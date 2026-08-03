@@ -3,3 +3,11 @@ node_modules
 .env
 
 /generated/prisma
+
+# Logs
+*.log
+server.err.log
+server.log
+
+# Lock files
+package-lock.json

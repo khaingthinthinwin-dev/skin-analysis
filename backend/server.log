@@ -1620,3 +1620,5 @@ Swagger documentation: http://localhost:8080/api/docs
 [32m[Nest] 5456  - [39m2026/08/03 10:47:25 [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +182ms[39m
 Application is running on: http://localhost:8080
 Swagger documentation: http://localhost:8080/api/docs
+[2J[3J[H[[90m13:45:16[0m] File change detected. Starting incremental compilation...
+
