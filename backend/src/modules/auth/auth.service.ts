@@ -35,11 +35,11 @@ export class AuthService {
       email,
       name,
       passwordHash,
-      role: 'buyer' as any,
+      roleCode: 'buyer',
     });
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
 
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -49,7 +49,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: user.roleCode,
       },
       ...tokens,
     };
@@ -71,7 +71,7 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
 
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -81,7 +81,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: user.roleCode,
       },
       ...tokens,
     };
@@ -127,7 +127,7 @@ export class AuthService {
       }
 
       // Generate new tokens
-      const tokens = await this.generateTokens(user.id, user.email, user.role);
+      const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
 
       // Store new refresh token
       await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -169,13 +169,13 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: user.roleCode,
       avatarUrl: user.avatarUrl,
     };
   }
 
-  private async generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
+  private async generateTokens(userId: string, email: string, roleCode: string) {
+    const payload = { sub: userId, email, role: roleCode };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
