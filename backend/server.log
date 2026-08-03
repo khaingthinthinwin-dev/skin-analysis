@@ -66,3 +66,39 @@ Swagger documentation: http://localhost:8080/api/docs
 [32m[Nest] 26568  - [39m2026/08/03 10:47:38 [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +90ms[39m
 Application is running on: http://localhost:8080
 Swagger documentation: http://localhost:8080/api/docs
+[2J[3J[H[[90m10:47:17[0m] File change detected. Starting incremental compilation...
+
+[[90m10:47:21[0m] Found 0 errors. Watching for file changes.
+
+[2J[3J[H[[90m10:47:21[0m] File change detected. Starting incremental compilation...
+
+[[90m10:47:22[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +31ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +65ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRedisModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/api/v1} (version: 1):[39m[38;5;3m +147ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/health, GET} (version: 1) route[39m[38;5;3m +5ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/v1/auth} (version: 1):[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/register, POST} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/login, POST} (version: 1) route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/refresh, POST} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/logout, POST} (version: 1) route[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/verify, GET} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/v1/users} (version: 1):[39m[38;5;3m +0ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/me, GET} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/me, PATCH} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users, GET} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, GET} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:24 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, DELETE} (version: 1) route[39m[38;5;3m +1ms[39m
+[32m[Nest] 5456  - [39m2026/08/03 10:47:25 [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +182ms[39m
+Application is running on: http://localhost:8080
+Swagger documentation: http://localhost:8080/api/docs

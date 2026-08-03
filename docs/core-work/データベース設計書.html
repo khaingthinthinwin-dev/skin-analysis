@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データベース設計書 - AI搭載スキンケアマーケットプレイス</title>
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-light: #38bdf8;
+            --primary-dark: #0284c7;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #6366f1;
+            --bg: #f0f9ff;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .doc-meta {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .doc-meta-item {
+            background: rgba(255,255,255,0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0.75rem 2rem;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .section-header:hover {
+            background: var(--primary-dark);
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-header .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+            display: none;
+        }
+
+        .section-content.open {
+            display: block;
+        }
+
+        .section-toggle {
+            transition: transform 0.3s;
+        }
+
+        .section.open .section-toggle {
+            transform: rotate(180deg);
+        }
+
+        .subsection {
+            margin-bottom: 1.5rem;
+        }
+
+        .subsection h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .subsection h4 {
+            color: var(--text);
+            font-size: 1rem;
+            margin: 1rem 0 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+        }
+
+        th, td {
+            padding: 0.6rem 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg);
+            font-weight: 600;
+            color: var(--text);
+            position: sticky;
+            top: 60px;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .type-pk {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
+        .type-fk {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .type-idx {
+            background: #e0e7ff;
+            color: #3730a3;
+            border: 1px solid #a5b4fc;
+        }
+
+        .type-check {
+            background: #fce7f3;
+            color: #9d174d;
+            border: 1px solid #f9a8d4;
+        }
+
+        .type-unique {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .nullable {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .required {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+
+        .code-block .keyword {
+            color: #818cf8;
+        }
+
+        .code-block .string {
+            color: #34d399;
+        }
+
+        .code-block .comment {
+            color: #64748b;
+        }
+
+        .code-block .type {
+            color: #38bdf8;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 1.25rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin: 1rem 0;
+        }
+
+        .info-box.warning {
+            background: #fffbeb;
+            border-color: #fed7aa;
+        }
+
+        .info-box.success {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        ul, ol {
+            padding-left: 1.5rem;
+            margin: 0.75rem 0;
+        }
+
+        li {
+            margin-bottom: 0.4rem;
+        }
+
+        .er-diagram {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            line-height: 1.4;
+        }
+
+        .table-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .table-card h5 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .table-card .meta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .constraint-list {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .constraint-tag {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .tag-pk { background: #fef3c7; color: #92400e; }
+        .tag-fk { background: #dbeafe; color: #1e40af; }
+        .tag-unique { background: #d1fae5; color: #065f46; }
+        .tag-check { background: #fce7f3; color: #9d174d; }
+        .tag-index { background: #e0e7ff; color: #3730a3; }
+
+        @media print {
+            .nav { display: none; }
+            .section-content { display: block !important; }
+            .header { background: var(--primary) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .doc-meta { flex-direction: column; gap: 0.5rem; }
+            .nav-inner { padding: 0.5rem 1rem; }
+            .main { padding: 1rem; }
+            table { font-size: 0.75rem; }
+            th, td { padding: 0.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <h1>データベース設計書</h1>
+    <p class="subtitle">Database Design Specification - AI-Powered Skincare Marketplace</p>
+    <div class="doc-meta">
+        <span class="doc-meta-item">📄 Document ID: SKM-DBS-001</span>
+        <span class="doc-meta-item">📋 Version: 1.0</span>
+        <span class="doc-meta-item">📅 Created: 2026-08-03</span>
+        <span class="doc-meta-item">✅ Status: Released</span>
+    </div>
+</header>
+
+<nav class="nav">
+    <div class="nav-inner">
+        <button class="nav-btn active" onclick="scrollToSection('overview')">1. Overview</button>
+        <button class="nav-btn" onclick="scrollToSection('lookup')">2. Lookup Tables</button>
+        <button class="nav-btn" onclick="scrollToSection('entities')">3. Core Entities</button>
+        <button class="nav-btn" onclick="scrollToSection('indexes')">4. Indexes</button>
+        <button class="nav-btn" onclick="scrollToSection('redis')">5. Redis Cache</button>
+        <button class="nav-btn" onclick="scrollToSection('prisma')">6. Prisma ORM</button>
+    </div>
+</nav>
+
+<main class="main">
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="value">14</div>
+            <div class="label">Total Tables</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">3</div>
+            <div class="label">Lookup Tables</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">11</div>
+            <div class="label">Core Entities</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">32</div>
+            <div class="label">Indexes</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">12</div>
+            <div class="label">Foreign Keys</div>
+        </div>
+    </div>
+
+    <!-- Section 1: Overview -->
+    <div class="section open" id="overview">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2><span class="section-toggle">▼</span> 1. Database Overview (データベース概要)</h2>
+            <span class="badge">conventions</span>
+        </div>
+        <div class="section-content open">
+            <div class="subsection">
+                <h3>1.1 Database Engine</h3>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="value" style="font-size:1.2rem">PostgreSQL</div><div class="label">Primary Database v16+</div></div>
+                    <div class="stat-card"><div class="value" style="font-size:1.2rem">ACID</div><div class="label">Compliant Storage</div></div>
+                    <div class="stat-card"><div class="value" style="font-size:1.2rem">UTF8</div><div class="label">Multi-language Encoding</div></div>
+                    <div class="stat-card"><div class="value" style="font-size:1.2rem">UTC</div><div class="label">Timestamp Storage</div></div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>1.2 Naming Conventions</h3>
+                <table>
+                    <thead><tr><th>Element</th><th>Convention</th><th>Example</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Tables</strong></td><td>Pluralized, snake_case</td><td><code>products</code>, <code>order_items</code></td></tr>
+                        <tr><td><strong>Columns</strong></td><td>Singular, snake_case</td><td><code>merchant_id</code>, <code>stock_quantity</code></td></tr>
+                        <tr><td><strong>Primary Keys</strong></td><td><code>id</code> (CUID)</td><td><code>clx1234...</code></td></tr>
+                        <tr><td><strong>Foreign Keys</strong></td><td><code><table>_id</code></td><td><code>user_id</code>, <code>product_id</code></td></tr>
+                        <tr><td><strong>Indexes</strong></td><td><code>idx_</code> prefix</td><td><code>idx_products_category_id</code></td></tr>
+                        <tr><td><strong>Unique</strong></td><td><code>uq_</code> prefix</td><td><code>uq_users_email</code></td></tr>
+                        <tr><td><strong>Check</strong></td><td><code>chk_</code> prefix</td><td><code>chk_products_price</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>1.3 ID Strategy</h3>
+                <div class="info-box">
+                    <strong>CUID (Collision-resistant Unique Identifier)</strong>
+                    <ul>
+                        <li>String type with <code>@default(cuid())</code> in Prisma</li>
+                        <li>Time-ordered, globally unique</li>
+                        <li>URL-safe, no sequential gaps</li>
+                        <li>Perfect for distributed systems</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Section 2: Lookup Tables -->
+    <div class="section" id="lookup">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2><span class="section-toggle">▼</span> 2. Lookup Tables (マスターテーブル)</h2>
+            <span class="badge">3 tables</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>Entity Relationships</h3>
+                <div class="er-diagram">
+user_roles ||--o{ users : "has"
+order_statuses ||--o{ orders : "tracks"
+discount_types ||--o{ promotions : "categorizes"</div>
+            </div>
+
+            <div class="subsection">
+                <h3>2.1 User Roles</h3>
+                <table>
+                    <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>role_id</code></td><td><span class="type-badge type-pk">SERIAL PK</span></td><td>Auto-increment</td><td>Primary key</td></tr>
+                        <tr><td><code>role_code</code></td><td><code>VARCHAR(20)</code></td><td><span class="type-badge type-unique">UNIQUE</span> NOT NULL</td><td>Role identifier</td></tr>
+                        <tr><td><code>role_name</code></td><td><code>VARCHAR(50)</code></td><td><span class="type-badge type-unique">UNIQUE</span> NOT NULL</td><td>Display name</td></tr>
+                        <tr><td><code>description</code></td><td><code>VARCHAR(500)</code></td><td>NULLABLE</td><td>Role description</td></tr>
+                        <tr><td><code>is_active</code></td><td><code>BOOLEAN</code></td><td>NOT NULL, DEFAULT TRUE</td><td>Active status</td></tr>
+                    </tbody>
+                </table>
+                <div class="info-box">
+                    <strong>Seed Data</strong>
+                    <code>buyer</code>, <code>merchant</code>, <code>admin</code>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>2.2 Order Statuses</h3>
+                <table>
+                    <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>status_id</code></td><td><span class="type-badge type-pk">SERIAL PK</span></td><td>Auto-increment</td><td>Primary key</td></tr>
+                        <tr><td><code>status_code</code></td><td><code>VARCHAR(20)</code></td><td><span class="type-badge type-unique">UNIQUE</span> NOT NULL</td><td>Status identifier</td></tr>
+                        <tr><td><code>status_name</code></td><td><code>VARCHAR(50)</code></td><td><span class="type-badge type-unique">UNIQUE</span> NOT NULL</td><td>Display name</td></tr>
+                        <tr><td><code>display_order</code></td><td><code>INTEGER</code></td><td>NOT NULL</td><td>Sort order</td></tr>
+                        <tr><td><code>is_terminal_state</code></td><td><code>BOOLEAN</code></td><td>NOT NULL, DEFAULT FALSE</td><td>End state flag</td></tr>
+                    </tbody>
+                </table>
+                <div class="info-box">
+                    <strong>Order Flow</strong>
+                    <code>pending → confirmed → processing → shipped → delivered</code><br>
+                    <code>cancelled</code> / <code>refunded</code> can occur at various stages
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>2.3 Discount Types</h3>
+                <table>
+                    <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>discount_type_id</code></td><td><span class="type-badge type-pk">SERIAL PK</span></td><td>Auto-increment</td><td>Primary key</td></tr>
+                        <tr><td><code>type_code</code></td><td><code>VARCHAR(20)</code></td><td><span class="type-badge type-unique">UNIQUE</span> NOT NULL</td><td>Type identifier</td></tr>
+                        <tr><td><code>type_name</code></td><td><code>VARCHAR(50)</code></td><td><span class="type-badge type-unique">UNIQUE</span> NOT NULL</td><td>Display name</td></tr>
+                        <tr><td><code>is_active</code></td><td><code>BOOLEAN</code></td><td>NOT NULL, DEFAULT TRUE</td><td>Active status</td></tr>
+                    </tbody>
+                </table>
+                <div class="info-box">
+                    <strong>Seed Data</strong>
+                    <code>percentage</code>, <code>fixed</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Core Entities -->
+    <div class="section" id="entities">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2><span class="section-toggle">▼</span> 3. Core Entity Tables (コアエンティティ)</h2>
+            <span class="badge">11 tables</span>
+        </div>
+        <div class="section-content">
+            <!-- Users -->
+            <div class="subsection">
+                <h3>3.1 Users Table (users - ユーザーマスタ)</h3>
+                <table>
+                    <thead><tr><th>Column</th><th>Type</th><th>PK/FK</th><th>Nullable</th><th>Default</th><th>Constraints</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>id</code></td><td><code>VARCHAR(25)</code></td><td><span class="type-badge type-pk">PK</span></td><td class="required">NOT NULL</td><td>cuid()</td><td>-</td></tr>
+                        <tr><td><code>email</code></td><td><code>VARCHAR(255)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td><span class="type-badge type-unique">UNIQUE</span></td></tr>
+                        <tr><td><code>password_hash</code></td><td><code>VARCHAR(255)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td>Argon2</td></tr>
+                        <tr><td><code>name</code></td><td><code>VARCHAR(200)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td>-</td></tr>
+                        <tr><td><code>role</code></td><td><code>VARCHAR(20)</code></td><td>-</td><td class="required">NOT NULL</td><td>'buyer'</td><td><span class="type-badge type-check">CHECK</span></td></tr>
+                        <tr><td><code>avatar_url</code></td><td><code>VARCHAR(500)</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
+                        <tr><td><code>phone</code></td><td><code>VARCHAR(20)</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
+                        <tr><td><code>is_active</code></td><td><code>BOOLEAN</code></td><td>-</td><td class="required">NOT NULL</td><td>TRUE</td><td>-</td></tr>
+                        <tr><td><code>email_verified</code></td><td><code>BOOLEAN</code></td><td>-</td><td class="required">NOT NULL</td><td>FALSE</td><td>-</td></tr>
+                        <tr><td><code>created_at</code></td><td><code>TIMESTAMPTZ</code></td><td>-</td><td class="required">NOT NULL</td><td>NOW()</td><td>-</td></tr>
+                        <tr><td><code>updated_at</code></td><td><code>TIMESTAMPTZ</code></td><td>-</td><td class="required">NOT NULL</td><td>NOW()</td><td>-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Products -->
+            <div class="subsection">
+                <h3>3.2 Products Table (products - 商品テーブル)</h3>
+                <table>
+                    <thead><tr><th>Column</th><th>Type</th><th>PK/FK</th><th>Nullable</th><th>Default</th><th>Constraints</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>id</code></td><td><code>VARCHAR(25)</code></td><td><span class="type-badge type-pk">PK</span></td><td class="required">NOT NULL</td><td>cuid()</td><td>-</td></tr>
+                        <tr><td><code>merchant_id</code></td><td><code>VARCHAR(25)</code></td><td><span class="type-badge type-fk">FK→users</span></td><td class="required">NOT NULL</td><td>-</td><td>ON DELETE CASCADE</td></tr>
+                        <tr><td><code>category_id</code></td><td><code>VARCHAR(25)</code></td><td><span class="type-badge type-fk">FK→categories</span></td><td class="required">NOT NULL</td><td>-</td><td>ON DELETE RESTRICT</td></tr>
+                        <tr><td><code>name</code></td><td><code>VARCHAR(255)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td>-</td></tr>
+                        <tr><td><code>slug</code></td><td><code>VARCHAR(255)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td><span class="type-badge type-unique">UNIQUE</span></td></tr>
+                        <tr><td><code>description</code></td><td><code>TEXT</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
+                        <tr><td><code>price</code></td><td><code>NUMERIC(10,2)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td><span class="type-badge type-check">CHECK >0</span></td></tr>
+                        <tr><td><code>compare_at_price</code></td><td><code>NUMERIC(10,2)</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
+                        <tr><td><code>sku</code></td><td><code>VARCHAR(100)</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td><span class="type-badge type-unique">UNIQUE</span></td></tr>
+                        <tr><td><code>stock_quantity</code></td><td><code>INTEGER</code></td><td>-</td><td class="required">NOT NULL</td><td>0</td><td><span class="type-badge type-check">CHECK ≥0</span></td></tr>
+                        <tr><td><code>images</code></td><td><code>TEXT[]</code></td><td>-</td><td class="required">NOT NULL</td><td>'{}'</td><td>-</td></tr>
+                        <tr><td><code>skin_types</code></td><td><code>TEXT[]</code></td><td>-</td><td class="required">NOT NULL</td><td>'{}'</td><td>-</td></tr>
+                        <tr><td><code>ingredients</code></td><td><code>TEXT[]</code></td><td>-</td><td class="required">NOT NULL</td><td>'{}'</td><td>-</td></tr>
+                        <tr><td><code>is_active</code></td><td><code>BOOLEAN</code></td><td>-</td><td class="required">NOT NULL</td><td>TRUE</td><td>-</td></tr>
+                        <tr><td><code>is_featured</code></td><td><code>BOOLEAN</code></td><td>-</td><td class="required">NOT NULL</td><td>FALSE</td><td>-</td></tr>
+                        <tr><td><code>avg_rating</code></td><td><code>NUMERIC(3,2)</code></td><td>-</td><td class="required">NOT NULL</td><td>0</td><td>-</td></tr>
+                        <tr><td><code>review_count</code></td><td><code>INTEGER</code></td><td>-</td><td class="required">NOT NULL</td><td>0</td><td>-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Orders -->
+            <div class="subsection">
+                <h3>3.3 Orders Table (orders - 注文テーブル)</h3>
+                <table>
+                    <thead><tr><th>Column</th><th>Type</th><th>PK/FK</th><th>Nullable</th><th>Default</th><th>Constraints</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>id</code></td><td><code>VARCHAR(25)</code></td><td><span class="type-badge type-pk">PK</span></td><td class="required">NOT NULL</td><td>cuid()</td><td>-</td></tr>
+                        <tr><td><code>user_id</code></td><td><code>VARCHAR(25)</code></td><td><span class="type-badge type-fk">FK→users</span></td><td class="required">NOT NULL</td><td>-</td><td>ON DELETE RESTRICT</td></tr>
+                        <tr><td><code>status</code></td><td><code>VARCHAR(20)</code></td><td>-</td><td class="required">NOT NULL</td><td>'pending'</td><td><span class="type-badge type-check">CHECK</span></td></tr>
+                        <tr><td><code>subtotal</code></td><td><code>NUMERIC(10,2)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td><span class="type-badge type-check">CHECK >0</span></td></tr>
+                        <tr><td><code>shipping_cost</code></td><td><code>NUMERIC(10,2)</code></td><td>-</td><td class="required">NOT NULL</td><td>0</td><td>-</td></tr>
+                        <tr><td><code>tax</code></td><td><code>NUMERIC(10,2)</code></td><td>-</td><td class="required">NOT NULL</td><td>0</td><td>-</td></tr>
+                        <tr><td><code>total</code></td><td><code>NUMERIC(10,2)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td><span class="type-badge type-check">CHECK >0</span></td></tr>
+                        <tr><td><code>shipping_address</code></td><td><code>JSONB</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td>-</td></tr>
+                        <tr><td><code>payment_method</code></td><td><code>VARCHAR(50)</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
+                        <tr><td><code>payment_status</code></td><td><code>VARCHAR(20)</code></td><td>-</td><td class="required">NOT NULL</td><td>'pending'</td><td>pending, completed, failed, refunded</td></tr>
+                        <tr><td><code>notes</code></td><td><code>TEXT</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Other Tables Summary -->
+            <div class="subsection">
+                <h3>3.4 Other Core Tables</h3>
+                <div class="stats-grid">
+                    <div class="table-card">
+                        <h5>refresh_tokens</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">JWT refresh token management</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-fk">FK: user_id→users</span>
+                            <span class="constraint-tag tag-index">IDX: user_id, family, token_hash</span>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h5>categories</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">Hierarchical product categories</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-unique">UNIQUE: slug</span>
+                            <span class="constraint-tag tag-fk">FK: parent_id→categories</span>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h5>reviews</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">Product reviews with ratings</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-fk">FK: user_id→users, product_id→products</span>
+                            <span class="constraint-tag tag-unique">UNIQUE: (user_id, product_id)</span>
+                            <span class="constraint-tag tag-check">CHECK: rating 1-5</span>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h5>wishlists</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">User saved products</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-fk">FK: user_id→users, product_id→products</span>
+                            <span class="constraint-tag tag-unique">UNIQUE: (user_id, product_id)</span>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h5>order_items</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">Individual order line items</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-fk">FK: order_id→orders, product_id→products</span>
+                            <span class="constraint-tag tag-check">CHECK: quantity>0</span>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h5>shops</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">Merchant shop profiles</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-unique">UNIQUE: user_id, slug</span>
+                            <span class="constraint-tag tag-fk">FK: user_id→users</span>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h5>promotions</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">Discount codes and coupons</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-unique">UNIQUE: code</span>
+                            <span class="constraint-tag tag-fk">FK: merchant_id→users</span>
+                            <span class="constraint-tag tag-check">CHECK: discount_type, dates</span>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h5>advertisements</h5>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">Shop advertisements</p>
+                        <div class="constraint-list">
+                            <span class="constraint-tag tag-pk">PK: id</span>
+                            <span class="constraint-tag tag-fk">FK: shop_id→shops</span>
+                            <span class="constraint-tag tag-check">CHECK: dates</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ER Diagram -->
+            <div class="subsection">
+                <h3>3.5 Entity Relationship Diagram</h3>
+                <div class="er-diagram">
+users ||--o{ products : "lists"
+users ||--o{ reviews : "writes"
+users ||--o{ wishlists : "saves"
+users ||--o{ orders : "places"
+users ||--o{ refresh_tokens : "has"
+users ||--o| shops : "owns"
+users ||--o{ promotions : "creates"
+categories ||--o{ products : "contains"
+categories ||--o| categories : "parent_of"
+products ||--o{ reviews : "receives"
+products ||--o{ wishlists : "saved_in"
+products ||--o{ order_items : "included_in"
+orders ||--o{ order_items : "contains"
+shops ||--o{ advertisements : "displays"</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Indexes -->
+    <div class="section" id="indexes">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2><span class="section-toggle">▼</span> 4. Performance Indexes (パフォーマンスインデックス)</h2>
+            <span class="badge">32 indexes</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>Index Strategy</h3>
+                <div class="info-box">
+                    <strong>Performance Target: Page load ≤ 2 seconds</strong>
+                    Indexes are optimized for common query patterns: dashboard listings, search/filter, and relationship lookups.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>4.1 Users Table Indexes</h3>
+                <table>
+                    <thead><tr><th>Index Name</th><th>Columns</th><th>Purpose</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>idx_users_email</code></td><td><code>email</code></td><td>Login lookups, uniqueness validation</td></tr>
+                        <tr><td><code>idx_users_role</code></td><td><code>role</code></td><td>Role-based filtering</td></tr>
+                        <tr><td><code>idx_users_is_active</code></td><td><code>is_active</code></td><td>Active user filtering</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>4.2 Products Table Indexes</h3>
+                <table>
+                    <thead><tr><th>Index Name</th><th>Columns</th><th>Purpose</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>idx_products_merchant_id</code></td><td><code>merchant_id</code></td><td>Merchant's product listings</td></tr>
+                        <tr><td><code>idx_products_category_id</code></td><td><code>category_id</code></td><td>Category-based filtering</td></tr>
+                        <tr><td><code>idx_products_slug</code></td><td><code>slug</code></td><td>URL slug lookups</td></tr>
+                        <tr><td><code>idx_products_price</code></td><td><code>price</code></td><td>Price sorting/filtering</td></tr>
+                        <tr><td><code>idx_products_is_active</code></td><td><code>is_active</code></td><td>Active product filtering</td></tr>
+                        <tr><td><code>idx_products_created_at</code></td><td><code>created_at DESC</code></td><td>Newest products</td></tr>
+                        <tr><td><code>idx_products_active_featured</code></td><td><code>is_featured, created_at DESC</code></td><td>Featured products (partial)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>4.3 Orders Table Indexes</h3>
+                <table>
+                    <thead><tr><th>Index Name</th><th>Columns</th><th>Purpose</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>idx_orders_user_id</code></td><td><code>user_id</code></td><td>User order history</td></tr>
+                        <tr><td><code>idx_orders_status</code></td><td><code>status</code></td><td>Status-based filtering</td></tr>
+                        <tr><td><code>idx_orders_created_at</code></td><td><code>created_at DESC</code></td><td>Order date sorting</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>4.4 Other Table Indexes</h3>
+                <table>
+                    <thead><tr><th>Table</th><th>Index Name</th><th>Columns</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>refresh_tokens</code></td><td><code>idx_refresh_tokens_user_id</code></td><td><code>user_id</code></td></tr>
+                        <tr><td><code>refresh_tokens</code></td><td><code>idx_refresh_tokens_family</code></td><td><code>family</code></td></tr>
+                        <tr><td><code>refresh_tokens</code></td><td><code>idx_refresh_tokens_token_hash</code></td><td><code>token_hash</code></td></tr>
+                        <tr><td><code>categories</code></td><td><code>idx_categories_parent_id</code></td><td><code>parent_id</code></td></tr>
+                        <tr><td><code>categories</code></td><td><code>idx_categories_slug</code></td><td><code>slug</code></td></tr>
+                        <tr><td><code>reviews</code></td><td><code>idx_reviews_product_id</code></td><td><code>product_id</code></td></tr>
+                        <tr><td><code>reviews</code></td><td><code>idx_reviews_rating</code></td><td><code>rating</code></td></tr>
+                        <tr><td><code>wishlists</code></td><td><code>idx_wishlists_user_id</code></td><td><code>user_id</code></td></tr>
+                        <tr><td><code>order_items</code></td><td><code>idx_order_items_order_id</code></td><td><code>order_id</code></td></tr>
+                        <tr><td><code>order_items</code></td><td><code>idx_order_items_product_id</code></td><td><code>product_id</code></td></tr>
+                        <tr><td><code>order_items</code></td><td><code>idx_order_items_merchant_id</code></td><td><code>merchant_id</code></td></tr>
+                        <tr><td><code>shops</code></td><td><code>idx_shops_slug</code></td><td><code>slug</code></td></tr>
+                        <tr><td><code>shops</code></td><td><code>idx_shops_is_approved</code></td><td><code>is_approved</code></td></tr>
+                        <tr><td><code>promotions</code></td><td><code>idx_promotions_merchant_id</code></td><td><code>merchant_id</code></td></tr>
+                        <tr><td><code>promotions</code></td><td><code>idx_promotions_code</code></td><td><code>code</code></td></tr>
+                        <tr><td><code>promotions</code></td><td><code>idx_promotions_is_active</code></td><td><code>is_active</code></td></tr>
+                        <tr><td><code>promotions</code></td><td><code>idx_promotions_expires_at</code></td><td><code>expires_at</code></td></tr>
+                        <tr><td><code>advertisements</code></td><td><code>idx_advertisements_shop_id</code></td><td><code>shop_id</code></td></tr>
+                        <tr><td><code>advertisements</code></td><td><code>idx_advertisements_is_active</code></td><td><code>is_active</code></td></tr>
+                        <tr><td><code>advertisements</code></td><td><code>idx_advertisements_expires_at</code></td><td><code>expires_at</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Redis Cache -->
+    <div class="section" id="redis">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2><span class="section-toggle">▼</span> 5. Redis Caching Architecture (Redisキャッシュ設計)</h2>
+            <span class="badge">key patterns</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>5.1 Redis Memory Layout</h3>
+                <div class="code-block">
+┌──────────────────────────────────────────────────────────────────┐
+│                          Redis Memory                            │
+├───────────────────┬──────────────────────────┬───────────────────┤
+│ Blacklist String  │ Session Hash             │ Cache String      │
+│ TTL: 15min / 7d   │ TTL: 7d                  │ TTL: 2-30min      │
+│ blacklist:{jti}   │ session:{userId}         │ cache:<entity>:<id>│
+└───────────────────┴──────────────────────────┴───────────────────┘</div>
+            </div>
+
+            <div class="subsection">
+                <h3>5.2 Key Namespace Design</h3>
+                <table>
+                    <thead><tr><th>Domain</th><th>Key Pattern</th><th>Type</th><th>TTL</th><th>Invalidation</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Token Blacklist</strong></td><td><code>blacklist:{jti}</code></td><td>String</td><td>15 min</td><td>Logout</td></tr>
+                        <tr><td><strong>Refresh Blacklist</strong></td><td><code>refresh:blacklist:{jti}</code></td><td>String</td><td>7 days</td><td>Reuse detection</td></tr>
+                        <tr><td><strong>User Session</strong></td><td><code>session:{userId}</code></td><td>Hash</td><td>7 days</td><td>Logout</td></tr>
+                        <tr><td><strong>Product Cache</strong></td><td><code>cache:product:{id}</code></td><td>String</td><td>5 min</td><td>Product update</td></tr>
+                        <tr><td><strong>Product List</strong></td><td><code>cache:products:list:{hash}</code></td><td>String</td><td>2 min</td><td>Any mutation</td></tr>
+                        <tr><td><strong>Category Cache</strong></td><td><code>cache:categories</code></td><td>String</td><td>30 min</td><td>Category change</td></tr>
+                        <tr><td><strong>User Profile</strong></td><td><code>cache:user:{id}</code></td><td>String</td><td>5 min</td><td>Profile update</td></tr>
+                        <tr><td><strong>Shop Cache</strong></td><td><code>cache:shop:{id}</code></td><td>String</td><td>10 min</td><td>Shop update</td></tr>
+                        <tr><td><strong>API Rate Limit</strong></td><td><code>rate:api:{ip}</code></td><td>Sorted Set</td><td>60 sec</td><td>Auto sliding</td></tr>
+                        <tr><td><strong>Auth Rate Limit</strong></td><td><code>rate:auth:{ip}</code></td><td>String</td><td>300 sec</td><td>Login attempt</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>5.3 Cache Invalidation Flow</h3>
+                <div class="info-box">
+                    <strong>Write-Through / Evict Strategy</strong>
+                    <ol>
+                        <li>Save changes to PostgreSQL (transaction)</li>
+                        <li>Evict cache key: <code>DEL cache:product:{id}</code></li>
+                        <li>Invalidate list cache: <code>DEL cache:products:list:*</code></li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>5.4 Rate Limiting (Sliding Window)</h3>
+                <div class="code-block">
+<span class="comment">-- sliding_window.lua</span>
+<span class="keyword">local</span> key = KEYS[1]
+<span class="keyword">local</span> limit = tonumber(ARGV[1])
+<span class="keyword">local</span> window = tonumber(ARGV[2])
+<span class="keyword">local</span> now = tonumber(ARGV[3])
+<span class="keyword">local</span> window_start = now - window
+
+redis.call('ZREMRANGEBYSCORE', key, '-inf', window_start)
+<span class="keyword">local</span> count = redis.call('ZCARD', key)
+
+<span class="keyword">if</span> count < limit <span class="keyword">then</span>
+  redis.call('ZADD', key, now, now .. ':' .. math.random(1000000))
+  redis.call('EXPIRE', key, window)
+  <span class="keyword">return</span> {1, limit - count - 1}
+<span class="keyword">else</span>
+  <span class="keyword">return</span> {0, 0}
+<span class="keyword">end</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: Prisma ORM -->
+    <div class="section" id="prisma">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2><span class="section-toggle">▼</span> 6. Prisma ORM Integration (Prisma ORM連携)</h2>
+            <span class="badge">mapping rules</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>6.1 Type Mapping</h3>
+                <table>
+                    <thead><tr><th>PostgreSQL</th><th>Prisma</th><th>TypeScript</th><th>Notes</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>VARCHAR(n)</code></td><td><code>String</code></td><td><code>string</code></td><td>Direct mapping</td></tr>
+                        <tr><td><code>TEXT</code></td><td><code>String</code></td><td><code>string</code></td><td>Direct mapping</td></tr>
+                        <tr><td><code>INTEGER</code></td><td><code>Int</code></td><td><code>number</code></td><td>Direct mapping</td></tr>
+                        <tr><td><code>NUMERIC(p,s)</code></td><td><code>Decimal</code></td><td><code>string</code></td><td>Use string for precision</td></tr>
+                        <tr><td><code>BOOLEAN</code></td><td><code>Boolean</code></td><td><code>boolean</code></td><td>Direct mapping</td></tr>
+                        <tr><td><code>TIMESTAMPTZ</code></td><td><code>DateTime</code></td><td><code>Date</code></td><td>Direct mapping</td></tr>
+                        <tr><td><code>JSONB</code></td><td><code>Json</code></td><td><code>JsonValue</code></td><td>Use with caution</td></tr>
+                        <tr><td><code>TEXT[]</code></td><td><code>String[]</code></td><td><code>string[]</code></td><td>PostgreSQL array</td></tr>
+                        <tr><td><code>VARCHAR(25)</code> (FK)</td><td><code>String</code></td><td><code>string</code></td><td>References lookup table</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>6.2 Lookup Table Integration</h3>
+                <div class="info-box">
+                    <strong>Prisma Model Definitions</strong>
+                    <p>Lookup tables are defined as Prisma models with foreign key references:</p>
+                    <ul>
+                        <li><code>UserRole</code> model → <code>users.role</code> references <code>user_roles.role_code</code></li>
+                        <li><code>OrderStatus</code> model → <code>orders.status</code> references <code>order_statuses.status_code</code></li>
+                        <li><code>DiscountType</code> model → <code>promotions.discount_type</code> references <code>discount_types.type_code</code></li>
+                    </ul>
+                </div>
+                <table>
+                    <thead><tr><th>Core Table</th><th>Column</th><th>References</th><th>On Delete</th><th>On Update</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>users</code></td><td><code>role</code></td><td><code>user_roles.role_code</code></td><td>RESTRICT</td><td>CASCADE</td></tr>
+                        <tr><td><code>orders</code></td><td><code>status</code></td><td><code>order_statuses.status_code</code></td><td>RESTRICT</td><td>CASCADE</td></tr>
+                        <tr><td><code>promotions</code></td><td><code>discount_type</code></td><td><code>discount_types.type_code</code></td><td>RESTRICT</td><td>CASCADE</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>6.2 Cascade Rules</h3>
+                <table>
+                    <thead><tr><th>Relation</th><th>onDelete</th><th>onUpdate</th><th>Rationale</th></tr></thead>
+                    <tbody>
+                        <tr><td>User → RefreshToken</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete tokens with user</td></tr>
+                        <tr><td>User → Product</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete products with merchant</td></tr>
+                        <tr><td>User → Review</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete reviews with user</td></tr>
+                        <tr><td>User → Wishlist</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete wishlist with user</td></tr>
+                        <tr><td>User → Order</td><td><span class="type-badge type-fk">RESTRICT</span></td><td>CASCADE</td><td>Prevent deleting user with orders</td></tr>
+                        <tr><td>User → Shop</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete shop with merchant</td></tr>
+                        <tr><td>Category → Product</td><td><span class="type-badge type-fk">RESTRICT</span></td><td>CASCADE</td><td>Prevent deleting category with products</td></tr>
+                        <tr><td>Product → Review</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete reviews with product</td></tr>
+                        <tr><td>Order → OrderItem</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete items with order</td></tr>
+                        <tr><td>Shop → Advertisement</td><td><span class="type-badge type-check">CASCADE</span></td><td>CASCADE</td><td>Delete ads with shop</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>6.3 Transactions Example</h3>
+                <div class="code-block">
+<span class="comment">// Creating order with stock decrement (atomic)</span>
+<span class="keyword">await</span> prisma.$transaction(<span class="keyword">async</span> (tx) => {
+  <span class="keyword">const</span> order = <span class="keyword">await</span> tx.order.create({ data: orderData });
+  <span class="keyword">await</span> tx.orderItem.createMany({
+    data: items.map(i => ({ ...i, orderId: order.id })),
+  });
+  <span class="keyword">await</span> tx.product.updateMany({
+    where: { id: { in: productIds } },
+    data: { stockQuantity: { decrement: 1 } },
+  });
+});</div>
+            </div>
+
+            <div class="subsection">
+                <h3>6.4 Generated Types</h3>
+                <div class="code-block">
+<span class="comment">// Use Prisma-generated types instead of hand-written interfaces</span>
+<span class="keyword">import</span> <span class="type">type</span> { Prisma } <span class="keyword">from</span> <span class="string">'../generated/prisma/client'</span>;
+
+<span class="type">type</span> ProductWithRelations = Prisma.ProductGetPayload<{
+  include: { 
+    category: <span class="keyword">true</span>; 
+    merchant: { select: { name: <span class="keyword">true</span>; shop: <span class="keyword">true</span> } };
+    reviews: { select: { rating: <span class="keyword">true</span> } };
+  };
+}>;</div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    function toggleSection(header) {
+        const section = header.parentElement;
+        const content = section.querySelector('.section-content');
+        section.classList.toggle('open');
+        content.classList.toggle('open');
+    }
+
+    function scrollToSection(id) {
+        const section = document.getElementById(id);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            if (!section.classList.contains('open')) {
+                section.classList.add('open');
+                section.querySelector('.section-content').classList.add('open');
+            }
+        }
+    }
+
+    window.addEventListener('scroll', () => {
+        const sections = ['overview', 'lookup', 'entities', 'indexes', 'redis', 'prisma'];
+        let current = '';
+        sections.forEach(id => {
+            const section = document.getElementById(id);
+            if (section && section.getBoundingClientRect().top <= 150) {
+                current = id;
+            }
+        });
+        if (current) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            const navBtns = document.querySelectorAll('.nav-btn');
+            const index = sections.indexOf(current);
+            if (navBtns[index]) navBtns[index].classList.add('active');
+        }
+    });
+</script>
+
+</body>
+</html>
