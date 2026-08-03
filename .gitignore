@@ -9,6 +9,8 @@ node_modules/
 *.log
 server.err.log
 server.log
+dev.err.log
+dev.log
 
 # Lock files
 package-lock.json
