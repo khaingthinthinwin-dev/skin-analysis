@@ -11,3 +11,6 @@ server.log
 
 # Lock files
 package-lock.json
+
+# Build
+dist/

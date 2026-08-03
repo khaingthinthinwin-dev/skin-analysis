@@ -19,7 +19,7 @@ export class UsersService {
         id: true,
         email: true,
         name: true,
-        role: true,
+        roleCode: true,
         avatarUrl: true,
         isActive: true,
         createdAt: true,
