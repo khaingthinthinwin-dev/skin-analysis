@@ -10,28 +10,45 @@ datasource db {
 }
 
 // ============================================
-// ENUMS
+// LOOKUP TABLES
 // ============================================
 
-enum UserRole {
-  buyer
-  merchant
-  admin
+model UserRole {
+  id          Int      @id @default(autoincrement())
+  roleCode    String   @unique @map("role_code")
+  roleName    String   @unique @map("role_name")
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users User[]
+
+  @@map("user_roles")
 }
 
-enum OrderStatus {
-  pending
-  confirmed
-  processing
-  shipped
-  delivered
-  cancelled
-  refunded
+model OrderStatus {
+  id              Int      @id @default(autoincrement())
+  statusCode      String   @unique @map("status_code")
+  statusName      String   @unique @map("status_name")
+  displayOrder    Int      @map("display_order")
+  isTerminalState Boolean  @default(false) @map("is_terminal_state")
+  description     String?
+
+  orders Order[]
+
+  @@map("order_statuses")
 }
 
-enum DiscountType {
-  percentage
-  fixed
+model DiscountType {
+  id        Int      @id @default(autoincrement())
+  typeCode  String   @unique @map("type_code")
+  typeName  String   @unique @map("type_name")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  promotions Promotion[]
+
+  @@map("discount_types")
 }
 
 // ============================================
@@ -43,7 +60,7 @@ model User {
   email         String   @unique
   name          String
   passwordHash  String   @map("password_hash")
-  role          UserRole @default(buyer)
+  roleCode      String   @default("buyer") @map("role")
   avatarUrl     String?  @map("avatar_url")
   phone         String?
   isActive      Boolean  @default(true) @map("is_active")
@@ -52,15 +69,17 @@ model User {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  products             Product[]
-  reviews              Review[]
-  wishlists            Wishlist[]
-  orders               Order[]
-  orderItems           OrderItem[]
-  refreshTokens        RefreshToken[]
-  promotions           Promotion[]
-  shop                 Shop?
+  role             UserRole      @relation(fields: [roleCode], references: [roleCode])
+  products         Product[]
+  reviews          Review[]
+  wishlists        Wishlist[]
+  orders           Order[]
+  orderItems       OrderItem[]
+  refreshTokens    RefreshToken[]
+  promotions       Promotion[]
+  shop             Shop?
 
+  @@index([roleCode])
   @@map("users")
 }
 
@@ -199,26 +218,27 @@ model Wishlist {
 // ============================================
 
 model Order {
-  id              String      @id @default(cuid())
-  userId          String      @map("user_id")
-  status          OrderStatus @default(pending)
-  subtotal        Decimal     @db.Decimal(10, 2)
-  shippingCost    Decimal     @default(0) @map("shipping_cost") @db.Decimal(10, 2)
-  tax             Decimal     @default(0) @db.Decimal(10, 2)
-  total           Decimal     @db.Decimal(10, 2)
-  shippingAddress Json        @map("shipping_address")
-  paymentMethod   String?     @map("payment_method")
-  paymentStatus   String      @default("pending") @map("payment_status")
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  statusCode      String   @default("pending") @map("status")
+  subtotal        Decimal  @db.Decimal(10, 2)
+  shippingCost    Decimal  @default(0) @map("shipping_cost") @db.Decimal(10, 2)
+  tax             Decimal  @default(0) @db.Decimal(10, 2)
+  total           Decimal  @db.Decimal(10, 2)
+  shippingAddress Json     @map("shipping_address")
+  paymentMethod   String?  @map("payment_method")
+  paymentStatus   String   @default("pending") @map("payment_status")
   notes           String?
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
   user  User        @relation(fields: [userId], references: [id])
+  status OrderStatus @relation(fields: [statusCode], references: [statusCode])
   items OrderItem[]
 
   @@index([userId])
-  @@index([status])
+  @@index([statusCode])
   @@index([createdAt])
   @@map("orders")
 }
@@ -278,22 +298,23 @@ model Shop {
 // ============================================
 
 model Promotion {
-  id              String       @id @default(cuid())
-  merchantId      String       @map("merchant_id")
-  code            String       @unique
+  id              String   @id @default(cuid())
+  merchantId      String   @map("merchant_id")
+  code            String   @unique
   description     String?
-  discountType    DiscountType @map("discount_type")
-  discountValue   Decimal      @map("discount_value") @db.Decimal(10, 2)
-  minOrderAmount  Decimal?     @map("min_order_amount") @db.Decimal(10, 2)
-  maxUses         Int?         @map("max_uses")
-  usedCount       Int          @default(0) @map("used_count")
-  startsAt        DateTime     @map("starts_at")
-  expiresAt       DateTime     @map("expires_at")
-  isActive        Boolean      @default(true) @map("is_active")
-  createdAt       DateTime     @default(now()) @map("created_at")
+  discountTypeCode String  @map("discount_type")
+  discountValue   Decimal  @map("discount_value") @db.Decimal(10, 2)
+  minOrderAmount  Decimal? @map("min_order_amount") @db.Decimal(10, 2)
+  maxUses         Int?     @map("max_uses")
+  usedCount       Int      @default(0) @map("used_count")
+  startsAt        DateTime @map("starts_at")
+  expiresAt       DateTime @map("expires_at")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   // Relations
-  merchant User @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  merchant     User         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  discountType DiscountType @relation(fields: [discountTypeCode], references: [typeCode])
 
   @@index([merchantId])
   @@index([code])
