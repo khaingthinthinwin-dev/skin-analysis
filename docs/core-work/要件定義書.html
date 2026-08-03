@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI搭載スキンケアマーケットプレイス 要件定義書</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .doc-meta {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .doc-meta-item {
+            background: rgba(255,255,255,0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Navigation */
+        .nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0.75rem 2rem;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Main Content */
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Section */
+        .section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .section-header:hover {
+            background: var(--primary-dark);
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-header .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+            display: none;
+        }
+
+        .section-content.open {
+            display: block;
+        }
+
+        .section-toggle {
+            transition: transform 0.3s;
+        }
+
+        .section.open .section-toggle {
+            transform: rotate(180deg);
+        }
+
+        /* Subsection */
+        .subsection {
+            margin-bottom: 1.5rem;
+        }
+
+        .subsection h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .subsection h4 {
+            color: var(--text);
+            font-size: 1rem;
+            margin: 1rem 0 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subsection h4 .icon {
+            width: 20px;
+            height: 20px;
+            background: var(--primary-light);
+            color: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg);
+            font-weight: 600;
+            color: var(--text);
+            position: sticky;
+            top: 60px;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background: var(--bg);
+        }
+
+        /* Priority Badges */
+        .priority {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .priority-medium {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fed7aa;
+        }
+
+        .priority-low {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        /* Permission Matrix */
+        .perm-matrix td:nth-child(2),
+        .perm-matrix td:nth-child(3),
+        .perm-matrix td:nth-child(4) {
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .perm-matrix .category-row {
+            background: var(--bg);
+            font-weight: 600;
+        }
+
+        .perm-matrix .category-row td {
+            padding: 0.5rem 1rem;
+        }
+
+        /* Check/Cross icons */
+        .check {
+            color: #16a34a;
+        }
+
+        .cross {
+            color: #dc2626;
+        }
+
+        /* Info boxes */
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin: 1rem 0;
+        }
+
+        .info-box.warning {
+            background: #fffbeb;
+            border-color: #fed7aa;
+        }
+
+        .info-box.success {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        /* Lists */
+        ul, ol {
+            padding-left: 1.5rem;
+            margin: 0.75rem 0;
+        }
+
+        li {
+            margin-bottom: 0.4rem;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+
+        .code-block .comment {
+            color: #64748b;
+        }
+
+        .code-block .keyword {
+            color: #818cf8;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 1.25rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Architecture diagram */
+        .arch-diagram {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            line-height: 1.4;
+        }
+
+        /* Checklist */
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .checklist input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        /* Role cards */
+        .role-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .role-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .role-card h4 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .role-card .role-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* Print styles */
+        @media print {
+            .nav {
+                display: none;
+            }
+            .section-content {
+                display: block !important;
+            }
+            .header {
+                background: var(--primary) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .section {
+                break-inside: avoid;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            .doc-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .nav-inner {
+                padding: 0.5rem 1rem;
+            }
+            .main {
+                padding: 1rem;
+            }
+            table {
+                font-size: 0.8rem;
+            }
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <h1>AI搭載スキンケアマーケットプレイス</h1>
+    <p class="subtitle">Requirements Definition (要件定義書)</p>
+    <div class="doc-meta">
+        <span class="doc-meta-item">📄 Document ID: SKM-REQ-001</span>
+        <span class="doc-meta-item">📋 Version: 1.0</span>
+        <span class="doc-meta-item">📅 Created: 2026-08-03</span>
+        <span class="doc-meta-item">✅ Status: Released</span>
+    </div>
+</header>
+
+<!-- Navigation -->
+<nav class="nav">
+    <div class="nav-inner">
+        <button class="nav-btn active" onclick="scrollToSection('overview')">1. Overview</button>
+        <button class="nav-btn" onclick="scrollToSection('roles')">2. Roles</button>
+        <button class="nav-btn" onclick="scrollToSection('requirements')">3. Requirements</button>
+        <button class="nav-btn" onclick="scrollToSection('rules')">4. Business Rules</button>
+        <button class="nav-btn" onclick="scrollToSection('nfr')">5. Non-Functional</button>
+        <button class="nav-btn" onclick="scrollToSection('architecture')">6. Architecture</button>
+        <button class="nav-btn" onclick="scrollToSection('acceptance')">7. Acceptance</button>
+        <button class="nav-btn" onclick="scrollToSection('appendix')">8. Appendix</button>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main">
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="value">3</div>
+            <div class="label">User Roles</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">10</div>
+            <div class="label">Data Entities</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">80+</div>
+            <div class="label">Requirements</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">47</div>
+            <div class="label">NFRs</div>
+        </div>
+    </div>
+
+    <!-- Section 1: Project Overview -->
+    <div class="section open" id="overview">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                1. Project Overview & Background (プロジェクト概要)
+            </h2>
+            <span class="badge">7 subsections</span>
+        </div>
+        <div class="section-content open">
+            <div class="subsection">
+                <h3>1.1 Project Name</h3>
+                <p><strong>AI-Powered Skincare Marketplace Platform</strong> (AI搭載スキンケアマーケットプレイス)</p>
+            </div>
+
+            <div class="subsection">
+                <h3>1.2 Purpose & Objectives</h3>
+                <p>An AI-powered skincare marketplace connecting buyers seeking personalized solutions with merchants selling skincare products, featuring AI skin analysis and smart product recommendations.</p>
+            </div>
+
+            <div class="subsection">
+                <h3>1.3 Business Context</h3>
+                <div class="info-box">
+                    <strong>Problem Statement</strong>
+                    Consumers struggle to find skincare products suited to their individual skin types. Traditional e-commerce lacks personalization.
+                </div>
+                <div class="info-box success">
+                    <strong>Solution Approach</strong>
+                    Implement an AI-powered marketplace that analyzes user skin conditions and recommends personalized products.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>1.4 Project Scope</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="info-box success">
+                        <strong>Included</strong>
+                        <ul>
+                            <li>User authentication/authorization</li>
+                            <li>AI skin analysis</li>
+                            <li>Product management</li>
+                            <li>Shopping cart & checkout</li>
+                            <li>Order management</li>
+                            <li>Merchant dashboard</li>
+                            <li>Admin panel</li>
+                            <li>Multi-language (EN/MY/JA)</li>
+                        </ul>
+                    </div>
+                    <div class="info-box warning">
+                        <strong>Excluded</strong>
+                        <ul>
+                            <li>Physical delivery logistics</li>
+                            <li>Payment gateway (stubbed)</li>
+                            <li>Mobile native apps</li>
+                            <li>Advanced ML training</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>1.5 Technology Stack</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="info-box">
+                        <strong>Backend</strong>
+                        <ul>
+                            <li>Node.js v22+ (LTS)</li>
+                            <li>NestJS v11</li>
+                            <li>TypeScript v5.7+</li>
+                            <li>Prisma v6</li>
+                            <li>PostgreSQL v16</li>
+                            <li>Redis v7</li>
+                            <li>JWT + Argon2</li>
+                        </ul>
+                    </div>
+                    <div class="info-box">
+                        <strong>Frontend</strong>
+                        <ul>
+                            <li>React v19</li>
+                            <li>Vite v6</li>
+                            <li>TypeScript v5.7+ (strict)</li>
+                            <li>React Router v7</li>
+                            <li>TanStack Query v5</li>
+                            <li>React Hook Form + Zod</li>
+                            <li>shadcn/ui + Tailwind CSS v4</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: User Roles -->
+    <div class="section" id="roles">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                2. User Roles & Permissions (ユーザーロール)
+            </h2>
+            <span class="badge">3 roles</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>2.1 User Roles Overview</h3>
+                <div class="role-cards">
+                    <div class="role-card">
+                        <h4>
+                            <span class="role-icon">👤</span>
+                            Buyer (購入者)
+                        </h4>
+                        <p>Browse products, AI analysis, purchase</p>
+                        <ul>
+                            <li>Register/login</li>
+                            <li>AI skin analysis</li>
+                            <li>Browse/search products</li>
+                            <li>Add to cart/wishlist</li>
+                            <li>Checkout & payment</li>
+                            <li>Write reviews</li>
+                            <li>View order history</li>
+                        </ul>
+                    </div>
+                    <div class="role-card">
+                        <h4>
+                            <span class="role-icon">🏪</span>
+                            Merchant (出品者)
+                        </h4>
+                        <p>Sell skincare products</p>
+                        <ul>
+                            <li>All Buyer permissions</li>
+                            <li>Manage products (CRUD)</li>
+                            <li>Manage shop profile</li>
+                            <li>Create promotions/coupons</li>
+                            <li>Manage advertisements</li>
+                            <li>View sales dashboard</li>
+                            <li>View analytics</li>
+                        </ul>
+                    </div>
+                    <div class="role-card">
+                        <h4>
+                            <span class="role-icon">⚙️</span>
+                            Admin (管理者)
+                        </h4>
+                        <p>Platform management</p>
+                        <ul>
+                            <li>All permissions</li>
+                            <li>User management</li>
+                            <li>Merchant approval</li>
+                            <li>Review moderation</li>
+                            <li>Content moderation</li>
+                            <li>Analytics & reports</li>
+                            <li>Revenue & commission management</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>2.2 Permission Matrix</h3>
+                <table class="perm-matrix">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Buyer</th>
+                            <th>Merchant</th>
+                            <th>Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="category-row"><td colspan="4">User Management</td></tr>
+                        <tr><td>Register/Login</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View/Edit Own Profile</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Manage Users</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
+                        
+                        <tr class="category-row"><td colspan="4">Product Management</td></tr>
+                        <tr><td>Browse Products</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Search/Filter Products</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View Product Details</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Create/Edit Products</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Delete Products</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        
+                        <tr class="category-row"><td colspan="4">AI Skin Analysis</td></tr>
+                        <tr><td>Upload Photo</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View Analysis Results</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View Recommendations</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        
+                        <tr class="category-row"><td colspan="4">Shopping</td></tr>
+                        <tr><td>Add to Cart</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Manage Cart</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Checkout</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View Orders</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        
+                        <tr class="category-row"><td colspan="4">Reviews</td></tr>
+                        <tr><td>Write Reviews</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View Reviews</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Moderate Reviews</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
+                        
+                        <tr class="category-row"><td colspan="4">Merchant Features</td></tr>
+                        <tr><td>Manage Shop Profile</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View Sales Dashboard</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Create Promotions</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Manage Advertisements</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>View Analytics</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        
+                        <tr class="category-row"><td colspan="4">Admin Features</td></tr>
+                        <tr><td>Approve Merchants</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
+                        <tr><td>Moderate Content</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
+                        <tr><td>Revenue Tracking</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
+                        <tr><td>Commission Management</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Functional Requirements -->
+    <div class="section" id="requirements">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                3. Functional Requirements (機能要件)
+            </h2>
+            <span class="badge">20 modules</span>
+        </div>
+        <div class="section-content">
+            <!-- Data Model -->
+            <div class="subsection">
+                <h3>3.1 Core Entities & Data Model</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">10 core entities defined in Prisma schema</p>
+            </div>
+
+            <!-- Buyer Module -->
+            <div class="subsection">
+                <h3>3.2 Buyer Module (購入者モジュール)</h3>
+                
+                <h4><span class="icon">🔐</span> Authentication (B-AUTH)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>B-AUTH-001</td><td>User can register with email and password</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AUTH-002</td><td>User can login with email and password</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AUTH-003</td><td>System issues JWT access token (15 min) and refresh token (7 days)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AUTH-004</td><td>User can logout (token blacklisted in Redis)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AUTH-005</td><td>Access token auto-refreshes via refresh token</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AUTH-006</td><td>Password is hashed with Argon2</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AUTH-007</td><td>Refresh token rotation on every use</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AUTH-008</td><td>Token family tracking for breach detection</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">👤</span> Profile Setup (B-PROF)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>B-PROF-001</td><td>User can view own profile</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-PROF-002</td><td>User can edit name, email, phone</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-PROF-003</td><td>User can upload/change avatar</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>B-PROF-004</td><td>User can set skin type (dry, oily, combination, sensitive, normal)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-PROF-005</td><td>User can set skin concerns (acne, dark spots, wrinkles, etc.)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-PROF-006</td><td>Profile auto-populates during registration</td><td><span class="priority priority-high">High</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">🔬</span> AI Skin Analysis (B-AI)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>B-AI-001</td><td>User can upload facial photo for analysis</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AI-002</td><td>System performs AI-based skin condition analysis</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AI-003</td><td>System displays analysis results (skin type, condition, age estimation)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AI-004</td><td>System recommends products based on analysis results</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AI-005</td><td>User can view analysis history</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>B-AI-006</td><td>System shows skin condition trends over time</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>B-AI-007</td><td>Supported image formats: JPG, PNG, WebP</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-AI-008</td><td>Maximum image size: 10MB</td><td><span class="priority priority-high">High</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">🎯</span> Smart Product Matching (B-MATCH)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>B-MATCH-001</td><td>System provides personalized recommendations based on skin analysis</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-MATCH-002</td><td>User can filter products by skin type</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-MATCH-003</td><td>User can filter products by ingredients</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>B-MATCH-004</td><td>User can filter products by price range</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-MATCH-005</td><td>User can filter products by review rating</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>B-MATCH-006</td><td>System displays "Recommended for You" section</td><td><span class="priority priority-high">High</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">🔍</span> Search & Filter (B-SEARCH)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>B-SEARCH-001</td><td>User can search products by keyword</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-SEARCH-002</td><td>User can browse products by category</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-SEARCH-003</td><td>User can sort by price, rating, newest</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-SEARCH-004</td><td>Results are paginated (default 20 per page)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-SEARCH-005</td><td>Search supports partial matching</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-SEARCH-006</td><td>Category tree supports nested navigation</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">📦</span> Cart & Checkout (B-CART, B-CHECK)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>B-CART-001</td><td>User can add products to cart</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CART-002</td><td>User can update item quantities</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CART-003</td><td>User can remove items from cart</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CART-004</td><td>Cart shows item subtotal calculation</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CART-005</td><td>Cart shows available stock</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CHECK-001</td><td>User can enter shipping address</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CHECK-002</td><td>User can select payment method</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CHECK-003</td><td>User can review order before confirming</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CHECK-004</td><td>System calculates subtotal, shipping, tax, total</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CHECK-005</td><td>Order is created with status "pending"</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>B-CHECK-006</td><td>Stock is decremented on order creation</td><td><span class="priority priority-high">High</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Merchant Module -->
+            <div class="subsection">
+                <h3>3.3 Merchant Module (マーチャントモジュール)</h3>
+                
+                <h4><span class="icon">📦</span> Product Management (M-PROD)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>M-PROD-001</td><td>Merchant can create new products</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROD-002</td><td>Merchant can edit existing products</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROD-003</td><td>Merchant can delete products (soft delete)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROD-004</td><td>Merchant can upload product images</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROD-005</td><td>Merchant can manage inventory (stock quantity)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROD-006</td><td>Merchant can view own product list</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROD-007</td><td>Merchant can toggle product active/inactive</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROD-008</td><td>Merchant can set product as featured</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">📊</span> Sales Dashboard & Analytics (M-DASH, M-ANAL)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>M-DASH-001</td><td>Merchant can view daily/monthly sales overview</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-DASH-002</td><td>Merchant can view order list</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-DASH-003</td><td>Merchant can update order status</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-DASH-004</td><td>Merchant can view best-selling products ranking</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>M-ANAL-001</td><td>Merchant can view sales trends (charts)</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>M-ANAL-002</td><td>Merchant can view product performance (views, sales)</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">🏷️</span> Promotions & Ads (M-PROMO, M-AD)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>M-PROMO-001</td><td>Merchant can create discount coupons</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROMO-002</td><td>Merchant can set discount type (percentage or fixed)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-PROMO-003</td><td>Merchant can set min order amount</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>M-PROMO-004</td><td>Merchant can set max uses and expiry date</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>M-AD-001</td><td>Merchant can create shop advertisements</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>M-AD-002</td><td>Merchant can set ad schedule (start/end date)</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Admin Module -->
+            <div class="subsection">
+                <h3>3.4 Admin Module (管理者モジュール)</h3>
+                
+                <h4><span class="icon">🛡️</span> Moderation & Management (A-REV, A-CONT)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>A-REV-001</td><td>Admin can view all reviews</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-REV-002</td><td>Admin can approve/reject reviews</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-REV-003</td><td>Admin can delete inappropriate reviews</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-CONT-001</td><td>Admin can review new product listings</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-CONT-002</td><td>Admin can approve/reject merchant registrations</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-CONT-003</td><td>Admin can manage categories (add/edit/delete)</td><td><span class="priority priority-high">High</span></td></tr>
+                    </tbody>
+                </table>
+
+                <h4><span class="icon">📈</span> Analytics & Revenue (A-ANAL, A-COMM, A-REV)</h4>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th></tr></thead>
+                    <tbody>
+                        <tr><td>A-ANAL-001</td><td>Admin can view platform-wide dashboard</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-ANAL-002</td><td>Admin can view user growth analytics</td><td><span class="priority priority-medium">Medium</span></td></tr>
+                        <tr><td>A-ANAL-003</td><td>Admin can view sales reports (monthly/yearly)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-COMM-001</td><td>Admin can set platform commission rate</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-COMM-002</td><td>System calculates commission per transaction</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-REV-001</td><td>Admin can view revenue dashboard</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-REV-002</td><td>Admin can view revenue trends (charts)</td><td><span class="priority priority-high">High</span></td></tr>
+                        <tr><td>A-REV-003</td><td>Admin can view payment status</td><td><span class="priority priority-high">High</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Business Rules -->
+    <div class="section" id="rules">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                4. Special Business Rules (ビジネスルール)
+            </h2>
+            <span class="badge">7 categories</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>4.1 Authentication Rules</h3>
+                <div class="info-box">
+                    <strong>Rule 4.1.1: Dual-Token Architecture</strong>
+                    <ul>
+                        <li>Access Token: 15-minute expiry, signed with JWT_ACCESS_SECRET</li>
+                        <li>Refresh Token: 7-day expiry, signed with JWT_REFRESH_SECRET (different secret)</li>
+                        <li>Refresh tokens hashed (Argon2) before database storage</li>
+                        <li>Token rotation: issue new refresh token on every use</li>
+                        <li>Absolute time limit: 90-day hard session cap regardless of rotations</li>
+                        <li>Token family tracking for breach detection (reuse detection)</li>
+                        <li>On reuse of revoked token: revoke ALL tokens for the user</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>4.2 Product Rules</h3>
+                <div class="info-box">
+                    <strong>Rule 4.2.1: Stock Management</strong>
+                    <ul>
+                        <li>Stock quantity cannot go below 0</li>
+                        <li>Low stock threshold triggers warning (default: 10 units)</li>
+                        <li>Stock is decremented atomically on order creation</li>
+                        <li>Out-of-stock products cannot be added to cart</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>4.3 Order Rules</h3>
+                <div class="info-box">
+                    <strong>Rule 4.3.1: Order Status Flow</strong>
+                    <div class="code-block">
+pending → confirmed → processing → shipped → delivered
+    ↓
+cancelled
+    ↓
+refunded</div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>4.4 Review Rules</h3>
+                <div class="info-box">
+                    <strong>Rule 4.4.1: Review Eligibility</strong>
+                    <ul>
+                        <li>Only users who purchased a product can review it (verified purchase)</li>
+                        <li>One review per user per product</li>
+                        <li>Reviews are approved by default but can be moderated by admin</li>
+                        <li>Rating must be between 1 and 5 (inclusive)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>4.5 Promotion Rules</h3>
+                <div class="info-box">
+                    <strong>Rule 4.5.1: Coupon Validation</strong>
+                    <ul>
+                        <li>Coupon code must be unique</li>
+                        <li>Coupon must be active and not expired</li>
+                        <li>Order amount must meet minimum requirement (if set)</li>
+                        <li>Total usage must not exceed max uses (if set)</li>
+                        <li>Only one coupon can be applied per order</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>4.6 Merchant Rules</h3>
+                <div class="info-box">
+                    <strong>Rule 4.6.1: Shop Approval</strong>
+                    <ul>
+                        <li>New merchant shops require admin approval</li>
+                        <li>Shops are inactive until approved</li>
+                        <li>Admin can reject shops with reason</li>
+                        <li>Merchants can only edit/delete their own products</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>4.7 AI Skin Analysis Rules</h3>
+                <div class="info-box">
+                    <strong>Rule 4.7.1: Image Requirements</strong>
+                    <ul>
+                        <li>Image must contain a face</li>
+                        <li>Image should be well-lit and clear</li>
+                        <li>Maximum image size: 10MB</li>
+                        <li>Supported formats: JPG, PNG, WebP</li>
+                        <li>Analysis results are cached for 24 hours</li>
+                        <li>Users can re-analyze at any time</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Non-Functional Requirements -->
+    <div class="section" id="nfr">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                5. Non-Functional Requirements (非機能要件)
+            </h2>
+            <span class="badge">47 NFRs</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>5.1 Performance</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Target</th></tr></thead>
+                    <tbody>
+                        <tr><td>NFR-001</td><td>Page load time for dashboards</td><td>≤ 2 seconds</td></tr>
+                        <tr><td>NFR-002</td><td>Search and filter operations</td><td>≤ 3 seconds (10,000 records)</td></tr>
+                        <tr><td>NFR-003</td><td>API response time (p95)</td><td>≤ 500 milliseconds</td></tr>
+                        <tr><td>NFR-004</td><td>AI skin analysis processing</td><td>≤ 10 seconds</td></tr>
+                        <tr><td>NFR-005</td><td>Database query optimization</td><td>Proper indexing on FK and filter columns</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>5.2 Security</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>NFR-006</td><td>Role-based authorization</td><td>All API endpoints enforce RBAC</td></tr>
+                        <tr><td>NFR-007</td><td>Authentication required</td><td>All non-public endpoints require JWT</td></tr>
+                        <tr><td>NFR-008</td><td>Input validation</td><td>Validate all user inputs at every layer</td></tr>
+                        <tr><td>NFR-009</td><td>SQL injection prevention</td><td>Use Prisma parameterized queries</td></tr>
+                        <tr><td>NFR-010</td><td>XSS prevention</td><td>React auto-escaping + CSP headers</td></tr>
+                        <tr><td>NFR-011</td><td>CSRF protection</td><td>SameSite cookies + CSRF tokens</td></tr>
+                        <tr><td>NFR-012</td><td>Rate limiting</td><td>API rate limits per IP/user</td></tr>
+                        <tr><td>NFR-013</td><td>Audit logging</td><td>Log all significant actions</td></tr>
+                        <tr><td>NFR-014</td><td>Sensitive data protection</td><td>Never log passwords, tokens, PII</td></tr>
+                        <tr><td>NFR-015</td><td>HTTPS enforcement</td><td>All production traffic over HTTPS</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>5.3 Internationalization</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>NFR-031</td><td>Multi-language support</td><td>English, Myanmar, Japanese</td></tr>
+                        <tr><td>NFR-032</td><td>Language detection</td><td>Auto-detect from browser settings</td></tr>
+                        <tr><td>NFR-033</td><td>Language toggle</td><td>User can manually switch languages</td></tr>
+                        <tr><td>NFR-034</td><td>Localized content</td><td>UI text, error messages, notifications</td></tr>
+                        <tr><td>NFR-035</td><td>Locale-aware formatting</td><td>Dates, numbers, currencies</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>5.4 Accessibility</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Requirement</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>NFR-036</td><td>WCAG 2.1 AA compliance</td><td>Semantic HTML, keyboard navigation</td></tr>
+                        <tr><td>NFR-037</td><td>Screen reader support</td><td>ARIA labels, roles, descriptions</td></tr>
+                        <tr><td>NFR-038</td><td>Color contrast</td><td>Minimum 4.5:1 for normal text</td></tr>
+                        <tr><td>NFR-039</td><td>Focus indicators</td><td>Visible focus on all interactive elements</td></tr>
+                        <tr><td>NFR-040</td><td>Skip navigation</td><td>Skip-to-main-content link</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: Architecture -->
+    <div class="section" id="architecture">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                6. System Architecture (システムアーキテクチャ)
+            </h2>
+            <span class="badge">diagrams & endpoints</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>6.1 High-Level Architecture</h3>
+                <div class="arch-diagram">
+┌─────────────────────────────────────────────────────────────────────┐
+│                      CLIENT LAYER                                   │
+│  +-------------------------------------------------------------+   │
+│  |  React SPA (Vite + TypeScript)                              |   │
+│  |  |-- shadcn/ui Components                                   |   │
+│  |  |-- React Router (Lazy Routes)                             |   │
+│  |  |-- TanStack Query (Server State)                          |   │
+│  |  |-- React Hook Form + Zod (Forms)                          |   │
+│  |  |-- i18next (EN/MY/JA)                                     |   │
+│  |  +-- next-themes (Light/Dark)                               |   │
+│  +----------------------------+--------------------------------+   │
+│                               | HTTPS (JWT Bearer)                 │
++-------------------------------+------------------------------------+
+│                          API LAYER                                 │
+│  +----------------------------+--------------------------------+   │
+│  |  NestJS REST API (v11 + TypeScript)                         |   │
+│  |  |-- Auth Module (JWT + Refresh Rotation)                   |   │
+│  |  |-- Guards (JWT, RBAC)                                     |   │
+│  |  |-- Pipes (ValidationPipe + class-validator)               |   │
+│  |  |-- Interceptors (Logging, Serialization, Timeout)         |   │
+│  |  |-- Filters (ExceptionFilter -> Structured Errors)         |   │
+│  |  +-- Swagger/OpenAPI Documentation                          |   │
+│  +----------+-------------------------------+------------------+   │
+│             |                               |                     │
++-------------+-------------------------------+---------------------+
+│          DATA LAYER                    CACHE LAYER                │
+│  +----------+----------+      +----------+----------+             │
+│  |  PostgreSQL v16     |      |  Redis v7            |             │
+│  |  |-- Prisma ORM v6  |      |  |-- Session Store   |             │
+│  |  |-- Migrations     |      |  |-- Token Blacklist |             │
+│  |  |-- Indexes        |      |  |-- API Cache       |             │
+│  |  +-- Transactions   |      |  +-- Rate Limiting   |             │
+│  +---------------------+      +---------------------+             │
+└────────────────────────────────────────────────────────────────────┘
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>6.2 API Endpoints</h3>
+                <div class="code-block">
+/api/v1/
+├── /auth           # Authentication
+│   ├── POST /register
+│   ├── POST /login
+│   ├── POST /refresh
+│   ├── POST /logout
+│   └── GET  /verify
+├── /users          # User Management
+│   ├── GET    /me
+│   ├── PATCH  /me
+│   └── PATCH  /me/password
+├── /products       # Product Management
+│   ├── GET    /           # List (public)
+│   ├── GET    /:slug      # Detail (public)
+│   ├── POST   /           # Create (merchant)
+│   ├── PATCH  /:id        # Update (merchant)
+│   └── DELETE /:id        # Delete (merchant)
+├── /recommendations # AI Recommendations
+│   ├── POST   /skin-analysis
+│   └── GET    /personalized
+├── /wishlist       # Wishlist
+├── /cart           # Shopping Cart
+├── /orders         # Order Management
+├── /reviews        # Reviews
+├── /promotions     # Promotions
+├── /shops          # Shop Management
+├── /ads            # Advertisements
+├── /analytics      # Analytics
+├── /admin          # Admin Management
+└── /health         # Health Check</div>
+            </div>
+
+            <div class="subsection">
+                <h3>6.3 Frontend Routes</h3>
+                <div class="code-block">
+Routes:
+├── /                          # Home
+├── /login                     # Login
+├── /register                  # Registration
+├── /profile                   # Profile
+├── /skin-analysis             # AI Skin Analysis
+├── /recommendations           # Recommendations
+├── /products                  # Products
+├── /products/:slug            # Product Detail
+├── /wishlist                  # Wishlist
+├── /cart                      # Cart
+├── /checkout                  # Checkout
+├── /orders                    # Orders
+├── /merchant/
+│   ├── /dashboard             # Merchant Dashboard
+│   ├── /products              # Products
+│   ├── /promotions            # Promotions
+│   └── /analytics             # Analytics
+├── /admin/
+│   ├── /dashboard             # Admin Dashboard
+│   ├── /users                 # Users
+│   ├── /merchants             # Merchants
+│   ├── /reviews               # Reviews
+│   └── /revenue               # Revenue
+└── *                          # 404</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 7: Acceptance Criteria -->
+    <div class="section" id="acceptance">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                7. Acceptance Criteria (受入基準)
+            </h2>
+            <span class="badge">checklist</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>7.1 Functional Acceptance Criteria</h3>
+                <ul class="checklist">
+                    <li><input type="checkbox"> All three user roles can login and access their respective dashboards</li>
+                    <li><input type="checkbox"> User registration and authentication work end-to-end</li>
+                    <li><input type="checkbox"> AI skin analysis processes images and returns results</li>
+                    <li><input type="checkbox"> Product browsing, search, and filtering work correctly</li>
+                    <li><input type="checkbox"> Shopping cart operations (add, update, remove) function properly</li>
+                    <li><input type="checkbox"> Checkout flow creates orders and updates inventory</li>
+                    <li><input type="checkbox"> Merchant can manage products (CRUD operations)</li>
+                    <li><input type="checkbox"> Merchant dashboard shows sales data</li>
+                    <li><input type="checkbox"> Admin can moderate reviews and content</li>
+                    <li><input type="checkbox"> All API endpoints enforce role-based access control</li>
+                    <li><input type="checkbox"> Multi-language support works for EN, MY, JA</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3>7.2 Non-Functional Acceptance Criteria</h3>
+                <ul class="checklist">
+                    <li><input type="checkbox"> Dashboard pages load in ≤ 2 seconds</li>
+                    <li><input type="checkbox"> API response time ≤ 500ms (p95)</li>
+                    <li><input type="checkbox"> All role-based access control enforced</li>
+                    <li><input type="checkbox"> SQL injection and XSS vulnerabilities mitigated</li>
+                    <li><input type="checkbox"> Database schema created via Prisma migrations</li>
+                    <li><input type="checkbox"> Test coverage ≥ 80%</li>
+                </ul>
+            </div>
+
+            <div class="subsection">
+                <h3>7.3 Success Metrics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="value">100+</div>
+                        <div class="label">User Registrations (1st month)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value">50+</div>
+                        <div class="label">AI Analyses per Day</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value">5%+</div>
+                        <div class="label">Conversion Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value">10+</div>
+                        <div class="label">Merchants (1st quarter)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value">99%+</div>
+                        <div class="label">System Uptime</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value">4.0+</div>
+                        <div class="label">User Satisfaction</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 8: Appendix -->
+    <div class="section" id="appendix">
+        <div class="section-header" onclick="toggleSection(this)">
+            <h2>
+                <span class="section-toggle">▼</span>
+                8. Appendix (付録)
+            </h2>
+            <span class="badge">terminology & references</span>
+        </div>
+        <div class="section-content">
+            <div class="subsection">
+                <h3>8.1 Reference Terminology</h3>
+                <table>
+                    <thead><tr><th>Term</th><th>Definition</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>AI Skin Analysis</strong></td><td>Machine learning-based analysis of facial images to determine skin type and conditions</td></tr>
+                        <tr><td><strong>Smart Product Matching</strong></td><td>Algorithm that recommends products based on user's skin analysis results</td></tr>
+                        <tr><td><strong>Merchant</strong></td><td>Seller who lists products on the marketplace</td></tr>
+                        <tr><td><strong>Buyer</strong></td><td>End user who browses and purchases products</td></tr>
+                        <tr><td><strong>Admin</strong></td><td>Platform administrator with full access</td></tr>
+                        <tr><td><strong>SKU</strong></td><td>Stock Keeping Unit - unique product identifier</td></tr>
+                        <tr><td><strong>RBAC</strong></td><td>Role-Based Access Control</td></tr>
+                        <tr><td><strong>JWT</strong></td><td>JSON Web Token for authentication</td></tr>
+                        <tr><td><strong>Soft Delete</strong></td><td>Logical deletion using is_active flag; records retained</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>8.2 References</h3>
+                <ul>
+                    <li><strong>Prisma Schema:</strong> <code>backend/prisma/schema.prisma</code></li>
+                    <li><strong>API Documentation:</strong> <code>http://localhost:8080/api/docs</code></li>
+                    <li><strong>Environment Setup:</strong> <code>docs/guides/ENVIRONMENT_SETUP.md</code></li>
+                    <li><strong>Specification:</strong> <code>docs/SPECIFICATION.md</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    // Toggle section open/closed
+    function toggleSection(header) {
+        const section = header.parentElement;
+        const content = section.querySelector('.section-content');
+        section.classList.toggle('open');
+        content.classList.toggle('open');
+    }
+
+    // Scroll to section
+    function scrollToSection(id) {
+        const section = document.getElementById(id);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Update active nav button
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Open the section if closed
+            if (!section.classList.contains('open')) {
+                section.classList.add('open');
+                section.querySelector('.section-content').classList.add('open');
+            }
+        }
+    }
+
+    // Update nav on scroll
+    window.addEventListener('scroll', () => {
+        const sections = ['overview', 'roles', 'requirements', 'rules', 'nfr', 'architecture', 'acceptance', 'appendix'];
+        let current = '';
+        
+        sections.forEach(id => {
+            const section = document.getElementById(id);
+            if (section && section.getBoundingClientRect().top <= 150) {
+                current = id;
+            }
+        });
+        
+        if (current) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            const navBtns = document.querySelectorAll('.nav-btn');
+            const index = sections.indexOf(current);
+            if (navBtns[index]) navBtns[index].classList.add('active');
+        }
+    });
+</script>
+
+</body>
+</html>
