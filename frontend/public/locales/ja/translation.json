@@ -1,0 +1,61 @@
+{
+  "common": {
+    "home": "ホーム",
+    "profile": "プロフィール",
+    "settings": "設定",
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "register": "新規登録",
+    "loading": "読み込み中...",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "submit": "送信",
+    "back": "戻る",
+    "next": "次へ"
+  },
+  "nav": {
+    "home": "ホーム",
+    "about": "概要",
+    "products": "製品",
+    "contact": "お問い合わせ",
+    "dashboard": "ダッシュボード",
+    "profile": "プロフィール",
+    "settings": "設定"
+  },
+  "auth": {
+    "login": {
+      "title": "ログイン",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "submit": "ログイン",
+      "submitting": "ログイン中...",
+      "forgotPassword": "パスワードをお忘れですか？",
+      "noAccount": "アカウントをお持ちでないですか？",
+      "createAccount": "作成する"
+    },
+    "register": {
+      "title": "アカウント作成",
+      "name": "氏名",
+      "email": "メールアドレス",
+      "password": "パスワード",
+      "confirmPassword": "パスワード確認",
+      "submit": "作成",
+      "submitting": "作成中...",
+      "hasAccount": "すでにアカウントをお持ちですか？",
+      "signIn": "ログイン"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "AI搭載のスキンケア体験",
+      "subtitle": "高度なAI分析によるパーソナライズされたスキンケア製品を発見",
+      "cta": "始める"
+    }
+  },
+  "footer": {
+    "copyright": "© 2026 SkincareAI. 全著作権所有。",
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約"
+  }
+}
