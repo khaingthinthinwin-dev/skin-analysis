@@ -7,7 +7,7 @@
 | Attribute | Value |
 |-----------|-------|
 | **Document ID** | SKM-DEV-001 |
-| **System** | AI-Powered Skincare Marketplace Platform |
+| **System** | Cosmetics Finder |
 | **Version** | 1.0 |
 | **Created** | 2026-08-03 |
 | **Last Updated** | 2026-08-03 |
@@ -536,7 +536,7 @@ Before generating or modifying code, AI agents MUST read and understand:
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Requirements Definition | `docs/core-work/要件定義書.md` | Business rules, functional requirements |
+| Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business rules, functional requirements |
 | Database Design Spec | `docs/core-work/データベース設計書.md` | Schema design, data dictionary |
 | Specification Document | `docs/SPECIFICATION.md` | Full architecture, technology stack, API design |
 | This Document | `DEVELOPMENT_RULES.md` | Coding standards, guardrails, governance |
@@ -1452,10 +1452,8 @@ border-border     → All borders
 | Inactive | Gray (`bg-gray-100 text-gray-800`) | Inactive |
 | Pending | Yellow (`bg-yellow-100 text-yellow-800`) | Pending |
 | Processing | Blue (`bg-blue-100 text-blue-800`) | Processing |
-| Shipped | Indigo (`bg-indigo-100 text-indigo-800`) | Shipped |
 | Delivered | Green (`bg-green-100 text-green-800`) | Delivered |
-| Cancelled | Red (`bg-red-100 text-red-800`) | Cancelled |
-| Refunded | Orange (`bg-orange-100 text-orange-800`) | Refunded |
+| Done | Green (`bg-green-100 text-green-800`) | Done |
 | Approved | Green (`bg-green-100 text-green-800`) | Approved |
 | Rejected | Red (`bg-red-100 text-red-800`) | Rejected |
 | Low Stock | Amber (`bg-amber-100 text-amber-800`) | Low Stock |
@@ -1751,9 +1749,8 @@ User submits review → is_approved = true → Visible on product
 **Status Flow:**
 
 ```
-pending → confirmed → processing → shipped → delivered
-   ↓          ↓           ↓          ↓
-cancelled  cancelled   (no cancel)  (no cancel)
+pending → confirmed → processing → delivered → done
+
 ```
 
 **Transition Rules:**
@@ -1761,21 +1758,16 @@ cancelled  cancelled   (no cancel)  (no cancel)
 | From | Allowed To | Triggered By |
 |------|-----------|-------------|
 | pending | confirmed | Merchant |
-| pending | cancelled | Buyer or Admin |
 | confirmed | processing | Merchant |
-| confirmed | cancelled | Admin |
-| processing | shipped | Merchant |
-| shipped | delivered | System (tracking) or Admin |
-| delivered | refunded | Admin |
+| processing | delivered | Merchant |
+| delivered | done | System (auto-confirm) or Buyer |
 
 **Order Rules:**
 - Stock is decremented atomically on order creation (`$transaction`).
-- Stock is restored on cancellation.
 - Prices are locked at order creation time.
 - Total = Subtotal + Shipping Cost + Tax.
 - Subtotal = Σ(unit_price × quantity).
-- Only `pending` orders can be cancelled by buyer.
-- Refund status tracked separately from order status.
+- Done status is auto-confirmed by system or confirmed by buyer.
 
 ## 12.5 Wishlist Rules
 

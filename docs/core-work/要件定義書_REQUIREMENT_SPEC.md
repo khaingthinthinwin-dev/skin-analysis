@@ -1,4 +1,4 @@
-# AI搭載スキンケアマーケットプレイス 要件定義書
+# Cosmetics Finder 要件定義書
 
 ## Requirements Definition (要件定義)
 
@@ -9,7 +9,7 @@
 | Attribute | Value |
 | :--- | :--- |
 | **Document ID** | SKM-REQ-001 |
-| **System** | AI-Powered Skincare Marketplace Platform (AI搭載スキンケアマーケットプレイス) |
+| **System** | Cosmetics Finder |
 | **Version** | 1.0 |
 | **Created** | 2026-08-03 |
 | **Last Updated** | 2026-08-03 |
@@ -38,7 +38,7 @@
 ## 1. Project Overview & Background
 
 ### 1.1 Project Name (プロジェクト名)
-**AI-Powered Skincare Marketplace Platform** (AI搭載スキンケアマーケットプレイス)
+**Cosmetics Finder**
 
 ### 1.2 Purpose & objectives (目的と目標)
 The system provides an AI-powered skincare marketplace platform that connects buyers seeking personalized skincare solutions with merchants selling skincare products. The platform features AI skin analysis, smart product recommendations, and a complete e-commerce workflow from browsing to checkout.
@@ -203,7 +203,7 @@ Represents a customer order.
 **Attributes:**
 - OrderID (Primary Key, CUID)
 - UserID (Foreign Key to User)
-- Status (pending, confirmed, processing, shipped, delivered, cancelled, refunded)
+- Status (pending, confirmed, processing, delivered, done)
 - Subtotal (Decimal 10,2)
 - ShippingCost (Decimal 10,2, Default: 0)
 - Tax (Decimal 10,2, Default: 0)
@@ -340,7 +340,7 @@ Represents JWT refresh tokens.
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| B-AI-001 | User can upload facial photo for analysis | High |
+| B-AI-001 | User can upload facial photo or use camera for analysis | High |
 | B-AI-002 | System performs AI-based skin condition analysis | High |
 | B-AI-003 | System displays analysis results (skin type, condition, age estimation) | High |
 | B-AI-004 | System recommends products based on analysis results | High |
@@ -418,8 +418,7 @@ Represents JWT refresh tokens.
 | B-CHECK-007 | User can view order confirmation | High |
 | B-CHECK-008 | User can view order history | High |
 | B-CHECK-009 | User can view order details | High |
-| B-CHECK-010 | User can cancel pending orders | Medium |
-| B-CHECK-011 | Order confirmation email is sent | Medium |
+| B-CHECK-010 | Order confirmation email is sent | Medium |
 
 #### 3.2.10 Merchant Module - Product Management (マーチャントモジュール - 商品管理)
 
@@ -578,13 +577,11 @@ Represents JWT refresh tokens.
 
 #### Rule 4.3.1: Order Status Flow
 ```
-pending → confirmed → processing → shipped → delivered → done
+pending → confirmed → processing → delivered → done
 ```
 
-#### Rule 4.3.2: Order Cancellation
-- Buyers can cancel orders only in "pending" status
-- Stock is restored on cancellation
-- Refund status is tracked separately
+#### Rule 4.3.2: Order Completion
+- Done status is auto-confirmed by system or confirmed by buyer
 
 #### Rule 4.3.3: Price Calculation
 - Subtotal = sum of (unit_price × quantity) for all items
@@ -824,7 +821,7 @@ pending → confirmed → processing → shipped → delivered → done
 │   ├── POST   /
 │   ├── GET    /
 │   ├── GET    /:id
-│   └── POST   /:id/cancel
+│   └── POST   /:id/complete
 ├── /reviews        # Reviews
 │   ├── GET    /products/:productId/reviews
 │   ├── POST   /products/:productId/reviews

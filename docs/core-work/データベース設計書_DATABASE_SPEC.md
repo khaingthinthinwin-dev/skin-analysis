@@ -7,7 +7,7 @@
 | Attribute | Value |
 | :--- | :--- |
 | **Document ID** | SKM-DBS-001 |
-| **System** | AI-Powered Skincare Marketplace Platform (AI搭載スキンケアマーケットプレイス) |
+| **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
 | **Version** | 1.0 |
 | **Created** | 2026-08-03 |
@@ -127,10 +127,8 @@ INSERT INTO order_statuses (status_code, status_name, display_order, is_terminal
 ('pending', 'Pending', 1, FALSE, 'Order created, awaiting confirmation'),
 ('confirmed', 'Confirmed', 2, FALSE, 'Order confirmed by merchant'),
 ('processing', 'Processing', 3, FALSE, 'Order is being prepared'),
-('shipped', 'Shipped', 4, FALSE, 'Order has been shipped'),
-('delivered', 'Delivered', 5, FALSE, 'Order delivered to customer'),
-('cancelled', 'Cancelled', 6, TRUE, 'Order cancelled by user or system'),
-('refunded', 'Refunded', 7, TRUE, 'Order refunded to customer');
+('delivered', 'Delivered', 4, FALSE, 'Order delivered to customer'),
+('done', 'Done', 5, TRUE, 'Order completed and confirmed');
 
 -- Seed Discount Types
 INSERT INTO discount_types (type_code, type_name, is_active) VALUES
@@ -415,14 +413,14 @@ Manages customer order information.
 |---|---|---|---|---|---|---|---|---|
 | 1 | 注文ID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
 | 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_orders_user`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 3 | ステータス | `status` | VARCHAR(20) | - | - | N | 'pending' | Order status (pending, confirmed, processing, shipped, delivered, cancelled, refunded). |
+| 3 | ステータス | `status` | VARCHAR(20) | - | - | N | 'pending' | Order status (pending, confirmed, processing, delivered, done). |
 | 4 | 小計 | `subtotal` | NUMERIC(10,2) | - | - | N | - | Check constraint: `subtotal > 0`. |
 | 5 | 配送料 | `shipping_cost` | NUMERIC(10,2) | - | - | N | 0 | Shipping cost. |
 | 6 | 税金 | `tax` | NUMERIC(10,2) | - | - | N | 0 | Tax amount. |
 | 7 | 合計 | `total` | NUMERIC(10,2) | - | - | N | - | Check constraint: `total > 0`. |
 | 8 | 配送先住所 | `shipping_address` | JSONB | - | - | N | - | Shipping address details (JSON). |
 | 9 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | Y | NULL | Payment method used. |
-| 10 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment processing status (pending, completed, failed, refunded). |
+| 10 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment processing status (pending, completed, failed). |
 | 11 | 備考 | `notes` | TEXT | - | - | Y | NULL | Order notes from customer. |
 | 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 | 13 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |

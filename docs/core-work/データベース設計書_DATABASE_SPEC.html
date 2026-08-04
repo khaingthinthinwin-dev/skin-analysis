@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>データベース設計書 - AI搭載スキンケアマーケットプレイス</title>
+    <title>データベース設計書 - Cosmetics Finder</title>
     <style>
         :root {
             --primary: #0ea5e9;
@@ -420,7 +420,7 @@
 
 <header class="header">
     <h1>データベース設計書</h1>
-    <p class="subtitle">Database Design Specification - AI-Powered Skincare Marketplace</p>
+    <p class="subtitle">Database Design Specification - Cosmetics Finder</p>
     <div class="doc-meta">
         <span class="doc-meta-item">📄 Document ID: SKM-DBS-001</span>
         <span class="doc-meta-item">📋 Version: 1.0</span>
@@ -561,8 +561,7 @@ discount_types ||--o{ promotions : "categorizes"</div>
                 </table>
                 <div class="info-box">
                     <strong>Order Flow</strong>
-                    <code>pending → confirmed → processing → shipped → delivered</code><br>
-                    <code>cancelled</code> / <code>refunded</code> can occur at various stages
+                    <code>pending → confirmed → processing → delivered → done</code>
                 </div>
             </div>
 
@@ -655,7 +654,7 @@ discount_types ||--o{ promotions : "categorizes"</div>
                         <tr><td><code>total</code></td><td><code>NUMERIC(10,2)</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td><span class="type-badge type-check">CHECK >0</span></td></tr>
                         <tr><td><code>shipping_address</code></td><td><code>JSONB</code></td><td>-</td><td class="required">NOT NULL</td><td>-</td><td>-</td></tr>
                         <tr><td><code>payment_method</code></td><td><code>VARCHAR(50)</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
-                        <tr><td><code>payment_status</code></td><td><code>VARCHAR(20)</code></td><td>-</td><td class="required">NOT NULL</td><td>'pending'</td><td>pending, completed, failed, refunded</td></tr>
+                        <tr><td><code>payment_status</code></td><td><code>VARCHAR(20)</code></td><td>-</td><td class="required">NOT NULL</td><td>'pending'</td><td>pending, completed, failed</td></tr>
                         <tr><td><code>notes</code></td><td><code>TEXT</code></td><td>-</td><td class="nullable">NULL</td><td>NULL</td><td>-</td></tr>
                     </tbody>
                 </table>
