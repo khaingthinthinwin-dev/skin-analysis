@@ -1,37 +1,37 @@
 # Cosmetics Finder 要件定義書
 
-## Requirements Definition (要件定義)
+## 要件定義
 
 ---
 
-## Document Control (ドキュメント管理)
+## ドキュメント管理
 
-| Attribute | Value |
+| 属性 | 値 |
 | :--- | :--- |
-| **Document ID** | SKM-REQ-001 |
-| **System** | Cosmetics Finder |
-| **Version** | 1.0 |
-| **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-03 |
-| **Author** | Software Architect |
-| **Status** | Released (承認済み) |
+| **ドキュメントID** | SKM-REQ-001 |
+| **システム** | Cosmetics Finder |
+| **バージョン** | 1.0 |
+| **作成日** | 2026-08-03 |
+| **最終更新日** | 2026-08-03 |
+| **著者** | ソフトウェアアーキテクト |
+| **ステータス** | リリース済み（承認済み） |
 
-### Document Revision History
+### ドキュメント改訂履歴
 
-| Version | Date | Author | Description of Changes |
+| バージョン | 日付 | 著者 | 変更説明 |
 | :--- | :--- | :--- | :--- |
-| 1.0 | 2026-08-03 | Software Architect | Initial requirements definition |
+| 1.0 | 2026-08-03 | ソフトウェアアーキテクト | 初回要件定義 |
 
 ---
 
-## Table of Contents (目次)
+## 目次
 
-1. [Project Overview & Background](#1-project-overview--background)
-2. [User Roles & Permissions](#2-user-roles--permissions)
-3. [Functional Requirements](#3-functional-requirements)
-4. [Special Business Rules](#4-special-business-rules)
-5. [Non-Functional Requirements](#5-non-functional-requirements)
-6. [System Architecture Context](#6-system-architecture-context)
+1. [プロジェクト概要と背景](#1-プロジェクト概要と背景)
+2. [ユーザーロールと権限](#2-ユーザーロールと権限)
+3. [機能要件](#3-機能要件)
+4. [特別ビジネスルール](#4-特別ビジネスルール)
+5. [非機能要件](#5-非機能要件)
+6. [システムアーキテクチャコンテキスト](#6-システムアーキテクチャコンテキスト)
 
 ---
 
@@ -992,12 +992,12 @@ http://localhost:8080/api/docs
 
 ---
 
-**Document Management (文書管理):**
-- Author: Software Architect
-- Created: 2026-08-03
-- Last Updated: 2026-08-03
-- Next Review: Phase 2 Planning
+**ドキュメント管理:**
+- 著者: ソフトウェアアーキテクト
+- 作成日: 2026-08-03
+- 最終更新日: 2026-08-03
+- 次回レビュー: フェーズ2企画
 
 ---
 
-*End of REQUIREMENT_DEFINITION.md*
+*要件定義書_REQUIREMENT_SPEC.md ここまで*

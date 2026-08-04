@@ -1,25 +1,25 @@
-# Database Design Specification (データベース設計書)
+# データベース設計書
 
 ---
 
-## Document Control (ドキュメント管理)
+## ドキュメント管理
 
-| Attribute | Value |
+| 属性 | 値 |
 | :--- | :--- |
-| **Document ID** | SKM-DBS-001 |
-| **System** | Cosmetics Finder |
-| **Phase** | Technical Design |
-| **Version** | 1.0 |
-| **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-03 |
-| **Author** | Lead Database Engineer |
-| **Status** | Released (承認済み) |
+| **ドキュメントID** | SKM-DBS-001 |
+| **システム** | Cosmetics Finder |
+| **フェーズ** | 技術設計 |
+| **バージョン** | 1.0 |
+| **作成日** | 2026-08-03 |
+| **最終更新日** | 2026-08-03 |
+| **著者** | リードデータベースエンジニア |
+| **ステータス** | 承認済み |
 
-### Document Revision History
+### ドキュメント改訂履歴
 
-| Version | Date | Author | Description of Changes |
+| バージョン | 日付 | 葬者 | 変更説明 |
 | :--- | :--- | :--- | :--- |
-| 1.0 | 2026-08-03 | Lead Database Engineer | Initial technical design specification (新規作成) |
+| 1.0 | 2026-08-03 | リードデータベースエンジニア | 初回技術設計仕様（新規作成） |
 
 ---
 
@@ -118,22 +118,22 @@ CREATE TABLE discount_types (
 ```sql
 -- ユーザーロールシード
 INSERT INTO user_roles (role_code, role_name, description, is_active) VALUES
-('buyer', 'Buyer', 'End user who browses and purchases products', TRUE),
-('merchant', 'Merchant', 'Seller who lists products on the marketplace', TRUE),
-('admin', 'Admin', 'Platform administrator with full access', TRUE);
+('buyer', '購入者', '商品を閲覧および購入するエンドユーザー', TRUE),
+('merchant', '出品者', 'マーケットプレイスに商品を出品する販売者', TRUE),
+('admin', '管理者', '完全なアクセス権を持つプラットフォーム管理者', TRUE);
 
 -- 注文ステータスシード（ワークフロー生命周期追跡）
 INSERT INTO order_statuses (status_code, status_name, display_order, is_terminal_state, description) VALUES
-('pending', 'Pending', 1, FALSE, 'Order created, awaiting confirmation'),
-('confirmed', 'Confirmed', 2, FALSE, 'Order confirmed by merchant'),
-('processing', 'Processing', 3, FALSE, 'Order is being prepared'),
-('delivered', 'Delivered', 4, FALSE, 'Order delivered to customer'),
-('done', 'Done', 5, TRUE, 'Order completed and confirmed');
+('pending', '保留中', 1, FALSE, '注文作成済み、確認待ち'),
+('confirmed', '確認済み', 2, FALSE, '出品者による注文確認'),
+('processing', '処理中', 3, FALSE, '注文を準備中'),
+('delivered', '配送済み', 4, FALSE, '顧客に配送完了'),
+('done', '完了', 5, TRUE, '注文完了および確認済み');
 
 -- 割引タイプシード
 INSERT INTO discount_types (type_code, type_name, is_active) VALUES
-('percentage', 'Percentage Discount', TRUE),
-('fixed', 'Fixed Amount Discount', TRUE);
+('percentage', 'パーセンテージ割引', TRUE),
+('fixed', '固定金額割引', TRUE);
 ```
 
 ---
@@ -163,7 +163,7 @@ erDiagram
 ロールベースアクセス制御を持つシステムユーザー情報を管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | ユーザーID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | メールアドレス | `email` | VARCHAR(255) | - | - | N | - | ユニークキー（`uq_users_email`）。ログインIDとして使用。 |
@@ -202,7 +202,7 @@ CREATE TABLE users (
 セッション管理用のJWTリフレッシュトークンを管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | リフレッシュトークンID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_refresh_tokens_user`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -239,7 +239,7 @@ CREATE TABLE refresh_tokens (
 階層ツリー構造を持つ商品カテゴリを管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | カテゴリID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | カテゴリ名 | `name` | VARCHAR(100) | - | - | N | - | カテゴリ表示名。 |
@@ -271,7 +271,7 @@ CREATE TABLE categories (
 出品者によるスキンケア商品リストを管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 商品ID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | 出品者ID | `merchant_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_products_merchant`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -338,7 +338,7 @@ CREATE TABLE products (
 評価付きの商品レビューを管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | レビューID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_reviews_user`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -381,7 +381,7 @@ CREATE TABLE reviews (
 ユーザーの保存された商品を管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | お気に入りID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_wishlists_user`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -409,7 +409,7 @@ CREATE TABLE wishlists (
 顧客注文情報を管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 注文ID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_orders_user`）。`users(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
@@ -454,7 +454,7 @@ CREATE TABLE orders (
 注文内の個別アイテムを管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 注文商品ID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | 注文ID | `order_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_order_items_order`）。`orders(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -491,7 +491,7 @@ CREATE TABLE order_items (
 出品者店舗プロフィールを管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 店舗ID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | ユニークキー（`uq_shops_user_id`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -540,7 +540,7 @@ CREATE TABLE shops (
 割引コードとプロモーションを管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | プロモーションID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | 出品者ID | `merchant_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_promotions_merchant`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -587,7 +587,7 @@ CREATE TABLE promotions (
 店舗広告を管理します。
 
 #### データ辞書
-| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+| 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 広告ID | `id` | VARCHAR(25) | Y | - | N | cuid() | プライマリキー。CUID形式。 |
 | 2 | 店舗ID | `shop_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_advertisements_shop`）。`shops(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
@@ -861,7 +861,7 @@ model DiscountType {
 | `orders` | `status` | `order_statuses.status_code` | RESTRICT | CASCADE |
 | `promotions` | `discount_type` | `discount_types.type_code` | RESTRICT | CASCADE |
 
-### 6.2 カスケードルール
+### 6.3 カスケードルール
 
 | リレーション | onDelete | onUpdate | 根拠 |
 |----------|----------|----------|-----------|
@@ -879,7 +879,7 @@ model DiscountType {
 | Order → OrderItem | Cascade | Cascade | 注文削除時に注文商品を削除 |
 | Shop → Advertisement | Cascade | Cascade | 店舗削除時に広告を削除 |
 
-### 6.3 ソフト削除パターン
+### 6.4 ソフト削除パターン
 
 ソフト削除が必要なテーブル（商品、店舗）では、`is_active`ブールフラグで実装:
 
@@ -893,7 +893,7 @@ const activeProducts = await prisma.product.findMany({
 });
 ```
 
-### 6.4 トランザクション
+### 6.5 トランザクション
 
 アトミシティが必要な複数ステップの書き込みにはPrisma `$transaction`を使用:
 
@@ -911,7 +911,7 @@ await prisma.$transaction(async (tx) => {
 });
 ```
 
-### 6.5 生成されたタイプ
+### 6.6 生成されたタイプ
 
 手書きのインターフェースではなく、Prisma生成されたタイプを使用:
 
@@ -955,18 +955,18 @@ erDiagram
 
 | カテゴリ | テーブル数 | 説明 |
 |----------|--------|-------------|
-| **マスター/ルックアップ** | 7 | user_roles, order_statuses, discount_types, skin_types, skin_concerns, currencies, payment_statuses |
+| **マスター/ルックアップ** | 3 | user_roles, order_statuses, discount_types |
 | **コアエンティティ** | 11 | users, refresh_tokens, categories, products, reviews, wishlists, orders, order_items, shops, promotions, advertisements |
-| **合計** | 18 | 完全なデータベーススキーマ |
+| **合計** | 14 | 完全なデータベーススキーマ |
 
 ---
 
-**Document Management (文書管理):**
-- Author: Lead Database Engineer
-- Created: 2026-08-03
-- Last Updated: 2026-08-03
-- Next Review: Phase 2 Planning
+**ドキュメント管理:**
+- 著者: リードデータベースエンジニア
+- 作成日: 2026-08-03
+- 最終更新日: 2026-08-03
+- 次回レビュー: フェーズ2計画
 
 ---
 
-*End of DATABASE_DESIGN_SPECIFICATION.md*
+*データベース設計書 ここまで*
