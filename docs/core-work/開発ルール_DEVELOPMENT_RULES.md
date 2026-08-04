@@ -1138,11 +1138,18 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 ## 9.1 Marketplace Design Language
 
 **Design Principles:**
-- Clean, modern skincare marketplace aesthetic.
+- Luxury beauty marketplace aesthetic inspired by Sephora, Dior Beauty, Rare Beauty, and Glow Recipe.
+- Elegant, feminine, sophisticated visual identity.
 - Mobile-first responsive design.
 - Consistent spacing using Tailwind's 4px grid system.
 - Semantic color tokens from shadcn/ui (never raw color values).
 - WCAG 2.1 AA compliance for all interactive elements.
+
+**Brand Identity:**
+- Primary brand color: Luxury Purple (#7C3AED) - conveys premium, sophisticated beauty.
+- Accent color: Beauty Pink (#EC4899) - used for promotions, CTA highlights, wishlist hearts, ratings, and sale badges.
+- Secondary color: Soft Lavender (#F3E8FF) - used for card backgrounds, sections, filters, badges, and subtle surfaces.
+- The overall aesthetic should feel premium, clean, and modern like high-end beauty retailers.
 
 **Layout Grid:**
 - Desktop: 12-column grid, max-width 1280px, centered.
@@ -1172,11 +1179,13 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 **Product Card Rules:**
 - Image: 1:1 aspect ratio, lazy-loaded, fallback placeholder.
 - Name: max 2 lines with `line-clamp-2`, bold weight.
-- Rating: Lucide `Star` icons, half-star support, review count linked.
+- Rating: Lucide `Star` icons with Beauty Pink (#EC4899) color, half-star support, review count linked.
 - Price: Current price bold, compare-at price with strikethrough, currency formatted.
-- Tags: Small pill badges for skin types (e.g., "Oily", "Sensitive").
-- Wishlist: Heart icon toggle, animated on click.
+- Tags: Small pill badges for skin types (e.g., "Oily", "Sensitive") with Soft Lavender (#F3E8FF) background.
+- Wishlist: Heart icon toggle with Beauty Pink (#EC4899) color, animated on click.
 - Hover: Subtle shadow elevation, optional quick-view button.
+- Card background: Soft Lavender (#F3E8FF) for luxury beauty aesthetic.
+- Border: Light gray border with rounded corners for premium feel.
 
 ## 9.3 AI Analysis Screens
 
@@ -1231,13 +1240,16 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 ```
 
 **AI Screen Rules:**
-- Loading state: Skeleton shimmer or spinner during analysis.
+- Loading state: Skeleton shimmer or spinner during analysis with lavender background.
 - Error state: Clear error message with retry button.
 - Progress indicator for long-running analysis.
 - Condition severity: Color-coded badges (green=low, yellow=moderate, red=high).
 - Confidence displayed as percentage bar.
 - Products sorted by match score descending.
-- "Re-Analyze" button always available.
+- "Re-Analyze" button always available with Luxury Purple (#7C3AED) background.
+- Upload area: Soft Lavender (#F3E8FF) background with purple border.
+- Results page: Clean white background with lavender card sections.
+- CTA buttons: Luxury Purple (#7C3AED) with white text.
 
 ## 9.4 Merchant Dashboard Design
 
@@ -1267,11 +1279,13 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 ```
 
 **Dashboard Rules:**
-- KPI cards: Large number, label, trend indicator (up/down arrow with percentage).
-- Charts: Use Recharts or similar. Responsive, interactive.
-- Tables: Sortable columns, pagination, status badges.
+- KPI cards: Large number, label, trend indicator (up/down arrow with percentage) on Soft Lavender (#F3E8FF) background.
+- Charts: Use Recharts or similar. Responsive, interactive with Luxury Purple (#7C3AED) as primary chart color.
+- Tables: Sortable columns, pagination, status badges with luxury aesthetic.
 - Time range selector: 7d, 30d, 90d, 1y.
 - All monetary values formatted with currency symbol.
+- Header: Luxury Purple (#7C3AED) background with white text.
+- Sidebar: Clean white background with purple accent for active items.
 
 ## 9.5 Admin Dashboard Design
 
@@ -1300,44 +1314,77 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 ```
 
 **Admin Dashboard Rules:**
-- Alert badges for pending actions (merchant approvals, review moderation).
-- Platform-wide metrics with trend indicators.
-- Quick action buttons for common admin tasks.
-- All charts must be interactive (hover tooltips, click to drill down).
+- Alert badges for pending actions (merchant approvals, review moderation) with Beauty Pink (#EC4899) accent.
+- Platform-wide metrics with trend indicators on Soft Lavender (#F3E8FF) backgrounds.
+- Quick action buttons for common admin tasks with Luxury Purple (#7C3AED) styling.
+- All charts must be interactive (hover tooltips, click to drill down) with purple-based color scheme.
+- Header: Luxury Purple (#7C3AED) background with white text.
+- Sidebar: Clean white background with purple accent for active items.
+- Revenue charts: Use purple gradient fills for premium aesthetic.
 
 ## 9.6 Color Palette
+
+**Luxury Cosmetics Design System - Official Color Palette**
 
 **Use shadcn/ui CSS variables only. Never define raw colors.**
 
 | Token | Light Mode | Dark Mode | Usage |
 |-------|-----------|-----------|-------|
-| `--background` | White | Dark navy | Page background |
-| `--foreground` | Near-black | Near-white | Primary text |
-| `--primary` | Brand blue | Brand blue | Primary actions, links |
-| `--primary-foreground` | White | White | Text on primary |
-| `--secondary` | Light gray | Dark gray | Secondary actions |
-| `--muted` | Very light gray | Very dark gray | Muted backgrounds |
-| `--muted-foreground` | Gray | Light gray | Secondary text |
-| `--destructive` | Red | Red | Delete, error actions |
-| `--border` | Light gray | Dark gray | Borders |
-| `--ring` | Brand blue | Brand blue | Focus rings |
+| `--background` | #FFFFFF (White) | #18181B (Near-black) | Page background |
+| `--foreground` | #18181B (Near-black) | #FFFFFF (White) | Primary text |
+| `--primary` | #7C3AED (Luxury Purple) | #7C3AED (Luxury Purple) | Primary actions, links, CTA buttons |
+| `--primary-foreground` | #FFFFFF (White) | #FFFFFF (White) | Text on primary |
+| `--secondary` | #F3E8FF (Soft Lavender) | #2D1B4E (Dark Lavender) | Secondary actions, card backgrounds |
+| `--muted` | #F8F4FF (Light Lavender) | #1F1529 (Very Dark Purple) | Muted backgrounds, subtle surfaces |
+| `--muted-foreground` | #6B7280 (Gray) | #9CA3AF (Light Gray) | Secondary text, captions |
+| `--destructive` | #EF4444 (Red) | #EF4444 (Red) | Delete, error actions |
+| `--border` | #E5E7EB (Light Gray) | #374151 (Dark Gray) | Borders |
+| `--ring` | #7C3AED (Luxury Purple) | #7C3AED (Luxury Purple) | Focus rings |
+| `--accent` | #EC4899 (Beauty Pink) | #EC4899 (Beauty Pink) | Promotions, wishlist hearts, ratings, sale badges |
+
+**Additional Brand Colors:**
+
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Luxury Purple | #7C3AED | Main brand color, primary buttons, headers, navigation |
+| Beauty Pink | #EC4899 | Promotions, CTA highlights, wishlist hearts, rating stars, sale badges, beauty-focused accents |
+| Soft Lavender | #F3E8FF | Card backgrounds, section backgrounds, filter backgrounds, badges, subtle surfaces |
+| Muted Lavender | #F8F4FF | Input backgrounds, hover states, subtle highlights |
+| Success Green | #22C55E | Success states, positive indicators |
+| Warning Amber | #F59E0B | Warning states, low stock alerts |
+| Error Red | #EF4444 | Error states, destructive actions |
 
 **Semantic Colors (Tailwind utilities):**
 
 ```
-bg-background     → Page background
-bg-primary        → Primary buttons
-bg-destructive    → Delete buttons
-text-foreground   → Primary text
-text-muted-foreground → Secondary text
-border-border     → All borders
+bg-background     → Page background (White)
+bg-primary        → Primary buttons (Luxury Purple)
+bg-secondary      → Secondary surfaces (Soft Lavender)
+bg-accent         → Accent elements (Beauty Pink)
+bg-destructive    → Delete buttons (Red)
+bg-muted          → Muted backgrounds (Light Lavender)
+text-foreground   → Primary text (Near-black)
+text-muted-foreground → Secondary text (Gray)
+text-primary-foreground → Text on purple buttons (White)
+border-border     → All borders (Light Gray)
+ring              → Focus rings (Luxury Purple)
 ```
 
-**Rules:**
+**Color Usage Rules:**
+- **Purple (#7C3AED)** becomes the main brand color and replaces all previous "Brand Blue" references. Use for primary buttons, navigation, headers, links, and focus rings.
+- **Pink (#EC4899)** is used for promotions, CTA highlights, wishlist hearts, rating stars, sale badges, and beauty-focused accents.
+- **Lavender (#F3E8FF)** is used for card backgrounds, section backgrounds, filter backgrounds, badges, and subtle surfaces.
+- **White (#FFFFFF)** remains the primary page background.
+- **Dark text (#18181B)** remains the primary typography color.
 - NEVER use raw color values like `bg-white`, `bg-gray-500`, `text-red-500`.
 - ALWAYS use semantic tokens: `bg-background`, `text-muted-foreground`.
 - `dark:` overrides on shadcn components are PROHIBITED.
 - Color decisions are made via CSS variables, not Tailwind classes.
+- Use purple and pink gradients for hero sections and promotional banners.
+- Product cards should have luxury beauty aesthetics with lavender backgrounds.
+- AI Skin Analysis pages should use lavender backgrounds and purple CTA buttons.
+- Merchant and Admin dashboards should follow the same purple-based theme.
+- Wishlist icons, rating elements, and promotional badges should use pink accents.
 
 ## 9.7 Typography
 
@@ -1387,11 +1434,13 @@ border-border     → All borders
 - Labels MUST be associated with inputs via `htmlFor`/`id`.
 - Error messages MUST be displayed below the input, linked via `aria-describedby`.
 - Required fields MUST have visual indicator (asterisk) and `aria-required`.
-- Submit button MUST show loading state during submission.
+- Submit button MUST show loading state during submission with Luxury Purple (#7C3AED) background.
 - Form submission MUST be disabled during loading.
 - Use `FormMessage` component from shadcn/ui for error display.
 - Validation errors MUST appear inline, not in alerts.
-- Cancel button uses `variant="outline"`. Submit uses default variant.
+- Cancel button uses `variant="outline"`. Submit uses default variant with purple styling.
+- Input backgrounds: Soft Lavender (#F3E8FF) for luxury beauty aesthetic.
+- Focus states: Purple ring (#7C3AED) for consistent brand identity.
 
 ## 9.9 Tables
 
@@ -1411,12 +1460,15 @@ border-border     → All borders
 
 **Table Rules:**
 - Use shadcn/ui `Table` component.
-- Sortable columns: Click header to sort, show arrow indicator.
-- Selectable rows: Checkbox in first column.
-- Pagination: Bottom of table, shows current range.
+- Sortable columns: Click header to sort, show arrow indicator with purple accent.
+- Selectable rows: Checkbox in first column with purple accent.
+- Pagination: Bottom of table, shows current range with purple active page.
 - Empty state: Message + illustration when no data.
 - Loading state: Skeleton rows during fetch.
 - Responsive: Horizontal scroll on mobile with sticky first column.
+- Header background: Soft Lavender (#F3E8FF) for luxury beauty aesthetic.
+- Row hover: Light lavender background for premium feel.
+- Status badges: Use the updated status badge colors with purple and pink accents.
 
 ## 9.10 Modals (Dialogs)
 
@@ -1440,9 +1492,11 @@ border-border     → All borders
 - ESC key MUST close the dialog.
 - Click outside dialog MUST close it (unless confirmation required).
 - Title MUST be descriptive and concise.
-- Actions: Cancel (outline) on left, Primary action on right.
+- Actions: Cancel (outline) on left, Primary action on right with Luxury Purple (#7C3AED) background.
 - Destructive modals: Use `AlertDialog` with red confirmation button.
 - Loading state on submit button during async operations.
+- Modal background: White with subtle lavender border for luxury aesthetic.
+- Header: Luxury Purple (#7C3AED) accent or border for brand consistency.
 
 ## 9.11 Status Badges
 
@@ -1450,20 +1504,24 @@ border-border     → All borders
 |--------|------------|------|
 | Active | Green (`bg-green-100 text-green-800`) | Active |
 | Inactive | Gray (`bg-gray-100 text-gray-800`) | Inactive |
-| Pending | Yellow (`bg-yellow-100 text-yellow-800`) | Pending |
-| Processing | Blue (`bg-blue-100 text-blue-800`) | Processing |
+| Pending | Amber (`bg-amber-100 text-amber-800`) | Pending |
+| Processing | Purple (`bg-purple-100 text-purple-800`) | Processing |
 | Delivered | Green (`bg-green-100 text-green-800`) | Delivered |
 | Done | Green (`bg-green-100 text-green-800`) | Done |
 | Approved | Green (`bg-green-100 text-green-800`) | Approved |
 | Rejected | Red (`bg-red-100 text-red-800`) | Rejected |
 | Low Stock | Amber (`bg-amber-100 text-amber-800`) | Low Stock |
 | Out of Stock | Red (`bg-red-100 text-red-800`) | Out of Stock |
+| Sale/Promotion | Pink (`bg-pink-100 text-pink-800`) | Sale |
+| New Arrival | Purple (`bg-purple-100 text-purple-800`) | New |
 
 **Badge Rules:**
 - Use `Badge` component from shadcn/ui with appropriate `variant`.
 - Consistent sizing: `text-xs px-2 py-0.5 rounded-full`.
-- Color MUST convey semantic meaning (green=good, red=bad, yellow=warning).
+- Color MUST convey semantic meaning (green=good, red=bad, yellow=warning, purple=processing/brand, pink=promotions).
 - Never use color alone to convey information. Include text label.
+- Use Beauty Pink (#EC4899) for promotional badges and sale indicators.
+- Use Luxury Purple (#7C3AED) for processing states and brand-related badges.
 
 ---
 

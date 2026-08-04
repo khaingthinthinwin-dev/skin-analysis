@@ -17,12 +17,18 @@ This specification defines a reusable, implementation-ready architecture for an 
 
 ### Design Principles
 
+- **Luxury Beauty Marketplace**: Elegant, feminine, sophisticated aesthetic inspired by Sephora, Dior Beauty, Rare Beauty, and Glow Recipe
 - **Type-Safe End-to-End**: TypeScript on both frontend and backend; Prisma schema as single source of truth
 - **Security-First**: JWT with refresh token rotation, RBAC, Redis blacklisting, input validation
 - **Performance-Oriented**: Redis caching, lazy loading, code splitting, optimized queries
 - **Scalable Architecture**: Feature-based modular design, API versioning, database indexing strategy
 - **Accessibility**: WCAG 2.1 AA compliance, semantic HTML, keyboard navigation
 - **Internationalization**: English, Myanmar, and Japanese language support from day one
+
+**Brand Identity:**
+- Primary brand color: Luxury Purple (#7C3AED) - conveys premium, sophisticated beauty
+- Accent color: Beauty Pink (#EC4899) - used for promotions, CTA highlights, wishlist hearts, ratings, and sale badges
+- Secondary color: Soft Lavender (#F3E8FF) - used for card backgrounds, sections, filters, badges, and subtle surfaces
 
 ---
 
@@ -925,35 +931,45 @@ export class AllExceptionsFilter implements ExceptionFilter {
 - Theme persisted in localStorage
 - CSS variables on `:root` (light) and `.dark` (dark)
 
-### CSS Variable System (shadcn/ui)
+### CSS Variable System (shadcn/ui) - Luxury Cosmetics Theme
 
 ```css
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --border: 214.3 31.8% 91.4%;
-  --destructive: 0 84.2% 60.2%;
-  /* ... */
+  --background: 0 0% 100%;           /* #FFFFFF White */
+  --foreground: 240 6% 10%;          /* #18181B Near-black */
+  --primary: 263 83% 64%;            /* #7C3AED Luxury Purple */
+  --primary-foreground: 0 0% 100%;   /* #FFFFFF White */
+  --secondary: 270 100% 96%;         /* #F3E8FF Soft Lavender */
+  --muted: 270 100% 97%;             /* #F8F4FF Light Lavender */
+  --muted-foreground: 220 9% 46%;    /* #6B7280 Gray */
+  --accent: 330 81% 60%;             /* #EC4899 Beauty Pink */
+  --destructive: 0 84% 60%;          /* #EF4444 Red */
+  --border: 220 13% 91%;             /* #E5E7EB Light Gray */
+  --ring: 263 83% 64%;               /* #7C3AED Luxury Purple */
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  /* ... */
+  --background: 240 6% 10%;          /* #18181B Near-black */
+  --foreground: 0 0% 100%;           /* #FFFFFF White */
+  --primary: 263 83% 64%;            /* #7C3AED Luxury Purple */
+  --primary-foreground: 0 0% 100%;   /* #FFFFFF White */
+  --secondary: 270 50% 20%;          /* #2D1B4E Dark Lavender */
+  --muted: 270 40% 12%;              /* #1F1529 Very Dark Purple */
+  --muted-foreground: 220 9% 60%;    /* #9CA3AF Light Gray */
+  --accent: 330 81% 60%;             /* #EC4899 Beauty Pink */
+  --destructive: 0 84% 60%;          /* #EF4444 Red */
+  --border: 220 13% 30%;             /* #374151 Dark Gray */
+  --ring: 263 83% 64%;               /* #7C3AED Luxury Purple */
 }
 ```
 
 ### Tailwind Integration
 
-- Use semantic tokens in Tailwind: `bg-background`, `text-foreground`, `bg-primary`
+- Use semantic tokens in Tailwind: `bg-background`, `text-foreground`, `bg-primary`, `bg-secondary`, `bg-accent`
 - Never use raw color values: `bg-white dark:bg-gray-950` -> use `bg-background`
 - No manual `dark:` overrides on shadcn components
+- Brand colors: Primary Purple (#7C3AED), Accent Pink (#EC4899), Secondary Lavender (#F3E8FF)
+- Use `bg-primary` for main buttons, `bg-accent` for promotional elements, `bg-secondary` for card backgrounds
 
 ---
 
