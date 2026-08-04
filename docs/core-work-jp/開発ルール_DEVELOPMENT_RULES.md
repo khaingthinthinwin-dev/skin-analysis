@@ -4,16 +4,16 @@
 
 ---
 
-| Attribute | Value |
-|-----------|-------|
-| **Document ID** | SKM-DEV-001 |
-| **System** | Cosmetics Finder |
-| **Version** | 1.0 |
-| **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-03 |
-| **Author** | Principal Software Architect & Enterprise Engineering Governance Lead |
-| **Status** | Released |
-| **Audience** | Human Developers, Cursor AI, GitHub Copilot, Claude Code, Gemini Code Assist |
+| 属性 | 値 |
+|------|-----|
+| **ドキュメントID** | SKM-DEV-001 |
+| **システム** | Cosmetics Finder |
+| **バージョン** | 1.0 |
+| **作成日** | 2026-08-03 |
+| **最終更新日** | 2026-08-03 |
+| **著者** | プリンシパルソフトウェアアーキテクト＆エンタープライズエンジニアリングガバナンスリード |
+| **ステータス** | リリース済み |
+| **対象者** | 人間の開発者、Cursor AI、GitHub Copilot、Claude Code、Gemini Code Assist |
 
 ---
 
@@ -1960,13 +1960,13 @@ final = max(0, subtotal - discount)
 
 ---
 
-**Document Management:**
-- Author: Principal Software Architect & Enterprise Engineering Governance Lead
-- Created: 2026-08-03
-- Last Updated: 2026-08-03
-- Next Review: Phase 2 Planning
-- Approved By: [Pending]
+**ドキュメント管理:**
+- 著者: プリンシパルソフトウェアアーキテクト＆エンタープライズエンジニアリングガバナンスリード
+- 作成日: 2026-08-03
+- 最終更新日: 2026-08-03
+- 次回レビュー: フェーズ2企画
+- 承認者: [保留中]
 
 ---
 
-*End of DEVELOPMENT_RULES.md*
+*開発ルール_DEVELOPMENT_RULES.md ここまで*
