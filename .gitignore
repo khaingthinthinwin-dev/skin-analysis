@@ -29,3 +29,9 @@ Thumbs.db
 
 # Prisma
 generated/
+
+# Coverage
+coverage/
+
+# Git hooks backup
+*.bak

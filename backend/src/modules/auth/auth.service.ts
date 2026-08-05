@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
@@ -39,7 +43,11 @@ export class AuthService {
     });
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.roleCode,
+    );
 
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -71,7 +79,11 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.roleCode,
+    );
 
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -127,7 +139,11 @@ export class AuthService {
       }
 
       // Generate new tokens
-      const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
+      const tokens = await this.generateTokens(
+        user.id,
+        user.email,
+        user.roleCode,
+      );
 
       // Store new refresh token
       await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -174,14 +190,22 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(userId: string, email: string, roleCode: string) {
+  private async generateTokens(
+    userId: string,
+    email: string,
+    roleCode: string,
+  ) {
     const payload = { sub: userId, email, role: roleCode };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('jwt.refreshSecret') || 'refresh-secret',
-        expiresIn: this.configService.get<string>('jwt.refreshExpiration') || '7d' as any,
+        secret:
+          this.configService.get<string>('jwt.refreshSecret') ||
+          'refresh-secret',
+        expiresIn:
+          this.configService.get<string>('jwt.refreshExpiration') ||
+          ('7d' as any),
       }),
     ]);
 

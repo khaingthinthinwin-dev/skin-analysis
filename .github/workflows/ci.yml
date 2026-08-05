@@ -1,0 +1,62 @@
+# =============================================================================
+# CI Pipeline — Cosmetics Finder (Skin Analysis)
+# =============================================================================
+# Authority: docs/core-work/開発ルール_DEVELOPMENT_RULES.md §3.3
+#
+# Runs the full verify-all.sh script on every Pull Request to develop or main.
+# Zero additional dependencies — uses only existing npm scripts and bash tools.
+# =============================================================================
+
+name: CI — Verify Project Health
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# Cancel any in-progress runs for the same PR to save CI minutes
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Full Verification (Lint + TypeCheck + Tests)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20]
+
+    steps:
+      # ── Checkout ──
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
+
+      # ── Node.js Setup ──
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      # ── Install Dependencies (Backend) ──
+      - name: Install backend dependencies
+        run: npm ci
+
+      # ── Install Dependencies (Frontend) ──
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # ── Run Verification Script ──
+      - name: Run verify-all.sh
+        run: |
+          chmod +x scripts/verify-all.sh
+          bash scripts/verify-all.sh --ci

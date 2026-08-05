@@ -13,9 +13,11 @@ import { UsersModule } from '../users/users.module';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('jwt.accessSecret') || 'access-secret',
+        secret:
+          configService.get<string>('jwt.accessSecret') || 'access-secret',
         signOptions: {
-          expiresIn: configService.get<string>('jwt.accessExpiration') || '15m' as any,
+          expiresIn:
+            configService.get<string>('jwt.accessExpiration') || ('15m' as any),
         },
       }),
       inject: [ConfigService],

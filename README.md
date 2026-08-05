@@ -15,13 +15,13 @@ A full-stack marketplace platform connecting buyers with skincare merchants, pow
 |  React SPA        | <---------------------> |  NestJS REST API  |
 |  (Vite + React 19)|                         |  (API v1)         |
 +-------------------+                         +--------+----------+
-                                                      |
-                                    +-----------------+-----------------+
-                                    |                                 |
-                             +------+------+                   +------+------+
-                             | PostgreSQL  |                   |    Redis    |
-                             | (Prisma v7) |                   |  (Cache)   |
-                             +-------------+                   +-------------+
+                                                       |
+                                     +-----------------+-----------------+
+                                     |                                 |
+                              +------+------+                   +------+------+
+                              | PostgreSQL  |                   |    Redis    |
+                              | (Prisma v7) |                   |  (Cache)   |
+                              +-------------+                   +-------------+
 ```
 
 **Request flow:** Client -> Global pipes (validation) -> JwtAuthGuard (token + Redis blacklist) -> RolesGuard (RBAC) -> Controller -> Service -> Prisma/Redis -> Response.
@@ -59,7 +59,7 @@ A full-stack marketplace platform connecting buyers with skincare merchants, pow
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js 20+
 - PostgreSQL 16+
 - Redis 7+
 
@@ -68,6 +68,9 @@ A full-stack marketplace platform connecting buyers with skincare merchants, pow
 ```bash
 git clone <repo-url>
 cd skin-analysis
+
+# Install git hooks
+git config core.hooksPath .githooks
 
 # Backend
 cd backend
@@ -131,6 +134,31 @@ Frontend runs on `http://localhost:5173`.
 | Lint | `cd frontend && npm run lint` |
 | Build | `cd frontend && npm run build` |
 | Unit tests | `cd frontend && npm run test` |
+
+## Git Hooks
+
+This project uses Git hooks to ensure code quality:
+
+| Hook | Purpose |
+|------|---------|
+| `pre-commit` | Runs ESLint on staged files and full verification |
+| `commit-msg` | Validates commit message format (Conventional Commits) |
+| `prepare-commit-msg` | Adds ticket ID from branch name to commit message |
+
+### Setup
+
+```bash
+git config core.hooksPath .githooks
+```
+
+### Commit Message Format
+
+```
+<type>(<scope>): <description>
+
+Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+Example: feat(auth): add login endpoint
+```
 
 ## Project Structure
 
