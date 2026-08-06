@@ -27,23 +27,55 @@
     "login": {
       "title": "ログイン",
       "email": "メールアドレス",
+      "emailPlaceholder": "user@example.com",
       "password": "パスワード",
+      "passwordPlaceholder": "パスワードを入力",
       "submit": "ログイン",
       "submitting": "ログイン中...",
+      "success": "ログイン成功",
       "forgotPassword": "パスワードをお忘れですか？",
       "noAccount": "アカウントをお持ちでないですか？",
-      "createAccount": "作成する"
+      "createAccount": "作成する",
+      "showPassword": "パスワードを表示",
+      "hidePassword": "パスワードを非表示"
     },
     "register": {
       "title": "アカウント作成",
-      "name": "氏名",
+      "fullName": "氏名",
+      "fullNamePlaceholder": "田中太郎",
       "email": "メールアドレス",
+      "emailPlaceholder": "user@example.com",
       "password": "パスワード",
+      "passwordPlaceholder": "パスワードを作成",
       "confirmPassword": "パスワード確認",
-      "submit": "作成",
-      "submitting": "作成中...",
+      "confirmPasswordPlaceholder": "パスワードを再入力",
+      "submit": "アカウント作成",
+      "submitting": "アカウント作成中...",
+      "success": "アカウント作成成功",
       "hasAccount": "すでにアカウントをお持ちですか？",
-      "signIn": "ログイン"
+      "signIn": "ログイン",
+      "iAm": "私は：",
+      "buyer": "購入者 - 商品を閲覧・購入する",
+      "merchant": "出品者 - スキンケア商品を販売する",
+      "showPassword": "パスワードを表示",
+      "hidePassword": "パスワードを非表示",
+      "passwordRequirement": {
+        "length": "8文字以上",
+        "uppercase": "大文字1つ (A-Z)",
+        "lowercase": "小文字1つ (a-z)",
+        "number": "数字1つ (0-9)",
+        "special": "特殊文字1つ (@$!%*?&)"
+      },
+      "license": "事業許可書 (PDF)",
+      "licensePlaceholder": "ドラッグ＆ドロップまたはクリックしてアップロード",
+      "licenseHelper": "事業許可書をPDF形式でアップロードしてください（最大10MB）。ファイル名はlicense.pdfである必要があります。",
+      "licenseRemove": "ファイルを削除",
+      "licenseError": {
+        "type": "サポートされていないファイル形式です。PDFファイルのみ対応しています。",
+        "size": "ファイルサイズが10MBを超えています",
+        "name": "ファイル名はlicense.pdfである必要があります",
+        "required": "出品者登録には事業許可書が必要です"
+      }
     }
   },
   "home": {
@@ -54,7 +86,7 @@
     }
   },
   "footer": {
-    "copyright": "© 2026 SkincareAI. 全著作権所有。",
+    "copyright": "© 2026 Cosmetics Finder. 全著作権所有。",
     "privacy": "プライバシーポリシー",
     "terms": "利用規約"
   }

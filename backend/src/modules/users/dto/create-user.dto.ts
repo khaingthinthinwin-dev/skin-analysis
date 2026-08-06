@@ -1,4 +1,11 @@
-import { IsEmail, IsString, IsOptional, MinLength, MaxLength, IsIn } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsOptional,
+  MinLength,
+  MaxLength,
+  IsIn,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUserDto {
@@ -22,4 +29,18 @@ export class CreateUserDto {
   @IsString()
   @IsIn(['buyer', 'merchant', 'admin'])
   roleCode?: string;
+
+  @ApiPropertyOptional({ example: '/uploads/licenses/license.pdf' })
+  @IsOptional()
+  @IsString()
+  licenseUrl?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'pending',
+    enum: ['pending', 'approved', 'rejected'],
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['pending', 'approved', 'rejected'])
+  licenseStatus?: string | null;
 }

@@ -1,10 +1,8 @@
 import { Link } from 'react-router'
-import { useTranslation } from 'react-i18next'
 import { Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function Unauthorized() {
-  const { t } = useTranslation()
 
   return (
     <div className="flex min-h-[calc(100vh-200px)] flex-col items-center justify-center gap-4 px-4">

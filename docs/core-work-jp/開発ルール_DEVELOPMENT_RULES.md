@@ -188,7 +188,7 @@ import { SomeType } from './types';
 
 # 2. プロジェクト構造ルール
 
-## 2.1 バックエンドモジュール構造
+## 2.1 バックエンドモジュール構造（NestJS + PostgreSQL）
 
 ```
 backend/src/
@@ -200,44 +200,173 @@ backend/src/
 │   └── validation.ts                    # Zod envスキーマ
 ├── common/                              # 横断的関心事（共有）
 │   ├── decorators/                      # @Roles(), @CurrentUser(), @Public()
+│   │   ├── roles.decorator.ts
+│   │   ├── current-user.decorator.ts
+│   │   └── public.decorator.ts
 │   ├── guards/                          # JwtAuthGuard, RolesGuard
+│   │   ├── jwt-auth.guard.ts
+│   │   └── roles.guard.ts
 │   ├── filters/                         # AllExceptionsFilter
+│   │   └── all-exceptions.filter.ts
 │   ├── interceptors/                    # ログ、変換、タイムアウト
+│   │   ├── logging.interceptor.ts
+│   │   ├── transform.interceptor.ts
+│   │   └── timeout.interceptor.ts
 │   ├── pipes/                           # ValidationPipe
+│   │   └── validation.pipe.ts
 │   ├── dto/                             # 共有DTO（ページネーションなど）
+│   │   ├── pagination.dto.ts
+│   │   └── pagination-response.dto.ts
 │   ├── interfaces/                      # 共有インターフェース
+│   │   ├── pagination.interface.ts
+│   │   └── api-response.interface.ts
 │   └── utils/                           # 純粋ユーティリティ関数
+│       ├── slug.util.ts
+│       └── date.util.ts
 ├── modules/                             # 機能モジュール
-│   ├── auth/                            # 認証
+│   ├── auth/                            # [ATM] 認証
 │   │   ├── auth.module.ts
 │   │   ├── auth.controller.ts
 │   │   ├── auth.service.ts
 │   │   ├── strategies/                  # JWT戦略
+│   │   │   ├── jwt-access.strategy.ts
+│   │   │   └── jwt-refresh.strategy.ts
 │   │   ├── guards/                      # LocalAuthGuard
+│   │   │   └── local-auth.guard.ts
 │   │   ├── dto/                         # LoginDto, RegisterDto
-│   │   └── *.spec.ts                    # ユニットテスト
-│   ├── users/
-│   ├── merchants/
-│   ├── products/
-│   ├── categories/
-│   ├── reviews/
-│   ├── wishlist/
-│   ├── cart/
-│   ├── orders/
-│   ├── promotions/
-│   ├── advertisements/
-│   ├── recommendations/
-│   ├── analytics/
-│   └── admin/
+│   │   │   ├── login.dto.ts
+│   │   │   └── register.dto.ts
+│   │   ├── auth.service.spec.ts
+│   │   └── README.md                    # [ATM] 所有者
+│   ├── users/                           # [ATM] ユーザー管理
+│   │   ├── users.module.ts
+│   │   ├── users.controller.ts
+│   │   ├── users.service.ts
+│   │   ├── dto/
+│   │   │   ├── update-user.dto.ts
+│   │   │   └── user-response.dto.ts
+│   │   ├── users.service.spec.ts
+│   │   └── README.md                    # [ATM] 所有者
+│   ├── skin-analysis/                   # [ATM] AI肌分析
+│   │   ├── skin-analysis.module.ts
+│   │   ├── skin-analysis.controller.ts
+│   │   ├── skin-analysis.service.ts
+│   │   ├── dto/
+│   │   │   └── skin-analysis.dto.ts
+│   │   ├── skin-analysis.service.spec.ts
+│   │   └── README.md                    # [ATM] 所有者
+│   ├── matching/                        # [HAML] マッチング＆レコメンド
+│   │   ├── matching.module.ts
+│   │   ├── matching.controller.ts
+│   │   ├── matching.service.ts
+│   │   ├── dto/
+│   │   │   └── match-query.dto.ts
+│   │   ├── matching.service.spec.ts
+│   │   └── README.md                    # [HAML] 所有者
+│   ├── products/                        # [TMO] 商品管理
+│   │   ├── products.module.ts
+│   │   ├── products.controller.ts
+│   │   ├── products.service.ts
+│   │   ├── dto/
+│   │   │   ├── create-product.dto.ts
+│   │   │   ├── update-product.dto.ts
+│   │   │   └── product-query.dto.ts
+│   │   ├── products.service.spec.ts
+│   │   └── README.md                    # [TMO] 所有者
+│   ├── search/                          # [TRPH] 検索・フィルタ
+│   │   ├── search.module.ts
+│   │   ├── search.controller.ts
+│   │   ├── search.service.ts
+│   │   ├── dto/
+│   │   │   └── search-query.dto.ts
+│   │   ├── search.service.spec.ts
+│   │   └── README.md                    # [TRPH] 所有者
+│   ├── categories/                      # [TRPH] カテゴリフィルタ
+│   │   ├── categories.module.ts
+│   │   ├── categories.controller.ts
+│   │   ├── categories.service.ts
+│   │   ├── categories.service.spec.ts
+│   │   └── README.md                    # [TRPH] 所有者
+│   ├── wishlist/                        # [EEM] ウィッシュリスト
+│   │   ├── wishlist.module.ts
+│   │   ├── wishlist.controller.ts
+│   │   ├── wishlist.service.ts
+│   │   ├── wishlist.service.spec.ts
+│   │   └── README.md                    # [EEM] 所有者
+│   ├── cart/                            # [EEM] ショッピングカート
+│   │   ├── cart.module.ts
+│   │   ├── cart.controller.ts
+│   │   ├── cart.service.ts
+│   │   ├── dto/
+│   │   │   └── add-to-cart.dto.ts
+│   │   ├── cart.service.spec.ts
+│   │   └── README.md                    # [EEM] 所有者
+│   ├── orders/                          # [EEM] 注文＆支払い
+│   │   ├── orders.module.ts
+│   │   ├── orders.controller.ts
+│   │   ├── orders.service.ts
+│   │   ├── dto/
+│   │   │   ├── create-order.dto.ts
+│   │   │   └── update-order-status.dto.ts
+│   │   ├── orders.service.spec.ts
+│   │   └── README.md                    # [EEM] 所有者
+│   ├── promotions/                      # [ZSLS] プロモーション
+│   │   ├── promotions.module.ts
+│   │   ├── promotions.controller.ts
+│   │   ├── promotions.service.ts
+│   │   ├── dto/
+│   │   │   ├── create-promotion.dto.ts
+│   │   │   └── validate-promotion.dto.ts
+│   │   ├── promotions.service.spec.ts
+│   │   └── README.md                    # [ZSLS] 所有者
+│   ├── advertisements/                  # [WYT] 広告管理
+│   │   ├── advertisements.module.ts
+│   │   ├── advertisements.controller.ts
+│   │   ├── advertisements.service.ts
+│   │   ├── advertisements.service.spec.ts
+│   │   └── README.md                    # [WYT] 所有者
+│   ├── reviews/                         # [PET] レビュー管理
+│   │   ├── reviews.module.ts
+│   │   ├── reviews.controller.ts
+│   │   ├── reviews.service.ts
+│   │   ├── dto/
+│   │   │   └── create-review.dto.ts
+│   │   ├── reviews.service.spec.ts
+│   │   └── README.md                    # [PET] 所有者
+│   ├── analytics/                       # [PET/WYT] 分析ダッシュボード
+│   │   ├── analytics.module.ts
+│   │   ├── analytics.controller.ts
+│   │   ├── analytics.service.ts
+│   │   ├── analytics.service.spec.ts
+│   │   └── README.md                    # [PET/WYT] 所有者
+│   ├── admin/                           # [PET/PPH] 管理者パネル
+│   │   ├── admin.module.ts
+│   │   ├── admin.controller.ts
+│   │   ├── admin.service.ts
+│   │   ├── admin.service.spec.ts
+│   │   └── README.md                    # [PET/PPH] 所有者
+│   └── commission/                      # [PPH] 手数料＆収益
+│       ├── commission.module.ts
+│       ├── commission.controller.ts
+│       ├── commission.service.ts
+│       ├── commission.service.spec.ts
+│       └── README.md                    # [PPH] 所有者
 └── shared/                              # グローバル共有サービス
     ├── shared.module.ts
+    ├── prisma/                          # PrismaModule, PrismaService（PostgreSQL）
+    │   ├── prisma.module.ts
+    │   └── prisma.service.ts
     ├── redis/                           # RedisModule, RedisService
-    ├── prisma/                          # PrismaModule, PrismaService
-    └── mail/                            # MailModule（将来）
+    │   ├── redis.module.ts
+    │   └── redis.service.ts
+    └── mail/                            # MailModule（将来用）
+        ├── mail.module.ts
+        └── mail.service.ts
 ```
 
 **バックエンドモジュールルール:**
 - 各機能モジュールは、コントローラー、サービス、DTO、テスト自己完結。
+- 各モジュールフォルダには開発者所有者を記載した`README.md`が必須。
 - 機能モジュールは`exports`配列を通じて他のモジュールに必要なもののみエクスポート。
 - `common/`はすべてのモジュールで共有されるフレームワークレベルのユーティリティを含む。
 - `shared/`は`@Global()`で登録されたグローバルサービス（Prisma、Redis）を含む。
@@ -245,7 +374,7 @@ backend/src/
 - コントローラーはHTTP関心事のみを処理。ビジネスロジックはサービスに属する。
 - サービスはビジネスロジックとデータアクセスを含む。コントローラーからPrismaを直接呼び出さない。
 
-## 2.2 フロントエンドページ構造
+## 2.2 フロントエンドページ構造（React + TypeScript）
 
 ```
 frontend/src/
@@ -254,63 +383,247 @@ frontend/src/
 │   └── routes.tsx                       # ルート定義
 ├── pages/                               # ルートレベルコンポーネント
 │   ├── Home.tsx
-│   ├── Login.tsx
-│   ├── Register.tsx
-│   ├── Profile.tsx
+│   ├── Login.tsx                        # [ATM]
+│   ├── Register.tsx                     # [ATM]
+│   ├── Profile.tsx                      # [ATM]
 │   ├── Settings.tsx
 │   ├── NotFound.tsx
 │   ├── Unauthorized.tsx
 │   ├── products/
 │   │   ├── ProductList.tsx
-│   │   ├── ProductDetail.tsx
-│   │   └── ProductSearch.tsx
+│   │   ├── ProductDetail.tsx            # [TMO]
+│   │   └── ProductSearch.tsx            # [TRPH]
 │   ├── cart/
-│   │   └── Cart.tsx
+│   │   └── Cart.tsx                     # [EEM]
 │   ├── checkout/
-│   │   └── Checkout.tsx
+│   │   └── Checkout.tsx                 # [EEM]
+│   ├── wishlist/
+│   │   └── Wishlist.tsx                 # [EEM]
 │   ├── skin-analysis/
-│   │   └── SkinAnalysis.tsx
+│   │   └── SkinAnalysis.tsx             # [ATM]
+│   ├── matching/
+│   │   └── Recommendations.tsx          # [HAML]
 │   ├── merchant/
-│   │   ├── Dashboard.tsx
-│   │   ├── Products.tsx
-│   │   ├── ProductForm.tsx
-│   │   ├── Promotions.tsx
-│   │   └── Analytics.tsx
+│   │   ├── Dashboard.tsx                # [WYT]
+│   │   ├── Products.tsx                 # [ZSLS]
+│   │   ├── ProductForm.tsx              # [ZSLS]
+│   │   ├── Promotions.tsx               # [ZSLS]
+│   │   ├── Advertisements.tsx           # [WYT]
+│   │   └── SalesAnalytics.tsx           # [WYT]
 │   └── admin/
-│       ├── Dashboard.tsx
-│       ├── Users.tsx
-│       ├── Merchants.tsx
-│       ├── Reviews.tsx
-│       └── Analytics.tsx
+│       ├── Dashboard.tsx                # [PET]
+│       ├── Users.tsx                    # [PET]
+│       ├── Reviews.tsx                  # [PET]
+│       ├── ContentModeration.tsx        # [PET]
+│       ├── Reports.tsx                  # [PET]
+│       ├── Commission.tsx               # [PPH]
+│       └── Revenue.tsx                  # [PPH]
 ├── components/
 │   ├── ui/                              # shadcn/uiプリミティブ（手動編集禁止）
+│   │   ├── button.tsx
+│   │   ├── input.tsx
+│   │   ├── label.tsx
+│   │   ├── card.tsx
+│   │   ├── dialog.tsx
+│   │   ├── dropdown-menu.tsx
+│   │   ├── table.tsx
+│   │   ├── badge.tsx
+│   │   ├── select.tsx
+│   │   ├── textarea.tsx
+│   │   ├── toast.tsx
+│   │   ├── form.tsx
+│   │   ├── avatar.tsx
+│   │   ├── skeleton.tsx
+│   │   └── separator.tsx
 │   ├── layout/                          # Header, Footer, Sidebar, MainLayout
+│   │   ├── Header.tsx
+│   │   ├── Footer.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── MainLayout.tsx
+│   │   ├── DashboardLayout.tsx
+│   │   └── AuthLayout.tsx
 │   ├── common/                          # ThemeToggle, LanguageToggle, ErrorBoundary
+│   │   ├── ThemeToggle.tsx
+│   │   ├── LanguageToggle.tsx
+│   │   ├── ErrorBoundary.tsx
+│   │   ├── LoadingSpinner.tsx
+│   │   └── EmptyState.tsx
 │   └── auth/                            # ProtectedRoute
+│       └── ProtectedRoute.tsx
 ├── features/                            # 機能固有コンポーネント＆ロジック
-│   ├── auth/
+│   ├── auth/                            # [ATM] 認証
 │   │   ├── components/
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── RegisterForm.tsx
+│   │   │   └── AuthTabs.tsx
 │   │   ├── hooks/
+│   │   │   └── useAuth.ts
 │   │   ├── schemas/
-│   │   └── services/
-│   ├── products/
-│   ├── cart/
-│   ├── skin-analysis/
-│   ├── merchant/
-│   └── admin/
+│   │   │   └── auth.schema.ts
+│   │   ├── services/
+│   │   │   └── auth.service.ts
+│   │   └── README.md                    # [ATM] 所有者
+│   ├── skin-analysis/                   # [ATM] 肌分析
+│   │   ├── components/
+│   │   │   ├── AnalysisUpload.tsx
+│   │   │   ├── AnalysisResults.tsx
+│   │   │   └── AnalysisHistory.tsx
+│   │   ├── hooks/
+│   │   │   └── useSkinAnalysis.ts
+│   │   ├── services/
+│   │   │   └── analysis.service.ts
+│   │   └── README.md                    # [ATM] 所有者
+│   ├── matching/                        # [HAML] マッチング＆レコメンド
+│   │   ├── components/
+│   │   │   ├── RecommendationCard.tsx
+│   │   │   ├── MatchResultList.tsx
+│   │   │   └── SkinTypeFilter.tsx
+│   │   ├── hooks/
+│   │   │   └── useMatching.ts
+│   │   ├── services/
+│   │   │   └── matching.service.ts
+│   │   └── README.md                    # [HAML] 所有者
+│   ├── products/                        # [TMO] 商品
+│   │   ├── components/
+│   │   │   ├── ProductCard.tsx
+│   │   │   ├── ProductGrid.tsx
+│   │   │   ├── ProductDetail.tsx
+│   │   │   └── ProductReviews.tsx
+│   │   ├── hooks/
+│   │   │   ├── useProducts.ts
+│   │   │   └── useProductDetail.ts
+│   │   ├── services/
+│   │   │   └── product.service.ts
+│   │   └── README.md                    # [TMO] 所有者
+│   ├── search/                          # [TRPH] 検索＆フィルタ
+│   │   ├── components/
+│   │   │   ├── SearchBar.tsx
+│   │   │   ├── FilterPanel.tsx
+│   │   │   └── SearchResults.tsx
+│   │   ├── hooks/
+│   │   │   └── useSearch.ts
+│   │   ├── services/
+│   │   │   └── search.service.ts
+│   │   └── README.md                    # [TRPH] 所有者
+│   ├── wishlist/                        # [EEM] ウィッシュリスト
+│   │   ├── components/
+│   │   │   ├── WishlistItem.tsx
+│   │   │   └── WishlistGrid.tsx
+│   │   ├── hooks/
+│   │   │   └── useWishlist.ts
+│   │   ├── services/
+│   │   │   └── wishlist.service.ts
+│   │   └── README.md                    # [EEM] 所有者
+│   ├── cart/                            # [EEM] カート
+│   │   ├── components/
+│   │   │   ├── CartItem.tsx
+│   │   │   ├── CartSummary.tsx
+│   │   │   └── CartDrawer.tsx
+│   │   ├── hooks/
+│   │   │   └── useCart.ts
+│   │   ├── services/
+│   │   │   └── cart.service.ts
+│   │   └── README.md                    # [EEM] 所有者
+│   ├── checkout/                        # [EEM] チェックアウト
+│   │   ├── components/
+│   │   │   ├── CheckoutForm.tsx
+│   │   │   ├── PaymentMethod.tsx
+│   │   │   └── OrderSummary.tsx
+│   │   ├── hooks/
+│   │   │   └── useCheckout.ts
+│   │   ├── services/
+│   │   │   └── checkout.service.ts
+│   │   └── README.md                    # [EEM] 所有者
+│   ├── merchant/                        # [ZSLS/WYT] マーチャント
+│   │   ├── components/
+│   │   │   ├── DashboardStats.tsx       # [WYT]
+│   │   │   ├── OrdersTable.tsx
+│   │   │   ├── ProductForm.tsx          # [ZSLS]
+│   │   │   ├── PromotionForm.tsx        # [ZSLS]
+│   │   │   ├── AdvertisementForm.tsx    # [WYT]
+│   │   │   └── SalesChart.tsx           # [WYT]
+│   │   ├── hooks/
+│   │   │   ├── useMerchant.ts
+│   │   │   ├── useProducts.ts           # [ZSLS]
+│   │   │   ├── usePromotions.ts         # [ZSLS]
+│   │   │   ├── useAdvertisements.ts     # [WYT]
+│   │   │   └── useSalesAnalytics.ts     # [WYT]
+│   │   ├── services/
+│   │   │   ├── merchant.service.ts
+│   │   │   ├── product.service.ts       # [ZSLS]
+│   │   │   ├── promotion.service.ts     # [ZSLS]
+│   │   │   ├── advertisement.service.ts # [WYT]
+│   │   │   └── sales.service.ts         # [WYT]
+│   │   └── README.md                    # [ZSLS/WYT] 所有者
+│   └── admin/                           # [PET/PPH] 管理者
+│       ├── components/
+│       │   ├── AdminStats.tsx
+│       │   ├── UsersTable.tsx           # [PET]
+│       │   ├── ReviewsTable.tsx         # [PET]
+│       │   ├── ContentModeration.tsx    # [PET]
+│       │   ├── ReportChart.tsx          # [PET]
+│       │   ├── CommissionTable.tsx      # [PPH]
+│       │   └── RevenueChart.tsx         # [PPH]
+│       ├── hooks/
+│       │   ├── useAdmin.ts
+│       │   ├── useModeration.ts         # [PET]
+│       │   ├── useReports.ts            # [PET]
+│       │   └── useCommission.ts         # [PPH]
+│       ├── services/
+│       │   ├── admin.service.ts
+│       │   ├── moderation.service.ts    # [PET]
+│       │   ├── report.service.ts        # [PET]
+│       │   └── commission.service.ts    # [PPH]
+│       └── README.md                    # [PET/PPH] 所有者
 ├── hooks/                               # 共有カスタムフック
+│   ├── useDebounce.ts
+│   ├── useLocalStorage.ts
+│   └── useMediaQuery.ts
 ├── providers/                           # コンテキストプロバイダー
+│   ├── AuthProvider.tsx
+│   ├── ThemeProvider.tsx
+│   ├── QueryProvider.tsx
+│   └── I18nProvider.tsx
 ├── services/                            # APIサービスレイヤー
+│   ├── api-client.ts                    # axios/fetch構成
+│   └── queryKeys.ts                     # TanStack Queryキー
 ├── schemas/                             # 共有Zodスキーマ
+│   ├── pagination.schema.ts
+│   └── common.schema.ts
 ├── types/                               # 共有TypeScript型
+│   ├── api.types.ts
+│   ├── user.types.ts
+│   ├── product.types.ts
+│   └── index.ts
 ├── lib/                                 # ユーティリティ、APIクライアント、定数
+│   ├── utils.ts                         # cn()ユーティリティ
+│   ├── constants.ts                     # アプリ定数
+│   └── api.ts                           # APIクライアント
 └── i18n/                                # i18next設定
+    ├── index.ts
+    └── locales/
+        ├── en/
+        │   ├── common.json
+        │   ├── auth.json
+        │   ├── products.json
+        │   └── cart.json
+        ├── ja/
+        │   ├── common.json
+        │   ├── auth.json
+        │   ├── products.json
+        │   └── cart.json
+        └── my/
+            ├── common.json
+            ├── auth.json
+            ├── products.json
+            └── cart.json
 ```
 
 **フロントエンド構造ルール:**
 - ページは薄い。再利用可能なロジックを`features/`または`hooks/`に抽出。
 - `components/ui/`はshadcn/uiコンポーネントを含む。生成後は手動で編集しない。
 - 機能フォルダはその機能のコンポーネント、フック、スキーマ、サービスを共存。
+- 各機能フォルダには開発者所有者を記載した`README.md`が必須。
 - ファイルごとに1コンポーネント。型は名前付きエクスポート、コンポーネントはデフォルトエクスポート。
 - ルートレベルコンポーネントは`pages/`に。再利用可能なコンポーネントは`components/`または`features/`に。
 
@@ -328,6 +641,12 @@ frontend/src/
 - 共有フォルダに機能固有のロジックを配置しない。
 - 他のモジュールの内部ファイルから`backend/src/modules/`をインポートしない。モジュールエクスポートを使用。
 - shadcn CLIを通じて生成しない限り、`components/ui/`に新しいファイルを作成しない。
+
+### 2.3.1 開発者所有者ルール
+- 各機能モジュールには開発者所有者を記載した`README.md`が必須
+- 開発者は各自のモジュールに責任を持つ
+- モジュール間連携はNestJSモジュールエクスポートを使用
+- 共有フォルダ（common/, shared/, components/ui/）は共同開発
 
 ## 2.4 モジュール間通信ルール
 

@@ -1,7 +1,14 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
+import * as fs from 'fs';
+import * as path from 'path';
+import type { StringValue } from 'ms';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -18,8 +25,8 @@ export class AuthService {
     private redis: RedisService,
   ) {}
 
-  async register(registerDto: RegisterDto) {
-    const { email, password, name } = registerDto;
+  async register(registerDto: RegisterDto, license?: Express.Multer.File) {
+    const { email, password, name, role = 'buyer' } = registerDto;
 
     // Check if user exists
     const existingUser = await this.usersService.findByEmail(email);
@@ -30,16 +37,28 @@ export class AuthService {
     // Hash password
     const passwordHash = await argon2.hash(password);
 
+    // Handle license file upload for merchant
+    let licenseUrl: string | null = null;
+    if (role === 'merchant' && license) {
+      licenseUrl = this.saveLicenseFile(license, email);
+    }
+
     // Create user
     const user = await this.usersService.create({
       email,
       name,
       passwordHash,
-      roleCode: 'buyer',
+      roleCode: role,
+      licenseUrl,
+      licenseStatus: role === 'merchant' ? 'pending' : null,
     });
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.roleCode,
+    );
 
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -50,6 +69,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
+        licenseUrl: user.licenseUrl,
       },
       ...tokens,
     };
@@ -71,7 +91,11 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.roleCode,
+    );
 
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
@@ -82,6 +106,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
+        licenseUrl: user.licenseUrl,
       },
       ...tokens,
     };
@@ -90,7 +115,11 @@ export class AuthService {
   async refreshToken(refreshToken: string) {
     try {
       // Verify refresh token
-      const payload = this.jwtService.verify(refreshToken, {
+      const payload = this.jwtService.verify<{
+        sub: string;
+        email: string;
+        role: string;
+      }>(refreshToken, {
         secret: this.configService.get<string>('jwt.refreshSecret'),
       });
 
@@ -101,7 +130,6 @@ export class AuthService {
       }
 
       // Find and validate refresh token in database
-      const tokenHash = await argon2.hash(refreshToken);
       const storedToken = await this.prisma.refreshToken.findFirst({
         where: {
           userId: payload.sub,
@@ -127,13 +155,17 @@ export class AuthService {
       }
 
       // Generate new tokens
-      const tokens = await this.generateTokens(user.id, user.email, user.roleCode);
+      const tokens = await this.generateTokens(
+        user.id,
+        user.email,
+        user.roleCode,
+      );
 
       // Store new refresh token
       await this.storeRefreshToken(user.id, tokens.refreshToken);
 
       return tokens;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
@@ -141,12 +173,12 @@ export class AuthService {
   async logout(userId: string, accessToken: string) {
     // Blacklist access token
     try {
-      const payload = this.jwtService.verify(accessToken);
+      const payload = this.jwtService.verify<{ exp: number }>(accessToken);
       const ttl = payload.exp - Math.floor(Date.now() / 1000);
       if (ttl > 0) {
         await this.redis.blacklistToken(accessToken, ttl);
       }
-    } catch (error) {
+    } catch {
       // Token might already be expired, continue with logout
     }
 
@@ -171,17 +203,52 @@ export class AuthService {
       name: user.name,
       role: user.roleCode,
       avatarUrl: user.avatarUrl,
+      licenseUrl: user.licenseUrl,
     };
   }
 
-  private async generateTokens(userId: string, email: string, roleCode: string) {
+  private saveLicenseFile(
+    file: Express.Multer.File,
+    userEmail: string,
+  ): string {
+    const uploadDir = this.configService.get<string>(
+      'LICENSE_STORAGE_PATH',
+      './uploads/licenses',
+    );
+
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const filename = `license_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.pdf`;
+    const filePath = path.join(uploadDir, filename);
+
+    // Save file
+    fs.writeFileSync(filePath, file.buffer);
+
+    // Return relative URL
+    return `/uploads/licenses/${filename}`;
+  }
+
+  private async generateTokens(
+    userId: string,
+    email: string,
+    roleCode: string,
+  ) {
     const payload = { sub: userId, email, role: roleCode };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('jwt.refreshSecret') || 'refresh-secret',
-        expiresIn: this.configService.get<string>('jwt.refreshExpiration') || '7d' as any,
+        secret:
+          this.configService.get<string>('jwt.refreshSecret') ||
+          'refresh-secret',
+        expiresIn:
+          (this.configService.get<string>('jwt.refreshExpiration') as
+            StringValue | undefined) || '7d',
       }),
     ]);
 

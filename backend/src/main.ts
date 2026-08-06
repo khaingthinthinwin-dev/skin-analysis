@@ -6,6 +6,8 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { RateLimitInterceptor } from './common/interceptors/rate-limit.interceptor';
+import { RedisService } from './shared/redis/redis.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -44,14 +46,32 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // Global interceptors
-  app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(),
+    new RateLimitInterceptor(app.get(RedisService)),
+  );
 
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('Skincare Marketplace API')
+    .setTitle('Cosmetics Finder API')
     .setDescription('AI-Powered Skincare Marketplace REST API')
     .setVersion('1.0')
     .addBearerAuth()
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('users', 'User management')
+    .addTag('products', 'Product management')
+    .addTag('orders', 'Order management')
+    .addTag('categories', 'Category management')
+    .addTag('reviews', 'Review management')
+    .addTag('cart', 'Shopping cart')
+    .addTag('wishlist', 'Wishlist management')
+    .addTag('search', 'Search functionality')
+    .addTag('skin-analysis', 'AI Skin analysis')
+    .addTag('promotions', 'Promotion management')
+    .addTag('advertisements', 'Advertisement management')
+    .addTag('admin', 'Admin endpoints')
+    .addTag('analytics', 'Analytics endpoints')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
@@ -62,4 +82,4 @@ async function bootstrap() {
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api/docs`);
 }
-bootstrap();
+void bootstrap();

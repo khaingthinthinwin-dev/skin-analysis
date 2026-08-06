@@ -1,11 +1,27 @@
-import { Controller, Get, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  AuthUser,
+} from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Users')
 @Controller('users')
@@ -17,7 +33,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
-  async getProfile(@CurrentUser() user: any) {
+  async getProfile(@CurrentUser() user: AuthUser) {
     return this.usersService.findById(user.id);
   }
 
@@ -25,7 +41,10 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'User profile updated' })
-  async updateProfile(@CurrentUser() user: any, @Body() updateUserDto: UpdateUserDto) {
+  async updateProfile(
+    @CurrentUser() user: AuthUser,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     return this.usersService.update(user.id, updateUserDto);
   }
 

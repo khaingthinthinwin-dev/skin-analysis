@@ -29,7 +29,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     >
       <div className="flex h-14 items-center justify-between border-b px-4">
         <Link to={ROUTES.HOME} className="font-bold text-lg">
-          SkincareAI
+          Cosmetics Finder
         </Link>
         <Button
           variant="ghost"

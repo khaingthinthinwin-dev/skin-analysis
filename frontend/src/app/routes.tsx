@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router'
+import { createBrowserRouter } from 'react-router'
 import { lazy, Suspense } from 'react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'

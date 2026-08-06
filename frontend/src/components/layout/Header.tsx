@@ -28,7 +28,7 @@ export function Header() {
         {/* Logo */}
         <Link to={ROUTES.HOME} className="flex items-center gap-2 font-bold text-lg">
           <Sparkles className="h-5 w-5 text-primary" />
-          <span>SkincareAI</span>
+          <span>Cosmetics Finder</span>
         </Link>
 
         {/* Desktop Navigation */}

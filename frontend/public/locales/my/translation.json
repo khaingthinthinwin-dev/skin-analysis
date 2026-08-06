@@ -27,23 +27,55 @@
     "login": {
       "title": "အကောင့်ဝင်ရန်",
       "email": "အီးမေးလ်",
+      "emailPlaceholder": "user@example.com",
       "password": "စကားဝှက်",
+      "passwordPlaceholder": "စကားဝှက်ထည့်ပါ",
       "submit": "ဝင်ရန်",
       "submitting": "ဝင်နေသည်...",
+      "success": "အကောင့်ဝင်ခြင်း အောင်မြင်ပါသည်",
       "forgotPassword": "စကားဝှက်မေ့နေပါသလား?",
       "noAccount": "အကောင့်မရှိဘူးလား?",
-      "createAccount": "ဖန်တီးရန်"
+      "createAccount": "ဖန်တီးရန်",
+      "showPassword": "စကားဝှက်ပြရန်",
+      "hidePassword": "စကားဝှက်ဝှက်ရန်"
     },
     "register": {
       "title": "အကောင့်ဖန်တီးရန်",
-      "name": "အမည်",
+      "fullName": "အမည်",
+      "fullNamePlaceholder": "ကိုကိုကြီး",
       "email": "အီးမေးလ်",
+      "emailPlaceholder": "user@example.com",
       "password": "စကားဝှက်",
+      "passwordPlaceholder": "စကားဝှက်ဖန်တီးပါ",
       "confirmPassword": "စကားဝှက်အတည်ပြုရန်",
-      "submit": "ဖန်တီးရန်",
-      "submitting": "ဖန်တီးနေသည်...",
+      "confirmPasswordPlaceholder": "စကားဝှက်ပြန်ထည့်ပါ",
+      "submit": "အကောင့်ဖန်တီးရန်",
+      "submitting": "အကောင့်ဖန်တီးနေသည်...",
+      "success": "အကောင့်ဖန်တီးခြင်း အောင်မြင်ပါသည်",
       "hasAccount": "အကောင့်ရှိပြီးသားလား?",
-      "signIn": "ဝင်ရန်"
+      "signIn": "ဝင်ရန်",
+      "iAm": "ကျွန်ုပ်သည်:",
+      "buyer": "ဝယ်ယူသူ - ထုတ်ကုန်များကို ကြည့်ရှု/ဝယ်ယူရန်",
+      "merchant": "ရောင်းချသူ - အသားအရေထုတ်ကုန်များ ရောင်းချရန်",
+      "showPassword": "စကားဝှက်ပြရန်",
+      "hidePassword": "စကားဝှက်ဝှက်ရန်",
+      "passwordRequirement": {
+        "length": "အနည်းဆုံး စာလုံး ၈ လုံး",
+        "uppercase": "အကြီးကြီး ၁ လုံး (A-Z)",
+        "lowercase": "အသေး ၁ လုံး (a-z)",
+        "number": "ဂဏန်း ၁ လုံး (0-9)",
+        "special": "အထူးသင်္ကေတ ၁ လုံး (@$!%*?&)"
+      },
+      "license": "စီးပွားလုပ်ငန်းလိုင်စင် (PDF)",
+      "licensePlaceholder": "ဆွဲထည့်ပါ သို့မဟုတ် ကလစ်နှိပ်၍ တင်ပါ",
+      "licenseHelper": "စီးပွားလုပ်ငန်းလိုင်စင်ကို PDF ဖြင့် တင်ပါ (အများဆုံး 10MB)။ ဖိုင်အမည်သည် license.pdf ဖြစ်ရမည်။",
+      "licenseRemove": "ဖိုင်ဖျက်ပါ",
+      "licenseError": {
+        "type": "ဖိုင်အမျိုးအစား မပံ့ပိုးပါ။ PDF ဖိုင်များသာလက်ခံပါသည်။",
+        "size": "ဖိုင်အရွယ်အစား 10MB ကျော်လွန်သည်",
+        "name": "ဖိုင်အမည်သည် license.pdf ဖြစ်ရမည်",
+        "required": "ရောင်းချသူမှတ်ပုံတင်ခြင်းအတွက် စီးပွားလုပ်ငန်းလိုင်စင် လိုအပ်ပါသည်"
+      }
     }
   },
   "home": {
@@ -54,7 +86,7 @@
     }
   },
   "footer": {
-    "copyright": "© 2026 SkincareAI. မူပိုင်ခွင့် အားလုံး ထိန်းသိမ်းထားသည်။",
+    "copyright": "© 2026 Cosmetics Finder. မူပိုင်ခွင့် အားလုံး ထိန်းသိမ်းထားသည်။",
     "privacy": "လုံခြုံရေးမူဝါဒ",
     "terms": "ဝန်ဆောင်မှု စည်းမျဉ်းများ"
   }
