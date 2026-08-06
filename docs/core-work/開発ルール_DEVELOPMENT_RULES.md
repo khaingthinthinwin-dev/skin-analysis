@@ -1922,7 +1922,7 @@ APP_CORS_ORIGIN=http://localhost:5173
 APP_ENV=development
 
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/skincare_marketplace
+DATABASE_URL=postgresql://user:password@localhost:5432/cosmetics_finder
 
 # Redis
 REDIS_HOST=localhost
@@ -1951,7 +1951,7 @@ AI_API_URL=
 
 ```bash
 VITE_API_URL=http://localhost:8080/api/v1
-VITE_APP_NAME=Skincare Marketplace
+VITE_APP_NAME=Cosmetics Finder
 VITE_APP_VERSION=0.1.0
 ```
 
@@ -1973,7 +1973,7 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: skincare_marketplace
+      POSTGRES_DB: cosmetics_finder
       POSTGRES_USER: dev_user
       POSTGRES_PASSWORD: dev_password
     ports:
@@ -1992,7 +1992,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgresql://dev_user:dev_password@postgres:5432/skincare_marketplace
+      DATABASE_URL: postgresql://dev_user:dev_password@postgres:5432/cosmetics_finder
       REDIS_HOST: redis
     depends_on:
       - postgres

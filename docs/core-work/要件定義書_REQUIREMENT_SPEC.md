@@ -41,7 +41,7 @@
 **Cosmetics Finder**
 
 ### 1.2 Purpose & objectives (目的と目標)
-The system provides an AI-powered skincare marketplace platform that connects buyers seeking personalized skincare solutions with merchants selling skincare products. The platform features AI skin analysis, smart product recommendations, and a complete e-commerce workflow from browsing to checkout.
+The system provides the Cosmetics Finder platform that connects buyers seeking personalized skincare solutions with merchants selling skincare products. The platform features AI skin analysis, smart product recommendations, and a complete e-commerce workflow from browsing to checkout.
 
 ### 1.3 Business Context (ビジネス背景)
 - **Problem Statement:** Consumers struggle to find skincare products suited to their individual skin types and concerns. Traditional e-commerce lacks personalization, leading to poor product choices and wasted spending.

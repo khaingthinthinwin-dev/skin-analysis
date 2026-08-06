@@ -1,4 +1,4 @@
-// Prisma Schema for AI-Powered Skincare Marketplace
+// Prisma Schema for Cosmetics Finder
 
 generator client {
   provider = "prisma-client-js"

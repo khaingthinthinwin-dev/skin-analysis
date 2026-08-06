@@ -1,4 +1,4 @@
-# AI-Powered Skincare Marketplace
+# Cosmetics Finder
 
 A full-stack marketplace platform connecting buyers with skincare merchants, powered by AI skin analysis and smart product recommendations.
 

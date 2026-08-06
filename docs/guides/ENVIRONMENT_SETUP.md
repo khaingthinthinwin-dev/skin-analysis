@@ -1,6 +1,6 @@
 # Environment Setup Guide (環境構築ガイド)
 
-# AI-Powered Skincare Marketplace
+# Cosmetics Finder
 # Environment Setup Guide
 
 **OS:** Windows 10/11  
@@ -352,10 +352,10 @@ psql -U postgres -h 127.0.0.1 -c "SELECT 1 AS test;"
 
 ```powershell
 # Create the database
-psql -U postgres -h 127.0.0.1 -c "CREATE DATABASE skincare_marketplace;"
+psql -U postgres -h 127.0.0.1 -c "CREATE DATABASE cosmetics_finder;"
 
 # Grant all privileges
-psql -U postgres -h 127.0.0.1 -c "GRANT ALL PRIVILEGES ON DATABASE skincare_marketplace TO postgres;"
+psql -U postgres -h 127.0.0.1 -c "GRANT ALL PRIVILEGES ON DATABASE cosmetics_finder TO postgres;"
 ```
 
 **Expected output for each command:**
@@ -386,14 +386,14 @@ pg_ctl reload -D "C:\Program Files\PostgreSQL\16\data"
 ### Verify the database was created
 
 ```powershell
-psql -U postgres -h 127.0.0.1 -d skincare_marketplace -c "SELECT current_database();"
+psql -U postgres -h 127.0.0.1 -d cosmetics_finder -c "SELECT current_database();"
 ```
 
 **Expected output:**
 ```
   current_database
 -------------------
- skincare_marketplace
+ cosmetics_finder
 (1 row)
 ```
 
@@ -424,12 +424,12 @@ Edit `.env` with your configuration:
 
 ```env
 # ==========================================
-# AI-Powered Skincare Marketplace
+# Cosmetics Finder
 # Backend Environment Configuration
 # ==========================================
 
 # --- Database (PostgreSQL) ---
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/skincare_marketplace?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/cosmetics_finder?schema=public"
 
 # --- Redis ---
 REDIS_URL="redis://localhost:6379"
@@ -512,7 +512,7 @@ Edit `.env`:
 
 ```env
 # ==========================================
-# AI-Powered Skincare Marketplace
+# Cosmetics Finder
 # Frontend Environment Configuration
 # ==========================================
 
@@ -646,7 +646,7 @@ Run this complete verification script in PowerShell to confirm everything is rea
 ```powershell
 Write-Host "========================================"
 Write-Host " ENVIRONMENT VERIFICATION REPORT"
-Write-Host " AI-Powered Skincare Marketplace"
+Write-Host " Cosmetics Finder"
 Write-Host "========================================"
 Write-Host ""
 
@@ -663,7 +663,7 @@ Write-Host "3. Git:        $(git --version)"
 Write-Host "4. PostgreSQL: $(psql --version)"
 
 # 5. Database Connection Test
-$dbTest = psql -U postgres -h 127.0.0.1 -d skincare_marketplace -t -c "SELECT 'OK: ' || current_database();"
+$dbTest = psql -U postgres -h 127.0.0.1 -d cosmetics_finder -t -c "SELECT 'OK: ' || current_database();"
 Write-Host "   DB Connection: $($dbTest.Trim())"
 
 # 6. Redis
@@ -687,14 +687,14 @@ Write-Host "========================================"
 ```
 ========================================
  ENVIRONMENT VERIFICATION REPORT
- AI-Powered Skincare Marketplace
+ Cosmetics Finder
 ========================================
 
 1. Node.js:    v22.x.x
 2. npm:        10.x.x
 3. Git:        git version 2.x.x.windows.1
 4. PostgreSQL: psql (PostgreSQL) 16.x
-   DB Connection: OK: skincare_marketplace
+   DB Connection: OK: cosmetics_finder
 5. Redis:      PING -> PONG
 6. Backend .env:  EXISTS
 7. .gitignore: EXISTS
@@ -824,7 +824,7 @@ npm run dev
 
 | Service | Host | Port | Username | Password | Database |
 |---------|------|------|----------|----------|----------|
-| PostgreSQL | localhost | 5432 | postgres | (your password) | skincare_marketplace |
+| PostgreSQL | localhost | 5432 | postgres | (your password) | cosmetics_finder |
 | Redis | localhost | 6379 | — | *(none in dev)* | — |
 | Backend API | localhost | 8080 | — | — | — |
 | Frontend | localhost | 3000 | — | — | — |

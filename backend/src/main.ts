@@ -55,7 +55,7 @@ async function bootstrap() {
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Cosmetics Finder API')
-    .setDescription('AI-Powered Skincare Marketplace REST API')
+    .setDescription('Cosmetics Finder REST API')
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('auth', 'Authentication endpoints')

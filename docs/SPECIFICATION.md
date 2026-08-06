@@ -1,11 +1,11 @@
 # Full Stack Starter Skill Specification
-## AI-Powered Skincare Marketplace Platform
+## Cosmetics Finder
 
 ---
 
 ## 1. Executive Summary
 
-This specification defines a reusable, implementation-ready architecture for an **AI-powered skincare marketplace** platform. The platform connects buyers seeking personalized skincare solutions with merchants selling skincare products, powered by AI skin analysis and smart product recommendations.
+This specification defines a reusable, implementation-ready architecture for the **Cosmetics Finder** platform. The platform connects buyers seeking personalized skincare solutions with merchants selling skincare products, powered by AI skin analysis and smart product recommendations.
 
 ### Platform Capabilities
 
