@@ -3,11 +3,11 @@ import { APP_NAME, API_BASE_URL, TOKEN_KEYS, ROUTES, SUPPORTED_LANGUAGES, THEME_
 
 describe('Constants', () => {
   it('has correct APP_NAME', () => {
-    expect(APP_NAME).toBe('SkincareAI')
+    expect(APP_NAME).toBe('Cosmetics Finder')
   })
 
   it('has correct API_BASE_URL', () => {
-    expect(API_BASE_URL).toBe('http://localhost:8080/api/v1')
+    expect(API_BASE_URL).toBe('http://localhost:8080/api')
   })
 
   it('has correct TOKEN_KEYS', () => {
