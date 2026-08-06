@@ -9,7 +9,7 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { RedisService } from '../../shared/redis/redis.service';
-import { ERROR_CODES } from '../constants/error-codes';
+import { Request, Response } from 'express';
 
 interface RateLimitConfig {
   windowMs: number;
@@ -30,25 +30,33 @@ const STRICT_CONFIG: RateLimitConfig = {
 export class RateLimitInterceptor implements NestInterceptor {
   constructor(private readonly redisService: RedisService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const response = context.switchToHttp().getResponse<Response>();
 
-    const ip = request.ip || request.connection.remoteAddress;
-    const path = request.route?.path || request.url;
+    const ip =
+      request.ip ||
+      (request.socket && 'remoteAddress' in request.socket
+        ? request.socket.remoteAddress
+        : undefined) ||
+      'unknown';
+    const path =
+      'route' in request && request.route && typeof request.route === 'object'
+        ? (request.route as { path?: string }).path || request.url
+        : request.url;
     const config = this.getRateLimitConfig(path);
 
     return next.handle().pipe(
       tap({
         next: () => {
-          this.addRateLimitHeaders(response, ip, path, config);
+          void this.addRateLimitHeaders(response, ip, path, config);
         },
-        error: (error) => {
+        error: (error: unknown) => {
           if (
             error instanceof HttpException &&
-            error.getStatus() === HttpStatus.TOO_MANY_REQUESTS
+            error.getStatus() === Number(HttpStatus.TOO_MANY_REQUESTS)
           ) {
-            this.addRateLimitHeaders(response, ip, path, config);
+            void this.addRateLimitHeaders(response, ip, path, config);
           }
         },
       }),
@@ -64,7 +72,7 @@ export class RateLimitInterceptor implements NestInterceptor {
   }
 
   private async addRateLimitHeaders(
-    response: any,
+    response: Response,
     ip: string,
     path: string,
     config: RateLimitConfig,

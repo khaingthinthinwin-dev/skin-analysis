@@ -4,7 +4,6 @@ import {
   Body,
   Get,
   UseGuards,
-  Request,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
@@ -18,13 +17,17 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  AuthUser,
+} from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -120,10 +123,10 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 200, description: 'User logged out successfully' })
-  async logout(@Request() req: any) {
+  async logout(@CurrentUser() user: AuthUser, req: Request) {
     const authHeader = req.headers.authorization;
-    const accessToken = authHeader?.replace('Bearer ', '');
-    return this.authService.logout(req.user.id, accessToken);
+    const accessToken = authHeader?.replace('Bearer ', '') ?? '';
+    return this.authService.logout(user.id, accessToken);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -132,7 +135,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify token and get user' })
   @ApiResponse({ status: 200, description: 'Token verified successfully' })
   @ApiResponse({ status: 401, description: 'Invalid token' })
-  async verify(@CurrentUser() user: any) {
+  async verify(@CurrentUser() user: AuthUser) {
     return this.authService.verifyToken(user.id);
   }
 }

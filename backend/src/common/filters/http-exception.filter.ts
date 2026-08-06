@@ -19,7 +19,7 @@ interface ErrorResponse {
   message: string | string[];
   timestamp: string;
   path: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 @Catch()
@@ -36,16 +36,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let errorCode: string = ERROR_CODES.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
-    let details: Record<string, any> | undefined;
+    let details: Record<string, unknown> | undefined;
 
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
 
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const responseObj = exceptionResponse as Record<string, any>;
+        const responseObj = exceptionResponse as Record<string, unknown>;
 
         // Use custom error code if provided
-        if (responseObj.errorCode) {
+        if (typeof responseObj.errorCode === 'string') {
           errorCode = responseObj.errorCode;
         } else {
           // Map HTTP status to error code
@@ -54,8 +54,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
         // Get message from response
         if (Array.isArray(responseObj.message)) {
-          message = responseObj.message;
-        } else if (responseObj.message) {
+          message = responseObj.message as string[];
+        } else if (typeof responseObj.message === 'string') {
           message = responseObj.message;
         } else if (typeof exceptionResponse === 'string') {
           message = exceptionResponse;
@@ -96,21 +96,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private getErrorCodeFromStatus(status: number): string {
     switch (status) {
-      case HttpStatus.BAD_REQUEST:
+      case Number(HttpStatus.BAD_REQUEST):
         return ERROR_CODES.VALIDATION_FAILED;
-      case HttpStatus.UNAUTHORIZED:
+      case Number(HttpStatus.UNAUTHORIZED):
         return ERROR_CODES.AUTH_INVALID_CREDENTIALS;
-      case HttpStatus.FORBIDDEN:
+      case Number(HttpStatus.FORBIDDEN):
         return ERROR_CODES.RESOURCE_FORBIDDEN;
-      case HttpStatus.NOT_FOUND:
+      case Number(HttpStatus.NOT_FOUND):
         return ERROR_CODES.RESOURCE_NOT_FOUND;
-      case HttpStatus.CONFLICT:
+      case Number(HttpStatus.CONFLICT):
         return ERROR_CODES.RESOURCE_CONFLICT;
-      case HttpStatus.TOO_MANY_REQUESTS:
+      case Number(HttpStatus.TOO_MANY_REQUESTS):
         return ERROR_CODES.RATE_LIMIT_EXCEEDED;
-      case HttpStatus.INTERNAL_SERVER_ERROR:
+      case Number(HttpStatus.INTERNAL_SERVER_ERROR):
         return ERROR_CODES.INTERNAL_SERVER_ERROR;
-      case HttpStatus.SERVICE_UNAVAILABLE:
+      case Number(HttpStatus.SERVICE_UNAVAILABLE):
         return ERROR_CODES.SERVICE_UNAVAILABLE;
       default:
         return ERROR_CODES.INTERNAL_SERVER_ERROR;
