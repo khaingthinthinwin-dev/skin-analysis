@@ -1,5 +1,12 @@
-import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  MaxLength,
+  IsIn,
+  IsOptional,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
   @ApiProperty({ example: 'john@example.com' })
@@ -16,4 +23,15 @@ export class RegisterDto {
   @IsString()
   @MinLength(8)
   password: string;
+
+  @ApiPropertyOptional({
+    example: 'buyer',
+    enum: ['buyer', 'merchant'],
+    default: 'buyer',
+  })
+  @IsOptional()
+  @IsIn(['buyer', 'merchant'], {
+    message: 'Role must be either buyer or merchant',
+  })
+  role?: 'buyer' | 'merchant';
 }

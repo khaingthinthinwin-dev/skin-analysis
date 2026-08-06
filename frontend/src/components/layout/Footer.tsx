@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { Sparkles } from 'lucide-react'
-import { ROUTES } from '@/lib/constants'
 
 export function Footer() {
   const { t } = useTranslation()
@@ -11,7 +10,7 @@ export function Footer() {
         <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <span className="font-bold">SkincareAI</span>
+            <span className="font-bold">Cosmetics Finder</span>
           </div>
           <p className="text-sm text-muted-foreground">{t('footer.copyright')}</p>
           <div className="flex gap-4 text-sm text-muted-foreground">

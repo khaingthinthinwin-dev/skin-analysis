@@ -63,6 +63,8 @@ model User {
   roleCode      String   @default("buyer") @map("role")
   avatarUrl     String?  @map("avatar_url")
   phone         String?
+  licenseUrl    String?  @map("license_url")
+  licenseStatus String?  @default("pending") @map("license_status")
   isActive      Boolean  @default(true) @map("is_active")
   emailVerified Boolean  @default(false) @map("email_verified")
   createdAt     DateTime @default(now()) @map("created_at")

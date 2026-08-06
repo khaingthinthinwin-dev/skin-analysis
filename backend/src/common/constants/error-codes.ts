@@ -1,0 +1,81 @@
+export const ERROR_CODES = {
+  // Authentication errors (1xxx)
+  AUTH_INVALID_CREDENTIALS: 'AUTH_001',
+  AUTH_TOKEN_EXPIRED: 'AUTH_002',
+  AUTH_TOKEN_INVALID: 'AUTH_003',
+  AUTH_ACCOUNT_DEACTIVATED: 'AUTH_004',
+  AUTH_EMAIL_NOT_VERIFIED: 'AUTH_005',
+  AUTH_TOO_MANY_ATTEMPTS: 'AUTH_006',
+  AUTH_EMAIL_ALREADY_EXISTS: 'AUTH_007',
+  AUTH_REFRESH_TOKEN_INVALID: 'AUTH_008',
+
+  // Validation errors (2xxx)
+  VALIDATION_FAILED: 'VAL_001',
+  VALIDATION_EMAIL_INVALID: 'VAL_002',
+  VALIDATION_PASSWORD_WEAK: 'VAL_003',
+  VALIDATION_NAME_TOO_LONG: 'VAL_004',
+  VALIDATION_REQUIRED_FIELD: 'VAL_005',
+
+  // Resource errors (3xxx)
+  RESOURCE_NOT_FOUND: 'RES_001',
+  RESOURCE_ALREADY_EXISTS: 'RES_002',
+  RESOURCE_CONFLICT: 'RES_003',
+  RESOURCE_FORBIDDEN: 'RES_004',
+
+  // Database errors (4xxx)
+  DATABASE_ERROR: 'DB_001',
+  DATABASE_CONSTRAINT_VIOLATION: 'DB_002',
+  DATABASE_CONNECTION_ERROR: 'DB_003',
+
+  // External service errors (5xxx)
+  EXTERNAL_SERVICE_ERROR: 'EXT_001',
+  AI_SERVICE_ERROR: 'EXT_002',
+  STORAGE_SERVICE_ERROR: 'EXT_003',
+
+  // Rate limiting (6xxx)
+  RATE_LIMIT_EXCEEDED: 'RATE_001',
+
+  // General errors (9xxx)
+  INTERNAL_SERVER_ERROR: 'SYS_001',
+  SERVICE_UNAVAILABLE: 'SYS_002',
+  NOT_IMPLEMENTED: 'SYS_003',
+} as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+
+export const ERROR_MESSAGES: Record<ErrorCode, string> = {
+  [ERROR_CODES.AUTH_INVALID_CREDENTIALS]: 'Invalid email or password',
+  [ERROR_CODES.AUTH_TOKEN_EXPIRED]: 'Token has expired',
+  [ERROR_CODES.AUTH_TOKEN_INVALID]: 'Invalid token',
+  [ERROR_CODES.AUTH_ACCOUNT_DEACTIVATED]: 'Account is deactivated',
+  [ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED]: 'Email not verified',
+  [ERROR_CODES.AUTH_TOO_MANY_ATTEMPTS]:
+    'Too many attempts, please try again later',
+  [ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS]: 'Email already registered',
+  [ERROR_CODES.AUTH_REFRESH_TOKEN_INVALID]: 'Invalid refresh token',
+
+  [ERROR_CODES.VALIDATION_FAILED]: 'Validation failed',
+  [ERROR_CODES.VALIDATION_EMAIL_INVALID]: 'Invalid email format',
+  [ERROR_CODES.VALIDATION_PASSWORD_WEAK]: 'Password does not meet requirements',
+  [ERROR_CODES.VALIDATION_NAME_TOO_LONG]: 'Name is too long',
+  [ERROR_CODES.VALIDATION_REQUIRED_FIELD]: 'Required field is missing',
+
+  [ERROR_CODES.RESOURCE_NOT_FOUND]: 'Resource not found',
+  [ERROR_CODES.RESOURCE_ALREADY_EXISTS]: 'Resource already exists',
+  [ERROR_CODES.RESOURCE_CONFLICT]: 'Resource conflict',
+  [ERROR_CODES.RESOURCE_FORBIDDEN]: 'Access denied',
+
+  [ERROR_CODES.DATABASE_ERROR]: 'Database error',
+  [ERROR_CODES.DATABASE_CONSTRAINT_VIOLATION]: 'Data constraint violation',
+  [ERROR_CODES.DATABASE_CONNECTION_ERROR]: 'Database connection error',
+
+  [ERROR_CODES.EXTERNAL_SERVICE_ERROR]: 'External service error',
+  [ERROR_CODES.AI_SERVICE_ERROR]: 'AI service error',
+  [ERROR_CODES.STORAGE_SERVICE_ERROR]: 'Storage service error',
+
+  [ERROR_CODES.RATE_LIMIT_EXCEEDED]: 'Rate limit exceeded',
+
+  [ERROR_CODES.INTERNAL_SERVER_ERROR]: 'Internal server error',
+  [ERROR_CODES.SERVICE_UNAVAILABLE]: 'Service unavailable',
+  [ERROR_CODES.NOT_IMPLEMENTED]: 'Not implemented',
+};

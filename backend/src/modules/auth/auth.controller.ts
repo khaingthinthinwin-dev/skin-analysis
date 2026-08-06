@@ -5,12 +5,18 @@ import {
   Get,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -27,11 +33,68 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @UseInterceptors(
+    FileInterceptor('license', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      fileFilter: (_req, file, cb) => {
+        if (file && file.mimetype !== 'application/pdf') {
+          return cb(
+            new BadRequestException('Only PDF files are accepted'),
+            false,
+          );
+        }
+        if (file && file.originalname.toLowerCase() !== 'license.pdf') {
+          return cb(
+            new BadRequestException('File must be named license.pdf'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
   @ApiOperation({ summary: 'Register a new user' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email' },
+        name: { type: 'string' },
+        password: { type: 'string', minLength: 8 },
+        role: { type: 'string', enum: ['buyer', 'merchant'], default: 'buyer' },
+        license: {
+          type: 'string',
+          format: 'binary',
+          description: 'Business license PDF (required for merchant)',
+        },
+      },
+      required: ['email', 'name', 'password'],
+    },
+  })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or invalid license file',
+  })
   @ApiResponse({ status: 409, description: 'Email already registered' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(
+    @Body() registerDto: RegisterDto,
+    @UploadedFile() license?: Express.Multer.File,
+  ) {
+    // Validate license file for merchant
+    if (registerDto.role === 'merchant' && !license) {
+      throw new BadRequestException(
+        'Business license is required for merchant registration',
+      );
+    }
+    if (registerDto.role === 'buyer' && license) {
+      throw new BadRequestException(
+        'License file is not allowed for buyer registration',
+      );
+    }
+
+    return this.authService.register(registerDto, license);
   }
 
   @Public()

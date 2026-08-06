@@ -27,23 +27,55 @@
     "login": {
       "title": "Sign In",
       "email": "Email",
+      "emailPlaceholder": "user@example.com",
       "password": "Password",
+      "passwordPlaceholder": "Enter your password",
       "submit": "Sign In",
       "submitting": "Signing in...",
+      "success": "Logged in successfully",
       "forgotPassword": "Forgot password?",
       "noAccount": "Don't have an account?",
-      "createAccount": "Create one"
+      "createAccount": "Create one",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
     },
     "register": {
       "title": "Create Account",
-      "name": "Full Name",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "John Doe",
       "email": "Email",
+      "emailPlaceholder": "user@example.com",
       "password": "Password",
+      "passwordPlaceholder": "Create a password",
       "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
       "submit": "Create Account",
       "submitting": "Creating account...",
+      "success": "Account created successfully",
       "hasAccount": "Already have an account?",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "iAm": "I am a:",
+      "buyer": "Buyer - Browse and purchase products",
+      "merchant": "Merchant - Sell skincare products",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "passwordRequirement": {
+        "length": "At least 8 characters",
+        "uppercase": "One uppercase letter (A-Z)",
+        "lowercase": "One lowercase letter (a-z)",
+        "number": "One number (0-9)",
+        "special": "One special character (@$!%*?&)"
+      },
+      "license": "Business License (PDF)",
+      "licensePlaceholder": "Drag & drop or click to upload",
+      "licenseHelper": "Upload your business license as PDF (max 10MB). File must be named license.pdf.",
+      "licenseRemove": "Remove file",
+      "licenseError": {
+        "type": "File type not supported. Only PDF files are accepted.",
+        "size": "File exceeds maximum size of 10 MB",
+        "name": "File must be named license.pdf",
+        "required": "Business license is required for merchant registration"
+      }
     }
   },
   "home": {
@@ -54,7 +86,7 @@
     }
   },
   "footer": {
-    "copyright": "© 2026 SkincareAI. All rights reserved.",
+    "copyright": "© 2026 Cosmetics Finder. All rights reserved.",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service"
   }

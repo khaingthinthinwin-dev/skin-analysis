@@ -2,10 +2,13 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
+import * as fs from 'fs';
+import * as path from 'path';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -22,8 +25,8 @@ export class AuthService {
     private redis: RedisService,
   ) {}
 
-  async register(registerDto: RegisterDto) {
-    const { email, password, name } = registerDto;
+  async register(registerDto: RegisterDto, license?: Express.Multer.File) {
+    const { email, password, name, role = 'buyer' } = registerDto;
 
     // Check if user exists
     const existingUser = await this.usersService.findByEmail(email);
@@ -34,12 +37,20 @@ export class AuthService {
     // Hash password
     const passwordHash = await argon2.hash(password);
 
+    // Handle license file upload for merchant
+    let licenseUrl: string | null = null;
+    if (role === 'merchant' && license) {
+      licenseUrl = await this.saveLicenseFile(license, email);
+    }
+
     // Create user
     const user = await this.usersService.create({
       email,
       name,
       passwordHash,
-      roleCode: 'buyer',
+      roleCode: role,
+      licenseUrl,
+      licenseStatus: role === 'merchant' ? 'pending' : null,
     });
 
     // Generate tokens
@@ -58,6 +69,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
+        licenseUrl: user.licenseUrl,
       },
       ...tokens,
     };
@@ -94,6 +106,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
+        licenseUrl: user.licenseUrl,
       },
       ...tokens,
     };
@@ -187,7 +200,34 @@ export class AuthService {
       name: user.name,
       role: user.roleCode,
       avatarUrl: user.avatarUrl,
+      licenseUrl: user.licenseUrl,
     };
+  }
+
+  private async saveLicenseFile(
+    file: Express.Multer.File,
+    userEmail: string,
+  ): Promise<string> {
+    const uploadDir = this.configService.get<string>(
+      'LICENSE_STORAGE_PATH',
+      './uploads/licenses',
+    );
+
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const filename = `license_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.pdf`;
+    const filePath = path.join(uploadDir, filename);
+
+    // Save file
+    fs.writeFileSync(filePath, file.buffer);
+
+    // Return relative URL
+    return `/uploads/licenses/${filename}`;
   }
 
   private async generateTokens(

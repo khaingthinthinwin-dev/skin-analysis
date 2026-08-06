@@ -55,4 +55,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const result = await this.client.exists(`blacklist:${token}`);
     return result === 1;
   }
+
+  getClient(): Redis {
+    return this.client;
+  }
 }

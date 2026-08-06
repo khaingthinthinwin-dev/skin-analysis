@@ -10,9 +10,9 @@
 | **Target Screen** | Sign-up / Login (新規登録 / ログイン) |
 | **Subsystem** | Authentication — User Registration & Session Management |
 | **Function ID** | FN-AUTH-001 |
-| **Version** | 2.0 |
+| **Version** | 3.0 |
 | **Created** | 2026-08-04 |
-| **Last Updated** | 2026-08-04 |
+| **Last Updated** | 2026-08-05 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -25,6 +25,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-04 | Software Architect | Initial functional specification for Sign-up and Login pages covering use cases, business rules, validation, error handling, and permission control. |
 | 2.0 | 2026-08-04 | Software Architect | Updated structure to fully conform to standard functional specification template, integrating detailed specifications from Requirement, Database, and Development Rules documents. |
+| 3.0 | 2026-08-05 | Software Architect | Added merchant license file upload feature. When role = merchant, user must upload business license PDF (license.pdf, max 10MB). Includes use case, business rules, validation, and API changes. |
 
 ---
 
@@ -61,12 +62,13 @@ This subsystem is the gateway to all platform functionality. It is responsible f
 This screen is responsible for the following core functional areas:
 
 1. **User Registration** — Enabling new users to create accounts with email, password, name, and role selection (Buyer or Merchant).
-2. **User Authentication** — Validating user credentials and issuing JWT access tokens (15-minute expiry) and refresh tokens (7-day expiry).
-3. **Session Management** — Managing token refresh, rotation, and revocation with family tracking for breach detection.
-4. **Token Blacklisting** — Implementing Redis-based token blacklisting for secure logout.
-5. **Password Security** — Hashing passwords with Argon2id algorithm (64MB memory, 3 iterations, 4 threads).
-6. **Rate Limiting** — Protecting authentication endpoints from brute-force attacks.
-7. **Account Verification** — Verifying token validity for protected route access.
+2. **Merchant License Upload** — When registering as a Merchant, users must upload a business license PDF file (license.pdf, max 10MB).
+3. **User Authentication** — Validating user credentials and issuing JWT access tokens (15-minute expiry) and refresh tokens (7-day expiry).
+4. **Session Management** — Managing token refresh, rotation, and revocation with family tracking for breach detection.
+5. **Token Blacklisting** — Implementing Redis-based token blacklisting for secure logout.
+6. **Password Security** — Hashing passwords with Argon2id algorithm (64MB memory, 3 iterations, 4 threads).
+7. **Rate Limiting** — Protecting authentication endpoints from brute-force attacks.
+8. **Account Verification** — Verifying token validity for protected route access.
 
 ### 1.3 Target Users
 
@@ -104,6 +106,7 @@ This screen is responsible for the following core functional areas:
 | `password` | User Input | Password for registration or login |
 | `name` | User Input | Full name for registration |
 | `role` | User Input | Role selection (buyer/merchant) for registration |
+| `license` | File Upload | Business license PDF (merchant only, max 10MB) |
 | `refreshToken` | HTTP Cookie | Refresh token for session operations |
 
 | Output Information | Data Category | Destination / Description |
@@ -111,6 +114,7 @@ This screen is responsible for the following core functional areas:
 | `accessToken` | JWT Token | Returned in response body for API authorization |
 | `refreshToken` | HTTP Cookie | Set as httpOnly cookie for session management |
 | `user` | User DTO | User profile data (excluding password hash) |
+| `licenseUrl` | URL | Path to uploaded license file (merchant only) |
 | `blacklist` | Redis Key | Token revocation record for logout |
 
 ### 1.6 Related Documents
@@ -130,6 +134,7 @@ This screen is responsible for the following core functional areas:
 | UC-ID | Use Case Name | Precondition | Postcondition | Triggering Actor |
 |-------|---------------|--------------|---------------|------------------|
 | UC-AUTH-001 | Register New Account | User is not authenticated. | New user record created in `users` table with hashed password. User redirected to login page. | Visitor |
+| UC-AUTH-001A | Upload Merchant License | User selects "Merchant" role during registration. | License PDF file uploaded and stored. File path saved to user record. | Visitor |
 | UC-AUTH-002 | Login with Credentials | User has existing account. | JWT access token issued. Refresh token set as httpOnly cookie. User redirected to home page. | Visitor |
 | UC-AUTH-003 | Refresh Access Token | Valid refresh token exists in httpOnly cookie. | New access token issued. Old refresh token revoked and new one issued (rotation). | Authenticated User |
 | UC-AUTH-004 | Logout | User is authenticated. | Access token blacklisted in Redis. Refresh token revoked. User redirected to login page. | Authenticated User |
@@ -269,6 +274,10 @@ This screen is responsible for the following core functional areas:
 | BR-AUTH-003 | Role Restriction | Only 'buyer' or 'merchant' roles allowed during registration. | Backend (DTO validation) |
 | BR-AUTH-004 | Default Role | If role not specified, defaults to 'buyer'. | Backend (service logic) |
 | BR-AUTH-005 | Email Verification | New users have `emailVerified = false`. | Backend (user creation) |
+| BR-AUTH-020 | Merchant License Required | When role = 'merchant', license file upload is mandatory. | Backend (DTO validation) + Frontend (conditional validation) |
+| BR-AUTH-021 | License File Type | License file must be PDF format only. | Backend (file validation) + Frontend (accept attribute) |
+| BR-AUTH-022 | License File Name | License file must be named 'license.pdf' (case-insensitive). | Backend (file validation) + Frontend (file name check) |
+| BR-AUTH-023 | License File Size | License file must not exceed 10MB. | Backend (file validation) + Frontend (size check) |
 
 ### 4.2 Login Rules
 
@@ -354,6 +363,11 @@ This screen is responsible for the following core functional areas:
 | EL-23 | Role Selection | Radio Group | `auth.iAm` | Yes | "I am a:" |
 | EL-24 | Buyer Radio | Radio Button | `auth.buyer` | Yes | "Buyer" - Browse and purchase |
 | EL-25 | Merchant Radio | Radio Button | `auth.merchant` | Yes | "Merchant" - Sell products |
+| EL-30 | License Label | Label | `auth.license` | Conditional | "Business License (PDF)" — shown when Merchant selected |
+| EL-31 | License Upload | File Input | `auth.licensePlaceholder` | Conditional | PDF upload with drag & drop zone — shown when Merchant selected |
+| EL-32 | License Helper | Helper Text | `auth.licenseHelper` | No | "Upload your business license as PDF (max 10MB). File must be named license.pdf." |
+| EL-33 | License File Name | Text | — | No | Displays uploaded filename "license.pdf" |
+| EL-34 | Remove License | Icon Button | `auth.licenseRemove` | No | Remove uploaded file and show upload zone again |
 | EL-26 | Create Account Button | Button (primary) | `auth.createAccount` | Yes | Submit registration |
 | EL-27 | Log In Link | Link | `auth.hasAccount` | No | "Already have an account? Log In" |
 | EL-28 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
@@ -364,6 +378,7 @@ This screen is responsible for the following core functional areas:
 - Buyer radio selected by default
 - Create Account button disabled until form is valid
 - Password requirements shown below password field
+- License upload field hidden (shown only when Merchant selected)
 
 ---
 
@@ -375,10 +390,10 @@ This screen is responsible for the following core functional areas:
 |-----------|---------------|
 | **Trigger** | "Create Account" button click on Register form |
 | **API Endpoint** | `POST /api/v1/auth/register` |
-| **Request Content-Type** | `application/json` |
-| **Pre-Submission Validation** | Full field validation (Zod schema) |
-| **Processing Steps** | 1. Validate email format and uniqueness. 2. Validate password strength. 3. Hash password with Argon2. 4. Create user record. 5. Return user DTO (exclude password). 6. Log USER_REGISTERED event. |
-| **Success Response** | 201 Created with user data |
+| **Request Content-Type** | `multipart/form-data` (when license file attached) or `application/json` |
+| **Pre-Submission Validation** | Full field validation (Zod schema). If role = merchant, license file validation. |
+| **Processing Steps** | 1. Validate email format and uniqueness. 2. Validate password strength. 3. If role = merchant, validate license file (PDF, named license.pdf, ≤10MB). 4. Hash password with Argon2. 5. Upload license file to storage. 6. Create user record with license_url. 7. Return user DTO (exclude password). 8. Log USER_REGISTERED event. |
+| **Success Response** | 201 Created with user data (including licenseUrl for merchants) |
 | **Post-Action** | Redirect to login page |
 
 ### 6.2 Operation: User Login
@@ -441,6 +456,7 @@ This screen is responsible for the following core functional areas:
 | `password` | Password | パスワード | VARCHAR(128) | Yes | Input (password) | `@MinLength(8)`, `@MaxLength(128)`, regex |
 | `name` | Full Name | 氏名 | VARCHAR(200) | Yes | Input (text) | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(200)` |
 | `role` | Role | ロール | ENUM | No | Radio Group | `@IsIn(['buyer', 'merchant'])`, default 'buyer' |
+| `license` | Business License | 事業許可書 | File (PDF) | Conditional | File Input | MIME: application/pdf, MaxSize: 10MB, FileName: license.pdf |
 
 ### 7.2 Input Specification — Login (入力定義)
 
@@ -469,6 +485,7 @@ This screen is responsible for the following core functional areas:
 | `name` | `users.name` | String |
 | `role` | `users.role` | Role enum string |
 | `emailVerified` | `users.email_verified` | Boolean |
+| `licenseUrl` | `users.license_url` | URL string or null (merchant only) |
 | `createdAt` | `users.created_at` | ISO 8601 timestamp |
 
 ---
@@ -481,6 +498,7 @@ This screen is responsible for the following core functional areas:
 |-------|-----------------|--------------------|--------------------|
 | `email` | Required, valid email format, max 255 chars | "Email is required" / "Invalid email address" | "メールアドレスは必須です" / "メールアドレスが無効です" |
 | `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" / "Password must contain uppercase, lowercase, number, and special character" | "パスワードは8文字以上である必要があります" / "パスワードには大文字、小文字、数字、特殊文字を含めてください" |
+| `license` | Required when role = merchant. PDF only, named license.pdf, max 10MB | "Business license is required for merchant registration" / "File must be PDF format" / "File must be named license.pdf" / "File size must not exceed 10MB" | " Merchant登録には事業許可書が必要です" / "ファイルはPDF形式である必要があります" / "ファイル名はlicense.pdfである必要があります" / "ファイルサイズは10MB以下である必要があります" |
 | `name` | Required, 1-200 chars | "Name is required" | "名前は必須です" |
 | `role` | Optional, must be 'buyer' or 'merchant' | "Invalid role" | "無効なロールです" |
 
@@ -528,6 +546,10 @@ Minimum Requirements:
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
 | `400` | `BAD_REQUEST` | Validation failures | Field-level inline errors + top banner |
+| `400` | `VALIDATION_ERROR` | License file not PDF | "File must be PDF format" |
+| `400` | `VALIDATION_ERROR` | License file not named license.pdf | "File must be named license.pdf" |
+| `400` | `VALIDATION_ERROR` | License file exceeds 10MB | "File size must not exceed 10MB" |
+| `400` | `VALIDATION_ERROR` | License file missing for merchant | "Business license is required for merchant registration" |
 | `409` | `CONFLICT` | Email already exists | "Email already registered" with link to login |
 | `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded | "Too many attempts. Please wait {seconds} seconds" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
@@ -662,6 +684,7 @@ Upon successful login, the frontend establishes WebSocket connection:
 | Page Load (Initial Render) | ≤ 2 seconds |
 | Login API Response | ≤ 500 milliseconds |
 | Registration API Response | ≤ 1 second |
+| License File Upload | ≤ 3 seconds (10MB PDF) |
 | Token Refresh Response | ≤ 200 milliseconds |
 | Password Hashing (Argon2) | ≤ 1 second |
 
@@ -674,6 +697,7 @@ Upon successful login, the frontend establishes WebSocket connection:
 | Token Theft | httpOnly cookies, Secure flag, SameSite=Strict |
 | Session Hijacking | Token rotation, family tracking, reuse detection |
 | CSRF | SameSite cookies, CORS restrictions |
+| Malicious File Upload | PDF-only validation, file size limit (10MB), filename validation (license.pdf) |
 
 ### 13.3 Responsive Design Requirements
 
@@ -701,6 +725,10 @@ Defined via `.env` configuration:
 | `ARGON2_PARALLELISM` | `4` | Argon2 parallel threads |
 | `RATE_LIMIT_LOGIN` | `5` | Max login attempts per window |
 | `RATE_LIMIT_WINDOW` | `300` | Rate limit window in seconds |
+| `LICENSE_MAX_SIZE` | `10485760` | Maximum license file size in bytes (10MB) |
+| `LICENSE_ALLOWED_TYPES` | `['application/pdf']` | Allowed MIME types for license upload |
+| `LICENSE_ALLOWED_FILENAME` | `license.pdf` | Required filename for license upload |
+| `LICENSE_STORAGE_PATH` | `./uploads/licenses` | Directory to store uploaded license files |
 
 ---
 
@@ -718,12 +746,13 @@ Defined via `.env` configuration:
 | B-AUTH-006 | Password hashed with Argon2 | BR-AUTH-016, Sec 6.1 |
 | B-AUTH-007 | Refresh token rotation | BR-AUTH-013, Sec 6.3 |
 | B-AUTH-008 | Token family tracking | BR-AUTH-014, BR-AUTH-015 |
+| B-AUTH-020 | Merchant must upload business license PDF | UC-AUTH-001A, BR-AUTH-020~023, Sec 6.1 |
 
 ### 15.2 Database Design Traceability
 
 | Database Table | Relevant Functional Operations |
 |----------------|-------------------------------|
-| `users` | Registration (INSERT), Login (SELECT), Verify (SELECT) |
+| `users` | Registration (INSERT with license_url), Login (SELECT), Verify (SELECT) |
 | `refresh_tokens` | Token storage (INSERT), Rotation (UPDATE), Revocation (UPDATE) |
 | `user_roles` | Role validation during registration |
 

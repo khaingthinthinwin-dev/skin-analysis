@@ -8,7 +8,23 @@ export const authService = {
   },
 
   register: async (data: RegisterData): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/register', data)
+    // Create FormData for multipart upload
+    const formData = new FormData()
+    formData.append('email', data.email)
+    formData.append('name', data.name)
+    formData.append('password', data.password)
+    if (data.role) {
+      formData.append('role', data.role)
+    }
+    if (data.licenseFile) {
+      formData.append('license', data.licenseFile)
+    }
+
+    const response = await apiClient.post<AuthResponse>('/auth/register', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return response.data
   },
 

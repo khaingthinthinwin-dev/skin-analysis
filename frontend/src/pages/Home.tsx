@@ -60,7 +60,7 @@ export default function Home() {
       <section className="border-t bg-muted/50 py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold">Why Choose SkincareAI?</h2>
+            <h2 className="text-3xl font-bold">Why Choose Cosmetics Finder?</h2>
             <p className="mt-4 text-muted-foreground">
               Powered by cutting-edge artificial intelligence
             </p>
