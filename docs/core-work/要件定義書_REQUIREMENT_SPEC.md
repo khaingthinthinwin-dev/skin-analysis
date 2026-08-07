@@ -491,15 +491,12 @@ Represents JWT refresh tokens.
 | A-REV-001 | Admin can view all reviews | High |
 | A-REV-002 | Admin can approve/reject reviews | High |
 | A-REV-003 | Admin can delete inappropriate reviews | High |
-| A-REV-004 | Admin can view review reports from users | Medium |
 
 #### 3.2.17 Admin Module - Content Moderation (管理者モジュール - コンテンツ管理)
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| A-CONT-001 | Admin can review new product listings | High |
 | A-CONT-002 | Admin can approve/reject merchant registrations | High |
-| A-CONT-003 | Admin can manage categories (add/edit/delete) | High |
 | A-CONT-004 | Admin can remove violating content | High |
 
 #### 3.2.18 Admin Module - Analytics & Reports (管理者モジュール - 分析・レポート)

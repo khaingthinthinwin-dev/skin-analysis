@@ -51,20 +51,18 @@
 
 ### 1.1 Purpose and Scope
 
-This screen serves as the central administration hub for maintaining platform integrity within the Cosmetics Finder platform. The Review & Content Moderation subsystem provides the complete set of capabilities necessary for administrators to moderate product reviews, manage user-submitted content, approve merchant registrations, and enforce platform quality standards.
+This screen serves as the central administration hub for maintaining platform integrity within the Cosmetics Finder platform. The Review & Content Moderation subsystem provides the complete set of capabilities necessary for administrators to moderate product reviews, remove violating content, approve merchant registrations, and enforce platform quality standards.
 
-This subsystem is critical for ensuring trust and safety across the marketplace. It is responsible for providing administrators with tools to review, approve, reject, and delete content while maintaining audit trails and ensuring compliance with platform policies.
+This subsystem is critical for ensuring trust and safety across the marketplace. It is responsible for providing administrators with tools to review, approve, reject, and delete reviews, remove content that breaches platform policy, and manage user accounts while maintaining audit trails and ensuring compliance with platform policies.
 
 ### 1.2 Functional Responsibilities
 
 This screen is responsible for the following core functional areas:
 
 1. **Review Moderation** — Viewing all reviews, approving/rejecting pending reviews, and deleting inappropriate reviews with audit logging.
-2. **Review Report Management** — Viewing and acting upon user-submitted review reports for policy violations.
-3. **Product Content Moderation** — Reviewing new product listings for compliance, approving/rejecting products, and removing violating content.
-4. **Merchant Registration Management** — Approving or rejecting merchant shop registrations based on license verification and compliance checks.
-5. **Category Management** — Adding, editing, and deleting product categories including hierarchical tree management.
-6. **User Account Moderation** — Activating or deactivating user accounts for policy violations.
+2. **Content Moderation** — Removing violating content that breaches platform policy.
+3. **Merchant Registration Management** — Approving or rejecting merchant shop registrations based on license verification and compliance checks.
+4. **User Account Moderation** — Activating or deactivating user accounts for policy violations.
 
 ### 1.3 Target Users
 
@@ -72,7 +70,7 @@ This screen is responsible for the following core functional areas:
 |-----------|-------|
 | **Primary Actor** | Platform Administrator (管理者) |
 | **Required Authentication** | JWT Bearer Token with `admin` role |
-| **Data Scope** | All reviews, products, merchants, categories, and user reports |
+| **Data Scope** | All reviews, products, merchants, and user accounts |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
 
@@ -104,16 +102,13 @@ This screen is responsible for the following core functional areas:
 | `moderationReason` | User Input | Optional reason for rejection |
 | `productId` | Path Parameter | ID of the product to moderate |
 | `merchantId` | Path Parameter | ID of the merchant to approve/reject |
-| `categoryId` | Path Parameter | ID of the category to manage |
 | `userId` | Path Parameter | ID of the user to activate/deactivate |
-| `categoryData` | Request Body | Category name, slug, parent, icon, sort order |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
 | `review` | Review DTO | Review data with moderation status |
 | `product` | Product DTO | Product data with approval status |
 | `merchant` | Merchant/Shop DTO | Merchant data with approval status |
-| `category` | Category DTO | Category data with hierarchy |
 | `auditLog` | Audit Record | Recorded moderation action |
 
 ### 1.6 Related Documents
@@ -135,12 +130,9 @@ This screen is responsible for the following core functional areas:
 | UC-MOD-001 | View All Reviews | Admin is authenticated with `admin` role. | List of all reviews displayed with filters and pagination. | Admin |
 | UC-MOD-002 | Moderate Review (Approve/Reject) | Review exists, admin is authenticated. | Review `is_approved` status updated. Product `avg_rating` and `review_count` recalculated if applicable. | Admin |
 | UC-MOD-003 | Delete Inappropriate Review | Review exists, admin is authenticated. | Review permanently removed. Product `avg_rating` and `review_count` recalculated. | Admin |
-| UC-MOD-004 | View Review Reports | Admin is authenticated. | List of user-submitted review reports displayed. | Admin |
-| UC-MOD-005 | Review New Product Listings | Admin is authenticated. | List of products pending review displayed. | Admin |
-| UC-MOD-006 | Approve/Reject Merchant Registration | Merchant shop exists with `is_approved = false`. | Shop `is_approved` status updated. | Admin |
-| UC-MOD-007 | Manage Categories (Add/Edit/Delete) | Admin is authenticated. | Category tree updated. Product listing categories refreshed. | Admin |
-| UC-MOD-008 | Remove Violating Content | Content violates platform policy. | Content removed or deactivated. Audit log recorded. | Admin |
-| UC-MOD-009 | Activate/Deactivate User Account | User account exists. | User `is_active` status toggled. User sessions terminated on deactivation. | Admin |
+| UC-MOD-004 | Remove Violating Content | Content violates platform policy. | Content removed or deactivated. Audit log recorded. | Admin |
+| UC-MOD-005 | Approve/Reject Merchant Registration | Merchant shop exists with `is_approved = false`. | Shop `is_approved` status updated. | Admin |
+| UC-MOD-006 | Activate/Deactivate User Account | User account exists. | User `is_active` status toggled. User sessions terminated on deactivation. | Admin |
 
 ### 2.2 Primary Business Workflow
 
@@ -307,17 +299,7 @@ This screen is responsible for the following core functional areas:
 | BR-MOD-022 | Rejection with Reason | Admin can reject shops with a reason stored for merchant reference. | Backend (moderation DTO) |
 | BR-MOD-023 | Re-approval on Reactivation | If an approved shop is deactivated, re-approval is required for reactivation. | Backend (status transition) |
 
-### 4.4 Category Management Rules
-
-| Rule ID | Rule Name | Description | Enforcement Layer |
-|---------|-----------|-------------|-------------------|
-| BR-MOD-030 | Category Uniqueness | Category `name` and `slug` must be unique across the platform. | Backend (DB unique constraint) |
-| BR-MOD-031 | Hierarchical Structure | Categories support parent-child relationships via `parent_id` self-referencing FK. | Backend (Prisma relation) |
-| BR-MOD-032 | Deletion Restriction | Categories with associated products cannot be deleted (ON DELETE RESTRICT). | Backend (DB constraint) |
-| BR-MOD-033 | Sort Order | Categories have a `sort_order` field for display ordering within their parent level. | Backend (DTO validation) |
-| BR-MOD-034 | Category Cache Invalidation | When categories are added, edited, or deleted, the Redis category cache (`cache:categories`) must be invalidated. | Backend (moderation service) |
-
-### 4.5 User Moderation Rules
+### 4.4 User Moderation Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
@@ -340,11 +322,11 @@ This screen is responsible for the following core functional areas:
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-01 | Page Title | Text | `admin.reviews.title` | Yes | "Review Moderation" |
-| EL-02 | Filter Tabs | Tab Group | `admin.reviews.tabs` | Yes | Tabs: All, Pending, Approved, Rejected, Reported |
+| EL-02 | Filter Tabs | Tab Group | `admin.reviews.tabs` | Yes | Tabs: All, Pending, Approved, Rejected |
 | EL-03 | Search Input | Input (text) | `admin.reviews.search` | No | Search reviews by user name, product name, or content |
 | EL-04 | Sort Dropdown | Select | `admin.reviews.sort` | No | Sort by: Newest, Oldest, Rating (High-Low), Rating (Low-High) |
 | EL-05 | Reviews Table | Table | — | Yes | Displays: checkbox, user avatar, user name, product name, rating stars, review title, status badge, created date, actions |
-| EL-06 | Review Status Badge | Badge | — | Yes | Green (Approved), Red (Rejected), Amber (Reported) |
+| EL-06 | Review Status Badge | Badge | — | Yes | Green (Approved), Red (Rejected) |
 | EL-07 | Rating Display | Star Rating | — | Yes | 1-5 star display with Beauty Pink (#EC4899) color |
 | EL-08 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Approve, Reject, Delete |
 | EL-09 | Bulk Actions | Button Group | — | No | Approve Selected, Reject Selected, Delete Selected |
@@ -396,35 +378,6 @@ This screen is responsible for the following core functional areas:
 | EL-34 | Reject Button | Button (destructive) | `admin.merchant.reject` | Yes | Reject merchant |
 | EL-35 | Close Button | Button (outline) | — | Yes | Close modal |
 
-### 5.3 Screen: Admin Categories Management (`/admin/categories`)
-
-**Purpose:** Allow administrators to manage product category hierarchy.
-
-#### 5.3.1 UI Elements
-
-**Category Tree View:**
-
-| Element ID | Element Name | Element Type | i18n Key | Required | Description |
-|------------|--------------|--------------|----------|:--------:|-------------|
-| EL-36 | Page Title | Text | `admin.categories.title` | Yes | "Category Management" |
-| EL-37 | Add Category Button | Button (primary) | `admin.categories.add` | Yes | Opens add category form |
-| EL-38 | Category Tree | Tree View | — | Yes | Hierarchical display of categories with expand/collapse |
-| EL-39 | Category Node | Tree Node | — | Yes | Category name, product count badge, edit/delete actions |
-| EL-40 | Drag Handle | Icon | — | No | Drag to reorder categories |
-| EL-41 | Sort Order Display | Text | — | Yes | Current sort order number |
-
-**Category Form Modal:**
-
-| Element ID | Element Name | Element Type | i18n Key | Required | Description |
-|------------|--------------|--------------|----------|:--------:|-------------|
-| EL-42 | Category Name Input | Input (text) | `admin.categories.name` | Yes | Category display name |
-| EL-43 | Slug Input | Input (text) | `admin.categories.slug` | Yes | Auto-generated from name, editable |
-| EL-44 | Parent Category Select | Select | `admin.categories.parent` | No | Parent category (null for root) |
-| EL-45 | Icon Upload | File Input | `admin.categories.icon` | No | Category icon image |
-| EL-46 | Sort Order Input | Input (number) | `admin.categories.sortOrder` | Yes | Display ordering |
-| EL-47 | Save Button | Button (primary) | `admin.categories.save` | Yes | Save category |
-| EL-48 | Cancel Button | Button (outline) | — | Yes | Cancel and close |
-
 ---
 
 ## 6. Functional Operation Specification
@@ -466,19 +419,7 @@ This screen is responsible for the following core functional areas:
 | **Success Response** | 204 No Content |
 | **Post-Action** | Display toast notification. Refresh reviews list. |
 
-### 6.4 Operation: View Review Reports
-
-| Attribute | Specification |
-|-----------|---------------|
-| **Trigger** | Admin clicks "Reported" tab on reviews page |
-| **API Endpoint** | `GET /api/v1/admin/reviews/reported` |
-| **Request Query Parameters** | `page`, `limit`, `sort`, `order` |
-| **Pre-Submission Validation** | JWT access token validated. Admin role verified. |
-| **Processing Steps** | 1. Validate JWT and admin role. 2. Query reviews that have been reported by users (requires `review_reports` table). 3. Join with reporter user data and review data. 4. Apply pagination. 5. Return paginated reported reviews list. |
-| **Success Response** | 200 OK with paginated reported reviews |
-| **Post-Action** | Display reported reviews with report details |
-
-### 6.5 Operation: View All Merchants
+### 6.4 Operation: View All Merchants
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -503,34 +444,7 @@ This screen is responsible for the following core functional areas:
 | **Success Response** | 200 OK with updated shop DTO |
 | **Post-Action** | Display toast notification. Refresh merchants list. |
 
-### 6.7 Operation: Manage Categories (CRUD)
-
-| Attribute | Specification |
-|-----------|---------------|
-| **Trigger** | Admin clicks Add/Edit/Delete on categories page |
-| **API Endpoints** | `POST /api/v1/admin/categories` (Create), `PATCH /api/v1/admin/categories/:id` (Update), `DELETE /api/v1/admin/categories/:id` (Delete) |
-| **Request Content-Type** | `application/json` |
-| **Pre-Submission Validation** | JWT access token validated. Admin role verified. Category data validated. |
-| **Processing Steps (Create)** | 1. Validate JWT and admin role. 2. Validate category name, slug uniqueness. 3. Validate parent category exists (if provided). 4. Create category record. 5. Invalidate category cache in Redis. 6. Log creation to audit trail. 7. Return created category DTO. |
-| **Processing Steps (Update)** | 1. Validate JWT and admin role. 2. Find category by ID. 3. Validate name/slug uniqueness (excluding current). 4. Update category record. 5. Invalidate category cache. 6. Log update to audit trail. 7. Return updated category DTO. |
-| **Processing Steps (Delete)** | 1. Validate JWT and admin role. 2. Find category by ID. 3. Check for associated products (reject if exist). 4. Check for child categories (reject if exist). 5. Delete category record. 6. Invalidate category cache. 7. Log deletion to audit trail. 8. Return 204 No Content. |
-| **Success Response** | 201 Created (Create), 200 OK (Update), 204 No Content (Delete) |
-| **Post-Action** | Refresh category tree. Display toast notification. |
-
-### 6.8 Operation: Remove Violating Content
-
-| Attribute | Specification |
-|-----------|---------------|
-| **Trigger** | Admin identifies violating product/content |
-| **API Endpoint** | `PATCH /api/v1/admin/products/:id/status` |
-| **Request Content-Type** | `application/json` |
-| **Request Body** | `{ isActive: false, reason?: string }` |
-| **Pre-Submission Validation** | JWT access token validated. Admin role verified. Product exists. |
-| **Processing Steps** | 1. Validate JWT and admin role. 2. Find product by ID. 3. Set `products.is_active = false`. 4. Invalidate product cache in Redis. 5. Invalidate product list cache. 6. Log content removal to audit trail. 7. Return updated product DTO. |
-| **Success Response** | 200 OK with updated product DTO |
-| **Post-Action** | Display toast notification. Refresh content list. |
-
-### 6.9 Operation: Activate/Deactivate User
+### 6.7 Operation: Activate/Deactivate User
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -561,17 +475,7 @@ This screen is responsible for the following core functional areas:
 | `status` | Approval Status | 承認ステータス | ENUM ('approved', 'rejected') | Yes | Radio / Button | `@IsIn(['approved', 'rejected'])` |
 | `reason` | Rejection Reason | 却下理由 | VARCHAR(500) | Conditional | Textarea | `@IsNotEmpty()` when status = 'rejected', `@MaxLength(500)` |
 
-### 7.3 Input Specification — Category Management (入力定義)
-
-| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
-|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
-| `name` | Category Name | カテゴリ名 | VARCHAR(100) | Yes | Input (text) | `@IsNotEmpty()`, `@MaxLength(100)` |
-| `slug` | Slug | スラッグ | VARCHAR(100) | Yes | Input (text) | `@IsNotEmpty()`, `@MaxLength(100)`, unique |
-| `parentId` | Parent Category | 親カテゴリ | VARCHAR(25) | No | Select | Valid CUID if provided |
-| `iconUrl` | Icon URL | アイコンURL | VARCHAR(500) | No | File Input | Valid URL format, max 5MB image |
-| `sortOrder` | Sort Order | ソート順 | INTEGER | Yes | Input (number) | `@IsInt()`, `@Min(0)` |
-
-### 7.4 Input Specification — User Moderation (入力定義)
+### 7.3 Input Specification — User Moderation (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
@@ -605,19 +509,6 @@ This screen is responsible for the following core functional areas:
 | `isApproved` | `shops.is_approved` | Status badge (Pending/Approved/Rejected) |
 | `createdAt` | `shops.created_at` | ISO 8601 timestamp |
 
-### 7.7 Output Specification — Category Tree (出力定義)
-
-| Field | Data Source | Display Format |
-|-------|-------------|----------------|
-| `id` | `categories.id` | CUID string |
-| `name` | `categories.name` | String |
-| `slug` | `categories.slug` | String |
-| `parentId` | `categories.parent_id` | CUID string or null |
-| `iconUrl` | `categories.icon_url` | URL or null |
-| `sortOrder` | `categories.sort_order` | Integer |
-| `children` | Joined data | Nested array of child categories |
-| `productCount` | Aggregated count | Integer |
-
 ---
 
 ## 8. Input Validation Rules
@@ -636,16 +527,7 @@ This screen is responsible for the following core functional areas:
 | `status` | Required, must be 'approved' or 'rejected' | "Status must be 'approved' or 'rejected'" | "ステータスは'approved'または'rejected'である必要があります" |
 | `reason` | Required when status = 'rejected', max 500 chars | "Rejection reason is required" / "Reason must not exceed 500 characters" | "却下理由は必須です" / "理由は500文字以下である必要があります" |
 
-### 8.3 Category Management Validation (Strict Mode)
-
-| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
-|-------|-----------------|--------------------|--------------------|
-| `name` | Required, 1-100 chars, unique | "Category name is required" / "Category name must not exceed 100 characters" / "Category name already exists" | "カテゴリ名は必須です" / "カテゴリ名は100文字以下である必要があります" / "カテゴリ名は既に存在します" |
-| `slug` | Required, 1-100 chars, unique, URL-friendly | "Slug is required" / "Slug must be URL-friendly" / "Slug already exists" | "スラッグは必須です" / "スラッグはURLフレンドリーである必要があります" / "スラッグは既に存在します" |
-| `parentId` | Optional, must reference existing category (not self) | "Parent category not found" / "Category cannot be its own parent" | "親カテゴリが見つかりません" / "カテゴリは自身の親にはなりません" |
-| `sortOrder` | Required, integer >= 0 | "Sort order must be a non-negative integer" | "ソート順は0以上の整数である必要があります" |
-
-### 8.4 User Moderation Validation (Strict Mode)
+### 8.3 User Moderation Validation (Strict Mode)
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
@@ -692,18 +574,7 @@ This screen is responsible for the following core functional areas:
 | `409` | `CONFLICT` | Merchant already in target status | "Merchant is already approved/rejected" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
-### 9.4 Error Classification Table — Category Management
-
-| HTTP Status | Error Code | Scenario | User-Facing Behavior |
-|-------------|------------|----------|---------------------|
-| `400` | `BAD_REQUEST` | Validation failures (name/slug) | Field-level inline errors |
-| `403` | `FORBIDDEN` | Non-admin user | "You do not have permission" |
-| `404` | `NOT_FOUND` | Category not found | "Category not found" |
-| `409` | `CONFLICT` | Duplicate name or slug | "Category name/slug already exists" |
-| `409` | `CONFLICT` | Category has products (delete restricted) | "Cannot delete category with associated products" |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
-
-### 9.5 Frontend Error Display Behavior
+### 9.4 Frontend Error Display Behavior
 
 - **Field-Level Validation**: Red border and inline text below invalid input.
 - **Form-Level Summary**: Alert banner at top of form listing all errors.
@@ -727,23 +598,18 @@ This screen is responsible for the following core functional areas:
 | `GET /admin/reviews/pending` | Protected (admin) | View pending reviews |
 | `POST /admin/reviews/:id/moderate` | Protected (admin) | Approve/reject review |
 | `DELETE /admin/reviews/:id` | Protected (admin) | Delete review |
-| `GET /admin/reviews/reported` | Protected (admin) | View reported reviews |
 | `GET /admin/users` | Protected (admin) | View all users |
 | `PATCH /admin/users/:id/status` | Protected (admin) | Activate/deactivate user |
 | `GET /admin/merchants` | Protected (admin) | View all merchants |
 | `PATCH /admin/merchants/:id/status` | Protected (admin) | Approve/reject merchant |
-| `POST /admin/categories` | Protected (admin) | Create category |
-| `PATCH /admin/categories/:id` | Protected (admin) | Update category |
-| `DELETE /admin/categories/:id` | Protected (admin) | Delete category |
-| `PATCH /admin/products/:id/status` | Protected (admin) | Deactivate product |
 
 ### 10.3 Role-Based Access
 
-| Role | Can View Reviews | Can Moderate Reviews | Can Manage Merchants | Can Manage Categories | Can Manage Users |
-|------|:----------------:|:--------------------:|:--------------------:|:---------------------:|:----------------:|
-| `buyer` | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `merchant` | Own products only | ✗ | ✗ | ✗ | ✗ |
-| `admin` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Role | Can View Reviews | Can Moderate Reviews | Can Manage Merchants | Can Manage Users |
+|------|:----------------:|:--------------------:|:--------------------:|:----------------:|
+| `buyer` | ✗ | ✗ | ✗ | ✗ |
+| `merchant` | Own products only | ✗ | ✗ | ✗ |
+| `admin` | ✓ | ✓ | ✓ | ✓ |
 
 ### 10.4 Security Audit Logging
 
@@ -754,10 +620,6 @@ This screen is responsible for the following core functional areas:
 | `REVIEW_DELETED` | adminId, reviewId, productId, timestamp | 2 years |
 | `MERCHANT_APPROVED` | adminId, shopId, merchantId, timestamp | 2 years |
 | `MERCHANT_REJECTED` | adminId, shopId, merchantId, reason, timestamp | 2 years |
-| `CATEGORY_CREATED` | adminId, categoryId, timestamp | 2 years |
-| `CATEGORY_UPDATED` | adminId, categoryId, changes, timestamp | 2 years |
-| `CATEGORY_DELETED` | adminId, categoryId, timestamp | 2 years |
-| `CONTENT_REMOVED` | adminId, productId, reason, timestamp | 2 years |
 | `USER_DEACTIVATED` | adminId, userId, timestamp | 2 years |
 | `USER_ACTIVATED` | adminId, userId, timestamp | 2 years |
 | `RBAC_VIOLATION` | userId, endpoint, requiredRole, timestamp | 30 days |
@@ -772,7 +634,6 @@ The admin dashboard receives real-time updates for pending moderation items:
 
 | Event | Trigger | Action |
 |-------|---------|--------|
-| `NEW_REVIEW_REPORT` | User submits review report | Increment pending reports badge count |
 | `NEW_MERCHANT_REGISTRATION` | New merchant registers | Increment pending merchant approvals badge |
 | `REVIEW_CREATED` | New review submitted (if pre-moderation enabled) | Increment pending reviews badge |
 
@@ -797,7 +658,6 @@ After moderation action, relevant parties are notified:
 |--------|--------|-----------|
 | Admin Dashboard | `/admin/reviews` | Clicking "Pending Reviews" card or sidebar link |
 | Admin Dashboard | `/admin/merchants` | Clicking "Pending Approvals" card or sidebar link |
-| Admin Dashboard | `/admin/categories` | Clicking sidebar "Categories" link |
 | Any admin page | `/admin/reviews` | Direct URL navigation |
 
 ### 12.2 Internal Navigation
@@ -805,12 +665,9 @@ After moderation action, relevant parties are notified:
 | Source | Target | Trigger |
 |--------|--------|---------|
 | `/admin/reviews` | Review Detail Modal | Click "View Detail" or row click |
-| `/admin/reviews` (Reported tab) | Review Detail Modal | Click on reported review |
 | `/admin/merchants` | Merchant Detail Modal | Click "View Detail" or row click |
-| `/admin/categories` | Category Form Modal | Click "Add Category" or "Edit" |
 | `/admin/reviews` | `/admin/merchants` | Sidebar navigation |
-| `/admin/merchants` | `/admin/categories` | Sidebar navigation |
-| `/admin/categories` | `/admin/reviews` | Sidebar navigation |
+| `/admin/merchants` | `/admin/reviews` | Sidebar navigation |
 
 ### 12.3 Outbound Navigation
 
@@ -818,7 +675,6 @@ After moderation action, relevant parties are notified:
 |--------|--------|-----------|
 | `/admin/reviews` | `/products/:slug` | Click "View Product" link in review detail |
 | `/admin/merchants` | `/admin/reviews` | After merchant approval, navigate to their reviews |
-| `/admin/categories` | `/products` | Click "View Products in Category" |
 | Any admin page | `/admin/dashboard` | Click "Back to Dashboard" |
 
 ### 12.4 Error Navigation
@@ -840,7 +696,6 @@ After moderation action, relevant parties are notified:
 | Admin Dashboard Load | ≤ 2 seconds |
 | Reviews List API Response | ≤ 500 milliseconds |
 | Moderation Action Response | ≤ 300 milliseconds |
-| Category Tree Load | ≤ 500 milliseconds |
 | Search/Filter Response | ≤ 3 seconds (10,000 reviews) |
 | Cache Invalidation | ≤ 50 milliseconds (Redis DEL) |
 
@@ -874,7 +729,6 @@ Defined via `.env` configuration:
 | `ADMIN_RATE_LIMIT` | `100` | Max admin API requests per minute |
 | `REVIEW_DEFAULT_PAGE_SIZE` | `20` | Default reviews per page |
 | `REVIEW_MAX_PAGE_SIZE` | `100` | Maximum reviews per page |
-| `CATEGORY_CACHE_TTL` | `1800` | Category cache TTL in seconds (30 min) |
 | `PRODUCT_CACHE_TTL` | `300` | Product cache TTL in seconds (5 min) |
 | `AUDIT_LOG_RETENTION_DAYS` | `730` | Admin audit log retention (2 years) |
 | `MODERATION_REASON_MAX_LENGTH` | `500` | Maximum characters for moderation reason |
@@ -891,22 +745,17 @@ Defined via `.env` configuration:
 | A-REV-001 | Admin can view all reviews | UC-MOD-001, Sec 6.1 |
 | A-REV-002 | Admin can approve/reject reviews | UC-MOD-002, BR-MOD-001~006, Sec 6.2 |
 | A-REV-003 | Admin can delete inappropriate reviews | UC-MOD-003, BR-MOD-005, Sec 6.3 |
-| A-REV-004 | Admin can view review reports from users | UC-MOD-004, Sec 6.4 |
-| A-CONT-001 | Admin can review new product listings | UC-MOD-005, BR-MOD-010~013, Sec 6.8 |
-| A-CONT-002 | Admin can approve/reject merchant registrations | UC-MOD-006, BR-MOD-020~023, Sec 6.6 |
-| A-CONT-003 | Admin can manage categories (add/edit/delete) | UC-MOD-007, BR-MOD-030~034, Sec 6.7 |
-| A-CONT-004 | Admin can remove violating content | UC-MOD-008, BR-MOD-011, Sec 6.8 |
+| A-CONT-002 | Admin can approve/reject merchant registrations | UC-MOD-005, BR-MOD-020~023, Sec 6.5 |
+| A-CONT-004 | Admin can remove violating content | UC-MOD-004, Sec 6.4 |
 
 ### 15.2 Database Design Traceability
 
 | Database Table | Relevant Functional Operations |
 |----------------|-------------------------------|
 | `reviews` | View reviews (SELECT), Moderate reviews (UPDATE is_approved), Delete reviews (DELETE) |
-| `products` | View products (SELECT), Deactivate products (UPDATE is_active), Recalculate avg_rating |
+| `products` | View products (SELECT), Recalculate avg_rating |
 | `shops` | View merchants (SELECT), Approve/reject merchants (UPDATE is_approved) |
-| `categories` | CRUD operations (INSERT/UPDATE/DELETE), Tree traversal via parent_id |
 | `users` | View users (SELECT), Activate/deactivate users (UPDATE is_active) |
-| `order_items` | Cascade delete prevention (ON DELETE RESTRICT for products with orders) |
 
 ### 15.3 API Endpoint Traceability
 
@@ -915,14 +764,9 @@ Defined via `.env` configuration:
 | `GET /admin/reviews/pending` | View pending reviews | A-REV-001 |
 | `POST /admin/reviews/:id/moderate` | Approve/reject review | A-REV-002 |
 | `DELETE /admin/reviews/:id` | Delete review | A-REV-003 |
-| `GET /admin/reviews/reported` | View reported reviews | A-REV-004 |
 | `GET /admin/merchants` | View merchants | A-CONT-002 |
 | `PATCH /admin/merchants/:id/status` | Approve/reject merchant | A-CONT-002 |
-| `POST /admin/categories` | Create category | A-CONT-003 |
-| `PATCH /admin/categories/:id` | Update category | A-CONT-003 |
-| `DELETE /admin/categories/:id` | Delete category | A-CONT-003 |
-| `PATCH /admin/products/:id/status` | Deactivate product | A-CONT-004 |
-| `PATCH /admin/users/:id/status` | Activate/deactivate user | A-CONT-004 |
+| `PATCH /admin/users/:id/status` | Activate/deactivate user | A-CONT-002 |
 
 ### 15.4 Related Document References
 
