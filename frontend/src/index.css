@@ -1,55 +1,133 @@
 @import "tailwindcss";
 
 @theme {
-  /* Base radius */
   --radius: 0.5rem;
 
-  /* Light theme colors - Luxury Cosmetics Palette */
-  --color-background: #ffffff;
-  --color-foreground: #0a0a0a;
-  --color-muted: #f3e8ff;
-  --color-muted-foreground: #737373;
-  --color-card: #ffffff;
-  --color-card-foreground: #0a0a0a;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #0a0a0a;
-  --color-primary: #7c3aed;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #f3e8ff;
-  --color-secondary-foreground: #0a0a0a;
-  --color-accent: #ec4899;
-  --color-accent-foreground: #ffffff;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-border: #e5e7eb;
-  --color-input: #e5e7eb;
-  --color-ring: #7c3aed;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
 
-  /* Font families */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Light Theme (default) */
+  --color-background: #ffffff;
+  --color-foreground: #18181B;
+  --color-muted: #F3E8FF;
+  --color-muted-foreground: #6B7280;
+  --color-card: #ffffff;
+  --color-card-foreground: #18181B;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #18181B;
+  --color-primary: #7C3AED;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #F3E8FF;
+  --color-secondary-foreground: #18181B;
+  --color-accent: #EC4899;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #E5E7EB;
+  --color-input: #E5E7EB;
+  --color-ring: #7C3AED;
+
+  /* MD3 Semantic Tokens - Light */
+  --color-surface: #ffffff;
+  --color-surface-dim: #F9FAFB;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #F9FAFB;
+  --color-surface-container: #F3F4F6;
+  --color-surface-container-high: #E5E7EB;
+  --color-surface-container-highest: #D1D5DB;
+  --color-on-surface: #18181B;
+  --color-on-surface-variant: #6B7280;
+  --color-inverse-surface: #18181B;
+  --color-inverse-on-surface: #ffffff;
+  --color-outline: #9CA3AF;
+  --color-outline-variant: #E5E7EB;
+  --color-surface-tint: #7C3AED;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #7C3AED;
+  --color-on-primary-container: #ffffff;
+  --color-inverse-primary: #A78BFA;
+  --color-on-secondary: #18181B;
+  --color-secondary-container: #F3E8FF;
+  --color-on-secondary-container: #5B21B6;
+  --color-tertiary: #6B7280;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #E5E7EB;
+  --color-on-tertiary-container: #374151;
+  --color-error: #EF4444;
+  --color-on-error: #ffffff;
+  --color-error-container: #FEE2E2;
+  --color-on-error-container: #991B1B;
+
+  /* Brand Aliases - Light */
+  --color-deep-base: #ffffff;
+  --color-glass-surface: rgba(255, 255, 255, 0.8);
+
+  /* Glow Shadows */
+  --shadow-glow-sm: 0 4px 20px rgba(124, 58, 237, 0.08);
+  --shadow-glow-lg: 0 8px 32px rgba(124, 58, 237, 0.12);
 }
 
 .dark {
   --color-background: #0a0a0a;
-  --color-foreground: #fafafa;
+  --color-foreground: #e5e2e1;
   --color-muted: #1a1025;
   --color-muted-foreground: #a3a3a3;
   --color-card: #0a0a0a;
-  --color-card-foreground: #fafafa;
+  --color-card-foreground: #e5e2e1;
   --color-popover: #0a0a0a;
-  --color-popover-foreground: #fafafa;
+  --color-popover-foreground: #e5e2e1;
   --color-primary: #a78bfa;
   --color-primary-foreground: #0a0a0a;
   --color-secondary: #1a1025;
-  --color-secondary-foreground: #fafafa;
+  --color-secondary-foreground: #e5e2e1;
   --color-accent: #f472b6;
   --color-accent-foreground: #0a0a0a;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #fafafa;
-  --color-border: #262626;
-  --color-input: #262626;
+  --color-border: #27272a;
+  --color-input: #27272a;
   --color-ring: #a78bfa;
+
+  /* MD3 Semantic Tokens - Dark */
+  --color-surface: #131313;
+  --color-surface-dim: #131313;
+  --color-surface-bright: #3a3939;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-surface-container-low: #1c1b1b;
+  --color-surface-container: #201f1f;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-highest: #353534;
+  --color-on-surface: #e5e2e1;
+  --color-on-surface-variant: #cac4d4;
+  --color-inverse-surface: #e5e2e1;
+  --color-inverse-on-surface: #313030;
+  --color-outline: #948e9d;
+  --color-outline-variant: #494552;
+  --color-surface-tint: #cebdff;
+  --color-on-primary: #381385;
+  --color-primary-container: #a78bfa;
+  --color-on-primary-container: #3c1989;
+  --color-inverse-primary: #674bb5;
+  --color-on-secondary: #313030;
+  --color-secondary-container: #474746;
+  --color-on-secondary-container: #b7b5b4;
+  --color-tertiary: #c8c6c9;
+  --color-on-tertiary: #303033;
+  --color-tertiary-container: #9e9ca0;
+  --color-on-tertiary-container: #343437;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  /* Brand Aliases - Dark */
+  --color-deep-base: #0A0A0A;
+  --color-glass-surface: rgba(26, 26, 26, 0.8);
+
+  /* Glow Shadows - Dark */
+  --shadow-glow-sm: 0 0 20px rgba(167, 139, 250, 0.1);
+  --shadow-glow-lg: 0 0 40px rgba(167, 139, 250, 0.15);
 }
 
 @layer base {
@@ -72,5 +150,51 @@
     min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: var(--color-glass-surface);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-glow-sm);
+  }
+
+  .fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .fade-in-up-delay-100 {
+    animation: fadeInUp 0.8s ease-out 100ms forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .fade-in-up-delay-200 {
+    animation: fadeInUp 0.8s ease-out 200ms forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .fade-in-up-delay-300 {
+    animation: fadeInUp 0.8s ease-out 300ms forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .glow-line {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--color-primary), transparent);
+    box-shadow: var(--shadow-glow-sm);
+  }
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

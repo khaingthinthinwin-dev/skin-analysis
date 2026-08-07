@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 const Home = lazy(() => import('@/pages/Home'))
+const About = lazy(() => import('@/pages/About'))
 const Login = lazy(() => import('@/pages/Login'))
 const Register = lazy(() => import('@/pages/Register'))
 const Profile = lazy(() => import('@/pages/Profile'))
@@ -27,6 +28,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <Home />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'about',
+        element: (
+          <SuspenseWrapper>
+            <About />
           </SuspenseWrapper>
         ),
       },

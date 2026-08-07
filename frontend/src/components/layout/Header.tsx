@@ -13,7 +13,7 @@ import { ROUTES } from '@/lib/constants'
 const navItems = [
   { key: 'home', href: ROUTES.HOME },
   { key: 'products', href: '/products' },
-  { key: 'about', href: '/about' },
+  { key: 'about', href: ROUTES.ABOUT },
 ]
 
 export function Header() {
