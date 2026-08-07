@@ -10,9 +10,9 @@
 | **Target Screen** | Wishlist & Cart Page (お気に入り & カートページ) |
 | **Subsystem** | Buyer Module — Wishlist Management & Shopping Cart |
 | **Function ID** | FN-WISH-001, FN-CART-001 |
-| **Version** | 1.0 |
+| **Version** | 1.2 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-05 |
+| **Last Updated** | 2026-08-07 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -24,6 +24,8 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-05 | Software Architect | Initial functional specification for Wishlist and Cart pages covering use cases, business rules, validation, error handling, and permission control. |
+| 1.1 | 2026-08-07 | Software Architect | Clarified that cart page subtotal is unit_price × quantity only (no discounts). Added note that coupon code entry and discount calculation occur on the checkout page. |
+| 1.2 | 2026-08-07 | Software Architect | Added guest user behavior: alert modal "Please log in to add items to your cart." with [Log in] button navigating to /login. Added UC-CART-005, BR-CART-0010, EL-36, and updated cart workflow diagram. |
 
 ---
 
@@ -62,7 +64,7 @@ This screen is responsible for the following core functional areas:
 1. **Wishlist Management** — Enabling authenticated users to add/remove products from their saved wishlist, view saved products with details, and move items to cart.
 2. **Shopping Cart Management** — Enabling authenticated users to add products to cart, update quantities, remove items, and view real-time subtotals.
 3. **Stock Validation** — Ensuring products are in stock before adding to cart and validating stock during quantity updates.
-4. **Price Calculation** — Computing item subtotals based on unit price × quantity for each cart item.
+4. **Price Calculation** — Computing item subtotals based on unit price × quantity for each cart item. Discounts and coupons are **not** applied on the cart page; coupon entry and discount calculation occur on the checkout page.
 5. **Wishlist-to-Cart Transfer** — Allowing users to move saved wishlist items directly into the shopping cart.
 6. **Cart Persistence** — Maintaining cart contents across sessions for logged-in users via database storage.
 7. **Product Display** — Showing product images, names, prices, and availability status in both wishlist and cart views.
@@ -74,7 +76,7 @@ This screen is responsible for the following core functional areas:
 | **Primary Actor** | Authenticated Buyer |
 | **Required Authentication** | JWT Bearer Token |
 | **Data Scope** | Own wishlist items, Own cart items |
-| **Guest Behavior** | Cart not persisted; wishlist unavailable |
+| **Guest Behavior** | Cart not persisted; wishlist unavailable. When a guest user clicks "Add to Cart" or "Add to Wishlist", an alert modal is displayed: "Please log in to add items to your cart." Clicking [Log in] navigates to the login page (`/login`). |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
 
@@ -82,7 +84,7 @@ This screen is responsible for the following core functional areas:
 ┌──────────────────────────┐      ┌─────────────────────────────────────┐
 │   Authenticated Buyer    │      │     wishlists / order_items         │
 │   (Manages Wishlist)     ├─────►│  Creates/saves wishlist records     │
-└──────────────────────────┘      └──────────────┬────────────────────┘
+└──────────────────────────┘      └──────────────┬──────────────────────┘
                                                  │ Reads/Writes
                                                  ▼
                                        ┌────────────────────────┐
@@ -93,8 +95,8 @@ This screen is responsible for the following core functional areas:
                                                   ▼
 ┌──────────────────────────┐      ┌─────────────────────────────────────┐
 │   Authenticated Buyer    │      │     products (Stock Validation)     │
-│   (Manages Cart)         ├─────┤  Validates stock & calculates totals │
-└──────────────────────────┘      └──────────────┬────────────────────┘
+│   (Manages Cart)         ├──────┤  Validates stock & calculates totals│
+└──────────────────────────┘      └──────────────┬──────────────────────┘
                                                  │
                                                  ▼
                                        ┌────────────────────────┐
@@ -143,6 +145,7 @@ This screen is responsible for the following core functional areas:
 | UC-CART-002 | Update Cart Item Quantity | User is authenticated. Cart item exists. Requested quantity ≤ available stock. | Cart item quantity updated. Subtotal recalculated. | Authenticated Buyer |
 | UC-CART-003 | Remove Item from Cart | User is authenticated. Cart item exists. | Cart item deleted. Subtotal recalculated. Cart badge updated. | Authenticated Buyer |
 | UC-CART-004 | View Cart | User is authenticated. Cart contains items. | Cart page displays all items with images, names, prices, quantities, subtotals, and stock status. | Authenticated Buyer |
+| UC-CART-005 | Guest User Add to Cart Attempt | User is not authenticated (guest). | Alert modal displayed: "Please log in to add items to your cart." Clicking [Log in] navigates to `/login`. | Guest User |
 
 ### 2.2 Primary Business Workflow — Wishlist
 
@@ -219,9 +222,25 @@ This screen is responsible for the following core functional areas:
               ▼                ▼                ▼
         ┌──────────┐    ┌──────────┐    ┌──────────────┐
         │ YES      │    │ NO       │    │ Out of Stock?│
-        │ (Proceed)│    │ (Redirect│    │              │
-        └────┬─────┘    │ to Login)│    └──────┬───────┘
-             │          └──────────┘           │
+        │ (Proceed)│    │ (Guest)  │    │              │
+        └────┬─────┘    └────┬─────┘    └──────┬───────┘
+             │               │                 │
+             │               ▼                 │
+             │    ┌─────────────────────┐      │
+             │    │ Show Alert Modal:   │      │
+             │    │ "Please log in to   │      │
+             │    │  add items to your  │      │
+             │    │  cart."             │      │
+             │    │ [Log in]            │      │
+             │    └─────────┬───────────┘      │
+             │              │                  │
+             │              ▼                  │
+             │    ┌──────────────────┐         │
+             │    │ Click [Log in]   │         │
+             │    │ → Navigate to    │         │
+             │    │   /login         │         │
+             │    └──────────────────┘         │
+             │                                 │
              │                          ┌──────┴───────┐
              │                          ▼              ▼
              │                    ┌──────────┐    ┌──────────┐
@@ -280,6 +299,10 @@ This screen is responsible for the following core functional areas:
 | B-CART-005 | Cart shows available stock |
 | B-CART-006 | Cart persists across sessions (logged-in users) |
 | B-CART-007 | Cart shows product images and names |
+
+**Note on Promotions/Discounts:** The cart page displays only the pre-discount subtotal (unit_price × quantity). Coupon code entry and discount calculation (per Rule 4.5.1 and 4.5.2 in `要件定義書_REQUIREMENT_SPEC.md`) are handled on the checkout page (`/checkout`), not the cart page. This separation ensures the cart remains a simple review step before the full pricing breakdown at checkout.
+
+**Note on Guest User Behavior:** Unauthenticated (guest) users cannot add items to cart. When a guest user clicks "Add to Cart" or "Move to Cart", an alert modal is displayed with the message "Please log in to add items to your cart." Clicking [Log in] navigates to the login page (`/login`). This ensures cart functionality is only available to authenticated users, as specified in BR-CART-001 and BR-CART-010.
 
 ---
 
@@ -351,8 +374,9 @@ This screen is responsible for the following core functional areas:
 | BR-CART-005 | Active Product Only | Only active products can be added to cart. | Backend (service validation) |
 | BR-CART-006 | Price at Order Time | Price is locked at order creation time, not cart time. | Backend (order service) |
 | BR-CART-007 | Cart Persistence | Cart items are stored in database for logged-in users. | Backend (DB storage) |
-| BR-CART-008 | Subtotal Calculation | Subtotal = unit_price × quantity for each item. | Backend (computed field) |
+| BR-CART-008 | Subtotal Calculation | Subtotal = unit_price × quantity for each item. Discounts and coupons are **not** applied at this stage; coupon entry and discount calculation occur on the checkout page. | Backend (computed field) |
 | BR-CART-009 | Duplicate Handling | Adding an existing cart item increments quantity instead of creating duplicate. | Backend (service logic) |
+| BR-CART-010 | Guest User Restriction | Unauthenticated (guest) users cannot add items to cart. An alert modal is displayed: "Please log in to add items to your cart." Clicking [Log in] navigates to `/login`. | Frontend (UI guard) |
 
 ### 4.3 Stock Validation Rules
 
@@ -451,6 +475,7 @@ This screen is responsible for the following core functional areas:
 | EL-33 | Continue Shopping Link | Link | `cart.continueShopping` | Yes | "Continue Shopping" link to /products |
 | EL-34 | Empty State | EmptyState | `cart.empty` | Conditional | "Your cart is empty. Start shopping!" |
 | EL-35 | Loading Skeleton | Skeleton | — | Conditional | Shown while loading cart data |
+| EL-36 | Guest Login Alert Modal | Dialog/Modal | `cart.guestLoginAlert` | Conditional | Alert modal for unauthenticated users: "Please log in to add items to your cart." with [Log in] button navigating to `/login` |
 
 **Default State:**
 - Cart items displayed as rows with quantity controls
@@ -479,14 +504,39 @@ This screen is responsible for the following core functional areas:
 │  ─────────────────────────  │
 │  Items: 3                   │
 │  Subtotal: ¥8,940           │
-│  Shipping: Calculated at    │
-│            checkout         │
+│  (unit_price × quantity)    │
+│  ─────────────────────────  │
+│  Note: Discounts and coupon │
+│  codes are applied at       │
+│  checkout.                  │
 │  ─────────────────────────  │
 │  [Proceed to Checkout]      │
 │  ─────────────────────────  │
 │  [Continue Shopping]        │
 └─────────────────────────────┘
 ```
+
+#### 5.2.4 Guest User Alert Modal Layout
+
+```
+┌─────────────────────────────────────────┐
+│  ┌─────────────────────────────────┐    │
+│  │                                 │    │
+│  │  ⚠ Please log in to add items  │    │
+│  │    to your cart.                │    │
+│  │                                 │    │
+│  │  ┌─────────────┐               │    │
+│  │  │   Log in    │               │    │
+│  │  └─────────────┘               │    │
+│  │                                 │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+```
+
+- **Trigger:** Guest user clicks "Add to Cart" on product detail, product card, or wishlist item.
+- **Behavior:** Modal dialog appears with message "Please log in to add items to your cart."
+- **Actions:** Clicking [Log in] navigates to `/login`. Clicking outside the modal or pressing ESC closes the modal.
+- **i18n Keys:** `cart.guestLoginAlert.title`, `cart.guestLoginAlert.message`, `cart.guestLoginAlert.loginButton`
 
 ---
 
@@ -650,7 +700,7 @@ This screen is responsible for the following core functional areas:
 |-------|-------------|----------------|
 | `items` | Cart items array | Array of Cart Item DTOs |
 | `totalItems` | Sum of quantities | Integer |
-| `subtotal` | Sum of all subtotals | Currency formatted string |
+| `subtotal` | Sum of all subtotals (unit_price × quantity per item, **before** discounts) | Currency formatted string |
 | `hasOutOfStock` | Any item with stock = 0 | Boolean |
 | `canCheckout` | All items in stock | Boolean |
 
@@ -826,6 +876,8 @@ The Wishlist and Cart pages operate with standard REST API calls. Real-time WebS
 |--------|--------|-----------|
 | `/wishlist` | `/login` | 401 Unauthorized |
 | `/cart` | `/login` | 401 Unauthorized |
+| Product Detail / Product Card | `/login` | Guest user clicks "Add to Cart" (via alert modal) |
+| `/wishlist` | `/login` | Guest user clicks "Move to Cart" (via alert modal) |
 
 ---
 
