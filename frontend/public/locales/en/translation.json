@@ -86,8 +86,22 @@
     }
   },
   "footer": {
-    "copyright": "© 2026 Cosmetics Finder. All rights reserved.",
+    "brand": "Cosmetics Finder",
+    "tagline": "Your beauty journey starts here.",
+    "quickLinks": "Quick Links",
+    "customerCare": "Customer Care",
+    "stayConnected": "Stay Connected",
+    "newsletter": "Subscribe to our newsletter",
+    "newsletterPlaceholder": "Enter your email",
+    "subscribe": "Subscribe",
+    "products": "Products",
+    "about": "About",
+    "contact": "Contact",
+    "skincareTips": "Skincare Tips",
+    "faq": "FAQ",
+    "aboutUs": "About Us",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "copyright": "© 2026 Cosmetics Finder. All rights reserved."
   }
 }

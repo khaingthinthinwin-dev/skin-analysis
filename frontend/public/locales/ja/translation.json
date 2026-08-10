@@ -86,8 +86,22 @@
     }
   },
   "footer": {
-    "copyright": "© 2026 Cosmetics Finder. 全著作権所有。",
+    "brand": "Cosmetics Finder",
+    "tagline": "あなたのビューティージャーニーはここから始まります。",
+    "quickLinks": "クイックリンク",
+    "customerCare": "カスタマーケア",
+    "stayConnected": "つながりを維持",
+    "newsletter": "ニュースレターを購読",
+    "newsletterPlaceholder": "メールアドレスを入力",
+    "subscribe": "購読する",
+    "products": "製品",
+    "about": "概要",
+    "contact": "お問い合わせ",
+    "skincareTips": "スキンケアのヒント",
+    "faq": "よくある質問",
+    "aboutUs": "会社概要",
     "privacy": "プライバシーポリシー",
-    "terms": "利用規約"
+    "terms": "利用規約",
+    "copyright": "© 2026 Cosmetics Finder. 全著作権所有。"
   }
 }

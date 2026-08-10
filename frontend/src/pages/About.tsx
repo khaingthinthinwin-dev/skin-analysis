@@ -1,5 +1,4 @@
 import { Link } from 'react-router'
-import { useTranslation } from 'react-i18next'
 import {
   Target,
   Eye,
@@ -10,14 +9,11 @@ import {
   BarChart3,
   Sparkles,
   ShoppingBag,
-  Languages,
 } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
 import { aboutImages } from '@/data/about'
 
 export default function About() {
-  const { t } = useTranslation()
-
   const steps = [
     { num: '1', title: 'Upload Photo', desc: 'Take or upload a clear facial photo for analysis.' },
     { num: '2', title: 'AI Analysis', desc: 'Our model analyzes skin type, condition, and age estimation.' },
