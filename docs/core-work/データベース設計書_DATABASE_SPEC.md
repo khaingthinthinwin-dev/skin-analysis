@@ -11,7 +11,7 @@
 | **Phase** | Technical Design |
 | **Version** | 1.0 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-03 |
+| **Last Updated** | 2026-08-10 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released (承認済み) |
 
@@ -20,6 +20,7 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-03 | Lead Database Engineer | Initial technical design specification (新規作成) |
+| 1.1 | 2026-08-10 | Lead Database Engineer | Added new fields to advertisements table for approval workflow, payment tracking, and weekly limits |
 
 ---
 
@@ -584,7 +585,7 @@ CREATE TABLE promotions (
 ---
 
 ### 3.11 Advertisements Table (`advertisements` - 広告テーブル)
-Manages shop advertisements.
+Manages shop advertisements with approval workflow, payment tracking, and weekly limits.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
@@ -593,12 +594,21 @@ Manages shop advertisements.
 | 2 | 店舗ID | `shop_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_advertisements_shop`). References `shops(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
 | 3 | タイトル | `title` | VARCHAR(200) | - | - | N | - | Advertisement title. |
 | 4 | 内容 | `content` | TEXT | - | - | Y | NULL | Advertisement content/description. |
-| 5 | 画像URL | `image_url` | VARCHAR(500) | - | - | Y | NULL | Advertisement image URL. |
-| 6 | リンクURL | `link_url` | VARCHAR(500) | - | - | Y | NULL | Click-through link URL. |
-| 7 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Advertisement active status. |
-| 8 | 開始日時 | `starts_at` | TIMESTAMPTZ | - | - | N | - | Advertisement start timestamp. |
-| 9 | 終了日時 | `expires_at` | TIMESTAMPTZ | - | - | N | - | Advertisement end timestamp. |
-| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 5 | 告知メッセージ | `announcement_message` | VARCHAR(500) | - | - | N | - | Banner announcement message. |
+| 6 | 画像URL | `image_url` | VARCHAR(500) | - | - | Y | NULL | Advertisement image URL. |
+| 7 | リンクURL | `link_url` | VARCHAR(500) | - | - | Y | NULL | Click-through link URL. |
+| 8 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Advertisement active status. |
+| 9 | 承認状態 | `approval_status` | VARCHAR(20) | - | - | N | 'pending' | Approval status: pending/approved/rejected. |
+| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/paid/failed/refunded. |
+| 11 | 支払い金額 | `payment_amount` | DECIMAL(10,2) | - | - | Y | NULL | Advertising fee amount. |
+| 12 | 支払い参照番号 | `payment_reference` | VARCHAR(100) | - | - | Y | NULL | Payment transaction reference. |
+| 13 | 承認者ID | `approved_by` | VARCHAR(25) | - | Y | Y | NULL | Foreign key (`fk_advertisements_approved_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 14 | 承認日時 | `approved_at` | TIMESTAMPTZ | - | - | Y | NULL | Approval/rejection timestamp. |
+| 15 | 却下理由 | `rejection_reason` | TEXT | - | - | Y | NULL | Reason for rejection. |
+| 16 | 週番号 | `week_number` | INTEGER | - | - | N | - | ISO week number for limit tracking. |
+| 17 | 開始日時 | `starts_at` | TIMESTAMPTZ | - | - | N | - | Advertisement start timestamp. |
+| 18 | 終了日時 | `expires_at` | TIMESTAMPTZ | - | - | N | - | Advertisement end timestamp. |
+| 19 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 
 #### Reference SQL DDL
 ```sql
@@ -607,15 +617,28 @@ CREATE TABLE advertisements (
     shop_id VARCHAR(25) NOT NULL,
     title VARCHAR(200) NOT NULL,
     content TEXT,
+    announcement_message VARCHAR(500) NOT NULL,
     image_url VARCHAR(500),
     link_url VARCHAR(500),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    payment_amount DECIMAL(10,2),
+    payment_reference VARCHAR(100),
+    approved_by VARCHAR(25),
+    approved_at TIMESTAMP WITH TIME ZONE,
+    rejection_reason TEXT,
+    week_number INTEGER NOT NULL,
     starts_at TIMESTAMP WITH TIME ZONE NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_advertisements_dates CHECK (expires_at > starts_at),
+    CONSTRAINT chk_advertisements_approval_status CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
     CONSTRAINT fk_advertisements_shop FOREIGN KEY (shop_id)
-        REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE
+        REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_advertisements_approved_by FOREIGN KEY (approved_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 ```
 
@@ -661,6 +684,9 @@ To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds)
 | 30 | `idx_advertisements_shop_id` | `advertisements` | `shop_id` | Optimizes shop advertisement loading. |
 | 31 | `idx_advertisements_is_active` | `advertisements` | `is_active` | Speeds up active advertisement filtering. |
 | 32 | `idx_advertisements_expires_at` | `advertisements` | `expires_at` | Optimizes expired ad cleanup. |
+| 33 | `idx_advertisements_approval_status` | `advertisements` | `approval_status` | Speeds up approval status filtering. |
+| 34 | `idx_advertisements_payment_status` | `advertisements` | `payment_status` | Optimizes payment status filtering. |
+| 35 | `idx_advertisements_week_number` | `advertisements` | `week_number` | Speeds up weekly ad limit checks. |
 
 ### 4.2 DDL Index Scripts
 
@@ -718,6 +744,9 @@ CREATE INDEX idx_promotions_expires_at ON promotions (expires_at);
 CREATE INDEX idx_advertisements_shop_id ON advertisements (shop_id);
 CREATE INDEX idx_advertisements_is_active ON advertisements (is_active);
 CREATE INDEX idx_advertisements_expires_at ON advertisements (expires_at);
+CREATE INDEX idx_advertisements_approval_status ON advertisements (approval_status);
+CREATE INDEX idx_advertisements_payment_status ON advertisements (payment_status);
+CREATE INDEX idx_advertisements_week_number ON advertisements (week_number);
 
 -- Partial Indexing for Active Products (Soft Delete Equivalent)
 CREATE INDEX idx_products_active_featured ON products (is_featured, created_at DESC) 

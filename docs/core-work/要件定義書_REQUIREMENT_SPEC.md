@@ -12,7 +12,7 @@
 | **System** | Cosmetics Finder |
 | **Version** | 1.0 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-03 |
+| **Last Updated** | 2026-08-10 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 
@@ -21,6 +21,7 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-03 | Software Architect | Initial requirements definition |
+| 1.1 | 2026-08-10 | Software Architect | Added advertisement approval workflow, payment system, weekly ad limit, and announcement message requirements |
 
 ---
 
@@ -473,6 +474,10 @@ Represents JWT refresh tokens.
 | M-AD-003 | Merchant can upload ad images | Medium |
 | M-AD-004 | Merchant can view/manage own ads | Medium |
 | M-AD-005 | Active ads display on platform | Medium |
+| M-AD-006 | Admin can approve/reject advertisements | High |
+| M-AD-007 | Merchants must pay advertising fee before submission | High |
+| M-AD-008 | Maximum 5 active advertisements per week | High |
+| M-AD-009 | Advertisements display with banner/image and announcement message | Medium |
 
 #### 3.2.15 Merchant Module - Shop Profile (マーチャントモジュール - 店舗プロフィール)
 
@@ -612,7 +617,31 @@ pending → confirmed → processing → delivered → done
 - Fixed discount: subtracted from subtotal (cannot exceed subtotal)
 - Discounted amount cannot go below 0
 
-### 4.6 Merchant Rules (出品者ルール)
+### 4.6 Advertisement Rules (広告ルール)
+
+#### Rule 4.6.1: Advertisement Approval
+- All advertisements require admin approval before display
+- Advertisements are in `PENDING_APPROVAL` status after payment
+- Admin can approve or reject with reason
+- Rejected ads can be edited and resubmitted
+
+#### Rule 4.6.2: Advertisement Payment
+- Merchants must pay advertising fee before ad submission
+- Payment must be verified before ad transitions to `PENDING_APPROVAL`
+- Payment transaction recorded with amount, status, reference
+- Refund automatically processed if ad is rejected
+
+#### Rule 4.6.3: Weekly Ad Limit
+- Maximum 5 active advertisements per week across all merchants
+- Week runs Monday 00:00 to Sunday 23:59 (UTC)
+- Limit validated before approving ad for display
+
+#### Rule 4.6.4: Advertisement Display
+- Advertisements display with banner/image and announcement message
+- Only approved ads within schedule are shown to buyers
+- Active ads cached in Redis with 5-minute TTL
+
+### 4.7 Merchant Rules (出品者ルール)
 
 #### Rule 4.6.1: Shop Approval
 - New merchant shops require admin approval

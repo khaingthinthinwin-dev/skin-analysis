@@ -10,7 +10,7 @@
 | **System** | Cosmetics Finder |
 | **Version** | 1.0 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-03 |
+| **Last Updated** | 2026-08-10 |
 | **Author** | Principal Software Architect & Enterprise Engineering Governance Lead |
 | **Status** | Released |
 | **Audience** | Human Developers, Cursor AI, GitHub Copilot, Claude Code, Gemini Code Assist |
@@ -2188,6 +2188,14 @@ final = max(0, subtotal - discount)
 | Shop approval required | Only approved shops can have active ads |
 | Image optional | Ads can be text-only or with image |
 | Link URL optional | Click-through URL is optional |
+| Admin approval required | All ads must be approved by admin before display |
+| Payment required | Merchants must pay advertising fee before submission |
+| Weekly ad limit | Maximum 5 active advertisements per week |
+| Announcement message | Ads must include announcement message for display |
+| Approval status | Ads have approval_status: pending/approved/rejected |
+| Payment status | Ads have payment_status: pending/paid/failed/refunded |
+| Rejection refund | Automatic refund if ad is rejected |
+| Resubmission | Rejected ads can be edited and resubmitted |
 
 ## 12.8 AI Skin Analysis Rules
 
