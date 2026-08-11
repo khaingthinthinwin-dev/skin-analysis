@@ -305,8 +305,7 @@ The Register form requires role options (hardcoded):
 | Related Document | Purpose |
 |-----------------|---------|
 | [DD_AUTH_01](./DD_SignUp_Login_01_MODULE_OVERVIEW.md) | Module overview and architecture |
-| [DD_AUTH_04](./DD_SignUp_Login_04_API_ENDPOINTS.md) | Backend REST API contract |
+| [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Backend REST API contract |
+| [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | DTO and type definitions |
 | [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Backend business rules |
-| [DD_COMMON_01](../00_common/DD_COMMON_01_UI_COMPONENTS.md) | Shared UI components (Button, Input, Card) |
-| [DD_COMMON_04](../00_common/DD_COMMON_04_SHARED_VALIDATION.md) | Shared validation utilities |
-| [機能設計書_SignUp_Login](./機能設計書_SignUp_Login_New.md) | Full functional specification |
+| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Full functional specification |

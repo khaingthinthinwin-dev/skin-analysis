@@ -158,5 +158,4 @@ Using Vitest + React Testing Library.
 | [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Business logic tested by unit tests |
 | [DD_AUTH_02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend components tested |
 | [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | API endpoints tested |
-| [DD_COMMON_04](../00_common/DD_COMMON_04_SHARED_VALIDATION.md) | Validation rules tested |
-| [機能設計書_SignUp_Login](./機能設計書_SignUp_Login_New.md) | Functional requirements |
+| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Functional requirements |

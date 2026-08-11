@@ -246,5 +246,5 @@ const CLEAR_COOKIE_OPTIONS = {
 |-----------------|---------|
 | [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Endpoint routing to these methods |
 | [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | DTO definitions used in validation |
-| [DD_AUTH_06](./DD_SignUp_Login_06_SECURITY.md) | Security implementation details |
+| [DD_AUTH_06](./DD_SignUp_Login_06__TEST_SPEC.md) | Test specification |
 | [Requirement Spec](../../core-work/要件定義書_REQUIREMENT_SPEC.md) | Source business rules |

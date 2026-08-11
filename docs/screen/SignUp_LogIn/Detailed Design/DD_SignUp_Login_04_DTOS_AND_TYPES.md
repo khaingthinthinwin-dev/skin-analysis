@@ -355,6 +355,4 @@ export interface RateLimitEntry {
 |-----------------|---------|
 | [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Endpoints that consume these DTOs |
 | [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Business rules for validation |
-| [DD_COMMON_04](../00_common/DD_COMMON_04_SHARED_VALIDATION.md) | Shared validation utilities |
-| [DD_COMMON_05](../00_common/DD_COMMON_05_TYPES.md) | Shared TypeScript types |
-| [機能設計書_SignUp_Login](./機能設計書_SignUp_Login_New.md) | Full functional specification |
+| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Full functional specification |

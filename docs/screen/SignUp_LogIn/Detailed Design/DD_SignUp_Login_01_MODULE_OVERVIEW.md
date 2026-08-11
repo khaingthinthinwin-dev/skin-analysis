@@ -134,9 +134,9 @@ stateDiagram-v2
 
 | Related Document | Purpose |
 |-----------------|---------|
-| [DD_AUTH_02](./DD_AUTH_02_FRONTEND_LOGIN.md) | Login page frontend design |
-| [DD_AUTH_03](./DD_AUTH_03_FRONTEND_REGISTER.md) | Register page frontend design |
-| [DD_AUTH_04](./DD_AUTH_04_API_ENDPOINTS.md) | Backend REST API contract |
-| [DD_AUTH_05](./DD_AUTH_05_BUSINESS_LOGIC.md) | Backend business rules and token lifecycle |
-| [DD_AUTH_06](./DD_AUTH_06_SECURITY.md) | Security implementation details |
-| [機能設計書_SignUp_Login](./機能設計書_SignUp_Login_New.md) | Full functional specification |
+| [DD_AUTH_02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend page design |
+| [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Backend REST API contract |
+| [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | DTO and type definitions |
+| [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Backend business rules and token lifecycle |
+| [DD_AUTH_06](./DD_SignUp_Login_06__TEST_SPEC.md) | Test specification |
+| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Full functional specification |

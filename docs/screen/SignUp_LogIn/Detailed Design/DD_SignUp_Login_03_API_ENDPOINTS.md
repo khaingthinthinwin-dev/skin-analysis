@@ -201,7 +201,6 @@ After successful login, the frontend establishes a WebSocket connection:
 |-----------------|---------|
 | [DD_AUTH_01](./DD_SignUp_Login_01_MODULE_OVERVIEW.md) | Module overview and architecture |
 | [DD_AUTH_02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend page design |
-| [DD_AUTH_04](./DD_SignUp_Login_04_DTOs_AND_TYPES.md) | Full DTO definitions |
+| [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | Full DTO definitions |
 | [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Backend business rules |
-| [DD_COMMON_07](../00_common/DD_COMMON_07_AUTH_AND_MIDDLEWARE.md) | Shared auth guards and middleware |
-| [機能設計書_SignUp_Login](./機能設計書_SignUp_Login_New.md) | Full functional specification |
+| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Full functional specification |
