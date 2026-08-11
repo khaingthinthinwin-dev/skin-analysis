@@ -584,7 +584,7 @@ CREATE TABLE promotions (
 ---
 
 ### 3.11 広告テーブル (`advertisements` - 広告テーブル)
-店舗広告を管理します。
+承認ワークフロー、支払い追跡、週間制限を備えた店舗広告を管理します。
 
 #### データ辞書
 | 項番 | 論理名 | 物理名 | データ型・桁数 | PK | FK | NULL許容 | 初期値 | 制約・備考 |
@@ -593,12 +593,21 @@ CREATE TABLE promotions (
 | 2 | 店舗ID | `shop_id` | VARCHAR(25) | - | Y | N | - | フォーリンキー（`fk_advertisements_shop`）。`shops(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
 | 3 | タイトル | `title` | VARCHAR(200) | - | - | N | - | 広告タイトル。 |
 | 4 | 内容 | `content` | TEXT | - | - | Y | NULL | 広告コンテンツ/説明。 |
-| 5 | 画像URL | `image_url` | VARCHAR(500) | - | - | Y | NULL | 広告画像URL。 |
-| 6 | リンクURL | `link_url` | VARCHAR(500) | - | - | Y | NULL | クリックスルーリンクURL。 |
-| 7 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | 広告有効ステータス。 |
-| 8 | 開始日時 | `starts_at` | TIMESTAMPTZ | - | - | N | - | 広告開始タイムスタンプ。 |
-| 9 | 終了日時 | `expires_at` | TIMESTAMPTZ | - | - | N | - | 広告終了タイムスタンプ。 |
-| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 5 | 告知メッセージ | `announcement_message` | VARCHAR(500) | - | - | N | - | バナー告知メッセージ。 |
+| 6 | 画像URL | `image_url` | VARCHAR(500) | - | - | Y | NULL | 広告画像URL。 |
+| 7 | リンクURL | `link_url` | VARCHAR(500) | - | - | Y | NULL | クリックスルーリンクURL。 |
+| 8 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | 広告有効ステータス。 |
+| 9 | 承認状態 | `approval_status` | VARCHAR(20) | - | - | N | 'pending' | 承認状態: pending/approved/rejected。 |
+| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | 支払い状態: pending/paid/failed/refunded。 |
+| 11 | 支払い金額 | `payment_amount` | DECIMAL(10,2) | - | - | Y | NULL | 広告料金額。 |
+| 12 | 支払い参照番号 | `payment_reference` | VARCHAR(100) | - | - | Y | NULL | 支払い取引参照。 |
+| 13 | 承認者ID | `approved_by` | VARCHAR(25) | - | Y | Y | NULL | フォーリンキー（`fk_advertisements_approved_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 14 | 承認日時 | `approved_at` | TIMESTAMPTZ | - | - | Y | NULL | 承認/却下タイムスタンプ。 |
+| 15 | 却下理由 | `rejection_reason` | TEXT | - | - | Y | NULL | 却下理由。 |
+| 16 | 週番号 | `week_number` | INTEGER | - | - | N | - | 週間制限追跡用ISO週番号。 |
+| 17 | 開始日時 | `starts_at` | TIMESTAMPTZ | - | - | N | - | 広告開始タイムスタンプ。 |
+| 18 | 終了日時 | `expires_at` | TIMESTAMPTZ | - | - | N | - | 広告終了タイムスタンプ。 |
+| 19 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
 
 #### 参照SQL DDL
 ```sql
@@ -607,15 +616,28 @@ CREATE TABLE advertisements (
     shop_id VARCHAR(25) NOT NULL,
     title VARCHAR(200) NOT NULL,
     content TEXT,
+    announcement_message VARCHAR(500) NOT NULL,
     image_url VARCHAR(500),
     link_url VARCHAR(500),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    payment_amount DECIMAL(10,2),
+    payment_reference VARCHAR(100),
+    approved_by VARCHAR(25),
+    approved_at TIMESTAMP WITH TIME ZONE,
+    rejection_reason TEXT,
+    week_number INTEGER NOT NULL,
     starts_at TIMESTAMP WITH TIME ZONE NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_advertisements_dates CHECK (expires_at > starts_at),
+    CONSTRAINT chk_advertisements_approval_status CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
     CONSTRAINT fk_advertisements_shop FOREIGN KEY (shop_id)
-        REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE
+        REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_advertisements_approved_by FOREIGN KEY (approved_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 ```
 
@@ -661,6 +683,9 @@ CREATE TABLE advertisements (
 | 30 | `idx_advertisements_shop_id` | `advertisements` | `shop_id` | 店舗広告のロードを最適化。 |
 | 31 | `idx_advertisements_is_active` | `advertisements` | `is_active` | 有効広告フィルタを高速化。 |
 | 32 | `idx_advertisements_expires_at` | `advertisements` | `expires_at` | 期限切れ広告のクリーンアップを最適化。 |
+| 33 | `idx_advertisements_approval_status` | `advertisements` | `approval_status` | 承認状態フィルタを高速化。 |
+| 34 | `idx_advertisements_payment_status` | `advertisements` | `payment_status` | 支払い状態フィルタを最適化。 |
+| 35 | `idx_advertisements_week_number` | `advertisements` | `week_number` | 週間広告制限チェックを高速化。 |
 
 ### 4.2 DDLインデックススクリプト
 
@@ -718,6 +743,9 @@ CREATE INDEX idx_promotions_expires_at ON promotions (expires_at);
 CREATE INDEX idx_advertisements_shop_id ON advertisements (shop_id);
 CREATE INDEX idx_advertisements_is_active ON advertisements (is_active);
 CREATE INDEX idx_advertisements_expires_at ON advertisements (expires_at);
+CREATE INDEX idx_advertisements_approval_status ON advertisements (approval_status);
+CREATE INDEX idx_advertisements_payment_status ON advertisements (payment_status);
+CREATE INDEX idx_advertisements_week_number ON advertisements (week_number);
 
 -- アクティブ商品の部分インデックス（ソフト削除に相当）
 CREATE INDEX idx_products_active_featured ON products (is_featured, created_at DESC) 

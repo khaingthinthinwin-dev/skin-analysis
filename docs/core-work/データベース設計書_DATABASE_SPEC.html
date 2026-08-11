@@ -734,11 +734,12 @@ discount_types ||--o{ promotions : "categorizes"</div>
                     </div>
                     <div class="table-card">
                         <h5>advertisements</h5>
-                        <p style="font-size:0.8rem;color:var(--text-muted)">Shop advertisements</p>
+                        <p style="font-size:0.8rem;color:var(--text-muted)">Shop advertisements with approval workflow</p>
                         <div class="constraint-list">
                             <span class="constraint-tag tag-pk">PK: id</span>
                             <span class="constraint-tag tag-fk">FK: shop_id→shops</span>
-                            <span class="constraint-tag tag-check">CHECK: dates</span>
+                            <span class="constraint-tag tag-fk">FK: approved_by→users</span>
+                            <span class="constraint-tag tag-check">CHECK: dates, approval_status, payment_status</span>
                         </div>
                     </div>
                 </div>
@@ -770,7 +771,7 @@ shops ||--o{ advertisements : "displays"</div>
     <div class="section" id="indexes">
         <div class="section-header" onclick="toggleSection(this)">
             <h2><span class="section-toggle">▼</span> 4. Performance Indexes (パフォーマンスインデックス)</h2>
-            <span class="badge">32 indexes</span>
+            <span class="badge">35 indexes</span>
         </div>
         <div class="section-content">
             <div class="subsection">
@@ -846,6 +847,9 @@ shops ||--o{ advertisements : "displays"</div>
                         <tr><td><code>advertisements</code></td><td><code>idx_advertisements_shop_id</code></td><td><code>shop_id</code></td></tr>
                         <tr><td><code>advertisements</code></td><td><code>idx_advertisements_is_active</code></td><td><code>is_active</code></td></tr>
                         <tr><td><code>advertisements</code></td><td><code>idx_advertisements_expires_at</code></td><td><code>expires_at</code></td></tr>
+                        <tr><td><code>advertisements</code></td><td><code>idx_advertisements_approval_status</code></td><td><code>approval_status</code></td></tr>
+                        <tr><td><code>advertisements</code></td><td><code>idx_advertisements_payment_status</code></td><td><code>payment_status</code></td></tr>
+                        <tr><td><code>advertisements</code></td><td><code>idx_advertisements_week_number</code></td><td><code>week_number</code></td></tr>
                     </tbody>
                 </table>
             </div>
