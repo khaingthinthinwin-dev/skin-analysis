@@ -212,10 +212,7 @@ This screen is responsible for the following core functional areas:
 | A-REV-001 | Admin can view all reviews |
 | A-REV-002 | Admin can approve/reject reviews |
 | A-REV-003 | Admin can delete inappropriate reviews |
-| A-REV-004 | Admin can view review reports from users |
-| A-CONT-001 | Admin can review new product listings |
 | A-CONT-002 | Admin can approve/reject merchant registrations |
-| A-CONT-003 | Admin can manage categories (add/edit/delete) |
 | A-CONT-004 | Admin can remove violating content |
 
 ---
