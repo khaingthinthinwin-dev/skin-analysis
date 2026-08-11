@@ -282,16 +282,25 @@ Represents discount codes and promotions.
 - CreatedDate
 
 #### 3.1.9 Advertisement Entity
-Represents shop advertisements.
+Represents shop advertisements with approval workflow, payment tracking, and weekly limits.
 
 **Attributes:**
 - AdvertisementID (Primary Key, CUID)
 - ShopID (Foreign Key to Shop)
 - Title
 - Content (Optional)
+- AnnouncementMessage (Required, max 500 chars) — banner text displayed on storefront
 - ImageUrl (Optional)
 - LinkUrl (Optional)
 - IsActive (Default: true)
+- ApprovalStatus (pending / approved / rejected, Default: 'pending')
+- PaymentStatus (pending / paid / failed / refunded, Default: 'pending')
+- PaymentAmount (Decimal, Optional) — advertising fee amount
+- PaymentReference (Optional) — payment transaction reference
+- ApprovedBy (Foreign Key to User, Optional) — admin who approved/rejected
+- ApprovedAt (Timestamp, Optional)
+- RejectionReason (Optional) — reason when admin rejects
+- WeekNumber (Integer) — ISO week number for weekly limit tracking
 - StartsAt
 - ExpiresAt
 - CreatedDate
@@ -863,12 +872,14 @@ pending → confirmed → processing → delivered → done
 │   ├── GET    /:id
 │   ├── GET    /merchant
 │   └── PATCH  /merchant
-├── /ads            # Advertisements
-│   ├── POST   /
-│   ├── GET    /
-│   ├── PATCH  /:id
-│   ├── DELETE /:id
-│   └── GET    /active
+├── /ads            # Advertisements (Merchant)
+│   ├── POST   /           # Create ad (draft)
+│   ├── GET    /           # List own ads
+│   ├── PATCH  /:id        # Update ad
+│   ├── DELETE /:id        # Soft delete ad
+│   ├── POST   /:id/pay    # Pay advertising fee
+│   ├── POST   /:id/submit # Submit for approval
+│   └── GET    /active     # List active ads (public)
 ├── /analytics      # Analytics
 │   ├── GET    /merchant/dashboard
 │   ├── GET    /merchant/sales
@@ -882,7 +893,10 @@ pending → confirmed → processing → delivered → done
 │   ├── GET    /merchants
 │   ├── PATCH  /merchants/:id/status
 │   ├── GET    /reviews/pending
-│   └── POST   /reviews/:id/moderate
+│   ├── POST   /reviews/:id/moderate
+│   ├── GET    /ads                # List all ads / pending approval queue
+│   ├── POST   /ads/:id/approve   # Approve advertisement
+│   └── POST   /ads/:id/reject    # Reject advertisement (with reason)
 └── /health         # Health Check
     └── GET    /
 ```
