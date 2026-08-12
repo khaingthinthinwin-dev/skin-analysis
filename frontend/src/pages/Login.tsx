@@ -41,6 +41,7 @@ export default function Login() {
       email: '',
       password: '',
     },
+    mode: 'onTouched',
   })
 
   const onSubmit = async (data: LoginFormData) => {
@@ -59,97 +60,96 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-200px)] items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">{t('auth.login.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('auth.login.email')}</FormLabel>
-                    <FormControl>
+    <Card className="w-full">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">{t('auth.login.title')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4" role="alert">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('auth.login.email')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder={t('auth.login.emailPlaceholder')}
+                      autoComplete="email"
+                      autoFocus
+                      inputMode="email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('auth.login.password')}</FormLabel>
+                  <FormControl>
+                    <div className="relative">
                       <Input
-                        type="email"
-                        placeholder={t('auth.login.emailPlaceholder')}
-                        autoComplete="email"
-                        autoFocus
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder={t('auth.login.passwordPlaceholder')}
+                        autoComplete="current-password"
                         {...field}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('auth.login.password')}</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder={t('auth.login.passwordPlaceholder')}
-                          autoComplete="current-password"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                          tabIndex={-1}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
-                          <span className="sr-only">
-                            {showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
-                          </span>
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('auth.login.submitting')}
-                  </>
-                ) : (
-                  t('auth.login.submit')
-                )}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">
-            {t('auth.login.noAccount')}{' '}
-            <Link to={ROUTES.REGISTER} className="text-primary hover:underline">
-              {t('auth.login.createAccount')}
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className="sr-only">
+                          {showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
+                        </span>
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('auth.login.submitting')}
+                </>
+              ) : (
+                t('auth.login.submit')
+              )}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">
+          {t('auth.login.noAccount')}{' '}
+          <Link to={ROUTES.REGISTER} className="text-primary hover:underline">
+            {t('auth.login.createAccount')}
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
   )
 }

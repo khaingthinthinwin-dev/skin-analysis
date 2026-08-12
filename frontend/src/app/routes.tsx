@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 import { lazy, Suspense } from 'react'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { AuthLayout } from '@/components/layout/AuthLayout'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -40,22 +41,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'login',
-        element: (
-          <SuspenseWrapper>
-            <Login />
-          </SuspenseWrapper>
-        ),
-      },
-      {
-        path: 'register',
-        element: (
-          <SuspenseWrapper>
-            <Register />
-          </SuspenseWrapper>
-        ),
-      },
-      {
         path: 'unauthorized',
         element: (
           <SuspenseWrapper>
@@ -90,14 +75,34 @@ export const router = createBrowserRouter([
           },
         ],
       },
-      {
-        path: '*',
-        element: (
-          <SuspenseWrapper>
-            <NotFound />
-          </SuspenseWrapper>
-        ),
-      },
     ],
+  },
+  {
+    path: '/login',
+    element: (
+      <AuthLayout>
+        <SuspenseWrapper>
+          <Login />
+        </SuspenseWrapper>
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/register',
+    element: (
+      <AuthLayout>
+        <SuspenseWrapper>
+          <Register />
+        </SuspenseWrapper>
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '*',
+    element: (
+      <SuspenseWrapper>
+        <NotFound />
+      </SuspenseWrapper>
+    ),
   },
 ])

@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000, // Increased timeout for file uploads
 })
@@ -31,12 +31,13 @@ apiClient.interceptors.response.use(
 
       if (refreshToken) {
         try {
-          const { data } = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
-            { refreshToken }
-          )
-          localStorage.setItem('accessToken', data.accessToken)
-          localStorage.setItem('refreshToken', data.refreshToken)
+            const { data: refreshResponse } = await axios.post(
+              `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'}/auth/refresh`,
+              { refreshToken }
+            )
+            const tokenData = refreshResponse.data || refreshResponse
+            localStorage.setItem('accessToken', tokenData.accessToken)
+            localStorage.setItem('refreshToken', tokenData.refreshToken)
           originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
           return apiClient(originalRequest)
         } catch {

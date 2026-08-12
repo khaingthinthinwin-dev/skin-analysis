@@ -75,7 +75,9 @@
         "size": "File exceeds maximum size of 10 MB",
         "name": "File must be named license.pdf",
         "required": "Business license is required for merchant registration"
-      }
+      },
+      "agreeToTerms": "I agree to the",
+      "termsOfService": "Terms of Service"
     }
   },
   "home": {

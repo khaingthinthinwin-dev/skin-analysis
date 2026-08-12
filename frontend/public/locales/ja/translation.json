@@ -75,7 +75,9 @@
         "size": "ファイルサイズが10MBを超えています",
         "name": "ファイル名はlicense.pdfである必要があります",
         "required": "出品者登録には事業許可書が必要です"
-      }
+      },
+      "agreeToTerms": "利用規約に同意します",
+      "termsOfService": "利用規約"
     }
   },
   "home": {

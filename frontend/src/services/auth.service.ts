@@ -3,12 +3,11 @@ import type { LoginCredentials, RegisterData, AuthResponse, User } from '@/types
 
 export const authService = {
   login: async (data: LoginCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/login', data)
-    return response.data
+    const response = await apiClient.post<{ data: AuthResponse }>('/auth/login', data)
+    return response.data.data
   },
 
   register: async (data: RegisterData): Promise<AuthResponse> => {
-    // Create FormData for multipart upload
     const formData = new FormData()
     formData.append('email', data.email)
     formData.append('name', data.name)
@@ -20,17 +19,13 @@ export const authService = {
       formData.append('license', data.licenseFile)
     }
 
-    const response = await apiClient.post<AuthResponse>('/auth/register', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    return response.data
+    const response = await apiClient.post<{ data: AuthResponse }>('/auth/register', formData)
+    return response.data.data
   },
 
   verifyToken: async (): Promise<User> => {
-    const response = await apiClient.get<User>('/auth/verify')
-    return response.data
+    const response = await apiClient.get<{ data: User }>('/auth/verify')
+    return response.data.data
   },
 
   logout: async (): Promise<void> => {
