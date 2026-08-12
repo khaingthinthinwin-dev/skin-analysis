@@ -4,9 +4,9 @@
 **Target Screen:** Wishlist & Cart Page (お気に入り & カートページ)  
 **Subsystem:** Buyer Module — Wishlist Management & Shopping Cart  
 **Function ID:** FN-WISH-001, FN-CART-001  
-**Version:** 1.0  
+**Version:** 1.2  
 **Created:** 2026-08-08  
-**Last Updated:** 2026-08-08  
+**Last Updated:** 2026-08-12  
 **Author:** Senior System Engineer   
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -18,6 +18,8 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-08 | Senior System Engineer | Initial release. Comprehensive screen items specification for Wishlist and Cart pages. |
+| 1.1 | 2026-08-12 | Senior System Engineer | Added "Clear All" cart functionality: `btnCartClearAll` item, `dlgCartClearConfirm` confirmation dialog, `DELETE /api/v1/cart` API behavior, i18n keys, validation error code, and test cases. |
+| 1.2 | 2026-08-12 | Senior System Engineer | Added return URL redirect after login: `btnGuestAlertLogin` now navigates to `/login?redirect={currentPath}`. Updated behavior spec to capture current path and post-login redirect logic. Updated guest user tests. |
 
 ### 1.2 Related Documents
 
@@ -232,32 +234,38 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | 37 | `lblCartTotalItemsValue` | Total Items Value | Text | Integer | Yes | Visible. Sum of all quantities. | — | Computed: sum of quantities | — |
 | 38 | `btnCartCheckout` | Checkout Button | Button (`primary`) | — | Yes | Visible. Text: "Proceed to Checkout" / "購入手続きへ" | — | — | Full width. Disabled when `hasOutOfStock = true` or cart is empty. Loading: Spinner. Navigates to `/checkout`. i18n: `cart.checkout`. |
 | 39 | `lnkCartContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | — | Text: "Continue Shopping" / "買い物を続ける" | — | — | Navigates to `/products`. i18n: `cart.continueShopping`. |
+| 40 | `btnCartClearAll` | Clear All Items Button | Button (`destructive` / `ghost`) | — | Yes | Visible. Text: "Clear All" / "すべて削除" | — | — | Full width. Disabled when cart is empty. Shows confirmation dialog before clearing. Loading: Spinner. i18n: `cart.clearAll`. |
+| 41 | `dlgCartClearConfirm` | Clear All Confirmation Dialog | Dialog/Modal | — | Conditional | Hidden by default. Shown when user clicks "Clear All" button. | Closes on ESC key or clicking outside. | — | i18n: `cart.clearConfirm.title`. |
+| 42 | `lblCartClearConfirmTitle` | Confirmation Title | Text (`<h2>`) | String | Conditional | Text: "Clear Cart?" / "カートを空にしますか？" | — | — | i18n: `cart.clearConfirm.title`. Tailwind: `text-lg font-semibold`. |
+| 43 | `lblCartClearConfirmMessage` | Confirmation Message | Text (`<p>`) | String | Conditional | Text: "This will remove all items from your cart." / "カート内のすべての商品が削除されます。" | — | — | i18n: `cart.clearConfirm.message`. |
+| 44 | `btnCartClearConfirmYes` | Confirm Clear Button | Button (`destructive`) | — | Conditional | Text: "Clear All" / "すべて削除" | — | — | Full width. Triggers `DELETE /api/v1/cart`. i18n: `cart.clearConfirm.confirmButton`. |
+| 45 | `btnCartClearConfirmNo` | Cancel Button | Button (`ghost`) | — | Conditional | Text: "Cancel" / "キャンセル" | — | — | Closes dialog. i18n: `cart.clearConfirm.cancelButton`. |
 
 ### 4.10 Section [L]: Cart Empty State (カート空状態)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 40 | `emptyCart` | Empty State Container | EmptyState | — | Conditional | Visible when cart has 0 items. | — | — | — |
-| 41 | `lblEmptyCartTitle` | Empty State Title | Text (`<h2>`) | String | Conditional | Text: "Your cart is empty" / "カートは空です" | — | — | i18n: `cart.emptyTitle`. Tailwind: `text-lg font-semibold`. |
-| 42 | `lblEmptyCartMessage` | Empty State Message | Text (`<p>`) | String | Conditional | Text: "Start shopping!" / "お買い物を始めましょう！" | — | — | i18n: `cart.emptyMessage`. Tailwind: `text-muted-foreground`. |
-| 43 | `lnkEmptyCartContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | Conditional | Text: "Browse Products" / "商品を見る" | — | — | Navigates to `/products`. i18n: `cart.browseProducts`. |
+| 41 | `emptyCart` | Empty State Container | EmptyState | — | Conditional | Visible when cart has 0 items. | — | — | — |
+| 42 | `lblEmptyCartTitle` | Empty State Title | Text (`<h2>`) | String | Conditional | Text: "Your cart is empty" / "カートは空です" | — | — | i18n: `cart.emptyTitle`. Tailwind: `text-lg font-semibold`. |
+| 43 | `lblEmptyCartMessage` | Empty State Message | Text (`<p>`) | String | Conditional | Text: "Start shopping!" / "お買い物を始めましょう！" | — | — | i18n: `cart.emptyMessage`. Tailwind: `text-muted-foreground`. |
+| 44 | `lnkEmptyCartContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | Conditional | Text: "Browse Products" / "商品を見る" | — | — | Navigates to `/products`. i18n: `cart.browseProducts`. |
 
 ### 4.11 Section [M]: Guest Login Alert Modal (ゲストログインアラートモーダル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 44 | `dlgGuestLoginAlert` | Guest Login Alert Modal | Dialog/Modal | — | Conditional | Hidden by default. Shown when unauthenticated user clicks "Add to Cart" or "Move to Cart". | Closes on ESC key or clicking outside. | — | i18n: `cart.guestLoginAlert.title`. |
-| 45 | `lblGuestAlertTitle` | Alert Title | Text (`<h2>`) | String | Conditional | Text: "Log In Required" / "ログインが必要です" | — | — | i18n: `cart.guestLoginAlert.title`. Tailwind: `text-lg font-semibold`. |
-| 46 | `lblGuestAlertMessage` | Alert Message | Text (`<p>`) | String | Conditional | Text: "Please log in to add items to your cart." / "カートに商品を追加するにはログインしてください。" | — | — | i18n: `cart.guestLoginAlert.message`. |
-| 47 | `btnGuestAlertLogin` | Log In Button | Button (`primary`) | — | Conditional | Text: "Log In" / "ログイン" | — | — | Navigates to `/login`. i18n: `cart.guestLoginAlert.loginButton`. Full width. |
-| 48 | `btnGuestAlertClose` | Close Button | Button (`ghost`) | — | Conditional | Text: "Cancel" / "キャンセル" | — | — | Closes modal. i18n: `cart.guestLoginAlert.closeButton`. |
+| 45 | `dlgGuestLoginAlert` | Guest Login Alert Modal | Dialog/Modal | — | Conditional | Hidden by default. Shown when unauthenticated user clicks "Add to Cart" or "Move to Cart". | Closes on ESC key or clicking outside. | — | i18n: `cart.guestLoginAlert.title`. |
+| 46 | `lblGuestAlertTitle` | Alert Title | Text (`<h2>`) | String | Conditional | Text: "Log In Required" / "ログインが必要です" | — | — | i18n: `cart.guestLoginAlert.title`. Tailwind: `text-lg font-semibold`. |
+| 47 | `lblGuestAlertMessage` | Alert Message | Text (`<p>`) | String | Conditional | Text: "Please log in to add items to your cart." / "カートに商品を追加するにはログインしてください。" | — | — | i18n: `cart.guestLoginAlert.message`. |
+| 48 | `btnGuestAlertLogin` | Log In Button | Button (`primary`) | — | Conditional | Text: "Log In" / "ログイン" | — | — | Navigates to `/login?redirect={currentPath}`. `currentPath` is the page where the modal was triggered (e.g., `/cart`, `/products/:slug`). i18n: `cart.guestLoginAlert.loginButton`. Full width. |
+| 49 | `btnGuestAlertClose` | Close Button | Button (`ghost`) | — | Conditional | Text: "Cancel" / "キャンセル" | — | — | Closes modal. i18n: `cart.guestLoginAlert.closeButton`. |
 
 ### 4.12 Shared: Loading Skeleton (共有: ローディングスケルトン)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 49 | `skeletonWishlistCard` | Wishlist Card Skeleton | Skeleton | — | Conditional | Visible during wishlist data fetch. Card-shaped placeholder. | — | — | Tailwind: `animate-pulse rounded-lg border h-64`. |
-| 50 | `skeletonCartItem` | Cart Item Skeleton | Skeleton | — | Conditional | Visible during cart data fetch. Row-shaped placeholder. | — | — | Tailwind: `animate-pulse h-20 border-b`. |
+| 50 | `skeletonWishlistCard` | Wishlist Card Skeleton | Skeleton | — | Conditional | Visible during wishlist data fetch. Card-shaped placeholder. | — | — | Tailwind: `animate-pulse rounded-lg border h-64`. |
+| 51 | `skeletonCartItem` | Cart Item Skeleton | Skeleton | — | Conditional | Visible during cart data fetch. Row-shaped placeholder. | — | — | Tailwind: `animate-pulse h-20 border-b`. |
 
 ---
 
@@ -357,7 +365,21 @@ The Wishlist page allows authenticated users to view and manage their saved prod
   - `404 NOT_FOUND`: Item already removed. Update UI.
   - `500 INTERNAL_SERVER_ERROR`: Revert removal. Toast: "Failed to remove item".
 
-### 5.8 Cart: Proceed to Checkout (`btnCartCheckout` onClick)
+### 5.8 Cart: Clear All Items (`btnCartClearAll` onClick)
+- **Trigger:** User clicks "Clear All" button in the cart summary panel.
+- **Processing Logic:**
+  1. **Confirmation:** Display `dlgCartClearConfirm` modal with title, message, and [Clear All] / [Cancel] buttons.
+  2. **Confirm Action:** If user clicks `btnCartClearConfirmYes`:
+     1. **Optimistic UI:** Immediately clear all cart items from the list. Show empty state. Update summary panel to zero.
+     2. **Backend Dispatch:** `DELETE /api/v1/cart`.
+     3. **Backend Execution:** Validate JWT. Delete all cart items for the authenticated user.
+     4. **Post-Execution UI:** Confirm empty state. Update cart badge to 0. Show success toast.
+  3. **Cancel Action:** If user clicks `btnCartClearConfirmNo` or presses ESC, close the dialog without action.
+- **Exception Handling:**
+  - `401 UNAUTHORIZED`: Revert cart state. Redirect to login.
+  - `500 INTERNAL_SERVER_ERROR`: Revert cart state. Toast: "Failed to clear cart. Please try again".
+
+### 5.9 Cart: Proceed to Checkout (`btnCartCheckout` onClick)
 - **Trigger:** User clicks "Proceed to Checkout" button.
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** Verify all items are in stock (`hasOutOfStock = false`). Verify cart is not empty.
@@ -365,15 +387,16 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 - **Exception Handling:**
   - If any item is out of stock: Button is disabled. Tooltip or toast: "Remove out-of-stock items before checkout".
 
-### 5.9 Guest Login Alert (`dlgGuestLoginAlert`)
+### 5.10 Guest Login Alert (`dlgGuestLoginAlert`)
 - **Trigger:** Unauthenticated user clicks any "Add to Cart" or "Move to Cart" action.
 - **Processing Logic:**
-  1. **Display Modal:** `dlgGuestLoginAlert` appears with title, message, and [Log In] button.
-  2. **Log In Action:** Clicking `btnGuestAlertLogin` navigates to `/login`.
-  3. **Close Action:** Clicking `btnGuestAlertClose` or pressing ESC closes the modal.
+  1. **Capture Current Path:** Store `window.location.pathname` as `returnUrl` (e.g., `/cart`, `/products/vitamin-c-serum`).
+  2. **Display Modal:** `dlgGuestAlertLogin` appears with title, message, and [Log In] button.
+  3. **Log In Action:** Clicking `btnGuestAlertLogin` navigates to `/login?redirect={returnUrl}`. After successful login, the authentication flow reads the `redirect` query parameter and navigates the user back to the original page.
+  4. **Close Action:** Clicking `btnGuestAlertClose` or pressing ESC closes the modal.
 - **Exception Handling:** None applicable.
 
-### 5.10 Language Toggle (`btnLanguageToggle` onClick)
+### 5.11 Language Toggle (`btnLanguageToggle` onClick)
 - **Trigger:** User clicks language toggle button.
 - **Processing Logic:**
   1. Cycle through languages: EN → JA → MY → EN.
@@ -382,7 +405,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
   4. Re-render all translated labels and currency formats.
 - **Exception Handling:** None applicable.
 
-### 5.11 Theme Toggle (`btnThemeToggle` onClick)
+### 5.12 Theme Toggle (`btnThemeToggle` onClick)
 - **Trigger:** User clicks theme toggle button.
 - **Processing Logic:**
   1. Cycle through themes: light → dark → system.
@@ -418,6 +441,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | **CART_002** | `rowCartItem` | Product not found | Toast (destructive) | "Product not found" | "商品が見つかりません" |
 | **CART_003** | `rowCartItem` | Cart item not found (already removed) | Toast (warning) | "Item not found in cart" | "カートにアイテムが見つかりません" |
 | **CART_004** | `pnlCartSummary` | Server error (500 response) | Toast (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
+| **CART_005** | `btnCartClearAll` | Clear cart API failure (500 response) | Toast (destructive) | "Failed to clear cart. Please try again" | "カートの削除に失敗しました。もう一度お試しください" |
 | **CART_NET** | `dlgGuestLoginAlert` | Network error | Toast (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
 
 ---
@@ -574,6 +598,30 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 }
 ```
 
+### 8.8 Clear Cart Success Response
+
+```json
+{
+  "data": {
+    "deletedCount": 3,
+    "message": "Cart cleared successfully"
+  }
+}
+```
+
+### 8.9 Error Response — Clear Cart Failed
+
+```json
+{
+  "statusCode": 500,
+  "error": "INTERNAL_SERVER_ERROR",
+  "errorCode": "CART_005",
+  "message": "Failed to clear cart. Please try again",
+  "timestamp": "2026-08-08T12:00:00.000Z",
+  "path": "/api/v1/cart"
+}
+```
+
 ---
 
 ## 9. i18n Keys Reference (i18nキーリファレンス)
@@ -617,6 +665,11 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | `cart.guestLoginAlert.message` | "Please log in to add items to your cart." |
 | `cart.guestLoginAlert.loginButton` | "Log In" |
 | `cart.guestLoginAlert.closeButton` | "Cancel" |
+| `cart.clearAll` | "Clear All" |
+| `cart.clearConfirm.title` | "Clear Cart?" |
+| `cart.clearConfirm.message` | "This will remove all items from your cart." |
+| `cart.clearConfirm.confirmButton` | "Clear All" |
+| `cart.clearConfirm.cancelButton` | "Cancel" |
 
 ### 9.3 Japanese (ja) — Wishlist
 
@@ -657,6 +710,11 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | `cart.guestLoginAlert.message` | "カートに商品を追加するにはログインしてください。" |
 | `cart.guestLoginAlert.loginButton` | "ログイン" |
 | `cart.guestLoginAlert.closeButton` | "キャンセル" |
+| `cart.clearAll` | "すべて削除" |
+| `cart.clearConfirm.title` | "カートを空にしますか？" |
+| `cart.clearConfirm.message` | "カート内のすべての商品が削除されます。" |
+| `cart.clearConfirm.confirmButton` | "すべて削除" |
+| `cart.clearConfirm.cancelButton` | "キャンセル" |
 
 ---
 
@@ -778,6 +836,14 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 - [ ] Empty state displays when cart has no items
 - [ ] Empty state "Browse Products" link navigates to /products
 - [ ] Loading skeleton displays during data fetch
+- [ ] "Clear All" button displays confirmation dialog
+- [ ] "Clear All" button is disabled when cart is empty
+- [ ] Confirmation dialog "Clear All" button clears all items from cart
+- [ ] Confirmation dialog "Cancel" button closes dialog without clearing
+- [ ] Pressing ESC on confirmation dialog closes it without clearing
+- [ ] Clear all with optimistic UI shows empty state immediately
+- [ ] Clear all API failure reverts cart state and shows error toast
+- [ ] Cart badge updates to 0 after clearing all items
 - [ ] Language toggle switches all labels and currency formats
 - [ ] Theme toggle works
 - [ ] Keyboard navigation works
@@ -796,7 +862,9 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 - [ ] Guest user clicking "Add to Cart" on product detail shows login alert modal
 - [ ] Guest user clicking "Move to Cart" on wishlist shows login alert modal
 - [ ] Login alert modal displays correct title and message
-- [ ] [Log In] button in modal navigates to /login
+- [ ] [Log In] button in modal navigates to `/login?redirect={currentPath}`
+- [ ] Redirect parameter contains the correct page path (e.g., `/cart`, `/products/:slug`)
+- [ ] After login, user is redirected back to the original page via `redirect` query parameter
 - [ ] [Cancel] button in modal closes the modal
 - [ ] Pressing ESC closes the modal
 - [ ] Clicking outside the modal closes it
