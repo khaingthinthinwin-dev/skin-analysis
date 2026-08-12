@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 2.0 |
+| **Version** | 3.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-10 |
+| **Last Updated** | 2026-08-11 |
 | **Author** | Senior System Engineer |
 | **Status** | Draft |
 | **Classification** | Internal — Engineering Division |
@@ -25,6 +25,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-06 | Senior System Engineer | Initial functional specification for Admin Commission and Revenue pages. |
 | 2.0 | 2026-08-10 | Senior System Engineer | Updated structure to fully conform to standard functional specification template, integrating detailed specifications from Requirement and Development Rules documents. |
+| 3.0 | 2026-08-11 | Senior System Engineer | Added Revenue Target Progress (configurable gauge bar) and AI Revenue Forecast (dotted line chart) features to the Revenue Dashboard. |
 
 ---
 
@@ -65,8 +66,10 @@ This screen suite is responsible for the following core functional areas:
 3. **Revenue Dashboard KPI** — Displaying revenue KPIs and trend visualization over configurable ranges.
 4. **Payment Status Breakdown** — Summarizing payment statuses across completed, pending, failed, and refunded records.
 5. **Merchant Payout Management** — Processing merchant payouts with idempotency and status tracking.
-6. **Audit and Error Handling** — Logging financial actions and surfacing consistent error states.
-7. **Internationalization and Responsive UI** — Supporting EN / JA / MY and responsive layouts.
+6. **Revenue Target Progress** — Configuring monthly/quarterly revenue targets and displaying current progress via a gauge bar.
+7. **AI Revenue Forecast** — Predicting revenue and platform fees from historical data and rendering the forecast as a dotted line alongside the current trend.
+8. **Audit and Error Handling** — Logging financial actions and surfacing consistent error states.
+9. **Internationalization and Responsive UI** — Supporting EN / JA / MY and responsive layouts.
 
 ### 1.3 Target Users
 
@@ -74,7 +77,7 @@ This screen suite is responsible for the following core functional areas:
 |-----------|-------|
 | **Primary Actor** | Platform Administrator (Admin) |
 | **Required Authentication** | JWT access token |
-| **Data Scope** | Commission settings, reports, revenue KPIs, payout records |
+| **Data Scope** | Commission settings, reports, revenue KPIs, revenue targets, payout records |
 | **Authorization** | Admin-only access |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
@@ -102,6 +105,8 @@ This screen suite is responsible for the following core functional areas:
 | `to` | User Input | End date for commission report filter |
 | `range` | User Input | Trend chart range selection (7d/30d/90d/1y) |
 | `status` | User Input | Payout status filter (pending/completed/failed) |
+| `targetPeriod` | User Input | Revenue target period (monthly/quarterly) |
+| `targetAmount` | User Input | Revenue target amount in the edit target dialog |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
@@ -109,6 +114,8 @@ This screen suite is responsible for the following core functional areas:
 | `reports` | Report Data | Merchant-level commission report rows |
 | `kpis` | KPI Data | Revenue KPI values (total, commission, avg order, net) |
 | `trendPoints` | Chart Data | Trend series data for the revenue chart |
+| `forecastPoints` | Chart Data | AI forecast series data (revenue + platform fees) drawn as a dotted line |
+| `target` | Display Data | Revenue target object (amount, period, progress percentage) |
 | `payouts` | Display Data | Payout list rows for the payout table |
 | `message` | Notification | Success or error text delivered via toast / alert |
 
@@ -134,6 +141,9 @@ This screen suite is responsible for the following core functional areas:
 | UC-COMM-004 | View Revenue Dashboard | Admin authenticated | KPI cards and trend chart displayed | Admin |
 | UC-COMM-005 | Process Payout | Admin authenticated | Payout status updated and data refreshed | Admin |
 | UC-COMM-006 | Change Revenue Range | Admin authenticated | Trend chart refreshed for selected range | Admin |
+| UC-COMM-007 | Set Revenue Target | Admin authenticated | Revenue target saved and gauge bar updated | Admin |
+| UC-COMM-008 | View Target Progress | Admin authenticated | Gauge bar displays progress toward target | Admin |
+| UC-COMM-009 | View Revenue Forecast | Admin authenticated | Dotted forecast line displayed on trend chart | Admin |
 
 ### 2.2 Primary Business Workflow
 
@@ -147,7 +157,7 @@ Admin navigates to /admin/commission or /admin/revenue
    Screen loads data in parallel
             │
             ▼
-   Commission: rate + reports  Revenue: KPI + chart + payouts
+   Commission: rate + reports  Revenue: KPI + chart + target + forecast + payouts
             │
             ▼
    Admin performs actions:
@@ -155,6 +165,9 @@ Admin navigates to /admin/commission or /admin/revenue
       • Filter reports
       • Process payout
       • Change chart range
+      • Set revenue target
+      • View target progress
+      • View AI revenue forecast
             │
             ▼
    Backend validates action and updates data
@@ -170,9 +183,9 @@ Admin navigates to /admin/commission or /admin/revenue
 | 1 | Admin navigates to /admin/commission or /admin/revenue | Unauthenticated | — | System |
 | 2 | ProtectedRoute validates admin role | — | Authorized | System |
 | 3 | Screen loads data in parallel | — | Data Loaded | System |
-| 4 | Admin edits rate / filters reports / processes payout / changes range | — | — | Admin |
+| 4 | Admin edits rate / filters reports / processes payout / changes range / sets target | — | — | Admin |
 | 5 | Backend validates action and updates data | — | Updated | System |
-| 6 | View refreshed data or error message | — | — | System |
+| 6 | View refreshed data, target gauge, or forecast error message | — | — | System |
 
 ### 2.4 Relevant Requirements Covered
 
@@ -185,6 +198,8 @@ Admin navigates to /admin/commission or /admin/revenue
 | A-REV-002 | Admin can view revenue trends (charts) |
 | A-REV-003 | Admin can view payment status |
 | A-REV-004 | Admin can manage merchant payouts |
+| A-REV-005 | Admin can set monthly/quarterly revenue targets and view progress |
+| A-REV-006 | System can forecast revenue and platform fees using historical data |
 
 ---
 
@@ -200,11 +215,19 @@ Admin navigates to /admin/commission or /admin/revenue
 
 ### 3.2 Revenue Page States
 
-| State | Description | Can View KPIs | Can Process Payout |
-|-------|-------------|:-------------:|:------------------:|
-| `INITIAL` | Page loading data | ✓ | ✗ |
-| `READY` | Data rendered | ✓ | ✓ |
-| `ERROR` | Load failed | ✗ | ✗ |
+| State | Description | Can View KPIs | Can View Target | Can View Forecast | Can Process Payout |
+|-------|-------------|:-------------:|:---------------:|:-----------------:|:------------------:|
+| `INITIAL` | Page loading data | ✓ | ✓ | ✓ | ✗ |
+| `READY` | Data rendered | ✓ | ✓ | ✓ | ✓ |
+| `ERROR` | Load failed | ✗ | ✗ | ✗ | ✗ |
+
+### 3.3 Target State Transitions
+
+| Transition ID | Origin | Target | Trigger | Guard |
+|---------------|--------|--------|---------|-------|
+| TR-COMM-04 | none | active | Target saved | amount > 0, valid period |
+| TR-COMM-05 | active | active | Target updated | new amount > 0, valid period |
+| TR-COMM-06 | active | none | Target cleared | admin removes target |
 
 ### 3.3 Payout State Transitions
 
@@ -248,12 +271,32 @@ Admin navigates to /admin/commission or /admin/revenue
 | BR-REV-004 | Payout Idempotency | Payout processing is idempotent; retrying a processed payout returns conflict status. | Backend (service logic) |
 | BR-REV-005 | Payout Status Flow | Payout transitions pending → processing → completed, or pending → failed. | Backend (state machine) |
 
-### 4.5 Security Rules
+### 4.5 Revenue Target Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-REV-006 | Target Period | Revenue targets support `monthly` and `quarterly` periods only. | Backend (DTO validation) + Frontend (toggle group) |
+| BR-REV-007 | Target Amount | Target amount must be a positive decimal greater than 0 with a maximum of two decimal places. | Backend (DTO validation) + Frontend (form validation) |
+| BR-REV-008 | Progress Calculation | Progress = (actual revenue in period / target amount) × 100. Gauge clamps display to 0–100%, and values above 100% are shown separately as "over target". | Backend (query aggregation) + Frontend (gauge rendering) |
+| BR-REV-009 | Single Active Target | Only one active target per period type is stored; saving a new target for the same period overwrites the previous one. | Backend (service logic) |
+| BR-REV-010 | Target Scope | Progress is calculated from completed/settled orders only, consistent with KPI scope (BR-REV-001). | Backend (query aggregation) |
+
+### 4.6 AI Revenue Forecast Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-REV-011 | Forecast Basis | Forecast is derived from historical revenue and platform fee data using trend extrapolation (e.g., linear regression over the selected range). | Backend (forecast service) |
+| BR-REV-012 | Forecast Series | Forecast produces both predicted revenue and predicted platform fees series, rendered as a dotted line continuing from the current trend line. | Backend (forecast service) + Frontend (chart series) |
+| BR-REV-013 | Forecast Horizon | Forecast extends to the end of the selected range for `7d`/`30d`/`90d` and to the current period end for `1y`. | Backend (forecast service) |
+| BR-REV-014 | Data Sufficiency | If historical data is insufficient (fewer than the minimum required points), the forecast is not generated and the dotted line is hidden with an informational note. | Backend (forecast service) + Frontend (empty state) |
+| BR-REV-015 | Non-Committing Output | Forecast values are indicative estimates; they are never written back to financial records or used in KPI/aggregation calculations. | Backend (service logic) |
+
+### 4.7 Security Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-COMM-006 | Admin Only | Only admin users can access commission and revenue admin routes. | Backend (JwtAuthGuard, RolesGuard) + Frontend (ProtectedRoute) |
-| BR-COMM-007 | Audit Logging | Audit log entries are created for commission rate updates and payout processing. | Backend (audit service) |
+| BR-COMM-007 | Audit Logging | Audit log entries are created for commission rate updates, revenue target updates, and payout processing. | Backend (audit service) |
 | BR-COMM-008 | Loading State | System uses skeleton loading states until API responses arrive. | Frontend (UI) |
 
 ---
@@ -306,7 +349,7 @@ Admin navigates to /admin/commission or /admin/revenue
 
 ### 5.2 Screen: Revenue Page (`/admin/revenue`)
 
-**Purpose:** Allow admins to view revenue KPIs, trend visualization, payment status breakdown, and merchant payout list.
+**Purpose:** Allow admins to view revenue KPIs, trend visualization with AI forecast, revenue target progress, payment status breakdown, and merchant payout list.
 
 #### 5.2.1 UI Elements
 
@@ -326,19 +369,33 @@ Admin navigates to /admin/commission or /admin/revenue
 | EL-27 | Payout Table | Table | — | Yes | Merchant payouts with action button |
 | EL-28 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
 | EL-29 | Confirmation Dialog | Modal | — | No | Confirm payout processing |
+| EL-30 | Target Progress Card | Card | `revenue.targetProgress` | No | Card containing the revenue target gauge bar |
+| EL-31 | Target Period Toggle | Toggle Group | `revenue.targetPeriod` | No | Monthly / Quarterly period selection |
+| EL-32 | Target Amount Display | Text | `revenue.targetAmount` | No | Displays the configured target amount |
+| EL-33 | Gauge Bar | Progress Indicator | `revenue.progress` | No | Progress bar displaying current % toward target |
+| EL-34 | Progress Percentage | Text | `revenue.progressLabel` | No | Percentage label rendered beside the gauge bar |
+| EL-35 | Edit Target Button | Button (secondary) | `revenue.editTarget` | No | Opens the edit target dialog |
+| EL-36 | Target Amount Input | Input (number) | `revenue.targetPlaceholder` | No | Revenue target amount input in the edit dialog |
+| EL-37 | Target Period Select | Select | `revenue.targetPeriodLabel` | No | Monthly / quarterly selection in the edit dialog |
+| EL-38 | Save Target Button | Button (primary) | `revenue.saveTarget` | Yes | Saves the revenue target configuration |
+| EL-39 | Cancel Target Button | Button (secondary) | `revenue.cancelTarget` | No | Cancels target editing |
+| EL-40 | Forecast Legend | Text | `revenue.forecast` | No | "AI Forecast" dotted line legend |
+| EL-41 | Forecast Series | Chart Series | — | No | Dotted forecast line (revenue + platform fees) overlaid on the trend chart |
 
 **Global:**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-30 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
-| EL-31 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
+| EL-42 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
+| EL-43 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
 
 **Default State:**
 - Skeleton loading displayed until API responses arrive
 - Trend range default `30d`
+- Target period default `monthly`; gauge bar shows `0%` until a target is configured
+- Forecast dotted line hidden when historical data is insufficient
 - Process buttons disabled for non-pending payouts
-- Confirmation dialog closed
+- Confirmation dialog and edit target dialog closed
 
 ---
 
@@ -388,12 +445,12 @@ Admin navigates to /admin/commission or /admin/revenue
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | `/admin/revenue` route mounted |
-| **API Endpoint** | `GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts` |
+| **API Endpoint** | `GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
-| **Processing Steps** | 1. Fetch KPI, trend, payment, and payout data in parallel. 2. Populate cards, chart, panels, and tables. 3. On failure, show alert and preserve last known data if available. |
+| **Processing Steps** | 1. Fetch KPI, trend, target, forecast, payment, and payout data in parallel. 2. Populate cards, chart, gauge, panels, and tables. 3. On failure, show alert and preserve last known data if available. |
 | **Success Response** | 200 OK with dashboard data |
-| **Post-Action** | Populate KPI cards, trend chart, payment status panel, and payout table |
+| **Post-Action** | Populate KPI cards, trend chart, target gauge, forecast dotted line, payment status panel, and payout table |
 | **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
 
 ### 6.5 Operation: Trend Range Change
@@ -404,9 +461,9 @@ Admin navigates to /admin/commission or /admin/revenue
 | **API Endpoint** | `GET /api/v1/admin/revenue/trends` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Range value is one of `7d`, `30d`, `90d`, `1y` |
-| **Processing Steps** | 1. Fetch trend series for selected range. 2. Update chart and tooltip labels. 3. On failure, maintain previous chart state and show alert. |
+| **Processing Steps** | 1. Fetch trend series for selected range. 2. Fetch forecast series for the selected range (Sec 6.9). 3. Update chart, forecast dotted line, and tooltip labels. 4. On failure, maintain previous chart state and show alert. |
 | **Success Response** | 200 OK with trend series data |
-| **Post-Action** | Update chart and tooltip labels |
+| **Post-Action** | Update chart, forecast dotted line, and tooltip labels |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
 
 ### 6.6 Operation: Payout Processing
@@ -421,6 +478,45 @@ Admin navigates to /admin/commission or /admin/revenue
 | **Success Response** | 200 OK with updated payout status |
 | **Post-Action** | Refresh payout list and KPI metrics, success toast |
 | **Error Response** | 404 Not Found, 409 Conflict, 500 Internal Server Error |
+
+### 6.7 Operation: Revenue Target Load
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | `/admin/revenue` route mounted |
+| **API Endpoint** | `GET /api/v1/admin/revenue/targets` |
+| **Request Content-Type** | `application/json` |
+| **Pre-Submission Validation** | Valid admin JWT access token |
+| **Processing Steps** | 1. Fetch active revenue target and current period actual revenue. 2. Calculate progress percentage. 3. Render target card, gauge bar, and period toggle. 4. On failure, show error alert and render gauge at 0%. |
+| **Success Response** | 200 OK with target config, actual revenue, and progress percentage |
+| **Post-Action** | Render target amount, gauge bar progress, and period toggle |
+| **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
+
+### 6.8 Operation: Revenue Target Save
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | "Save Target" button click on Edit Target dialog |
+| **API Endpoint** | `PUT /api/v1/admin/revenue/targets` |
+| **Request Content-Type** | `application/json` |
+| **Pre-Submission Validation** | Target amount is required, decimal > 0 with max 2 decimal places; period is `monthly` or `quarterly` |
+| **Processing Steps** | 1. Open edit dialog. 2. Validate input. 3. Submit target upsert (overwrites existing target for the same period). 4. Refresh target card and gauge bar on success. 5. Log TARGET_UPDATED event. |
+| **Success Response** | 200 OK with saved target configuration |
+| **Post-Action** | Close dialog, refresh gauge bar and target display, success toast |
+| **Error Response** | 400 Validation Error (inline field error), 500 Internal Server Error |
+
+### 6.9 Operation: Revenue Forecast Load
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | `/admin/revenue` route mounted, or Trend Range Change |
+| **API Endpoint** | `GET /api/v1/admin/revenue/forecast` |
+| **Request Content-Type** | `application/json` |
+| **Pre-Submission Validation** | Valid admin JWT access token; range is one of `7d`, `30d`, `90d`, `1y` |
+| **Processing Steps** | 1. Fetch historical revenue and platform fee series for the selected range. 2. Compute trend extrapolation for the forecast horizon. 3. Return predicted revenue and platform fee points. 4. Render as a dotted line appended to the current trend line. 5. On insufficient data, return empty forecast and hide the dotted line with an informational note. |
+| **Success Response** | 200 OK with forecast series data (or empty series when data is insufficient) |
+| **Post-Action** | Render dotted forecast line and update legend/tooltip labels |
+| **Error Response** | 400 Validation Error, 500 Internal Server Error |
 
 ---
 
@@ -463,6 +559,21 @@ Admin navigates to /admin/commission or /admin/revenue
 | `payouts` | Payout records | Array of payout list rows |
 | `message` | API response | Toast / alert text |
 
+### 7.6 Input Specification — Revenue Target (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `targetAmount` | Target Amount | 目標金額 | DECIMAL(12,2) | Yes | Input (number) | Required, regex `/^\d+(\.\d{1,2})?$/`, value > 0 |
+| `targetPeriod` | Target Period | 目標期間 | ENUM | Yes | Toggle Group / Select | One of `monthly`, `quarterly` |
+
+### 7.7 Output Specification — Revenue Target & Forecast (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `target` | Revenue target record + aggregation | Object of `{ targetAmount, period, actualRevenue, progressPercent }` |
+| `progressPercent` | Backend calculation | Percentage string clamped to 0–100% for gauge display |
+| `forecastPoints` | Forecast service | Array of `{ date, forecastRevenue, forecastCommission }` points |
+
 ---
 
 ## 8. Input Validation Rules
@@ -488,7 +599,14 @@ Admin navigates to /admin/commission or /admin/revenue
 | `range` | Must be one of `7d`, `30d`, `90d`, `1y` | "Invalid range" | "無効な期間です" |
 | `status` | Must be one of `pending`, `completed`, `failed` | "Invalid status" | "無効なステータスです" |
 
-### 8.4 Validation Enforcement Layers
+### 8.4 Revenue Target Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `targetAmount` | Required, must match `/^\d+(\.\d{1,2})?$/`, greater than 0 | "Target amount is required" / "Target amount must be a positive number with up to 2 decimal places" | "目標金額は必須です" / "目標金額は0より大きい小数第2位までの数値で入力してください" |
+| `targetPeriod` | Must be one of `monthly`, `quarterly` | "Invalid target period" | "無効な目標期間です" |
+
+### 8.5 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
@@ -520,8 +638,10 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
+| `400` | `COMM_005` | Invalid target amount or period | Inline field error on edit target dialog |
 | `404` | `COMM_003` | Payout not found | Alert banner + refresh list |
 | `409` | `COMM_004` | Payout already processed | Alert banner + disable action |
+| `422` | `COMM_006` | Insufficient historical data for forecast | Informational note; forecast dotted line hidden |
 | `500` | `SYS_001` | Server error | Alert banner with retry option |
 | network | `NET_ERR` | Network failure | Alert banner for connectivity issue |
 
@@ -550,6 +670,9 @@ Admin navigates to /admin/commission or /admin/revenue
 | `GET /api/v1/admin/commission/reports` | Protected (Admin) | Fetch merchant commission reports |
 | `GET /api/v1/admin/revenue` | Protected (Admin) | Fetch revenue KPI data |
 | `GET /api/v1/admin/revenue/trends` | Protected (Admin) | Fetch revenue trend series |
+| `GET /api/v1/admin/revenue/targets` | Protected (Admin) | Fetch revenue target and progress |
+| `PUT /api/v1/admin/revenue/targets` | Protected (Admin) | Save/update revenue target |
+| `GET /api/v1/admin/revenue/forecast` | Protected (Admin) | Fetch AI revenue forecast series |
 | `GET /api/v1/admin/revenue/payments` | Protected (Admin) | Fetch payment status breakdown |
 | `GET /api/v1/admin/revenue/payouts` | Protected (Admin) | Fetch payout list |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Protected (Admin) | Process a payout |
@@ -567,6 +690,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | Event | Data Logged | Retention |
 |-------|-------------|-----------|
 | `COMMISSION_RATE_UPDATED` | adminId, oldRate, newRate, ip, timestamp | 90 days |
+| `TARGET_UPDATED` | adminId, oldAmount, newAmount, period, ip, timestamp | 90 days |
 | `PAYOUT_PROCESSED` | adminId, payoutId, amount, merchantId, ip, timestamp | 90 days |
 | `PAYOUT_FAILED` | adminId, payoutId, reason, ip, timestamp | 30 days |
 
@@ -583,7 +707,9 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Event | Trigger | Action |
 |-------|---------|--------|
 | `rateUpdated` | Commission rate saved | Success toast |
+| `targetUpdated` | Revenue target saved | Success toast |
 | `payoutProcessed` | Payout processed | Success toast |
+| `forecastUnavailable` | Insufficient historical data | Informational note next to chart |
 | `error` | API error | Dismissible alert banner with retry option |
 | `networkError` | Connectivity issue | Alert banner for connectivity issue |
 
@@ -603,6 +729,7 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Source | Target | Trigger |
 |--------|--------|---------|
 | `/admin/commission` | Edit Rate dialog | Click "Edit Rate" |
+| `/admin/revenue` | Edit Target dialog | Click "Edit Target" |
 | `/admin/revenue` | Confirmation dialog | Click "Process" on a pending payout |
 
 ### 12.3 Outbound Navigation (Post-Action)
@@ -610,6 +737,7 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Source | Target | Condition |
 |--------|--------|-----------|
 | Edit Rate dialog | `/admin/commission` | Save or cancel |
+| Edit Target dialog | `/admin/revenue` | Save or cancel |
 | Confirmation dialog | `/admin/revenue` | Confirm or cancel |
 
 ### 12.4 Error Navigation
@@ -628,6 +756,8 @@ No WebSocket or server-sent event integration is required for this release. UI n
 |--------|--------|
 | Page Load (Initial Render) | ≤ 2 seconds |
 | Dashboard Query Response | ≤ 1 second |
+| Target Progress Query Response | ≤ 1 second |
+| Forecast Query Response | ≤ 2 seconds |
 | Client-side Cache Stale Time | 5 minutes |
 | Payout Process Response | ≤ 2 seconds |
 
@@ -658,6 +788,9 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Audit logging policy | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
 | Database schema | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
 | Internationalization support | `frontend/src/i18n.ts` |
+| Revenue target periods | `monthly`, `quarterly` (frontend toggle group, backend DTO) |
+| Forecast algorithm | Trend extrapolation (e.g., linear regression) over selected range |
+| Minimum forecast data points | Backend config (default: 7 historical points) |
 
 ---
 
@@ -674,6 +807,8 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | A-REV-002 | Admin can view revenue trends (charts) | UC-COMM-006, Sec 6.5 |
 | A-REV-003 | Admin can view payment status | BR-REV-003, Sec 5.2 |
 | A-REV-004 | Admin can manage merchant payouts | UC-COMM-005, Sec 6.6 |
+| A-REV-005 | Admin can set monthly/quarterly revenue targets and view progress | UC-COMM-007/008, BR-REV-006~010, Sec 6.7, 6.8 |
+| A-REV-006 | System can forecast revenue and platform fees using historical data | UC-COMM-009, BR-REV-011~015, Sec 6.9 |
 
 ### 15.2 API Endpoint Traceability
 
@@ -683,6 +818,9 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | `GET /api/v1/admin/commission/reports` | Report Filter (Sec 6.3) |
 | `GET /api/v1/admin/revenue` | Revenue Dashboard Load (Sec 6.4) |
 | `GET /api/v1/admin/revenue/trends` | Trend Range Change (Sec 6.5) |
+| `GET /api/v1/admin/revenue/targets` | Revenue Target Load (Sec 6.7) |
+| `PUT /api/v1/admin/revenue/targets` | Revenue Target Save (Sec 6.8) |
+| `GET /api/v1/admin/revenue/forecast` | Revenue Forecast Load (Sec 6.9) |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Payout Processing (Sec 6.6) |
 
 ### 15.3 Related Document References
@@ -695,8 +833,10 @@ No WebSocket or server-sent event integration is required for this release. UI n
 
 ### 15.4 Audit / Verification Checklist
 
-- [ ] Audit log entries created for rate updates and payout processing
+- [ ] Audit log entries created for rate updates, target updates, and payout processing
 - [ ] Currency values never rendered as floats (string-safe formatting)
+- [ ] Target progress calculation excludes refunds (consistent with KPI scope)
+- [ ] Forecast values never written back to financial records or used in aggregations
 
 ---
 
