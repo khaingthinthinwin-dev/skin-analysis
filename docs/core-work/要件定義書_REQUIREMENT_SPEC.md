@@ -12,7 +12,7 @@
 | **System** | Cosmetics Finder |
 | **Version** | 1.0 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-10 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 
@@ -22,6 +22,10 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-03 | Software Architect | Initial requirements definition |
 | 1.1 | 2026-08-10 | Software Architect | Added advertisement approval workflow, payment system, weekly ad limit, and announcement message requirements |
+| 1.2 | 2026-08-14 | Software Architect | Added comprehensive merchant state management, product ownership rules, review validation, database schemas, API requirements, and database relationships from system specification |
+| 1.3 | 2026-08-14 | Software Architect | Restricted shopping features (cart, wishlist, checkout) to Buyer role only; replaced email notifications with website notification system |
+| 1.4 | 2026-08-14 | Software Architect | Updated all entity definitions to use UUID primary keys; added SQL schema for all entities; added merchant_id field to users table |
+| 1.5 | 2026-08-14 | Software Architect | Removed duplicate order status flow section |
 
 ---
 
@@ -85,13 +89,44 @@ The system provides the Cosmetics Finder platform that connects buyers seeking p
 
 ## 2. User Roles & Permissions
 
+### 2.0 Guest / Unauthorized User Rules (未認証ユーザールール)
+
+#### Allowed Actions
+- View Home Page without login
+- Browse public product listings
+- Search products by keyword
+- Filter products (category, price, rating)
+- View product detail pages
+- View public shop profiles and locations
+- View advertisements displayed on storefront
+- View product reviews (read only)
+
+#### Restricted Actions (Trigger Redirect to Login)
+
+| Action | Behavior |
+|--------|----------|
+| Add to Cart | Show alert modal with login button → redirect to `/login` |
+| Add to Wishlist | Show alert modal with login button → redirect to `/login` |
+| AI Skin Analysis | Redirect to `/register` |
+| Checkout & Payment | Redirect to `/login` |
+| Write Reviews | Redirect to `/login` |
+| View Order History | Redirect to `/login` |
+| Chat with Merchant | Redirect to `/login` |
+| Order Tracking | Redirect to `/login` |
+
+#### Implementation Notes
+- All restricted actions must check `req.user` or equivalent auth state before executing
+- Alert modal must NOT dismiss without user action (no auto-close)
+- Redirect URL should include `?redirect=<original_path>` for post-login navigation
+- Public routes must not expose any private user data or session tokens
+
 ### 2.1 User Roles Overview (ユーザーロール概要)
 
 | Role | Japanese Name | Primary Responsibility | Key Permissions |
 |------|---------------|----------------------|-----------------|
 | **Buyer** | 購入者 | Browse products, AI analysis, purchase | • Register/login<br>• AI skin analysis<br>• Browse/search products<br>• Add to cart/wishlist<br>• Checkout & payment<br>• Write reviews<br>• View order history |
-| **Merchant** | 出品者 | Sell skincare products | • All Buyer permissions<br>• Manage products (CRUD)<br>• Manage shop profile<br>• Create promotions/coupons<br>• Manage advertisements<br>• View sales dashboard<br>• View analytics |
-| **Admin** | 管理者 | Platform management | • All permissions<br>• User management<br>• Merchant approval<br>• Review moderation<br>• Content moderation<br>• Analytics & reports<br>• Revenue & commission management |
+| **Merchant** | 出品者 | Sell skincare products | • Register/login<br>• Browse products<br>• Manage products (CRUD)<br>• Manage shop profile<br>• Create promotions/coupons<br>• Manage advertisements<br>• View sales dashboard<br>• View analytics |
+| **Admin** | 管理者 | Platform management | • Register/login<br>• User management<br>• Merchant approval<br>• Review moderation<br>• Content moderation<br>• Analytics & reports<br>• Revenue & commission management |
 
 ### 2.2 Role-Based Access Control (RBAC) (ロールベースアクセス制御)
 
@@ -114,13 +149,13 @@ The system provides the Cosmetics Finder platform that connects buyers seeking p
 | View Analysis Results | ✅ | ❌ | ❌ |
 | View Recommendations | ✅ | ❌ | ❌ |
 | **Shopping** | | | |
-| Add to Cart | ✅ | ✅ | ✅ |
-| Manage Cart | ✅ | ✅ | ✅ |
-| Checkout | ✅ | ✅ | ✅ |
-| View Orders | ✅ | ✅ | ✅ |
+| Add to Cart | ✅ | ❌ | ❌ |
+| Manage Cart | ✅ | ❌ | ❌ |
+| Checkout | ✅ | ❌ | ❌ |
+| View Orders | ✅ | ❌ | ❌ |
 | **Wishlist** | | | |
-| Add/Remove Wishlist | ✅ | ✅ | ✅ |
-| View Wishlist | ✅ | ✅ | ✅ |
+| Add/Remove Wishlist | ✅ | ❌ | ❌ |
+| View Wishlist | ✅ | ❌ | ❌ |
 | **Reviews** | | | |
 | Write Reviews | ✅ | ❌ | ❌ |
 | View Reviews | ✅ | ✅ | ✅ |
@@ -137,6 +172,381 @@ The system provides the Cosmetics Finder platform that connects buyers seeking p
 | Revenue Tracking | ❌ | ❌ | ✅ |
 | Commission Management | ❌ | ❌ | ✅ |
 
+### 2.3 Buyer / Authorized User Rules (認証済み購入者ルール)
+
+#### Authentication Requirements
+- Must be logged in with valid JWT/session token
+- Account status must be `active` (not `inactive` or `banned`)
+- Email verification required before accessing full features
+
+#### Allowed Actions
+- Full product browsing and search
+- AI Skin Analysis (photo upload and results)
+- Personalized product recommendations
+- **Shopping features (Buyer only):**
+  - Wishlist management (add/remove/move to cart)
+  - Cart management (add/remove/update quantity)
+  - Checkout and payment processing
+  - Order placement and tracking
+- Write reviews for purchased products
+- Manage own profile
+- Chat with merchants (future feature)
+- Request password reset
+- Request forget password
+
+#### Buyer-Specific Validations
+- Profile must include skin type and concerns for AI features
+- Photo upload: JPG, PNG, WebP only, max 10MB
+- Only one review per customer per product
+- Reviews allowed only after confirmed product arrival
+- Coupon codes validated at checkout (expiry, minimum amount, single use)
+
+#### Shopping Restriction
+- **Merchant and Admin users CANNOT access shopping features**
+- Cart, wishlist, checkout, and order features are restricted to Buyer role only
+- Attempting restricted actions returns `403 Forbidden` with message: "Shopping features are only available to buyers"
+
+#### Session Management
+- JWT token expiry: 24 hours
+- Refresh token expiry: 7 days
+- Invalid/expired tokens return `401 Unauthorized`
+
+### 2.4 Merchant Rules (出品者ルール)
+
+#### Merchant Allowed Actions
+- Register/login
+- Browse and search products (view only)
+- View product details
+- Manage own products (CRUD)
+- Manage shop profile
+- Create promotions/coupons
+- Manage advertisements
+- View sales dashboard and analytics
+- View reviews (read only)
+- Dispute management (report false/abusive reviews)
+
+#### Merchant Restricted Actions
+- **CANNOT access shopping features (cart, wishlist, checkout)**
+- **CANNOT write reviews**
+- **CANNOT use AI skin analysis**
+- Attempting restricted actions returns `403 Forbidden` with message: "This feature is not available for merchant accounts"
+
+### 2.5 Admin Rules (管理者ルール)
+
+#### Admin Allowed Actions
+- Register/login
+- User management (view, toggle status)
+- Merchant approval/rejection
+- Review moderation (approve/reject/flag)
+- Content moderation
+- Advertisement management and approval
+- Revenue and commission management
+- Platform analytics and reports
+- System configuration
+
+#### Admin Restricted Actions
+- **CANNOT access shopping features (cart, wishlist, checkout)**
+- **CANNOT write reviews**
+- **CANNOT use AI skin analysis**
+- **CANNOT create/edit products (except for moderation purposes)**
+- Attempting restricted actions returns `403 Forbidden` with message: "This feature is not available for admin accounts"
+
+### 2.6 Merchant State Management (出品者ステート管理)
+
+#### State Definitions
+
+| State | Code | Description |
+|-------|------|-------------|
+| **Pending** | `pending` | Registration submitted, awaiting admin approval |
+| **Approved** | `approved` | License verified, full access granted |
+| **Rejected** | `rejected` | License denied, access blocked |
+
+#### State Transitions
+
+```
+[New Registration]
+       ↓
+    PENDING ────────→ APPROVED
+       ↓                  ↑
+    REJECTED ─── Resubmit ┘
+```
+
+#### Pending State Rules
+- Can login with email/password
+- Can access merchant dashboard
+- Can view and edit own profile
+- Can view license status and rejection reason
+- **CANNOT:** Create/edit/delete products
+- **CANNOT:** Create promotions or coupons
+- **CANNOT:** Create advertisements
+- **CANNOT:** Access sales analytics
+- **CANNOT:** Shop is not publicly visible
+- **CANNOT:** Access shopping features (cart, wishlist, checkout)
+- Attempting restricted actions returns `403 Forbidden` with message: "Your account is pending approval"
+
+#### Approved State Rules
+- Full access to all merchant features (except shopping)
+- Shop publicly visible
+- Products appear in search results
+- Can create/manage products, promotions, advertisements
+- Can view sales dashboard and analytics
+- Can generate order invoices
+- **CANNOT:** Access shopping features (cart, wishlist, checkout)
+
+#### Rejected State Rules
+- Can login with email/password
+- See alert banner: "Your account has been rejected. Reason: [reason]"
+- Can view rejection details
+- Can resubmit license for review
+- **CANNOT:** Access any merchant features
+- **CANNOT:** Access shopping features (cart, wishlist, checkout)
+- Attempting restricted actions returns `403 Forbidden` with message: "Your account has been rejected"
+
+### 2.7 Strict APPROVED-Only Merchant Feature Gate
+
+#### Implementation Rule
+All merchant-specific features MUST check `merchant.license_status === 'approved'` before allowing access.
+
+#### Middleware / Guard Logic
+```typescript
+// Pseudocode for merchant feature guard
+function requireApprovedMerchant(req, res, next) {
+  const merchant = getMerchantByUserId(req.user.id);
+  
+  if (!merchant) {
+    return res.status(403).json({ 
+      error: 'MERCHANT_NOT_FOUND',
+      message: 'You must register as a merchant first' 
+    });
+  }
+  
+  if (merchant.license_status !== 'approved') {
+    return res.status(403).json({ 
+      error: 'MERCHANT_NOT_APPROVED',
+      status: merchant.license_status,
+      message: getStatusMessage(merchant.license_status) 
+    });
+  }
+  
+  next();
+}
+```
+
+#### Shopping Feature Guard
+```typescript
+// Middleware to restrict shopping features to buyers only
+function requireBuyerRole(req, res, next) {
+  if (req.user.role !== 'buyer') {
+    return res.status(403).json({ 
+      error: 'SHOPPING_NOT_ALLOWED',
+      message: 'Shopping features are only available to buyers' 
+    });
+  }
+  next();
+}
+```
+
+#### Protected Endpoints (Merchant Only)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/products` | POST | Create product |
+| `/products/:id` | PATCH | Edit product |
+| `/products/:id` | DELETE | Soft delete product |
+| `/products/:id/stock` | PATCH | Update stock |
+| `/promotions` | POST | Create promotion |
+| `/promotions/:id` | PATCH | Edit promotion |
+| `/promotions/:id` | DELETE | Delete promotion |
+| `/ads` | POST | Create advertisement |
+| `/ads/:id/pay` | POST | Pay ad fee |
+| `/ads/:id/submit` | POST | Submit ad for approval |
+| `/shops/merchant` | PATCH | Edit shop profile |
+| `/analytics/merchant/dashboard` | GET | View dashboard |
+| `/analytics/merchant/sales` | GET | View analytics |
+
+#### Protected Endpoints (Buyer Only - Shopping)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/cart` | GET | View cart |
+| `/cart/items` | POST | Add item to cart |
+| `/cart/items/:id` | PATCH | Update cart item |
+| `/cart/items/:id` | DELETE | Remove cart item |
+| `/wishlist` | GET | View wishlist |
+| `/wishlist/:productId` | POST | Add to wishlist |
+| `/wishlist/:productId` | DELETE | Remove from wishlist |
+| `/orders` | POST | Place order |
+| `/orders` | GET | View order history |
+| `/orders/:id` | GET | View order detail |
+| `/checkout` | POST | Process checkout |
+
+### 2.8 Product Ownership & 403 Authorization
+
+#### Ownership Rules
+- Products can only be created by `approved` merchants
+- Each product is linked to exactly one merchant via `merchant_id`
+- Only the owning merchant can edit/delete their own products
+- Admin can view all products regardless of ownership
+
+#### Authorization Check
+```typescript
+// Middleware for product ownership verification
+function requireProductOwnership(req, res, next) {
+  const product = getProductById(req.params.id);
+  
+  if (!product) {
+    return res.status(404).json({ error: 'PRODUCT_NOT_FOUND' });
+  }
+  
+  if (req.user.role === 'admin') {
+    return next(); // Admin bypass
+  }
+  
+  if (req.user.role !== 'merchant') {
+    return res.status(403).json({ error: 'UNAUTHORIZED' });
+  }
+  
+  const merchant = getMerchantByUserId(req.user.id);
+  
+  if (product.merchant_id !== merchant.id) {
+    return res.status(403).json({ 
+      error: 'PRODUCT_OWNERSHIP_REQUIRED',
+      message: 'You can only manage your own products' 
+    });
+  }
+  
+  next();
+}
+```
+
+#### 403 Error Responses
+| Scenario | Error Code | Message |
+|----------|------------|---------|
+| Buyer tries to access merchant features | `UNAUTHORIZED_ROLE` | "You do not have merchant permissions" |
+| Merchant/Admin tries to access shopping features | `SHOPPING_NOT_ALLOWED` | "Shopping features are only available to buyers" |
+| Pending merchant tries to create product | `MERCHANT_NOT_APPROVED` | "Your account is pending approval" |
+| Rejected merchant tries any merchant action | `MERCHANT_REJECTED` | "Your account has been rejected" |
+| Merchant tries to edit another's product | `PRODUCT_OWNERSHIP_REQUIRED` | "You can only manage your own products" |
+| Unauthorized user tries protected action | `AUTHENTICATION_REQUIRED` | "Please login to continue" |
+
+### 2.9 Password Reset / Forgot Password
+
+#### Flow
+```
+User clicks "Forgot Password"
+    ↓
+Enters email address
+    ↓
+System generates password reset token (6-digit code or link)
+    ↓
+Display website notification with reset code/link
+    ↓
+User enters code or clicks link
+    ↓
+User enters new password (min 8 chars, 1 uppercase, 1 number, 1 special char)
+    ↓
+Password updated, all existing sessions invalidated
+    ↓
+Redirect to login with success message
+```
+
+#### API Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/forgot-password` | Request password reset |
+| POST | `/auth/reset-password` | Reset password with token |
+| POST | `/auth/verify-reset-code` | Verify 6-digit code |
+
+#### Security Rules
+- Reset token expires after 15 minutes
+- Maximum 3 reset requests per email per hour
+- Reset code is 6 digits, valid for 10 minutes
+- After successful reset, invalidate all existing sessions
+- Log password reset events in audit trail
+
+### 2.10 Website Notification System (ウェブサイト通知システム)
+
+#### Notification Types
+| Type | Trigger | Target User |
+|------|---------|-------------|
+| `merchant_approved` | Admin approves merchant registration | Merchant |
+| `merchant_rejected` | Admin rejects merchant registration | Merchant |
+| `order_placed` | Buyer places new order | Merchant |
+| `order_status_changed` | Merchant updates order status | Buyer |
+| `ad_approved` | Admin approves advertisement | Merchant |
+| `ad_rejected` | Admin rejects advertisement | Merchant |
+| `review_submitted` | Buyer writes product review | Merchant |
+| `review_moderated` | Admin moderates review | Buyer |
+| `password_reset` | User requests password reset | User (all roles) |
+| `stock_low_warning` | Product stock below threshold | Merchant |
+| `license_expiring` | Merchant license expiring soon | Merchant |
+
+#### Notification Data Structure
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "type": "merchant_approved",
+  "title": "Merchant Registration Approved",
+  "message": "Your merchant registration has been approved. You can now access all merchant features.",
+  "data": {
+    "merchant_id": "uuid",
+    "shop_name": "Beauty Shop"
+  },
+  "is_read": false,
+  "created_at": "2026-08-14T10:30:00Z"
+}
+```
+
+#### Notification Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/notifications` | Get user notifications (paginated) |
+| GET | `/notifications/unread-count` | Get unread notification count |
+| PATCH | `/notifications/:id/read` | Mark notification as read |
+| PATCH | `/notifications/read-all` | Mark all notifications as read |
+| DELETE | `/notifications/:id` | Delete notification |
+
+#### Notification Display Rules
+- Notifications display in header as bell icon with unread count badge
+- Clicking bell icon shows notification dropdown panel
+- Notifications ordered by creation date (newest first)
+- Unread notifications highlighted with bold text
+- Clicking notification marks it as read and navigates to relevant page (if applicable)
+- Maximum 100 notifications per user (older auto-deleted)
+- Notifications older than 90 days auto-deleted
+
+### 2.11 Merchant Rejection Reason & Review Information
+
+#### Rejection Data Structure
+```json
+{
+  "merchant_id": "uuid",
+  "license_status": "rejected",
+  "rejection_reason": "Business license is expired or unreadable",
+  "rejection_details": {
+    "category": "expired_license | invalid_document | mismatch | other",
+    "message": "The uploaded license shows an expiration date of 2024-12-31",
+    "suggested_action": "Please upload a current valid business license",
+    "resubmit_allowed": true
+  },
+  "reviewed_at": "2026-08-10T10:30:00Z",
+  "reviewed_by": "admin_user_id"
+}
+```
+
+#### Website Notification for Rejection
+```json
+{
+  "type": "merchant_rejected",
+  "title": "Merchant Registration Update",
+  "message": "Your merchant registration has been reviewed. Reason: Business license is expired or unreadable. Please resubmit with a valid license.",
+  "data": {
+    "merchant_id": "uuid",
+    "rejection_reason": "Business license is expired or unreadable",
+    "resubmit_url": "/merchant/license/resubmit"
+  }
+}
+```
+
 ---
 
 ## 3. Functional Requirements
@@ -147,178 +557,557 @@ The system provides the Cosmetics Finder platform that connects buyers seeking p
 Represents system users with role assignments.
 
 **Attributes:**
-- UserID (Primary Key, CUID)
-- Email (Unique)
-- FullName
-- PasswordHash (Argon2)
-- Role (buyer, merchant, admin)
-- AvatarUrl (Optional)
-- Phone (Optional)
-- IsActive (Default: true)
-- EmailVerified (Default: false)
-- CreatedDate
-- ModifiedDate
+- UserID (Primary Key, UUID)
+- Email (Unique, VARCHAR(255))
+- PasswordHash (VARCHAR(255), Argon2)
+- Name (VARCHAR(255))
+- Phone (VARCHAR(20), Optional)
+- AvatarUrl (TEXT, Optional)
+- Role (VARCHAR(20), Default: 'buyer') - Values: 'buyer', 'merchant', 'admin', 'super_admin'
+- MerchantID (UUID, Foreign Key to Merchants, Optional) - Links user to merchant account
+- IsActive (BOOLEAN, Default: true)
+- EmailVerified (BOOLEAN, Default: false)
+- CreatedAt (TIMESTAMP)
+- UpdatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE users (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email           VARCHAR(255) UNIQUE NOT NULL,
+  password_hash   VARCHAR(255) NOT NULL,
+  name            VARCHAR(255) NOT NULL,
+  phone           VARCHAR(20),
+  avatar_url      TEXT,
+  role            VARCHAR(20) NOT NULL DEFAULT 'buyer',
+  -- roles: 'buyer', 'merchant', 'admin', 'super_admin'
+  merchant_id     UUID REFERENCES merchants(id),
+  is_active       BOOLEAN DEFAULT true,
+  email_verified  BOOLEAN DEFAULT false,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
 
 #### 3.1.2 Product Entity
 Represents a skincare product listed by a merchant.
 
 **Attributes:**
-- ProductID (Primary Key, CUID)
-- MerchantID (Foreign Key to User)
-- CategoryID (Foreign Key to Category)
-- Name
-- Slug (Unique)
-- Description
-- ShortDescription
-- Price (Decimal 10,2)
-- CompareAtPrice (Optional)
-- SKU (Unique, Optional)
-- StockQuantity (Default: 0)
-- LowStockThreshold (Default: 10)
-- Images (String Array)
-- Tags (String Array)
-- SkinTypes (String Array)
-- Ingredients (String Array)
-- IsActive (Default: true)
-- IsFeatured (Default: false)
-- AvgRating (Decimal 3,2, Default: 0)
-- ReviewCount (Default: 0)
-- CreatedDate
-- ModifiedDate
+- ProductID (Primary Key, UUID)
+- MerchantID (Foreign Key to Merchants)
+- CategoryID (Foreign Key to Categories)
+- Name (VARCHAR(255))
+- Slug (VARCHAR(255), Unique)
+- Description (TEXT)
+- ShortDescription (VARCHAR(500), Optional)
+- Price (DECIMAL(10,2))
+- CompareAtPrice (DECIMAL(10,2), Optional)
+- SKU (VARCHAR(100), Unique, Optional)
+- StockQuantity (INTEGER, Default: 0)
+- LowStockThreshold (INTEGER, Default: 10)
+- Images (TEXT Array)
+- Tags (TEXT Array)
+- SkinTypes (TEXT Array)
+- Ingredients (TEXT Array)
+- IsActive (BOOLEAN, Default: true)
+- IsFeatured (BOOLEAN, Default: false)
+- AvgRating (DECIMAL(3,2), Default: 0)
+- ReviewCount (INTEGER, Default: 0)
+- CreatedAt (TIMESTAMP)
+- UpdatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE products (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id       UUID NOT NULL REFERENCES merchants(id),
+  category_id       UUID REFERENCES categories(id),
+  name              VARCHAR(255) NOT NULL,
+  slug              VARCHAR(255) UNIQUE NOT NULL,
+  description       TEXT,
+  short_description VARCHAR(500),
+  price             DECIMAL(10,2) NOT NULL,
+  compare_at_price  DECIMAL(10,2),
+  sku               VARCHAR(100) UNIQUE,
+  stock_quantity    INTEGER DEFAULT 0,
+  low_stock_threshold INTEGER DEFAULT 10,
+  images            TEXT[],
+  tags              TEXT[],
+  skin_types        TEXT[],
+  ingredients       TEXT[],
+  is_active         BOOLEAN DEFAULT true,
+  is_featured       BOOLEAN DEFAULT false,
+  avg_rating        DECIMAL(3,2) DEFAULT 0,
+  review_count      INTEGER DEFAULT 0,
+  created_at        TIMESTAMP DEFAULT NOW(),
+  updated_at        TIMESTAMP DEFAULT NOW()
+);
+```
 
 #### 3.1.3 Category Entity
 Represents product categories with tree structure.
 
 **Attributes:**
-- CategoryID (Primary Key, CUID)
-- Name
-- Slug (Unique)
-- ParentID (Foreign Key to Category, Optional)
-- IconUrl (Optional)
-- SortOrder (Default: 0)
-- CreatedDate
+- CategoryID (Primary Key, UUID)
+- Name (VARCHAR(255))
+- Slug (VARCHAR(255), Unique)
+- ParentID (Foreign Key to Categories, Optional)
+- IconUrl (TEXT, Optional)
+- SortOrder (INTEGER, Default: 0)
+- CreatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE categories (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        VARCHAR(255) NOT NULL,
+  slug        VARCHAR(255) UNIQUE NOT NULL,
+  parent_id   UUID REFERENCES categories(id),
+  icon_url    TEXT,
+  sort_order  INTEGER DEFAULT 0,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
 
 #### 3.1.4 Order Entity
 Represents a customer order.
 
 **Attributes:**
-- OrderID (Primary Key, CUID)
-- UserID (Foreign Key to User)
-- Status (pending, confirmed, processing, delivered, done)
-- Subtotal (Decimal 10,2)
-- ShippingCost (Decimal 10,2, Default: 0)
-- Tax (Decimal 10,2, Default: 0)
-- Total (Decimal 10,2)
-- ShippingAddress (JSON)
-- PaymentMethod (Optional)
-- PaymentStatus (Default: "pending")
-- Notes (Optional)
-- CreatedDate
-- ModifiedDate
+- OrderID (Primary Key, UUID)
+- UserID (Foreign Key to Users)
+- Status (VARCHAR(30), Default: 'placed') - Values: 'placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'
+- Subtotal (DECIMAL(10,2))
+- ShippingCost (DECIMAL(10,2), Default: 0)
+- Tax (DECIMAL(10,2), Default: 0)
+- Total (DECIMAL(10,2))
+- ShippingAddress (JSONB)
+- PaymentMethod (VARCHAR(50), Optional)
+- PaymentStatus (VARCHAR(20), Default: 'pending')
+- CouponCode (VARCHAR(50), Optional)
+- DiscountAmount (DECIMAL(10,2), Default: 0)
+- Notes (TEXT, Optional)
+- CreatedAt (TIMESTAMP)
+- UpdatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE orders (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  buyer_id        UUID NOT NULL REFERENCES users(id),
+  merchant_id     UUID NOT NULL REFERENCES merchants(id),
+  status          VARCHAR(30) NOT NULL DEFAULT 'placed',
+  total_amount    DECIMAL(10,2) NOT NULL,
+  shipping_address JSONB NOT NULL,
+  payment_method  VARCHAR(50) NOT NULL,
+  payment_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
+  coupon_code     VARCHAR(50),
+  discount_amount DECIMAL(10,2) DEFAULT 0,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
 
 #### 3.1.5 Review Entity
 Represents a product review.
 
 **Attributes:**
-- ReviewID (Primary Key, CUID)
-- UserID (Foreign Key to User)
-- ProductID (Foreign Key to Product)
-- Rating (1-5)
-- Title (Optional)
-- Body (Optional)
-- Images (String Array)
-- IsVerifiedPurchase (Default: false)
-- IsApproved (Default: true)
-- CreatedDate
-- ModifiedDate
+- ReviewID (Primary Key, UUID)
+- UserID (Foreign Key to Users)
+- ProductID (Foreign Key to Products)
+- Rating (INTEGER, 1-5)
+- Title (VARCHAR(255), Optional)
+- Body (TEXT, Optional)
+- Images (TEXT Array)
+- IsVerifiedPurchase (BOOLEAN, Default: false)
+- IsApproved (BOOLEAN, Default: true)
+- CreatedAt (TIMESTAMP)
+- UpdatedAt (TIMESTAMP)
 - Unique Constraint: [UserID, ProductID]
+
+**SQL Schema:**
+```sql
+CREATE TABLE reviews (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             UUID NOT NULL REFERENCES users(id),
+  product_id          UUID NOT NULL REFERENCES products(id),
+  rating              INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  title               VARCHAR(255),
+  body                TEXT,
+  images              TEXT[],
+  is_verified_purchase BOOLEAN DEFAULT false,
+  is_approved         BOOLEAN DEFAULT true,
+  created_at          TIMESTAMP DEFAULT NOW(),
+  updated_at          TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, product_id)
+);
+```
 
 #### 3.1.6 Wishlist Entity
 Represents a user's saved products.
 
 **Attributes:**
-- WishlistID (Primary Key, CUID)
-- UserID (Foreign Key to User)
-- ProductID (Foreign Key to Product)
-- CreatedDate
+- WishlistID (Primary Key, UUID)
+- UserID (Foreign Key to Users)
+- ProductID (Foreign Key to Products)
+- CreatedAt (TIMESTAMP)
 - Unique Constraint: [UserID, ProductID]
+
+**SQL Schema:**
+```sql
+CREATE TABLE wishlist (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id),
+  product_id  UUID NOT NULL REFERENCES products(id),
+  created_at  TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, product_id)
+);
+```
 
 #### 3.1.7 Shop Entity
 Represents a merchant's shop profile.
 
 **Attributes:**
-- ShopID (Primary Key, CUID)
-- UserID (Foreign Key to User, Unique)
-- Name
-- Slug (Unique)
-- Description (Optional)
-- LogoUrl (Optional)
-- BannerUrl (Optional)
-- Address (Optional)
-- Phone (Optional)
-- Email (Optional)
-- Latitude (Decimal 10,7, Optional)
-- Longitude (Decimal 10,7, Optional)
-- IsApproved (Default: false)
-- CreatedDate
-- ModifiedDate
+- ShopID (Primary Key, UUID)
+- UserID (Foreign Key to Users, Unique)
+- Name (VARCHAR(255))
+- Slug (VARCHAR(255), Unique)
+- Description (TEXT, Optional)
+- LogoUrl (TEXT, Optional)
+- BannerUrl (TEXT, Optional)
+- Address (TEXT, Optional)
+- Phone (VARCHAR(20), Optional)
+- Email (VARCHAR(255), Optional)
+- Latitude (DECIMAL(10,7), Optional)
+- Longitude (DECIMAL(10,7), Optional)
+- IsApproved (BOOLEAN, Default: false)
+- CreatedAt (TIMESTAMP)
+- UpdatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE shops (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID UNIQUE NOT NULL REFERENCES users(id),
+  name        VARCHAR(255) NOT NULL,
+  slug        VARCHAR(255) UNIQUE NOT NULL,
+  description TEXT,
+  logo_url    TEXT,
+  banner_url  TEXT,
+  address     TEXT,
+  phone       VARCHAR(20),
+  email       VARCHAR(255),
+  latitude    DECIMAL(10,7),
+  longitude   DECIMAL(10,7),
+  is_approved BOOLEAN DEFAULT false,
+  created_at  TIMESTAMP DEFAULT NOW(),
+  updated_at  TIMESTAMP DEFAULT NOW()
+);
+```
 
 #### 3.1.8 Promotion Entity
 Represents discount codes and promotions.
 
 **Attributes:**
-- PromotionID (Primary Key, CUID)
-- MerchantID (Foreign Key to User)
-- Code (Unique)
-- Description (Optional)
-- DiscountType (percentage, fixed)
-- DiscountValue (Decimal 10,2)
-- MinOrderAmount (Decimal 10,2, Optional)
-- MaxUses (Optional)
-- UsedCount (Default: 0)
-- StartsAt
-- ExpiresAt
-- IsActive (Default: true)
-- CreatedDate
+- PromotionID (Primary Key, UUID)
+- MerchantID (Foreign Key to Merchants)
+- Code (VARCHAR(50), Unique)
+- Description (TEXT, Optional)
+- DiscountType (VARCHAR(20)) - Values: 'percentage', 'fixed'
+- DiscountValue (DECIMAL(10,2))
+- MinOrderAmount (DECIMAL(10,2), Optional)
+- MaxUses (INTEGER, Optional)
+- UsedCount (INTEGER, Default: 0)
+- StartsAt (TIMESTAMP)
+- ExpiresAt (TIMESTAMP)
+- IsActive (BOOLEAN, Default: true)
+- CreatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE promotions (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id     UUID NOT NULL REFERENCES merchants(id),
+  code            VARCHAR(50) UNIQUE NOT NULL,
+  description     TEXT,
+  discount_type   VARCHAR(20) NOT NULL,
+  discount_value  DECIMAL(10,2) NOT NULL,
+  min_order_amount DECIMAL(10,2),
+  max_uses        INTEGER,
+  used_count      INTEGER DEFAULT 0,
+  starts_at       TIMESTAMP NOT NULL,
+  expires_at      TIMESTAMP NOT NULL,
+  is_active       BOOLEAN DEFAULT true,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
 
 #### 3.1.9 Advertisement Entity
 Represents shop advertisements with approval workflow, payment tracking, and weekly limits.
 
 **Attributes:**
-- AdvertisementID (Primary Key, CUID)
-- ShopID (Foreign Key to Shop)
-- Title
-- Content (Optional)
-- AnnouncementMessage (Required, max 500 chars) — banner text displayed on storefront
-- ImageUrl (Optional)
-- LinkUrl (Optional)
-- IsActive (Default: true)
-- ApprovalStatus (pending / approved / rejected, Default: 'pending')
-- PaymentStatus (pending / paid / failed / refunded, Default: 'pending')
-- PaymentAmount (Decimal, Optional) — advertising fee amount
-- PaymentReference (Optional) — payment transaction reference
-- ApprovedBy (Foreign Key to User, Optional) — admin who approved/rejected
-- ApprovedAt (Timestamp, Optional)
-- RejectionReason (Optional) — reason when admin rejects
-- WeekNumber (Integer) — ISO week number for weekly limit tracking
-- StartsAt
-- ExpiresAt
-- CreatedDate
+- AdvertisementID (Primary Key, UUID)
+- ShopID (Foreign Key to Shops)
+- Title (VARCHAR(255))
+- Content (TEXT, Optional)
+- AnnouncementMessage (VARCHAR(500), Required) — banner text displayed on storefront
+- ImageUrl (TEXT, Optional)
+- LinkUrl (TEXT, Optional)
+- IsActive (BOOLEAN, Default: true)
+- ApprovalStatus (VARCHAR(20), Default: 'pending') - Values: 'pending', 'approved', 'rejected'
+- PaymentStatus (VARCHAR(20), Default: 'pending') - Values: 'pending', 'completed', 'refunded', 'failed'
+- PaymentAmount (DECIMAL(10,2), Optional) — advertising fee amount
+- PaymentReference (VARCHAR(255), Optional) — payment transaction reference
+- ApprovedBy (Foreign Key to Users, Optional) — admin who approved/rejected
+- ApprovedAt (TIMESTAMP, Optional)
+- RejectionReason (TEXT, Optional) — reason when admin rejects
+- WeekNumber (INTEGER) — ISO week number for weekly limit tracking
+- StartsAt (TIMESTAMP)
+- ExpiresAt (TIMESTAMP)
+- CreatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE advertisements (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_id               UUID NOT NULL REFERENCES shops(id),
+  title                 VARCHAR(255) NOT NULL,
+  content               TEXT,
+  announcement_message  VARCHAR(500) NOT NULL,
+  image_url             TEXT,
+  link_url              TEXT,
+  is_active             BOOLEAN DEFAULT true,
+  approval_status       VARCHAR(20) NOT NULL DEFAULT 'pending',
+  payment_status        VARCHAR(20) NOT NULL DEFAULT 'pending',
+  payment_amount        DECIMAL(10,2),
+  payment_reference     VARCHAR(255),
+  approved_by           UUID REFERENCES users(id),
+  approved_at           TIMESTAMP,
+  rejection_reason      TEXT,
+  week_number           INTEGER,
+  starts_at             TIMESTAMP NOT NULL,
+  expires_at            TIMESTAMP NOT NULL,
+  created_at            TIMESTAMP DEFAULT NOW()
+);
+```
 
 #### 3.1.10 RefreshToken Entity
 Represents JWT refresh tokens.
 
 **Attributes:**
-- RefreshTokenID (Primary Key, CUID)
-- UserID (Foreign Key to User)
-- TokenHash
-- Family
-- DeviceInfo (JSON, Optional)
-- IPAddress (Optional)
-- IsRevoked (Default: false)
-- AbsoluteLimitAt
-- ExpiresAt
-- CreatedDate
+- RefreshTokenID (Primary Key, UUID)
+- UserID (Foreign Key to Users)
+- TokenHash (VARCHAR(255))
+- Family (VARCHAR(255))
+- DeviceInfo (JSONB, Optional)
+- IPAddress (VARCHAR(45), Optional)
+- IsRevoked (BOOLEAN, Default: false)
+- AbsoluteLimitAt (TIMESTAMP)
+- ExpiresAt (TIMESTAMP)
+- CreatedAt (TIMESTAMP)
+
+**SQL Schema:**
+```sql
+CREATE TABLE refresh_tokens (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL REFERENCES users(id),
+  token_hash        VARCHAR(255) NOT NULL,
+  family            VARCHAR(255) NOT NULL,
+  device_info       JSONB,
+  ip_address        VARCHAR(45),
+  is_revoked        BOOLEAN DEFAULT false,
+  absolute_limit_at TIMESTAMP NOT NULL,
+  expires_at        TIMESTAMP NOT NULL,
+  created_at        TIMESTAMP DEFAULT NOW()
+);
+```
+
+### 3.1.11 Database Schema (データベーススキーマ)
+
+#### Users Table
+```sql
+CREATE TABLE users (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email           VARCHAR(255) UNIQUE NOT NULL,
+  password_hash   VARCHAR(255) NOT NULL,
+  name            VARCHAR(255) NOT NULL,
+  phone           VARCHAR(20),
+  avatar_url      TEXT,
+  role            VARCHAR(20) NOT NULL DEFAULT 'buyer',
+  -- roles: 'buyer', 'merchant', 'admin', 'super_admin'
+  is_active       BOOLEAN DEFAULT true,
+  email_verified  BOOLEAN DEFAULT false,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Merchants Table
+```sql
+CREATE TABLE merchants (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID UNIQUE NOT NULL REFERENCES users(id),
+  shop_name       VARCHAR(255) NOT NULL,
+  business_license_url TEXT NOT NULL,
+  license_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'approved', 'rejected'
+  rejection_reason TEXT,
+  reviewed_at     TIMESTAMP,
+  reviewed_by     UUID REFERENCES users(id),
+  license_expires_at TIMESTAMP,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Orders Table
+```sql
+CREATE TABLE orders (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  buyer_id        UUID NOT NULL REFERENCES users(id),
+  merchant_id     UUID NOT NULL REFERENCES merchants(id),
+  status          VARCHAR(30) NOT NULL DEFAULT 'placed',
+  total_amount    DECIMAL(10,2) NOT NULL,
+  shipping_address JSONB NOT NULL,
+  payment_method  VARCHAR(50) NOT NULL,
+  payment_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
+  coupon_code     VARCHAR(50),
+  discount_amount DECIMAL(10,2) DEFAULT 0,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Order Status Flow
+```
+placed → confirmed → packed → shipped → out_for_delivery → delivered
+   ↓         ↓          ↓         ↓              ↓              ↓
+  Any state can be cancelled (before shipped) → cancelled
+```
+
+#### Order Status Updates
+| Status | Description | Updated By |
+|--------|-------------|------------|
+| `placed` | Order created, awaiting confirmation | System |
+| `confirmed` | Merchant accepted order | Merchant |
+| `packed` | Order packed and ready to ship | Merchant |
+| `shipped` | Order sent to courier | Merchant |
+| `out_for_delivery` | Order on the way to buyer | Courier/System |
+| `delivered` | Buyer received order | Buyer/System |
+| `cancelled` | Order cancelled (buyer or merchant) | Buyer/Merchant |
+
+#### Tracking Response
+```json
+{
+  "order_id": "uuid",
+  "status": "shipped",
+  "timeline": [
+    { "status": "placed", "timestamp": "2026-08-10T10:00:00Z" },
+    { "status": "confirmed", "timestamp": "2026-08-10T14:30:00Z" },
+    { "status": "packed", "timestamp": "2026-08-11T09:00:00Z" },
+    { "status": "shipped", "timestamp": "2026-08-11T15:00:00Z" }
+  ],
+  "estimated_delivery": "2026-08-14",
+  "carrier": "YANGON_EXPRESS",
+  "tracking_number": "YOE123456789"
+}
+```
+
+#### Advertisements Table
+```sql
+CREATE TABLE advertisements (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_id         UUID NOT NULL REFERENCES shops(id),
+  title           VARCHAR(255) NOT NULL,
+  content         TEXT,
+  announcement_message VARCHAR(500) NOT NULL,
+  image_url       TEXT,
+  link_url        TEXT,
+  is_active       BOOLEAN DEFAULT true,
+  approval_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  payment_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
+  payment_amount  DECIMAL(10,2),
+  payment_reference VARCHAR(255),
+  approved_by     UUID REFERENCES users(id),
+  approved_at     TIMESTAMP,
+  rejection_reason TEXT,
+  week_number     INTEGER,
+  starts_at       TIMESTAMP NOT NULL,
+  expires_at      TIMESTAMP NOT NULL,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Ad Fee Settings Table
+```sql
+CREATE TABLE ad_fee_settings (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  placement       VARCHAR(50) NOT NULL,
+  tier            VARCHAR(20) NOT NULL,
+  daily_rate      DECIMAL(10,2) NOT NULL,
+  is_active       BOOLEAN DEFAULT true,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW(),
+  UNIQUE(placement, tier)
+);
+```
+
+#### Default Fee Settings
+| Placement | Basic | Standard | Premium |
+|-----------|-------|----------|---------|
+| Homepage Slider | $3.00/day | $5.00/day | $8.00/day |
+| Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day |
+| Category Banner | $2.50/day | $4.00/day | $7.00/day |
+| Search Results Top | $1.50/day | $2.50/day | $5.00/day |
+
+#### Ad Fee Calculation Formula
+```
+Total Fee = daily_rate × number_of_days × tier_multiplier
+
+Tier Multipliers:
+- basic: 1.0x
+- standard: 1.5x
+- premium: 2.0x
+```
+
+#### Ad Payments Table
+```sql
+CREATE TABLE ad_payments (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ad_id           UUID NOT NULL REFERENCES advertisements(id),
+  merchant_id     UUID NOT NULL REFERENCES merchants(id),
+  amount          DECIMAL(10,2) NOT NULL,
+  payment_method  VARCHAR(50) NOT NULL,
+  payment_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'completed', 'refunded', 'failed'
+  transaction_id  VARCHAR(255),
+  paid_at         TIMESTAMP,
+  refund_amount   DECIMAL(10,2),
+  refund_reason   TEXT,
+  refunded_at     TIMESTAMP,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Ad Fee History Table
+```sql
+CREATE TABLE ad_fee_history (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ad_fee_setting_id UUID NOT NULL REFERENCES ad_fee_settings(id),
+  old_daily_rate  DECIMAL(10,2),
+  new_daily_rate  DECIMAL(10,2),
+  changed_by      UUID NOT NULL REFERENCES users(id),
+  change_reason   TEXT,
+  effective_from  TIMESTAMP NOT NULL,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Fee History Rules
+- Fee changes do not affect already-paid advertisements
+- New fees apply only to ads created after the change effective date
+- All fee changes are logged in `ad_fee_history`
+- Admin can view fee change history with timestamps and reasons
 
 ### 3.2 Functional Requirements by Module
 
@@ -334,6 +1123,11 @@ Represents JWT refresh tokens.
 | B-AUTH-006 | Password is hashed with Argon2 | High |
 | B-AUTH-007 | Refresh token rotation on every use | High |
 | B-AUTH-008 | Token family tracking for breach detection | Medium |
+| B-AUTH-009 | User can request password reset via website | High |
+| B-AUTH-010 | User can reset password with 6-digit code | High |
+| B-AUTH-011 | Reset token expires after 15 minutes | High |
+| B-AUTH-012 | Maximum 3 reset requests per email per hour | Medium |
+| B-AUTH-013 | Password reset invalidates all existing sessions | High |
 
 #### 3.2.2 Buyer Module - Profile Setup (購入者モジュール - プロフィール設定)
 
@@ -428,7 +1222,7 @@ Represents JWT refresh tokens.
 | B-CHECK-007 | User can view order confirmation | High |
 | B-CHECK-008 | User can view order history | High |
 | B-CHECK-009 | User can view order details | High |
-| B-CHECK-010 | Order confirmation email is sent | Medium |
+| B-CHECK-010 | Order confirmation notification is sent | Medium |
 
 #### 3.2.10 Merchant Module - Product Management (マーチャントモジュール - 商品管理)
 
@@ -487,6 +1281,69 @@ Represents JWT refresh tokens.
 | M-AD-007 | Merchants must pay advertising fee before submission | High |
 | M-AD-008 | Maximum 5 active advertisements per week | High |
 | M-AD-009 | Advertisements display with banner/image and announcement message | Medium |
+| M-AD-010 | Ad states: draft → pending_payment → pending_approval → approved → active → expired | High |
+| M-AD-011 | Rejected ads auto-refund payment to merchant | High |
+| M-AD-012 | Per merchant: maximum 2 active ads simultaneously | Medium |
+| M-AD-013 | Minimum ad duration: 7 days | Medium |
+| M-AD-014 | Maximum ad duration: 30 days | Medium |
+
+#### Advertisement Ad States Flow
+```
+draft → pending_payment → pending_approval → approved → active → expired
+                                    ↓
+                                rejected (refund fee)
+                                    ↓
+                                resubmitted
+```
+
+#### Ad Creation Flow
+```
+Merchant creates advertisement
+    ↓
+Uploads content (image, title, description, date range)
+    ↓
+System calculates fee based on duration and placement
+    ↓
+Merchant pays advertisement fee
+    ↓
+Ad enters admin approval queue
+    ↓
+Admin reviews ad content, image, message, and due date
+    ↓
+├── Approved → Ad displayed on storefront
+└── Rejected → Fee refunded, reason sent to merchant
+```
+
+#### Advertisement Slider on Product Dashboard
+
+##### Display Rules
+- Slider appears on the main product dashboard/home page
+- Shows only `approved` and `active` advertisements
+- Maximum 5 ads in rotation
+- Auto-rotate every 5 seconds
+- Manual navigation (prev/next buttons)
+
+##### Slider Response
+```json
+{
+  "ads": [
+    {
+      "id": "uuid",
+      "title": "Summer Sale - 20% Off",
+      "image_url": "https://...",
+      "link": "/products?promo=summer20",
+      "shop_name": "Beauty Shop",
+      "start_date": "2026-08-01",
+      "end_date": "2026-08-31"
+    }
+  ]
+}
+```
+
+##### Display Priority
+1. Ads with higher payment tier (premium > standard > basic)
+2. Ads ending soonest (urgency)
+3. Random rotation within same priority
 
 #### 3.2.15 Merchant Module - Shop Profile (マーチャントモジュール - 店舗プロフィール)
 
@@ -586,15 +1443,10 @@ Represents JWT refresh tokens.
 
 ### 4.3 Order Rules (注文ルール)
 
-#### Rule 4.3.1: Order Status Flow
-```
-pending → confirmed → processing → delivered → done
-```
+#### Rule 4.3.1: Order Completion
+- Delivered status is auto-confirmed by system or confirmed by buyer
 
-#### Rule 4.3.2: Order Completion
-- Done status is auto-confirmed by system or confirmed by buyer
-
-#### Rule 4.3.3: Price Calculation
+#### Rule 4.3.2: Price Calculation
 - Subtotal = sum of (unit_price × quantity) for all items
 - Tax is calculated based on shipping address location
 - Total = Subtotal + Shipping Cost + Tax
@@ -611,6 +1463,63 @@ pending → confirmed → processing → delivered → done
 - Rating must be between 1 and 5 (inclusive)
 - Average rating is auto-calculated from all approved reviews
 - Review count is auto-updated
+
+#### Rule 4.4.3: Review Validation Rules
+1. **Purchase Required:** Reviewer must have a confirmed order containing the product
+2. **Arrival Confirmed:** Order status must be `delivered` or buyer confirmed arrival
+3. **One Review Per Product:** Each buyer can review a product only once
+4. **Rating Range:** Star rating must be between 1 and 5 (integer)
+5. **Content Rules:**
+   - No external website links
+   - No phone numbers
+   - No store advertisements
+   - No inappropriate images
+   - No unrelated content
+6. **Image Limits:** Maximum 5 images per review, max 5MB each, JPG/PNG only
+
+#### Review Validation Middleware
+```typescript
+function validateReview(req, res, next) {
+  const { productId } = req.params;
+  const buyerId = req.user.id;
+  
+  // Check purchase history
+  const hasOrder = checkProductPurchased(buyerId, productId);
+  if (!hasOrder) {
+    return res.status(403).json({ 
+      error: 'PURCHASE_REQUIRED',
+      message: 'You can only review products you have purchased' 
+    });
+  }
+  
+  // Check arrival confirmation
+  const orderDelivered = checkOrderDelivered(buyerId, productId);
+  if (!orderDelivered) {
+    return res.status(403).json({ 
+      error: 'DELIVERY_REQUIRED',
+      message: 'You can only review products after confirming delivery' 
+    });
+  }
+  
+  // Check existing review
+  const existingReview = getReviewByBuyerAndProduct(buyerId, productId);
+  if (existingReview) {
+    return res.status(409).json({ 
+      error: 'REVIEW_EXISTS',
+      message: 'You have already reviewed this product' 
+    });
+  }
+  
+  next();
+}
+```
+
+#### Admin Moderation Actions
+| Action | Description |
+|--------|-------------|
+| Approve | Make review visible to public |
+| Reject | Remove review, notify buyer |
+| Flag | Mark for further investigation |
 
 ### 4.5 Promotion Rules (プロモーションルール)
 
@@ -958,6 +1867,108 @@ Routes:
 7. **Microservice Migration:** Independent scaling of services
 8. **Advanced Analytics:** Business intelligence dashboards
 
+### 6.6 API Requirements (API要件)
+
+#### Authentication
+- JWT-based authentication
+- Token stored in HTTP-only cookie or Authorization header
+- Token refresh mechanism
+- Role-based middleware for protected routes
+
+#### Request/Response Format
+- All requests use JSON body (except file uploads)
+- All responses follow consistent format:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Optional message",
+  "error": null
+}
+```
+
+#### Error Response Format
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "Human-readable error message",
+  "error": {
+    "code": "ERROR_CODE",
+    "details": { ... }
+  }
+}
+```
+
+#### Standard HTTP Status Codes
+| Code | Usage |
+|------|-------|
+| 200 | Success |
+| 201 | Created |
+| 400 | Bad Request / Validation Error |
+| 401 | Unauthorized / Invalid Token |
+| 403 | Forbidden / Insufficient Permissions |
+| 404 | Resource Not Found |
+| 409 | Conflict (e.g., duplicate review) |
+| 422 | Unprocessable Entity |
+| 500 | Internal Server Error |
+
+#### File Upload Requirements
+- Use `multipart/form-data` for file uploads
+- Max file size: 10MB
+- Supported formats: JPG, PNG, WebP (images), PDF (documents)
+- Store files in cloud storage (S3, GCS, etc.)
+- Return public URLs for uploaded files
+
+#### Rate Limiting
+- Auth endpoints: 5 requests per minute per IP
+- API endpoints: 100 requests per minute per user
+- File upload: 10 requests per minute per user
+
+### 6.7 Database Relationships (データベースリレーションシップ)
+
+#### Entity Relationship Diagram
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   users     │────<│  merchants  │────<│  products   │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                   │                   │
+       │                   │                   │
+       ▼                   ▼                   ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  orders     │────<│ order_items │     │  reviews    │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │
+       ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  payments   │     │  coupons    │     │  promotions │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                            │
+                                            ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│advertisements│────<│ ad_payments │     │ ad_fee_hist │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │
+       ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ ad_settings │     │   shops     │     │ audit_logs  │
+└─────────────┘     └─────────────┘     └─────────────┘
+```
+
+#### Key Relationships
+| Relationship | Type | Description |
+|--------------|------|-------------|
+| users → merchants | 1:1 | One user can be one merchant |
+| merchants → products | 1:N | One merchant has many products |
+| users → orders | 1:N | One buyer has many orders |
+| merchants → orders | 1:N | One merchant has many orders |
+| orders → order_items | 1:N | One order has many items |
+| products → reviews | 1:N | One product has many reviews |
+| users → reviews | 1:N | One buyer has many reviews |
+| merchants → advertisements | 1:N | One merchant has many ads |
+| advertisements → ad_payments | 1:1 | One ad has one payment |
+| ad_fee_settings → ad_fee_history | 1:N | Settings changes logged |
+
 ---
 
 ## 7. Acceptance Criteria & Success Metrics
@@ -1035,8 +2046,38 @@ See: `docs/guides/ENVIRONMENT_SETUP.md`
 **Document Management (文書管理):**
 - Author: Software Architect
 - Created: 2026-08-03
-- Last Updated: 2026-08-03
+- Last Updated: 2026-08-14
 - Next Review: Phase 2 Planning
+
+---
+
+## 9. Appendix B - Cross-File Consistency Check (Appendix B - ファイル間整合性チェック)
+
+### Final Consistency Check (最終整合性チェック)
+
+| Rule | Source File | Status |
+|------|-------------|--------|
+| Merchant license_status instead of merchant_status | Specification.xlsx | ✅ Consistent |
+| 403 authorization for product ownership | TharapheeHtet(Cosmetic Finder).xlsx | ✅ Consistent |
+| Password reset flow | AI Skin Analysis 1.xlsx | ✅ Consistent |
+| Ad fee calculation and refund | AI Skin Analysis 1.xlsx | ✅ Consistent |
+| Review validation rules | WaiYanTun(Cosmetic_Finder).xlsx | ✅ Consistent |
+| Order tracking states | ThainMyweOo(CosmeticFinder).xlsx | ✅ Consistent |
+| Ad slider on dashboard | PyaePhyoHein(cosmetic option).xlsx | ✅ Consistent |
+| Merchant rejection/resubmit flow | AI Skin Analysis 1.xlsx | ✅ Consistent |
+| Super Admin seeding | AI Skin Analysis 1.xlsx | ✅ Consistent |
+
+### Source Files (ソースファイル)
+
+| File | Focus Area |
+|------|------------|
+| `AI Skin Analysis 1.xlsx` | In-depth functional specs, edge cases, workflow rules, administrative controls |
+| `TharapheeHtet(Cosmetic Finder).xlsx` | Technical spec mapping: functions, permissions, API routes |
+| `ThainMyweOo(CosmeticFinder).xlsx` | Step-by-step user journeys and UI process flows |
+| `WaiYanTun(Cosmetic_Finder).xlsx` | Structured feature matrix and permission checklist |
+| `PyaePhyoHein(cosmetic option).xlsx` | Functional option breakdowns per role |
+| `Specification.xlsx` | Development guidelines, gap analysis, documentation strategy |
+| `AI_Cosmetic_Finder_System_Specification.md` | Comprehensive system specification with database schemas, API requirements, and detailed role rules |
 
 ---
 
