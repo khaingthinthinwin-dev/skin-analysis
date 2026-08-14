@@ -10,9 +10,9 @@
 | **Target Screen** | Product Detail (商品詳細) |
 | **Subsystem** | Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry |
 | **Function ID** | FN-PROD-001 |
-| **Version** | 4.0 |
+| **Version** | 5.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-10 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
 | **Status** | Draft (審査中) |
 | **Classification** | Internal — Engineering Division |
@@ -27,6 +27,7 @@
 | 2.0 | 2026-08-06 | Software Architect | Updated structure to fully conform to standard functional specification template, integrating detailed specifications from Requirement, Database, and Development Rules documents. |
 | 3.0 | 2026-08-07 | Software Architect | Removed UI wireframe, layout behavior, folder structure, and frontend implementation details (routes, types, Zod schema, service layer, hooks) from Section 5 to conform to the standard screen specification template (UI Elements only), matching the structure of other screen specification documents. |
 | 4.0 | 2026-08-10 | Software Architect | Removed the Wishlist deletion (Remove from Wishlist) section and all deletion-related references from the Product Detail scope since deletion is handled by a separate module; added the Active Promotion display section including the promotion balance; corrected database table references (`cart_items` does not exist in the DB design — replaced with `promotions` / `order_items`). |
+| 5.0 | 2026-08-14 | Software Architect | Aligned with DATABASE_SPEC v2.0: replaced all CUID references with UUID (all PKs now use `gen_random_uuid()`); updated merchant data model to reference `merchants` table (display name is `shopName`, not `name`); corrected wishlist table name from `wishlists` to `wishlist` (singular) with matching constraint/index names; clarified verified-purchase check to use `delivered` order status (terminal state per DB spec); updated all JSON examples and Prisma queries accordingly. |
 
 ---
 
@@ -108,7 +109,7 @@ This screen is responsible for the following core functional areas:
 | Input Information | Data Category | Source / Description |
 |-------------------|---------------|----------------------|
 | `slug` | URL Path Parameter | Product slug used to resolve the product detail |
-| `productId` | URL Path Parameter | CUID product identifier used by reviews / wishlist / cart |
+| `productId` | URL Path Parameter | UUID product identifier used by reviews / wishlist / cart |
 | `page`, `limit` | Query Parameters | Pagination for the review list |
 | `rating`, `title`, `body`, `images` | User Input | Review content submitted via the review form |
 | `quantity` | User Input | Quantity selected in the Add to Cart stepper |
@@ -127,7 +128,7 @@ This screen is responsible for the following core functional areas:
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlists`, `promotions`, `order_items`), constraints. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.0) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`), UUID PKs, merchants table, constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
@@ -286,6 +287,7 @@ This screen is responsible for the following core functional areas:
 |---------|-----------|-------------|-------------------|
 | BR-PROD-005 | Verified Purchase Only | Only buyers with a completed order containing the product can review (Rule 4.4.1). | Backend (service check) |
 | BR-PROD-006 | One Review Per Product | Unique constraint `uq_reviews_user_product` on `(user_id, product_id)`. | Backend (DB constraint + ConflictException) |
+
 | BR-PROD-007 | Rating Bounds | Rating must be between 1 and 5 (Rule 4.4.2, `chk_reviews_rating`). | Backend (DTO + DB check) |
 | BR-PROD-008 | Moderation | `is_approved` defaults `true`; admin can moderate via `/admin/reviews/:id/moderate`. | Backend (admin module) |
 | BR-PROD-009 | Aggregates | `avg_rating` / `review_count` recalculated transactionally after each approved review. | Backend (transaction) |
@@ -302,7 +304,7 @@ This screen is responsible for the following core functional areas:
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-PROD-013 | Wishlist Uniqueness | Unique constraint `uq_wishlists_user_product` on `(user_id, product_id)`. | Backend (DB constraint) |
+| BR-PROD-013 | Wishlist Uniqueness | Unique constraint `uq_wishlist_user_product` on `(user_id, product_id)` — table name is `wishlist` (singular). | Backend (DB constraint) |
 | BR-PROD-014 | Duplicate Handling | Duplicate add returns 409 "Product already in wishlist". | Backend (service check) |
 
 ### 4.5 Security Rules
@@ -368,7 +370,7 @@ This screen is responsible for the following core functional areas:
 | **Trigger** | Buyer navigates to `/products/:slug` |
 | **API Endpoint** | `GET /api/v1/products/:slug` |
 | **Request Content-Type** | `application/json` (response) |
-| **Pre-Submission Validation** | `slug` path parameter format (CUID/slug, max 255 chars) |
+| **Pre-Submission Validation** | `slug` path parameter format (URL slug, max 255 chars) |
 | **Processing Steps** | 1. Validate slug format. 2. Look up product by slug (`idx_products_slug`). 3. Filter `is_active = true` (Rule 4.2.1). 4. Include category (with parent), merchant (with shop). 5. Return product detail DTO (exclude internal fields). |
 | **Success Response** | 200 OK with product detail (see §7.4) |
 | **Error Response** | 400 Invalid slug; 404 Product not found / inactive |
@@ -377,7 +379,7 @@ This screen is responsible for the following core functional areas:
 **Backend Processing Flow:**
 
 ```
-Slug validated as CUID/slug format
+Slug validated as URL slug format (max 255 chars)
   → ProductsService.findOneBySlug()
     → Lookup product by slug (idx_products_slug index)
     → Filter where is_active = true
@@ -393,7 +395,7 @@ Slug validated as CUID/slug format
 | **Trigger** | Product detail page loads the Reviews tab |
 | **API Endpoint** | `GET /api/v1/products/:productId/reviews` |
 | **Request Content-Type** | `application/json` (response) |
-| **Pre-Submission Validation** | `productId` (CUID); query `page` (min 1), `limit` (1–50) |
+| **Pre-Submission Validation** | `productId` (UUID); query `page` (min 1), `limit` (1–50) |
 | **Processing Steps** | 1. Verify product exists. 2. Query reviews where `product_id` and `is_approved = true` (`idx_reviews_product_id`). 3. Include user (name, avatarUrl). 4. Order by `created_at DESC`. 5. Paginate and return. |
 | **Success Response** | 200 OK with review list + pagination meta (see §7.5) |
 | **Error Response** | 404 Product not found |
@@ -402,7 +404,7 @@ Slug validated as CUID/slug format
 **Backend Processing Flow:**
 
 ```
-productId validated (CUID format)
+productId validated (UUID format)
   → ReviewsService.findByProduct()
     → Verify product exists
     → Query reviews where product_id = productId AND is_approved = true (idx_reviews_product_id index)
@@ -419,7 +421,7 @@ productId validated (CUID format)
 | **API Endpoint** | `POST /api/v1/products/:productId/reviews` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Zod review schema (rating 1–5, title ≤ 255, body ≤ 5000, ≤ 5 images) |
-| **Processing Steps** | 1. Validate JWT + `buyer` role. 2. Verify product exists. 3. Verify verified purchase (completed order containing product, Rule 4.4.1). 4. Check unique `(user_id, product_id)` constraint (Rule 4.4.1). 5. Create review with `is_verified_purchase = true`. 6. Recalculate `avg_rating` / `review_count` in a transaction. 7. Invalidate Redis product cache. 8. Log `REVIEW_CREATED`. |
+| **Processing Steps** | 1. Validate JWT + `buyer` role. 2. Verify product exists. 3. Verify verified purchase (order with status `delivered` containing the product, Rule 4.4.1). 4. Check unique `(user_id, product_id)` constraint (Rule 4.4.1). 5. Create review with `is_verified_purchase = true`. 6. Recalculate `avg_rating` / `review_count` in a transaction. 7. Invalidate Redis product cache. 8. Log `REVIEW_CREATED`. |
 | **Success Response** | 201 Created with review DTO |
 | **Error Response** | 401 Unauthorized; 403 Not a buyer; 404 Product not found; 409 Duplicate review; 422 Not a verified purchase |
 | **Post-Action** | Reviews + product detail queries invalidated; rating summary refreshed |
@@ -430,7 +432,7 @@ productId validated (CUID format)
 JwtAuthGuard + RolesGuard(buyer) validate access token
   → ReviewsService.create()
     → Verify product exists
-    → Verify user has a completed order containing the product (Rule 4.4.1)
+    → Verify user has a delivered order (status = 'delivered') containing the product (Rule 4.4.1)
       → If not → UnprocessableEntityException
     → Check unique constraint (user_id, product_id) for existing review
       → If exists → ConflictException
@@ -448,7 +450,7 @@ JwtAuthGuard + RolesGuard(buyer) validate access token
 | **Trigger** | Product detail page loads the "Related Products" section |
 | **API Endpoint** | `GET /api/v1/recommendations/similar/:productId` |
 | **Request Content-Type** | `application/json` (response) |
-| **Pre-Submission Validation** | `productId` (CUID) |
+| **Pre-Submission Validation** | `productId` (UUID) |
 | **Processing Steps** | 1. Load target product (categoryId, skinTypes, tags). 2. Query active products matching category or overlapping skinTypes/tags. 3. Exclude target product. 4. Limit to 8 results. 5. Return product card DTOs. |
 | **Success Response** | 200 OK with similar product card list (see §7.6) |
 | **Error Response** | 404 Product not found |
@@ -457,7 +459,7 @@ JwtAuthGuard + RolesGuard(buyer) validate access token
 **Backend Processing Flow:**
 
 ```
-productId validated
+productId validated (UUID format)
   → MatchingService.findSimilar()
     → Load target product (categoryId, skinTypes, tags)
     → Query active products matching category or overlapping skinTypes/tags
@@ -501,7 +503,7 @@ productId validated
 | **Trigger** | Product detail page loads the "Active Promotion" section |
 | **API Endpoint** | `GET /api/v1/products/:slug/promotions` |
 | **Request Content-Type** | `application/json` (response) |
-| **Pre-Submission Validation** | `slug` (CUID/slug format, max 255 chars) |
+| **Pre-Submission Validation** | `slug` (URL slug format, max 255 chars) |
 | **Processing Steps** | 1. Validate slug format. 2. Look up product by slug. 3. Load product's merchant. 4. Query `promotions` where `merchant_id` = product.merchant and `is_active = true`, `starts_at <= now()`, `now() < expires_at` (Rule 4.5.1). 5. Filter promotions with remaining balance `> 0` (Rule BR-PROD-019). 6. Order by `starts_at DESC`. 7. Return promotion DTOs including computed `balance`. |
 | **Success Response** | 200 OK with active promotion list (see §7.7) |
 | **Error Response** | 400 Invalid slug; 404 Product not found / inactive |
@@ -510,7 +512,7 @@ productId validated
 **Backend Processing Flow:**
 
 ```
-slug validated (CUID/slug format)
+slug validated (URL slug format, max 255 chars)
   → ProductsService.findOneBySlug()
     → Lookup product by slug (idx_products_slug index)
     → Filter where is_active = true
@@ -549,7 +551,7 @@ slug validated (CUID/slug format)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `products.id` | CUID string |
+| `id` | `products.id` | UUID string |
 | `name` | `products.name` | String |
 | `slug` | `products.slug` | URL-friendly string |
 | `description` | `products.description` | String or null |
@@ -566,14 +568,14 @@ slug validated (CUID/slug format)
 | `avgRating` | `products.avg_rating` | Decimal string (1 decimal) |
 | `reviewCount` | `products.review_count` | Integer |
 | `category` | `categories` | Nested object with parent |
-| `merchant` | `users` + `shops` | Nested object with shop |
+| `merchant` | `merchants` | Nested object: `id`, `shopName` (from `merchants.shop_name`), `licenseStatus`, `shop` (from `shops` via `user_id`) |
 
 **Example Response (200):**
 
 ```json
 {
   "data": {
-    "id": "clx1234567890",
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "Hydrating Facial Serum",
     "slug": "hydrating-facial-serum",
     "description": "Lightweight daily serum with hyaluronic acid...",
@@ -584,8 +586,8 @@ slug validated (CUID/slug format)
     "stockQuantity": 45,
     "lowStockThreshold": 10,
     "images": [
-      "https://cdn.example.com/products/clx/1-full.webp",
-      "https://cdn.example.com/products/clx/2-full.webp"
+      "https://cdn.example.com/products/uuid/1-full.webp",
+      "https://cdn.example.com/products/uuid/2-full.webp"
     ],
     "tags": ["serum", "hydrating"],
     "skinTypes": ["dry", "sensitive"],
@@ -596,14 +598,15 @@ slug validated (CUID/slug format)
     "reviewCount": 32,
     "createdAt": "2026-07-01T08:00:00.000Z",
     "category": {
-      "id": "clxcat0001",
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
       "name": "Serums",
       "slug": "serums",
       "parent": { "name": "Skincare", "slug": "skincare" }
     },
     "merchant": {
-      "id": "clxmer0001",
-      "name": "Glow Lab",
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "shopName": "Glow Lab",
+      "licenseStatus": "approved",
       "shop": {
         "name": "Glow Lab Official Store",
         "slug": "glow-lab-official-store",
@@ -619,7 +622,7 @@ slug validated (CUID/slug format)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `data[].id` | `reviews.id` | CUID string |
+| `data[].id` | `reviews.id` | UUID string |
 | `data[].rating` | `reviews.rating` | Integer 1–5 |
 | `data[].title` | `reviews.title` | String or null |
 | `data[].body` | `reviews.body` | String or null |
@@ -635,7 +638,7 @@ slug validated (CUID/slug format)
 {
   "data": [
     {
-      "id": "clxrev0001",
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
       "rating": 5,
       "title": "Amazing for dry skin",
       "body": "My skin feels hydrated all day.",
@@ -643,7 +646,7 @@ slug validated (CUID/slug format)
       "isVerifiedPurchase": true,
       "createdAt": "2026-08-01T10:00:00.000Z",
       "user": {
-        "id": "clxbuy0001",
+        "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
         "name": "Jane Doe",
         "avatarUrl": null
       }
@@ -665,7 +668,7 @@ slug validated (CUID/slug format)
 ```json
 {
   "data": {
-    "id": "clxrev0001",
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
     "rating": 5,
     "title": "Amazing for dry skin",
     "body": "My skin feels hydrated all day.",
@@ -681,7 +684,7 @@ slug validated (CUID/slug format)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `products.id` | CUID string |
+| `id` | `products.id` | UUID string |
 | `name` | `products.name` | String |
 | `slug` | `products.slug` | URL-friendly string |
 | `price` | `products.price` | Decimal string |
@@ -697,12 +700,12 @@ slug validated (CUID/slug format)
 {
   "data": [
     {
-      "id": "clx1234567891",
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
       "name": "Vitamin C Brightening Serum",
       "slug": "vitamin-c-brightening-serum",
       "price": "28.00",
       "compareAtPrice": null,
-      "images": ["https://cdn.example.com/products/clx/1-thumb.webp"],
+      "images": ["https://cdn.example.com/products/uuid/1-thumb.webp"],
       "avgRating": "4.30",
       "reviewCount": 18,
       "stockQuantity": 20
@@ -715,7 +718,7 @@ slug validated (CUID/slug format)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `data[].id` | `promotions.id` | CUID string |
+| `data[].id` | `promotions.id` | UUID string |
 | `data[].code` | `promotions.code` | String (coupon code) |
 | `data[].description` | `promotions.description` | String or null |
 | `data[].discountType` | `promotions.discount_type` | `percentage` / `fixed` |
@@ -733,7 +736,7 @@ slug validated (CUID/slug format)
 {
   "data": [
     {
-      "id": "clxprom0001",
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
       "code": "GLOW10",
       "description": "10% off from Glow Lab",
       "discountType": "percentage",
@@ -757,8 +760,8 @@ slug validated (CUID/slug format)
 
 | Parameter | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-----------|-----------------|--------------------|--------------------|
-| `slug` | Required, CUID/slug format, max 255 chars | "slug must be a string" | "スラッグは文字列である必要があります" |
-| `productId` | Required, CUID format | "productId must be a valid CUID" | "productId が無効です" |
+| `slug` | Required, URL slug format, max 255 chars | "slug must be a string" | "スラッグは文字列である必要があります" |
+| `productId` | Required, UUID format | "productId must be a valid UUID" | "productId が無効です" |
 
 ### 8.2 Review Validation (Strict Mode)
 
@@ -1052,18 +1055,21 @@ Defined via `.env` configuration and service constants:
 |----------------|-------------------------------|-------------------------|
 | `products` | Load product detail by slug (SELECT), recalculate rating (UPDATE) | `idx_products_slug`, `idx_products_is_active`, `idx_products_category_id`, `uq_products_slug`, `chk_products_stock` |
 | `categories` | Breadcrumb and category display | `idx_categories_parent_id` |
-| `users` | Merchant name for "Sold by", reviewer info | `pk_users` |
-| `shops` | Shop profile for "Sold by" | `fk_shops_user` |
+| `merchants` | Merchant display name (`shop_name`), license status for "Sold by" section | `idx_merchants_user_id`, `idx_merchants_license_status` |
+| `users` | Reviewer info (name, avatarUrl) | `pk_users` |
+| `shops` | Shop profile for "Sold by" — linked via `shops.user_id` | `idx_shops_user_id`, `uq_shops_slug`, `idx_shops_is_approved` |
 | `reviews` | Review list (SELECT), create review (INSERT) | `idx_reviews_product_id`, `uq_reviews_user_product`, `chk_reviews_rating` |
-| `wishlists` | Add to wishlist (SELECT / INSERT) | `idx_wishlists_user_id`, `uq_wishlists_user_product` |
+| `wishlist` | Add to wishlist (SELECT / INSERT) — table name is singular | `idx_wishlist_user_id`, `uq_wishlist_user_product` |
 | `promotions` | Active promotion display (SELECT), balance computed from `max_uses` / `used_count` | `idx_promotions_merchant_id`, `idx_promotions_is_active`, `idx_promotions_expires_at`, `uq_promotions_code`, `chk_promotions_discount_value`, `chk_promotions_dates` |
-| `order_items` | Add to cart (INSERT / MERGE). The database design (`SKM-DBS-001`) has **no `cart_items` table** — the actual table used for cart/order lines is `order_items`. | `idx_order_items_product_id`, `idx_order_items_merchant_id`, `fk_order_items_product`, `fk_order_items_merchant`, `chk_order_items_quantity`, `chk_order_items_total` |
+| `order_items` | Verified purchase check (SELECT) and add to cart (INSERT / MERGE). The database design (`SKM-DBS-001`) has **no `cart_items` table** — the actual table used for cart/order lines is `order_items`. | `idx_order_items_product_id`, `idx_order_items_merchant_id`, `fk_order_items_product`, `fk_order_items_merchant`, `chk_order_items_quantity`, `chk_order_items_total` |
 
 **Reference Prisma Queries:**
 
 *Product Detail with Relations:*
 
 ```typescript
+// NOTE: products.merchant_id → references merchants(id) (DATABASE_SPEC v2.0)
+// merchants.shop_name is the display name; shops links via shops.user_id (not merchant_id)
 const product = await prisma.product.findUnique({
   where: { slug: dto.slug, isActive: true },
   include: {
@@ -1071,8 +1077,13 @@ const product = await prisma.product.findUnique({
     merchant: {
       select: {
         id: true,
-        name: true,
-        shop: { select: { name: true, slug: true, logoUrl: true, isApproved: true } },
+        shopName: true,       // merchants.shop_name (display name)
+        licenseStatus: true,  // merchants.license_status
+        user: {
+          select: {
+            shop: { select: { name: true, slug: true, logoUrl: true, isApproved: true } },
+          },
+        },
       },
     },
   },
