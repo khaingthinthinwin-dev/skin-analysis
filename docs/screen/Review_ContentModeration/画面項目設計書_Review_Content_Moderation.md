@@ -4,7 +4,7 @@
 **Target Screen:** Review & Content Moderation (レビュー・コンテンツ管理)  
 **Subsystem:** Administration — Review Moderation & Content Management  
 **Function ID:** FN-MOD-001  
-**Version:** 1.2  
+**Version:** 1.3  
 **Created:** 2026-08-08  
 **Last Updated:** 2026-08-12  
 **Author:** Senior System Engineer  
@@ -22,6 +22,7 @@
 | 1.0 | 2026-08-08 | Senior System Engineer | Initial release. Screen items specification for Review & Content Moderation covering reviews dashboard, review detail modal, merchants management, merchant detail modal, and user moderation actions. |
 | 1.1 | 2026-08-12 | Senior System Engineer | Added Product Content Moderation screen (UC-MOD-004, BR-MOD-010~013): product table, product moderation modal, deactivation/reactivation flows, database mappings, API responses, i18n keys, and test checklist. |
 | 1.2 | 2026-08-12 | Senior System Engineer | Added User Management screen (`/admin/users`): user table, user detail modal, activate/deactivate flows (UC-MOD-006, BR-MOD-040~042), database mappings, API responses, i18n keys, and test checklist. Fixed `is_approved IS NULL` to correct `is_approved = FALSE` per BR-MOD-002. |
+| 1.3 | 2026-08-13 | Senior System Engineer | Removed `PENDING_REVIEW` status from Product Moderation States per database design (no `status` column in `products` table). Removed `statPendingReviewCount`, "Pending Review" filter tab, and `status` field from Products List database mapping. Updated layout diagrams, i18n keys, behavior specs, and test checklist accordingly. |
 
 ### 1.2 Related Documents
 
@@ -216,12 +217,12 @@ The Review & Content Moderation screens serve as the central administration hub 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [AA] STATS BAR (cond.)              │   │
-│  │   Total | Active | Inactive | Pending Review     │   │
+│  │   Total | Active | Inactive                      │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [BB] FILTER TABS                    │   │
-│  │   All | Active | Inactive | Pending Review       │   │
+│  │   All | Active | Inactive                        │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -546,13 +547,13 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 69 | `statTotalProducts` | Total Products Count | Stats Card | Integer | — | Populated on load | — | `COUNT(products)` | Tailwind: `bg-white rounded-lg p-4 shadow-sm`. |
 | 70 | `statActiveCount` | Active Products Count | Stats Card | Integer | — | Populated on load | — | `COUNT(products WHERE is_active = TRUE)` | Green badge for active count. |
 | 71 | `statInactiveCount` | Inactive Products Count | Stats Card | Integer | — | Populated on load | — | `COUNT(products WHERE is_active = FALSE)` | Red badge. |
-| 72 | `statPendingReviewCount` | Pending Review Count | Stats Card | Integer | — | Populated on load | — | `COUNT(products WHERE status = 'PENDING_REVIEW')` | Amber badge. |
+
 
 ### 4.25 Section [BB]: Filter Tabs — Content Moderation (フィルタタブ — コンテンツ管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 73 | `tabFilterContent` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Active, Inactive, Pending Review | — | i18n key: `admin.content.tabs`. Updates query params on change. |
+| 73 | `tabFilterContent` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Active, Inactive | — | i18n key: `admin.content.tabs`. Updates query params on change. |
 
 ### 4.26 Section [CC]: Search + Sort Bar — Content Moderation (検索・ソートバー — コンテンツ管理)
 
@@ -573,7 +574,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 81 | `lblProductName` | Product Name | Static Label (Link) | String | — | Populated from DB | — | `products.name` | Links to `/products/:slug`. `font-medium text-sm`. |
 | 82 | `lblProductShop` | Shop Name | Static Label | String | — | Populated from DB | — | `shops.name` | `text-sm text-muted-foreground`. |
 | 83 | `lblProductPrice` | Product Price | Static Label | Decimal | — | Formatted with currency | — | `products.price` | Localized currency format. |
-| 84 | `badgeProductStatus` | Product Status Badge | Badge | Enum | — | Green (Active), Red (Inactive), Amber (Pending Review) | — | `products.is_active` | Standard status badge colors. |
+| 84 | `badgeProductStatus` | Product Status Badge | Badge | Enum | — | Green (Active), Red (Inactive) | — | `products.is_active` | Standard status badge colors. |
 | 85 | `lblProductOwner` | Product Owner | Static Label | String | — | Populated from DB | — | `users.name` (via shops) | Owner name from shop relation. |
 | 86 | `lblProductCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `products.created_at` | Localized date format via i18n. |
 | 87 | `ddlProductActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Deactivate, Reactivate | — | Destructive actions show confirmation. |
@@ -621,7 +622,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 102 | `badgeProductDetailStatus` | Product Status Badge | Badge | Enum | — | Green (Active), Red (Inactive), Amber (Pending Review) | — | `products.is_active` | Current product status. |
+| 102 | `badgeProductDetailStatus` | Product Status Badge | Badge | Enum | — | Green (Active), Red (Inactive) | — | `products.is_active` | Current product status. |
 | 103 | `lblProductDetailCreated` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `products.created_at` | Localized date format. |
 | 104 | `lblProductDetailUpdated` | Last Updated | Static Label | DateTime | — | ISO 8601 formatted | — | `products.updated_at` | Localized date format. |
 
@@ -894,9 +895,9 @@ The Review & Content Moderation screens serve as the central administration hub 
 - **Exception Handling:** None applicable.
 
 ### 5.19 Content Tab Filter Change (`tabFilterContent` onChange)
-- **Trigger:** User clicks a filter tab (All, Active, Inactive, Pending Review).
+- **Trigger:** User clicks a filter tab (All, Active, Inactive).
 - **Processing Logic:**
-  1. Update URL query parameter `?status=active|inactive|pending_review`.
+  1. Update URL query parameter `?status=active|inactive`.
   2. Reset pagination to page 1.
   3. Fetch filtered products from `GET /api/v1/admin/content?status={status}&page=1&limit=20`.
   4. Re-render products table with new data.
@@ -1154,7 +1155,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `images[0]` | `product.images[0]` | `images` | `products` | TEXT[] |
 | `price` | `product.price` | `price` | `products` | NUMERIC(10,2) |
 | `isActive` | `product.isActive` | `is_active` | `products` | BOOLEAN |
-| `status` | `product.status` | `status` | `products` | VARCHAR(50) |
 | `shop.name` | `product.shop.name` | `name` | `shops` | VARCHAR(200) |
 | `shop.user.name` | `product.shop.user.name` | `name` | `users` | VARCHAR(200) |
 | `createdAt` | `product.createdAt` | `created_at` | `products` | TIMESTAMPTZ |
@@ -1295,7 +1295,6 @@ The Review & Content Moderation screens serve as the central administration hub 
       "images": ["https://cdn.example.com/products/serum-1.jpg"],
       "price": 49.99,
       "isActive": true,
-      "status": "ACTIVE",
       "shop": {
         "id": "clxShop001",
         "name": "Beauty Garden",
@@ -1444,7 +1443,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.content.tabs.all` | "All" |
 | `admin.content.tabs.active` | "Active" |
 | `admin.content.tabs.inactive` | "Inactive" |
-| `admin.content.tabs.pendingReview` | "Pending Review" |
+
 | `admin.content.search` | "Search products..." |
 | `admin.content.sort.newest` | "Newest" |
 | `admin.content.sort.oldest` | "Oldest" |
@@ -1456,7 +1455,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.content.stats.total` | "Total Products" |
 | `admin.content.stats.active` | "Active" |
 | `admin.content.stats.inactive` | "Inactive" |
-| `admin.content.stats.pendingReview` | "Pending Review" |
+
 | `admin.content.reason` | "Reason for Deactivation" |
 | `admin.content.reasonPlaceholder` | "Enter reason for deactivation..." |
 | `admin.content.deactivate` | "Deactivate" |
@@ -1548,7 +1547,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.content.tabs.all` | "すべて" |
 | `admin.content.tabs.active` | "有効" |
 | `admin.content.tabs.inactive` | "無効" |
-| `admin.content.tabs.pendingReview` | "レビュー待ち" |
+
 | `admin.content.search` | "製品を検索..." |
 | `admin.content.sort.newest` | "新規順" |
 | `admin.content.sort.oldest` | "古い順" |
@@ -1560,7 +1559,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.content.stats.total` | "合計製品数" |
 | `admin.content.stats.active` | "有効" |
 | `admin.content.stats.inactive` | "無効" |
-| `admin.content.stats.pendingReview` | "レビュー待ち" |
+
 | `admin.content.reason` | "無効化理由" |
 | `admin.content.reasonPlaceholder` | "無効化理由を入力してください..." |
 | `admin.content.deactivate` | "無効化" |
@@ -1642,7 +1641,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | Property | Value |
 | :--- | :--- |
 | **Location** | `frontend/src/components/ui/tabs.tsx` |
-| **Usage** | Filter tabs (All, Pending, Approved, Rejected, Active, Inactive, Pending Review, Admin) |
+| **Usage** | Filter tabs (All, Pending, Approved, Rejected, Active, Inactive, Admin) |
 
 ### 10.7 Pagination Component
 
@@ -1725,15 +1724,15 @@ The Review & Content Moderation screens serve as the central administration hub 
 ### 12.5 Content Moderation Dashboard Tests
 
 - [ ] Page loads with correct title "Product Content Moderation"
-- [ ] Stats bar displays correct counts (Total, Active, Inactive, Pending Review)
-- [ ] Filter tabs filter products correctly (All, Active, Inactive, Pending Review)
+- [ ] Stats bar displays correct counts (Total, Active, Inactive)
+- [ ] Filter tabs filter products correctly (All, Active, Inactive)
 - [ ] Search input filters products by name, shop name
 - [ ] Sort dropdown sorts products correctly (Newest, Oldest, Price, Name)
 - [ ] Pagination works with page size selector (20, 50, 100)
 - [ ] Select all checkbox toggles all row checkboxes
 - [ ] Bulk action buttons enable when selections made
 - [ ] Bulk action buttons disable when no selections
-- [ ] Status badges display correct colors (Green=Active, Red=Inactive, Amber=Pending)
+- [ ] Status badges display correct colors (Green=Active, Red=Inactive)
 
 ### 12.6 Product Moderation Modal Tests
 
@@ -1741,7 +1740,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 - [ ] Product info card displays image, name, price, description, category, shop
 - [ ] Product images gallery displays all images in grid layout
 - [ ] Shop owner card displays logo, shop name, owner name, owner email
-- [ ] Status info displays current status badge, created date, last updated
+- [ ] Status info displays current status badge (Active/Inactive), created date, last updated
 - [ ] Deactivate button shows reason textarea
 - [ ] Deactivate with reason submits successfully
 - [ ] Deactivate without reason shows validation error

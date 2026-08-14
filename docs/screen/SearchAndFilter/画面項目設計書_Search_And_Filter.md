@@ -4,9 +4,9 @@
 **Target Screen:** Search & Filter Page (検索・フィルタページ)  
 **Subsystem:** Buyer Module — Product Search, Filtering, Sorting & Pagination  
 **Function ID:** FN-SEARCH-001  
-**Version:** 1.0  
+**Version:** 1.1  
 **Created:** 2026-08-07  
-**Last Updated:** 2026-08-10  
+**Last Updated:** 2026-08-14  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -20,6 +20,7 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-10 | Senior System Engineer | Initial release. Screen items specification for the Search & Filter page covering keyword search, category browsing, multi-dimensional filtering, sorting, pagination, active filter chips, and responsive filter drawer. Aligned with SKM-FDS-SEARCH-001 and PRWM-SIS-SCR-001 format. |
+| 1.1 | 2026-08-14 | Senior System Engineer | Added Grid/List view toggle specification: screen items `tglViewMode` / `btnGridMode` / `btnListMode` (Sec 4.4), behavior (Sec 5.14), i18n keys (Sec 9), shared ViewToggle component (Sec 10.7), UI/UX & accessibility notes (Sec 11), and test checklist (Sec 12.6). View mode defaults to Grid, persists to localStorage, and leaves URL-based search/filter/sort/pagination state unchanged. |
 
 ### 1.2 Related Documents
 
@@ -55,6 +56,7 @@ The Search & Filter page is the discovery and exploration entry point within the
 6. **URL-State Navigation** — All search/filter/sort/page state persisted in URL query parameters as single source of truth (BR-SEARCH-003).
 7. **Caching** — Repeat searches and category tree served from Redis (list TTL 2 min, category tree TTL 30 min).
 8. **Responsive Design** — Desktop filters sidebar, mobile filter drawer, responsive product grid.
+9. **View Mode Toggle** — Switch results between a responsive Grid layout (1–4 columns) and a mobile-friendly stacked List layout. Selection persists to `localStorage`, defaults to Grid, and does not alter URL query params or trigger a refetch.
 
 ---
 
@@ -64,74 +66,75 @@ The Search & Filter page is the discovery and exploration entry point within the
 
 #### Desktop Layout (≥ 1024px)
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                         BROWSER VIEWPORT                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│               ┌─────────────────────────────────────┐            │
-│               │      [A] PAGE HEADER / TITLE        │            │
-│               │   Logo + System Name                │            │
-│               │   "Cosmetics Finder"                │            │
-│               │   [A1] Page Title: "Search Products"│            │
-│               └─────────────────────────────────────┘            │
-│                                                                 │
-│               ┌─────────────────────────────────────┐            │
-│               │   [B] SEARCH BAR                    │            │
-│               │   [B1] Keyword Input                │            │
-│               │   [B2] Search Button  [B3] Clear    │            │
-│               └─────────────────────────────────────┘            │
-│                                                                 │
-│  ┌──────────────────────┐   ┌──────────────────────────────────┐ │
-│  │  [C] FILTERS PANEL   │   │   [D] RESULTS AREA               │ │
-│  │                      │   │   [D1] Results Count             │ │
-│  │  [C1] Categories     │   │   [D2] Sort Select               │ │
-│  │  [C2] Skin Type      │   │   [D3] Active Filter Chips       │ │
-│  │  [C3] Ingredients    │   │   [D4] Product Grid              │ │
-│  │  [C4] Price Range    │   │   [D5] Pagination + Page Size    │ │
-│  │  [C5] Rating         │   │                                  │ │
-│  │                      │   │   (cond.) Loading Skeleton /     │ │
-│  │  [C6] Apply Filters  │   │           Empty State /          │ │
-│  │  [C7] Reset Filters  │   │           Error Banner           │ │
-│  └──────────────────────┘   └──────────────────────────────────┘ │
-│                                                                 │
-│               ┌─────────────────────────────────────┐            │
-│               │   [E] FOOTER CONTROLS               │            │
-│               │   [Language] [Theme]                │            │
-│               └─────────────────────────────────────┘            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                           BROWSER VIEWPORT                           │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│               ┌─────────────────────────────────────┐                │
+│               │      [A] PAGE HEADER / TITLE        │                │
+│               │   Logo + System Name                │                │
+│               │   "Cosmetics Finder"                │                │
+│               │   [A1] Page Title: "Search Products"│                │
+│               ├─────────────────────────────────────┤                │
+│                                                                      │
+│               ┌─────────────────────────────────────┐                │
+│               │   [B] SEARCH BAR                    │                │
+│               │   [B1] Keyword Input                │                │
+│               │   [B2] Search Button  [B3] Clear    │                │
+│               ├─────────────────────────────────────┤                │
+│                                                                      │
+│ ┌──────────────────────┐   ┌──────────────────────────────────────┐  │
+│ │  [C] FILTERS PANEL   │   │   [D] RESULTS AREA                   │  │
+│ │                      │   │   [D1] Results Count                 │  │
+│ │  [C1] Categories     │   │   [D2] Sort Select  [D2a] View Toggle│  │
+│ │  [C2] Skin Type      │   │   [D3] Active Filter Chips           │  │
+│ │  [C3] Ingredients    │   │   [D4] Product Grid / List           │  │
+│ │  [C4] Price Range    │   │   [D5] Pagination + Page Size        │  │
+│ │  [C5] Rating         │   │                                      │  │
+│ │                      │   │   (cond.) Loading Skeleton /         │  │
+│ │  [C6] Apply Filters  │   │           Empty State /              │  │
+│ │  [C7] Reset Filters  │   │           Error Banner               │  │
+│ ├──────────────────────┤   ├──────────────────────────────────────┤  │
+│                                                                      │
+│               ┌─────────────────────────────────────┐                │
+│               │   [E] FOOTER CONTROLS               │                │
+│               │   [Language] [Theme]                │                │
+│               ├─────────────────────────────────────┤                │
+│                                                                      │
+┌──────────────────────────────────────────────────────────────────────┐
 ```
 
 #### Mobile Layout (< 768px)
 ```text
-┌─────────────────────────────────────────────────────────┐
-│                     BROWSER VIEWPORT                     │
-├─────────────────────────────────────────────────────────┤
-│   [A] PAGE HEADER (Logo + System Name)                  │
-│   [A1] Page Title: "Search Products"                    │
-│   [B] SEARCH BAR ([B1] Input [B2] Search [B3] Clear)    │
-│   [D1] Results Count      [D2] Sort Select              │
-│   [D3] Active Filter Chips Row                          │
-│   [D4] PRODUCT GRID (stacked, 1–2 columns)              │
-│   [D5] Pagination   [D6] Page Size Select               │
-│   [E] FOOTER CONTROLS ([Language] [Theme])              │
-│                                                         │
-│   [C] FILTER DRAWER (cond., bottom sheet / overlay)     │
-│      [C1] Categories  [C2] Skin Type  [C3] Ingredients  │
-│      [C4] Price Range  [C5] Rating                      │
-│      [C6] Apply Filters  [C7] Reset Filters             │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│                    BROWSER VIEWPORT                   │
+├───────────────────────────────────────────────────────┤
+│   [A] PAGE HEADER (Logo + System Name)                │
+│   [A1] Page Title: "Search Products"                  │
+│   [B] SEARCH BAR ([B1] Input [B2] Search [B3] Clear)  │
+│   [D1] Results Count  [D2] Sort Select                │
+│   [D2a] View Toggle (Grid/List)                       │
+│   [D3] Active Filter Chips Row                        │
+│   [D4] PRODUCT GRID (1– 2 cols) / LIST (stacked rows) │
+│   [D5] Pagination   [D6] Page Size Select             │
+│   [E] FOOTER CONTROLS ([Language] [Theme])            │
+│                                                       │
+│   [C] FILTER DRAWER (cond., bottom sheet / overlay)   │
+│      [C1] Categories  [C2] Skin Type  [C3] Ingredients│
+│      [C4] Price Range  [C5] Rating                    │
+│      [C6] Apply Filters  [C7] Reset Filters           │
+│                                                       │
+┌───────────────────────────────────────────────────────┐
 ```
 
 ### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
 | Breakpoint | Min Width | Layout Behavior |
 | :--- | :--- | :--- |
-| Mobile (default) | 0px | Filters drawer (trigger button in results header). Stacked grid with 1–2 columns. Filter chips row above results. |
-| Tablet (`md:`) | 768px | Narrower filters sidebar + results grid with 2–3 columns |
-| Desktop (`lg:`) | 1024px | Full filters sidebar + results grid with 4 columns |
-| Wide (`xl:`) | 1280px | Filters sidebar + results grid with 4 columns, enhanced spacing |
+| Mobile (default) | 0px | Filters drawer (trigger button in results header). Grid view: 1–2 columns; List view: stacked rows. Grid/List view toggle in results toolbar (persists to localStorage). Filter chips row above results. |
+| Tablet (`md:`) | 768px | Narrower filters sidebar + results grid with 2–3 columns. Grid/List view toggle in results toolbar. |
+| Desktop (`lg:`) | 1024px | Full filters sidebar + results grid with 4 columns. Grid/List view toggle in results toolbar. |
+| Wide (`xl:`) | 1280px | Filters sidebar + results grid with 4 columns, enhanced spacing. Grid/List view toggle in results toolbar. |
 
 ---
 
@@ -179,23 +182,26 @@ The Search & Filter page is the discovery and exploration entry point within the
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 22 | `lblResultsCount` | Results Count | Text | String | Mandatory | Visible. Text: "{total} products for '{q}'" (or default count) | — | `meta.total` | i18n key `search.resultsCount`. Updates on every query. |
 | 23 | `selSort` | Sort Select | Select | Enum | No | Default: `createdAt desc` (Newest) | Options: newest, price asc, price desc, rating | `products.price`, `products.avg_rating`, `products.created_at` (params `sort`, `order`) | Sort allowlist (BR-SEARCH-015). Change resets `page` to 1. |
-| 24 | `chipsActiveFilters` | Active Filter Chips Row | Chips Row | — | Conditional | Hidden when no filters applied. | — | — | Renders one chip per active filter value (BR-SEARCH-019). Above results on desktop; above results inside drawer header on mobile (BR-SEARCH-024). |
-| 25 | `chipFilter` | Active Filter Chip | Tag Chip | String | — | Visible per active filter. | — | URL params `categoryId`, `skinTypes`, `ingredients`, `minPrice`, `maxPrice`, `rating` | Human-readable label (e.g., "Skin Type: Dry", "$10–$50", "Rating: 4★+"). Close (×) icon removes single value (BR-SEARCH-021, BR-SEARCH-022). |
-| 26 | `btnClearAllFilters` | Clear All Filters | Button (`ghost`/link) | — | Conditional | Visible only when ≥ 1 chip present. Text: "Clear all" | — | — | Removes all filters at once, keeps keyword `q` (BR-SEARCH-023). |
-| 27 | `gridProducts` | Product Grid | Grid | — | Mandatory | Visible. Responsive grid. | — | `data` (Product Summary DTO array) | 1–2 cols (mobile), 2–3 (tablet), 4 (desktop). |
-| 28 | `cardProduct` | Product Card | Card | — | Mandatory | One card per product. | — | `data[]` product summary | Reused `ProductCard` component. Click navigates to `/products/:slug`. Out-of-stock flagged `isInStock: false` (BR-SEARCH-014). |
-| 29 | `sklLoading` | Loading Skeleton | Skeleton | — | Conditional | Shown during fetch. Hidden otherwise. | — | — | Shimmer placeholders (lavender) matching grid layout. |
-| 30 | `pnlEmpty` | Empty State | EmptyState | — | Conditional | Shown when query returns `total = 0`. | — | `meta.total === 0` | "No products found" + description + `btnResetFilters`. i18n keys `search.empty.*`. |
-| 31 | `alertError` | Error Banner | Alert (`destructive`) | String | Conditional | Hidden by default. Shown on API/network error. | — | API error response | Tailwind: `border-destructive/50 text-destructive`. Dismissible. Includes Retry button. |
-| 32 | `pgnPagination` | Pagination | Pagination | — | No | Visible when `totalPages > 1`. | `page` ≥ 1, `limit` 1–100 | `meta.page`, `meta.totalPages` | Previous/next + page numbers. First/last page boundaries disable buttons (Sec 3.3). |
-| 33 | `selPageSize` | Page Size Select | Select | Enum | No | Default: 20 | Options: 10 / 20 / 50 | Query param `limit` | Changing page size resets `page` to 1. |
+| 24 | `tglViewMode` | View Mode Toggle | Toggle Group (segmented control) | Enum (`grid` / `list`) | No | Default: `grid` (Grid view). | — | — | Two segments: Grid and List. Persists to `localStorage` key `search.viewMode`; falls back to `grid` when absent or invalid. Local UI state only — never written to URL query params (search/filter/sort/page unchanged). |
+| 25 | `btnGridMode` | Grid View Button | Button (segment, icon + text) | Enum (`grid`) | No | Active when `tglViewMode = grid`. | — | — | Grid icon + i18n label. `aria-pressed="true"` when active. Selects responsive grid layout for `gridProducts`. |
+| 26 | `btnListMode` | List View Button | Button (segment, icon + text) | Enum (`list`) | No | Active when `tglViewMode = list`. | — | — | List icon + i18n label. `aria-pressed="true"` when active. Selects mobile-friendly stacked list layout. |
+| 27 | `chipsActiveFilters` | Active Filter Chips Row | Chips Row | — | Conditional | Hidden when no filters applied. | — | — | Renders one chip per active filter value (BR-SEARCH-019). Above results on desktop; above results inside drawer header on mobile (BR-SEARCH-024). |
+| 28 | `chipFilter` | Active Filter Chip | Tag Chip | String | — | Visible per active filter. | — | URL params `categoryId`, `skinTypes`, `ingredients`, `minPrice`, `maxPrice`, `rating` | Human-readable label (e.g., "Skin Type: Dry", "$10–$50", "Rating: 4★+"). Close (×) icon removes single value (BR-SEARCH-021, BR-SEARCH-022). |
+| 29 | `btnClearAllFilters` | Clear All Filters | Button (`ghost`/link) | — | Conditional | Visible only when ≥ 1 chip present. Text: "Clear all" | — | — | Removes all filters at once, keeps keyword `q` (BR-SEARCH-023). |
+| 30 | `gridProducts` | Product Grid / List | Grid (Grid view) / List (List view) | — | Mandatory | Visible. Grid view: responsive grid. List view: stacked single-column rows. | — | `data` (Product Summary DTO array) | Grid view: 1–2 cols (mobile), 2–3 (tablet), 4 (desktop). List view: full-width rows (thumbnail left, details right), no horizontal scroll. Layout driven by `tglViewMode`; switching does not refetch. |
+| 31 | `cardProduct` | Product Card | Card | — | Mandatory | One card per product. | — | `data[]` product summary | Grid view: vertical card. List view: horizontal row layout. Reused `ProductCard` component. Click navigates to `/products/:slug`. Out-of-stock flagged `isInStock: false` (BR-SEARCH-014). |
+| 32 | `sklLoading` | Loading Skeleton | Skeleton | — | Conditional | Shown during fetch. Hidden otherwise. | — | — | Shimmer placeholders (lavender) matching current view mode: grid blocks in Grid view, row skeletons in List view. |
+| 33 | `pnlEmpty` | Empty State | EmptyState | — | Conditional | Shown when query returns `total = 0`. | — | `meta.total === 0` | "No products found" + description + `btnResetFilters`. i18n keys `search.empty.*`. |
+| 34 | `alertError` | Error Banner | Alert (`destructive`) | String | Conditional | Hidden by default. Shown on API/network error. | — | API error response | Tailwind: `border-destructive/50 text-destructive`. Dismissible. Includes Retry button. |
+| 35 | `pgnPagination` | Pagination | Pagination | — | No | Visible when `totalPages > 1`. | `page` ≥ 1, `limit` 1–100 | `meta.page`, `meta.totalPages` | Previous/next + page numbers. First/last page boundaries disable buttons (Sec 3.3). |
+| 36 | `selPageSize` | Page Size Select | Select | Enum | No | Default: 20 | Options: 10 / 20 / 50 | Query param `limit` | Changing page size resets `page` to 1. |
 
 ### 4.5 Section [E]: Footer Controls (フッターコントロール)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 34 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
-| 35 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
+| 37 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
+| 38 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
 
 ---
 
@@ -314,6 +320,15 @@ The Search & Filter page is the discovery and exploration entry point within the
   2. Update `next-themes` theme via `setTheme()`.
   3. Persist preference to `localStorage`.
 - **Exception Handling:** None applicable.
+
+### 5.14 View Mode Toggle (`tglViewMode` / `btnGridMode` / `btnListMode` onClick)
+- **Trigger:** User clicks the "Grid" or "List" segment button in the results toolbar.
+- **Processing Logic:**
+  1. Set `tglViewMode` to the clicked value (`grid` or `list`).
+  2. Re-render `gridProducts` / `cardProduct` / `sklLoading` in the selected layout using the already-fetched `data` — no API refetch is triggered.
+  3. Leave all URL query params untouched (`q`, `categoryId`, `skinTypes`, `ingredients`, `minPrice`, `maxPrice`, `rating`, `sort`, `order`, `page`, `limit`). Search, filters, sorting, and pagination state remain unchanged; page position is not reset.
+  4. Persist the selection to `localStorage` key `search.viewMode`. On page load, restore the stored value; if absent or invalid, fall back to `grid` (Grid view).
+- **Exception Handling:** None applicable (local UI state only). Invalid stored value silently falls back to `grid`.
 
 ---
 
@@ -472,6 +487,11 @@ The Search & Filter page is the discovery and exploration entry point within the
 | `search.sort.priceAsc` | "Price: Low to High" |
 | `search.sort.priceDesc` | "Price: High to Low" |
 | `search.sort.rating` | "Highest Rated" |
+| `search.view` | "View" |
+| `search.view.grid` | "Grid" |
+| `search.view.list` | "List" |
+| `search.view.gridLabel` | "Switch to grid view" |
+| `search.view.listLabel` | "Switch to list view" |
 | `search.filtersTitle` | "Filters" |
 | `search.openFilters` | "Open filters" |
 | `search.categories` | "Categories" |
@@ -519,6 +539,11 @@ The Search & Filter page is the discovery and exploration entry point within the
 | `search.sort.priceAsc` | "価格が安い順" |
 | `search.sort.priceDesc` | "価格が高い順" |
 | `search.sort.rating` | "評価が高い順" |
+| `search.view` | "表示" |
+| `search.view.grid` | "グリッド" |
+| `search.view.list` | "リスト" |
+| `search.view.gridLabel` | "グリッド表示に切り替え" |
+| `search.view.listLabel` | "リスト表示に切り替え" |
 | `search.filtersTitle` | "フィルタ" |
 | `search.openFilters` | "フィルタを開く" |
 | `search.categories` | "カテゴリ" |
@@ -602,6 +627,14 @@ The Search & Filter page is the discovery and exploration entry point within the
 | **Location** | `frontend/src/components/ui/accordion.tsx`, `frontend/src/components/ui/checkbox.tsx`, `frontend/src/components/ui/radio-group.tsx` |
 | **Usage** | Filter groups (`grpCategories`, `grpSkinType`, `grpIngredients`, `grpPriceRange`, `grpRating`), checkboxes, and star rating selector |
 
+### 10.7 ViewToggle Component
+
+| Property | Value |
+| :--- | :--- |
+| **Location** | `frontend/src/features/search/components/ViewToggle.tsx` |
+| **Purpose** | Renders the Grid/List view toggle and the product items in either a responsive grid (1–4 columns) or a stacked, mobile-friendly list |
+| **Usage** | `tglViewMode`, `btnGridMode`, `btnListMode`; drives the layout of `gridProducts` / `cardProduct` / `sklLoading` |
+
 ---
 
 ## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
@@ -610,6 +643,8 @@ The Search & Filter page is the discovery and exploration entry point within the
 - **URL-State Single Source of Truth:** All search/filter/sort/page state persisted in URL query params (BR-SEARCH-003). Back-button and share-URL friendly.
 - **Responsive Viewport Design:** Desktop filters sidebar + 4-column grid; tablet 2–3 columns; mobile filter drawer + 1–2 column grid (Sec 3.2).
 - **Accessibility:** Every control keyboard navigable. ARIA labels required. Drawer uses focus trap + `aria-modal`. Error messages announced via `role="alert"`. Chips announce removal.
+- **View Mode Toggle:** Segmented Grid/List control in the results toolbar next to `selSort`. Grid renders the responsive 1–4 column card layout; List renders single-column stacked rows (thumbnail left, title/description/price right) optimized for narrow viewports — no horizontal scroll, long text truncated. Selection is device-independent, persisted to `localStorage` (`search.viewMode`), defaults to Grid, and is never serialized into the URL, so search/filter/sort/pagination state is unaffected.
+- **View Toggle Accessibility:** `tglViewMode` renders as `role="group"` with a visible label; each segment is a focusable button with `aria-pressed` reflecting the active mode and an `aria-label` (i18n). Focus indicator uses the primary color ring. Operable by keyboard (Tab / Enter / Space; arrow-key navigation within the group) and by touch (targets ≥ 44px). Active mode changes announced to screen readers via `aria-live="polite"`.
 - **Performance:** Skeleton shimmer grid during fetch; 300ms debounce on keyword input; TanStack Query caching; `keepPreviousData` on pagination. Cache-aside Redis pattern (list TTL 2 min, category tree TTL 30 min).
 - **Security:** All user input sanitized (Prisma parameterized queries; React auto-escaping). Never log full response body. Rate limiting on public search.
 - **Design Tokens:** Status badges use standard color mapping — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`. Rating stars use Beauty Pink.
@@ -687,6 +722,26 @@ The Search & Filter page is the discovery and exploration entry point within the
 - [ ] Keyboard navigation works (Tab, Enter, Arrow)
 - [ ] Screen readers announce errors and chip removal
 
+### 12.6 View Mode Toggle Tests
+
+- [ ] Default view is Grid on first visit (no stored preference)
+- [ ] Grid view renders responsive 1–4 column layout (mobile 1–2 columns)
+- [ ] List view renders stacked single-column rows (thumbnail left, details right)
+- [ ] List view is mobile-friendly — no horizontal scroll; truncation applied to long titles/descriptions
+- [ ] Switching views keeps search keyword unchanged
+- [ ] Switching views keeps filters, sort, and page position unchanged
+- [ ] Switching views does not trigger a refetch (no additional API call)
+- [ ] No URL query params change when switching views
+- [ ] Selected view persisted to `localStorage` (`search.viewMode`)
+- [ ] View restored from `localStorage` on page reload
+- [ ] Absent/invalid stored value falls back to Grid
+- [ ] `aria-pressed` reflects the active segment
+- [ ] Toggle keyboard operable (Tab to focus, Enter/Space to select, arrow keys within group)
+- [ ] Focus ring (primary) visible on toggle segments
+- [ ] Screen reader announces the active view mode
+- [ ] Touch targets ≥ 44px on mobile
+
 ---
 
 *End of Screen Items Specification (Search & Filter Page)*
+
