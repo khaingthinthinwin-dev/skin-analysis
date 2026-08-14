@@ -4,9 +4,9 @@
 **Target Screen:** Review & Content Moderation (レビュー・コンテンツ管理)  
 **Subsystem:** Administration — Review Moderation & Content Management  
 **Function ID:** FN-MOD-001  
-**Version:** 1.3  
+**Version:** 1.4  
 **Created:** 2026-08-08  
-**Last Updated:** 2026-08-12  
+**Last Updated:** 2026-08-14  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -23,6 +23,7 @@
 | 1.1 | 2026-08-12 | Senior System Engineer | Added Product Content Moderation screen (UC-MOD-004, BR-MOD-010~013): product table, product moderation modal, deactivation/reactivation flows, database mappings, API responses, i18n keys, and test checklist. |
 | 1.2 | 2026-08-12 | Senior System Engineer | Added User Management screen (`/admin/users`): user table, user detail modal, activate/deactivate flows (UC-MOD-006, BR-MOD-040~042), database mappings, API responses, i18n keys, and test checklist. Fixed `is_approved IS NULL` to correct `is_approved = FALSE` per BR-MOD-002. |
 | 1.3 | 2026-08-13 | Senior System Engineer | Removed `PENDING_REVIEW` status from Product Moderation States per database design (no `status` column in `products` table). Removed `statPendingReviewCount`, "Pending Review" filter tab, and `status` field from Products List database mapping. Updated layout diagrams, i18n keys, behavior specs, and test checklist accordingly. |
+| 1.4 | 2026-08-14 | Senior System Engineer | Aligned with core requirements v1.5 and database spec v2.0: UUID IDs, approved-by-default reviews with no active pending review filter, merchant `license_status` as the approval source of truth, synchronized shop visibility, corrected document path, and website notifications. |
 
 ### 1.2 Related Documents
 
@@ -31,7 +32,7 @@
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `users`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
-| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation | `docs/screen/ReviewContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
+| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
 
@@ -83,12 +84,12 @@ The Review & Content Moderation screens serve as the central administration hub 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [C] STATS BAR (cond.)               │   │
-│  │   Total | Pending | Approved | Rejected          │   │
+│  │   Total | Approved | Rejected                    │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [D] FILTER TABS                     │   │
-│  │   All | Pending | Approved | Rejected            │   │
+│  │   All | Approved | Rejected                      │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -368,15 +369,14 @@ The Review & Content Moderation screens serve as the central administration hub 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 2 | `statTotalReviews` | Total Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews)` | Tailwind: `bg-white rounded-lg p-4 shadow-sm`. |
-| 3 | `statPendingCount` | Pending Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE AND moderation_reason IS NOT NULL)` | Amber badge for pending count. Note: Reviews are approved by default (`is_approved = true`). Pending count reflects reviews pending re-approval or under manual review. |
-| 4 | `statApprovedCount` | Approved Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = TRUE)` | Green badge. |
-| 5 | `statRejectedCount` | Rejected Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE)` | Red badge. |
+| 3 | `statApprovedCount` | Approved Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = TRUE)` | Green badge. |
+| 4 | `statRejectedCount` | Rejected Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE)` | Red badge. |
 
 ### 4.3 Section [D]: Filter Tabs — Reviews (フィルタタブ — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 6 | `tabFilterReviews` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Pending, Approved, Rejected | — | i18n key: `admin.reviews.tabs`. Updates query params on change. |
+| 6 | `tabFilterReviews` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Approved, Rejected | — | i18n key: `admin.reviews.tabs`. Updates query params on change. |
 
 ### 4.4 Section [E]: Search + Sort Bar (検索・ソートバー)
 
@@ -399,7 +399,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 16 | `lblProductName` | Product Name | Static Label | String | — | Populated from DB | — | `products.name` | `text-sm text-muted-foreground`. |
 | 17 | `ratingStars` | Rating Display | Star Rating | Integer (1-5) | — | Populated from DB | — | `reviews.rating` | 1-5 star display with Beauty Pink (#EC4899). |
 | 18 | `lblReviewTitle` | Review Title | Static Label | String | — | Populated from DB or "—" | — | `reviews.title` | Truncated at 50 chars. |
-| 19 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected), Amber (Pending) | — | `reviews.is_approved` | Standard status badge colors. |
+| 19 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected) | — | `reviews.is_approved` | Standard status badge colors. Reviews are approved by default. |
 | 20 | `lblCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `reviews.created_at` | Localized date format via i18n. |
 | 21 | `ddlReviewActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject, Delete | — | Destructive actions show confirmation. |
 
@@ -486,7 +486,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 48 | `lblShopName` | Shop Name | Static Label | String | — | Populated from DB | — | `shops.name` | `font-medium text-sm`. |
 | 49 | `lblMerchantUserName` | Merchant User Name | Static Label | String | — | Populated from DB | — | `users.name` | `text-sm text-muted-foreground`. |
 | 50 | `lblMerchantRegDate` | Registration Date | Static Label | DateTime | — | ISO 8601 formatted | — | `shops.created_at` | Localized date format. |
-| 51 | `badgeMerchantStatus` | Merchant Status Badge | Badge | Enum | — | Green (Approved), Amber (Pending), Red (Rejected) | — | `shops.is_approved` | Standard status badge colors. |
+| 51 | `badgeMerchantStatus` | Merchant Status Badge | Badge | Enum | — | Green (Approved), Amber (Pending), Red (Rejected) | — | `merchants.license_status` | Standard status badge colors. `shops.is_approved` is synchronized for public shop visibility. |
 | 52 | `ddlMerchantActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject | — | Destructive actions show confirmation. |
 
 ### 4.17 Section [R]: Pagination — Merchants (ページネーション — 出品者)
@@ -723,11 +723,11 @@ The Review & Content Moderation screens serve as the central administration hub 
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
 
 ### 5.1 Reviews Tab Filter Change (`tabFilterReviews` onChange)
-- **Trigger:** User clicks a filter tab (All, Pending, Approved, Rejected).
+- **Trigger:** User clicks a filter tab (All, Approved, Rejected).
 - **Processing Logic:**
-  1. Update URL query parameter `?status=pending|approved|rejected`.
+  1. Update URL query parameter `?status=approved|rejected` or remove `status` for All.
   2. Reset pagination to page 1.
-  3. Fetch filtered reviews from `GET /api/v1/admin/reviews/pending?status={status}&page=1&limit=20`.
+  3. Fetch filtered reviews from `GET /api/v1/admin/reviews?status={status}&page=1&limit=20`.
   4. Re-render reviews table with new data.
 - **Exception Handling:** Network error: Show toast "Failed to load reviews. Please try again."
 
@@ -849,7 +849,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 - **Trigger:** User clicks "Approve" button in merchant detail modal.
 - **Processing Logic:**
   1. **Backend Dispatch:** `PATCH /api/v1/admin/merchants/:id/status` with `{ status: 'approved' }`.
-  2. **Backend Execution:** Update `shops.is_approved = true`. Log audit trail.
+  2. **Backend Execution:** Update `merchants.license_status = 'approved'`, clear `merchants.rejection_reason`, set `reviewed_at`/`reviewed_by`, synchronize `shops.is_approved = true`, create website notification, and log audit trail.
   3. **Post-Execution UI:** Close modal. Show success toast "Merchant approved". Refresh merchants list.
 - **Exception Handling:**
   - `409 CONFLICT`: Show toast "Merchant is already approved".
@@ -862,7 +862,7 @@ The Review & Content Moderation screens serve as the central administration hub 
   1. **UI Update:** Show rejection reason textarea.
   2. **Client-Side Pre-Check:** Validate reason not empty.
   3. **Backend Dispatch:** `PATCH /api/v1/admin/merchants/:id/status` with `{ status: 'rejected', reason: '...' }`.
-  4. **Backend Execution:** Update `shops.is_approved = false`. Deactivate shop's products (`is_active = false`). Log audit trail.
+  4. **Backend Execution:** Update `merchants.license_status = 'rejected'`, store `merchants.rejection_reason`, set `reviewed_at`/`reviewed_by`, synchronize `shops.is_approved = false`, deactivate merchant's products (`is_active = false`), create website notification, and log audit trail.
   5. **Post-Execution UI:** Close modal. Show success toast "Merchant rejected". Refresh merchants list.
 - **Exception Handling:**
   - `400 BAD_REQUEST`: Inline error "Rejection reason is required".
@@ -1099,8 +1099,8 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 | Table Field | API Response Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `review.id` | `id` | `reviews` | VARCHAR(25) PK |
-| `user.name` | `review.user.name` | `name` | `users` | VARCHAR(200) |
+| `id` | `review.id` | `id` | `reviews` | UUID PK |
+| `user.name` | `review.user.name` | `name` | `users` | VARCHAR(255) |
 | `user.avatarUrl` | `review.user.avatarUrl` | `avatar_url` | `users` | VARCHAR(500) NULL |
 | `product.name` | `review.product.name` | `name` | `products` | VARCHAR(255) |
 | `product.images[0]` | `review.product.images[0]` | `images` | `products` | TEXT[] |
@@ -1125,14 +1125,16 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 | Table Field | API Response Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `merchant.id` | `id` | `shops` | VARCHAR(25) PK |
-| `name` | `merchant.name` | `name` | `shops` | VARCHAR(200) |
-| `slug` | `merchant.slug` | `slug` | `shops` | VARCHAR(200) |
-| `logoUrl` | `merchant.logoUrl` | `logo_url` | `shops` | VARCHAR(500) NULL |
-| `user.name` | `merchant.user.name` | `name` | `users` | VARCHAR(200) |
+| `id` | `merchant.id` | `id` | `merchants` | UUID PK |
+| `shopName` | `merchant.shopName` | `shop_name` | `merchants` | VARCHAR(255) |
+| `licenseStatus` | `merchant.licenseStatus` | `license_status` | `merchants` | VARCHAR(20) |
+| `rejectionReason` | `merchant.rejectionReason` | `rejection_reason` | `merchants` | TEXT NULL |
+| `shop.slug` | `merchant.shop.slug` | `slug` | `shops` | VARCHAR(255) |
+| `shop.logoUrl` | `merchant.shop.logoUrl` | `logo_url` | `shops` | TEXT NULL |
+| `shop.isApproved` | `merchant.shop.isApproved` | `is_approved` | `shops` | BOOLEAN |
+| `user.name` | `merchant.user.name` | `name` | `users` | VARCHAR(255) |
 | `user.email` | `merchant.user.email` | `email` | `users` | VARCHAR(255) |
-| `isApproved` | `merchant.isApproved` | `is_approved` | `shops` | BOOLEAN |
-| `createdAt` | `merchant.createdAt` | `created_at` | `shops` | TIMESTAMPTZ |
+| `createdAt` | `merchant.createdAt` | `created_at` | `merchants` | TIMESTAMPTZ |
 
 ### 7.4 Merchant Detail → Database
 
@@ -1149,7 +1151,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 | Table Field | API Response Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `product.id` | `id` | `products` | VARCHAR(25) PK |
+| `id` | `product.id` | `id` | `products` | UUID PK |
 | `name` | `product.name` | `name` | `products` | VARCHAR(255) |
 | `slug` | `product.slug` | `slug` | `products` | VARCHAR(255) |
 | `images[0]` | `product.images[0]` | `images` | `products` | TEXT[] |
@@ -1166,7 +1168,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `description` | `product.description` | `description` | `products` | TEXT NULL |
 | `images` | `product.images` | `images` | `products` | TEXT[] |
 | `category.name` | `product.category.name` | `name` | `categories` | VARCHAR(200) |
-| `shop.id` | `product.shop.id` | `id` | `shops` | VARCHAR(25) |
+| `shop.id` | `product.shop.id` | `id` | `shops` | UUID |
 | `shop.logoUrl` | `product.shop.logoUrl` | `logo_url` | `shops` | VARCHAR(500) NULL |
 | `shop.user.email` | `product.shop.user.email` | `email` | `users` | VARCHAR(255) |
 | `updatedAt` | `product.updatedAt` | `updated_at` | `products` | TIMESTAMPTZ |
@@ -1175,7 +1177,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 | Table Field | API Response Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `user.id` | `id` | `users` | VARCHAR(25) PK |
+| `id` | `user.id` | `id` | `users` | UUID PK |
 | `name` | `user.name` | `name` | `users` | VARCHAR(200) |
 | `email` | `user.email` | `email` | `users` | VARCHAR(255) |
 | `avatarUrl` | `user.avatarUrl` | `avatar_url` | `users` | VARCHAR(500) NULL |
@@ -1385,7 +1387,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | :--- | :--- |
 | `admin.reviews.title` | "Review Moderation" |
 | `admin.reviews.tabs.all` | "All" |
-| `admin.reviews.tabs.pending` | "Pending" |
 | `admin.reviews.tabs.approved` | "Approved" |
 | `admin.reviews.tabs.rejected` | "Rejected" |
 | `admin.reviews.search` | "Search reviews..." |
@@ -1395,7 +1396,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.reviews.sort.ratingLow` | "Rating (Low-High)" |
 | `admin.reviews.detail.title` | "Review Detail" |
 | `admin.reviews.stats.total` | "Total Reviews" |
-| `admin.reviews.stats.pending` | "Pending" |
 | `admin.reviews.stats.approved` | "Approved" |
 | `admin.reviews.stats.rejected` | "Rejected" |
 | `admin.moderation.reason` | "Reason for Rejection" |
@@ -1493,7 +1493,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 ### 9.4 Japanese (ja) — Reviews
 | `admin.reviews.tabs.all` | "すべて" |
-| `admin.reviews.tabs.pending` | "保留中" |
 | `admin.reviews.tabs.approved` | "承認済み" |
 | `admin.reviews.tabs.rejected` | "却下済み" |
 | `admin.reviews.search` | "レビューを検索..." |
@@ -1503,7 +1502,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.reviews.sort.ratingLow` | "評価（低→高）" |
 | `admin.reviews.detail.title` | "レビュー詳細" |
 | `admin.reviews.stats.total` | "合計レビュー数" |
-| `admin.reviews.stats.pending` | "保留中" |
 | `admin.reviews.stats.approved` | "承認済み" |
 | `admin.reviews.stats.rejected` | "却下済み" |
 | `admin.moderation.reason` | "却下理由" |
@@ -1641,7 +1639,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | Property | Value |
 | :--- | :--- |
 | **Location** | `frontend/src/components/ui/tabs.tsx` |
-| **Usage** | Filter tabs (All, Pending, Approved, Rejected, Active, Inactive, Admin) |
+| **Usage** | Filter tabs (reviews: All/Approved/Rejected; merchants: All/Pending/Approved/Rejected; products/users: All/Active/Inactive/Admin as applicable) |
 
 ### 10.7 Pagination Component
 
@@ -1677,7 +1675,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 - [ ] Page loads with correct title "Review Moderation"
 - [ ] Stats bar displays correct counts
-- [ ] Filter tabs filter reviews correctly (All, Pending, Approved, Rejected)
+- [ ] Filter tabs filter reviews correctly (All, Approved, Rejected)
 - [ ] Search input filters reviews by user name, product name, content
 - [ ] Sort dropdown sorts reviews correctly
 - [ ] Pagination works with page size selector (20, 50, 100)
