@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 1.0 |
+| **Version** | 2.0 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-10 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released (承認済み) |
 
@@ -21,6 +21,7 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-03 | Lead Database Engineer | Initial technical design specification (新規作成) |
 | 1.1 | 2026-08-10 | Lead Database Engineer | Added new fields to advertisements table for approval workflow, payment tracking, and weekly limits |
+| 2.0 | 2026-08-14 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v1.5: UUID primary keys, merchants table, restructured orders, ad fee tables, updated FK relationships |
 
 ---
 
@@ -37,7 +38,7 @@
 To ensure consistency across the platform, the database adheres to strict snake_case conventions:
 * **Tables:** Pluralized, lowercase, separated by underscores (e.g., `products`, `order_items`).
 * **Columns:** Lowercase, singular, separated by underscores (e.g., `merchant_id`, `stock_quantity`).
-* **Primary Keys:** Standardized as `id` (CUID format for distributed systems). 
+* **Primary Keys:** Standardized as `id` (UUID format for distributed systems). 
 * **Foreign Keys:** Named as `<referenced_table_singular>_id` (e.g., `user_id` referencing `users`).
 * **Indexes:** Prefixed with `idx_` followed by the table name and columns indexed (e.g., `idx_products_category_id`). Unique indexes use the `uq_` prefix.
 * **Constraints:** Prefixed with `chk_` for check constraints, `fk_` for foreign keys, and `pk_` for primary keys.
@@ -49,9 +50,9 @@ To ensure consistency across the platform, the database adheres to strict snake_
 * **Dates without time:** Columns tracking calendar dates without hours/minutes (like order dates) must use the `DATE` type.
 
 ### 1.4 ID Strategy
-* **Primary Keys:** Use CUID (Collision-resistant Unique Identifier) for distributed-friendly, URL-safe IDs.
-* **Format:** String type with `@default(cuid())` in Prisma schema.
-* **Benefits:** Time-ordered, globally unique, no sequential gaps.
+* **Primary Keys:** Use UUID (Universally Unique Identifier) for distributed-friendly, globally unique IDs.
+* **Format:** `UUID` type with `DEFAULT gen_random_uuid()` in PostgreSQL.
+* **Benefits:** Globally unique, no sequential gaps, native PostgreSQL support, no external dependencies.
 
 ---
 
@@ -89,7 +90,7 @@ CREATE TABLE user_roles (
 -- =========================================================================
 CREATE TABLE order_statuses (
     status_id SERIAL,
-    status_code VARCHAR(20) NOT NULL,
+    status_code VARCHAR(30) NOT NULL,
     status_name VARCHAR(50) NOT NULL,
     display_order INTEGER NOT NULL,
     is_terminal_state BOOLEAN NOT NULL DEFAULT FALSE,
@@ -125,11 +126,13 @@ INSERT INTO user_roles (role_code, role_name, description, is_active) VALUES
 
 -- Seed Order Statuses (Workflow lifecycle tracking)
 INSERT INTO order_statuses (status_code, status_name, display_order, is_terminal_state, description) VALUES
-('pending', 'Pending', 1, FALSE, 'Order created, awaiting confirmation'),
-('confirmed', 'Confirmed', 2, FALSE, 'Order confirmed by merchant'),
-('processing', 'Processing', 3, FALSE, 'Order is being prepared'),
-('delivered', 'Delivered', 4, FALSE, 'Order delivered to customer'),
-('done', 'Done', 5, TRUE, 'Order completed and confirmed');
+('placed', 'Placed', 1, FALSE, 'Order created, awaiting confirmation'),
+('confirmed', 'Confirmed', 2, FALSE, 'Merchant accepted order'),
+('packed', 'Packed', 3, FALSE, 'Order packed and ready to ship'),
+('shipped', 'Shipped', 4, FALSE, 'Order sent to courier'),
+('out_for_delivery', 'Out for Delivery', 5, FALSE, 'Order on the way to buyer'),
+('delivered', 'Delivered', 6, TRUE, 'Buyer received order'),
+('cancelled', 'Cancelled', 7, TRUE, 'Order cancelled (buyer or merchant)');
 
 -- Seed Discount Types
 INSERT INTO discount_types (type_code, type_name, is_active) VALUES
@@ -145,16 +148,17 @@ Transactional entities handle user credentials, products, orders, reviews, wishl
 
 ```mermaid
 erDiagram
-    users ||--o{ products : "lists"
+    users ||--o| merchants : "may_be"
     users ||--o{ reviews : "writes"
-    users ||--o{ wishlists : "saves"
+    users ||--o{ wishlist : "saves"
     users ||--o{ orders : "places"
     users ||--o{ refresh_tokens : "has"
-    users ||--o{ shops : "owns"
-    users ||--o{ promotions : "creates"
+    users ||--o| shops : "owns"
+    merchants ||--o{ products : "lists"
+    merchants ||--o{ promotions : "creates"
     categories ||--o{ products : "contains"
     products ||--o{ reviews : "receives"
-    products ||--o{ wishlists : "saved_in"
+    products ||--o{ wishlist : "saved_in"
     products ||--o{ order_items : "included_in"
     orders ||--o{ order_items : "contains"
     shops ||--o{ advertisements : "displays"
@@ -166,47 +170,94 @@ Manages system user information with role-based access.
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | ユーザーID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
+| 1 | ユーザーID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
 | 2 | メールアドレス | `email` | VARCHAR(255) | - | - | N | - | Unique key (`uq_users_email`). Used as login ID. |
 | 3 | パスワードハッシュ | `password_hash` | VARCHAR(255) | - | - | N | - | Encrypted password hash (Argon2) for authentication. |
-| 4 | フルネーム | `name` | VARCHAR(200) | - | - | N | - | Full name of the user. |
-| 5 | ロール | `role` | VARCHAR(20) | - | - | N | 'buyer' | User role (buyer, merchant, admin). |
-| 6 | アバターURL | `avatar_url` | VARCHAR(500) | - | - | Y | NULL | Profile picture URL. |
+| 4 | フルネーム | `name` | VARCHAR(255) | - | - | N | - | Full name of the user. |
+| 5 | ロール | `role` | VARCHAR(20) | - | - | N | 'buyer' | User role (buyer, merchant, admin, super_admin). |
+| 6 | 出品者ID | `merchant_id` | UUID | - | Y | Y | NULL | Foreign key (`fk_users_merchant`). References `merchants(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
 | 7 | 電話番号 | `phone` | VARCHAR(20) | - | - | Y | NULL | Contact phone number. |
-| 8 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Account active (TRUE) or inactive (FALSE) status. |
-| 9 | メール認証済み | `email_verified` | BOOLEAN | - | - | N | FALSE | Email verification status. |
-| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
-| 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+| 8 | アバターURL | `avatar_url` | TEXT | - | - | Y | NULL | Profile picture URL. |
+| 9 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Account active (TRUE) or inactive (FALSE) status. |
+| 10 | メール認証済み | `email_verified` | BOOLEAN | - | - | N | FALSE | Email verification status. |
+| 11 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 12 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
 
 #### Reference SQL DDL
 ```sql
 CREATE TABLE users (
-    id VARCHAR(25) PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    name VARCHAR(200) NOT NULL,
+    name VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'buyer',
-    avatar_url VARCHAR(500),
+    merchant_id UUID,
     phone VARCHAR(20),
+    avatar_url TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_users_email UNIQUE (email),
-    CONSTRAINT chk_users_role CHECK (role IN ('buyer', 'merchant', 'admin'))
+    CONSTRAINT chk_users_role CHECK (role IN ('buyer', 'merchant', 'admin', 'super_admin')),
+    CONSTRAINT fk_users_merchant FOREIGN KEY (merchant_id)
+        REFERENCES merchants(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 ```
 
 ---
 
-### 3.2 Refresh Tokens Table (`refresh_tokens` - リフレッシュトークンテーブル)
+### 3.2 Merchants Table (`merchants` - 出品者テーブル)
+Manages merchant profiles with license verification and approval workflow.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 出品者ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Unique key (`uq_merchants_user_id`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 店舗名 | `shop_name` | VARCHAR(255) | - | - | N | - | Merchant shop display name. |
+| 4 | 事業許可証URL | `business_license_url` | TEXT | - | - | N | - | URL to uploaded business license document. |
+| 5 | 許可状態 | `license_status` | VARCHAR(20) | - | - | N | 'pending' | License verification status: pending/approved/rejected. |
+| 6 | 却下理由 | `rejection_reason` | TEXT | - | - | Y | NULL | Reason for license rejection. |
+| 7 | レビュー日時 | `reviewed_at` | TIMESTAMPTZ | - | - | Y | NULL | Admin review timestamp. |
+| 8 | レビュー者ID | `reviewed_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_merchants_reviewed_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 9 | 許可証有効期限 | `license_expires_at` | TIMESTAMPTZ | - | - | Y | NULL | Business license expiration date. |
+| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE merchants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    shop_name VARCHAR(255) NOT NULL,
+    business_license_url TEXT NOT NULL,
+    license_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    rejection_reason TEXT,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    reviewed_by UUID,
+    license_expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_merchants_user_id UNIQUE (user_id),
+    CONSTRAINT chk_merchants_license_status CHECK (license_status IN ('pending', 'approved', 'rejected')),
+    CONSTRAINT fk_merchants_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_merchants_reviewed_by FOREIGN KEY (reviewed_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.3 Refresh Tokens Table (`refresh_tokens` - リフレッシュトークンテーブル)
 Manages JWT refresh tokens for session management.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | リフレッシュトークンID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_refresh_tokens_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 1 | リフレッシュトークンID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Foreign key (`fk_refresh_tokens_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
 | 3 | トークンハッシュ | `token_hash` | VARCHAR(255) | - | - | N | - | Hashed refresh token value. |
 | 4 | ファミリー | `family` | VARCHAR(255) | - | - | N | - | Token family for breach detection. |
 | 5 | デバイス情報 | `device_info` | JSONB | - | - | Y | NULL | Device metadata (User-Agent parsing). |
@@ -219,8 +270,8 @@ Manages JWT refresh tokens for session management.
 #### Reference SQL DDL
 ```sql
 CREATE TABLE refresh_tokens (
-    id VARCHAR(25) PRIMARY KEY,
-    user_id VARCHAR(25) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
     token_hash VARCHAR(255) NOT NULL,
     family VARCHAR(255) NOT NULL,
     device_info JSONB,
@@ -236,28 +287,28 @@ CREATE TABLE refresh_tokens (
 
 ---
 
-### 3.3 Categories Table (`categories` - カテゴリテーブル)
+### 3.4 Categories Table (`categories` - カテゴリテーブル)
 Manages product categories with hierarchical tree structure.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | カテゴリID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | カテゴリ名 | `name` | VARCHAR(100) | - | - | N | - | Category display name. |
-| 3 | スラッグ | `slug` | VARCHAR(100) | - | - | N | - | Unique key (`uq_categories_slug`). URL-friendly identifier. |
-| 4 | 親カテゴリID | `parent_id` | VARCHAR(25) | - | Y | Y | NULL | Self-referencing foreign key for tree structure. ON DELETE SET NULL ON UPDATE CASCADE. |
-| 5 | アイコンURL | `icon_url` | VARCHAR(500) | - | - | Y | NULL | Category icon image URL. |
+| 1 | カテゴリID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | カテゴリ名 | `name` | VARCHAR(255) | - | - | N | - | Category display name. |
+| 3 | スラッグ | `slug` | VARCHAR(255) | - | - | N | - | Unique key (`uq_categories_slug`). URL-friendly identifier. |
+| 4 | 親カテゴリID | `parent_id` | UUID | - | Y | Y | NULL | Self-referencing foreign key for tree structure. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 5 | アイコンURL | `icon_url` | TEXT | - | - | Y | NULL | Category icon image URL. |
 | 6 | ソート順 | `sort_order` | INTEGER | - | - | N | 0 | Display ordering within parent category. |
 | 7 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 
 #### Reference SQL DDL
 ```sql
 CREATE TABLE categories (
-    id VARCHAR(25) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    slug VARCHAR(100) NOT NULL,
-    parent_id VARCHAR(25),
-    icon_url VARCHAR(500),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    parent_id UUID,
+    icon_url TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_categories_slug UNIQUE (slug),
@@ -268,21 +319,21 @@ CREATE TABLE categories (
 
 ---
 
-### 3.4 Products Table (`products` - 商品テーブル)
+### 3.5 Products Table (`products` - 商品テーブル)
 Manages skincare product listings by merchants.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 商品ID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | 出品者ID | `merchant_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_products_merchant`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
-| 3 | カテゴリID | `category_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_products_category`). References `categories(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 1 | 商品ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_products_merchant`). References `merchants(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | カテゴリID | `category_id` | UUID | - | Y | N | - | Foreign key (`fk_products_category`). References `categories(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
 | 4 | 商品名 | `name` | VARCHAR(255) | - | - | N | - | Product display name. |
 | 5 | スラッグ | `slug` | VARCHAR(255) | - | - | N | - | Unique key (`uq_products_slug`). URL-friendly identifier. |
 | 6 | 説明 | `description` | TEXT | - | - | Y | NULL | Detailed product description. |
 | 7 | 短い説明 | `short_description` | VARCHAR(500) | - | - | Y | NULL | Brief product summary. |
-| 8 | 価格 | `price` | NUMERIC(10,2) | - | - | N | - | Check constraint: `price > 0`. |
-| 9 | 比較価格 | `compare_at_price` | NUMERIC(10,2) | - | - | Y | NULL | Original price for discount display. |
+| 8 | 価格 | `price` | DECIMAL(10,2) | - | - | N | - | Check constraint: `price > 0`. |
+| 9 | 比較価格 | `compare_at_price` | DECIMAL(10,2) | - | - | Y | NULL | Original price for discount display. |
 | 10 | SKU | `sku` | VARCHAR(100) | - | - | Y | NULL | Unique key (`uq_products_sku`). Stock Keeping Unit. |
 | 11 | 在庫数 | `stock_quantity` | INTEGER | - | - | N | 0 | Check constraint: `stock_quantity >= 0`. |
 | 12 | 低在庫閾値 | `low_stock_threshold` | INTEGER | - | - | N | 10 | Low stock warning threshold. |
@@ -292,7 +343,7 @@ Manages skincare product listings by merchants.
 | 16 | 成分 | `ingredients` | TEXT[] | - | - | N | '{}' | Product ingredients list. |
 | 17 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Product visibility status. |
 | 18 | おすすめフラグ | `is_featured` | BOOLEAN | - | - | N | FALSE | Featured product flag. |
-| 19 | 平均評価 | `avg_rating` | NUMERIC(3,2) | - | - | N | 0 | Auto-calculated average rating. |
+| 19 | 平均評価 | `avg_rating` | DECIMAL(3,2) | - | - | N | 0 | Auto-calculated average rating. |
 | 20 | レビュー数 | `review_count` | INTEGER | - | - | N | 0 | Auto-calculated review count. |
 | 21 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 | 22 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
@@ -300,15 +351,15 @@ Manages skincare product listings by merchants.
 #### Reference SQL DDL
 ```sql
 CREATE TABLE products (
-    id VARCHAR(25) PRIMARY KEY,
-    merchant_id VARCHAR(25) NOT NULL,
-    category_id VARCHAR(25) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL,
+    category_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL,
     description TEXT,
     short_description VARCHAR(500),
-    price NUMERIC(10, 2) NOT NULL,
-    compare_at_price NUMERIC(10, 2),
+    price DECIMAL(10, 2) NOT NULL,
+    compare_at_price DECIMAL(10, 2),
     sku VARCHAR(100),
     stock_quantity INTEGER NOT NULL DEFAULT 0,
     low_stock_threshold INTEGER NOT NULL DEFAULT 10,
@@ -318,7 +369,7 @@ CREATE TABLE products (
     ingredients TEXT[] DEFAULT '{}',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     is_featured BOOLEAN NOT NULL DEFAULT FALSE,
-    avg_rating NUMERIC(3, 2) DEFAULT 0,
+    avg_rating DECIMAL(3, 2) DEFAULT 0,
     review_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -327,7 +378,7 @@ CREATE TABLE products (
     CONSTRAINT chk_products_price CHECK (price > 0),
     CONSTRAINT chk_products_stock CHECK (stock_quantity >= 0),
     CONSTRAINT fk_products_merchant FOREIGN KEY (merchant_id)
-        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        REFERENCES merchants(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_products_category FOREIGN KEY (category_id)
         REFERENCES categories(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -335,15 +386,15 @@ CREATE TABLE products (
 
 ---
 
-### 3.5 Reviews Table (`reviews` - レビューテーブル)
+### 3.6 Reviews Table (`reviews` - レビューテーブル)
 Manages product reviews with ratings.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | レビューID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_reviews_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
-| 3 | 商品ID | `product_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_reviews_product`). References `products(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 1 | レビューID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Foreign key (`fk_reviews_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 商品ID | `product_id` | UUID | - | Y | N | - | Foreign key (`fk_reviews_product`). References `products(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
 | 4 | 評価 | `rating` | INTEGER | - | - | N | - | Check constraint: `rating >= 1 AND rating <= 5`. |
 | 5 | タイトル | `title` | VARCHAR(255) | - | - | Y | NULL | Review title. |
 | 6 | 本文 | `body` | TEXT | - | - | Y | NULL | Review content. |
@@ -356,9 +407,9 @@ Manages product reviews with ratings.
 #### Reference SQL DDL
 ```sql
 CREATE TABLE reviews (
-    id VARCHAR(25) PRIMARY KEY,
-    user_id VARCHAR(25) NOT NULL,
-    product_id VARCHAR(25) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    product_id UUID NOT NULL,
     rating INTEGER NOT NULL,
     title VARCHAR(255),
     body TEXT,
@@ -378,50 +429,50 @@ CREATE TABLE reviews (
 
 ---
 
-### 3.6 Wishlists Table (`wishlists` - お気に入りテーブル)
+### 3.7 Wishlist Table (`wishlist` - お気に入りテーブル)
 Manages user's saved products.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | お気に入りID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_wishlists_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
-| 3 | 商品ID | `product_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_wishlists_product`). References `products(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 1 | お気に入りID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Foreign key (`fk_wishlist_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 商品ID | `product_id` | UUID | - | Y | N | - | Foreign key (`fk_wishlist_product`). References `products(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
 | 4 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 
 #### Reference SQL DDL
 ```sql
-CREATE TABLE wishlists (
-    id VARCHAR(25) PRIMARY KEY,
-    user_id VARCHAR(25) NOT NULL,
-    product_id VARCHAR(25) NOT NULL,
+CREATE TABLE wishlist (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    product_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_wishlists_user_product UNIQUE (user_id, product_id),
-    CONSTRAINT fk_wishlists_user FOREIGN KEY (user_id)
+    CONSTRAINT uq_wishlist_user_product UNIQUE (user_id, product_id),
+    CONSTRAINT fk_wishlist_user FOREIGN KEY (user_id)
         REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_wishlists_product FOREIGN KEY (product_id)
+    CONSTRAINT fk_wishlist_product FOREIGN KEY (product_id)
         REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 ```
 
 ---
 
-### 3.7 Orders Table (`orders` - 注文テーブル)
+### 3.8 Orders Table (`orders` - 注文テーブル)
 Manages customer order information.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 注文ID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_orders_user`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 3 | ステータス | `status` | VARCHAR(20) | - | - | N | 'pending' | Order status (pending, confirmed, processing, delivered, done). |
-| 4 | 小計 | `subtotal` | NUMERIC(10,2) | - | - | N | - | Check constraint: `subtotal > 0`. |
-| 5 | 配送料 | `shipping_cost` | NUMERIC(10,2) | - | - | N | 0 | Shipping cost. |
-| 6 | 税金 | `tax` | NUMERIC(10,2) | - | - | N | 0 | Tax amount. |
-| 7 | 合計 | `total` | NUMERIC(10,2) | - | - | N | - | Check constraint: `total > 0`. |
-| 8 | 配送先住所 | `shipping_address` | JSONB | - | - | N | - | Shipping address details (JSON). |
-| 9 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | Y | NULL | Payment method used. |
-| 10 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment processing status (pending, completed, failed). |
+| 1 | 注文ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 購入者ID | `buyer_id` | UUID | - | Y | N | - | Foreign key (`fk_orders_buyer`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_orders_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 4 | ステータス | `status` | VARCHAR(30) | - | - | N | 'placed' | Order status (placed, confirmed, packed, shipped, out_for_delivery, delivered, cancelled). |
+| 5 | 合計金額 | `total_amount` | DECIMAL(10,2) | - | - | N | - | Check constraint: `total_amount > 0`. |
+| 6 | 配送先住所 | `shipping_address` | JSONB | - | - | N | - | Shipping address details (JSON). |
+| 7 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | Payment method used. |
+| 8 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment processing status (pending, completed, failed, refunded). |
+| 9 | クーポンコード | `coupon_code` | VARCHAR(50) | - | - | Y | NULL | Applied coupon code. |
+| 10 | 割引金額 | `discount_amount` | DECIMAL(10,2) | - | - | N | 0 | Discount amount applied. |
 | 11 | 備考 | `notes` | TEXT | - | - | Y | NULL | Order notes from customer. |
 | 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 | 13 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
@@ -429,52 +480,55 @@ Manages customer order information.
 #### Reference SQL DDL
 ```sql
 CREATE TABLE orders (
-    id VARCHAR(25) PRIMARY KEY,
-    user_id VARCHAR(25) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'pending',
-    subtotal NUMERIC(10, 2) NOT NULL,
-    shipping_cost NUMERIC(10, 2) DEFAULT 0,
-    tax NUMERIC(10, 2) DEFAULT 0,
-    total NUMERIC(10, 2) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    buyer_id UUID NOT NULL,
+    merchant_id UUID NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'placed',
+    total_amount DECIMAL(10, 2) NOT NULL,
     shipping_address JSONB NOT NULL,
-    payment_method VARCHAR(50),
+    payment_method VARCHAR(50) NOT NULL,
     payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    coupon_code VARCHAR(50),
+    discount_amount DECIMAL(10, 2) DEFAULT 0,
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_orders_subtotal CHECK (subtotal > 0),
-    CONSTRAINT chk_orders_total CHECK (total > 0),
-    CONSTRAINT fk_orders_user FOREIGN KEY (user_id)
-        REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT chk_orders_total CHECK (total_amount > 0),
+    CONSTRAINT chk_orders_status CHECK (status IN ('placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled')),
+    CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('pending', 'completed', 'failed', 'refunded')),
+    CONSTRAINT fk_orders_buyer FOREIGN KEY (buyer_id)
+        REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_orders_merchant FOREIGN KEY (merchant_id)
+        REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 ```
 
 ---
 
-### 3.8 Order Items Table (`order_items` - 注文商品テーブル)
+### 3.9 Order Items Table (`order_items` - 注文商品テーブル)
 Manages individual items within an order.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 注文商品ID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | 注文ID | `order_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_order_items_order`). References `orders(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
-| 3 | 商品ID | `product_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_order_items_product`). References `products(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 4 | 出品者ID | `merchant_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_order_items_merchant`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 1 | 注文商品ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 注文ID | `order_id` | UUID | - | Y | N | - | Foreign key (`fk_order_items_order`). References `orders(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 商品ID | `product_id` | UUID | - | Y | N | - | Foreign key (`fk_order_items_product`). References `products(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 4 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_order_items_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
 | 5 | 数量 | `quantity` | INTEGER | - | - | N | - | Check constraint: `quantity > 0`. |
-| 6 | 単価 | `unit_price` | NUMERIC(10,2) | - | - | N | - | Price at time of order. |
-| 7 | 合計金額 | `total_price` | NUMERIC(10,2) | - | - | N | - | Check constraint: `total_price > 0`. |
+| 6 | 単価 | `unit_price` | DECIMAL(10,2) | - | - | N | - | Price at time of order. |
+| 7 | 合計金額 | `total_price` | DECIMAL(10,2) | - | - | N | - | Check constraint: `total_price > 0`. |
 
 #### Reference SQL DDL
 ```sql
 CREATE TABLE order_items (
-    id VARCHAR(25) PRIMARY KEY,
-    order_id VARCHAR(25) NOT NULL,
-    product_id VARCHAR(25) NOT NULL,
-    merchant_id VARCHAR(25) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL,
+    product_id UUID NOT NULL,
+    merchant_id UUID NOT NULL,
     quantity INTEGER NOT NULL,
-    unit_price NUMERIC(10, 2) NOT NULL,
-    total_price NUMERIC(10, 2) NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    total_price DECIMAL(10, 2) NOT NULL,
     CONSTRAINT chk_order_items_quantity CHECK (quantity > 0),
     CONSTRAINT chk_order_items_total CHECK (total_price > 0),
     CONSTRAINT fk_order_items_order FOREIGN KEY (order_id)
@@ -482,30 +536,30 @@ CREATE TABLE order_items (
     CONSTRAINT fk_order_items_product FOREIGN KEY (product_id)
         REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_order_items_merchant FOREIGN KEY (merchant_id)
-        REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE
+        REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 ```
 
 ---
 
-### 3.9 Shops Table (`shops` - 店舗テーブル)
+### 3.10 Shops Table (`shops` - 店舗テーブル)
 Manages merchant shop profiles.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 店舗ID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | ユーザーID | `user_id` | VARCHAR(25) | - | Y | N | - | Unique key (`uq_shops_user_id`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
-| 3 | 店舗名 | `name` | VARCHAR(200) | - | - | N | - | Shop display name. |
-| 4 | スラッグ | `slug` | VARCHAR(200) | - | - | N | - | Unique key (`uq_shops_slug`). URL-friendly identifier. |
+| 1 | 店舗ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Unique key (`uq_shops_user_id`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 店舗名 | `name` | VARCHAR(255) | - | - | N | - | Shop display name. |
+| 4 | スラッグ | `slug` | VARCHAR(255) | - | - | N | - | Unique key (`uq_shops_slug`). URL-friendly identifier. |
 | 5 | 説明 | `description` | TEXT | - | - | Y | NULL | Shop description. |
-| 6 | ロゴURL | `logo_url` | VARCHAR(500) | - | - | Y | NULL | Shop logo image URL. |
-| 7 | バナーURL | `banner_url` | VARCHAR(500) | - | - | Y | NULL | Shop banner image URL. |
+| 6 | ロゴURL | `logo_url` | TEXT | - | - | Y | NULL | Shop logo image URL. |
+| 7 | バナーURL | `banner_url` | TEXT | - | - | Y | NULL | Shop banner image URL. |
 | 8 | 住所 | `address` | TEXT | - | - | Y | NULL | Physical shop address. |
 | 9 | 電話番号 | `phone` | VARCHAR(20) | - | - | Y | NULL | Shop contact phone. |
 | 10 | メール | `email` | VARCHAR(255) | - | - | Y | NULL | Shop contact email. |
-| 11 | 緯度 | `latitude` | NUMERIC(10,7) | - | - | Y | NULL | GPS latitude for shop finder. |
-| 12 | 経度 | `longitude` | NUMERIC(10,7) | - | - | Y | NULL | GPS longitude for shop finder. |
+| 11 | 緯度 | `latitude` | DECIMAL(10,7) | - | - | Y | NULL | GPS latitude for shop finder. |
+| 12 | 経度 | `longitude` | DECIMAL(10,7) | - | - | Y | NULL | GPS longitude for shop finder. |
 | 13 | 承認済み | `is_approved` | BOOLEAN | - | - | N | FALSE | Admin approval status. |
 | 14 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 | 15 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
@@ -513,18 +567,18 @@ Manages merchant shop profiles.
 #### Reference SQL DDL
 ```sql
 CREATE TABLE shops (
-    id VARCHAR(25) PRIMARY KEY,
-    user_id VARCHAR(25) NOT NULL,
-    name VARCHAR(200) NOT NULL,
-    slug VARCHAR(200) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
     description TEXT,
-    logo_url VARCHAR(500),
-    banner_url VARCHAR(500),
+    logo_url TEXT,
+    banner_url TEXT,
     address TEXT,
     phone VARCHAR(20),
     email VARCHAR(255),
-    latitude NUMERIC(10, 7),
-    longitude NUMERIC(10, 7),
+    latitude DECIMAL(10, 7),
+    longitude DECIMAL(10, 7),
     is_approved BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -537,19 +591,19 @@ CREATE TABLE shops (
 
 ---
 
-### 3.10 Promotions Table (`promotions` - プロモーションテーブル)
+### 3.11 Promotions Table (`promotions` - プロモーションテーブル)
 Manages discount codes and promotions.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | プロモーションID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | 出品者ID | `merchant_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_promotions_merchant`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 1 | プロモーションID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_promotions_merchant`). References `merchants(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
 | 3 | クーポンコード | `code` | VARCHAR(50) | - | - | N | - | Unique key (`uq_promotions_code`). Discount code. |
 | 4 | 説明 | `description` | TEXT | - | - | Y | NULL | Promotion description. |
 | 5 | 割引タイプ | `discount_type` | VARCHAR(20) | - | - | N | - | Enum type: 'percentage' or 'fixed'. |
-| 6 | 割引値 | `discount_value` | NUMERIC(10,2) | - | - | N | - | Check constraint: `discount_value > 0`. |
-| 7 | 最低注文金額 | `min_order_amount` | NUMERIC(10,2) | - | - | Y | NULL | Minimum order amount for discount. |
+| 6 | 割引値 | `discount_value` | DECIMAL(10,2) | - | - | N | - | Check constraint: `discount_value > 0`. |
+| 7 | 最低注文金額 | `min_order_amount` | DECIMAL(10,2) | - | - | Y | NULL | Minimum order amount for discount. |
 | 8 | 最大使用数 | `max_uses` | INTEGER | - | - | Y | NULL | Maximum times this code can be used. |
 | 9 | 使用回数 | `used_count` | INTEGER | - | - | N | 0 | Current usage count. |
 | 10 | 開始日時 | `starts_at` | TIMESTAMPTZ | - | - | N | - | Promotion start timestamp. |
@@ -560,13 +614,13 @@ Manages discount codes and promotions.
 #### Reference SQL DDL
 ```sql
 CREATE TABLE promotions (
-    id VARCHAR(25) PRIMARY KEY,
-    merchant_id VARCHAR(25) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL,
     code VARCHAR(50) NOT NULL,
     description TEXT,
     discount_type VARCHAR(20) NOT NULL,
-    discount_value NUMERIC(10, 2) NOT NULL,
-    min_order_amount NUMERIC(10, 2),
+    discount_value DECIMAL(10, 2) NOT NULL,
+    min_order_amount DECIMAL(10, 2),
     max_uses INTEGER,
     used_count INTEGER NOT NULL DEFAULT 0,
     starts_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -578,31 +632,31 @@ CREATE TABLE promotions (
     CONSTRAINT chk_promotions_discount_value CHECK (discount_value > 0),
     CONSTRAINT chk_promotions_dates CHECK (expires_at > starts_at),
     CONSTRAINT fk_promotions_merchant FOREIGN KEY (merchant_id)
-        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+        REFERENCES merchants(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 ```
 
 ---
 
-### 3.11 Advertisements Table (`advertisements` - 広告テーブル)
+### 3.12 Advertisements Table (`advertisements` - 広告テーブル)
 Manages shop advertisements with approval workflow, payment tracking, and weekly limits.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 広告ID | `id` | VARCHAR(25) | Y | - | N | cuid() | Primary key. CUID format. |
-| 2 | 店舗ID | `shop_id` | VARCHAR(25) | - | Y | N | - | Foreign key (`fk_advertisements_shop`). References `shops(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
-| 3 | タイトル | `title` | VARCHAR(200) | - | - | N | - | Advertisement title. |
+| 1 | 広告ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 店舗ID | `shop_id` | UUID | - | Y | N | - | Foreign key (`fk_advertisements_shop`). References `shops(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | タイトル | `title` | VARCHAR(255) | - | - | N | - | Advertisement title. |
 | 4 | 内容 | `content` | TEXT | - | - | Y | NULL | Advertisement content/description. |
 | 5 | 告知メッセージ | `announcement_message` | VARCHAR(500) | - | - | N | - | Banner announcement message. |
-| 6 | 画像URL | `image_url` | VARCHAR(500) | - | - | Y | NULL | Advertisement image URL. |
-| 7 | リンクURL | `link_url` | VARCHAR(500) | - | - | Y | NULL | Click-through link URL. |
+| 6 | 画像URL | `image_url` | TEXT | - | - | Y | NULL | Advertisement image URL. |
+| 7 | リンクURL | `link_url` | TEXT | - | - | Y | NULL | Click-through link URL. |
 | 8 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Advertisement active status. |
 | 9 | 承認状態 | `approval_status` | VARCHAR(20) | - | - | N | 'pending' | Approval status: pending/approved/rejected. |
-| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/paid/failed/refunded. |
+| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded/failed. |
 | 11 | 支払い金額 | `payment_amount` | DECIMAL(10,2) | - | - | Y | NULL | Advertising fee amount. |
-| 12 | 支払い参照番号 | `payment_reference` | VARCHAR(100) | - | - | Y | NULL | Payment transaction reference. |
-| 13 | 承認者ID | `approved_by` | VARCHAR(25) | - | Y | Y | NULL | Foreign key (`fk_advertisements_approved_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 12 | 支払い参照番号 | `payment_reference` | VARCHAR(255) | - | - | Y | NULL | Payment transaction reference. |
+| 13 | 承認者ID | `approved_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_advertisements_approved_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
 | 14 | 承認日時 | `approved_at` | TIMESTAMPTZ | - | - | Y | NULL | Approval/rejection timestamp. |
 | 15 | 却下理由 | `rejection_reason` | TEXT | - | - | Y | NULL | Reason for rejection. |
 | 16 | 週番号 | `week_number` | INTEGER | - | - | N | - | ISO week number for limit tracking. |
@@ -613,19 +667,19 @@ Manages shop advertisements with approval workflow, payment tracking, and weekly
 #### Reference SQL DDL
 ```sql
 CREATE TABLE advertisements (
-    id VARCHAR(25) PRIMARY KEY,
-    shop_id VARCHAR(25) NOT NULL,
-    title VARCHAR(200) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shop_id UUID NOT NULL,
+    title VARCHAR(255) NOT NULL,
     content TEXT,
     announcement_message VARCHAR(500) NOT NULL,
-    image_url VARCHAR(500),
-    link_url VARCHAR(500),
+    image_url TEXT,
+    link_url TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     approval_status VARCHAR(20) NOT NULL DEFAULT 'pending',
     payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
     payment_amount DECIMAL(10,2),
-    payment_reference VARCHAR(100),
-    approved_by VARCHAR(25),
+    payment_reference VARCHAR(255),
+    approved_by UUID,
     approved_at TIMESTAMP WITH TIME ZONE,
     rejection_reason TEXT,
     week_number INTEGER NOT NULL,
@@ -634,13 +688,137 @@ CREATE TABLE advertisements (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_advertisements_dates CHECK (expires_at > starts_at),
     CONSTRAINT chk_advertisements_approval_status CHECK (approval_status IN ('pending', 'approved', 'rejected')),
-    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
+    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded', 'failed')),
     CONSTRAINT fk_advertisements_shop FOREIGN KEY (shop_id)
         REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_advertisements_approved_by FOREIGN KEY (approved_by)
         REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+---
+
+### 3.13 Ad Fee Settings Table (`ad_fee_settings` - 広告料金設定テーブル)
+Manages advertising fee rates by placement and tier.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 配置場所 | `placement` | VARCHAR(50) | - | - | N | - | Ad placement location (homepage_slider, product_sidebar, category_banner, search_top). |
+| 3 | ティア | `tier` | VARCHAR(20) | - | - | N | - | Pricing tier (basic, standard, premium). |
+| 4 | 日額料金 | `daily_rate` | DECIMAL(10,2) | - | - | N | - | Daily advertising rate. |
+| 5 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Setting active status. |
+| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 7 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE ad_fee_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    placement VARCHAR(50) NOT NULL,
+    tier VARCHAR(20) NOT NULL,
+    daily_rate DECIMAL(10,2) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_ad_fee_settings_placement_tier UNIQUE (placement, tier)
+);
 ```
+
+#### Default Fee Settings
+| Placement | Basic | Standard | Premium |
+|-----------|-------|----------|---------|
+| Homepage Slider | $3.00/day | $5.00/day | $8.00/day |
+| Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day |
+| Category Banner | $2.50/day | $4.00/day | $7.00/day |
+| Search Results Top | $1.50/day | $2.50/day | $5.00/day |
+
+---
+
+### 3.14 Ad Payments Table (`ad_payments` - 広告支払いテーブル)
+Manages payment transactions for advertisements.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 支払いID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 広告ID | `ad_id` | UUID | - | Y | N | - | Foreign key (`fk_ad_payments_ad`). References `advertisements(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_ad_payments_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 4 | 金額 | `amount` | DECIMAL(10,2) | - | - | N | - | Payment amount. |
+| 5 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | Payment method used. |
+| 6 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded/failed. |
+| 7 | トランザクションID | `transaction_id` | VARCHAR(255) | - | - | Y | NULL | External payment transaction ID. |
+| 8 | 支払日時 | `paid_at` | TIMESTAMPTZ | - | - | Y | NULL | Payment completion timestamp. |
+| 9 | 返金額 | `refund_amount` | DECIMAL(10,2) | - | - | Y | NULL | Refund amount if applicable. |
+| 10 | 返金理由 | `refund_reason` | TEXT | - | - | Y | NULL | Reason for refund. |
+| 11 | 返金日時 | `refunded_at` | TIMESTAMPTZ | - | - | Y | NULL | Refund processing timestamp. |
+| 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 13 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE ad_payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ad_id UUID NOT NULL,
+    merchant_id UUID NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    transaction_id VARCHAR(255),
+    paid_at TIMESTAMP WITH TIME ZONE,
+    refund_amount DECIMAL(10,2),
+    refund_reason TEXT,
+    refunded_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_ad_payments_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded', 'failed')),
+    CONSTRAINT fk_ad_payments_ad FOREIGN KEY (ad_id)
+        REFERENCES advertisements(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_ad_payments_merchant FOREIGN KEY (merchant_id)
+        REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.15 Ad Fee History Table (`ad_fee_history` - 広告料金履歴テーブル)
+Tracks changes to advertising fee settings over time.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 履歴ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 料金設定ID | `ad_fee_setting_id` | UUID | - | Y | N | - | Foreign key (`fk_ad_fee_history_setting`). References `ad_fee_settings(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 旧日額料金 | `old_daily_rate` | DECIMAL(10,2) | - | - | Y | NULL | Previous daily rate (NULL for initial creation). |
+| 4 | 新日額料金 | `new_daily_rate` | DECIMAL(10,2) | - | - | N | - | New daily rate after change. |
+| 5 | 変更者ID | `changed_by` | UUID | - | Y | N | - | Foreign key (`fk_ad_fee_history_changed_by`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 6 | 変更理由 | `change_reason` | TEXT | - | - | Y | NULL | Reason for fee change. |
+| 7 | 適用開始日時 | `effective_from` | TIMESTAMPTZ | - | - | N | - | When the new rate takes effect. |
+| 8 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE ad_fee_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ad_fee_setting_id UUID NOT NULL,
+    old_daily_rate DECIMAL(10,2),
+    new_daily_rate DECIMAL(10,2) NOT NULL,
+    changed_by UUID NOT NULL,
+    change_reason TEXT,
+    effective_from TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ad_fee_history_setting FOREIGN KEY (ad_fee_setting_id)
+        REFERENCES ad_fee_settings(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_ad_fee_history_changed_by FOREIGN KEY (changed_by)
+        REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+```
+
+#### Fee History Rules
+- Fee changes do not affect already-paid advertisements
+- New fees apply only to ads created after the change effective date
+- All fee changes are logged in `ad_fee_history`
+- Admin can view fee change history with timestamps and reasons
 
 ---
 
@@ -655,38 +833,47 @@ To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds)
 | 1 | `idx_users_email` | `users` | `email` | Optimizes email lookups during login and uniqueness validations. |
 | 2 | `idx_users_role` | `users` | `role` | Optimizes user role filtering and permission sorting. |
 | 3 | `idx_users_is_active` | `users` | `is_active` | Speeds up lookups filtering active users. |
-| 4 | `idx_refresh_tokens_user_id` | `refresh_tokens` | `user_id` | Speeds up token lookups per user. |
-| 5 | `idx_refresh_tokens_family` | `refresh_tokens` | `family` | Optimizes token family tracking for breach detection. |
-| 6 | `idx_refresh_tokens_token_hash` | `refresh_tokens` | `token_hash` | Optimizes token verification lookups. |
-| 7 | `idx_categories_parent_id` | `categories` | `parent_id` | Speeds up category tree traversal. |
-| 8 | `idx_categories_slug` | `categories` | `slug` | Optimizes category lookups by URL slug. |
-| 9 | `idx_products_merchant_id` | `products` | `merchant_id` | Speeds up merchant's product listings. |
-| 10 | `idx_products_category_id` | `products` | `category_id` | Optimizes category-based product filtering. |
-| 11 | `idx_products_slug` | `products` | `slug` | Optimizes product lookups by URL slug. |
-| 12 | `idx_products_price` | `products` | `price` | Speeds up price-based sorting and filtering. |
-| 13 | `idx_products_is_active` | `products` | `is_active` | Optimizes active product filtering. |
-| 14 | `idx_products_created_at` | `products` | `created_at` | Speeds up newest product listings. |
-| 15 | `idx_reviews_product_id` | `reviews` | `product_id` | Optimizes product review loading. |
-| 16 | `idx_reviews_rating` | `reviews` | `rating` | Speeds up rating-based filtering. |
-| 17 | `idx_wishlists_user_id` | `wishlists` | `user_id` | Optimizes user wishlist loading. |
-| 18 | `idx_orders_user_id` | `orders` | `user_id` | Speeds up user order history. |
-| 19 | `idx_orders_status` | `orders` | `status` | Optimizes order status filtering. |
-| 20 | `idx_orders_created_at` | `orders` | `created_at` | Speeds up order date sorting. |
-| 21 | `idx_order_items_order_id` | `order_items` | `order_id` | Optimizes order detail loading. |
-| 22 | `idx_order_items_product_id` | `order_items` | `product_id` | Speeds up product order history. |
-| 23 | `idx_order_items_merchant_id` | `order_items` | `merchant_id` | Optimizes merchant order filtering. |
-| 24 | `idx_shops_slug` | `shops` | `slug` | Optimizes shop lookups by URL slug. |
-| 25 | `idx_shops_is_approved` | `shops` | `is_approved` | Speeds up approved shop filtering. |
-| 26 | `idx_promotions_merchant_id` | `promotions` | `merchant_id` | Optimizes merchant promotions loading. |
-| 27 | `idx_promotions_code` | `promotions` | `code` | Speeds up coupon code validation. |
-| 28 | `idx_promotions_is_active` | `promotions` | `is_active` | Optimizes active promotion filtering. |
-| 29 | `idx_promotions_expires_at` | `promotions` | `expires_at` | Speeds up expired promotion cleanup. |
-| 30 | `idx_advertisements_shop_id` | `advertisements` | `shop_id` | Optimizes shop advertisement loading. |
-| 31 | `idx_advertisements_is_active` | `advertisements` | `is_active` | Speeds up active advertisement filtering. |
-| 32 | `idx_advertisements_expires_at` | `advertisements` | `expires_at` | Optimizes expired ad cleanup. |
-| 33 | `idx_advertisements_approval_status` | `advertisements` | `approval_status` | Speeds up approval status filtering. |
-| 34 | `idx_advertisements_payment_status` | `advertisements` | `payment_status` | Optimizes payment status filtering. |
-| 35 | `idx_advertisements_week_number` | `advertisements` | `week_number` | Speeds up weekly ad limit checks. |
+| 4 | `idx_users_merchant_id` | `users` | `merchant_id` | Optimizes user-merchant relationship lookups. |
+| 5 | `idx_refresh_tokens_user_id` | `refresh_tokens` | `user_id` | Speeds up token lookups per user. |
+| 6 | `idx_refresh_tokens_family` | `refresh_tokens` | `family` | Optimizes token family tracking for breach detection. |
+| 7 | `idx_refresh_tokens_token_hash` | `refresh_tokens` | `token_hash` | Optimizes token verification lookups. |
+| 8 | `idx_merchants_user_id` | `merchants` | `user_id` | Optimizes merchant lookups by user. |
+| 9 | `idx_merchants_license_status` | `merchants` | `license_status` | Speeds up merchant approval workflow filtering. |
+| 10 | `idx_categories_parent_id` | `categories` | `parent_id` | Speeds up category tree traversal. |
+| 11 | `idx_categories_slug` | `categories` | `slug` | Optimizes category lookups by URL slug. |
+| 12 | `idx_products_merchant_id` | `products` | `merchant_id` | Speeds up merchant's product listings. |
+| 13 | `idx_products_category_id` | `products` | `category_id` | Optimizes category-based product filtering. |
+| 14 | `idx_products_slug` | `products` | `slug` | Optimizes product lookups by URL slug. |
+| 15 | `idx_products_price` | `products` | `price` | Speeds up price-based sorting and filtering. |
+| 16 | `idx_products_is_active` | `products` | `is_active` | Optimizes active product filtering. |
+| 17 | `idx_products_created_at` | `products` | `created_at` | Speeds up newest product listings. |
+| 18 | `idx_reviews_product_id` | `reviews` | `product_id` | Optimizes product review loading. |
+| 19 | `idx_reviews_rating` | `reviews` | `rating` | Speeds up rating-based filtering. |
+| 20 | `idx_wishlist_user_id` | `wishlist` | `user_id` | Optimizes user wishlist loading. |
+| 21 | `idx_orders_buyer_id` | `orders` | `buyer_id` | Speeds up buyer order history. |
+| 22 | `idx_orders_merchant_id` | `orders` | `merchant_id` | Optimizes merchant order filtering. |
+| 23 | `idx_orders_status` | `orders` | `status` | Optimizes order status filtering. |
+| 24 | `idx_orders_created_at` | `orders` | `created_at` | Speeds up order date sorting. |
+| 25 | `idx_order_items_order_id` | `order_items` | `order_id` | Optimizes order detail loading. |
+| 26 | `idx_order_items_product_id` | `order_items` | `product_id` | Speeds up product order history. |
+| 27 | `idx_order_items_merchant_id` | `order_items` | `merchant_id` | Optimizes merchant order filtering. |
+| 28 | `idx_shops_user_id` | `shops` | `user_id` | Optimizes shop lookups by user. |
+| 29 | `idx_shops_slug` | `shops` | `slug` | Optimizes shop lookups by URL slug. |
+| 30 | `idx_shops_is_approved` | `shops` | `is_approved` | Speeds up approved shop filtering. |
+| 31 | `idx_promotions_merchant_id` | `promotions` | `merchant_id` | Optimizes merchant promotions loading. |
+| 32 | `idx_promotions_code` | `promotions` | `code` | Speeds up coupon code validation. |
+| 33 | `idx_promotions_is_active` | `promotions` | `is_active` | Optimizes active promotion filtering. |
+| 34 | `idx_promotions_expires_at` | `promotions` | `expires_at` | Speeds up expired promotion cleanup. |
+| 35 | `idx_advertisements_shop_id` | `advertisements` | `shop_id` | Optimizes shop advertisement loading. |
+| 36 | `idx_advertisements_is_active` | `advertisements` | `is_active` | Speeds up active advertisement filtering. |
+| 37 | `idx_advertisements_expires_at` | `advertisements` | `expires_at` | Optimizes expired ad cleanup. |
+| 38 | `idx_advertisements_approval_status` | `advertisements` | `approval_status` | Speeds up approval status filtering. |
+| 39 | `idx_advertisements_payment_status` | `advertisements` | `payment_status` | Optimizes payment status filtering. |
+| 40 | `idx_advertisements_week_number` | `advertisements` | `week_number` | Speeds up weekly ad limit checks. |
+| 41 | `idx_ad_payments_ad_id` | `ad_payments` | `ad_id` | Optimizes ad payment lookups. |
+| 42 | `idx_ad_payments_merchant_id` | `ad_payments` | `merchant_id` | Speeds up merchant payment history. |
+| 43 | `idx_ad_fee_settings_placement_tier` | `ad_fee_settings` | `placement, tier` | Optimizes fee lookups by placement and tier. |
+| 44 | `idx_ad_fee_history_setting_id` | `ad_fee_history` | `ad_fee_setting_id` | Speeds up fee history lookups. |
 
 ### 4.2 DDL Index Scripts
 
@@ -695,11 +882,16 @@ To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds)
 CREATE INDEX idx_users_email ON users (email);
 CREATE INDEX idx_users_role ON users (role);
 CREATE INDEX idx_users_is_active ON users (is_active);
+CREATE INDEX idx_users_merchant_id ON users (merchant_id);
 
 -- Indexes for Refresh Tokens Table
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens (user_id);
 CREATE INDEX idx_refresh_tokens_family ON refresh_tokens (family);
 CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens (token_hash);
+
+-- Indexes for Merchants Table
+CREATE INDEX idx_merchants_user_id ON merchants (user_id);
+CREATE INDEX idx_merchants_license_status ON merchants (license_status);
 
 -- Indexes for Categories Table
 CREATE INDEX idx_categories_parent_id ON categories (parent_id);
@@ -717,11 +909,12 @@ CREATE INDEX idx_products_created_at ON products (created_at DESC);
 CREATE INDEX idx_reviews_product_id ON reviews (product_id);
 CREATE INDEX idx_reviews_rating ON reviews (rating);
 
--- Indexes for Wishlists Table
-CREATE INDEX idx_wishlists_user_id ON wishlists (user_id);
+-- Indexes for Wishlist Table
+CREATE INDEX idx_wishlist_user_id ON wishlist (user_id);
 
 -- Indexes for Orders Table
-CREATE INDEX idx_orders_user_id ON orders (user_id);
+CREATE INDEX idx_orders_buyer_id ON orders (buyer_id);
+CREATE INDEX idx_orders_merchant_id ON orders (merchant_id);
 CREATE INDEX idx_orders_status ON orders (status);
 CREATE INDEX idx_orders_created_at ON orders (created_at DESC);
 
@@ -731,6 +924,7 @@ CREATE INDEX idx_order_items_product_id ON order_items (product_id);
 CREATE INDEX idx_order_items_merchant_id ON order_items (merchant_id);
 
 -- Indexes for Shops Table
+CREATE INDEX idx_shops_user_id ON shops (user_id);
 CREATE INDEX idx_shops_slug ON shops (slug);
 CREATE INDEX idx_shops_is_approved ON shops (is_approved);
 
@@ -747,6 +941,16 @@ CREATE INDEX idx_advertisements_expires_at ON advertisements (expires_at);
 CREATE INDEX idx_advertisements_approval_status ON advertisements (approval_status);
 CREATE INDEX idx_advertisements_payment_status ON advertisements (payment_status);
 CREATE INDEX idx_advertisements_week_number ON advertisements (week_number);
+
+-- Indexes for Ad Payments Table
+CREATE INDEX idx_ad_payments_ad_id ON ad_payments (ad_id);
+CREATE INDEX idx_ad_payments_merchant_id ON ad_payments (merchant_id);
+
+-- Indexes for Ad Fee Settings Table
+CREATE INDEX idx_ad_fee_settings_placement_tier ON ad_fee_settings (placement, tier);
+
+-- Indexes for Ad Fee History Table
+CREATE INDEX idx_ad_fee_history_setting_id ON ad_fee_history (ad_fee_setting_id);
 
 -- Partial Indexing for Active Products (Soft Delete Equivalent)
 CREATE INDEX idx_products_active_featured ON products (is_featured, created_at DESC) 
@@ -834,14 +1038,13 @@ Important implementation instructions for constructing NestJS backend entities:
 | `VARCHAR(n)` | `String` | `string` | Direct mapping |
 | `TEXT` | `String` | `string` | Direct mapping |
 | `INTEGER` | `Int` | `number` | Direct mapping |
-| `NUMERIC(p,s)` | `Decimal` | `string` | Use string to avoid float precision issues |
+| `DECIMAL(p,s)` | `Decimal` | `string` | Use string to avoid float precision issues |
 | `BOOLEAN` | `Boolean` | `boolean` | Direct mapping |
 | `TIMESTAMPTZ` | `DateTime` | `Date` | Direct mapping |
 | `JSONB` | `Json` | `JsonValue` | Use with caution |
 | `TEXT[]` | `String[]` | `string[]` | PostgreSQL array type |
-| `VARCHAR(25)` (CUID) | `String` | `string` | Use `@default(cuid())` |
+| `UUID` | `String` | `string` | Use `@default(uuid())` or `@default(dbgenerated("gen_random_uuid()"))` |
 | `SERIAL` | `Int` | `number` | Auto-increment for lookup tables |
-| `VARCHAR(20)` (FK) | `String` | `string` | References lookup table |
 
 ### 6.2 Lookup Table Integration
 
@@ -895,18 +1098,23 @@ model DiscountType {
 | Relation | onDelete | onUpdate | Rationale |
 |----------|----------|----------|-----------|
 | User → RefreshToken | Cascade | Cascade | Delete all tokens when user is deleted |
-| User → Product | Cascade | Cascade | Delete all products when merchant is deleted |
+| User → Merchant | Cascade | Cascade | Delete merchant profile when user is deleted |
 | User → Review | Cascade | Cascade | Delete all reviews when user is deleted |
 | User → Wishlist | Cascade | Cascade | Delete all wishlist items when user is deleted |
-| User → Order | Restrict | Cascade | Prevent deleting user with existing orders |
-| User → Shop | Cascade | Cascade | Delete shop when merchant is deleted |
-| User → Promotion | Cascade | Cascade | Delete promotions when merchant is deleted |
+| User → Order (buyer) | Restrict | Cascade | Prevent deleting user with existing orders |
+| User → Shop | Cascade | Cascade | Delete shop when user is deleted |
+| Merchant → Product | Cascade | Cascade | Delete all products when merchant is deleted |
+| Merchant → Order | Restrict | Cascade | Prevent deleting merchant with existing orders |
+| Merchant → Promotion | Cascade | Cascade | Delete promotions when merchant is deleted |
+| Merchant → AdPayment | Restrict | Cascade | Prevent deleting merchant with payment history |
 | Category → Product | Restrict | Cascade | Prevent deleting category with products |
 | Product → Review | Cascade | Cascade | Delete reviews when product is deleted |
 | Product → Wishlist | Cascade | Cascade | Delete wishlist items when product is deleted |
 | Product → OrderItem | Restrict | Cascade | Prevent deleting product with order history |
 | Order → OrderItem | Cascade | Cascade | Delete order items when order is deleted |
 | Shop → Advertisement | Cascade | Cascade | Delete ads when shop is deleted |
+| Advertisement → AdPayment | Cascade | Cascade | Delete payments when ad is deleted |
+| AdFeeSetting → AdFeeHistory | Cascade | Cascade | Delete history when setting is deleted |
 
 ### 6.3 Soft Delete Pattern
 
@@ -964,28 +1172,33 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
 
 ```mermaid
 erDiagram
-    users ||--o{ products : "lists"
+    users ||--o| merchants : "may_be"
     users ||--o{ reviews : "writes"
-    users ||--o{ wishlists : "saves"
+    users ||--o{ wishlist : "saves"
     users ||--o{ orders : "places"
     users ||--o{ refresh_tokens : "has"
     users ||--o| shops : "owns"
-    users ||--o{ promotions : "creates"
+    merchants ||--o{ products : "lists"
+    merchants ||--o{ promotions : "creates"
+    merchants ||--o{ ad_payments : "pays"
     categories ||--o{ products : "contains"
     categories ||--o| categories : "parent_of"
     products ||--o{ reviews : "receives"
-    products ||--o{ wishlists : "saved_in"
+    products ||--o{ wishlist : "saved_in"
     products ||--o{ order_items : "included_in"
     orders ||--o{ order_items : "contains"
     shops ||--o{ advertisements : "displays"
+    advertisements ||--o{ ad_payments : "has"
+    ad_fee_settings ||--o{ ad_fee_history : "tracked_by"
 ```
 
 ### 7.2 Table Count Summary
 
 | Category | Tables | Description |
 |----------|--------|-------------|
-| **Master/Lookup** | 7 | user_roles, order_statuses, discount_types, skin_types, skin_concerns, currencies, payment_statuses |
-| **Core Entities** | 11 | users, refresh_tokens, categories, products, reviews, wishlists, orders, order_items, shops, promotions, advertisements |
+| **Master/Lookup** | 3 | user_roles, order_statuses, discount_types |
+| **Core Entities** | 12 | users, merchants, refresh_tokens, categories, products, reviews, wishlist, orders, order_items, shops, promotions, advertisements |
+| **Ad Fee Management** | 3 | ad_fee_settings, ad_payments, ad_fee_history |
 | **Total** | 18 | Complete database schema |
 
 ---
@@ -993,7 +1206,7 @@ erDiagram
 **Document Management (文書管理):**
 - Author: Lead Database Engineer
 - Created: 2026-08-03
-- Last Updated: 2026-08-03
+- Last Updated: 2026-08-14
 - Next Review: Phase 2 Planning
 
 ---
