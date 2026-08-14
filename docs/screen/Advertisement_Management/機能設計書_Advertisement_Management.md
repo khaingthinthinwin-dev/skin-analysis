@@ -188,78 +188,91 @@ This subsystem is responsible for the following core functional areas:
                     └──────────┬───────────┘
                                │
                                ▼
-                    ┌──────────────────────┐
-                    │  Merchant Dashboard  │
-                    │  /merchant/ads       │
-                    └──────────┬───────────┘
-                               │
-              ┌────────────────┼────────────────────┐
-              ▼                ▼                    ▼
-   ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-   │ View Ad List    │ │ New Ad          │ │ Edit Ad         │
-   │ (UC-AD-004)     │ │ (UC-AD-001)     │ │ (UC-AD-005)     │
-   └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-            │                   │                   │
-            ▼                   ▼                   ▼
-   ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-   │ Filter/Search   │ │ Fill Ad Form    │ │ Update Fields   │
-   │ Ads             │ │ (Schedule,      │ │ & Schedule      │
-   │                 │ │  announcement,  │ │  (editing a     │
-   │                 │ │  image)         │ │  rejected ad    │
-   │                 │ │                 │ │  → back to      │
-   │                 │ │                 │ │  pending)       │
-   └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-            │                   │                   │
-            │                   ▼                   ▼
-            │          ┌─────────────────┐ ┌─────────────────┐
-            │          │ Upload Image    │ │ Save Changes    │
-            │          │ (UC-AD-003)     │ │ (UC-AD-005)     │
-            │          └────────┬────────┘ └────────┬────────┘
-            │                   │                   │
-            │                   ▼                   ▼
-            │          ┌─────────────────┐ ┌─────────────────┐
-            │          │ Pay Ad Fee      │ │ Ad Draft Saved  │
-            │          │ (UC-AD-009)     │ └────────┬────────┘
-            │          └────────┬────────┘          │
-            │                   │                   │
-            │                   ▼                   │
-            │          ┌─────────────────┐          │
-            │          │ Submit for      │◄─────────┘
-            │          │ Approval        │   (if paid)
-            │          │ (UC-AD-010)     │
-            │          └────────┬────────┘
-            │                   │
-            │                   ▼
-            │          ┌─────────────────┐      ┌─────────────────┐
-            │          │ PENDING         │─────►│ Admin           │
-            │          │ APPROVAL        │      │ Approve /       │
-            │          │                 │      │ Reject          │
-            │          └────────┬────────┘      │ (UC-AD-011/012)│
-            │                   │               └────────┬────────┘
-            │                   │                        │
-            │         approved  │                 ┌──────┴──────┐
-            │         ┌─────────▼────────┐        │  rejected   │
-            │         │ APPROVED (paid)  │        ▼            │
-            │         │ Weekly limit     │  ┌─────────────────┐│
-            │         │ validated (5/wk) │  │ REJECTED +     ││
-            │         │ → displayable    │  │ refund (auto)  ││
-            │         └─────────┬────────┘  └────────┬────────┘│
-            │                   │                     │        │
-            │                   │             edit & resubmit  │
-            │                   │                     └────────┘
-            │                   ▼
-            │          ┌─────────────────┐
-            │          │ Toggle Active/  │
-            │          │ Inactive        │
-            │          │ (UC-AD-007)     │
-            │          └────────┬────────┘
-            │                   │
-            │                   ▼
-            │          ┌─────────────────┐
-            │          │ Delete Ad       │
-            │          │ (Soft Delete)   │
-            │          │ (UC-AD-006)     │
-            │          └─────────────────┘
+              ┌────────────────────────────────┐
+              │  Check license_status          │
+              └───────────┬────────┬───────────┘
+                          │        │
+              pending/reject│       │approved
+                          ▼        ▼
+              ┌────────────────┐ ┌─────────────────────────┐
+              │  Home Page     │ │  Advertisement          │
+              │                │ │  Management Page        │
+              │                │ │  /merchant/ads          │
+              └────────────────┘ └─────────────┬───────────┘
+                                               │
+                                               ▼
+                                 ┌──────────────────────┐
+                                 │  Merchant Dashboard  │
+                                 │  /merchant/ads       │
+                                 └──────────┬───────────┘
+                                            │
+                           ┌────────────────┼────────────────────┐
+                           ▼                ▼                    ▼
+                ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+                │ View Ad List    │ │ New Ad          │ │ Edit Ad         │
+                │ (UC-AD-004)     │ │ (UC-AD-001)     │ │ (UC-AD-005)     │
+                └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
+                         │                   │                   │
+                         ▼                   ▼                   ▼
+                ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+                │ Filter/Search   │ │ Fill Ad Form    │ │ Update Fields   │
+                │ Ads             │ │ (Schedule,      │ │ & Schedule      │
+                │                 │ │  announcement,  │ │  (editing a     │
+                │                 │ │  image)         │ │  rejected ad    │
+                │                 │ │                 │ │  → back to      │
+                │                 │ │                 │ │  pending)       │
+                └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
+                         │                   │                   │
+                         │                   ▼                   ▼
+                         │          ┌─────────────────┐ ┌─────────────────┐
+                         │          │ Upload Image    │ │ Save Changes    │
+                         │          │ (UC-AD-003)     │ │ (UC-AD-005)     │
+                         │          └────────┬────────┘ └────────┬────────┘
+                         │                   │                   │
+                         │                   ▼                   ▼
+                         │          ┌─────────────────┐ ┌─────────────────┐
+                         │          │ Pay Ad Fee      │ │ Ad Draft Saved  │
+                         │          │ (UC-AD-009)     │ └────────┬────────┘
+                         │          └────────┬────────┘          │
+                         │                   │                   │
+                         │                   ▼                   │
+                         │          ┌─────────────────┐          │
+                         │          │ Submit for      │◄─────────┘
+                         │          │ Approval        │   (if paid)
+                         │          │ (UC-AD-010)     │
+                         │          └────────┬────────┘
+                         │                   │
+                         │                   ▼
+                         │          ┌─────────────────┐      ┌─────────────────┐
+                         │          │ PENDING         │─────►│ Admin           │
+                         │          │ APPROVAL        │      │ Approve /       │
+                         │          │                 │      │ Reject          │
+                         │          └────────┬────────┘      │ (UC-AD-011/012)│
+                         │                   │               └────────┬────────┘
+                         │                   │                        │
+                         │         approved  │                 ┌──────┴──────┐
+                         │         ┌─────────▼────────┐        │  rejected   │
+                         │         │ APPROVED (paid)  │        ▼            │
+                         │         │ Weekly limit     │  ┌─────────────────┐│
+                         │         │ validated (5/wk) │  │ REJECTED +     ││
+                         │         │ → displayable    │  │ refund (auto)  ││
+                         │         └─────────┬────────┘  └────────┬────────┘│
+                         │                   │                     │        │
+                         │                   │             edit & resubmit  │
+                         │                   │                     └────────┘
+                         │                   ▼
+                         │          ┌─────────────────┐
+                         │          │ Toggle Active/  │
+                         │          │ Inactive        │
+                         │          │ (UC-AD-007)     │
+                         │          └────────┬────────┘
+                         │                   │
+                         │                   ▼
+                         │          ┌─────────────────┐
+                         │          │ Delete Ad       │
+                         │          │ (Soft Delete)   │
+                         │          │ (UC-AD-006)     │
+                         │          └─────────────────┘
 ```
 
 ### 2.3 Primary Business Workflow — Platform Banner Display
@@ -985,6 +998,8 @@ The Advertisement Management screen does not require WebSocket connections. Adve
 |--------|--------|-----------|
 | Merchant dashboard | `/merchant/advertisements` | Click "Advertisements" menu |
 | Admin dashboard | `/admin/advertisements` | Click "Advertisement Moderation" menu |
+| Merchant | Home Page | `license_status` is `'pending'` or `'reject'` |
+| Merchant | `/merchant/advertisements` (Advertisement Management Page) | `license_status` is `'approved'` |
 | Any protected route (unauthenticated) | `/login` | No valid access token |
 
 ### 12.2 Internal Navigation
