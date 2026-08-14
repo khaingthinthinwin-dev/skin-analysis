@@ -10,11 +10,11 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 3.0 |
+| **Version** | 4.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-11 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Senior System Engineer |
-| **Status** | Draft |
+| **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
 
 ---
@@ -26,6 +26,7 @@
 | 1.0 | 2026-08-06 | Senior System Engineer | Initial functional specification for Admin Commission and Revenue pages. |
 | 2.0 | 2026-08-10 | Senior System Engineer | Updated structure to fully conform to standard functional specification template, integrating detailed specifications from Requirement and Development Rules documents. |
 | 3.0 | 2026-08-11 | Senior System Engineer | Added Revenue Target Progress (configurable gauge bar) and AI Revenue Forecast (dotted line chart) features to the Revenue Dashboard. |
+| 4.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID definitions to UUID format, released final specification. |
 
 ---
 

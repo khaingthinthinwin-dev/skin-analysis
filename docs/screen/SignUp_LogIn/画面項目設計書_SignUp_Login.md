@@ -1,4 +1,4 @@
-# Screen Items Specification (画面項目設計書) — Sign-up / Login
+ rea# Screen Items Specification (画面項目設計書) — Sign-up / Login
 
 **Document ID:** SKM-SIS-SCR-001  
 **Target Screen:** Authentication (Sign-up / Login)  

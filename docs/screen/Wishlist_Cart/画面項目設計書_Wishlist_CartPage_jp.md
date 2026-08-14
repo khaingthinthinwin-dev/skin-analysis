@@ -4,9 +4,9 @@
 **対象画面:** お気に入り & カートページ  
 **サブシステム:** バイヤーモジュール — お気に入り管理 & ショッピングカート  
 **機能ID:** FN-WISH-001, FN-CART-001  
-**バージョン:** 1.2  
+**バージョン:** 2.0  
 **作成日:** 2026-08-08  
-**最終更新日:** 2026-08-12  
+**最終更新日:** 2026-08-14  
 **著者:** シニアシステムエンジニア   
 **レビュー状態:** 承認済み  
 **分類:** 社内 — エンジニアリング部門
@@ -20,6 +20,7 @@
 | 1.0 | 2026-08-08 | シニアシステムエンジニア | 初版リリース。お気に入りおよびカートページの包括的な画面項目設計書。 |
 | 1.1 | 2026-08-12 | シニアシステムエンジニア | カート「すべて削除」機能を追加: `btnCartClearAll` 項目、`dlgCartClearConfirm` 確認ダイアログ、`DELETE /api/v1/cart` API仕様、i18nキー、バリデーションエラーコード、テストケース。 |
 | 1.2 | 2026-08-12 | シニアシステムエンジニア | リダイレクトURLのリダイレクトを追加: `btnGuestAlertLogin` が `/login?redirect={currentPath}` にナビゲートするように変更。動作仕様に現在パスのキャプチャとログイン後のリダイレクトロジックを追加。ゲストユーザーテストを更新。 |
+| 2.0 | 2026-08-14 | シニアシステムエンジニア | REQUIREMENT_SPEC v1.5およびDATABASE_SPEC v2.0に準拠：ID形式をCUIDからUUID形式に更新、DBマッピングデータ型をUUIDに修正、アクセス権限をバイヤーロールのみに制限。 |
 
 ### 1.2 関連ドキュメント
 
@@ -44,7 +45,7 @@
 | **主要アクター** | 認証済みバイヤー |
 | **認証要件** | JWT Bearer Token |
 | **データスコープ** | 自分のお気に入り商品、自分のカート商品 |
-| **アクセス制御** | 保護ルート — JwtAuthGuard 適用 |
+| **アクセス制御** | 保護ルート — JwtAuthGuard 適用。バイヤーロール（Buyer）のみに制限（マーチャントおよび管理者は403 Forbiddenでアクセス不可）。 |
 | **ゲスト動作** | カートは永続化されない；お気に入りは利用不可。ゲストユーザーが「カートに追加」または「お気に入りに追加」を操作するとアラートモーダルが表示される。 |
 
 ### 2.3 主要機能・基本設計方針
@@ -452,7 +453,7 @@
 
 | フォームフィールド | APIフィールド | データベースカラム | テーブル | データ型 |
 | :--- | :--- | :--- | :--- | :--- |
-| `imgWishlistProduct` | `productId` | `product_id` | `wishlists` | VARCHAR(25) FK |
+| `imgWishlistProduct` | `productId` | `product_id` | `wishlists` | UUID FK |
 | `lnkWishlistProductName` | `productName` | `name` | `products` | VARCHAR(255) |
 | `lblWishlistProductPrice` | `productPrice` | `price` | `products` | NUMERIC(10,2) |
 | `lblWishlistComparePrice` | `compareAtPrice` | `compare_at_price` | `products` | NUMERIC(10,2) |
@@ -463,7 +464,7 @@
 
 | フォームフィールド | APIフィールド | データベースカラム | テーブル | データ型 |
 | :--- | :--- | :--- | :--- | :--- |
-| `imgCartProduct` | `productId` | `product_id` | `cart_items` | VARCHAR(25) FK |
+| `imgCartProduct` | `productId` | `product_id` | `cart_items` | UUID FK |
 | `lnkCartProductName` | `productName` | `name` | `products` | VARCHAR(255) |
 | `lblCartUnitPrice` | `unitPrice` | `price` | `products` | NUMERIC(10,2) |
 | `txtCartQuantity` | `quantity` | `quantity` | `cart_items` | INTEGER |
@@ -480,8 +481,8 @@
 {
   "data": [
     {
-      "id": "clx001wishlist01",
-      "productId": "clx001product01",
+      "id": "e4b10b06-0370-4357-9dbd-8de5a97df778",
+      "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
       "productName": "Vitamin C Serum",
       "productSlug": "vitamin-c-serum",
       "productImage": "/uploads/products/vitamin-c-serum.webp",
@@ -505,8 +506,8 @@
   "data": {
     "items": [
       {
-        "id": "clx001cart01",
-        "productId": "clx001product01",
+        "id": "3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f",
+        "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
         "productName": "Vitamin C Serum",
         "productSlug": "vitamin-c-serum",
         "productImage": "/uploads/products/vitamin-c-serum.webp",
@@ -531,8 +532,8 @@
 ```json
 {
   "data": {
-    "id": "clx001wishlist01",
-    "productId": "clx001product01",
+    "id": "e4b10b06-0370-4357-9dbd-8de5a97df778",
+    "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
 }
@@ -543,8 +544,8 @@
 ```json
 {
   "data": {
-    "id": "clx001cart01",
-    "productId": "clx001product01",
+    "id": "3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f",
+    "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
     "quantity": 1,
     "unitPrice": "39.99",
     "subtotal": "39.99",
@@ -560,8 +561,8 @@
 ```json
 {
   "data": {
-    "id": "clx001cart01",
-    "productId": "clx001product01",
+    "id": "3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f",
+    "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
     "quantity": 3,
     "unitPrice": "39.99",
     "subtotal": "119.97",
@@ -581,7 +582,7 @@
   "errorCode": "VAL-CART-004",
   "message": "Only 2 available in stock",
   "timestamp": "2026-08-08T12:00:00.000Z",
-  "path": "/api/v1/cart/items/clx001cart01"
+  "path": "/api/v1/cart/items/3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f"
 }
 ```
 
@@ -594,7 +595,7 @@
   "errorCode": "VAL-WISH-002",
   "message": "Product already in wishlist",
   "timestamp": "2026-08-08T12:00:00.000Z",
-  "path": "/api/v1/wishlist/clx001product01"
+  "path": "/api/v1/wishlist/6b72a6b2-60cc-483a-867c-1b77df7f7dc8"
 }
 ```
 

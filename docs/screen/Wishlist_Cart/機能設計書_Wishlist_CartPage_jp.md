@@ -10,9 +10,9 @@
 | **対象画面** | お気に入り＆カートページ |
 | **サブシステム** | 購入者モジュール — お気に入り管理＆ショッピングカート |
 | **機能ID** | FN-WISH-001, FN-CART-001 |
-| **バージョン** | 1.2 |
+| **バージョン** | 2.0 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-07 |
+| **最終更新日** | 2026-08-14 |
 | **作成者** | ソフトウェアアーキテクト |
 | **ステータス** | 承認済み |
 | **分類** | 社内 — 技術部門 |
@@ -26,6 +26,7 @@
 | 1.0 | 2026-08-05 | ソフトウェアアーキテクト | お気に入りおよびカートページの初期機能設計書。ユースケース、ビジネスルール、バリデーション、エラー処理、権限制御を網羅。 |
 | 1.1 | 2026-08-07 | ソフトウェアアーキテクト | カートページの小計は単価×数量のみ（割引なし）であることを明記。クーポンコード入力と割引計算はチェックアウトページで行われることを追記。 |
 | 1.2 | 2026-08-07 | ソフトウェアアーキテクト | ゲストユーザーの動作を追加：アラートモーダル「カートに商品を追加するにはログインしてください。」[ログイン]ボタンで/loginに遷移。UC-CART-005、BR-CART-0010、EL-36を追加し、カートワークフローダイアグラムを更新。 |
+| 2.0 | 2026-08-14 | ソフトウェアアーキテクト | REQUIREMENT_SPEC v1.5およびDATABASE_SPEC v2.0に準拠：ID形式をCUIDからUUID形式に更新、アクセス権限をバイヤーロールのみに制限（マーチャントおよび管理者は403 Forbidden）。 |
 
 ---
 
@@ -588,13 +589,13 @@
 
 | フィールド | 表示名（EN） | 表示名（JA） | データ型＆長さ | 必須 | バリデーション |
 |-----------|-------------|-------------|--------------|:----:|--------------|
-| `productId` | Product ID | 商品ID | VARCHAR(25) | Yes | `@IsString()`、`@IsNotEmpty()`、CUID形式 |
+| `productId` | Product ID | 商品ID | UUID | Yes | `@IsUUID()`、`@IsNotEmpty()`、UUID形式 |
 
 ### 7.2 入力仕様 — カートに追加
 
 | フィールド | 表示名（EN） | 表示名（JA） | データ型＆長さ | 必須 | バリデーション |
 |-----------|-------------|-------------|--------------|:----:|--------------|
-| `productId` | Product ID | 商品ID | VARCHAR(25) | Yes | `@IsString()`、`@IsNotEmpty()`、CUID形式 |
+| `productId` | Product ID | 商品ID | UUID | Yes | `@IsUUID()`、`@IsNotEmpty()`、UUID形式 |
 | `quantity` | Quantity | 数量 | INTEGER | No（デフォルト：1） | `@IsInt()`、`@Min(1)`、`@Max(99)` |
 
 ### 7.3 入力仕様 — カート数量更新
@@ -607,8 +608,8 @@
 
 | フィールド | データソース | 表示形式 |
 |-----------|-------------|----------|
-| `id` | `wishlists.id` | CUID文字列 |
-| `productId` | `wishlists.product_id` | CUID文字列 |
+| `id` | `wishlists.id` | UUID文字列 |
+| `productId` | `wishlists.product_id` | UUID文字列 |
 | `productName` | `products.name` | 文字列 |
 | `productSlug` | `products.slug` | URLフレンドリー文字列 |
 | `productImage` | `products.images[0]` | URL文字列 |
@@ -622,8 +623,8 @@
 
 | フィールド | データソース | 表示形式 |
 |-----------|-------------|----------|
-| `id` | カート商品ID | CUID文字列 |
-| `productId` | 商品参照 | CUID文字列 |
+| `id` | カート商品ID | UUID文字列 |
+| `productId` | 商品参照 | UUID文字列 |
 | `productName` | `products.name` | 文字列 |
 | `productSlug` | `products.slug` | URLフレンドリー文字列 |
 | `productImage` | `products.images[0]` | URL文字列 |
@@ -652,7 +653,7 @@
 
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-----------|-------------------|----------------------|----------------------|
-| `productId` | 必須、有効なCUID形式 | "Product ID is required" / "Invalid product ID" | 「商品IDは必須です」/「無効な商品IDです」 |
+| `productId` | 必須、有効なUUID形式 | "Product ID is required" / "Invalid product ID" | 「商品IDは必須です」/「無効な商品IDです」 |
 | — | 商品が存在しアクティブであること | "Product not found or unavailable" | 「商品が見つからないか利用できません」 |
 | — | 商品がお気に入りに既に存在しないこと | "Product already in wishlist" | 「商品は既にお気に入りに追加されています」 |
 
@@ -660,7 +661,7 @@
 
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-----------|-------------------|----------------------|----------------------|
-| `productId` | 必須、有効なCUID形式 | "Product ID is required" / "Invalid product ID" | 「商品IDは必須です」/「無効な商品IDです」 |
+| `productId` | 必須、有効なUUID形式 | "Product ID is required" / "Invalid product ID" | 「商品IDは必須です」/「無効な商品IDです」 |
 | `quantity` | オプション、整数≥1、≤99 | "Quantity must be at least 1" / "Quantity cannot exceed 99" | 「数量は1以上である必要があります」/「数量は99を超えることはできません」 |
 | — | 商品が存在、アクティブ、在庫>0であること | "Product is out of stock" | 「商品は在庫切れです」 |
 | — | 商品が既にカートにある場合、新数量≤在庫 | "Insufficient stock" | 「在庫が不足しています」 |
@@ -687,10 +688,10 @@
 ```json
 {
   "statusCode": 400,
-  "message": ["productId must be a valid CUID"],
+  "message": ["productId must be a valid UUID"],
   "error": "Bad Request",
   "timestamp": "2026-08-05T12:00:00.000Z",
-  "path": "/api/v1/wishlist/abc123"
+  "path": "/api/v1/wishlist/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 }
 ```
 
@@ -750,8 +751,8 @@
 | ロール | お気に入りにアクセス可能 | カートにアクセス可能 | 備考 |
 |--------|:---------------------:|:-------------------:|------|
 | `buyer` | ✓ | ✓ | これらの機能の主要ユーザー |
-| `merchant` | ✓ | ✓ | 購入者機能も利用可能 |
-| `admin` | ✓ | ✓ | 完全アクセス |
+| `merchant` | ✗ | ✗ | アクセス拒否："Shopping features are only available to buyers" (403 Forbidden) |
+| `admin` | ✗ | ✗ | アクセス拒否："Shopping features are only available to buyers" (403 Forbidden) |
 
 ### 10.4 所有ルール
 

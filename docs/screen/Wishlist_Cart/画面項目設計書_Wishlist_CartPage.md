@@ -4,9 +4,9 @@
 **Target Screen:** Wishlist & Cart Page (お気に入り & カートページ)  
 **Subsystem:** Buyer Module — Wishlist Management & Shopping Cart  
 **Function ID:** FN-WISH-001, FN-CART-001  
-**Version:** 1.2  
+**Version:** 2.0  
 **Created:** 2026-08-08  
-**Last Updated:** 2026-08-12  
+**Last Updated:** 2026-08-14  
 **Author:** Senior System Engineer   
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -20,6 +20,7 @@
 | 1.0 | 2026-08-08 | Senior System Engineer | Initial release. Comprehensive screen items specification for Wishlist and Cart pages. |
 | 1.1 | 2026-08-12 | Senior System Engineer | Added "Clear All" cart functionality: `btnCartClearAll` item, `dlgCartClearConfirm` confirmation dialog, `DELETE /api/v1/cart` API behavior, i18n keys, validation error code, and test cases. |
 | 1.2 | 2026-08-12 | Senior System Engineer | Added return URL redirect after login: `btnGuestAlertLogin` now navigates to `/login?redirect={currentPath}`. Updated behavior spec to capture current path and post-login redirect logic. Updated guest user tests. |
+| 2.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, corrected DB mapping types to UUID, and restricted screen access to Buyer role only. |
 
 ### 1.2 Related Documents
 
@@ -44,7 +45,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | **Primary Actors** | Authenticated Buyer |
 | **Required Authentication** | JWT Bearer Token |
 | **Data Scope** | Own wishlist items, Own cart items |
-| **Access Control** | Protected routes — JwtAuthGuard applied |
+| **Access Control** | Protected routes — JwtAuthGuard applied. Restricted to Buyer role only (Merchants and Admins are denied access with 403 Forbidden). |
 | **Guest Behavior** | Cart not persisted; wishlist unavailable. Guest users triggering "Add to Cart" or "Add to Wishlist" see an alert modal. |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
@@ -452,7 +453,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `imgWishlistProduct` | `productId` | `product_id` | `wishlists` | VARCHAR(25) FK |
+| `imgWishlistProduct` | `productId` | `product_id` | `wishlists` | UUID FK |
 | `lnkWishlistProductName` | `productName` | `name` | `products` | VARCHAR(255) |
 | `lblWishlistProductPrice` | `productPrice` | `price` | `products` | NUMERIC(10,2) |
 | `lblWishlistComparePrice` | `compareAtPrice` | `compare_at_price` | `products` | NUMERIC(10,2) |
@@ -463,7 +464,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `imgCartProduct` | `productId` | `product_id` | `cart_items` | VARCHAR(25) FK |
+| `imgCartProduct` | `productId` | `product_id` | `cart_items` | UUID FK |
 | `lnkCartProductName` | `productName` | `name` | `products` | VARCHAR(255) |
 | `lblCartUnitPrice` | `unitPrice` | `price` | `products` | NUMERIC(10,2) |
 | `txtCartQuantity` | `quantity` | `quantity` | `cart_items` | INTEGER |
@@ -480,8 +481,8 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 {
   "data": [
     {
-      "id": "clx001wishlist01",
-      "productId": "clx001product01",
+      "id": "e4b10b06-0370-4357-9dbd-8de5a97df778",
+      "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
       "productName": "Vitamin C Serum",
       "productSlug": "vitamin-c-serum",
       "productImage": "/uploads/products/vitamin-c-serum.webp",
@@ -505,8 +506,8 @@ The Wishlist page allows authenticated users to view and manage their saved prod
   "data": {
     "items": [
       {
-        "id": "clx001cart01",
-        "productId": "clx001product01",
+        "id": "3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f",
+        "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
         "productName": "Vitamin C Serum",
         "productSlug": "vitamin-c-serum",
         "productImage": "/uploads/products/vitamin-c-serum.webp",
@@ -531,8 +532,8 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 ```json
 {
   "data": {
-    "id": "clx001wishlist01",
-    "productId": "clx001product01",
+    "id": "e4b10b06-0370-4357-9dbd-8de5a97df778",
+    "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
 }
@@ -543,8 +544,8 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 ```json
 {
   "data": {
-    "id": "clx001cart01",
-    "productId": "clx001product01",
+    "id": "3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f",
+    "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
     "quantity": 1,
     "unitPrice": "39.99",
     "subtotal": "39.99",
@@ -560,8 +561,8 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 ```json
 {
   "data": {
-    "id": "clx001cart01",
-    "productId": "clx001product01",
+    "id": "3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f",
+    "productId": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
     "quantity": 3,
     "unitPrice": "39.99",
     "subtotal": "119.97",
@@ -581,7 +582,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
   "errorCode": "VAL-CART-004",
   "message": "Only 2 available in stock",
   "timestamp": "2026-08-08T12:00:00.000Z",
-  "path": "/api/v1/cart/items/clx001cart01"
+  "path": "/api/v1/cart/items/3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f"
 }
 ```
 
@@ -594,7 +595,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
   "errorCode": "VAL-WISH-002",
   "message": "Product already in wishlist",
   "timestamp": "2026-08-08T12:00:00.000Z",
-  "path": "/api/v1/wishlist/clx001product01"
+  "path": "/api/v1/wishlist/6b72a6b2-60cc-483a-867c-1b77df7f7dc8"
 }
 ```
 

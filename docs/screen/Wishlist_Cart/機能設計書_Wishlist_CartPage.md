@@ -10,9 +10,9 @@
 | **Target Screen** | Wishlist & Cart Page (お気に入り & カートページ) |
 | **Subsystem** | Buyer Module — Wishlist Management & Shopping Cart |
 | **Function ID** | FN-WISH-001, FN-CART-001 |
-| **Version** | 1.2 |
+| **Version** | 2.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-07 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -26,6 +26,7 @@
 | 1.0 | 2026-08-05 | Software Architect | Initial functional specification for Wishlist and Cart pages covering use cases, business rules, validation, error handling, and permission control. |
 | 1.1 | 2026-08-07 | Software Architect | Clarified that cart page subtotal is unit_price × quantity only (no discounts). Added note that coupon code entry and discount calculation occur on the checkout page. |
 | 1.2 | 2026-08-07 | Software Architect | Added guest user behavior: alert modal "Please log in to add items to your cart." with [Log in] button navigating to /login. Added UC-CART-005, BR-CART-0010, EL-36, and updated cart workflow diagram. |
+| 2.0 | 2026-08-14 | Software Architect | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, restricted wishlist and cart access to Buyer role only (Merchants and Admins get 403 Forbidden). |
 
 ---
 
@@ -586,13 +587,13 @@ This screen is responsible for the following core functional areas:
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
-| `productId` | Product ID | 商品ID | VARCHAR(25) | Yes | `@IsString()`, `@IsNotEmpty()`, CUID format |
+| `productId` | Product ID | 商品ID | UUID | Yes | `@IsUUID()`, `@IsNotEmpty()`, UUID format |
 
 ### 7.2 Input Specification — Add to Cart (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
-| `productId` | Product ID | 商品ID | VARCHAR(25) | Yes | `@IsString()`, `@IsNotEmpty()`, CUID format |
+| `productId` | Product ID | 商品ID | UUID | Yes | `@IsUUID()`, `@IsNotEmpty()`, UUID format |
 | `quantity` | Quantity | 数量 | INTEGER | No (default: 1) | `@IsInt()`, `@Min(1)`, `@Max(99)` |
 
 ### 7.3 Input Specification — Update Cart Quantity (入力定義)
@@ -605,8 +606,8 @@ This screen is responsible for the following core functional areas:
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `wishlists.id` | CUID string |
-| `productId` | `wishlists.product_id` | CUID string |
+| `id` | `wishlists.id` | UUID string |
+| `productId` | `wishlists.product_id` | UUID string |
 | `productName` | `products.name` | String |
 | `productSlug` | `products.slug` | URL-friendly string |
 | `productImage` | `products.images[0]` | URL string |
@@ -620,8 +621,8 @@ This screen is responsible for the following core functional areas:
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | Cart item ID | CUID string |
-| `productId` | Product reference | CUID string |
+| `id` | Cart item ID | UUID string |
+| `productId` | Product reference | UUID string |
 | `productName` | `products.name` | String |
 | `productSlug` | `products.slug` | URL-friendly string |
 | `productImage` | `products.images[0]` | URL string |
@@ -650,7 +651,7 @@ This screen is responsible for the following core functional areas:
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
-| `productId` | Required, valid CUID format | "Product ID is required" / "Invalid product ID" | "商品IDは必須です" / "無効な商品IDです" |
+| `productId` | Required, valid UUID format | "Product ID is required" / "Invalid product ID" | "商品IDは必須です" / "無効な商品IDです" |
 | — | Product must exist and be active | "Product not found or unavailable" | "商品が見つからないか利用できません" |
 | — | Product must not already be in wishlist | "Product already in wishlist" | "商品は既にお気に入りに追加されています" |
 
@@ -658,7 +659,7 @@ This screen is responsible for the following core functional areas:
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
-| `productId` | Required, valid CUID format | "Product ID is required" / "Invalid product ID" | "商品IDは必須です" / "無効な商品IDです" |
+| `productId` | Required, valid UUID format | "Product ID is required" / "Invalid product ID" | "商品IDは必須です" / "無効な商品IDです" |
 | `quantity` | Optional, integer ≥ 1, ≤ 99 | "Quantity must be at least 1" / "Quantity cannot exceed 99" | "数量は1以上である必要があります" / "数量は99を超えることはできません" |
 | — | Product must exist, be active, and have stock > 0 | "Product is out of stock" | "商品は在庫切れです" |
 | — | If product already in cart, new quantity ≤ stock | "Insufficient stock" | "在庫が不足しています" |
@@ -685,10 +686,10 @@ This screen is responsible for the following core functional areas:
 ```json
 {
   "statusCode": 400,
-  "message": ["productId must be a valid CUID"],
+  "message": ["productId must be a valid UUID"],
   "error": "Bad Request",
   "timestamp": "2026-08-05T12:00:00.000Z",
-  "path": "/api/v1/wishlist/abc123"
+  "path": "/api/v1/wishlist/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 }
 ```
 
@@ -748,8 +749,8 @@ This screen is responsible for the following core functional areas:
 | Role | Can Access Wishlist | Can Access Cart | Notes |
 |------|:-------------------:|:---------------:|-------|
 | `buyer` | ✓ | ✓ | Primary users of these features |
-| `merchant` | ✓ | ✓ | Can also use buyer features |
-| `admin` | ✓ | ✓ | Full access |
+| `merchant` | ✗ | ✗ | Forbidden: "Shopping features are only available to buyers" (403 Forbidden) |
+| `admin` | ✗ | ✗ | Forbidden: "Shopping features are only available to buyers" (403 Forbidden) |
 
 
 ### 10.4 Ownership Rules

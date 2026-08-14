@@ -4,7 +4,7 @@
 **Target Screen:** Search & Filter Page (検索・フィルタページ)  
 **Subsystem:** Buyer Module — Product Search, Filtering, Sorting & Pagination  
 **Function ID:** FN-SEARCH-001  
-**Version:** 1.1  
+**Version:** 2.0  
 **Created:** 2026-08-07  
 **Last Updated:** 2026-08-14  
 **Author:** Senior System Engineer  
@@ -21,6 +21,7 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-10 | Senior System Engineer | Initial release. Screen items specification for the Search & Filter page covering keyword search, category browsing, multi-dimensional filtering, sorting, pagination, active filter chips, and responsive filter drawer. Aligned with SKM-FDS-SEARCH-001 and PRWM-SIS-SCR-001 format. |
 | 1.1 | 2026-08-14 | Senior System Engineer | Added Grid/List view toggle specification: screen items `tglViewMode` / `btnGridMode` / `btnListMode` (Sec 4.4), behavior (Sec 5.14), i18n keys (Sec 9), shared ViewToggle component (Sec 10.7), UI/UX & accessibility notes (Sec 11), and test checklist (Sec 12.6). View mode defaults to Grid, persists to localStorage, and leaves URL-based search/filter/sort/pagination state unchanged. |
+| 2.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, corrected DB mapping types to UUID. |
 
 ### 1.2 Related Documents
 
@@ -339,7 +340,7 @@ The Search & Filter page is the discovery and exploration entry point within the
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-SEARCH-001** | `txtSearch` (`q`) | Keyword exceeds 255 characters | Red border. Text below field. | "Keyword must be 255 characters or fewer" | "キーワードは255文字以内である必要があります" |
-| **VAL-SEARCH-002** | `chkCategory` (`categoryId`) | Invalid category ID format (CUID) | Red border. Text below field. | "Invalid category ID" | "無効なカテゴリIDです" |
+| **VAL-SEARCH-002** | `chkCategory` (`categoryId`) | Invalid category ID format (UUID) | Red border. Text below field. | "Invalid category ID" | "無効なカテゴリIDです" |
 | **VAL-SEARCH-003** | `chkSkinType` (`skinTypes`) | Invalid skin type enum value | Red border. Text below field. | "Invalid skin type" | "無効な肌タイプです" |
 | **VAL-SEARCH-004** | `chkIngredient` (`ingredients`) | Ingredients is not an array of strings | Red border. Text below field. | "Invalid ingredients" | "無効な成分です" |
 | **VAL-SEARCH-005** | `txtMinPrice` | Min price is less than 0 | Red border. Text below field. | "Minimum price must be 0 or more" | "最低価格は0以上である必要があります" |
@@ -368,7 +369,7 @@ The Search & Filter page is the discovery and exploration entry point within the
 | Form / UI Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
 | `txtSearch` | `q` | `name` / `short_description` / `tags` / `ingredients` | `products` | VARCHAR / TEXT / TEXT[] (partial case-insensitive match) |
-| `chkCategory` | `categoryId` | `id` | `categories` | VARCHAR(25) (CUID) |
+| `chkCategory` | `categoryId` | `id` | `categories` | UUID FK |
 | `chkSkinType` | `skinTypes` | `skin_types` | `products` | TEXT[] enum (`hasEvery`) |
 | `chkIngredient` | `ingredients` | `ingredients` | `products` | TEXT[] (`hasSome`) |
 | `txtMinPrice` | `minPrice` | `price` | `products` | NUMERIC(10,2) |
@@ -390,19 +391,19 @@ The Search & Filter page is the discovery and exploration entry point within the
 {
   "data": [
     {
-      "id": "clx1234567890",
+      "id": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
       "name": "Gentle Foaming Cleanser",
       "slug": "gentle-foaming-cleanser",
       "shortDescription": "pH-balanced cleanser for oily skin",
       "price": "29.99",
       "compareAtPrice": "39.99",
-      "images": ["https://cdn.example.com/products/clx1234567890/main.webp"],
+      "images": ["https://cdn.example.com/products/6b72a6b2-60cc-483a-867c-1b77df7f7dc8/main.webp"],
       "skinTypes": ["oily", "combination"],
       "tags": ["cleanser", "fragrance-free"],
       "avgRating": "4.5",
       "reviewCount": 128,
       "isInStock": true,
-      "category": { "id": "clxcat001", "name": "Cleansers", "slug": "cleansers" }
+      "category": { "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", "name": "Cleansers", "slug": "cleansers" }
     }
   ],
   "meta": {
@@ -422,14 +423,14 @@ The Search & Filter page is the discovery and exploration entry point within the
 {
   "data": [
     {
-      "id": "clxcat001",
+      "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
       "name": "Skincare",
       "slug": "skincare",
-      "iconUrl": "https://cdn.example.com/categories/clxcat001/icon.webp",
+      "iconUrl": "https://cdn.example.com/categories/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/icon.webp",
       "sortOrder": 1,
       "children": [
         {
-          "id": "clxcat011",
+          "id": "3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f",
           "name": "Cleansers",
           "slug": "cleansers",
           "iconUrl": null,

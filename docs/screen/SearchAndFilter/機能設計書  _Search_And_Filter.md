@@ -10,9 +10,9 @@
 | **Target Screen** | Search & Filter Page (検索・フィルタページ) |
 | **Subsystem** | Buyer Module — Product Search, Filtering, Sorting & Pagination |
 | **Function ID** | FN-SEARCH-001 |
-| **Version** | 2.0 |
+| **Version** | 2.1 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-07 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -25,6 +25,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-05 | Software Architect | Initial functional specification for the Search and Filter page covering API endpoints, query parameters, frontend design, database operations, caching, error handling, and testing strategy. |
 | 2.0 | 2026-08-07 | Software Architect | Restructured to fully conform to the standard functional specification template, integrating detailed specifications from Requirement, Database, and Development Rules documents and aligning with the Sign-up/Login and Wishlist/Cart functional specification format. |
+| 2.1 | 2026-08-14 | Software Architect | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID. |
 
 ---
 
@@ -486,7 +487,7 @@ This screen is responsible for the following core functional areas:
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
 | `q` | Keyword | キーワード | VARCHAR(255) | No | `@IsOptional()`, `@MaxLength(255)` |
-| `categoryId` | Category | カテゴリ | VARCHAR(25) | No | `@IsOptional()`, CUID format |
+| `categoryId` | Category | カテゴリ | UUID | No | `@IsOptional()`, UUID format |
 | `skinTypes` | Skin Type | 肌タイプ | TEXT[] (comma-separated) | No | `@IsOptional()`, enum: dry/oily/combination/sensitive/normal |
 | `ingredients` | Ingredients | 成分 | TEXT[] (comma-separated) | No | `@IsOptional()`, `@IsArray()` |
 | `tags` | Tags | タグ | TEXT[] (comma-separated) | No | `@IsOptional()` |
@@ -508,7 +509,7 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `products.id` | CUID string |
+| `id` | `products.id` | UUID string |
 | `name` | `products.name` | String |
 | `slug` | `products.slug` | URL-friendly string |
 | `shortDescription` | `products.short_description` | String |
@@ -528,19 +529,19 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 {
   "data": [
     {
-      "id": "clx1234567890",
+      "id": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
       "name": "Gentle Foaming Cleanser",
       "slug": "gentle-foaming-cleanser",
       "shortDescription": "pH-balanced cleanser for oily skin",
       "price": "29.99",
       "compareAtPrice": "39.99",
-      "images": ["https://cdn.example.com/products/clx1234567890/main.webp"],
+      "images": ["https://cdn.example.com/products/6b72a6b2-60cc-483a-867c-1b77df7f7dc8/main.webp"],
       "skinTypes": ["oily", "combination"],
       "tags": ["cleanser", "fragrance-free"],
       "avgRating": "4.5",
       "reviewCount": 128,
       "isInStock": true,
-      "category": { "id": "clxcat001", "name": "Cleansers", "slug": "cleansers" }
+      "category": { "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", "name": "Cleansers", "slug": "cleansers" }
     }
   ],
   "meta": {
@@ -565,7 +566,7 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `categories.id` | CUID string |
+| `id` | `categories.id` | UUID string |
 | `name` | `categories.name` | String |
 | `slug` | `categories.slug` | URL-friendly string |
 | `iconUrl` | `categories.icon_url` | URL string or null |
@@ -581,7 +582,7 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `q` | Optional, max 255 chars | "Keyword must be 255 characters or fewer" | "キーワードは255文字以内である必要があります" |
-| `categoryId` | Optional, valid CUID format | "Invalid category ID" | "無効なカテゴリIDです" |
+| `categoryId` | Optional, valid UUID format | "Invalid category ID" | "無効なカテゴリIDです" |
 | `skinTypes` | Optional, valid enum values | "Invalid skin type" | "無効な肌タイプです" |
 | `ingredients` | Optional, array of strings | "Invalid ingredients" | "無効な成分です" |
 | `minPrice` | Optional, ≥ 0 | "Minimum price must be 0 or more" | "最低価格は0以上である必要があります" |

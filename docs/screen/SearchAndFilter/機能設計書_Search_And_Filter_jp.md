@@ -10,9 +10,9 @@
 | **対象画面** | 検索・フィルタページ |
 | **サブシステム** | 購入者モジュール — 商品検索、フィルタリング、並び替え、ページネーション |
 | **機能ID** | FN-SEARCH-001 |
-| **バージョン** | 2.0 |
+| **バージョン** | 2.1 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-07 |
+| **最終更新日** | 2026-08-14 |
 | **著者** | ソフトウェアアーキテクト |
 | **ステータス** | 承認済み |
 | **分類** | 社内 — エンジニアリング部門 |
@@ -25,6 +25,7 @@
 |-----------|------|------|----------|
 | 1.0 | 2026-08-05 | ソフトウェアアーキテクト | 検索・フィルタページの初期機能設計書。APIエンドポイント、クエリパラメータ、フロントエンド設計、データベース操作、キャッシュ、エラーハンドリング、テスト戦略をカバー。 |
 | 2.0 | 2026-08-07 | ソフトウェアアーキテクト | 標準機能設計書テンプレートに完全準拠するよう構成を更新。要件定義、データベース設計、開発ルールの詳細仕様を統合し、サインアップ／ログインおよびウィッシュリスト／カートの機能設計書フォーマットと整合。 |
+| 2.1 | 2026-08-14 | ソフトウェアアーキテクト | REQUIREMENT_SPEC v1.5およびDATABASE_SPEC v2.0に準拠：ID形式をCUIDからUUID形式に更新。 |
 
 ---
 
@@ -484,7 +485,7 @@
 | フィールド | 表示名（EN） | 表示名（JA） | データ型・長さ | 必須 | バリデーション |
 |-----------|-------------|-------------|---------------|:----:|----------------|
 | `q` | Keyword | キーワード | VARCHAR(255) | 任意 | `@IsOptional()`、`@MaxLength(255)` |
-| `categoryId` | Category | カテゴリ | VARCHAR(25) | 任意 | `@IsOptional()`、CUID形式 |
+| `categoryId` | Category | カテゴリ | UUID | 任意 | `@IsOptional()`、UUID形式 |
 | `skinTypes` | Skin Type | 肌タイプ | TEXT[]（カンマ区切り） | 任意 | `@IsOptional()`、enum：dry/oily/combination/sensitive/normal |
 | `ingredients` | Ingredients | 成分 | TEXT[]（カンマ区切り） | 任意 | `@IsOptional()`、`@IsArray()` |
 | `tags` | Tags | タグ | TEXT[]（カンマ区切り） | 任意 | `@IsOptional()` |
@@ -506,7 +507,7 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 
 | フィールド | データソース | 表示形式 |
 |-----------|-------------|----------|
-| `id` | `products.id` | CUID文字列 |
+| `id` | `products.id` | UUID文字列 |
 | `name` | `products.name` | 文字列 |
 | `slug` | `products.slug` | URLフレンドリーな文字列 |
 | `shortDescription` | `products.short_description` | 文字列 |
@@ -526,19 +527,19 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 {
   "data": [
     {
-      "id": "clx1234567890",
+      "id": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
       "name": "Gentle Foaming Cleanser",
       "slug": "gentle-foaming-cleanser",
       "shortDescription": "pH-balanced cleanser for oily skin",
       "price": "29.99",
       "compareAtPrice": "39.99",
-      "images": ["https://cdn.example.com/products/clx1234567890/main.webp"],
+      "images": ["https://cdn.example.com/products/6b72a6b2-60cc-483a-867c-1b77df7f7dc8/main.webp"],
       "skinTypes": ["oily", "combination"],
       "tags": ["cleanser", "fragrance-free"],
       "avgRating": "4.5",
       "reviewCount": 128,
       "isInStock": true,
-      "category": { "id": "clxcat001", "name": "Cleansers", "slug": "cleansers" }
+      "category": { "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", "name": "Cleansers", "slug": "cleansers" }
     }
   ],
   "meta": {
@@ -563,7 +564,7 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 
 | フィールド | データソース | 表示形式 |
 |-----------|-------------|----------|
-| `id` | `categories.id` | CUID文字列 |
+| `id` | `categories.id` | UUID文字列 |
 | `name` | `categories.name` | 文字列 |
 | `slug` | `categories.slug` | URLフレンドリーな文字列 |
 | `iconUrl` | `categories.icon_url` | URL文字列またはnull |
@@ -579,7 +580,7 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-----------|---------------------|------------------------|------------------------|
 | `q` | 任意、最大255文字 | "Keyword must be 255 characters or fewer" | "キーワードは255文字以内である必要があります" |
-| `categoryId` | 任意、有効なCUID形式 | "Invalid category ID" | "無効なカテゴリIDです" |
+| `categoryId` | 任意、有効なUUID形式 | "Invalid category ID" | "無効なカテゴリIDです" |
 | `skinTypes` | 任意、有効なenum値 | "Invalid skin type" | "無効な肌タイプです" |
 | `ingredients` | 任意、文字列の配列 | "Invalid ingredients" | "無効な成分です" |
 | `minPrice` | 任意、≥ 0 | "Minimum price must be 0 or more" | "最低価格は0以上である必要があります" |
