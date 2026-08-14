@@ -4,9 +4,9 @@
 **対象画面:** レビュー・コンテンツ管理  
 **サブシステム:** 管理 — レビュー管理・コンテンツ管理  
 **機能ID:** FN-MOD-001  
-**バージョン:** 1.3  
+**バージョン:** 1.4  
 **作成日:** 2026-08-08  
-**最終更新日:** 2026-08-12  
+**最終更新日:** 2026-08-14  
 **著者:** シニアシステムエンジニア  
 **レビュー状態:** 承認済み  
 **分類:** 社内 — エンジニアリング部門
@@ -23,6 +23,7 @@
 | 1.1 | 2026-08-12 | シニアシステムエンジニア | 製品コンテンツ管理画面を追加（UC-MOD-004, BR-MOD-010~013）：製品テーブル、製品モデレーションモーダル、無効化/有効化フロー、データベースマッピング、APIレスポンス、i18nキー、テストチェックリスト。 |
 | 1.2 | 2026-08-12 | シニアシステムエンジニア | ユーザー管理画面を追加（`/admin/users`）：ユーザーテーブル、ユーザー詳細モーダル、有効化/無効化フロー（UC-MOD-006, BR-MOD-040~042）、データベースマッピング、APIレスポンス、i18nキー、テストチェックリスト。`is_approved IS NULL`をBR-MOD-002に従い正しい`is_approved = FALSE`に修正。 |
 | 1.3 | 2026-08-13 | シニアシステムエンジニア | データベース設計に従い製品モデレーションステータスから`PENDING_REVIEW`ステータスを削除（`products`テーブルに`status`カラムなし）。`statPendingReviewCount`、「保留中」フィルタタブ、製品一覧データベースマッピングの`status`フィールドを削除。レイアウト図、i18nキー、挙動仕様、テストチェックリストを相应に更新。 |
+| 1.4 | 2026-08-14 | シニアシステムエンジニア | コア要件v1.5およびDB設計v2.0に合わせ、UUID ID、デフォルト承認済みレビュー（有効な保留中レビューフィルタなし）、出品者承認の基準となる`license_status`、ショップ公開状態の同期、関連文書パス、ウェブサイト通知を反映。 |
 
 ### 1.2 関連ドキュメント
 
@@ -31,7 +32,7 @@
 | 1 | SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフローのロジック、必須フィールド、ルール。 |
 | 2 | SKM-DBS-001 | データベース設計書 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`reviews`、`products`、`shops`、`users`）、制約。 |
 | 3 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
-| 4 | SKM-FDS-MOD-001 | 機能設計書 — レビュー・コンテンツ管理 | `docs/screen/ReviewContentModeration/機能設計書_Review_Content_Moderation.md` | ユースケース、状態遷移、バリデーションルール、例外処理。 |
+| 4 | SKM-FDS-MOD-001 | 機能設計書 — レビュー・コンテンツ管理 | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | ユースケース、状態遷移、バリデーションルール、例外処理。 |
 
 ---
 
@@ -83,12 +84,12 @@
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [C] 統計バー（条件付き）                 │   │
-│  │   合計 | 保留中 | 承認済み | 却下済み                 │   │
+│  │   合計 | 承認済み | 却下済み                         │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [D] フィルタタブ                       │   │
-│  │   すべて | 保留中 | 承認済み | 却下済み              │   │
+│  │   すべて | 承認済み | 却下済み                      │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -368,15 +369,14 @@
 | 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 2 | `statTotalReviews` | レビュー合計数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(reviews)` | Tailwind: `bg-white rounded-lg p-4 shadow-sm`。 |
-| 3 | `statPendingCount` | 保留中レビュー数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(reviews WHERE is_approved = FALSE AND moderation_reason IS NOT NULL)` | 保留中カウント用のアンバーバッジ。備考：レビューはデフォルトで承認済み（`is_approved = true`）。保留中カウントは再承認待ちまたは手動レビュー中のレビューを反映します。 |
-| 4 | `statApprovedCount` | 承認済みレビュー数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(reviews WHERE is_approved = TRUE)` | グリーンバッジ。 |
-| 5 | `statRejectedCount` | 却下済みレビュー数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(reviews WHERE is_approved = FALSE)` | レッドバッジ。 |
+| 3 | `statApprovedCount` | 承認済みレビュー数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(reviews WHERE is_approved = TRUE)` | グリーンバッジ。 |
+| 4 | `statRejectedCount` | 却下済みレビュー数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(reviews WHERE is_approved = FALSE)` | レッドバッジ。 |
 
 ### 4.3 セクション [D]：フィルタタブ — レビュー
 
 | 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 6 | `tabFilterReviews` | フィルタタブ | タブグループ | Enum | — | デフォルト: "すべて" | 選択肢: すべて、保留中、承認済み、却下済み | — | i18nキー: `admin.reviews.tabs`。変更時にクエリパラメータを更新。 |
+| 6 | `tabFilterReviews` | フィルタタブ | タブグループ | Enum | — | デフォルト: "すべて" | 選択肢: すべて、承認済み、却下済み | — | i18nキー: `admin.reviews.tabs`。変更時にクエリパラメータを更新。 |
 
 ### 4.4 セクション [E]：検索・ソートバー
 
@@ -399,7 +399,7 @@
 | 16 | `lblProductName` | 製品名 | 静的ラベル | String | — | DBから設定 | — | `products.name` | `text-sm text-muted-foreground`。 |
 | 17 | `ratingStars` | 評価表示 | スターレーティング | Integer (1-5) | — | DBから設定 | — | `reviews.rating` | 1-5スタービューティング。Beauty Pink（#EC4899）。 |
 | 18 | `lblReviewTitle` | レビュータイトル | 静的ラベル | String | — | DBから設定または「—」 | — | `reviews.title` | 50文字で切り詰め。 |
-| 19 | `badgeReviewStatus` | レビューステータスバッジ | バッジ | Enum | — | グリーン（承認済み）、レッド（却下済み）、アンバー（保留中） | — | `reviews.is_approved` | 標準のステータスバッジカラー。 |
+| 19 | `badgeReviewStatus` | レビューステータスバッジ | バッジ | Enum | — | グリーン（承認済み）、レッド（却下済み） | — | `reviews.is_approved` | 標準のステータスバッジカラー。レビューはデフォルトで承認済み。 |
 | 20 | `lblCreatedDate` | 作成日 | 静的ラベル | DateTime | — | ISO 8601形式 | — | `reviews.created_at` | i18nによるローカライズ日付形式。 |
 | 21 | `ddlReviewActions` | アクションドロップダウン | ドロップダウンメニュー | — | — | 折りたたまれた状態 | 選択肢: 詳細表示、承認、却下、削除 | — | 破壊的アクションは確認を表示。 |
 
@@ -486,7 +486,7 @@
 | 48 | `lblShopName` | ショップ名 | 静的ラベル | String | — | DBから設定 | — | `shops.name` | `font-medium text-sm`。 |
 | 49 | `lblMerchantUserName` | 出品者ユーザー名 | 静的ラベル | String | — | DBから設定 | — | `users.name` | `text-sm text-muted-foreground`。 |
 | 50 | `lblMerchantRegDate` | 登録日 | 静的ラベル | DateTime | — | ISO 8601形式 | — | `shops.created_at` | ローカライズ日付形式。 |
-| 51 | `badgeMerchantStatus` | 出品者ステータスバッジ | バッジ | Enum | — | グリーン（承認済み）、アンバー（保留中）、レッド（却下済み） | — | `shops.is_approved` | 標準のステータスバッジカラー。 |
+| 51 | `badgeMerchantStatus` | 出品者ステータスバッジ | バッジ | Enum | — | グリーン（承認済み）、アンバー（保留中）、レッド（却下済み） | — | `merchants.license_status` | 標準のステータスバッジカラー。`shops.is_approved` は公開ショップ表示のため同期される。 |
 | 52 | `ddlMerchantActions` | アクションドロップダウン | ドロップダウンメニュー | — | — | 折りたたまれた状態 | 選択肢: 詳細表示、承認、却下 | — | 破壊的アクションは確認を表示。 |
 
 ### 4.17 セクション [R]：ページネーション — 出品者
@@ -722,11 +722,11 @@
 ## 5. 各項目における挙動・イベント仕様
 
 ### 5.1 レビュータブフィルタ変更（`tabFilterReviews` onChange）
-- **トリガー:** ユーザーがフィルタタブ（すべて、保留中、承認済み、却下済み）をクリック。
+- **トリガー:** ユーザーがフィルタタブ（すべて、承認済み、却下済み）をクリック。
 - **処理ロジック:**
-  1. URLクエリパラメータ `?status=pending|approved|rejected` を更新。
+  1. URLクエリパラメータ `?status=approved|rejected` を更新、または「すべて」の場合は `status` を削除。
   2. ページネーションをページ1にリセット。
-  3. `GET /api/v1/admin/reviews/pending?status={status}&page=1&limit=20` からフィルタ済みレビューを取得。
+  3. `GET /api/v1/admin/reviews?status={status}&page=1&limit=20` からフィルタ済みレビューを取得。
   4. 新しいデータでレビューテーブルを再レンダリング。
 - **例外処理:** ネットワークエラー: トースト「レビューの読み込みに失敗しました。もう一度お試しください。」を表示。
 
@@ -848,7 +848,7 @@
 - **トリガー:** ユーザーが出品者詳細モーダルの「承認」ボタンをクリック。
 - **処理ロジック:**
   1. **バックエンドディスパッチ:** `PATCH /api/v1/admin/merchants/:id/status` に `{ status: 'approved' }` を送信。
-  2. **バックエンド実行:** `shops.is_approved = true` を更新。監査ログを記録。
+  2. **バックエンド実行:** `merchants.license_status = 'approved'` を更新、`merchants.rejection_reason` をクリア、`reviewed_at`/`reviewed_by` を設定、`shops.is_approved = true` を同期、ウェブサイト通知を作成、監査ログを記録。
   3. **実行後UI:** モーダルを閉じる。成功トースト「出品者が承認されました」を表示。出品者リストを更新。
 - **例外処理:**
   - `409 CONFLICT`: トースト「出品者は既に承認済みです」を表示。
@@ -861,7 +861,7 @@
   1. **UI更新:** 却下理由テキストエリアを表示。
   2. **クライアント側事前チェック:** 理由が空でないことのバリデーション。
   3. **バックエンドディスパッチ:** `PATCH /api/v1/admin/merchants/:id/status` に `{ status: 'rejected', reason: '...' }` を送信。
-  4. **バックエンド実行:** `shops.is_approved = false` を更新。ショップの製品を無効化（`is_active = false`）。監査ログを記録。
+  4. **バックエンド実行:** `merchants.license_status = 'rejected'` を更新、`merchants.rejection_reason` を保存、`reviewed_at`/`reviewed_by` を設定、`shops.is_approved = false` を同期、出品者の製品を無効化（`is_active = false`）、ウェブサイト通知を作成、監査ログを記録。
   5. **実行後UI:** モーダルを閉じる。成功トースト「出品者が却下されました」を表示。出品者リストを更新。
 - **例外処理:**
   - `400 BAD_REQUEST`: インラインエラー「却下理由は必須です」を表示。
@@ -1098,8 +1098,8 @@
 
 | テーブルフィールド | APIレスポンスフィールド | データベースカラム | テーブル | データ型 |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `review.id` | `id` | `reviews` | VARCHAR(25) PK |
-| `user.name` | `review.user.name` | `name` | `users` | VARCHAR(200) |
+| `id` | `review.id` | `id` | `reviews` | UUID PK |
+| `user.name` | `review.user.name` | `name` | `users` | VARCHAR(255) |
 | `user.avatarUrl` | `review.user.avatarUrl` | `avatar_url` | `users` | VARCHAR(500) NULL |
 | `product.name` | `review.product.name` | `name` | `products` | VARCHAR(255) |
 | `product.images[0]` | `review.product.images[0]` | `images` | `products` | TEXT[] |
@@ -1124,14 +1124,16 @@
 
 | テーブルフィールド | APIレスポンスフィールド | データベースカラム | テーブル | データ型 |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `merchant.id` | `id` | `shops` | VARCHAR(25) PK |
-| `name` | `merchant.name` | `name` | `shops` | VARCHAR(200) |
-| `slug` | `merchant.slug` | `slug` | `shops` | VARCHAR(200) |
-| `logoUrl` | `merchant.logoUrl` | `logo_url` | `shops` | VARCHAR(500) NULL |
-| `user.name` | `merchant.user.name` | `name` | `users` | VARCHAR(200) |
+| `id` | `merchant.id` | `id` | `merchants` | UUID PK |
+| `shopName` | `merchant.shopName` | `shop_name` | `merchants` | VARCHAR(255) |
+| `licenseStatus` | `merchant.licenseStatus` | `license_status` | `merchants` | VARCHAR(20) |
+| `rejectionReason` | `merchant.rejectionReason` | `rejection_reason` | `merchants` | TEXT NULL |
+| `shop.slug` | `merchant.shop.slug` | `slug` | `shops` | VARCHAR(255) |
+| `shop.logoUrl` | `merchant.shop.logoUrl` | `logo_url` | `shops` | TEXT NULL |
+| `shop.isApproved` | `merchant.shop.isApproved` | `is_approved` | `shops` | BOOLEAN |
+| `user.name` | `merchant.user.name` | `name` | `users` | VARCHAR(255) |
 | `user.email` | `merchant.user.email` | `email` | `users` | VARCHAR(255) |
-| `isApproved` | `merchant.isApproved` | `is_approved` | `shops` | BOOLEAN |
-| `createdAt` | `merchant.createdAt` | `created_at` | `shops` | TIMESTAMPTZ |
+| `createdAt` | `merchant.createdAt` | `created_at` | `merchants` | TIMESTAMPTZ |
 
 ### 7.4 出品者詳細 → データベース
 
@@ -1148,7 +1150,7 @@
 
 | テーブルフィールド | APIレスポンスフィールド | データベースカラム | テーブル | データ型 |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `product.id` | `id` | `products` | VARCHAR(25) PK |
+| `id` | `product.id` | `id` | `products` | UUID PK |
 | `name` | `product.name` | `name` | `products` | VARCHAR(255) |
 | `slug` | `product.slug` | `slug` | `products` | VARCHAR(255) |
 | `images[0]` | `product.images[0]` | `images` | `products` | TEXT[] |
@@ -1165,7 +1167,7 @@
 | `description` | `product.description` | `description` | `products` | TEXT NULL |
 | `images` | `product.images` | `images` | `products` | TEXT[] |
 | `category.name` | `product.category.name` | `name` | `categories` | VARCHAR(200) |
-| `shop.id` | `product.shop.id` | `id` | `shops` | VARCHAR(25) |
+| `shop.id` | `product.shop.id` | `id` | `shops` | UUID |
 | `shop.logoUrl` | `product.shop.logoUrl` | `logo_url` | `shops` | VARCHAR(500) NULL |
 | `shop.user.email` | `product.shop.user.email` | `email` | `users` | VARCHAR(255) |
 | `updatedAt` | `product.updatedAt` | `updated_at` | `products` | TIMESTAMPTZ |
@@ -1174,8 +1176,8 @@
 
 | テーブルフィールド | APIレスポンスフィールド | データベースカラム | テーブル | データ型 |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | `user.id` | `id` | `users` | VARCHAR(25) PK |
-| `name` | `user.name` | `name` | `users` | VARCHAR(200) |
+| `id` | `user.id` | `id` | `users` | UUID PK |
+| `name` | `user.name` | `name` | `users` | VARCHAR(255) |
 | `email` | `user.email` | `email` | `users` | VARCHAR(255) |
 | `avatarUrl` | `user.avatarUrl` | `avatar_url` | `users` | VARCHAR(500) NULL |
 | `role` | `user.role` | `role` | `users` | VARCHAR(50) |
@@ -1384,7 +1386,6 @@
 | :--- | :--- |
 | `admin.reviews.title` | "Review Moderation" |
 | `admin.reviews.tabs.all` | "All" |
-| `admin.reviews.tabs.pending` | "Pending" |
 | `admin.reviews.tabs.approved` | "Approved" |
 | `admin.reviews.tabs.rejected` | "Rejected" |
 | `admin.reviews.search` | "Search reviews..." |
@@ -1394,7 +1395,6 @@
 | `admin.reviews.sort.ratingLow` | "Rating (Low-High)" |
 | `admin.reviews.detail.title` | "Review Detail" |
 | `admin.reviews.stats.total` | "Total Reviews" |
-| `admin.reviews.stats.pending` | "Pending" |
 | `admin.reviews.stats.approved` | "Approved" |
 | `admin.reviews.stats.rejected` | "Rejected" |
 | `admin.moderation.reason` | "Reason for Rejection" |
@@ -1494,7 +1494,6 @@
 | :--- | :--- |
 | `admin.reviews.title` | "レビュー・モデレーション" |
 | `admin.reviews.tabs.all` | "すべて" |
-| `admin.reviews.tabs.pending` | "保留中" |
 | `admin.reviews.tabs.approved` | "承認済み" |
 | `admin.reviews.tabs.rejected` | "却下済み" |
 | `admin.reviews.search` | "レビューを検索..." |
@@ -1504,7 +1503,6 @@
 | `admin.reviews.sort.ratingLow` | "評価（低→高）" |
 | `admin.reviews.detail.title` | "レビュー詳細" |
 | `admin.reviews.stats.total` | "合計レビュー数" |
-| `admin.reviews.stats.pending` | "保留中" |
 | `admin.reviews.stats.approved` | "承認済み" |
 | `admin.reviews.stats.rejected` | "却下済み" |
 | `admin.moderation.reason` | "却下理由" |

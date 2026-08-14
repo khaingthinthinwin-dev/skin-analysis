@@ -10,9 +10,9 @@
 | **Target Screen** | Advertisement Management (広告管理) |
 | **Subsystem** | Advertisement — Shop Advertisement Management |
 | **Function ID** | FN-AD-001 |
-| **Version** | 1.1 |
+| **Version** | 2.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-10 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -26,6 +26,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-05 | Software Architect | Initial functional specification for Advertisement Management covering merchant ad creation, scheduling, image upload, status control, and platform display. |
 | 1.1 | 2026-08-10 | Software Architect | Aligned with Requirement Spec v1.1 / Database Spec v1.1. Added admin approval workflow (M-AD-006), advertising fee payment (M-AD-007), weekly ad limit (M-AD-008), and announcement message (M-AD-009). Added `approval_status`, `payment_status`, `payment_amount`, `payment_reference`, `approved_by`, `approved_at`, `rejection_reason`, `week_number`, and `announcement_message` fields. |
+| 2.0 | 2026-08-14 | Software Architect | Aligned with DATABASE_SPEC v2.0 & REQUIREMENT_SPEC v1.5: replaced CUID references with UUID (`gen_random_uuid()`); integrated dynamic fee pricing via `ad_fee_settings` (placement × tier), payment transaction ledger via `ad_payments` (linked to `merchants`), and fee audit log via `ad_fee_history`; updated DB traceability matrix. |
 
 ---
 
@@ -139,7 +140,7 @@ This subsystem is responsible for the following core functional areas:
 | `expiresAt` | User Input | Schedule end timestamp |
 | `paymentReference` | System / User Input | Payment transaction reference for ad fee |
 | `page` / `limit` / `status` / `approvalStatus` | Query Parameter | Pagination and status filter for list view |
-| `id` | Path Parameter | Advertisement ID (CUID) for update/delete |
+| `id` | Path Parameter | Advertisement ID (UUID) for update/delete |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
@@ -154,7 +155,7 @@ This subsystem is responsible for the following core functional areas:
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~009, Merchant Shop Advertisement module, Advertisement Rules (4.6) |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements` table (v1.1 fields), indexes, check constraints |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.0) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements`, `ad_fee_settings`, `ad_payments`, `ad_fee_history`, `merchants`, `shops` tables, UUID PKs, indexes, check constraints |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Advertisement Rules (12.7), naming conventions, RBAC |
 
 ---
@@ -466,8 +467,10 @@ This subsystem is responsible for the following core functional areas:
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-AD-033 | Payment Required Before Submission | Merchants must pay the advertising fee before ad submission. | Backend (service logic) |
-| BR-AD-034 | Payment Record | Payment transaction recorded with amount, status, and reference (`payment_amount`, `payment_reference`). | Backend (payment service) |
-| BR-AD-035 | Payment Verification | Payment must be verified before ad transitions to `PENDING_APPROVAL`. | Backend (service logic) |
+| BR-AD-034 | Dynamic Fee Rate | Advertising fee is calculated dynamically based on ad placement (`homepage_slider`, `product_sidebar`, `category_banner`, `search_top`) and pricing tier (`basic`, `standard`, `premium`) from `ad_fee_settings`. | Backend (ad_fee_settings query) |
+| BR-AD-035 | Payment Record & Ledger | Payment details recorded in `ad_payments` ledger table with `ad_id`, `merchant_id` (referencing `merchants.id`), `amount`, `payment_method`, `payment_status`, and `transaction_id`. | Backend (payment service) |
+| BR-AD-036 | Payment Verification | Payment must be verified (`payment_status = paid`) before ad transitions to `PENDING_APPROVAL`. | Backend (service logic) |
+| BR-AD-037 | Fee Modification Audit | Rate changes by admins apply only to new ads created after the change effective date and are logged in `ad_fee_history`. | Backend (audit logic) |
 
 ### 4.8 Weekly Ad Limit Rules
 
@@ -642,7 +645,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/ads/:id/pay` |
 | **Request Content-Type** | `application/json` (payment info; payment gateway stubbed) |
 | **Pre-Submission Validation** | Advertisement ownership check; ad must be in `payment_status = pending` |
-| **Processing Steps** | 1. Validate `:id` as CUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Confirm ad is not yet paid. 5. Process payment (stubbed) for `payment_amount` (configurable fee). 6. Record `payment_status = paid`, `payment_amount`, `payment_reference`. 7. Log `AD_PAID` audit event. 8. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Confirm ad is not yet paid. 5. Resolve fee rate from `ad_fee_settings` by placement & tier. 6. Process payment (stubbed) for `payment_amount`. 7. Record transaction in `ad_payments` with `payment_status = paid`, `payment_amount`, `transaction_id`. 8. Log `AD_PAID` audit event. 9. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Enable "Submit for Approval" button; show success toast |
 
@@ -654,7 +657,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/ads/:id/submit` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Advertisement ownership check; `payment_status = paid` required |
-| **Processing Steps** | 1. Validate `:id` as CUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Verify `payment_status = paid`. 5. Set `approval_status = pending` (submit). 6. Invalidate active ads cache. 7. Notify admin of pending approval. 8. Log `AD_SUBMITTED` audit event. 9. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Verify `payment_status = paid`. 5. Set `approval_status = pending` (submit). 6. Invalidate active ads cache. 7. Notify admin of pending approval. 8. Log `AD_SUBMITTED` audit event. 9. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Ad becomes read-only for merchant until admin decision |
 
@@ -666,7 +669,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/admin/ads/:id/approve` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Admin role; ad in `approval_status = pending` |
-| **Processing Steps** | 1. Validate `:id` as CUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate weekly limit: count approved active ads with same `week_number`; if ≥ 5 return 409 Conflict. 5. Set `approval_status = approved`, `approved_by` (admin id), `approved_at` (now). 6. Invalidate active ads cache. 7. Log `AD_APPROVED` audit event. 8. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate weekly limit: count approved active ads with same `week_number`; if ≥ 5 return 409 Conflict. 5. Set `approval_status = approved`, `approved_by` (admin id), `approved_at` (now). 6. Invalidate active ads cache. 7. Log `AD_APPROVED` audit event. 8. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Ad is eligible for storefront display within its schedule |
 
@@ -678,7 +681,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/admin/ads/:id/reject` |
 | **Request Content-Type** | `application/json` (rejectionReason) |
 | **Pre-Submission Validation** | Admin role; ad in `approval_status = pending`; reason required |
-| **Processing Steps** | 1. Validate `:id` as CUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate `rejection_reason` (required). 5. Set `approval_status = rejected`, `approved_by`, `approved_at`, `rejection_reason`. 6. Trigger automatic refund → `payment_status = refunded`. 7. Invalidate active ads cache. 8. Log `AD_REJECTED` audit event. 9. Notify merchant of rejection and reason. 10. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate `rejection_reason` (required). 5. Set `approval_status = rejected`, `approved_by`, `approved_at`, `rejection_reason`. 6. Trigger automatic refund → `payment_status = refunded` in `ad_payments`. 7. Invalidate active ads cache. 8. Log `AD_REJECTED` audit event. 9. Notify merchant of rejection and reason. 10. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Merchant sees rejection reason; can edit + resubmit |
 
@@ -702,7 +705,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `PATCH /api/v1/ads/:id` |
 | **Request Content-Type** | `multipart/form-data` or `application/json` |
 | **Pre-Submission Validation** | Full DTO validation, advertisement ownership check |
-| **Processing Steps** | 1. Validate `:id` as CUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. 5. Validate provided fields (expires_at > starts_at if both present). 6. Update advertisement record; recompute `week_number` if `starts_at` changed. 7. If ad was `rejected`, reset `approval_status = pending` for resubmission. 8. Invalidate active ads cache (`DEL cache:ads:active`). 9. Log `AD_UPDATED` audit event. 10. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. 5. Validate provided fields (expires_at > starts_at if both present). 6. Update advertisement record; recompute `week_number` if `starts_at` changed. 7. If ad was `rejected`, reset `approval_status = pending` for resubmission. 8. Invalidate active ads cache (`DEL cache:ads:active`). 9. Log `AD_UPDATED` audit event. 10. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Close dialog, refresh ad list, show success toast |
 
@@ -714,7 +717,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `DELETE /api/v1/ads/:id` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Advertisement ownership check |
-| **Processing Steps** | 1. Validate `:id` as CUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. 5. Set `is_active = false` (soft delete). 6. Invalidate active ads cache (`DEL cache:ads:active`). 7. Log `AD_DELETED` audit event. 8. Return soft-deleted ad info. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. 5. Set `is_active = false` (soft delete). 6. Invalidate active ads cache (`DEL cache:ads:active`). 7. Log `AD_DELETED` audit event. 8. Return soft-deleted ad info. |
 | **Success Response** | 200 OK with `{ id, isActive: false }` |
 | **Post-Action** | Remove ad from list view, show success toast |
 
@@ -785,8 +788,8 @@ Same as Create Advertisement, with all fields optional (partial update).
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `advertisements.id` | CUID string |
-| `shopId` | `advertisements.shop_id` | CUID string |
+| `id` | `advertisements.id` | UUID string |
+| `shopId` | `advertisements.shop_id` | UUID string |
 | `title` | `advertisements.title` | String |
 | `content` | `advertisements.content` | String or null |
 | `announcementMessage` | `advertisements.announcement_message` | String |
@@ -797,7 +800,7 @@ Same as Create Advertisement, with all fields optional (partial update).
 | `paymentStatus` | `advertisements.payment_status` | 'pending' / 'paid' / 'failed' / 'refunded' |
 | `paymentAmount` | `advertisements.payment_amount` | Decimal string or null |
 | `paymentReference` | `advertisements.payment_reference` | String or null |
-| `approvedBy` | `advertisements.approved_by` | CUID string or null |
+| `approvedBy` | `advertisements.approved_by` | UUID string or null |
 | `approvedAt` | `advertisements.approved_at` | ISO 8601 timestamp or null |
 | `rejectionReason` | `advertisements.rejection_reason` | String or null |
 | `weekNumber` | `advertisements.week_number` | Integer (ISO week) |
@@ -809,8 +812,8 @@ Same as Create Advertisement, with all fields optional (partial update).
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `advertisements.id` | CUID string |
-| `shopId` | `advertisements.shop_id` | CUID string |
+| `id` | `advertisements.id` | UUID string |
+| `shopId` | `advertisements.shop_id` | UUID string |
 | `title` | `advertisements.title` | String |
 | `content` | `advertisements.content` | String or null |
 | `announcementMessage` | `advertisements.announcement_message` | String (banner announcement) |
@@ -871,7 +874,7 @@ Same as Create Advertisement, with all fields optional (partial update).
   "message": ["Forbidden"],
   "error": "Forbidden",
   "timestamp": "2026-08-05T12:00:00.000Z",
-  "path": "/api/v1/ads/clx1234567890"
+  "path": "/api/v1/ads/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
@@ -1089,7 +1092,7 @@ Defined via `.env` configuration:
 | `AD_IMAGE_STORAGE_PATH` | `./uploads/ads` | Directory to store uploaded ad images |
 | `AD_ACTIVE_CACHE_TTL_SECONDS` | `300` | Active ads cache TTL (5 min) |
 | `AD_ACTIVE_CACHE_KEY` | `cache:ads:active` | Redis key for active ads cache |
-| `AD_FEE_AMOUNT` | `50.00` | Advertising fee required per ad submission |
+| `AD_FEE_SETTINGS_TABLE` | `ad_fee_settings` | Dynamic placement/tier fee settings master |
 | `AD_WEEKLY_LIMIT` | `5` | Maximum active advertisements per week (platform-wide) |
 | `AD_ANNOUNCEMENT_MAX_LENGTH` | `500` | Maximum length of announcement message |
 
@@ -1116,6 +1119,10 @@ Defined via `.env` configuration:
 | Database Table | Relevant Functional Operations |
 |----------------|-------------------------------|
 | `advertisements` | Create (INSERT), List (SELECT+WHERE), Update (SELECT+UPDATE), Soft delete (UPDATE is_active), Pay (UPDATE payment_status/payment_amount/payment_reference), Submit/Approve/Reject (UPDATE approval_status/approved_by/approved_at/rejection_reason), Active display (SELECT+WHERE approved+paid+in-schedule), Weekly limit (SELECT count by week_number) |
+| `ad_fee_settings` | Daily rate lookup (SELECT by placement + tier) for dynamic ad pricing |
+| `ad_payments` | Record advertisement payment transaction (INSERT), update payment status / refund (UPDATE) — linked via `merchant_id` to `merchants` |
+| `ad_fee_history` | Audit trail for rate modifications by admin (INSERT) |
+| `merchants` | Merchant profile and license status verification |
 | `shops` | Shop approval check (SELECT is_approved), Resolve merchant shop id (SELECT) |
 | `users` | Approver reference (`approved_by` FK), admin identity for audit |
 

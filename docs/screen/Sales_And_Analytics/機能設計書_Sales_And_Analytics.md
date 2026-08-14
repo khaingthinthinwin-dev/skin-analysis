@@ -10,7 +10,7 @@
 | **Target Screen** | Merchant Sales Dashboard & Analytics (販売ダッシュボード・分析), Admin Analytics & Reports (管理者分析・レポート) |
 | **Subsystem** | Sales Dashboard & Analytics |
 | **Function ID** | FN-SA-001 (Merchant Sales Dashboard), FN-SA-002 (Merchant Analytics), FN-SA-003 (Admin Analytics & Reports) |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | 2026-08-14 |
 | **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
@@ -24,6 +24,7 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-14 | Software Architect | Initial functional specification for the Sales & Analytics subsystem covering the Merchant Sales Dashboard, Merchant Analytics, and Admin Analytics & Reports screens. Aligned with Requirement Spec v1.0 modules M-DASH, M-ANAL, A-ANAL and the `orders`, `order_items`, `products`, `users`, `shops`, and `reviews` tables in Database Spec v1.0. |
+| 1.1 | 2026-08-14 | Software Architect | Added merchant license-status gate (BR-SA-004a) and merchant-ID resolution pattern (BR-SA-001) to reflect the confirmed `merchants` table schema. |
 
 ---
 
@@ -332,21 +333,22 @@ The state machine itself (states + forward-only transitions) is specified in §3
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-SA-001 | Merchant Data Scope | All merchant analytics queries MUST be scoped to `order_items.merchant_id = <current user id>` (or products owned by the current user). A merchant can never see another merchant's data. | Backend (query scoping) |
+| BR-SA-001 | Merchant Data Scope | All merchant analytics queries MUST resolve `merchants.id` via `merchants.user_id = currentUser.id`, then scope all queries to that resolved `merchants.id` (e.g. `order_items.merchant_id = <resolved merchants.id>`, `products.merchant_id = <resolved merchants.id>`). A merchant can never see another merchant's data. | Backend (query scoping) |
 | BR-SA-002 | Admin Platform Scope | Admin analytics queries cover all merchants/platform data with no merchant filter. | Backend (query scoping) |
 | BR-SA-003 | Read-Only Analytics | All `/analytics/*` endpoints are read-only. This subsystem performs **no write operations at all** — order status update (§6.4) is owned by the Order Management / Fulfillment module (out of scope). | Backend (method design) |
 | BR-SA-004 | Role Requirement | `/analytics/merchant/*` requires role `merchant` or `admin`; `/analytics/admin/*` requires role `admin` only (Requirement Spec permission matrix §2: View Sales Dashboard/View Analytics — Merchant ✓ Admin ✓; Revenue Tracking — Admin only). | Backend (RBAC) |
+| BR-SA-004a | Merchant Eligibility Gate | The `merchant` role MUST have `merchants.license_status = 'approved'` to access any `/analytics/merchant/*` endpoint. If not approved, return `403 FORBIDDEN` with message 'Your merchant account is not approved'. The `admin` role bypasses this license check. | Backend (RBAC / license gate) |
 
 ### 4.2 Metric Definition Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-SA-005 | Total Sales | `totalSales = SUM(order_items.total_price)` for the merchant's items, counted only within **recognized orders** (BR-SA-006). | Backend (aggregation) |
+| BR-SA-005 | Total Sales | `totalSales = SUM(order_items.total_price)` for the merchant's items (`order_items.merchant_id = <resolved merchants.id>`), counted only within **recognized orders** (BR-SA-006). | Backend (aggregation) |
 | BR-SA-006 | Recognized Order | An order is recognized for revenue KPIs when its `status` is `confirmed`, `processing`, `delivered`, or `done`. `pending` orders are excluded from sales figures (they are not yet confirmed). | Backend (aggregation) |
-| BR-SA-007 | Order Count | `orderCount = COUNT(DISTINCT orders.id)` over recognized orders containing at least one item from the merchant's shop. | Backend (aggregation) |
+| BR-SA-007 | Order Count | `orderCount = COUNT(DISTINCT orders.id)` over recognized orders containing at least one item from the resolved merchant's shop (`order_items.merchant_id = <resolved merchants.id>`). | Backend (aggregation) |
 | BR-SA-008 | Average Order Value | `avgOrderValue = totalSales / orderCount`. When `orderCount = 0`, display `0.00`. | Backend (aggregation) + Frontend (formatting) |
 | BR-SA-009 | Average Rating | `avgRating = AVG(products.avg_rating)` across the merchant's products (rounded to 1 decimal). When no products, display `—`. | Backend (aggregation) |
-| BR-SA-010 | Best-Seller Ranking | Ranked by `SUM(order_items.quantity)` DESC, tie-broken by `SUM(total_price)` DESC. Only recognized orders count. | Backend (aggregation) |
+| BR-SA-010 | Best-Seller Ranking | Ranked by `SUM(order_items.quantity)` DESC, tie-broken by `SUM(total_price)` DESC, scoped to the resolved `merchants.id` (`order_items.merchant_id = <resolved merchants.id>`). Only recognized orders count. | Backend (aggregation) |
 | BR-SA-011 | Product Views | `views` metric for product performance: derived from a `product_views` counter (event-sourced or periodic aggregation). When unavailable, defaults to `0` with a documented limitation. | Backend (analytics service) |
 
 ### 4.3 Time Range & Aggregation Rules
@@ -548,7 +550,7 @@ The state machine itself (states + forward-only transitions) is specified in §3
 | **API Endpoint** | `GET /api/v1/analytics/merchant/dashboard?range=30d` |
 | **Request Content-Type** | None (query parameters) |
 | **Pre-Submission Validation** | `range` ∈ `7d/30d/90d/1y`; custom `from`/`to` must not be present with `range` |
-| **Processing Steps** | 1. Validate JWT and role (`merchant`/`admin`). 2. Resolve merchant's user id (for admin, platform-wide). 3. Check Redis cache `cache:sa:merchant:{id}:kpis`. 4. On miss: compute `totalSales`, `orderCount`, `avgOrderValue`, `avgRating` per BR-SA-005~009 using `idx_order_items_merchant_id`, `idx_orders_created_at`. 5. Compute trend deltas vs. previous equivalent period. 6. Seed cache (5-min TTL). 7. Return KPI DTO. |
+| **Processing Steps** | 1. Validate JWT and role (`merchant`/`admin`). 2. Resolve `merchants.id` via `merchants.user_id = currentUser.id` (merchant role only). Verify `license_status = 'approved'`, else `403 FORBIDDEN`. Use the resolved `merchants.id` for all subsequent query scoping. 3. Check Redis cache `cache:sa:merchant:{id}:kpis`. 4. On miss: compute `totalSales`, `orderCount`, `avgOrderValue`, `avgRating` per BR-SA-005~009 using `idx_order_items_merchant_id`, `idx_orders_created_at`. 5. Compute trend deltas vs. previous equivalent period. 6. Seed cache (5-min TTL). 7. Return KPI DTO. |
 | **Success Response** | 200 OK with `kpis` object |
 | **Post-Action** | Render KPI cards |
 
@@ -572,7 +574,7 @@ The state machine itself (states + forward-only transitions) is specified in §3
 | **API Endpoint** | `GET /api/v1/analytics/merchant/products?page=1&limit=20&sortBy=revenue&order=desc` |
 | **Request Content-Type** | None (query parameters) |
 | **Pre-Submission Validation** | Pagination and sort validation |
-| **Processing Steps** | 1. Validate JWT and role. 2. Scope products to the merchant (`products.merchant_id`). 3. Aggregate units sold and revenue from `order_items` within recognized orders (BR-SA-005/006/010). 4. Join `products.avg_rating`/`review_count` and views (BR-SA-011). 5. Apply sort and pagination. 6. Return rows with `meta`. |
+| **Processing Steps** | 1. Validate JWT and role. 2. Resolve `merchants.id` via `merchants.user_id = currentUser.id` (merchant role only). Verify `license_status = 'approved'`, else `403 FORBIDDEN`. Use the resolved `merchants.id` for all subsequent query scoping. 3. Scope products to the merchant (`products.merchant_id = <resolved merchants.id>`). 4. Aggregate units sold and revenue from `order_items` within recognized orders (BR-SA-005/006/010). 5. Join `products.avg_rating`/`review_count` and views (BR-SA-011). 6. Apply sort and pagination. 7. Return rows with `meta`. |
 | **Success Response** | 200 OK with `productPerformance` rows and `meta` |
 | **Post-Action** | Render sortable table / best-seller list |
 
@@ -598,7 +600,7 @@ The state machine itself (states + forward-only transitions) is specified in §3
 | **API Endpoint** | `GET /api/v1/analytics/merchant/demographics?range=90d` |
 | **Request Content-Type** | None (query parameters) |
 | **Pre-Submission Validation** | Range validation |
-| **Processing Steps** | 1. Validate JWT and role. 2. Scope recognized orders to merchant. 3. Aggregate `orders.shipping_address` JSONB (region/city, optional gender/age when present). 4. Anonymize — return counts only (BR-SA-026). 5. Return `demographics` object. |
+| **Processing Steps** | 1. Validate JWT and role. 2. Resolve `merchants.id` via `merchants.user_id = currentUser.id` (merchant role only). Verify `license_status = 'approved'`, else `403 FORBIDDEN`. Use the resolved `merchants.id` for all subsequent query scoping. 3. Scope recognized orders to merchant. 4. Aggregate `orders.shipping_address` JSONB (region/city, optional gender/age when present). 5. Anonymize — return counts only (BR-SA-026). 6. Return `demographics` object. |
 | **Success Response** | 200 OK with `demographics` |
 | **Post-Action** | Render charts or no-data note |
 
@@ -765,7 +767,7 @@ The state machine itself (states + forward-only transitions) is specified in §3
 |-------------|------------|----------|---------------------|
 | `400` | `BAD_REQUEST` | Invalid range/date/period/query params | Field-level inline errors + top banner |
 | `401` | `UNAUTHORIZED` | Missing or invalid JWT | Redirect to login |
-| `403` | `FORBIDDEN` | Non-merchant/admin role, or merchant accessing another merchant's data | "You don't have permission to view this data" |
+| `403` | `FORBIDDEN` | Non-merchant/admin role, merchant accessing another merchant's data, or merchant with `license_status` ≠ `approved` (BR-SA-004a) | "You don't have permission to view this data" / "Your merchant account is not approved" |
 | `404` | `NOT_FOUND` | Order `:id` not found *(raised by Order Management / Fulfillment module — not reachable from analytics screens)* | "Order not found" with refresh option |
 | `409` | `INVALID_STATUS_TRANSITION` | Non-forward order status change *(raised by Order Management / Fulfillment module — not reachable from analytics screens)* | "Invalid status transition" with the status badge unchanged |
 | `422` | `UNPROCESSABLE_ENTITY` | Invalid report period combination | "Invalid report parameters" |
@@ -821,9 +823,11 @@ The state machine itself (states + forward-only transitions) is specified in §3
 @Controller('analytics/merchant')
 export class MerchantAnalyticsController {
   // GET /dashboard, GET /sales, GET /products, GET /demographics
-  //   merchant  -> aggregates scoped to order_items.merchant_id = current user (BR-SA-001)
-  //   admin     -> no merchant scoping (BR-SA-002); admin has no shop and sees nothing
-  //                unless orders/products are selected via a merchant filter
+  //   merchant  -> 1) resolve merchants.id via merchants.user_id = currentUser.id
+  //                2) verify license_status = 'approved', else 403 (BR-SA-004a)
+  //                3) scope all queries to the resolved merchants.id (BR-SA-001)
+  //   admin     -> no merchant scoping (BR-SA-002); admin bypasses the license check (BR-SA-004a);
+  //                has no shop and sees nothing unless orders/products are selected via a merchant filter
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1040,6 +1044,7 @@ This section documents schema and behavior shared with other subsystems. It is t
 | `shops` | Shop Profile, Advertisement Management | Merchant identification, admin pending actions |
 | `reviews` | Review Moderation, Product Detail | Pending review counts |
 | `users` | SignUp/Login, Admin Management | User growth, merchant identity |
+| `merchants` | Sales Dashboard, Merchant Analytics | Merchant ID resolution (`merchants.user_id` → `merchants.id`) and license gating (`merchants.license_status`) for all merchant-scoped queries per BR-SA-001/004a. |
 
 ### 16.2 Order Status Enum Shared
 

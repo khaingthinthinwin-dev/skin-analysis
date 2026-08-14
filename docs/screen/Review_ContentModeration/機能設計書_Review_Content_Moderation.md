@@ -10,9 +10,9 @@
 | **Target Screen** | Review & Content Moderation (レビュー・コンテンツ管理) |
 | **Subsystem** | Administration — Review Moderation & Content Management |
 | **Function ID** | FN-MOD-001 |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | 2026-08-07 |
-| **Last Updated** | 2026-08-07 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -24,6 +24,7 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-07 | Software Architect | Initial functional specification for Review and Content Moderation covering use cases, business rules, validation, error handling, and permission control. |
+| 1.1 | 2026-08-14 | Software Architect | Aligned with core requirements and database design: UUID identifiers, approved-by-default review flow, merchant `license_status` workflow, website notifications, and removal of unsupported product pending state. |
 
 ---
 
@@ -59,7 +60,7 @@ This subsystem is critical for ensuring trust and safety across the marketplace.
 
 This screen is responsible for the following core functional areas:
 
-1. **Review Moderation** — Viewing all reviews, approving/rejecting pending reviews, and deleting inappropriate reviews with audit logging.
+1. **Review Moderation** — Viewing all reviews, approving/rejecting visible or hidden reviews, and deleting inappropriate reviews with audit logging. Reviews are approved by default; this screen is for post-publication moderation unless a future pre-moderation mode is explicitly added.
 2. **Content Moderation** — Removing violating content that breaches platform policy.
 3. **Merchant Registration Management** — Approving or rejecting merchant shop registrations based on license verification and compliance checks.
 4. **User Account Moderation** — Activating or deactivating user accounts for policy violations.
@@ -131,7 +132,7 @@ This screen is responsible for the following core functional areas:
 | UC-MOD-002 | Moderate Review (Approve/Reject) | Review exists, admin is authenticated. | Review `is_approved` status updated. Product `avg_rating` and `review_count` recalculated if applicable. | Admin |
 | UC-MOD-003 | Delete Inappropriate Review | Review exists, admin is authenticated. | Review permanently removed. Product `avg_rating` and `review_count` recalculated. | Admin |
 | UC-MOD-004 | Remove Violating Content | Content violates platform policy. | Content removed or deactivated. Audit log recorded. | Admin |
-| UC-MOD-005 | Approve/Reject Merchant Registration | Merchant shop exists with `is_approved = false`. | Shop `is_approved` status updated. | Admin |
+| UC-MOD-005 | Approve/Reject Merchant Registration | Merchant exists with `license_status = 'pending'` and an associated shop exists. | Merchant `license_status` updated; associated `shops.is_approved` synchronized. | Admin |
 | UC-MOD-006 | Activate/Deactivate User Account | User account exists. | User `is_active` status toggled. User sessions terminated on deactivation. | Admin |
 
 ### 2.2 Primary Business Workflow
@@ -197,12 +198,12 @@ This screen is responsible for the following core functional areas:
 | Step | Action | Status Before | Status After | Assigned To |
 |:----:|--------|---------------|--------------|-------------|
 | 1 | Admin navigates to /admin/reviews | — | Reviews list loaded | System |
-| 2 | Admin selects pending review | — | Review detail displayed | Admin |
+| 2 | Admin selects a review | — | Review detail displayed | Admin |
 | 3 | Admin approves or rejects review | is_approved = true (default) | is_approved = true/false | Admin |
 | 4 | System recalculates product avg_rating | Old avg_rating | Updated avg_rating | System |
 | 5 | System invalidates product cache | Cached product | Cache evicted | System |
 | 6 | Admin navigates to /admin/merchants | — | Merchant list loaded | System |
-| 7 | Admin approves merchant shop | is_approved = false | is_approved = true | Admin |
+| 7 | Admin approves merchant registration | license_status = pending / shops.is_approved = false | license_status = approved / shops.is_approved = true | Admin |
 | 8 | Admin manages categories | — | Category tree updated | Admin |
 
 ### 2.4 Relevant Requirements Covered
@@ -225,7 +226,7 @@ This screen is responsible for the following core functional areas:
 |-------|-------------|:-----------------:|:-------------:|
 | `APPROVED` | Review is approved and displayed on product page | ✓ | ✗ |
 | `REJECTED` | Review is rejected and hidden from product page | ✗ | ✗ |
-| `PENDING` | Review awaiting moderation (future: pre-moderation mode) | Configurable | ✗ |
+| `PENDING` | Not supported in the current database schema; reserved only for a future pre-moderation mode. | N/A | ✗ |
 
 ### 3.2 Merchant Approval States
 
@@ -241,7 +242,6 @@ This screen is responsible for the following core functional areas:
 |-------|-------------|:-----------------:|:----------------:|
 | `ACTIVE` | Product is active and approved | ✓ | ✓ |
 | `INACTIVE` | Product is deactivated (soft delete or admin action) | ✗ | ✗ |
-| `PENDING_REVIEW` | Product awaiting admin review (future: pre-moderation) | Configurable | Configurable |
 
 ### 3.4 User Account Moderation States
 
@@ -256,8 +256,8 @@ This screen is responsible for the following core functional areas:
 |---------------|--------------|--------------|----------------|------------------|
 | TR-MOD-01 | `APPROVED` (default) | `REJECTED` | Admin rejects review | Admin role, review exists |
 | TR-MOD-02 | `REJECTED` | `APPROVED` | Admin re-approves review | Admin role, review exists |
-| TR-MOD-03 | `PENDING` (merchant) | `APPROVED` | Admin approves merchant | Admin role, shop exists |
-| TR-MOD-04 | `PENDING` (merchant) | `REJECTED` | Admin rejects merchant | Admin role, shop exists |
+| TR-MOD-03 | `PENDING` (merchant) | `APPROVED` | Admin approves merchant | Admin role, merchant and shop exist |
+| TR-MOD-04 | `PENDING` (merchant) | `REJECTED` | Admin rejects merchant | Admin role, merchant and shop exist |
 | TR-MOD-05 | `ACTIVE` (product) | `INACTIVE` | Admin deactivates product | Admin role, product exists |
 | TR-MOD-06 | `INACTIVE` (product) | `ACTIVE` | Admin reactivates product | Admin role, product exists |
 | TR-MOD-07 | `ACTIVE` (user) | `INACTIVE` | Admin deactivates user | Admin role, user exists, no pending orders |
@@ -291,10 +291,10 @@ This screen is responsible for the following core functional areas:
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-MOD-020 | Shop Approval Required | New merchant shops require admin approval before going live. `shops.is_approved = false` by default. | Backend (shop creation) |
-| BR-MOD-021 | Unapproved Shop Restriction | Products from unapproved shops are NOT visible to buyers in search results. | Backend (product query filter) |
-| BR-MOD-022 | Rejection with Reason | Admin can reject shops with a reason stored for merchant reference. | Backend (moderation DTO) |
-| BR-MOD-023 | Re-approval on Reactivation | If an approved shop is deactivated, re-approval is required for reactivation. | Backend (status transition) |
+| BR-MOD-020 | Merchant Approval Required | New merchants require admin approval before full merchant access. `merchants.license_status = 'pending'` and `shops.is_approved = false` by default. | Backend (merchant/shop creation) |
+| BR-MOD-021 | Unapproved Merchant Restriction | Products from merchants whose `license_status` is not `approved` or whose shop is not approved are NOT visible to buyers in search results. | Backend (product query filter) |
+| BR-MOD-022 | Rejection with Reason | Admin can reject merchants with a reason stored in `merchants.rejection_reason` for merchant reference. | Backend (moderation DTO) |
+| BR-MOD-023 | Re-approval on Reactivation | If an approved merchant/shop is deactivated, re-approval is required before merchant features and public visibility are restored. | Backend (status transition) |
 
 ### 4.4 User Moderation Rules
 
@@ -319,7 +319,7 @@ This screen is responsible for the following core functional areas:
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-01 | Page Title | Text | `admin.reviews.title` | Yes | "Review Moderation" |
-| EL-02 | Filter Tabs | Tab Group | `admin.reviews.tabs` | Yes | Tabs: All, Pending, Approved, Rejected |
+| EL-02 | Filter Tabs | Tab Group | `admin.reviews.tabs` | Yes | Tabs: All, Approved, Rejected |
 | EL-03 | Search Input | Input (text) | `admin.reviews.search` | No | Search reviews by user name, product name, or content |
 | EL-04 | Sort Dropdown | Select | `admin.reviews.sort` | No | Sort by: Newest, Oldest, Rating (High-Low), Rating (Low-High) |
 | EL-05 | Reviews Table | Table | — | Yes | Displays: checkbox, user avatar, user name, product name, rating stars, review title, status badge, created date, actions |
@@ -379,13 +379,13 @@ This screen is responsible for the following core functional areas:
 
 ## 6. Functional Operation Specification
 
-### 6.1 Operation: View Pending Reviews
+### 6.1 Operation: View Reviews
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Admin navigates to /admin/reviews or clicks "Pending Reviews" tab |
-| **API Endpoint** | `GET /api/v1/admin/reviews/pending` |
-| **Request Query Parameters** | `page` (default: 1), `limit` (default: 20), `sort` (default: `createdAt`), `order` (default: `desc`) |
+| **Trigger** | Admin navigates to /admin/reviews or changes the review status filter |
+| **API Endpoint** | `GET /api/v1/admin/reviews` |
+| **Request Query Parameters** | `page` (default: 1), `limit` (default: 20), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`approved`/`rejected`/omitted for all) |
 | **Pre-Submission Validation** | JWT access token validated. Admin role verified. |
 | **Processing Steps** | 1. Validate JWT access token. 2. Verify admin role via RolesGuard. 3. Query `reviews` table with filters. 4. Join with `users` and `products` for display data. 5. Apply pagination. 6. Return paginated review list with metadata. |
 | **Success Response** | 200 OK with paginated review data |
@@ -424,7 +424,7 @@ This screen is responsible for the following core functional areas:
 | **API Endpoint** | `GET /api/v1/admin/merchants` |
 | **Request Query Parameters** | `page`, `limit`, `sort`, `order`, `status` (pending/approved/rejected) |
 | **Pre-Submission Validation** | JWT access token validated. Admin role verified. |
-| **Processing Steps** | 1. Validate JWT and admin role. 2. Query `shops` table with status filter. 3. Join with `users` for merchant user data. 4. Apply pagination. 5. Return paginated merchant list. |
+| **Processing Steps** | 1. Validate JWT and admin role. 2. Query `merchants` table with `license_status` filter. 3. Join with `users` and associated `shops` for merchant/shop data. 4. Apply pagination. 5. Return paginated merchant list. |
 | **Success Response** | 200 OK with paginated merchant data |
 | **Post-Action** | Display merchants table |
 
@@ -436,9 +436,9 @@ This screen is responsible for the following core functional areas:
 | **API Endpoint** | `PATCH /api/v1/admin/merchants/:id/status` |
 | **Request Content-Type** | `application/json` |
 | **Request Body** | `{ status: 'approved' | 'rejected', reason?: string }` |
-| **Pre-Submission Validation** | JWT access token validated. Admin role verified. Shop exists. |
-| **Processing Steps** | 1. Validate JWT and admin role. 2. Find shop by ID. 3. If action = 'rejected', validate reason is provided. 4. Update `shops.is_approved` based on status. 5. If rejected, deactivate shop's products (`is_active = false`). 6. Log moderation action to audit trail. 7. Return updated shop data. |
-| **Success Response** | 200 OK with updated shop DTO |
+| **Pre-Submission Validation** | JWT access token validated. Admin role verified. Merchant and associated shop exist. |
+| **Processing Steps** | 1. Validate JWT and admin role. 2. Find merchant by ID. 3. If status = 'rejected', validate reason is provided. 4. Update `merchants.license_status`, `rejection_reason`, `reviewed_at`, and `reviewed_by`. 5. Synchronize associated `shops.is_approved` (`true` for approved, `false` for rejected). 6. If rejected, deactivate merchant's products (`is_active = false`). 7. Create website notification for the merchant user. 8. Log moderation action to audit trail. 9. Return updated merchant data. |
+| **Success Response** | 200 OK with updated merchant DTO |
 | **Post-Action** | Display toast notification. Refresh merchants list. |
 
 ### 6.7 Operation: Activate/Deactivate User
@@ -482,7 +482,7 @@ This screen is responsible for the following core functional areas:
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `reviews.id` | CUID string |
+| `id` | `reviews.id` | UUID string |
 | `user.name` | `users.name` | String |
 | `user.avatarUrl` | `users.avatar_url` | URL or null |
 | `product.name` | `products.name` | String |
@@ -497,14 +497,15 @@ This screen is responsible for the following core functional areas:
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `shops.id` | CUID string |
-| `name` | `shops.name` | String |
-| `slug` | `shops.slug` | String |
-| `logoUrl` | `shops.logo_url` | URL or placeholder |
+| `id` | `merchants.id` | UUID string |
+| `shopName` | `merchants.shop_name` / `shops.name` | String |
+| `licenseStatus` | `merchants.license_status` | Status badge (Pending/Approved/Rejected) |
+| `shop.isApproved` | `shops.is_approved` | Boolean visibility flag |
+| `shop.slug` | `shops.slug` | String |
+| `shop.logoUrl` | `shops.logo_url` | URL or placeholder |
 | `user.name` | `users.name` | String |
 | `user.email` | `users.email` | String |
-| `isApproved` | `shops.is_approved` | Status badge (Pending/Approved/Rejected) |
-| `createdAt` | `shops.created_at` | ISO 8601 timestamp |
+| `createdAt` | `merchants.created_at` | ISO 8601 timestamp |
 
 ---
 
@@ -592,7 +593,7 @@ This screen is responsible for the following core functional areas:
 
 | Endpoint | Access Level | Description |
 |----------|-------------|-------------|
-| `GET /admin/reviews/pending` | Protected (admin) | View pending reviews |
+| `GET /admin/reviews` | Protected (admin) | View all reviews with optional approved/rejected filter |
 | `POST /admin/reviews/:id/moderate` | Protected (admin) | Approve/reject review |
 | `DELETE /admin/reviews/:id` | Protected (admin) | Delete review |
 | `GET /admin/users` | Protected (admin) | View all users |
@@ -632,7 +633,7 @@ The admin dashboard receives real-time updates for pending moderation items:
 | Event | Trigger | Action |
 |-------|---------|--------|
 | `NEW_MERCHANT_REGISTRATION` | New merchant registers | Increment pending merchant approvals badge |
-| `REVIEW_CREATED` | New review submitted (if pre-moderation enabled) | Increment pending reviews badge |
+| `REVIEW_CREATED` | New review submitted | Increment total reviews badge; reviews are approved by default |
 
 ### 11.2 Post-Moderation WebSocket Updates
 
@@ -641,7 +642,7 @@ After moderation action, relevant parties are notified:
 | Event | Trigger | Recipients | Action |
 |-------|---------|------------|--------|
 | `REVIEW_STATUS_CHANGED` | Admin approves/rejects review | Review author, Product merchant | Toast notification |
-| `MERCHANT_STATUS_CHANGED` | Admin approves/rejects merchant | Merchant user | Email notification (future) |
+| `MERCHANT_STATUS_CHANGED` | Admin approves/rejects merchant | Merchant user | Website notification |
 | `CONTENT_REMOVED` | Admin deactivates product | Product merchant | Toast notification |
 | `USER_STATUS_CHANGED` | Admin activates/deactivates user | Affected user | Session termination on deactivation |
 
@@ -653,7 +654,7 @@ After moderation action, relevant parties are notified:
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| Admin Dashboard | `/admin/reviews` | Clicking "Pending Reviews" card or sidebar link |
+| Admin Dashboard | `/admin/reviews` | Clicking "Reviews" card or sidebar link |
 | Admin Dashboard | `/admin/merchants` | Clicking "Pending Approvals" card or sidebar link |
 | Any admin page | `/admin/reviews` | Direct URL navigation |
 
@@ -758,7 +759,7 @@ Defined via `.env` configuration:
 
 | API Endpoint | Functional Operation | Requirement |
 |--------------|---------------------|-------------|
-| `GET /admin/reviews/pending` | View pending reviews | A-REV-001 |
+| `GET /admin/reviews` | View all reviews | A-REV-001 |
 | `POST /admin/reviews/:id/moderate` | Approve/reject review | A-REV-002 |
 | `DELETE /admin/reviews/:id` | Delete review | A-REV-003 |
 | `GET /admin/merchants` | View merchants | A-CONT-002 |
