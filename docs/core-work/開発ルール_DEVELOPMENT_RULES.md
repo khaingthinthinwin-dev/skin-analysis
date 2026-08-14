@@ -8,12 +8,12 @@
 |-----------|-------|
 | **Document ID** | SKM-DEV-001 |
 | **System** | Cosmetics Finder |
-| **Version** | 1.0 |
+| **Version** | 2.0 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-10 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Principal Software Architect & Enterprise Engineering Governance Lead |
 | **Status** | Released |
-| **Audience** | Human Developers, Cursor AI, GitHub Copilot, Claude Code, Gemini Code Assist |
+| **Audience** | Human Developers, Cursor AI, Gemini Code Assist, Claude |
 
 ---
 
@@ -70,7 +70,7 @@
 | Relations | Explicit `@relation` name | `@relation("UserProducts")` | Implicit relation without name |
 | Table maps | `snake_case` plural | `@@map("products")`, `@@map("order_items")` | `@@map("Products")` |
 | Column maps | `snake_case` | `@map("merchant_id")`, `@map("created_at")` | `@map("merchantId")` |
-| Primary keys | `id` with `@default(cuid())` | `id String @id @default(cuid())` | Auto-increment for business entities |
+| Primary keys | `id` with `@default(dbgenerated("gen_random_uuid()"))` or `@default(uuid())` | `id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` | Auto-increment for business entities |
 | Foreign keys | `<model>Id` camelCase | `merchantId`, `categoryId` | `merchant_id` in Prisma field name |
 | Indexes | `@@index([field])` | `@@index([merchantId])` | No index on FK columns |
 | Check constraints | Inline in Prisma | `@db.Decimal(10, 2)` | Raw SQL for simple constraints |
@@ -80,7 +80,7 @@
 - Every `@unique` constraint MUST be named explicitly if it involves multiple columns.
 - Always specify `onDelete` and `onUpdate` explicitly. Never rely on database defaults.
 - Use `Decimal` for monetary values. Never use `Float` or `Double`.
-- Use `String @id @default(cuid())` for primary keys on business entities.
+- Use `String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` (or `@default(uuid())`) for primary keys on business entities (aligned with database-level UUID format).
 - Use `Int @id @default(autoincrement())` only for lookup/master tables.
 
 ## 1.3 React Component Naming
@@ -345,12 +345,20 @@ backend/src/
 │   │   ├── admin.service.ts
 │   │   ├── admin.service.spec.ts
 │   │   └── README.md                    # [PET/PPH] Ownership
-│   └── commission/                      # [PPH] Commission & Revenue
-│       ├── commission.module.ts
-│       ├── commission.controller.ts
-│       ├── commission.service.ts
-│       ├── commission.service.spec.ts
-│       └── README.md                    # [PPH] Ownership
+│   ├── commission/                      # [PPH] Commission & Revenue
+│   │   ├── commission.module.ts
+│   │   ├── commission.controller.ts
+│   │   ├── commission.service.ts
+│   │   ├── commission.service.spec.ts
+│   │   └── README.md                    # [PPH] Ownership
+│   └── notifications/                   # [ATM] Website Notification System
+│       ├── notifications.module.ts
+│       ├── notifications.controller.ts
+│       ├── notifications.service.ts
+│       ├── dto/
+│       │   └── notification-response.dto.ts
+│       ├── notifications.service.spec.ts
+│       └── README.md                    # [ATM] Ownership
 └── shared/                              # Global shared services
     ├── shared.module.ts
     ├── prisma/                          # PrismaModule, PrismaService (PostgreSQL)
@@ -418,6 +426,8 @@ frontend/src/
 │       ├── Reports.tsx                  # [PET]
 │       ├── Commission.tsx               # [PPH]
 │       └── Revenue.tsx                  # [PPH]
+│   └── notifications/                   # [ATM]
+│       └── Notifications.tsx
 ├── components/
 │   ├── ui/                              # shadcn/ui primitives (DO NOT EDIT manually)
 │   │   ├── button.tsx
@@ -575,6 +585,15 @@ frontend/src/
 │       │   ├── report.service.ts        # [PET]
 │       │   └── commission.service.ts    # [PPH]
 │       └── README.md                    # [PET/PPH] Ownership
+│   └── notifications/                   # [ATM] Notifications
+│       ├── components/
+│       │   ├── NotificationBell.tsx
+│       │   └── NotificationPanel.tsx
+│       ├── hooks/
+│       │   └── useNotifications.ts
+│       ├── services/
+│       │   └── notification.service.ts
+│       └── README.md                    # [ATM] Ownership
 ├── hooks/                               # Shared custom hooks
 │   ├── useDebounce.ts
 │   ├── useLocalStorage.ts
@@ -983,7 +1002,7 @@ findAll() { ... }
 - Never rely on frontend-only authorization. Always enforce on backend.
 - Admin endpoints MUST require `admin` role. No exceptions.
 - Merchant endpoints MUST require `merchant` or `admin` role.
-- Buyer-specific features (reviews, wishlist, AI analysis) MUST require `buyer` role or higher.
+- Buyer-specific features (reviews, wishlist, cart, checkout, AI analysis) MUST require the `buyer` role. Merchants and Admins are strictly prohibited from accessing these features.
 
 ## 5.5 Password Hashing Using Argon2
 
@@ -1015,7 +1034,7 @@ Layer 1: Frontend (Zod) ──> Layer 2: API Client (Zod runtime) ──> Layer 
 - ALL request bodies MUST be validated by `class-validator` decorated DTOs.
 - Global `ValidationPipe` MUST be configured with `whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`.
 - Query parameters MUST be validated with DTO classes.
-- URL parameters (IDs) MUST be validated as proper CUID format.
+- URL parameters (IDs) MUST be validated as proper UUID format.
 
 **Frontend Validation Rules:**
 - ALL forms MUST use `zodResolver` with React Hook Form.
@@ -1159,7 +1178,7 @@ console.log('debug info');  // NEVER use console.log
 ```json
 {
   "event": "USER_LOGIN",
-  "userId": "clx1234567890",
+  "userId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "email": "user@example.com",
   "ip": "192.168.1.1",
   "timestamp": "2026-08-03T12:00:00.000Z",
@@ -1316,7 +1335,7 @@ Every security-related feature MUST include tests for:
 ```json
 {
   "data": {
-    "id": "clx1234567890",
+    "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
     "name": "Product Name",
     "price": "29.99"
   }
@@ -1328,8 +1347,8 @@ Every security-related feature MUST include tests for:
 ```json
 {
   "data": [
-    { "id": "clx1234567890", "name": "Product 1" },
-    { "id": "clx0987654321", "name": "Product 2" }
+    { "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", "name": "Product 1" },
+    { "id": "a3b90f42-4b7d-4bad-9bdd-2b0d7b3dcb6d", "name": "Product 2" }
   ],
   "meta": {
     "page": 1,
@@ -1381,7 +1400,7 @@ GET /api/v1/products?page=1&limit=20&sort=createdAt&order=desc
 **Cursor-Based Pagination (for large datasets):**
 
 ```
-GET /api/v1/products?cursor=clx1234567890&limit=20
+GET /api/v1/products?cursor=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d&limit=20
 ```
 
 **Cursor Response:**
@@ -1390,7 +1409,7 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 {
   "data": [...],
   "meta": {
-    "nextCursor": "clx0987654321",
+    "nextCursor": "a3b90f42-4b7d-4bad-9bdd-2b0d7b3dcb6d",
     "hasMore": true,
     "limit": 20
   }
@@ -1420,7 +1439,7 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 ```json
 {
   "data": {
-    "analysisId": "clx1234567890",
+    "analysisId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
     "skinType": "combination",
     "conditions": [
       { "name": "mild_acne", "severity": "low", "confidence": 0.87 },
@@ -1429,7 +1448,7 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
     "estimatedAge": 28,
     "recommendations": [
       {
-        "productId": "clx0987654321",
+        "productId": "a3b90f42-4b7d-4bad-9bdd-2b0d7b3dcb6d",
         "productName": "Gentle Foaming Cleanser",
         "reason": "Suitable for combination skin with mild acne",
         "matchScore": 0.94
@@ -2126,25 +2145,28 @@ User submits review → is_approved = true → Visible on product
 **Status Flow:**
 
 ```
-pending → confirmed → processing → delivered → done
-
+placed → confirmed → packed → shipped → out_for_delivery → delivered
+   ↓         ↓          ↓         ↓              ↓              ↓
+  Any state can be cancelled (before shipped) → cancelled
 ```
 
 **Transition Rules:**
 
 | From | Allowed To | Triggered By |
 |------|-----------|-------------|
-| pending | confirmed | Merchant |
-| confirmed | processing | Merchant |
-| processing | delivered | Merchant |
-| delivered | done | System (auto-confirm) or Buyer |
+| placed | confirmed | Merchant |
+| confirmed | packed | Merchant |
+| packed | shipped | Merchant |
+| shipped | out_for_delivery | Courier/System |
+| out_for_delivery | delivered | Buyer/System |
+| placed/confirmed/packed | cancelled | Buyer or Merchant |
 
 **Order Rules:**
 - Stock is decremented atomically on order creation (`$transaction`).
 - Prices are locked at order creation time.
 - Total = Subtotal + Shipping Cost + Tax.
 - Subtotal = Σ(unit_price × quantity).
-- Done status is auto-confirmed by system or confirmed by buyer.
+- Delivered status is confirmed by system or buyer.
 
 ## 12.5 Wishlist Rules
 
@@ -2348,9 +2370,9 @@ final = max(0, subtotal - discount)
 **Document Management:**
 - Author: Principal Software Architect & Enterprise Engineering Governance Lead
 - Created: 2026-08-03
-- Last Updated: 2026-08-03
+- Last Updated: 2026-08-14
 - Next Review: Phase 2 Planning
-- Approved By: [Pending]
+- Approved By: [Approved]
 
 ---
 
