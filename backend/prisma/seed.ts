@@ -57,7 +57,30 @@ async function main() {
   }
   console.log('Seeded discount_types');
 
+  // Ad Fee Settings
+  const adFeeSettings = [
+    { placement: 'homepage_banner', tier: 'gold', dailyRate: 50.00 },
+    { placement: 'homepage_banner', tier: 'silver', dailyRate: 30.00 },
+    { placement: 'homepage_banner', tier: 'bronze', dailyRate: 15.00 },
+    { placement: 'search_results', tier: 'gold', dailyRate: 40.00 },
+    { placement: 'search_results', tier: 'silver', dailyRate: 25.00 },
+    { placement: 'search_results', tier: 'bronze', dailyRate: 10.00 },
+    { placement: 'category_page', tier: 'gold', dailyRate: 20.00 },
+    { placement: 'category_page', tier: 'silver', dailyRate: 12.00 },
+    { placement: 'category_page', tier: 'bronze', dailyRate: 6.00 },
+  ];
+
+  for (const setting of adFeeSettings) {
+    await prisma.adFeeSetting.upsert({
+      where: { placement_tier: { placement: setting.placement, tier: setting.tier } },
+      update: {},
+      create: { ...setting, dailyRate: setting.dailyRate },
+    });
+  }
+  console.log('Seeded ad_fee_settings');
+
   console.log('Database seeding complete!');
+
 }
 
 main()

@@ -37,21 +37,28 @@ export class AuthService {
     // Hash password
     const passwordHash = await argon2.hash(password);
 
-    // Handle license file upload for merchant
-    let licenseUrl: string | null = null;
-    if (role === 'merchant' && license) {
-      licenseUrl = this.saveLicenseFile(license, email);
-    }
-
     // Create user
     const user = await this.usersService.create({
       email,
       name,
       passwordHash,
       roleCode: role,
-      licenseUrl,
-      licenseStatus: role === 'merchant' ? 'pending' : null,
     });
+
+    // If merchant, create a Merchant record with license info
+    if (role === 'merchant') {
+      const licenseUrl = license
+        ? this.saveLicenseFile(license, email)
+        : 'pending_upload';
+      await this.prisma.merchant.create({
+        data: {
+          userId: user.id,
+          shopName: name,
+          businessLicenseUrl: licenseUrl,
+          licenseStatus: 'pending',
+        },
+      });
+    }
 
     // Generate tokens
     const tokens = await this.generateTokens(
@@ -69,7 +76,6 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
-        licenseUrl: user.licenseUrl,
       },
       ...tokens,
     };
@@ -106,7 +112,6 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
-        licenseUrl: user.licenseUrl,
       },
       ...tokens,
     };
@@ -203,7 +208,6 @@ export class AuthService {
       name: user.name,
       role: user.roleCode,
       avatarUrl: user.avatarUrl,
-      licenseUrl: user.licenseUrl,
     };
   }
 

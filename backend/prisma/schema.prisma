@@ -1,4 +1,4 @@
-// Prisma Schema for Cosmetics Finder
+// Prisma Schema for Cosmetics Finder (Aligned with DATABASE_SPEC v2.0)
 
 generator client {
   provider = "prisma-client-js"
@@ -56,38 +56,42 @@ model DiscountType {
 // ============================================
 
 model User {
-  id            String   @id @default(cuid())
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email         String   @unique
   name          String
   passwordHash  String   @map("password_hash")
   roleCode      String   @default("buyer") @map("role")
-  avatarUrl     String?  @map("avatar_url")
+  merchantId    String?  @map("merchant_id") @db.Uuid
   phone         String?
-  licenseUrl    String?  @map("license_url")
-  licenseStatus String?  @default("pending") @map("license_status")
+  avatarUrl     String?  @map("avatar_url")
   isActive      Boolean  @default(true) @map("is_active")
   emailVerified Boolean  @default(false) @map("email_verified")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  role             UserRole      @relation(fields: [roleCode], references: [roleCode])
-  products         Product[]
-  reviews          Review[]
-  wishlists        Wishlist[]
-  orders           Order[]
-  orderItems       OrderItem[]
-  refreshTokens    RefreshToken[]
-  promotions       Promotion[]
-  shop             Shop?
+  role            UserRole       @relation(fields: [roleCode], references: [roleCode], onDelete: Restrict, onUpdate: Cascade)
+  merchantProfile Merchant?      @relation("UserMerchantProfile")
+  merchantRef     Merchant?      @relation("UserMerchantRef", fields: [merchantId], references: [id], onDelete: SetNull)
+  refreshTokens   RefreshToken[]
+  reviews         Review[]
+  wishlists       Wishlist[]
+  orders          Order[]
+  shop            Shop?
+  adApprovals     Advertisement[] @relation("AdminAdApprovals")
+  adFeeHistories  AdFeeHistory[]  @relation("AdminAdFeeHistory")
+  reviewedMerchants Merchant[]   @relation("AdminMerchantReviews")
 
   @@index([roleCode])
+  @@index([email])
+  @@index([isActive])
+  @@index([merchantId])
   @@map("users")
 }
 
 model RefreshToken {
-  id              String   @id @default(cuid())
-  userId          String   @map("user_id")
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
   tokenHash       String   @map("token_hash")
   family          String
   deviceInfo      Json?    @map("device_info")
@@ -107,17 +111,49 @@ model RefreshToken {
 }
 
 // ============================================
+// MERCHANT WORKFLOW
+// ============================================
+
+model Merchant {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @unique @map("user_id") @db.Uuid
+  shopName           String    @map("shop_name")
+  businessLicenseUrl String    @map("business_license_url")
+  licenseStatus      String    @default("pending") @map("license_status")
+  rejectionReason    String?   @map("rejection_reason")
+  reviewedAt         DateTime? @map("reviewed_at")
+  reviewedBy         String?   @map("reviewed_by") @db.Uuid
+  licenseExpiresAt   DateTime? @map("license_expires_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user         User        @relation("UserMerchantProfile", fields: [userId], references: [id], onDelete: Cascade)
+  userRefs     User[]      @relation("UserMerchantRef")
+  reviewer     User?       @relation("AdminMerchantReviews", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  products     Product[]
+  promotions   Promotion[]
+  orders       Order[]
+  orderItems   OrderItem[]
+  adPayments   AdPayment[]
+
+  @@index([userId])
+  @@index([licenseStatus])
+  @@map("merchants")
+}
+
+// ============================================
 // PRODUCT MANAGEMENT
 // ============================================
 
 model Category {
-  id        String     @id @default(cuid())
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   slug      String     @unique
-  parentId  String?    @map("parent_id")
+  parentId  String?    @map("parent_id") @db.Uuid
   iconUrl   String?    @map("icon_url")
   sortOrder Int        @default(0) @map("sort_order")
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt DateTime   @default(now()) @map("created_at")
 
   // Relations
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
@@ -130,9 +166,9 @@ model Category {
 }
 
 model Product {
-  id                String   @id @default(cuid())
-  merchantId        String   @map("merchant_id")
-  categoryId        String   @map("category_id")
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId        String   @map("merchant_id") @db.Uuid
+  categoryId        String   @map("category_id") @db.Uuid
   name              String
   slug              String   @unique
   description       String?
@@ -154,11 +190,11 @@ model Product {
   updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relations
-  merchant    User        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  category    Category    @relation(fields: [categoryId], references: [id])
-  reviews     Review[]
-  wishlists   Wishlist[]
-  orderItems  OrderItem[]
+  merchant   Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id])
+  reviews    Review[]
+  wishlists  Wishlist[]
+  orderItems OrderItem[]
 
   @@index([merchantId])
   @@index([categoryId])
@@ -174,17 +210,17 @@ model Product {
 // ============================================
 
 model Review {
-  id                  String   @id @default(cuid())
-  userId              String   @map("user_id")
-  productId           String   @map("product_id")
-  rating              Int
-  title               String?
-  body                String?
-  images              String[]
-  isVerifiedPurchase  Boolean  @default(false) @map("is_verified_purchase")
-  isApproved          Boolean  @default(true) @map("is_approved")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  productId          String   @map("product_id") @db.Uuid
+  rating             Int
+  title              String?
+  body               String?
+  images             String[]
+  isVerifiedPurchase Boolean  @default(false) @map("is_verified_purchase")
+  isApproved         Boolean  @default(true) @map("is_approved")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -201,9 +237,9 @@ model Review {
 // ============================================
 
 model Wishlist {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  productId String   @map("product_id")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -220,44 +256,46 @@ model Wishlist {
 // ============================================
 
 model Order {
-  id              String   @id @default(cuid())
-  userId          String   @map("user_id")
-  statusCode      String   @default("pending") @map("status")
-  subtotal        Decimal  @db.Decimal(10, 2)
-  shippingCost    Decimal  @default(0) @map("shipping_cost") @db.Decimal(10, 2)
-  tax             Decimal  @default(0) @db.Decimal(10, 2)
-  total           Decimal  @db.Decimal(10, 2)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buyerId         String   @map("buyer_id") @db.Uuid
+  merchantId      String   @map("merchant_id") @db.Uuid
+  statusCode      String   @default("placed") @map("status")
+  totalAmount     Decimal  @map("total_amount") @db.Decimal(10, 2)
   shippingAddress Json     @map("shipping_address")
-  paymentMethod   String?  @map("payment_method")
+  paymentMethod   String   @map("payment_method")
   paymentStatus   String   @default("pending") @map("payment_status")
+  couponCode      String?  @map("coupon_code")
+  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(10, 2)
   notes           String?
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user  User        @relation(fields: [userId], references: [id])
-  status OrderStatus @relation(fields: [statusCode], references: [statusCode])
-  items OrderItem[]
+  buyer    User        @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  merchant Merchant    @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  status   OrderStatus @relation(fields: [statusCode], references: [statusCode], onDelete: Restrict)
+  items    OrderItem[]
 
-  @@index([userId])
+  @@index([buyerId])
+  @@index([merchantId])
   @@index([statusCode])
   @@index([createdAt])
   @@map("orders")
 }
 
 model OrderItem {
-  id          String  @id @default(cuid())
-  orderId     String  @map("order_id")
-  productId   String  @map("product_id")
-  merchantId  String  @map("merchant_id")
-  quantity    Int
-  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
-  totalPrice  Decimal @map("total_price") @db.Decimal(10, 2)
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String  @map("order_id") @db.Uuid
+  productId  String  @map("product_id") @db.Uuid
+  merchantId String  @map("merchant_id") @db.Uuid
+  quantity   Int
+  unitPrice  Decimal @map("unit_price") @db.Decimal(10, 2)
+  totalPrice Decimal @map("total_price") @db.Decimal(10, 2)
 
   // Relations
-  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product  Product @relation(fields: [productId], references: [id])
-  merchant User    @relation(fields: [merchantId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([productId])
@@ -270,8 +308,8 @@ model OrderItem {
 // ============================================
 
 model Shop {
-  id          String   @id @default(cuid())
-  userId      String   @unique @map("user_id")
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
   name        String
   slug        String   @unique
   description String?
@@ -290,6 +328,7 @@ model Shop {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   advertisements Advertisement[]
 
+  @@index([userId])
   @@index([slug])
   @@index([isApproved])
   @@map("shops")
@@ -300,23 +339,23 @@ model Shop {
 // ============================================
 
 model Promotion {
-  id              String   @id @default(cuid())
-  merchantId      String   @map("merchant_id")
-  code            String   @unique
-  description     String?
-  discountTypeCode String  @map("discount_type")
-  discountValue   Decimal  @map("discount_value") @db.Decimal(10, 2)
-  minOrderAmount  Decimal? @map("min_order_amount") @db.Decimal(10, 2)
-  maxUses         Int?     @map("max_uses")
-  usedCount       Int      @default(0) @map("used_count")
-  startsAt        DateTime @map("starts_at")
-  expiresAt       DateTime @map("expires_at")
-  isActive        Boolean  @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId       String       @map("merchant_id") @db.Uuid
+  code             String       @unique
+  description      String?
+  discountTypeCode String       @map("discount_type")
+  discountValue    Decimal      @map("discount_value") @db.Decimal(10, 2)
+  minOrderAmount   Decimal?     @map("min_order_amount") @db.Decimal(10, 2)
+  maxUses          Int?         @map("max_uses")
+  usedCount        Int          @default(0) @map("used_count")
+  startsAt         DateTime     @map("starts_at")
+  expiresAt        DateTime     @map("expires_at")
+  isActive         Boolean      @default(true) @map("is_active")
+  createdAt        DateTime     @default(now()) @map("created_at")
 
   // Relations
-  merchant     User         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  discountType DiscountType @relation(fields: [discountTypeCode], references: [typeCode])
+  merchant     Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  discountType DiscountType @relation(fields: [discountTypeCode], references: [typeCode], onDelete: Restrict)
 
   @@index([merchantId])
   @@index([code])
@@ -326,26 +365,99 @@ model Promotion {
 }
 
 // ============================================
-// ADVERTISEMENTS
+// ADVERTISEMENTS & FEES
 // ============================================
 
 model Advertisement {
-  id        String   @id @default(cuid())
-  shopId    String   @map("shop_id")
-  title     String
-  content   String?
-  imageUrl  String?  @map("image_url")
-  linkUrl   String?  @map("link_url")
-  isActive  Boolean  @default(true) @map("is_active")
-  startsAt  DateTime @map("starts_at")
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId              String    @map("shop_id") @db.Uuid
+  title               String
+  content             String?
+  announcementMessage String    @map("announcement_message")
+  imageUrl            String?   @map("image_url")
+  linkUrl             String?   @map("link_url")
+  isActive            Boolean   @default(true) @map("is_active")
+  approvalStatus      String    @default("pending") @map("approval_status")
+  paymentStatus       String    @default("pending") @map("payment_status")
+  paymentAmount       Decimal?  @map("payment_amount") @db.Decimal(10, 2)
+  paymentReference    String?   @map("payment_reference")
+  approvedBy          String?   @map("approved_by") @db.Uuid
+  approvedAt          DateTime? @map("approved_at")
+  rejectionReason     String?   @map("rejection_reason")
+  weekNumber          Int       @map("week_number")
+  startsAt            DateTime  @map("starts_at")
+  expiresAt           DateTime  @map("expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
 
   // Relations
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop        Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  approver    User?       @relation("AdminAdApprovals", fields: [approvedBy], references: [id], onDelete: SetNull)
+  adPayments  AdPayment[]
 
   @@index([shopId])
   @@index([isActive])
   @@index([expiresAt])
+  @@index([approvalStatus])
+  @@index([paymentStatus])
+  @@index([weekNumber])
   @@map("advertisements")
+}
+
+model AdFeeSetting {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  placement String
+  tier      String
+  dailyRate Decimal  @map("daily_rate") @db.Decimal(10, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  history AdFeeHistory[]
+
+  @@unique([placement, tier])
+  @@index([placement, tier])
+  @@map("ad_fee_settings")
+}
+
+model AdPayment {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adId          String    @map("ad_id") @db.Uuid
+  merchantId    String    @map("merchant_id") @db.Uuid
+  amount        Decimal   @db.Decimal(10, 2)
+  paymentMethod String    @map("payment_method")
+  paymentStatus String    @default("pending") @map("payment_status")
+  transactionId String?   @map("transaction_id")
+  paidAt        DateTime? @map("paid_at")
+  refundAmount  Decimal?  @map("refund_amount") @db.Decimal(10, 2)
+  refundReason  String?   @map("refund_reason")
+  refundedAt    DateTime? @map("refunded_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  advertisement Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+  merchant      Merchant      @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@index([adId])
+  @@index([merchantId])
+  @@map("ad_payments")
+}
+
+model AdFeeHistory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adFeeSettingId String   @map("ad_fee_setting_id") @db.Uuid
+  oldDailyRate   Decimal? @map("old_daily_rate") @db.Decimal(10, 2)
+  newDailyRate   Decimal  @map("new_daily_rate") @db.Decimal(10, 2)
+  changedBy      String   @map("changed_by") @db.Uuid
+  changeReason   String?  @map("change_reason")
+  effectiveFrom  DateTime @map("effective_from")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  setting        AdFeeSetting @relation(fields: [adFeeSettingId], references: [id], onDelete: Cascade)
+  changedByAdmin User         @relation("AdminAdFeeHistory", fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@index([adFeeSettingId])
+  @@map("ad_fee_history")
 }

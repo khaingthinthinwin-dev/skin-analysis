@@ -22,7 +22,7 @@ export const registerSchema = z
       .regex(/[0-9]/, 'Password must contain at least one number')
       .regex(/[@$!%*?&]/, 'Password must contain at least one special character (@$!%*?&)'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
-    role: z.enum(['buyer', 'merchant'], { required_error: 'Please select a role', message: 'Please select a role' }),
+    role: z.enum(['buyer', 'merchant'], { message: 'Please select a role' }),
     licenseFile: z.any().optional().nullable(),
     agreeToTerms: z.boolean().refine((val) => val === true, {
       message: 'You must agree to the Terms of Service',

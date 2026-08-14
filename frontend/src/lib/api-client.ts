@@ -38,7 +38,7 @@ apiClient.interceptors.response.use(
             const tokenData = refreshResponse.data || refreshResponse
             localStorage.setItem('accessToken', tokenData.accessToken)
             localStorage.setItem('refreshToken', tokenData.refreshToken)
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+          originalRequest.headers.Authorization = `Bearer ${tokenData.accessToken}`
           return apiClient(originalRequest)
         } catch {
           localStorage.removeItem('accessToken')

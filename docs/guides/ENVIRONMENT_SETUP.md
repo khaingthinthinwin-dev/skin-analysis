@@ -4,8 +4,8 @@
 # Environment Setup Guide
 
 **OS:** Windows 10/11  
-**Stack:** NestJS + TypeScript + Prisma + PostgreSQL + Redis + React + Vite  
-**Last Updated:** 2026-08-03
+**Stack:** NestJS 11 + TypeScript 5.7+ + Prisma 6 + PostgreSQL 16 + Redis 7 + React 19 + Vite 6 + Tailwind CSS 4 + React Router 7  
+**Last Updated:** 2026-08-14
 
 ---
 
@@ -722,13 +722,13 @@ These packages are already installed in the project. **You do NOT need to instal
 | `@nestjs/config` | `.env` file management |
 | `@nestjs/jwt` | JWT token generation/verification |
 | `@nestjs/passport` | Authentication middleware |
+| `@nestjs/swagger` | Swagger API documentation & annotations |
 | `@prisma/client` | Prisma ORM client |
 | `prisma` | Prisma CLI |
 | `ioredis` | Redis client |
 | `argon2` | Password hashing |
 | `class-validator` | DTO validation decorators |
 | `class-transformer` | Object transformation utilities |
-| `swagger` | API documentation |
 
 ### Frontend (React + Vite)
 
@@ -736,14 +736,17 @@ These packages are already installed in the project. **You do NOT need to instal
 |---------|---------|
 | `react` | UI library |
 | `react-dom` | React DOM rendering |
-| `react-router-dom` | Client-side routing |
+| `react-router` | Client-side routing (React Router v7) |
 | `@tanstack/react-query` | Server state management |
 | `react-hook-form` | Form handling |
 | `zod` | Schema validation |
 | `axios` | HTTP client |
 | `i18next` | Internationalization |
-| `tailwindcss` | CSS framework |
-| `shadcn/ui` | UI components |
+| `tailwindcss` | Tailwind CSS v4 framework |
+| `@tailwindcss/vite` | Vite plugin for Tailwind CSS v4 |
+| `lucide-react` | Icon library |
+| `sonner` | Toast notification library |
+| `shadcn/ui` | UI components (Radix UI primitives) |
 
 ---
 
