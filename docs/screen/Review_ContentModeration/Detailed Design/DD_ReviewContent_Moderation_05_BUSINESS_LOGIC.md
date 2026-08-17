@@ -1,0 +1,469 @@
+# DD_MOD_05 — Business Logic (Review & Content Moderation)
+
+> **Doc ID:** SKM-DD-MOD-05 | **Version:** 1.0 | **Status:** Released  
+> **Last Updated:** 2026-08-17
+
+---
+
+## 1. Overview
+
+This document specifies the core business logic, state transition rules, cache invalidation, and audit logging implemented in the `AdminService` and related moderation services.
+
+- **Location:** `src/modules/admin/admin.service.ts`, `src/modules/admin/merchant-admin.service.ts`, `src/modules/admin/content-moderation.service.ts`, `src/modules/admin/user-admin.service.ts`
+
+---
+
+## 2. Core Service Methods
+
+### 2.1 moderateReview(reviewId, dto)
+
+1. **Validation:** Handled by `ModerateReviewDto` with class-validator.
+2. **Logic:**
+   - Find review by `id` in `reviews` table. If not found, return 404.
+   - If `dto.action === 'reject'`:
+     - Validate `dto.reason` is provided and non-empty. If missing, return 400 with `REJECTION_REASON_REQUIRED`.
+     - Check current `is_approved` state. If already `false`, return 409 with `REVIEW_ALREADY_REJECTED`.
+   - If `dto.action === 'approve'`:
+     - Check current `is_approved` state. If already `true`, return 409 with `REVIEW_ALREADY_APPROVED`.
+   - Update `reviews.is_approved` (`true` for approve, `false` for reject).
+   - **Recalculate product statistics:**
+     - Query `SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = :productId AND is_approved = true`
+     - Update `products.avg_rating` and `products.review_count`
+   - **Invalidate caches:**
+     - Delete `cache:product:{productId}` from Redis
+     - Delete all keys matching `cache:products:list:*` from Redis (pattern-based invalidation)
+   - **Audit log:** Insert `REVIEW_APPROVED` or `REVIEW_REJECTED` with `adminId`, `reviewId`, `productId`, `reason` (if rejected), `timestamp`.
+3. **Transaction Boundaries:** Review update, product stat recalculation, and audit log must be atomic.
+
+### 2.2 deleteReview(reviewId)
+
+1. **Validation:** Review ID is valid UUID.
+2. **Logic:**
+   - Find review by `id`. If not found, return 404.
+   - Capture `productId` before deletion for recalculation.
+   - Hard delete review from `reviews` table.
+   - **Recalculate product statistics:**
+     - Query remaining approved reviews for the product
+     - Update `products.avg_rating` and `products.review_count`
+   - **Invalidate caches:**
+     - Delete `cache:product:{productId}` from Redis
+     - Delete all keys matching `cache:products:list:*` from Redis
+   - **Audit log:** Insert `REVIEW_DELETED` with `adminId`, `reviewId`, `productId`, `timestamp`.
+3. **Transaction Boundaries:** Review deletion, product stat recalculation, and audit log must be atomic.
+
+### 2.3 bulkModerateReviews(dto)
+
+1. **Validation:** Handled by `BulkModerateReviewsDto`.
+2. **Logic:**
+   - Validate all review IDs exist.
+   - For each review, apply the same logic as `moderateReview` (step 2.1).
+   - Return `BulkOperationResponseDto` with `processed` count, `failed` count, and per-ID results.
+   - On partial failure, continue processing remaining reviews.
+3. **Transaction Boundaries:** Each review moderation is independent. No cross-review atomicity required.
+
+### 2.4 bulkDeleteReviews(dto)
+
+1. **Validation:** Handled by `BulkDeleteReviewsDto`.
+2. **Logic:**
+   - Validate all review IDs exist.
+   - For each review, apply the same logic as `deleteReview` (step 2.2).
+   - Return `BulkOperationResponseDto` with counts and results.
+3. **Transaction Boundaries:** Each review deletion is independent.
+
+### 2.5 moderateMerchant(merchantId, dto)
+
+1. **Validation:** Handled by `ModerateMerchantDto`.
+2. **Logic:**
+   - Find merchant by `id` in `merchants` table. If not found, return 404.
+   - Find associated shop via `shops.merchant_id = merchantId`. If not found, return 404.
+   - If `dto.status === 'rejected'`:
+     - Validate `dto.reason` is provided. If missing, return 400 with `REJECTION_REASON_REQUIRED`.
+     - Check current `license_status`. If already `'rejected'`, return 409 with `MERCHANT_ALREADY_REJECTED`.
+   - If `dto.status === 'approved'`:
+     - Check current `license_status`. If already `'approved'`, return 409 with `MERCHANT_ALREADY_APPROVED`.
+   - Update `merchants.license_status` to `dto.status`.
+   - Set `merchants.rejection_reason` to `dto.reason` (if rejected) or `null` (if approved).
+   - Set `merchants.reviewed_at` to current timestamp.
+   - Set `merchants.reviewed_by` to `adminId`.
+   - **Synchronize shop visibility:**
+     - If approved: set `shops.is_approved = true`
+     - If rejected: set `shops.is_approved = false`
+   - **If rejected: deactivate merchant's products:**
+     - Update `products.is_active = false` WHERE `shop_id = shopId`
+     - Invalidate product caches for all affected products
+   - **Create website notification:**
+     - Insert notification record for the merchant user with type `MERCHANT_STATUS_CHANGED`
+   - **Audit log:** Insert `MERCHANT_APPROVED` or `MERCHANT_REJECTED` with `adminId`, `merchantId`, `shopId`, `reason` (if rejected), `timestamp`.
+3. **Transaction Boundaries:** Merchant update, shop sync, product deactivation, notification creation, and audit log must be atomic.
+
+### 2.6 moderateProduct(productId, dto)
+
+1. **Validation:** Handled by `ModerateProductDto`.
+2. **Logic:**
+   - Find product by `id` in `products` table. If not found, return 404.
+   - If `dto.isActive === false`:
+     - Validate `dto.reason` is provided. If missing, return 400 with `DEACTIVATION_REASON_REQUIRED`.
+     - Check current `is_active`. If already `false`, return 409 with `PRODUCT_ALREADY_INACTIVE`.
+   - If `dto.isActive === true`:
+     - Check current `is_active`. If already `true`, return 409 with `PRODUCT_ALREADY_ACTIVE`.
+   - Update `products.is_active` to `dto.isActive`.
+   - **Invalidate caches:**
+     - Delete `cache:product:{productId}` from Redis
+     - Delete all keys matching `cache:products:list:*` from Redis
+   - **Audit log:** Insert `PRODUCT_DEACTIVATED` or `PRODUCT_REACTIVATED` with `adminId`, `productId`, `reason` (if deactivated), `timestamp`.
+3. **Transaction Boundaries:** Product update, cache invalidation, and audit log must be atomic.
+
+### 2.7 bulkModerateProducts(dto)
+
+1. **Validation:** Handled by `BulkModerateProductsDto`.
+2. **Logic:**
+   - Validate all product IDs exist.
+   - For each product, apply the same logic as `moderateProduct` (step 2.6).
+   - Return `BulkOperationResponseDto` with counts and results.
+3. **Transaction Boundaries:** Each product moderation is independent.
+
+### 2.8 moderateUser(userId, dto)
+
+1. **Validation:** Handled by `ModerateUserDto`.
+2. **Logic:**
+   - Find user by `id` in `users` table. If not found, return 404.
+   - **Self-deactivation prevention:** If `userId === adminId` and `dto.isActive === false`, return 400 with `SELF_DEACTIVATION_PREVENTED`.
+   - If `dto.isActive === false`:
+     - Check current `is_active`. If already `false`, return 409 with `USER_ALREADY_INACTIVE`.
+   - If `dto.isActive === true`:
+     - Check current `is_active`. If already `true`, return 409 with `USER_ALREADY_ACTIVE`.
+   - Update `users.is_active` to `dto.isActive`.
+   - **If deactivating: revoke all sessions:**
+     - Update `refresh_tokens.is_revoked = true` WHERE `user_id = userId`
+     - This ensures user cannot refresh access token after deactivation
+   - **Invalidate user profile cache** in Redis.
+   - **Audit log:** Insert `USER_DEACTIVATED` or `USER_ACTIVATED` with `adminId`, `userId`, `timestamp`.
+3. **Transaction Boundaries:** User update, token revocation, and audit log must be atomic.
+
+---
+
+## 3. State Transition Logic
+
+### 3.1 Review State Machine
+
+| Transition | Origin | Target | Guard Conditions |
+|------------|--------|--------|------------------|
+| TR-MOD-01 | `is_approved = true` | `is_approved = false` | Admin role, review exists |
+| TR-MOD-02 | `is_approved = false` | `is_approved = true` | Admin role, review exists |
+
+```typescript
+function transitionReviewState(review: Review, action: ReviewAction): boolean {
+  if (action === 'reject') {
+    if (!review.isApproved) return false; // Already rejected (409)
+    review.isApproved = false;
+  } else if (action === 'approve') {
+    if (review.isApproved) return false; // Already approved (409)
+    review.isApproved = true;
+  }
+  return true;
+}
+```
+
+### 3.2 Merchant State Machine
+
+| Transition | Origin | Target | Guard Conditions |
+|------------|--------|--------|------------------|
+| TR-MOD-03 | `license_status = 'pending'` | `license_status = 'approved'` | Admin role, merchant and shop exist |
+| TR-MOD-04 | `license_status = 'pending'` | `license_status = 'rejected'` | Admin role, merchant and shop exist |
+
+```typescript
+function transitionMerchantState(merchant: Merchant, status: MerchantStatus): boolean {
+  if (status === 'rejected') {
+    if (merchant.licenseStatus === 'rejected') return false; // Already rejected (409)
+    merchant.licenseStatus = 'rejected';
+  } else if (status === 'approved') {
+    if (merchant.licenseStatus === 'approved') return false; // Already approved (409)
+    merchant.licenseStatus = 'approved';
+  }
+  return true;
+}
+```
+
+### 3.3 Product State Machine
+
+| Transition | Origin | Target | Guard Conditions |
+|------------|--------|--------|------------------|
+| TR-MOD-05 | `is_active = true` | `is_active = false` | Admin role, product exists |
+| TR-MOD-06 | `is_active = false` | `is_active = true` | Admin role, product exists |
+
+```typescript
+function transitionProductState(product: Product, isActive: boolean): boolean {
+  if (!isActive) {
+    if (!product.isActive) return false; // Already inactive (409)
+    product.isActive = false;
+  } else {
+    if (product.isActive) return false; // Already active (409)
+    product.isActive = true;
+  }
+  return true;
+}
+```
+
+### 3.4 User State Machine
+
+| Transition | Origin | Target | Guard Conditions |
+|------------|--------|--------|------------------|
+| TR-MOD-07 | `is_active = true` | `is_active = false` | Admin role, user exists, not self-deactivation |
+| TR-MOD-08 | `is_active = false` | `is_active = true` | Admin role, user exists |
+
+```typescript
+function transitionUserState(user: User, adminId: string, isActive: boolean): boolean {
+  if (!isActive) {
+    if (user.id === adminId) return false; // Self-deactivation prevented (400)
+    if (!user.isActive) return false; // Already inactive (409)
+    user.isActive = false;
+  } else {
+    if (user.isActive) return false; // Already active (409)
+    user.isActive = true;
+  }
+  return true;
+}
+```
+
+---
+
+## 4. Product Statistics Recalculation
+
+### 4.1 Recalculate After Review Change
+
+```typescript
+async recalculateProductStats(productId: string): Promise<void> {
+  const result = await this.prisma.$queryRaw`
+    SELECT 
+      COALESCE(AVG(rating), 0) as avg_rating,
+      COUNT(*) as review_count
+    FROM reviews 
+    WHERE product_id = ${productId} 
+    AND is_approved = true
+  `;
+
+  await this.prisma.products.update({
+    where: { id: productId },
+    data: {
+      avgRating: result.avg_rating,
+      reviewCount: result.review_count,
+    },
+  });
+}
+```
+
+### 4.2 Trigger Points
+
+| Action | Recalculation Required |
+|--------|----------------------|
+| Review approved | Yes — product `avg_rating` and `review_count` |
+| Review rejected | Yes — product `avg_rating` and `review_count` |
+| Review deleted | Yes — product `avg_rating` and `review_count` |
+| Merchant rejected | No — products deactivated, but stats unchanged |
+| Product deactivated | No — product hidden, stats preserved |
+| Product reactivated | No — product restored, stats preserved |
+| User deactivated | No — user hidden, reviews preserved |
+
+---
+
+## 5. Cache Invalidation Logic
+
+### 5.1 Product Cache Invalidation
+
+```typescript
+async invalidateProductCache(productId: string): Promise<void> {
+  // Delete specific product cache
+  await this.redis.del(`cache:product:${productId}`);
+  
+  // Delete all product list caches (pattern-based)
+  const keys = await this.redis.keys('cache:products:list:*');
+  if (keys.length > 0) {
+    await this.redis.del(...keys);
+  }
+}
+```
+
+### 5.2 User Profile Cache Invalidation
+
+```typescript
+async invalidateUserCache(userId: string): Promise<void> {
+  await this.redis.del(`cache:user:${userId}`);
+  await this.redis.del(`cache:user:profile:${userId}`);
+}
+```
+
+### 5.3 When Invalidation Occurs
+
+| Action | Cache Invalidated |
+|--------|-------------------|
+| Review approved/rejected | `cache:product:{id}`, `cache:products:list:*` |
+| Review deleted | `cache:product:{id}`, `cache:products:list:*` |
+| Product deactivated/reactivated | `cache:product:{id}`, `cache:products:list:*` |
+| Merchant rejected (products deactivated) | `cache:product:{id}` for each product, `cache:products:list:*` |
+| User deactivated/reactivated | `cache:user:{id}`, `cache:user:profile:{id}` |
+
+---
+
+## 6. Audit Logging Logic
+
+### 6.1 Audit Log Structure
+
+```typescript
+interface AuditLogEntry {
+  id: string;           // UUID
+  adminId: string;      // Who performed the action
+  action: string;       // Event type
+  targetType: string;   // 'review' | 'merchant' | 'product' | 'user'
+  targetId: string;     // ID of the affected record
+  details: Record<string, any>; // Additional context
+  timestamp: Date;      // When the action occurred
+}
+```
+
+### 6.2 Audit Log Events
+
+| Event | Details Captured | Retention |
+|-------|------------------|-----------|
+| `REVIEW_APPROVED` | adminId, reviewId, productId, timestamp | 2 years |
+| `REVIEW_REJECTED` | adminId, reviewId, productId, reason, timestamp | 2 years |
+| `REVIEW_DELETED` | adminId, reviewId, productId, timestamp | 2 years |
+| `MERCHANT_APPROVED` | adminId, merchantId, shopId, timestamp | 2 years |
+| `MERCHANT_REJECTED` | adminId, merchantId, shopId, reason, timestamp | 2 years |
+| `PRODUCT_DEACTIVATED` | adminId, productId, reason, timestamp | 2 years |
+| `PRODUCT_REACTIVATED` | adminId, productId, timestamp | 2 years |
+| `USER_DEACTIVATED` | adminId, userId, timestamp | 2 years |
+| `USER_ACTIVATED` | adminId, userId, timestamp | 2 years |
+| `RBAC_VIOLATION` | userId, endpoint, requiredRole, timestamp | 30 days |
+
+### 6.3 Audit Interceptor
+
+```typescript
+@Injectable()
+export class AuditInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const request = context.switchToHttp().getRequest();
+    const adminId = request.user?.id;
+    const action = this.getDecoratorValue(context, 'AuditAction');
+    const targetType = this.getDecoratorValue(context, 'AuditTarget');
+
+    return next.handle().pipe(
+      tap(async (response) => {
+        if (action && adminId) {
+          await this.auditService.log({
+            adminId,
+            action,
+            targetType,
+            targetId: response?.data?.id,
+            details: response?.data,
+            timestamp: new Date(),
+          });
+        }
+      }),
+    );
+  }
+}
+```
+
+---
+
+## 7. Notification Logic
+
+### 7.1 Website Notification on Merchant Status Change
+
+```typescript
+async createMerchantStatusNotification(
+  userId: string,
+  status: 'approved' | 'rejected',
+  shopName: string,
+  rejectionReason?: string,
+): Promise<void> {
+  const message = status === 'approved'
+    ? `Your shop "${shopName}" has been approved. You can now list products.`
+    : `Your shop "${shopName}" has been rejected. ${rejectionReason || ''}`;
+
+  await this.prisma.notifications.create({
+    data: {
+      userId,
+      type: 'MERCHANT_STATUS_CHANGED',
+      title: `Merchant ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+      message,
+      metadata: { shopName, status, rejectionReason },
+    },
+  });
+}
+```
+
+### 7.2 Notification Events
+
+| Event | Recipients | Trigger |
+|-------|------------|---------|
+| `REVIEW_STATUS_CHANGED` | Review author, Product merchant | Admin approves/rejects review |
+| `MERCHANT_STATUS_CHANGED` | Merchant user | Admin approves/rejects merchant |
+| `CONTENT_REMOVED` | Product merchant | Admin deactivates product |
+| `USER_STATUS_CHANGED` | Affected user | Admin activates/deactivates user |
+
+---
+
+## 8. Session Termination Logic
+
+### 8.1 Revoke All User Tokens
+
+```typescript
+async revokeAllUserTokens(userId: string): Promise<void> {
+  await this.prisma.refreshTokens.updateMany({
+    where: { userId, isRevoked: false },
+    data: { isRevoked: true },
+  });
+}
+```
+
+### 8.2 Trigger Points
+
+| Action | Token Revocation |
+|--------|------------------|
+| User deactivated | Yes — all refresh tokens revoked |
+| User reactivated | No — tokens remain revoked, user must re-login |
+| Admin logout | Yes — current session tokens revoked |
+
+---
+
+## 9. Validation Rules
+
+### 9.1 Review Moderation Validation
+
+| Field | Rule | Error Message (EN) | Error Message (JA) |
+|-------|------|--------------------|--------------------|
+| `action` | Required, 'approve' or 'reject' | "Action must be 'approve' or 'reject'" | "アクションは'approve'または'reject'である必要があります" |
+| `reason` | Required when action = 'reject', max 500 chars | "Rejection reason is required" | "却下理由は必須です" |
+
+### 9.2 Merchant Moderation Validation
+
+| Field | Rule | Error Message (EN) | Error Message (JA) |
+|-------|------|--------------------|--------------------|
+| `status` | Required, 'approved' or 'rejected' | "Status must be 'approved' or 'rejected'" | "ステータスは'approved'または'rejected'である必要があります" |
+| `reason` | Required when status = 'rejected', max 500 chars | "Rejection reason is required" | "却下理由は必須です" |
+
+### 9.3 Product Moderation Validation
+
+| Field | Rule | Error Message (EN) | Error Message (JA) |
+|-------|------|--------------------|--------------------|
+| `isActive` | Required, boolean | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
+| `reason` | Required when isActive = false, max 500 chars | "Deactivation reason is required" | "無効化理由は必須です" |
+
+### 9.4 User Moderation Validation
+
+| Field | Rule | Error Message (EN) | Error Message (JA) |
+|-------|------|--------------------|--------------------|
+| `isActive` | Required, boolean | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
+
+---
+
+## 10. Cross-References
+
+| Related Document | Purpose |
+|-----------------|---------|
+| [DD_MOD_03](./DD_ReviewContent_Moderation_03_API_ENDPOINTS.md) | Endpoint routing to these methods |
+| [DD_MOD_04](./DD_ReviewContent_Moderation_04_DTOS_AND_TYPES.md) | DTO definitions used in validation |
+| [DD_MOD_06](./DD_ReviewContent_Moderation_06_TEST_SPEC.md) | Test specification |
+| [機能設計書_Review_Content_Moderation](../機能設計書_Review_Content_Moderation.md) | Full functional specification |
+| [画面項目設計書_Review_Content_Moderation](../画面項目設計書_Review_Content_Moderation.md) | Screen items specification |
