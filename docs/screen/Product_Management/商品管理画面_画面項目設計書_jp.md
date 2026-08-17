@@ -4,9 +4,9 @@
 **対象画面:** 商品管理  
 **サブシステム:** 商品 — メルチャントCRUD操作、在庫管理  
 **機能ID:** FN-PROD-001  
-**バージョン:** 1.1  
+**バージョン:** 1.3  
 **作成日:** 2026-08-10  
-**最終更新:** 2026-08-11  
+**最終更新:** 2026-08-14  
 **著者:** シニアシステムエンジニア  
 **レビュー状態:** 承認済み  
 **分類:** 社内 — エンジニアリング部門
@@ -21,6 +21,8 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-10 | シニアシステムエンジニア | 初版発行。商品管理（一覧、作成、編集）の画面項目仕様。 |
 | 1.1 | 2026-08-11 | シニアシステムエンジニア | 一括アクション項目定義を追加（全選択、一括有効/無効/削除）。削除確認ダイアログのサブ要素を追加（§4.3.1）。インライン在庫更新動作を追加（§5.17）。一括アクション動作を追加（§5.18～5.21）。低在庫/在庫切れ通知動作を追加（§5.22～5.23）。在庫更新および一括アクションのバリデーションエラーを追加（§6.2～6.3）。 |
+| 1.2 | 2026-08-12 | シニアシステムエンジニア | 「すべて削除」ボタン項目を追加（§4.2 項目5f）。すべて削除確認ダイアログのサブ要素を追加（§4.3.1 項目16f～16j）。すべて削除動作を追加（§5.24）BR-PROD-024 アクティブ注文ガードおよび部分成功モデル付き。すべて削除のi18nキーを追加（§9.1～9.2）。すべて削除のテストケースを追加（§12.1.3）。 |
+| 1.3 | 2026-08-14 | シニアシステムエンジニア | REQUIREMENT_SPEC v1.5およびDATABASE_SPEC v2.0に合わせて修正：削除ガードの注文ステータスを修正（`done` → `delivered`）§5.24。ライセンスステータス制限のエラーハンドリングを更新。 |
 
 ### 1.2 関連ドキュメント
 
@@ -206,6 +208,7 @@
 | 5c | `btnBulkActivate` | 一括有効化 | ドロップダウンアイテム | — | — | テキスト：「選択を有効にする」 | — | — | 選択した全商品の`is_active = true`を設定。 |
 | 5d | `btnBulkDeactivate` | 一括無効化 | ドロップダウンアイテム | — | — | テキスト：「選択を無効にする」 | — | — | 選択した全商品の`is_active = false`を設定。 |
 | 5e | `btnBulkDelete` | 一括削除 | ドロップダウンアイテム（`destructive`） | — | — | テキスト：「選択を削除する」 | — | — | ソフト削除前に確認ダイアログを表示。 |
+| 5f | `btnDeleteAll` | すべて削除 | ボタン（`destructive`、`outline`） | — | — | 表示中。テキスト：「すべて削除」 | — | — | 商品一覧が空でない場合に表示。すべて削除確認ダイアログを表示。現在の検索およびステータスフィルタに従う。フィルタに一致する全ページの商品を削除（BR-PROD-024 アクティブ注文ガード適用）。Tailwind: `border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground`。 |
 
 ### 4.3 セクション [C]：商品テーブル
 
@@ -232,6 +235,16 @@
 | 16c | `dlgDeleteDescription` | ダイアログ説明 | AlertDialogDescription | String | — | テキスト：「この商品を削除してもよろしいですか？この操作は取り消せません。」 | — | ハードコードUIテキスト | バルク時：「{count}件の商品を削除してもよろしいですか？」Tailwind: `text-sm text-muted-foreground`。 |
 | 16d | `dlgDeleteConfirmBtn` | 削除確認ボタン | ボタン（`destructive`） | — | — | テキスト：「削除」 | — | — | 全幅。読み込み中：スピナー + 「削除中...」。ソフト削除を実行。 |
 | 16e | `dlgDeleteCancelBtn` | キャンセルボタン | ボタン（`outline`） | — | — | テキスト：「キャンセル」 | — | — | 全幅。アクションなしでダイアログを閉じる。 |
+
+#### 4.3.2 すべて削除確認ダイアログ
+
+| No. | 項目ID | 項目名（論理名） | コンポーネント型 | データ型 & 最大長 | 必須 | 初期状態 / デフォルト値 | 入力制約 / フォーマット | データソース / DBマッピング | 備考 / ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 16f | `dlgDeleteAllConfirm` | すべて削除確認ダイアログ | AlertDialog | — | — | デフォルトで非表示。`btnDeleteAll`でオープン。 | — | — | モーダルオーバーレイ。キャンセルまたは背景クリックで閉じる。 |
+| 16g | `dlgDeleteAllTitle` | ダイアログタイトル | AlertDialogTitle | String | — | テキスト：「すべての商品を削除」 | — | ハードコードUIテキスト | Tailwind: `text-lg font-semibold`。 |
+| 16h | `dlgDeleteAllDescription` | ダイアログ説明 | AlertDialogDescription | String | — | 動的テキスト：「すべての{count}件の商品を削除してもよろしいですか？注文が進行中の商品はスキップされます。この操作は取り消せません。」 | — | 現在のフィルタからの動的カウント | Tailwind: `text-sm text-muted-foreground`。 |
+| 16i | `dlgDeleteAllConfirmBtn` | すべて削除確認ボタン | ボタン（`destructive`） | — | — | テキスト：「すべて削除」 | — | — | 全幅。読み込み中：スピナー + 「削除中...」。フィルタスコープのソフト削除をBR-PROD-024チェック付きで実行。 |
+| 16j | `dlgDeleteAllCancelBtn` | キャンセルボタン | ボタン（`outline`） | — | — | テキスト：「キャンセル」 | — | — | 全幅。アクションなしでダイアログを閉じる。 |
 
 ### 4.4 セクション [D]：ページネーション
 
@@ -534,6 +547,28 @@
   4. **カート動作：** 在庫切れの商品はカートに追加不可（バックエンドで強制）。
 - **例外処理：** 該当なし。
 
+### 5.24 すべての商品削除（`btnDeleteAll` onClick → `dlgDeleteAllConfirm` → `dlgDeleteAllConfirmBtn` onClick）
+- **トリガー：** ユーザーがアクションバーの「すべて削除」ボタンをクリック。
+- **処理ロジック：**
+  1. **事前チェック：** APIまたはキャッシュされた`meta.total`から、現在のフィルタ（検索クエリ、ステータスフィルタ）に一致する商品の合計件数を取得。
+  2. **確認ダイアログ：** `dlgDeleteAllConfirm`を説明付きでオープン：「すべての{count}件の商品を削除してもよろしいですか？注文が進行中の商品はスキップされます。この操作は取り消せません。」
+  3. **確認時：** `DELETE /api/v1/products/all` でボディ `{ search?: string, isActive?: boolean }` （現在のフィルタ状態を反映）。
+  4. **バックエンド実行（BR-PROD-024）：**
+     - フィルタ + `merchantId = userId`からPrisma where句を構築。
+     - 一致する全商品IDをクエリ。
+     - 各商品について、アクティブ注文を確認：リンクされた注文の`status NOT IN ('delivered', 'cancelled')`の`order_items`をクエリ。
+     - アクティブ注文**なし**の商品：`isActive = false`を設定（ソフト削除）。
+     - アクティブ注文**あり**の商品：スキップ、`skipped`配列に追加。
+     - `BULK_DELETE_ALL`監査イベントをログ。
+     - `cache:products:list:*`を無効化。
+  5. **実行後UI：**
+     - 全削除時（`skipped === 0`）：成功トースト：「{deleted}件の商品を正常に削除しました」
+     - 部分成功時（`skipped > 0`）：警告トースト：「{deleted}件の商品を削除しました。{skipped}件の商品は注文が進行中のため削除できませんでした。」
+     - ダイアログを閉じる。商品一覧を更新。
+- **例外処理：**
+  - `403`：「一部の商品を削除する権限がありません」を表示。可能な場合は部分成功を表示。
+  - ネットワークエラー：「一括削除に失敗しました。もう一度お試しください」を表示。ダイアログを閉じる。
+
 ---
 
 ## 6. バリデーション及びエラーメッセージマッピング
@@ -560,6 +595,8 @@
 | **VAL-PROD-016** | `tagTags` | タグが50文字を超える | 赤いボーダー。フィールド下にテキスト。 | "Tag must not exceed 50 characters" | "タグは50文字以内で入力してください" |
 | **PROD_001** | `alertError` | スラグ競合（409レスポンス） | アラートバナー（destructive） | "A product with this name already exists" | "この名前の商品は既に存在します" |
 | **PROD_002** | `alertError` | 権限エラー（403レスポンス） | アラートバナー（destructive） | "You don't have permission to manage this product" | "この商品を管理する権限がありません" |
+| **PROD_004** | `alertError` | メルカントのライセンスステータスが保留中（403 MERCHANT_NOT_APPROVEDレスポンス） | トースト通知（エラー） + `/`にリダイレクト | "Your account is pending approval. Product management is not available at this time." | "アカウントは承認待ちです。現在、商品管理機能は利用できません。" |
+| **PROD_005** | `alertError` | 商品にアクティブ注文あり（409レスポンス） | トースト通知（エラー） | "Cannot delete product with active orders. All orders must be completed first." | "注文が進行中の商品は削除できません。すべての注文を完了してください。" |
 | **PROD_003** | `alertError` | 商品未発見（404レスポンス） | アラートバナー（destructive） | "Product not found" | "商品が見つかりません" |
 | **SYS_001** | `alertError` | サーバーエラー（500レスポンス） | アラートバナー（destructive） | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
 | **NET_ERR** | `alertError` | ネットワークエラー | アラートバナー（destructive） | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
@@ -580,6 +617,10 @@
 | **BULK_002** | `alertError` | 部分一括失敗（403） | トースト通知（警告） | "{N} products updated. {M} products skipped due to permission restrictions." | "{N}件の商品を更新しました。{M}件の商品は権限制限によりスキップされました。" |
 | **BULK_003** | `alertError` | 一括操作失敗（500） | トースト通知（エラー） | "Bulk operation failed. Please try again." | "一括操作が失敗しました。もう一度お試しください" |
 | **BULK_004** | `alertError` | 一括中のネットワークエラー | トースト通知（エラー） | "Network error. Bulk operation may have partially completed." | "ネットワークエラー。一括操作が部分的に完了している可能性があります。" |
+| **BULK_005** | `toastWarning` | すべて削除部分成功（アクティブ注文） | トースト通知（警告） | "Successfully deleted {deleted} products. {skipped} products could not be deleted because they have active orders." | "{deleted}件の商品を削除しました。{skipped}件の商品は注文が進行中のため削除できませんでした。" |
+| **BULK_006** | `toastSuccess` | すべて削除完全成功 | トースト通知（成功） | "Successfully deleted {count} products." | "{count}件の商品を正常に削除しました" |
+| **BULK_007** | `alertError` | すべて削除失敗（500） | トースト通知（エラー） | "Delete all failed. Please try again." | "一括削除に失敗しました。もう一度お試しください" |
+| **BULK_008** | `alertError` | すべて削除権限エラー（403） | トースト通知（エラー） | "You don't have permission to delete some products." | "一部の商品を削除する権限がありません。" |
 
 ---
 
@@ -630,6 +671,7 @@
 | 一括有効化 | `PATCH /api/v1/products/bulk` | `ids`, `action: 'activate'` | `is_active` | `products` | SET TRUE |
 | 一括無効化 | `PATCH /api/v1/products/bulk` | `ids`, `action: 'deactivate'` | `is_active` | `products` | SET FALSE |
 | 一括削除 | `DELETE /api/v1/products/bulk` | `ids` | `is_active` | `products` | SET FALSE（ソフト） |
+| すべて削除 | `DELETE /api/v1/products/all` | `search`、`isActive`（フィルタ） | `is_active` | `products` | SET FALSE（ソフト、フィルタスコープ、BR-PROD-024ガード） |
 
 ---
 
@@ -788,6 +830,32 @@
 }
 ```
 
+### 8.9 すべて削除成功レスポンス
+
+```json
+{
+  "data": {
+    "deleted": 8,
+    "skipped": 2,
+    "skippedProductIds": ["clx1234567895", "clx1234567896"],
+    "message": "Successfully deleted 8 product(s). 2 product(s) could not be deleted because they have active orders."
+  }
+}
+```
+
+### 8.10 すべて削除完全成功レスポンス（スキップなし）
+
+```json
+{
+  "data": {
+    "deleted": 10,
+    "skipped": 0,
+    "skippedProductIds": [],
+    "message": "Successfully deleted 10 product(s)."
+  }
+}
+```
+
 ---
 
 ## 9. i18nキーリファレンス
@@ -852,6 +920,12 @@
 | `merchant.products.stockUpdateFailed` | "Failed to update stock. Please try again." |
 | `merchant.products.stockLabel` | "Stock" |
 | `merchant.products.stockEditHint` | "Double-click to edit" |
+| `merchant.products.deleteAll` | "Delete All" |
+| `merchant.products.deleteAllConfirmTitle` | "Delete All Products" |
+| `merchant.products.deleteAllConfirmDesc` | "Are you sure you want to delete all {count} products? Products with active orders will be skipped. This action cannot be undone." |
+| `merchant.products.deleteAllSuccess` | "{count} products deleted successfully" |
+| `merchant.products.deleteAllPartialSuccess` | "Successfully deleted {deleted} products. {skipped} products could not be deleted because they have active orders." |
+| `merchant.products.deleteAllFailed` | "Delete all failed. Please try again." |
 
 ### 9.2 日本語（ja）— 商品管理
 
@@ -913,6 +987,12 @@
 | `merchant.products.stockUpdateFailed` | "在庫の更新に失敗しました。もう一度お試しください" |
 | `merchant.products.stockLabel` | "在庫" |
 | `merchant.products.stockEditHint` | "ダブルクリックで編集" |
+| `merchant.products.deleteAll` | "すべて削除" |
+| `merchant.products.deleteAllConfirmTitle` | "すべての商品を削除" |
+| `merchant.products.deleteAllConfirmDesc` | "すべての{count}件の商品を削除してもよろしいですか？注文が進行中の商品はスキップされます。この操作は取り消せません。" |
+| `merchant.products.deleteAllSuccess` | "{count}件の商品を正常に削除しました" |
+| `merchant.products.deleteAllPartialSuccess` | "{deleted}件の商品を削除しました。{skipped}件の商品は注文が進行中のため削除できませんでした。" |
+| `merchant.products.deleteAllFailed` | "一括削除に失敗しました。もう一度お試しください" |
 
 ---
 
@@ -1032,6 +1112,23 @@
 - [ ] 整数でない在庫更新がバリデーションエラーを表示
 - [ ] 権限エラーがエラートーストを表示
 - [ ] 在庫更新中に読み込み状態を表示
+
+### 12.1.3 すべて削除テスト
+
+- [ ] すべて削除ボタンが商品存在時に表示
+- [ ] すべて削除ボタンが商品一覧が空で非表示
+- [ ] すべて削除が正しいフィルタ件数の確認ダイアログを表示
+- [ ] すべて削除が現在の検索フィルタに従う
+- [ ] すべて削除が現在のステータスフィルタ（有効/無効）に従う
+- [ ] すべて削除でフィルタなしの場合、全メルカント商品を対象
+- [ ] すべて削除がアクティブ注文のある商品をスキップ（BR-PROD-024）
+- [ ] すべて削除が一部商品スキップ時に部分成功メッセージを表示
+- [ ] すべて削除が全商品削除時に成功トーストを表示
+- [ ] すべて削除が完了後にダイアログを閉じて一覧を更新
+- [ ] すべて削除のネットワークエラーが適切なメッセージを表示
+- [ ] すべて削除の権限エラーが適切なメッセージを表示
+- [ ] すべて削除の読み込みスピナーがAPI呼び出し中に表示
+- [ ] すべて削除の確認ボタンが読み込み状態中は無効
 
 ### 12.2 商品フォームテスト（作成）
 

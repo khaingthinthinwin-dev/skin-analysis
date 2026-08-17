@@ -10,9 +10,9 @@
 | **対象画面** | 商品詳細ページ |
 | **サブシステム** | 商品カタログ — 商品詳細、レビュー、お気に入り＆カート追加 |
 | **機能ID** | FN-PROD-001 |
-| **バージョン** | 4.0 |
+| **バージョン** | 5.0 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-10 |
+| **最終更新日** | 2026-08-14 |
 | **作成者** | ソフトウェアアーキテクト |
 | **ステータス** | ドラフト（審査中） |
 | **分類** | 社内 — 技術部門 |
@@ -27,6 +27,7 @@
 | 2.0 | 2026-08-06 | ソフトウェアアーキテクト | 標準機能仕様テンプレートに完全準拠するよう構成を更新。要件定義書、データベース設計書、開発ルール書の詳細仕様を統合。 |
 | 3.0 | 2026-08-07 | ソフトウェアアーキテクト | 他の画面仕様書と構成を揃えるため、第5章からUIワイヤーフレーム、レイアウト動作、フォルダ構成、フロントエンド実装詳細（ルート、型、Zodスキーマ、サービス層、フック）を削除（UI要素のみ）。 |
 | 4.0 | 2026-08-10 | ソフトウェアアーキテクト | 削除は別モジュールで処理されるため、商品詳細のスコープからお気に入り削除セクションおよび削除関連の参照をすべて削除。有効プロモーション表示セクション（残数を含む）を追加。データベーステーブル参照を修正（DB設計に`cart_items`テーブルは存在しない — `promotions` / `order_items`に置換）。 |
+| 5.0 | 2026-08-14 | ソフトウェアアーキテクト | DB設計書v2.0に整合。CUID参照をすべてUUIDに置換（全PKが`gen_random_uuid()`を使用）。マーチャントデータモデルを`merchants`テーブル参照に更新（表示名は`name`ではなく`shopName`）。お気に入りテーブル名を`wishlists`から`wishlist`（単数形）に修正、制約/インデックス名も修正。検証済み購入チェックを`delivered`注文ステータス（DB設計の終端状態）を使用するよう明確化。すべてのJSON例とPrismaクエリを更新。 |
 
 ---
 
@@ -108,7 +109,7 @@
 | 入力情報 | データカテゴリ | ソース/説明 |
 |-------------------|---------------|----------------------|
 | `slug` | URLパスパラメータ | 商品詳細を解決するために使用される商品スラッグ |
-| `productId` | URLパスパラメータ | レビュー/お気に入り/カートで使用されるCUID商品識別子 |
+| `productId` | URLパスパラメータ | レビュー/お気に入り/カートで使用されるUUID商品識別子 |
 | `page`, `limit` | クエリパラメータ | レビューリストのページネーション |
 | `rating`, `title`, `body`, `images` | ユーザー入力 | レビューフォームから送信されるレビューコンテンツ |
 | `quantity` | ユーザー入力 | 「カートに追加」ステッパーで選択された数量 |
@@ -127,7 +128,7 @@
 | No. | 文書ID | 文書名 | ファイルパス/参照 | 備考 |
 |-----|-------------|---------------|----------------------|---------|
 | 1 | SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフロー論理、必須フィールド、ルール（ルール4.2.x、4.4.x）。 |
-| 2 | SKM-DBS-001 | データベース設計書 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`products`、`reviews`、`wishlists`、`promotions`、`order_items`）、制約。 |
+| 2 | SKM-DBS-001 | データベース設計書（v2.0） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`products`、`reviews`、`wishlist`、`promotions`、`order_items`）、UUID PK、`merchants`テーブル、制約。 |
 | 3 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
 
 ---
@@ -302,7 +303,7 @@
 
 | ルールID | ルール名 | 説明 | 強制レイヤー |
 |---------|-----------|-------------|-------------------|
-| BR-PROD-013 | お気に入りユニーク性 | `(user_id, product_id)`のユニーク制約`uq_wishlists_user_product`。 | バックエンド（DB制約） |
+| BR-PROD-013 | お気に入りユニーク性 | `(user_id, product_id)`のユニーク制約`uq_wishlist_user_product` — テーブル名は`wishlist`（単数形）。 | バックエンド（DB制約） |
 | BR-PROD-014 | 重複処理 | 重複追加は409「商品は既にお気に入りにあります」を返却。 | バックエンド（サービスチェック） |
 
 ### 4.5 セキュリティルール
@@ -368,7 +369,7 @@
 | **トリガー** | 購入者が`/products/:slug`に遷移 |
 | **APIエンドポイント** | `GET /api/v1/products/:slug` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `slug`パスパラメータ形式（CUID/slug、最大255文字） |
+| **送信前バリデーション** | `slug`パスパラメータ形式（URLスラッグ、最大255文字） |
 | **処理ステップ** | 1. slug形式を検証。2. slugで商品を検索（`idx_products_slug`）。3. `is_active = true`をフィルター（ルール4.2.1）。4. カテゴリー（親含む）、販売者（ショップ含む）を含める。5. 商品詳細DTOを返却（内部フィールドを除外）。 |
 | **成功レスポンス** | 商品詳細付き200 OK（§7.4参照） |
 | **エラーレスポンス** | 400 slug無効。404 商品が見つからない/非アクティブ |
@@ -377,7 +378,7 @@
 **バックエンド処理フロー：**
 
 ```
-Slug validated as CUID/slug format
+Slug validated as URL slug format (max 255 chars)
   → ProductsService.findOneBySlug()
     → Lookup product by slug (idx_products_slug index)
     → Filter where is_active = true
@@ -393,7 +394,7 @@ Slug validated as CUID/slug format
 | **トリガー** | 商品詳細ページがレビュータブをロード |
 | **APIエンドポイント** | `GET /api/v1/products/:productId/reviews` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `productId`（CUID）。クエリ`page`（最小1）、`limit`（1〜50） |
+| **送信前バリデーション** | `productId`（UUID）。クエリ`page`（最小1）、`limit`（1〜50） |
 | **処理ステップ** | 1. 商品の存在を確認。2. `product_id`かつ`is_approved = true`のレビューをクエリ（`idx_reviews_product_id`）。3. ユーザー（名前、avatarUrl）を含める。4. `created_at DESC`で並び替え。5. ページネーションして返却。 |
 | **成功レスポンス** | レビューリスト+ページネーションメタ付き200 OK（§7.5参照） |
 | **エラーレスポンス** | 404 商品が見つからない |
@@ -402,7 +403,7 @@ Slug validated as CUID/slug format
 **バックエンド処理フロー：**
 
 ```
-productId validated (CUID format)
+productId validated (UUID format)
   → ReviewsService.findByProduct()
     → Verify product exists
     → Query reviews where product_id = productId AND is_approved = true (idx_reviews_product_id index)
@@ -419,7 +420,7 @@ productId validated (CUID format)
 | **APIエンドポイント** | `POST /api/v1/products/:productId/reviews` |
 | **リクエストContent-Type** | `application/json` |
 | **送信前バリデーション** | Zodレビュースキーマ（レーティング1〜5、タイトル≤255、本文≤5000、画像≤5枚） |
-| **処理ステップ** | 1. JWT + `buyer`ロールを検証。2. 商品の存在を確認。3. 購入済み（商品を含む完了済み注文、ルール4.4.1）を確認。4. ユニーク`(user_id, product_id)`制約をチェック（ルール4.4.1）。5. `is_verified_purchase = true`でレビューを作成。6. `avg_rating` / `review_count`をトランザクション内で再計算。7. Redis商品キャッシュを無効化。8. `REVIEW_CREATED`をログ。 |
+| **処理ステップ** | 1. JWT + `buyer`ロールを検証。2. 商品の存在を確認。3. 検証済み購入（`delivered`ステータスの注文に商品を含む、ルール4.4.1）を確認。4. ユニーク`(user_id, product_id)`制約をチェック（ルール4.4.1）。5. `is_verified_purchase = true`でレビューを作成。6. `avg_rating` / `review_count`をトランザクション内で再計算。7. Redis商品キャッシュを無効化。8. `REVIEW_CREATED`をログ。 |
 | **成功レスポンス** | レビューDTO付き201 Created |
 | **エラーレスポンス** | 401 未認証。403 購入者でない。404 商品が見つからない。409 重複レビュー。422 購入済みでない |
 | **後続アクション** | レビュー+商品詳細クエリを無効化。レーティングサマリーを更新 |
@@ -430,7 +431,7 @@ productId validated (CUID format)
 JwtAuthGuard + RolesGuard(buyer) validate access token
   → ReviewsService.create()
     → Verify product exists
-    → Verify user has a completed order containing the product (Rule 4.4.1)
+    → Verify user has a delivered order (status = 'delivered') containing the product (Rule 4.4.1)
       → If not → UnprocessableEntityException
     → Check unique constraint (user_id, product_id) for existing review
       → If exists → ConflictException
@@ -448,7 +449,7 @@ JwtAuthGuard + RolesGuard(buyer) validate access token
 | **トリガー** | 商品詳細ページが「関連商品」セクションをロード |
 | **APIエンドポイント** | `GET /api/v1/recommendations/similar/:productId` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `productId`（CUID） |
+| **送信前バリデーション** | `productId`（UUID） |
 | **処理ステップ** | 1. 対象商品をロード（categoryId、skinTypes、tags）。2. カテゴリーまたはskinTypes/tagsの重複に一致するアクティブ商品をクエリ。3. 対象商品を除外。4. 8件に制限。5. 商品カードDTOを返却。 |
 | **成功レスポンス** | 類似商品カードリスト付き200 OK（§7.6参照） |
 | **エラーレスポンス** | 404 商品が見つからない |
@@ -457,7 +458,7 @@ JwtAuthGuard + RolesGuard(buyer) validate access token
 **バックエンド処理フロー：**
 
 ```
-productId validated
+productId validated (UUID format)
   → MatchingService.findSimilar()
     → Load target product (categoryId, skinTypes, tags)
     → Query active products matching category or overlapping skinTypes/tags
@@ -501,7 +502,7 @@ productId validated
 | **トリガー** | 商品詳細ページが「有効プロモーション」セクションをロード |
 | **APIエンドポイント** | `GET /api/v1/products/:slug/promotions` |
 | **リクエストContent-Type** | `application/json`（レスポンス） |
-| **送信前バリデーション** | `slug`（CUID/slug形式、最大255文字） |
+| **送信前バリデーション** | `slug`（URLスラッグ形式、最大255文字） |
 | **処理ステップ** | 1. slug形式を検証。2. slugで商品を検索。3. 商品の販売者をロード。4. `merchant_id` = 商品の販売者、`is_active = true`、`starts_at <= now()`、`now() < expires_at`の`promotions`をクエリ（ルール4.5.1）。5. 残数`> 0`のプロモーションをフィルター（ルールBR-PROD-019）。6. `starts_at DESC`で並び替え。7. 計算済み`balance`を含むプロモーションDTOを返却。 |
 | **成功レスポンス** | 有効プロモーションリスト付き200 OK（§7.7参照） |
 | **エラーレスポンス** | 400 slug無効。404 商品が見つからない/非アクティブ |
@@ -510,7 +511,7 @@ productId validated
 **バックエンド処理フロー：**
 
 ```
-slug validated (CUID/slug format)
+slug validated (URL slug format, max 255 chars)
   → ProductsService.findOneBySlug()
     → Lookup product by slug (idx_products_slug index)
     → Filter where is_active = true
@@ -549,7 +550,7 @@ slug validated (CUID/slug format)
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `id` | `products.id` | CUID文字列 |
+| `id` | `products.id` | UUID文字列 |
 | `name` | `products.name` | 文字列 |
 | `slug` | `products.slug` | URLフレンドリー文字列 |
 | `description` | `products.description` | 文字列またはnull |
@@ -566,14 +567,14 @@ slug validated (CUID/slug format)
 | `avgRating` | `products.avg_rating` | 10進文字列（小数1桁） |
 | `reviewCount` | `products.review_count` | 整数 |
 | `category` | `categories` | 親付きネストオブジェクト |
-| `merchant` | `users` + `shops` | ショップ付きネストオブジェクト |
+| `merchant` | `merchants` | ネストオブジェクト：`id`、`shopName`（`merchants.shop_name`から）、`licenseStatus`、`shop`（`shops` via `user_id`） |
 
 **レスポンス例（200）：**
 
 ```json
 {
   "data": {
-    "id": "clx1234567890",
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "Hydrating Facial Serum",
     "slug": "hydrating-facial-serum",
     "description": "Lightweight daily serum with hyaluronic acid...",
@@ -584,8 +585,8 @@ slug validated (CUID/slug format)
     "stockQuantity": 45,
     "lowStockThreshold": 10,
     "images": [
-      "https://cdn.example.com/products/clx/1-full.webp",
-      "https://cdn.example.com/products/clx/2-full.webp"
+      "https://cdn.example.com/products/uuid/1-full.webp",
+      "https://cdn.example.com/products/uuid/2-full.webp"
     ],
     "tags": ["serum", "hydrating"],
     "skinTypes": ["dry", "sensitive"],
@@ -596,14 +597,15 @@ slug validated (CUID/slug format)
     "reviewCount": 32,
     "createdAt": "2026-07-01T08:00:00.000Z",
     "category": {
-      "id": "clxcat0001",
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
       "name": "Serums",
       "slug": "serums",
       "parent": { "name": "Skincare", "slug": "skincare" }
     },
     "merchant": {
-      "id": "clxmer0001",
-      "name": "Glow Lab",
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "shopName": "Glow Lab",
+      "licenseStatus": "approved",
       "shop": {
         "name": "Glow Lab Official Store",
         "slug": "glow-lab-official-store",
@@ -619,7 +621,7 @@ slug validated (CUID/slug format)
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `data[].id` | `reviews.id` | CUID文字列 |
+| `data[].id` | `reviews.id` | UUID文字列 |
 | `data[].rating` | `reviews.rating` | 整数1〜5 |
 | `data[].title` | `reviews.title` | 文字列またはnull |
 | `data[].body` | `reviews.body` | 文字列またはnull |
@@ -635,7 +637,7 @@ slug validated (CUID/slug format)
 {
   "data": [
     {
-      "id": "clxrev0001",
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
       "rating": 5,
       "title": "Amazing for dry skin",
       "body": "My skin feels hydrated all day.",
@@ -643,7 +645,7 @@ slug validated (CUID/slug format)
       "isVerifiedPurchase": true,
       "createdAt": "2026-08-01T10:00:00.000Z",
       "user": {
-        "id": "clxbuy0001",
+        "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
         "name": "Jane Doe",
         "avatarUrl": null
       }
@@ -665,7 +667,7 @@ slug validated (CUID/slug format)
 ```json
 {
   "data": {
-    "id": "clxrev0001",
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
     "rating": 5,
     "title": "Amazing for dry skin",
     "body": "My skin feels hydrated all day.",
@@ -681,7 +683,7 @@ slug validated (CUID/slug format)
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `id` | `products.id` | CUID文字列 |
+| `id` | `products.id` | UUID文字列 |
 | `name` | `products.name` | 文字列 |
 | `slug` | `products.slug` | URLフレンドリー文字列 |
 | `price` | `products.price` | 10進文字列 |
@@ -697,12 +699,12 @@ slug validated (CUID/slug format)
 {
   "data": [
     {
-      "id": "clx1234567891",
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
       "name": "Vitamin C Brightening Serum",
       "slug": "vitamin-c-brightening-serum",
       "price": "28.00",
       "compareAtPrice": null,
-      "images": ["https://cdn.example.com/products/clx/1-thumb.webp"],
+      "images": ["https://cdn.example.com/products/uuid/1-thumb.webp"],
       "avgRating": "4.30",
       "reviewCount": 18,
       "stockQuantity": 20
@@ -715,7 +717,7 @@ slug validated (CUID/slug format)
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `data[].id` | `promotions.id` | CUID文字列 |
+| `data[].id` | `promotions.id` | UUID文字列 |
 | `data[].code` | `promotions.code` | 文字列（クーポンコード） |
 | `data[].description` | `promotions.description` | 文字列またはnull |
 | `data[].discountType` | `promotions.discount_type` | `percentage` / `fixed` |
@@ -733,7 +735,7 @@ slug validated (CUID/slug format)
 {
   "data": [
     {
-      "id": "clxprom0001",
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
       "code": "GLOW10",
       "description": "10% off from Glow Lab",
       "discountType": "percentage",
@@ -757,8 +759,8 @@ slug validated (CUID/slug format)
 
 | パラメータ | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-----------|-----------------|--------------------|--------------------|
-| `slug` | 必須、CUID/slug形式、最大255文字 | "slug must be a string" | "スラッグは文字列である必要があります" |
-| `productId` | 必須、CUID形式 | "productId must be a valid CUID" | "productId が無効です" |
+| `slug` | 必須、URLスラッグ形式、最大255文字 | "slug must be a string" | "スラッグは文字列である必要があります" |
+| `productId` | 必須、UUID形式 | "productId must be a valid UUID" | "productId が無効です" |
 
 ### 8.2 レビューバリデーション（ストリクトモード）
 
@@ -1052,10 +1054,11 @@ slug validated (CUID/slug format)
 |----------------|-------------------------------|-------------------------|
 | `products` | slugでの商品詳細ロード（SELECT）、レーティング再計算（UPDATE） | `idx_products_slug`、`idx_products_is_active`、`idx_products_category_id`、`uq_products_slug`、`chk_products_stock` |
 | `categories` | パンくずとカテゴリー表示 | `idx_categories_parent_id` |
-| `users` | 「販売者」の販売者名、レビュー投稿者情報 | `pk_users` |
-| `shops` | 「販売者」のショッププロフィール | `fk_shops_user` |
+| `merchants` | マーチャント表示名（`shop_name`）、「販売者」セクションのライセンスステータス | `idx_merchants_user_id`、`idx_merchants_license_status` |
+| `users` | レビュー投稿者情報（名前、avatarUrl） | `pk_users` |
+| `shops` | 「販売者」のショッププロフィール — `shops.user_id`でリンク | `idx_shops_user_id`、`uq_shops_slug`、`idx_shops_is_approved` |
 | `reviews` | レビュー一覧（SELECT）、レビュー作成（INSERT） | `idx_reviews_product_id`、`uq_reviews_user_product`、`chk_reviews_rating` |
-| `wishlists` | お気に入り追加（SELECT / INSERT） | `idx_wishlists_user_id`、`uq_wishlists_user_product` |
+| `wishlist` | お気に入り追加（SELECT / INSERT） — テーブル名は単数形 | `idx_wishlist_user_id`、`uq_wishlist_user_product` |
 | `promotions` | 有効プロモーション表示（SELECT）、`max_uses` / `used_count`から残数計算 | `idx_promotions_merchant_id`、`idx_promotions_is_active`、`idx_promotions_expires_at`、`uq_promotions_code`、`chk_promotions_discount_value`、`chk_promotions_dates` |
 | `order_items` | カートに追加（INSERT / MERGE）。データベース設計（`SKM-DBS-001`）には**`cart_items`テーブルは存在しない** — カート/注文ラインに実際に使用されるテーブルは`order_items`。 | `idx_order_items_product_id`、`idx_order_items_merchant_id`、`fk_order_items_product`、`fk_order_items_merchant`、`chk_order_items_quantity`、`chk_order_items_total` |
 
@@ -1064,6 +1067,8 @@ slug validated (CUID/slug format)
 *リレーション付き商品詳細：*
 
 ```typescript
+// NOTE: products.merchant_id → references merchants(id) (DATABASE_SPEC v2.0)
+// merchants.shop_name is the display name; shops links via shops.user_id (not merchant_id)
 const product = await prisma.product.findUnique({
   where: { slug: dto.slug, isActive: true },
   include: {
@@ -1071,8 +1076,13 @@ const product = await prisma.product.findUnique({
     merchant: {
       select: {
         id: true,
-        name: true,
-        shop: { select: { name: true, slug: true, logoUrl: true, isApproved: true } },
+        shopName: true,       // merchants.shop_name (display name)
+        licenseStatus: true,  // merchants.license_status
+        user: {
+          select: {
+            shop: { select: { name: true, slug: true, logoUrl: true, isApproved: true } },
+          },
+        },
       },
     },
   },

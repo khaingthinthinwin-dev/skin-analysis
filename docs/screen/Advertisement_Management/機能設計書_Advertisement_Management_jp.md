@@ -10,9 +10,9 @@
 | **対象画面** | 広告管理 (Advertisement Management) |
 | **サブシステム** | 広告 — ショップ広告管理 |
 | **機能ID** | FN-AD-001 |
-| **バージョン** | 1.1 |
+| **バージョン** | 2.0 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-10 |
+| **最終更新日** | 2026-08-14 |
 | **作成者** | Software Architect |
 | **ステータス** | 公開済み (承認済み) |
 | **分類** | 社内 — エンジニアリング部門 |
@@ -25,6 +25,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-05 | Software Architect | 広告管理の初期機能設計書。マーチャントによる広告作成、スケジュール設定、画像アップロード、ステータス管理、プラットフォーム表示をカバー。 |
 | 1.1 | 2026-08-10 | Software Architect | 要件定義書v1.1 / DB設計書v1.1に整合。管理者承認ワークフロー(M-AD-006)、広告掲載料支払い(M-AD-007)、週間広告件数上限(M-AD-008)、告知メッセージ(M-AD-009)を追加。`approval_status`、`payment_status`、`payment_amount`、`payment_reference`、`approved_by`、`approved_at`、`rejection_reason`、`week_number`、`announcement_message` フィールドを追加。 |
+| 2.0 | 2026-08-14 | Software Architect | 要件定義書v1.5 / DB設計書v2.0に整合。UUID化対応(CUID→UUID)。広告掲載料の動的価格設定を`ad_fee_settings`テーブルから取得。広告支払い取引を`ad_payments`テーブルに分離して追跡。料金設定変更監査用`ad_fee_history`テーブル追加。DBトレーサビリティ更新。 |
 
 ---
 
@@ -139,7 +140,7 @@
 | `expiresAt` | ユーザー入力 | スケジュール終了日時 |
 | `paymentReference` | システム / ユーザー入力 | 広告掲載料の支払い取引参照番号 |
 | `page` / `limit` / `status` / `approvalStatus` | クエリパラメータ | 一覧表示用のページネーションとステータス絞り込み |
-| `id` | パスパラメータ | 更新/削除対象の広告ID（CUID） |
+| `id` | パスパラメータ | 更新/削除対象の広告ID（UUID） |
 
 | 出力情報 | データ区分 | 送信先 / 説明 |
 |--------------------|---------------|---------------------------|
@@ -154,7 +155,7 @@
 | No. | ドキュメントID | ドキュメント名 | ファイルパス / 参照 | 備考 |
 |-----|-------------|---------------|----------------------|---------|
 | 1 | SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~009、マーチャントショップ広告モジュール、広告ルール（4.6） |
-| 2 | SKM-DBS-001 | データベース設計書 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements` テーブル（v1.1フィールド）、インデックス、チェック制約 |
+| 2 | SKM-DBS-001 | データベース設計書（v2.0） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements`、`ad_fee_settings`、`ad_payments`、`ad_fee_history`、`merchants`、`shops` テーブル、UUID PK、インデックス、チェック制約 |
 | 3 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 広告ルール（12.7）、命名規則、RBAC |
 
 ---
@@ -188,74 +189,85 @@
                     └──────────┬───────────┘
                                │
                                ▼
-                    ┌──────────────────────┐
-                    │  マーチャントダッシュボード │
-                    │  /merchant/ads       │
-                    └──────────┬───────────┘
-                               │
-              ┌────────────────┼────────────────────┐
-              ▼                ▼                    ▼
-   ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-   │ 広告一覧を表示   │ │ 新規広告作成     │ │ 広告を編集      │
-   │ (UC-AD-004)     │ │ (UC-AD-001)     │ │ (UC-AD-005)     │
-   └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-            │                   │                   │
-            ▼                   ▼                   ▼
-   ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-   │ 広告を絞り込み/   │ │ 広告フォーム入力  │ │ フィールドと     │
-   │ 検索            │ │ (スケジュール、   │ │ スケジュール更新  │
-   │                 │ │  告知メッセージ、 │ │  (却下済み広告の │
-   │                 │ │  画像)           │ │   編集→承認待ち  │
-   │                 │ │                 │ │   に戻る)        │
-   └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-            │                   │                   │
-            │                   ▼                   ▼
-            │          ┌─────────────────┐ ┌─────────────────┐
-            │          │ 画像をアップロード│ │ 変更を保存      │
-            │          │ (UC-AD-003)     │ │ (UC-AD-005)     │
-            │          └────────┬────────┘ └────────┬────────┘
-            │                   │                   │
-            │                   ▼                   ▼
-            │          ┌─────────────────┐ ┌─────────────────┐
-            │          │ 掲載料を支払う   │ │ 下書き保存完了   │
-            │          │ (UC-AD-009)     │ └────────┬────────┘
-            │          └────────┬────────┘          │
-            │                   │                   │
-            │                   ▼                   │
-            │          ┌─────────────────┐          │
-            │          │ 承認申請に提出   │◄─────────┘
-            │          │ (UC-AD-010)     │   (支払済みの場合)
-            │          └────────┬────────┘
-            │                   │
-            │                   ▼
-            │          ┌─────────────────┐      ┌─────────────────┐
-            │          │ 承認待ち         │─────►│ 管理者が        │
-            │          │ PENDING         │      │ 承認 / 却下     │
-            │          │ APPROVAL        │      │ (UC-AD-011/012) │
-            │          └────────┬────────┘      └────────┬────────┘
-            │                   │                        │
-            │                   │                 ┌──────┴──────┐
-            │         approved  │                 │  rejected   │
-            │         ┌─────────▼────────┐        ▼            │
-            │         │ 承認済み (支払済み) │  ┌─────────────────┐│
-            │         │ 週間上限を検証     │  │ 却下済み +       ││
-            │         │ (5件/週)          │  │ 払い戻し (自動)  ││
-            │         │ → 表示可能        │  └────────┬────────┘│
-            │         └─────────┬────────┘           │        │
-            │                   │            編集して再提出     │
-            │                   │                     └────────┘
-            │                   ▼
-            │          ┌─────────────────┐
-            │          │ 有効/無効を切り替え│
-            │          │ (UC-AD-007)     │
-            │          └────────┬────────┘
-            │                   │
-            │                   ▼
-            │          ┌─────────────────┐
-            │          │ 広告を削除       │
-            │          │ (ソフト削除)     │
-            │          │ (UC-AD-006)     │
-            │          └─────────────────┘
+              ┌────────────────────────────────┐
+              │  license_status をチェック       │
+              └───────────┬────────┬───────────┘
+                          │        │
+              pending/reject│       │approved
+                          ▼        ▼
+              ┌────────────────┐ ┌─────────────────────────┐
+              │  ホームページ    │ │  広告管理画面            │
+              │                │ │  /merchant/ads          │
+              └────────────────┘ └─────────────┬───────────┘
+                                               │
+                                               ▼
+                                 ┌──────────────────────┐
+                                 │  マーチャントダッシュボード │
+                                 │  /merchant/ads       │
+                                 └──────────┬───────────┘
+                                            │
+                           ┌────────────────┼────────────────────┐
+                           ▼                ▼                    ▼
+                ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+                │ 広告一覧を表示   │ │ 新規広告作成     │ │ 広告を編集      │
+                │ (UC-AD-004)     │ │ (UC-AD-001)     │ │ (UC-AD-005)     │
+                └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
+                         │                   │                   │
+                         ▼                   ▼                   ▼
+                ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+                │ 広告を絞り込み/   │ │ 広告フォーム入力  │ │ フィールドと     │
+                │ 検索            │ │ (スケジュール、   │ │ スケジュール更新  │
+                │                 │ │  告知メッセージ、 │ │  (却下済み広告の │
+                │                 │ │  画像)           │ │   編集→承認待ち  │
+                │                 │ │                 │ │   に戻る)        │
+                └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
+                         │                   │                   │
+                         │                   ▼                   ▼
+                         │          ┌─────────────────┐ ┌─────────────────┐
+                         │          │ 画像をアップロード│ │ 変更を保存      │
+                         │          │ (UC-AD-003)     │ │ (UC-AD-005)     │
+                         │          └────────┬────────┘ └────────┬────────┘
+                         │                   │                   │
+                         │                   ▼                   ▼
+                         │          ┌─────────────────┐ ┌─────────────────┐
+                         │          │ 掲載料を支払う   │ │ 下書き保存完了   │
+                         │          │ (UC-AD-009)     │ └────────┬────────┘
+                         │          └────────┬────────┘          │
+                         │                   │                   │
+                         │                   ▼                   │
+                         │          ┌─────────────────┐          │
+                         │          │ 承認申請に提出   │◄─────────┘
+                         │          │ (UC-AD-010)     │   (支払済みの場合)
+                         │          └────────┬────────┘
+                         │                   │
+                         │                   ▼
+                         │          ┌─────────────────┐      ┌─────────────────┐
+                         │          │ 承認待ち         │─────►│ 管理者が        │
+                         │          │ PENDING         │      │ 承認 / 却下     │
+                         │          │ APPROVAL        │      │ (UC-AD-011/012) │
+                         │          └────────┬────────┘      └────────┬────────┘
+                         │                   │                        │
+                         │                   │                 ┌──────┴──────┐
+                         │         ┌─────────▼────────┐        ▼            │
+                         │         │ 承認済み (支払済み) │  ┌─────────────────┐│
+                         │         │ 週間上限を検証     │  │ 却下済み +       ││
+                         │         │ (5件/週)          │  │ 払い戻し (自動)  ││
+                         │         │ → 表示可能        │  └────────┬────────┘│
+                         │         └─────────┬────────┘           │        │
+                         │                   │            編集して再提出     │
+                         │                   │                     └────────┘
+                         │                   ▼
+                         │          ┌─────────────────┐
+                         │          │ 有効/無効を切り替え│
+                         │          │ (UC-AD-007)     │
+                         │          └────────┬────────┘
+                         │                   │
+                         │                   ▼
+                         │          ┌─────────────────┐
+                         │          │ 広告を削除       │
+                         │          │ (ソフト削除)     │
+                         │          │ (UC-AD-006)     │
+                         │          └─────────────────┘
 ```
 
 ### 2.3 主要業務ワークフロー — プラットフォームのバナー表示
@@ -625,7 +637,7 @@
 | **APIエンドポイント** | `POST /api/v1/ads/:id/pay` |
 | **リクエストContent-Type** | `application/json`（支払い情報。支払いゲートウェイはスタブ実装） |
 | **提出前バリデーション** | 広告の所有権チェック。広告が `payment_status = pending` であること |
-| **処理ステップ** | 1. `:id` をCUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. 広告が未支払いであることを確認。5. `payment_amount`（設定可能な料金）で支払いを処理（スタブ）。6. `payment_status = paid`、`payment_amount`、`payment_reference` を記録。7. `AD_PAID` 監査イベントを記録。8. 更新された広告DTOを返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. 広告が未支払いであることを確認。5. `payment_amount`（設定可能な料金）で支払いを処理（スタブ）。6. `payment_status = paid`、`payment_amount`、`payment_reference` を記録。7. `AD_PAID` 監査イベントを記録。8. 更新された広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **後続アクション** | 「承認申請に提出」ボタンを有効化。成功トーストを表示 |
 
@@ -637,7 +649,7 @@
 | **APIエンドポイント** | `POST /api/v1/ads/:id/submit` |
 | **リクエストContent-Type** | なし |
 | **提出前バリデーション** | 広告の所有権チェック。`payment_status = paid` 必須 |
-| **処理ステップ** | 1. `:id` をCUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. `payment_status = paid` を検証。5. `approval_status = pending` に設定（提出）。6. 有効広告キャッシュを無効化。7. 管理者に承認待ちを通知。8. `AD_SUBMITTED` 監査イベントを記録。9. 更新された広告DTOを返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. `payment_status = paid` を検証。5. `approval_status = pending` に設定（提出）。6. 有効広告キャッシュを無効化。7. 管理者に承認待ちを通知。8. `AD_SUBMITTED` 監査イベントを記録。9. 更新された広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **後続アクション** | 管理者の判断まで広告はマーチャントにとって読み取り専用になる |
 
@@ -649,7 +661,7 @@
 | **APIエンドポイント** | `POST /api/v1/admin/ads/:id/approve` |
 | **リクエストContent-Type** | なし |
 | **提出前バリデーション** | 管理者ロール。広告が `approval_status = pending` |
-| **処理ステップ** | 1. `:id` をCUID形式として検証。2. JWTトークンと管理者ロールを検証。3. 広告を検索し、`approval_status = pending` を確認。4. 週間上限を検証：同じ `week_number` の承認済み有効広告をカウント。5件以上なら 409 Conflict を返す。5. `approval_status = approved`、`approved_by`（管理者ID）、`approved_at`（現在時刻）を設定。6. 有効広告キャッシュを無効化。7. `AD_APPROVED` 監査イベントを記録。8. 更新された広告DTOを返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンと管理者ロールを検証。3. 広告を検索し、`approval_status = pending` を確認。4. 週間上限を検証：同じ `week_number` の承認済み有効広告をカウント。5件以上なら 409 Conflict を返す。5. `approval_status = approved`、`approved_by`（管理者ID）、`approved_at`（現在時刻）を設定。6. 有効広告キャッシュを無効化。7. `AD_APPROVED` 監査イベントを記録。8. 更新された広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **後続アクション** | 広告はスケジュール期間内にストアフロント表示の対象になる |
 
@@ -661,7 +673,7 @@
 | **APIエンドポイント** | `POST /api/v1/admin/ads/:id/reject` |
 | **リクエストContent-Type** | `application/json`（rejectionReason） |
 | **提出前バリデーション** | 管理者ロール。広告が `approval_status = pending`。理由必須 |
-| **処理ステップ** | 1. `:id` をCUID形式として検証。2. JWTトークンと管理者ロールを検証。3. 広告を検索し、`approval_status = pending` を確認。4. `rejection_reason` を検証（必須）。5. `approval_status = rejected`、`approved_by`、`approved_at`、`rejection_reason` を設定。6. 自動払い戻しを実行 → `payment_status = refunded`。7. 有効広告キャッシュを無効化。8. `AD_REJECTED` 監査イベントを記録。9. マーチャントに却下と理由を通知。10. 更新された広告DTOを返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンと管理者ロールを検証。3. 広告を検索し、`approval_status = pending` を確認。4. `rejection_reason` を検証（必須）。5. `approval_status = rejected`、`approved_by`、`approved_at`、`rejection_reason` を設定。6. 自動払い戻しを実行 → `payment_status = refunded`。7. 有効広告キャッシュを無効化。8. `AD_REJECTED` 監査イベントを記録。9. マーチャントに却下と理由を通知。10. 更新された広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **後続アクション** | マーチャントが却下理由を確認。編集＋再提出が可能 |
 
@@ -685,7 +697,7 @@
 | **APIエンドポイント** | `PATCH /api/v1/ads/:id` |
 | **リクエストContent-Type** | `multipart/form-data` または `application/json` |
 | **提出前バリデーション** | 完全なDTOバリデーション、広告の所有権チェック |
-| **処理ステップ** | 1. `:id` をCUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告をIDで検索。4. `advertisement.shop_id == マーチャントの店舗ID` を確認。5. 指定されたフィールドを検証（両方指定時は expires_at > starts_at）。6. 広告レコードを更新。`starts_at` が変更された場合は `week_number` を再計算。7. 広告が `rejected` だった場合、再提出用に `approval_status = pending` にリセット。8. 有効広告キャッシュを無効化（`DEL cache:ads:active`）。9. `AD_UPDATED` 監査イベントを記録。10. 更新された広告DTOを返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告をIDで検索。4. `advertisement.shop_id == マーチャントの店舗ID` を確認。5. 指定されたフィールドを検証（両方指定時は expires_at > starts_at）。6. 広告レコードを更新。`starts_at` が変更された場合は `week_number` を再計算。7. 広告が `rejected` だった場合、再提出用に `approval_status = pending` にリセット。8. 有効広告キャッシュを無効化（`DEL cache:ads:active`）。9. `AD_UPDATED` 監査イベントを記録。10. 更新された広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **後続アクション** | ダイアログを閉じ、広告一覧を更新し、成功トーストを表示 |
 
@@ -697,7 +709,7 @@
 | **APIエンドポイント** | `DELETE /api/v1/ads/:id` |
 | **リクエストContent-Type** | なし |
 | **提出前バリデーション** | 広告の所有権チェック |
-| **処理ステップ** | 1. `:id` をCUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告をIDで検索。4. `advertisement.shop_id == マーチャントの店舗ID` を確認。5. `is_active = false` に設定（ソフト削除）。6. 有効広告キャッシュを無効化（`DEL cache:ads:active`）。7. `AD_DELETED` 監査イベントを記録。8. ソフト削除された広告情報を返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告をIDで検索。4. `advertisement.shop_id == マーチャントの店舗ID` を確認。5. `is_active = false` に設定（ソフト削除）。6. 有効広告キャッシュを無効化（`DEL cache:ads:active`）。7. `AD_DELETED` 監査イベントを記録。8. ソフト削除された広告情報を返す。 |
 | **成功レスポンス** | 200 OK、`{ id, isActive: false }` 付き |
 | **後続アクション** | 広告を一覧から削除し、成功トーストを表示 |
 
@@ -768,8 +780,8 @@
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `id` | `advertisements.id` | CUID文字列 |
-| `shopId` | `advertisements.shop_id` | CUID文字列 |
+| `id` | `advertisements.id` | UUID文字列 |
+| `shopId` | `advertisements.shop_id` | UUID文字列 |
 | `title` | `advertisements.title` | 文字列 |
 | `content` | `advertisements.content` | 文字列または null |
 | `announcementMessage` | `advertisements.announcement_message` | 文字列 |
@@ -780,7 +792,7 @@
 | `paymentStatus` | `advertisements.payment_status` | 'pending' / 'paid' / 'failed' / 'refunded' |
 | `paymentAmount` | `advertisements.payment_amount` | Decimal文字列または null |
 | `paymentReference` | `advertisements.payment_reference` | 文字列または null |
-| `approvedBy` | `advertisements.approved_by` | CUID文字列または null |
+| `approvedBy` | `advertisements.approved_by` | UUID文字列または null |
 | `approvedAt` | `advertisements.approved_at` | ISO 8601タイムスタンプまたは null |
 | `rejectionReason` | `advertisements.rejection_reason` | 文字列または null |
 | `weekNumber` | `advertisements.week_number` | 整数（ISO週） |
@@ -792,8 +804,8 @@
 
 | フィールド | データソース | 表示形式 |
 |-------|-------------|----------------|
-| `id` | `advertisements.id` | CUID文字列 |
-| `shopId` | `advertisements.shop_id` | CUID文字列 |
+| `id` | `advertisements.id` | UUID文字列 |
+| `shopId` | `advertisements.shop_id` | UUID文字列 |
 | `title` | `advertisements.title` | 文字列 |
 | `content` | `advertisements.content` | 文字列または null |
 | `announcementMessage` | `advertisements.announcement_message` | 文字列（バナー告知） |
@@ -854,7 +866,7 @@
   "message": ["Forbidden"],
   "error": "Forbidden",
   "timestamp": "2026-08-05T12:00:00.000Z",
-  "path": "/api/v1/ads/clx1234567890"
+  "path": "/api/v1/ads/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
@@ -981,6 +993,8 @@ export class AdminAdvertisementsController {
 |--------|--------|-----------|
 | マーチャントダッシュボード | `/merchant/advertisements` | 「Advertisements」メニューをクリック |
 | 管理者ダッシュボード | `/admin/advertisements` | 「Advertisement Moderation」メニューをクリック |
+| マーチャント | ホームページ | `license_status` が `'pending'` または `'reject'` |
+| マーチャント | `/merchant/advertisements`（広告管理画面） | `license_status` が `'approved'` |
 | 任意の保護ルート（未認証） | `/login` | 有効なアクセストークンがない |
 
 ### 12.2 内部遷移
@@ -1070,7 +1084,7 @@ export class AdminAdvertisementsController {
 | `AD_IMAGE_STORAGE_PATH` | `./uploads/ads` | アップロードされた広告画像の保存ディレクトリ |
 | `AD_ACTIVE_CACHE_TTL_SECONDS` | `300` | 有効広告キャッシュのTTL（5分） |
 | `AD_ACTIVE_CACHE_KEY` | `cache:ads:active` | 有効広告キャッシュのRedisキー |
-| `AD_FEE_AMOUNT` | `50.00` | 広告提出ごとに必要な広告掲載料 |
+| `AD_FEE_SETTINGS_TABLE` | `ad_fee_settings` | プレースメント×ティアの動的掲載料設定マスタ |
 | `AD_WEEKLY_LIMIT` | `5` | 週間の最大有効広告数（プラットフォーム全体） |
 | `AD_ANNOUNCEMENT_MAX_LENGTH` | `500` | 告知メッセージの最大長 |
 
@@ -1097,6 +1111,10 @@ export class AdminAdvertisementsController {
 | DBテーブル | 関連する機能操作 |
 |----------------|-------------------------------|
 | `advertisements` | 作成（INSERT）、一覧（SELECT+WHERE）、更新（SELECT+UPDATE）、ソフト削除（UPDATE is_active）、支払い（UPDATE payment_status/payment_amount/payment_reference）、提出/承認/却下（UPDATE approval_status/approved_by/approved_at/rejection_reason）、有効広告表示（SELECT+WHERE 承認済み+支払済み+期間内）、週間上限（week_number でカウント） |
+| `ad_fee_settings` | プレースメント+ティアによる日次料金参照（SELECT）— 動的広告料金設定用 |
+| `ad_payments` | 広告支払い取引の記録（INSERT）、支払いステータス/払い戻しの更新（UPDATE）— `merchant_id` で `merchants` に紐付け |
+| `ad_fee_history` | 管理者による料金設定変更の監査証跡（INSERT） |
+| `merchants` | マーチャントプロフィールとライセンスステータスの検証 |
 | `shops` | 店舗承認チェック（SELECT is_approved）、マーチャントの店舗IDの特定（SELECT） |
 | `users` | 承認者参照（`approved_by` FK）、監査用の管理者識別 |
 
