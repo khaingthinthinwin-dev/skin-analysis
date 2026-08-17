@@ -4,11 +4,11 @@
 **Target Screen:** Admin Commission / Revenue Dashboard (手数料・収益管理)  
 **Subsystem:** Commission Management & Revenue Tracking  
 **Function ID:** FN-COMM-001  
-**Version:** 2.0  
+**Version:** 2.1  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-11  
+**Last Updated:** 2026-08-17  
 **Author:** Senior System Engineer  
-**Review Status:** Draft  
+**Review Status:** Final (Aligned with DATABASE_SPEC v2.0)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -21,15 +21,16 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-10 | Senior System Engineer | Initial release. Screen items specification for the Admin Commission and Revenue pages, aligned with SKM-FDS-COMM-001 (機能設計書). |
 | 2.0 | 2026-08-11 | Senior System Engineer | Added Revenue Target Progress (configurable gauge bar) and AI Revenue Forecast (dotted line) sections, behaviors, validation errors, database/API mappings, i18n keys, and tests. Aligned with SKM-FDS-COMM-001 v3.0. |
+| 2.1 | 2026-08-17 | System Engineer | Aligned database field mappings with DATABASE_SPEC v2.0 (UUID PKs, Decimal types). Updated table references, FK data types (UUID instead of VARCHAR(25)), and data type precision. Verified consistency with REQUIREMENT_SPEC v1.5 and DEVELOPMENT_RULES v2.0. |
 
 ### 1.2 Related Documents
 
-| No. | Document ID | Document Name | File Path | Remarks |
-| :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints, and data types. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
-| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | Use cases, state transitions, validation rules, error handling. |
+| No. | Document ID | Document Name | File Path | Version | Remarks |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 1.5 | Business workflow logic, user roles, merchant states, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.0 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
+| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.0 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
+| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 3.0 (referenced) | Use cases, state transitions, validation rules, business rules, and error handling. |
 
 ---
 
@@ -208,7 +209,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 1 | `lblPageTitleComm` | Page Title (Commission) | Text | String | — | Visible. Text: "Commission" | — | Hardcoded UI text | i18n key: `commission.title`. |
 | 2 | `lblPageTitleRev` | Page Title (Revenue) | Text | String | — | Visible. Text: "Revenue" | — | Hardcoded UI text | i18n key: `revenue.title`. |
-| 3 | `menuAdminUser` | Admin User Menu | Menu (Dropdown) | — | — | Visible. Shows admin identity. | — | `users.name` | Opens account/settings menu. |
+| 3 | `menuAdminUser` | Admin User Menu | Menu (Dropdown) | — | — | Visible. Shows admin identity. | — | `users.role` = `'admin'` | Opens account/settings menu. User must have admin role per REQUIREMENT_SPEC §2.5. |
 
 ### 4.2 Section [B]: Error Alert (エラーアラート)
 
@@ -244,7 +245,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | 16 | `tblReportOrders` | Orders Column | Column (`sortable`) | Integer | — | — | Sortable. | Order count | Number of orders in range. |
 | 17 | `tblReportRevenue` | Revenue Column | Column (`sortable`) | Decimal(10,2) | — | — | Rendered as currency string. | Sum of order totals | Currency formatting via locale. |
 | 18 | `tblReportCommission` | Commission Column | Column (`sortable`) | Decimal(10,2) | — | — | Rendered as currency string. | Calculated commission | Commission = revenue × rate. |
-| 19 | `pgReport` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the report table. |
+| 19 | `pgReport` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the report table. Per DEVELOPMENT_RULES, admin-only endpoints must validate `@UseGuards(JwtAuthGuard, RolesGuard)` and `@Roles('admin')`. |
 
 ### 4.6 Section [G]: Edit Rate Dialog (手数料率編集ダイアログ)
 
@@ -344,25 +345,26 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 ### 5.1 Commission Dashboard Load (page mount)
 - **Trigger:** `/admin/commission` route mounted.
+- **RBAC Validation:** `ProtectedRoute` validates admin role per REQUIREMENT_SPEC §2.5 and DEVELOPMENT_RULES §2.7. Returns `403 Forbidden` error code `COMM_002` if user lacks admin role.
 - **Processing Logic:**
-  1. `ProtectedRoute` validates admin role.
+  1. Validate JWT auth and admin role via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')`.
   2. Fetch commission settings and report rows concurrently (`GET /api/v1/admin/commission`, `GET /api/v1/admin/commission/reports`).
   3. Render rate card (`txtCurrentRate`) and report table (`tblReport`).
   4. On failure, show error alert in `alertError`.
 - **Exception Handling:**
-  - `403` (`COMM_002`): Redirect to `/unauthorized`.
-  - `500` (`SYS_001`): Alert banner with retry option.
+  - `403 COMM_002`: Admin role validation failed. Redirect to `/unauthorized`.
+  - `500 SYS_001`: Server error. Alert banner with retry option.
 
 ### 5.2 Commission Rate Edit (`btnEditRate` onClick → `btnRateSave` onClick)
 - **Trigger:** User clicks "Edit Rate" on the rate card, then "Save" in the dialog.
 - **Processing Logic:**
-  1. Open edit dialog (`dlgEditRate`), pre-fill `txtRateInput` with current rate.
+  1. Open edit dialog (`dlgEditRate`), pre-fill `txtRateInput` with current rate (transmitted as string per DATABASE_SPEC).
   2. **Client-Side Pre-Check:** Validate rate required, matches `/^\d+(\.\d{1,2})?$/`, 0 < value < 100.
-  3. **Backend Dispatch:** `PATCH /api/v1/admin/commission` with `{ rate }`.
+  3. **Backend Dispatch:** `PATCH /api/v1/admin/commission` with `{ rate: "10.50" }` (string format to preserve precision, per DEVELOPMENT_RULES §1.2).
   4. **Post-Execution UI:** On success, close dialog, refresh rate display, show success toast. Log `COMMISSION_RATE_UPDATED`.
 - **Exception Handling:**
-  - `400` (`COMM_001`): Inline field error on `txtRateInput`.
-  - `NET_ERR`: Alert banner for connectivity issue.
+  - `400 COMM_001`: Invalid rate validation failed. Inline field error on `txtRateInput`.
+  - `NET_ERR`: Network connectivity issue. Alert banner.
 
 ### 5.3 Report Filter (`btnApplyFilter` onClick)
 - **Trigger:** User clicks "Apply" in the report filter panel.
@@ -384,14 +386,15 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 ### 5.5 Revenue Dashboard Load (page mount)
 - **Trigger:** `/admin/revenue` route mounted.
+- **RBAC Validation:** `ProtectedRoute` validates admin role per REQUIREMENT_SPEC §2.5 and DEVELOPMENT_RULES §2.7. Returns `403 Forbidden` error code `COMM_002` if user lacks admin role.
 - **Processing Logic:**
-  1. `ProtectedRoute` validates admin role.
+  1. Validate JWT auth and admin role via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')`.
   2. Fetch KPI, trend, target, forecast, payment, and payout data concurrently (`GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts`).
   3. Populate KPI cards, trend chart, target gauge bar, forecast dotted line, payment status panel, and payout table.
   4. On failure, show alert and preserve last known data if available.
 - **Exception Handling:**
-  - `403` (`COMM_002`): Redirect to `/unauthorized`.
-  - `500` (`SYS_001`): Alert banner with retry option.
+  - `403 COMM_002`: Admin role validation failed. Redirect to `/unauthorized`.
+  - `500 SYS_001`: Server error. Alert banner with retry option.
 
 ### 5.6 Trend Range Change (`tglRange` onChange)
 - **Trigger:** User selects `7d` / `30d` / `90d` / `1y` on the range toggle.
@@ -431,13 +434,13 @@ The Commission and Revenue pages are the admin-side financial management screens
 ### 5.9 Revenue Target Save (`btnEditTarget` onClick → `btnTargetSave` onClick)
 - **Trigger:** User clicks "Edit Target" on the target card, then "Save" in the dialog.
 - **Processing Logic:**
-  1. Open edit dialog (`dlgEditTarget`), pre-fill `txtTargetAmount` and `selTargetPeriod` with current values (if any).
+  1. Open edit dialog (`dlgEditTarget`), pre-fill `txtTargetAmount` and `selTargetPeriod` with current values (if any, amount as string per DATABASE_SPEC).
   2. **Client-Side Pre-Check:** Validate amount required, matches `/^\d+(\.\d{1,2})?$/`, value > 0; period is `monthly` or `quarterly`.
-  3. **Backend Dispatch:** `PUT /api/v1/admin/revenue/targets` with `{ targetAmount, targetPeriod }` (upsert — overwrites existing target for the same period, BR-REV-009).
+  3. **Backend Dispatch:** `PUT /api/v1/admin/revenue/targets` with `{ targetAmount: "100000.00", targetPeriod: "monthly" }` (upsert — overwrites existing target for the same period, BR-REV-009).
   4. **Post-Execution UI:** On success, close dialog, refresh target card and gauge bar, show success toast. Log `TARGET_UPDATED`.
 - **Exception Handling:**
-  - `400` (`COMM_005`): Inline field error on `txtTargetAmount` / `selTargetPeriod`.
-  - `NET_ERR`: Alert banner for connectivity issue.
+  - `400 COMM_005`: Invalid target amount or period. Inline field error on `txtTargetAmount` / `selTargetPeriod`.
+  - `NET_ERR`: Network connectivity issue. Alert banner.
 
 ### 5.10 Revenue Forecast Load (page mount / `tglRange` onChange)
 - **Trigger:** `/admin/revenue` route mounted, or trend range change.
@@ -470,6 +473,8 @@ The Commission and Revenue pages are the admin-side financial management screens
 ---
 
 ## 6. Validation & Error Message Mapping (バリデーション及びエラーメッセージマッピング)
+
+**Note:** All commission and revenue endpoints are **admin-only** per REQUIREMENT_SPEC §2.5. Non-admin users receive `403 Forbidden` with error code `COMM_002`. Backend must enforce via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` per DEVELOPMENT_RULES §2.7.
 
 ### 6.1 Commission Rate Validation Errors
 
@@ -506,39 +511,39 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `txtRateInput` | `rate` | `rate` | `commission_settings` | DECIMAL(5,2) |
+| `txtRateInput` | `rate` | `rate` | `commission_settings` | Decimal(5,2) |
 
 ### 7.2 Commission Report → Database
 
 | Table Column | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- |
-| Merchant | `merchant_id` | `order_items` | VARCHAR(25) FK |
-| Revenue | `total` | `orders` | NUMERIC(10,2) |
+| Merchant | `merchant_id` | `merchants` (via orders → products → merchants) | UUID FK |
+| Revenue | `total` | `orders` | Decimal(10,2) |
 | Commission | Calculated | — | `revenue × commission_settings.rate` |
 
 ### 7.3 Revenue Dashboard → Database
 
 | KPI | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- |
-| Total Revenue | `total` | `orders` | NUMERIC(10,2) |
+| Total Revenue | `total` | `orders` | Decimal(10,2) |
 | Total Commission | Calculated | — | `total × rate` |
-| Avg Order Value | `total` | `orders` | NUMERIC(10,2) |
-| Net Revenue | `total` | `orders` | NUMERIC(10,2) (excludes refunds) |
+| Avg Order Value | `total` | `orders` | Decimal(10,2) |
+| Net Revenue | `total` | `orders` (with `status != 'cancelled'`) | Decimal(10,2) (excludes refunds) |
 
 ### 7.4 Payout → Database
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| Payout Merchant | `merchantId` | `merchant_id` | `payouts` | VARCHAR(25) FK |
-| Payout Amount | `amount` | `amount` | `payouts` | DECIMAL(10,2) |
-| Payout Status | `status` | `status` | `payouts` | ENUM('pending', 'processing', 'completed', 'failed') |
+| Payout Merchant | `merchantId` | `merchant_id` | `payouts` | UUID FK (references `merchants.id`) |
+| Payout Amount | `amount` | `amount` | `payouts` | Decimal(10,2) |
+| Payout Status | `status` | `status` | `payouts` | VARCHAR(20) (`'pending'`, `'completed'`, `'failed'`) |
 
 ### 7.5 Revenue Target → Database
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `txtTargetAmount` | `targetAmount` | `target_amount` | `revenue_targets` | DECIMAL(12,2) |
-| `selTargetPeriod` | `targetPeriod` | `period` | `revenue_targets` | ENUM('monthly', 'quarterly') |
+| `txtTargetAmount` | `targetAmount` | `target_amount` | `revenue_targets` | Decimal(12,2) |
+| `selTargetPeriod` | `targetPeriod` | `period` | `revenue_targets` | VARCHAR(20) (`'monthly'`, `'quarterly'`) |
 
 ---
 
@@ -692,6 +697,21 @@ The Commission and Revenue pages are the admin-side financial management screens
 }
 ```
 
+### 8.12 Admin Authorization Error Response (All Endpoints)
+
+```json
+{
+  "statusCode": 403,
+  "error": "FORBIDDEN",
+  "errorCode": "COMM_002",
+  "message": "You do not have permission to access this page",
+  "timestamp": "2026-08-10T12:00:00.000Z",
+  "path": "/api/v1/admin/commission"
+}
+```
+
+**Note:** Per REQUIREMENT_SPEC §2.5 and DEVELOPMENT_RULES §2.7, all Commission and Revenue endpoints are admin-only. Backend must enforce via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')`. Non-admin users (buyer, merchant) receive this error.
+
 ---
 
 ## 9. i18n Keys Reference (i18nキーリファレンス)
@@ -754,6 +774,9 @@ The Commission and Revenue pages are the admin-side financial management screens
 | `revenue.targetSaveSuccess` | "Revenue target updated successfully" |
 | `revenue.forecast` | "AI Forecast" |
 | `revenue.forecastUnavailable` | "Not enough historical data to generate a forecast" |
+| `errors.unauthorized` | "You do not have permission to access this page" |
+| `errors.serverError` | "Something went wrong. Please try again" |
+| `errors.networkError` | "Network error. Please check your connection" |
 
 ### 9.3 Japanese (ja) — Commission
 
@@ -813,6 +836,9 @@ The Commission and Revenue pages are the admin-side financial management screens
 | `revenue.targetSaveSuccess` | "収益目標が正常に更新されました" |
 | `revenue.forecast` | "AI予測" |
 | `revenue.forecastUnavailable` | "予測を生成するのに十分な履歴データがありません" |
+| `errors.unauthorized` | "このページへのアクセス権限がありません" |
+| `errors.serverError` | "問題が発生しました。もう一度お試しください" |
+| `errors.networkError` | "ネットワークエラー。接続を確認してください" |
 
 ---
 
@@ -883,13 +909,14 @@ The Commission and Revenue pages are the admin-side financial management screens
 ## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
 
 - **Design System:** Luxury Cosmetics Theme — Primary `#7C3AED` (Purple), Accent `#EC4899` (Pink), Secondary `#F3E8FF` (Lavender).
-- **Currency Precision:** All monetary values are transmitted and rendered as strings to preserve decimal precision. Never rendered as floats.
-- **Responsive Viewport Design:** KPI grid stacks on mobile; tables become horizontally scrollable below 768px.
+- **Currency Precision:** All monetary values are transmitted and rendered as strings (per DEVELOPMENT_RULES §1.2 on decimal handling) to preserve decimal precision. Never rendered as floats. Use `Decimal(10,2)` or `Decimal(12,2)` per DATABASE_SPEC.
+- **Responsive Viewport Design:** KPI grid stacks on mobile; tables become horizontally scrollable below 768px (per DEVELOPMENT_RULES §9 on responsive design).
 - **Loading States:** Skeleton loaders displayed for cards, chart, and tables until API responses arrive. Buttons display spinners during async operations.
 - **Accessibility:** Every control must be keyboard navigable. ARIA labels required. Error messages must be announced via `role="alert"`. Dialog focus traps enforced.
-- **Security:** Admin-only RBAC enforced on backend (`@UseGuards(JwtAuthGuard, RolesGuard)`, `@Roles('admin')`) and frontend (`<ProtectedRoute roles={['admin']} />`).
-- **Design Tokens:** Status badges use standard color mapping — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`.
-- **Audit Trail:** Commission rate updates, revenue target updates, and payout processing are logged with admin identity and retained per audit policy (90 days / 30 days).
+- **RBAC Implementation:** Commission & Revenue pages are **admin-only** per REQUIREMENT_SPEC §2.5. Backend must enforce `@UseGuards(JwtAuthGuard, RolesGuard)` with `@Roles('admin')` on all endpoints. Frontend must validate role via `<ProtectedRoute roles={['admin']} />`. Unauthorized access (non-admin users) returns `403 Forbidden` with error code `COMM_002`.
+- **Design Tokens:** Status badges use standard color mapping (per DEVELOPMENT_RULES §9) — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`.
+- **Naming Conventions:** Table/column names follow DATABASE_SPEC v2.0 (snake_case in DB, camelCase in API/JSON). UUIDs used as primary and foreign keys per DATABASE_SPEC §1.4.
+- **Audit Trail:** Commission rate updates, revenue target updates, and payout processing are logged with admin identity and retained per audit policy (90 days / 30 days, per DEVELOPMENT_RULES).
 - **Revenue Target Gauge:** Progress above 100% is clamped for gauge display and shown separately as "over target" (BR-REV-008). Only one active target per period type is stored; saving for the same period overwrites it (BR-REV-009).
 - **AI Forecast:** Forecast values are non-committing estimates — they are never written back to financial records or used in KPI/aggregation calculations (BR-REV-015). The dotted line is hidden with an informational note when historical data is insufficient (BR-REV-014).
 
