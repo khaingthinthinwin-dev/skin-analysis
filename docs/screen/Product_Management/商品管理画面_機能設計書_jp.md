@@ -858,6 +858,7 @@ if (activeOrders) {
 | `reviews` | 商品レビュー（SELECT+WHERE）、平均評価計算（集計） |
 | `wishlists` | ウィッシュリスト切替（INSERT/DELETE）、ウィッシュリストステータス確認（SELECT） |
 | `order_items` | 在庫デクリメント（UPDATE）、販売履歴（SELECT） |
+| `inventory_transactions` | 在庫変動監査証跡（INSERT）、在庫履歴（SELECT+WHERE） |
 
 ### 15.3 関連ドキュメント参照
 
