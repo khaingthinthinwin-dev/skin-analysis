@@ -24,6 +24,7 @@
 11. [Step 10 — Final Verification Checklist](#11-step-10--final-verification-checklist)
 12. [NPM Packages Reference](#12-npm-packages-reference)
 13. [Troubleshooting](#13-troubleshooting)
+14. [Database Schema Management Reference](#database-schema-management-reference)
 
 ---
 
@@ -807,6 +808,69 @@ cd backend
 npx prisma generate
 ```
 
+### Problem: "Drift detected" when running `npm run db:migrate`
+
+**Cause:** The database schema is out of sync with migration history. This happens when:
+- `npm run db:push` was used instead of `npm run db:migrate`
+- Tables were manually created or modified
+- Migrations were applied on a different branch without committing migration files
+
+**Fix — Option A (Reset database — dev only, loses all data):**
+
+```powershell
+cd backend
+
+# Reset database and reapply all migrations
+npx prisma migrate reset --force
+
+# Regenerate Prisma client
+npm run db:generate
+
+# (Optional) Re-seed with sample data
+npm run db:seed
+```
+
+**Fix — Option B (Keep data, create migration for drift):**
+
+```powershell
+cd backend
+
+# Accept the current schema state as a new migration
+npx prisma migrate dev --accept-data-loss
+```
+
+> **Warning:** Option B may cause data loss if columns/tables were added outside of migrations.
+
+### Problem: Schema changed but no migration file created
+
+**Cause:** `npm run db:push` was used instead of `npm run db:migrate`. The `db:push` command syncs schema directly without creating a migration file, which causes drift.
+
+**Fix:**
+
+```powershell
+cd backend
+
+# Reset to clean state
+npx prisma migrate reset --force
+
+# Create proper migration
+npm run db:migrate
+
+# Regenerate client
+npm run db:generate
+```
+
+> **Important:** Always use `npm run db:migrate` (not `db:push`) when working with a team. Migration files must be committed to git so other developers can apply them.
+
+### Problem: `db:push` vs `db:migrate` — When to use which?
+
+| Command | Creates Migration File | Safe for Team | When to Use |
+|---------|----------------------|---------------|-------------|
+| `npm run db:push` | No | No | Quick prototyping, solo development only |
+| `npm run db:migrate` | Yes | Yes | **Always use this** when working with others |
+
+**Rule of thumb:** If the code is in git and other people will pull it, **always use `npm run db:migrate`**.
+
 ### Problem: Frontend build errors
 
 ```powershell
@@ -846,6 +910,7 @@ npm install
 cp .env.example .env
 npm run db:generate
 npm run db:migrate
+npm run db:seed        # (Optional) Load sample data
 npm run start:dev
 
 # 3. Frontend (new terminal)
@@ -856,6 +921,52 @@ npm run dev
 
 # 4. Open browser
 # http://localhost:3000
+```
+
+---
+
+## Database Schema Management Reference
+
+### Common Commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run db:generate` | Regenerate Prisma Client after schema changes |
+| `npm run db:migrate` | Create migration file + apply to database |
+| `npm run db:push` | Sync schema directly (no migration file — **avoid for teams**) |
+| `npm run db:seed` | Load sample data into database |
+| `npm run db:studio` | Open Prisma Studio (GUI to view/edit data) |
+| `npx prisma migrate reset` | Drop and recreate database, reapply all migrations |
+
+### After Changing `schema.prisma`
+
+Always follow this order:
+
+```powershell
+cd backend
+
+# 1. Generate Prisma Client
+npm run db:generate
+
+# 2. Create migration and apply
+npm run db:migrate
+
+# 3. Verify (optional)
+npm run db:studio
+```
+
+### If You Accidentally Used `db:push`
+
+```powershell
+cd backend
+
+# Reset database (loses all data)
+npx prisma migrate reset --force
+
+# Re-apply migrations properly
+npm run db:migrate
+npm run db:generate
+npm run db:seed        # (Optional)
 ```
 
 ---
