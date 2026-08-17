@@ -4,9 +4,9 @@
 **Target Screen:** Product Detail (商品詳細)  
 **Subsystem:** Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry  
 **Function ID:** FN-PROD-001  
-**Version:** 1.2  
+**Version:** 1.3  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-11  
+**Last Updated:** 2026-08-17  
 **Author:** Senior System Engineer  
 **Review Status:** Draft (審査中)  
 **Classification:** Internal — Engineering Division
@@ -20,15 +20,16 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-10 | Senior System Engineer | Initial release. Screen items specification for the Product Detail page, aligned with the standard screen items format. Includes comprehensive item definitions with Item IDs, component types, data sources, event specifications, validation error codes, responsive breakpoints, and accessibility requirements. |
-| 1.1 | 2026-08-11 | Senior System Engineer | Cross-checked against `SKM-DBS-001` and `SKM-DEV-001`. Fixed SKU length (`VARCHAR(100)`), review rating type (`INTEGER`), array column types (`TEXT[]`), `discount_type` storage (`VARCHAR(20)` + CHECK), pagination limits (default 20, max 100), RBAC wording (buyer+), document ID reference (`SKM-FDS-PROD-001`), and added Myanmar (my) i18n reference. |
+| 1.1 | 2026-08-11 | Senior System Engineer | Cross-checked against `SKM-DBS-001` and `SKM-DEV-001`. Fixed SKU length (`VARCHAR(100)`), review rating type (`INTEGER`), array column types (`TEXT[]`), `discount_type` storage (`VARCHAR(20)` + CHECK), pagination and authorization wording, document ID reference (`SKM-FDS-PROD-001`), and added Myanmar (my) i18n reference. |
 | 1.2 | 2026-08-11 | Senior System Engineer | Aligned formatting with the Sign-up/Login screen items specification (`SKM-SIS-SCR-001`): Required column values normalized to `Mandatory` / `Conditional` / `—`, i18n keys section reorganized per feature area by language, and section separators corrected. |
+| 1.3 | 2026-08-17 | Senior System Engineer | Reconciled with current database, requirements, development rules, and Product Detail functional specification: UUID identifiers, buyer-only mutation authorization, review pagination limit, merchant/shop mapping, promotion field types, and the unresolved cart persistence model. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlists`, `promotions`, `order_items`), constraints. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 | 4 | SKM-FDS-PROD-001 | Functional Specification — Product Detail | `docs/screen/ProductDetail/機能設計書_ProductDetail.md` | Use cases, state transitions, validation rules, error handling. |
 
@@ -46,7 +47,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | **Primary Actors** | Buyer (authenticated and unauthenticated visitors) |
 | **Required Authentication** | None (view product, view reviews); JWT Bearer Token (write review, wishlist toggle, add to cart) |
 | **Data Scope** | Single product record (public); own review, own wishlist membership, own cart (authenticated) |
-| **Access Control** | Read endpoints public; write review, wishlist, and add-to-cart mutations require `buyer` role or higher (buyer, merchant, admin) (JwtAuthGuard + RolesGuard) |
+| **Access Control** | Read endpoints are public; review, wishlist, and add-to-cart mutations require an authenticated `buyer` role (JwtAuthGuard + RolesGuard). |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
 1. **Product Detail Display** — Render name, description, price, compare-at price, SKU, stock, tags, ingredients, category, merchant, and shop.
@@ -191,7 +192,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 14 | `lblSoldBy` | Sold By Label | Static Label | String | — | Text: "Sold by" | — | Hardcoded UI text | Tailwind: `text-sm text-muted-foreground`. |
-| 15 | `lnkShop` | Shop Name Link | Link (`<Link>`) | String(255) | — | Merchant shop name | — | `users.name`, `shops.name`, `shops.slug` | "Visit Shop →" navigates to `/shops/:shopSlug`. Shows shop logo (`shops.logoUrl`) if available. |
+| 15 | `lnkShop` | Shop Name Link | Link (`<Link>`) | String(255) | — | Merchant shop name | — | `products.merchant_id` → `merchants.id`; `merchants.user_id` → `shops.user_id`; `shops.name`, `shops.slug`, `shops.logo_url` | "Visit Shop →" navigates to `/shops/:shopSlug`. Shows shop logo when `shops.logo_url` is available. |
 
 ### 4.6 Section [F]: Product Tabs (商品タブ)
 
@@ -212,7 +213,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 23 | `uplReviewImages` | Review Image Upload | File Upload | File[] (JSON array) | — | Empty | Max 5 images. Accepts JPG/PNG/WebP | `reviews.images` | Optional. Thumbnail previews with remove buttons. |
 | 24 | `btnSubmitReview` | Submit Review Button | Button (`submit`, `primary`) | — | Conditional | Visible only when authenticated as buyer | — | — | Loading: Spinner + "Submitting...". Disabled when not a verified purchase (server enforces). |
 | 25 | `lblLoginPrompt` | Login Prompt | Static Label + Link | String | Conditional | Text: "Sign in to write a review" | — | Hardcoded UI text | Shown when unauthenticated. Link navigates to `/login`. |
-| 26 | `lstReviews` | Review List | Card List | Review DTO[] | — | Skeleton loaders; empty state when no reviews | Paginated: page ≥ 1, limit 1–100 (default 20) | `reviews` + `users` | Ordered by `created_at DESC`. Each card: rating, title, body, images, verified badge, user name/avatar, date. |
+| 26 | `lstReviews` | Review List | Card List | Review DTO[] | — | Skeleton loaders; empty state when no reviews | Paginated: page ≥ 1, limit 1–50 (default 20) | `reviews` + `users` | Ordered by `created_at DESC`. Each card: rating, title, body, images, verified badge, user name/avatar, date. |
 | 27 | `btnLoadMoreReviews` | Load More / Pagination | Button / Pagination | — | Conditional | Shown when `totalPages > 1` | — | `meta` | Loads next page; shows page info `meta.page / meta.totalPages`. |
 
 ### 4.8 Section [H]: Related Products (関連商品)
@@ -335,8 +336,8 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-PROD-001** | `slug` | Missing or invalid CUID/slug format | Error page / banner | "slug must be a string" | "スラッグは文字列である必要があります" |
-| **VAL-PROD-002** | `productId` | Invalid CUID format | Error page / banner | "productId must be a valid CUID" | "productId が無効です" |
+| **VAL-PROD-001** | `slug` | Missing, non-string, or invalid URL-slug format (max 255 characters) | Error page / banner | "slug must be a valid URL slug" | "スラッグは有効なURLスラッグである必要があります" |
+| **VAL-PROD-002** | `productId` | Invalid UUID format | Error page / banner | "productId must be a valid UUID" | "productId は有効なUUIDである必要があります" |
 
 ### 6.2 Review Form Validation Errors
 
@@ -406,7 +407,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `wgtRatingSummary` | `avgRating` | `avg_rating` | `products` | DECIMAL(3,2) |
 | `wgtRatingSummary` | `reviewCount` | `review_count` | `products` | INT |
 | `bcBreadcrumb` | `category` | `category_id` | `products` (FK) | FK → `categories` |
-| `lnkShop` | `merchant` | `merchant_id` | `products` (FK) | FK → `users` |
+| `lnkShop` | `merchant` / `shop` | `merchant_id` / `user_id` / `name`, `slug`, `logo_url` | `products` → `merchants` → `shops` | UUID FK chain: `products.merchant_id` → `merchants.id`; `merchants.user_id` → `shops.user_id` |
 
 ### 7.2 Review Form → Database
 
@@ -422,24 +423,23 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `stepperQuantity` | `quantity` | `quantity` | `order_items` | INT (≥ 1) |
-| — | `productId` | `product_id` | `order_items` | CUID (FK) |
-| — | — | `merchant_id` | `order_items` | CUID (FK) |
+| `stepperQuantity` | `quantity` | Not defined | — | INT (≥ 1) request value |
+| — | `productId` | Not defined | — | UUID request value |
 
-> **Note:** The database design (`SKM-DBS-001`) has **no `cart_items` table** — the actual table used for cart/order lines is `order_items`.
+> **Schema gap:** `SKM-DBS-001` has no `cart_items` (or equivalent cart) table. `order_items` is a finalized order-line table and requires `order_id`, `merchant_id`, `unit_price`, and `total_price`; it must not be used as cart persistence. `POST /api/v1/cart/items` remains the functional contract, but its persistence model requires database design before implementation.
 
 ### 7.4 Active Promotion → Database
 
 | UI Element / Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `lblPromoCode` | `code` | `code` | `promotions` | VARCHAR (unique) |
+| `lblPromoCode` | `code` | `code` | `promotions` | VARCHAR(50) UNIQUE |
 | `lblPromoDiscount` | `discountType` | `discount_type` | `promotions` | VARCHAR(20) (CHECK: `chk_promotions_discount_type` — 'percentage'/'fixed') |
 | `lblPromoDiscount` | `discountValue` | `discount_value` | `promotions` | DECIMAL(10,2) |
 | `lblPromoMinOrder` | `minOrderAmount` | `min_order_amount` | `promotions` | DECIMAL(10,2) (nullable) |
 | `lblPromoBalance` | `usedCount` | `used_count` | `promotions` | INT |
 | `lblPromoBalance` | `maxUses` | `max_uses` | `promotions` | INT (nullable = unlimited) |
-| `lblPromoValidity` | `startsAt` | `starts_at` | `promotions` | TIMESTAMP |
-| `lblPromoValidity` | `expiresAt` | `expires_at` | `promotions` | TIMESTAMP |
+| `lblPromoValidity` | `startsAt` | `starts_at` | `promotions` | TIMESTAMPTZ |
+| `lblPromoValidity` | `expiresAt` | `expires_at` | `promotions` | TIMESTAMPTZ |
 
 ---
 
@@ -450,7 +450,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 ```json
 {
   "data": {
-    "id": "clx1234567890",
+    "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "name": "Hydrating Facial Serum",
     "slug": "hydrating-facial-serum",
     "description": "Lightweight daily serum with hyaluronic acid...",
@@ -461,8 +461,8 @@ The Product Detail page is the primary conversion point in the buyer journey. It
     "stockQuantity": 45,
     "lowStockThreshold": 10,
     "images": [
-      "https://cdn.example.com/products/clx/1-full.webp",
-      "https://cdn.example.com/products/clx/2-full.webp"
+      "https://cdn.example.com/products/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/1-full.webp",
+      "https://cdn.example.com/products/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/2-full.webp"
     ],
     "tags": ["serum", "hydrating"],
     "skinTypes": ["dry", "sensitive"],
@@ -471,14 +471,14 @@ The Product Detail page is the primary conversion point in the buyer journey. It
     "avgRating": "4.50",
     "reviewCount": 32,
     "category": {
-      "id": "clxcat0001",
+      "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
       "name": "Serums",
       "slug": "serums",
       "parent": { "name": "Skincare", "slug": "skincare" }
     },
     "merchant": {
-      "id": "clxmer0001",
-      "name": "Glow Lab",
+      "id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+      "shopName": "Glow Lab",
       "shop": {
         "name": "Glow Lab Official Store",
         "slug": "glow-lab-official-store",
@@ -496,7 +496,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 {
   "data": [
     {
-      "id": "clxrev0001",
+      "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
       "rating": 5,
       "title": "Amazing for dry skin",
       "body": "My skin feels hydrated all day.",
@@ -504,7 +504,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
       "isVerifiedPurchase": true,
       "createdAt": "2026-08-01T10:00:00.000Z",
       "user": {
-        "id": "clxbuy0001",
+        "id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
         "name": "Jane Doe",
         "avatarUrl": null
       }
@@ -524,7 +524,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 ```json
 {
   "data": {
-    "id": "clxrev0001",
+    "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
     "rating": 5,
     "title": "Amazing for dry skin",
     "body": "My skin feels hydrated all day.",
@@ -542,12 +542,12 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 {
   "data": [
     {
-      "id": "clx1234567891",
+      "id": "f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c",
       "name": "Vitamin C Brightening Serum",
       "slug": "vitamin-c-brightening-serum",
       "price": "28.00",
       "compareAtPrice": null,
-      "images": ["https://cdn.example.com/products/clx/1-thumb.webp"],
+      "images": ["https://cdn.example.com/products/f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c/1-thumb.webp"],
       "avgRating": "4.30",
       "reviewCount": 18,
       "stockQuantity": 20
@@ -562,7 +562,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 {
   "data": [
     {
-      "id": "clxprom0001",
+      "id": "a7b8c9d0-e1f2-4a3b-5c6d-7e8f9a0b1c2d",
       "code": "GLOW10",
       "description": "10% off from Glow Lab",
       "discountType": "percentage",
