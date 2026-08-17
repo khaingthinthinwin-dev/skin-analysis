@@ -10,9 +10,9 @@
 | **Target Screen** | Review & Content Moderation (レビュー・コンテンツ管理) |
 | **Subsystem** | Administration — Review Moderation & Content Management |
 | **Function ID** | FN-MOD-001 |
-| **Version** | 1.1 |
+| **Version** | 1.5 |
 | **Created** | 2026-08-07 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -25,6 +25,10 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-07 | Software Architect | Initial functional specification for Review and Content Moderation covering use cases, business rules, validation, error handling, and permission control. |
 | 1.1 | 2026-08-14 | Software Architect | Aligned with core requirements and database design: UUID identifiers, approved-by-default review flow, merchant `license_status` workflow, website notifications, and removal of unsupported product pending state. |
+| 1.2 | 2026-08-17 | Software Architect | Added Review Reports feature (SYS-REV-001~008): buyer report submission, admin report review/resolution, report status flow, review_reports database table, new API endpoints, business rules BR-MOD-050~055. |
+| 1.3 | 2026-08-17 | Software Architect | Added Product Content Moderation (UC-MOD-008, BR-MOD-010~013), expanded merchant approval workflow (UC-MOD-005), and user management operations. |
+| 1.4 | 2026-08-17 | Software Architect | Aligned with core DB spec v2.2: added `review_reports`, `audit_logs`, `notifications` table references. |
+| 1.5 | 2026-08-17 | Software Architect | Updated traceability matrix with full coverage of audit logs, notifications, and report-related operations. |
 
 ---
 
@@ -64,6 +68,7 @@ This screen is responsible for the following core functional areas:
 2. **Content Moderation** — Removing violating content that breaches platform policy.
 3. **Merchant Registration Management** — Approving or rejecting merchant shop registrations based on license verification and compliance checks.
 4. **User Account Moderation** — Activating or deactivating user accounts for policy violations.
+5. **Review Report Management** — Processing reported reviews: confirming, rejecting, or completing reports. Managing report statuses (pending, rejected, completed).
 
 ### 1.3 Target Users
 
@@ -71,7 +76,7 @@ This screen is responsible for the following core functional areas:
 |-----------|-------|
 | **Primary Actor** | Platform Administrator (管理者) |
 | **Required Authentication** | JWT Bearer Token with `admin` role |
-| **Data Scope** | All reviews, products, merchants, and user accounts |
+| **Data Scope** | All reviews, products, merchants, user accounts, review reports, audit logs |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
 
@@ -116,9 +121,9 @@ This screen is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `categories`), constraints. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
+| 1 | SKM-REQ-001 | Requirements Definition (v1.7) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `categories`), constraints. |
+| 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
 
@@ -134,6 +139,8 @@ This screen is responsible for the following core functional areas:
 | UC-MOD-004 | Remove Violating Content | Content violates platform policy. | Content removed or deactivated. Audit log recorded. | Admin |
 | UC-MOD-005 | Approve/Reject Merchant Registration | Merchant exists with `license_status = 'pending'` and an associated shop exists. | Merchant `license_status` updated; associated `shops.is_approved` synchronized. | Admin |
 | UC-MOD-006 | Activate/Deactivate User Account | User account exists. | User `is_active` status toggled. User sessions terminated on deactivation. | Admin |
+| UC-MOD-007 | Manage Review Reports | Buyer has reported a review, pending report exists. | Admin confirms, rejects, or completes report. Target review may be rejected/deleted. | Admin |
+| UC-MOD-008 | Product Content Moderation | Product violates platform policy. | Admin deactivates (`is_active = false`) or reactivates product. Audit log recorded. | Admin |
 
 ### 2.2 Primary Business Workflow
 
@@ -304,6 +311,17 @@ This screen is responsible for the following core functional areas:
 | BR-MOD-041 | Session Termination | When a user is deactivated, all active sessions (refresh tokens) should be revoked. | Backend (token revocation) |
 | BR-MOD-042 | Self-Deactivation Prevention | Admin cannot deactivate their own account. | Backend (ownership check) |
 
+### 4.5 Review Report Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-MOD-050 | Only Buyers Can Report | Only buyers with purchase history can report reviews. | Backend (ownership check) |
+| BR-MOD-051 | Duplicate Report Prevention | Same user cannot report the same review twice. Enforced via unique constraint on `review_reports` table (review_id + reported_by). | Backend (Prisma unique constraint) |
+| BR-MOD-052 | Report Reason Required | Report must select a reason (spam/harassment/false_info/policy_violation) and optional detail text. | Backend (DTO validation) |
+| BR-MOD-053 | Report Status Management | Reports start with `pending` status. Admin changes to `rejected` or `completed`. | Backend (moderation service) |
+| BR-MOD-054 | Report Target Review Handling | When report is completed, admin can reject/delete the target review. Report is not auto-notified. | Backend (moderation service) |
+| BR-MOD-055 | Report Deletion | Admin can delete pending/rejected reports. Completed reports cannot be deleted. | Backend (moderation service) |
+
 ---
 
 ## 5. Screen Specifications
@@ -374,6 +392,41 @@ This screen is responsible for the following core functional areas:
 | EL-33 | Approve Button | Button (primary) | `admin.merchant.approve` | Yes | Approve merchant |
 | EL-34 | Reject Button | Button (destructive) | `admin.merchant.reject` | Yes | Reject merchant |
 | EL-35 | Close Button | Button (outline) | — | Yes | Close modal |
+
+### 5.3 Screen: Admin Report Management (`/admin/reports`)
+
+**Purpose:** Allow administrators to confirm, reject, or complete reported reviews.
+
+#### 5.3.1 UI Elements
+
+**Report List Table View:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-36 | Page Title | Text | `admin.reports.title` | Yes | "Review Report Management" |
+| EL-37 | Filter Tabs | Tab Group | `admin.reports.tabs` | Yes | Tabs: All, Pending, Rejected, Completed |
+| EL-38 | Search Input | Input (text) | `admin.reports.search` | No | Search by reporter name, review content |
+| EL-39 | Reports Table | Table | — | Yes | Displays: checkbox, reporter name, review body excerpt, reason badge, status badge, reported date, actions |
+| EL-40 | Report Status Badge | Badge | — | Yes | Amber (Pending), Green (Completed), Red (Rejected) |
+| EL-41 | Report Reason Badge | Badge | — | Yes | Reason category display (spam/harassment/false_info/policy_violation) |
+| EL-42 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Reject, Complete |
+| EL-43 | Bulk Actions | Button Group | — | No | Reject Selected, Complete Selected |
+| EL-44 | Pagination | Pagination | — | Yes | Page navigation with page size selector (20/50/100) |
+| EL-45 | Stats Bar | Stats Display | — | No | Shows: Total Reports, Pending Count, Rejected Count, Completed Count |
+
+**Report Detail Modal:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-46 | Reporter Info Card | Card | — | Yes | User name, email, avatar |
+| EL-47 | Review Info Card | Card | — | Yes | Review body, rating, target product name |
+| EL-48 | Report Reason Display | Text | — | Yes | Selected reason category |
+| EL-49 | Report Detail Text | Text | — | No | Reporter's additional explanation |
+| EL-50 | Target Review Actions | Button Group | — | Yes | Approve/Reject/Delete buttons for the target review |
+| EL-51 | Reject Button | Button (destructive) | `admin.reports.reject` | Yes | Reject report |
+| EL-52 | Complete Button | Button (primary) | `admin.reports.complete` | Yes | Complete report |
+| EL-53 | Delete Button | Button (destructive) | `admin.reports.delete` | Yes | Delete report |
+| EL-54 | Close Button | Button (outline) | — | Yes | Close modal |
 
 ---
 
@@ -454,6 +507,44 @@ This screen is responsible for the following core functional areas:
 | **Success Response** | 200 OK with updated user DTO |
 | **Post-Action** | Display toast notification. Refresh users list. |
 
+### 6.5 Operation: Product Content Moderation
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Admin clicks "Deactivate" or "Reactivate" on a product |
+| **API Endpoint** | `PATCH /api/v1/admin/products/:id/status` |
+| **Request Content-Type** | `application/json` |
+| **Request Body** | `{ isActive: boolean, reason?: string }` |
+| **Pre-Submission Validation** | JWT access token validated. Admin role verified. Product exists. |
+| **Processing Steps** | 1. Validate JWT and admin role. 2. Find product by ID. 3. If reason = 'deactivate', validate reason is provided. 4. Update `products.is_active`. 5. Invalidate product list cache. 6. Log action to audit trail. 7. Return updated product data. |
+| **Success Response** | 200 OK with updated Product DTO |
+| **Post-Action** | Display toast notification. Refresh products list. |
+
+### 6.8 Operation: Report List
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Admin navigates to /admin/reports or changes the report status filter |
+| **API Endpoint** | `GET /api/v1/admin/reports` |
+| **Request Query Parameters** | `page` (default: 1), `limit` (default: 20), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`pending`/`rejected`/`completed`/omitted for all) |
+| **Pre-Submission Validation** | JWT access token validated. Admin role verified. |
+| **Processing Steps** | 1. Validate JWT access token. 2. Verify admin role via RolesGuard. 3. Query `review_reports` table with optional status filter. 4. Join with `users` (reporter) and related `reviews` for display data. 5. Apply pagination. 6. Return paginated report list with metadata. |
+| **Success Response** | 200 OK with paginated report data |
+| **Post-Action** | Display reports table |
+
+### 6.9 Operation: Report Status Update
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Admin clicks "Reject" or "Complete" on a report |
+| **API Endpoint** | `PATCH /api/v1/admin/reports/:id/status` |
+| **Request Content-Type** | `application/json` |
+| **Request Body** | `{ status: 'rejected' | 'completed' }` |
+| **Pre-Submission Validation** | JWT access token validated. Admin role verified. Report exists. Completed reports cannot be changed. |
+| **Processing Steps** | 1. Validate JWT and admin role. 2. Find report by ID. 3. If status = 'completed', reject the target review (`is_approved = false`). 4. Update `review_reports.status`. 5. Set `review_reports.resolved_by` and `resolved_at`. 6. Log action to audit trail. 7. Return updated report data. |
+| **Success Response** | 200 OK with updated Report DTO |
+| **Post-Action** | Display toast notification. Refresh reports list. |
+
 ---
 
 ## 7. Input / Output Specification
@@ -477,6 +568,14 @@ This screen is responsible for the following core functional areas:
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `isActive` | Active Status | 有効ステータス | BOOLEAN | Yes | Toggle | `@IsBoolean()` |
+
+### 7.4 Input Specification — Review Report (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `reason` | Report Reason | 報告理由 | ENUM ('spam', 'harassment', 'false_info', 'policy_violation') | Yes | Select | `@IsIn(['spam', 'harassment', 'false_info', 'policy_violation'])` |
+| `detail` | Report Detail | 報告詳細 | TEXT | No | Textarea | `@MaxLength(1000)` |
+| `reviewId` | Review ID | レビューID | UUID | Yes | Hidden field | `@IsUUID()` |
 
 ### 7.5 Output Specification — Review List (出力定義)
 
@@ -507,6 +606,22 @@ This screen is responsible for the following core functional areas:
 | `user.email` | `users.email` | String |
 | `createdAt` | `merchants.created_at` | ISO 8601 timestamp |
 
+### 7.7 Output Specification — Report List (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `id` | `review_reports.id` | UUID string |
+| `reviewer.name` | `users.name` (reporter) | String |
+| `reviewer.email` | `users.email` (reporter) | String |
+| `review.content` | `reviews.body` | Text excerpt (100 chars) |
+| `review.rating` | `reviews.rating` | Star icons (1-5) |
+| `reason` | `review_reports.reason` | Badge (spam/harassment/false_info/policy_violation) |
+| `detail` | `review_reports.description` | Text or "—" |
+| `status` | `review_reports.status` | Status badge (Pending/Rejected/Completed) |
+| `resolvedBy.name` | `users.name` (resolver) | String or "—" |
+| `resolvedAt` | `review_reports.resolved_at` | ISO 8601 timestamp or "—" |
+| `createdAt` | `review_reports.created_at` | ISO 8601 timestamp |
+
 ---
 
 ## 8. Input Validation Rules
@@ -530,6 +645,14 @@ This screen is responsible for the following core functional areas:
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `isActive` | Required, boolean | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
+
+### 8.4 Report Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `reason` | Required, valid ENUM value | "Reason must be one of: spam, harassment, false_info, policy_violation" | "理由は次のいずれかである必要があります: spam, harassment, false_info, policy_violation" |
+| `detail` | Optional, max 1000 chars | "Detail must not exceed 1000 characters" | "詳細は1000文字以下である必要があります" |
+| `reviewId` | Required, valid UUID | "Review ID must be a valid UUID" | "レビューIDは有効なUUIDである必要があります" |
 
 ### 8.5 Validation Enforcement Layers
 
@@ -572,7 +695,17 @@ This screen is responsible for the following core functional areas:
 | `409` | `CONFLICT` | Merchant already in target status | "Merchant is already approved/rejected" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
-### 9.4 Frontend Error Display Behavior
+### 9.4 Error Classification Table — Report Management
+
+| HTTP Status | Error Code | Scenario | User-Facing Behavior |
+|-------------|------------|----------|---------------------|
+| `400` | `BAD_REQUEST` | Validation failures (missing reason, reviewId) | Field-level inline errors |
+| `403` | `FORBIDDEN` | Non-admin user | "You do not have permission" |
+| `404` | `NOT_FOUND` | Report not found | "Report not found" |
+| `409` | `CONFLICT` | Attempting to change an already completed report | "This report has already been completed" |
+| `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
+
+### 9.5 Frontend Error Display Behavior
 
 - **Field-Level Validation**: Red border and inline text below invalid input.
 - **Form-Level Summary**: Alert banner at top of form listing all errors.
@@ -600,14 +733,19 @@ This screen is responsible for the following core functional areas:
 | `PATCH /admin/users/:id/status` | Protected (admin) | Activate/deactivate user |
 | `GET /admin/merchants` | Protected (admin) | View all merchants |
 | `PATCH /admin/merchants/:id/status` | Protected (admin) | Approve/reject merchant |
+| `GET /admin/products` | Protected (admin) | View all products |
+| `PATCH /admin/products/:id/status` | Protected (admin) | Product moderation (deactivate/reactivate) |
+| `GET /admin/reports` | Protected (admin) | View all reports |
+| `PATCH /admin/reports/:id/status` | Protected (admin) | Report status update (reject/complete) |
+| `DELETE /admin/reports/:id` | Protected (admin) | Delete report |
 
 ### 10.3 Role-Based Access
 
-| Role | Can View Reviews | Can Moderate Reviews | Can Manage Merchants | Can Manage Users |
-|------|:----------------:|:--------------------:|:--------------------:|:----------------:|
-| `buyer` | ✗ | ✗ | ✗ | ✗ |
-| `merchant` | Own products only | ✗ | ✗ | ✗ |
-| `admin` | ✓ | ✓ | ✓ | ✓ |
+| Role | Can View Reviews | Can Moderate Reviews | Can Manage Merchants | Can Manage Users | Can Manage Reports |
+|------|:----------------:|:--------------------:|:--------------------:|:----------------:|:----------------:|
+| `buyer` | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `merchant` | Own products only | ✗ | ✗ | ✗ | ✗ |
+| `admin` | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### 10.4 Security Audit Logging
 
@@ -620,6 +758,9 @@ This screen is responsible for the following core functional areas:
 | `MERCHANT_REJECTED` | adminId, shopId, merchantId, reason, timestamp | 2 years |
 | `USER_DEACTIVATED` | adminId, userId, timestamp | 2 years |
 | `USER_ACTIVATED` | adminId, userId, timestamp | 2 years |
+| `REPORT_REJECTED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_COMPLETED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_DELETED` | adminId, reportId, timestamp | 2 years |
 | `RBAC_VIOLATION` | userId, endpoint, requiredRole, timestamp | 30 days |
 
 ---
@@ -656,6 +797,8 @@ After moderation action, relevant parties are notified:
 |--------|--------|-----------|
 | Admin Dashboard | `/admin/reviews` | Clicking "Reviews" card or sidebar link |
 | Admin Dashboard | `/admin/merchants` | Clicking "Pending Approvals" card or sidebar link |
+| Admin Dashboard | `/admin/reports` | Clicking "Reports" card or sidebar link |
+| Admin Dashboard | `/admin/products` | Clicking "Products" card or sidebar link |
 | Any admin page | `/admin/reviews` | Direct URL navigation |
 
 ### 12.2 Internal Navigation
@@ -664,8 +807,10 @@ After moderation action, relevant parties are notified:
 |--------|--------|---------|
 | `/admin/reviews` | Review Detail Modal | Click "View Detail" or row click |
 | `/admin/merchants` | Merchant Detail Modal | Click "View Detail" or row click |
+| `/admin/reports` | Report Detail Modal | Click "View Detail" or row click |
 | `/admin/reviews` | `/admin/merchants` | Sidebar navigation |
 | `/admin/merchants` | `/admin/reviews` | Sidebar navigation |
+| `/admin/reports` | `/admin/reviews` | Sidebar navigation |
 
 ### 12.3 Outbound Navigation
 
@@ -673,6 +818,7 @@ After moderation action, relevant parties are notified:
 |--------|--------|-----------|
 | `/admin/reviews` | `/products/:slug` | Click "View Product" link in review detail |
 | `/admin/merchants` | `/admin/reviews` | After merchant approval, navigate to their reviews |
+| `/admin/reports` | `/admin/reviews` | After report completion, navigate to target review |
 | Any admin page | `/admin/dashboard` | Click "Back to Dashboard" |
 
 ### 12.4 Error Navigation
@@ -682,6 +828,7 @@ After moderation action, relevant parties are notified:
 | Any admin page | `/login` | JWT token expired or invalid |
 | Any admin page | `/unauthorized` | 403 Forbidden (non-admin role) |
 | Any admin page | `/admin/dashboard` | Resource not found (404) |
+| `/admin/reports` | `/admin/reports` | After report status update, refresh list |
 
 ---
 
@@ -743,17 +890,22 @@ Defined via `.env` configuration:
 | A-REV-001 | Admin can view all reviews | UC-MOD-001, Sec 6.1 |
 | A-REV-002 | Admin can approve/reject reviews | UC-MOD-002, BR-MOD-001~006, Sec 6.2 |
 | A-REV-003 | Admin can delete inappropriate reviews | UC-MOD-003, BR-MOD-005, Sec 6.3 |
-| A-CONT-002 | Admin can approve/reject merchant registrations | UC-MOD-005, BR-MOD-020~023, Sec 6.5 |
-| A-CONT-004 | Admin can remove violating content | UC-MOD-004, Sec 6.4 |
+| A-CONT-002 | Admin can approve/reject merchant registrations | UC-MOD-005, BR-MOD-020~023, Sec 6.6 |
+| A-CONT-004 | Admin can remove violating content | UC-MOD-004, UC-MOD-008, Sec 6.5 |
+| A-REPORT-001 | Buyer can report a review | UC-MOD-007, BR-MOD-050~055 |
+| A-REPORT-002 | Admin can review/resolve reports | UC-MOD-007, BR-MOD-053~055, Sec 6.8~6.9 |
 
 ### 15.2 Database Design Traceability
 
 | Database Table | Relevant Functional Operations |
 |----------------|-------------------------------|
 | `reviews` | View reviews (SELECT), Moderate reviews (UPDATE is_approved), Delete reviews (DELETE) |
-| `products` | View products (SELECT), Recalculate avg_rating |
+| `products` | View products (SELECT), Recalculate avg_rating, Product moderation (UPDATE is_active) |
 | `shops` | View merchants (SELECT), Approve/reject merchants (UPDATE is_approved) |
 | `users` | View users (SELECT), Activate/deactivate users (UPDATE is_active) |
+| `review_reports` | View reports (SELECT), Report status update (UPDATE status), Report deletion (DELETE) |
+| `audit_logs` | Audit log recording (INSERT) |
+| `notifications` | Website notification creation (INSERT) for merchant status changes |
 
 ### 15.3 API Endpoint Traceability
 
@@ -764,7 +916,13 @@ Defined via `.env` configuration:
 | `DELETE /admin/reviews/:id` | Delete review | A-REV-003 |
 | `GET /admin/merchants` | View merchants | A-CONT-002 |
 | `PATCH /admin/merchants/:id/status` | Approve/reject merchant | A-CONT-002 |
+| `GET /admin/users` | View users | A-CONT-002 |
 | `PATCH /admin/users/:id/status` | Activate/deactivate user | A-CONT-002 |
+| `GET /admin/products` | View products | A-CONT-004 |
+| `PATCH /admin/products/:id/status` | Product moderation | A-CONT-004 |
+| `GET /admin/reports` | View reports | A-REPORT-001 |
+| `PATCH /admin/reports/:id/status` | Report status update | A-REPORT-002 |
+| `DELETE /admin/reports/:id` | Delete report | A-REPORT-002 |
 
 ### 15.4 Related Document References
 

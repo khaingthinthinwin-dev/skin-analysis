@@ -4,9 +4,9 @@
 **Target Screen:** Review & Content Moderation (レビュー・コンテンツ管理)  
 **Subsystem:** Administration — Review Moderation & Content Management  
 **Function ID:** FN-MOD-001  
-**Version:** 1.4  
+**Version:** 1.5  
 **Created:** 2026-08-08  
-**Last Updated:** 2026-08-14  
+**Last Updated:** 2026-08-17  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -24,15 +24,16 @@
 | 1.2 | 2026-08-12 | Senior System Engineer | Added User Management screen (`/admin/users`): user table, user detail modal, activate/deactivate flows (UC-MOD-006, BR-MOD-040~042), database mappings, API responses, i18n keys, and test checklist. Fixed `is_approved IS NULL` to correct `is_approved = FALSE` per BR-MOD-002. |
 | 1.3 | 2026-08-13 | Senior System Engineer | Removed `PENDING_REVIEW` status from Product Moderation States per database design (no `status` column in `products` table). Removed `statPendingReviewCount`, "Pending Review" filter tab, and `status` field from Products List database mapping. Updated layout diagrams, i18n keys, behavior specs, and test checklist accordingly. |
 | 1.4 | 2026-08-14 | Senior System Engineer | Aligned with core requirements v1.5 and database spec v2.0: UUID IDs, approved-by-default reviews with no active pending review filter, merchant `license_status` as the approval source of truth, synchronized shop visibility, corrected document path, and website notifications. |
+| 1.5 | 2026-08-17 | Senior System Engineer | Added Review Reports management screen (`/admin/reports`): report table, report detail modal, reject/complete flows, database mappings (`review_reports` table), API responses, i18n keys, and test checklist. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `users`), constraints. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
-| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
+| 1 | SKM-REQ-001 | Requirements Definition (v1.7) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `users`), constraints. |
+| 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
+| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation (v1.5) | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
 
@@ -718,6 +719,111 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 135 | `btnDeactivateUser` | Deactivate Button | Button (`destructive`) | — | — | Visible when user is active. Text: "Deactivate" | — | — | i18n key: `admin.users.deactivate`. Requires confirmation. Hidden for current admin (BR-MOD-042). |
 | 136 | `btnReactivateUser` | Reactivate Button | Button (`default`) | — | — | Visible when user is inactive. Text: "Reactivate" | — | — | i18n key: `admin.users.reactivate`. |
 
+### 4.46 Review Reports List Layout (`/admin/reports`)
+
+**Purpose:** Allow platform administrators to view, moderate, and manage user-submitted review reports.
+
+**Route:** `/admin/reports`
+
+**Layout Structure:**
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  DashboardLayout (admin sidebar)                         │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  PageHeader: "Review Reports" (admin.reports.title)│  │
+│  │  StatsBar: Total | Pending | Rejected | Completed  │  │
+│  │  SearchBar + FilterTabs: All | Pending | Rejected  │  │
+│  │                           | Completed              │  │
+│  │  ┌──────────────────────────────────────────────┐  │  │
+│  │  │  DataTable (report_rows)                     │  │  │
+│  │  │  Columns: [✓] [Reporter] [Review Excerpt]    │  │  │
+│  │  │  [Reason] [Status] [Created] [Actions]       │  │  │
+│  │  └──────────────────────────────────────────────┘  │  │
+│  │  Pagination: 20 | 50 | 100 per page                │  │
+│  └────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Table Columns:**
+| Column | Width | i18n Key | Notes |
+| :--- | :--- | :--- | :--- |
+| Checkbox | 40px | — | Row selection |
+| Reporter | 15% | `admin.reports.column.reporter` | User name + email |
+| Review Excerpt | 30% | `admin.reports.column.reviewExcerpt` | First 100 chars of review body |
+| Reason | 12% | `admin.reports.column.reason` | Badge with reason category |
+| Status | 10% | `admin.reports.column.status` | Badge: pending/rejected/completed |
+| Created | 12% | `admin.reports.column.createdAt` | Relative time |
+| Actions | 8% | — | Dropdown menu |
+
+**Status Badge Colors:**
+- Pending: `bg-amber-100 text-amber-800`
+- Rejected: `bg-red-100 text-red-800`
+- Completed: `bg-green-100 text-green-800`
+
+**Reason Badge Colors:**
+- Spam: `bg-orange-100 text-orange-800`
+- Harassment: `bg-red-100 text-red-800`
+- False Info: `bg-yellow-100 text-yellow-800`
+- Policy Violation: `bg-purple-100 text-purple-800`
+
+### 4.47 Report Detail Modal Layout
+
+**Purpose:** Display full report details and allow moderator to take action.
+
+**Modal Size:** `max-w-2xl`
+
+**Layout Structure:**
+```
+┌─────────────────────────────────────────────┐
+│  Header: "Report Detail" (admin.reports.detail.title)
+│  ─────────────────────────────────────────── │
+│  ┌───────────────┐  ┌────────────────────┐  │
+│  │ Reporter Card  │  │ Review Card        │  │
+│  │ - Avatar       │  │ - Rating stars     │  │
+│  │ - Name         │  │ - Review body      │  │
+│  │ - Email        │  │ - Product link     │  │
+│  └───────────────┘  └────────────────────┘  │
+│  ─────────────────────────────────────────── │
+│  Report Info                                │
+│  - Reason: [Badge]                          │
+│  - Detail: [Text or "—"]                    │
+│  - Status: [Badge]                          │
+│  - Resolved By: [Name or "—"]               │
+│  - Resolved At: [Date or "—"]               │
+│  ─────────────────────────────────────────── │
+│  Target Review Actions                      │
+│  [Approve Review] [Reject Review] [Delete Review] │
+│  ─────────────────────────────────────────── │
+│  Report Actions                             │
+│  [Reject Report] [Complete Report] [Delete Report] │
+│  ─────────────────────────────────────────── │
+│  Footer: [Close]                            │
+└─────────────────────────────────────────────┘
+```
+
+**Modal Elements:**
+| Element | Type | i18n Key | Notes |
+| :--- | :--- | :--- | :--- |
+| Reporter Avatar | Avatar | — | User avatar or placeholder |
+| Reporter Name | Text | — | `report.reporter.name` |
+| Reporter Email | Text | — | `report.reporter.email` |
+| Review Rating | Stars | — | 1-5 star display |
+| Review Body | Text | — | Full review text |
+| Product Link | Link | — | Navigate to product detail |
+| Report Reason | Badge | — | Reason category badge |
+| Report Detail | Text | — | Optional detail text |
+| Report Status | Badge | — | Status badge |
+| Resolved By | Text | — | Admin name or "—" |
+| Resolved At | Timestamp | — | ISO date or "—" |
+| Approve Review | Button (secondary) | `admin.moderation.approve` | Approve target review |
+| Reject Review | Button (destructive) | `admin.moderation.reject` | Reject target review |
+| Delete Review | Button (destructive) | `admin.moderation.delete` | Delete target review |
+| Reject Report | Button (destructive) | `admin.reports.reject` | Reject the report |
+| Complete Report | Button (primary) | `admin.reports.complete` | Mark report as completed |
+| Delete Report | Button (destructive) | `admin.reports.delete` | Delete the report |
+| Close | Button (outline) | — | Close modal |
+
 ---
 
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
@@ -1045,6 +1151,28 @@ The Review & Content Moderation screens serve as the central administration hub 
   3. Re-render table.
 - **Exception Handling:** None applicable.
 
+### 5.34 Report Status Behaviors
+
+| Current Status | Available Actions | Next Status | Notes |
+| :--- | :--- | :--- | :--- |
+| `pending` | Reject, Complete | `rejected`, `completed` | Default status for new reports |
+| `rejected` | Delete | — | Reports can be deleted |
+| `completed` | — | — | Completed reports cannot be changed |
+
+**Report → Review Action Relationship:**
+- When a report is marked `completed`, the target review is automatically rejected (`is_approved = false`).
+- The moderator can also manually approve/reject/delete the target review from the report detail modal.
+- Report actions do NOT notify the reporter (per BR-MOD-054).
+
+### 5.35 Report Table Row Actions
+
+| Action | Visible When | Confirmation | Effect |
+| :--- | :--- | :--- | :--- |
+| View Detail | Always | No | Opens Report Detail Modal |
+| Reject Report | Status is `pending` | Yes (AlertDialog) | Sets status to `rejected` |
+| Complete Report | Status is `pending` | Yes (AlertDialog) | Sets status to `completed`, rejects target review |
+| Delete Report | Status is `pending` or `rejected` | Yes (AlertDialog) | Permanently deletes report |
+
 ---
 
 ## 6. Validation & Error Message Mapping (バリデーション及びエラーメッセージマッピング)
@@ -1193,6 +1321,29 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `lastLoginAt` | `user.lastLoginAt` | `last_login_at` | `users` | TIMESTAMPTZ NULL |
 | `updatedAt` | `user.updatedAt` | `updated_at` | `users` | TIMESTAMPTZ |
 | `reviewCount` | `user.reviewCount` | (computed) | `reviews` | INTEGER |
+
+### 7.9 Report List → Database
+
+| Table Field | API Response Field | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `report.id` | `id` | `review_reports` | UUID PK |
+| `reporter.name` | `report.reporter.name` | `name` | `users` | VARCHAR(255) |
+| `review.body` | `report.review.body` | `body` | `reviews` | TEXT NULL |
+| `reason` | `report.reason` | `reason` | `review_reports` | VARCHAR(50) |
+| `status` | `report.status` | `status` | `review_reports` | VARCHAR(20) |
+| `createdAt` | `report.createdAt` | `created_at` | `review_reports` | TIMESTAMPTZ |
+
+### 7.10 Report Detail → Database
+
+| Table Field | API Response Field | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- | :--- |
+| `detail` | `report.description` | `description` | `review_reports` | TEXT NULL |
+| `resolvedBy` | `report.resolvedBy` | `resolved_by` | `users` | UUID FK NULL |
+| `resolvedAt` | `report.resolvedAt` | `resolved_at` | `review_reports` | TIMESTAMPTZ NULL |
+| `review.body` | `report.review.body` | `body` | `reviews` | TEXT NULL |
+| `review.rating` | `report.review.rating` | `rating` | `reviews` | INTEGER |
+| `review.product.name` | `report.review.product.name` | `name` | `products` | VARCHAR(255) |
+| `review.product.slug` | `report.review.product.slug` | `slug` | `products` | VARCHAR(255) |
 
 ---
 
@@ -1365,6 +1516,61 @@ The Review & Content Moderation screens serve as the central administration hub 
 }
 ```
 
+### 8.9 Report List Success Response
+
+```json
+{
+  "data": [
+    {
+      "id": "clxReport001",
+      "reviewId": "clxReview001",
+      "reporter": {
+        "id": "clxUser002",
+        "name": "Jane Doe",
+        "email": "jane@example.com",
+        "avatarUrl": "https://cdn.example.com/avatars/jane.jpg"
+      },
+      "review": {
+        "id": "clxReview001",
+        "body": "This product is amazing! It completely transformed my skin in just two weeks...",
+        "rating": 5,
+        "product": {
+          "id": "clxProd001",
+          "name": "Hydrating Serum",
+          "slug": "hydrating-serum"
+        }
+      },
+      "reason": "spam",
+      "detail": "This review appears to be fake promotional content",
+      "status": "pending",
+      "resolvedBy": null,
+      "resolvedAt": null,
+      "createdAt": "2026-08-15T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 45,
+    "totalPages": 3
+  }
+}
+```
+
+### 8.10 Report Status Update Success Response
+
+```json
+{
+  "data": {
+    "id": "clxReport001",
+    "status": "completed",
+    "resolvedBy": "clxAdmin001",
+    "resolvedAt": "2026-08-17T14:00:00.000Z",
+    "updatedAt": "2026-08-17T14:00:00.000Z"
+  }
+}
+```
+
 ### 8.7 Error Response (Standard)
 
 ```json
@@ -1491,6 +1697,50 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.users.stats.inactive` | "Inactive" |
 | `admin.users.stats.admin` | "Admin" |
 
+### 9.8 English (en) — Reports
+
+| Key | Value |
+| :--- | :--- |
+| `admin.reports.title` | "Review Reports" |
+| `admin.reports.tabs.all` | "All" |
+| `admin.reports.tabs.pending` | "Pending" |
+| `admin.reports.tabs.rejected` | "Rejected" |
+| `admin.reports.tabs.completed` | "Completed" |
+| `admin.reports.search` | "Search reports..." |
+| `admin.reports.column.reporter` | "Reporter" |
+| `admin.reports.column.reviewExcerpt` | "Review Excerpt" |
+| `admin.reports.column.reason` | "Reason" |
+| `admin.reports.column.status` | "Status" |
+| `admin.reports.column.createdAt` | "Created" |
+| `admin.reports.stats.total` | "Total Reports" |
+| `admin.reports.stats.pending` | "Pending" |
+| `admin.reports.stats.rejected` | "Rejected" |
+| `admin.reports.stats.completed` | "Completed" |
+| `admin.reports.detail.title` | "Report Detail" |
+| `admin.reports.detail.reporter` | "Reporter" |
+| `admin.reports.detail.review` | "Reported Review" |
+| `admin.reports.detail.reason` | "Reason" |
+| `admin.reports.detail.detail` | "Detail" |
+| `admin.reports.detail.status` | "Status" |
+| `admin.reports.detail.resolvedBy` | "Resolved By" |
+| `admin.reports.detail.resolvedAt` | "Resolved At" |
+| `admin.reports.detail.targetReviewActions` | "Target Review Actions" |
+| `admin.reports.detail.reportActions` | "Report Actions" |
+| `admin.reports.reject` | "Reject Report" |
+| `admin.reports.complete` | "Complete Report" |
+| `admin.reports.delete` | "Delete Report" |
+| `admin.reports.confirmReject` | "Are you sure you want to reject this report?" |
+| `admin.reports.confirmComplete` | "Are you sure you want to mark this report as completed? The target review will be rejected." |
+| `admin.reports.confirmDelete` | "Are you sure you want to permanently delete this report? This action cannot be undone." |
+| `admin.reports.success.rejected` | "Report rejected" |
+| `admin.reports.success.completed` | "Report completed" |
+| `admin.reports.success.deleted` | "Report deleted" |
+| `admin.reports.empty` | "No reports found" |
+| `admin.reports.reason.spam` | "Spam" |
+| `admin.reports.reason.harassment` | "Harassment" |
+| `admin.reports.reason.false_info` | "False Info" |
+| `admin.reports.reason.policy_violation` | "Policy Violation" |
+
 ### 9.4 Japanese (ja) — Reviews
 | `admin.reviews.tabs.all` | "すべて" |
 | `admin.reviews.tabs.approved` | "承認済み" |
@@ -1592,6 +1842,50 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.users.stats.active` | "有効" |
 | `admin.users.stats.inactive` | "無効" |
 | `admin.users.stats.admin` | "管理者" |
+
+### 9.13 Japanese (ja) — Reports
+
+| Key | Value |
+| :--- | :--- |
+| `admin.reports.title` | "レビューレポート" |
+| `admin.reports.tabs.all` | "すべて" |
+| `admin.reports.tabs.pending` | "保留中" |
+| `admin.reports.tabs.rejected` | "却下済み" |
+| `admin.reports.tabs.completed` | "完了済み" |
+| `admin.reports.search` | "レポートを検索..." |
+| `admin.reports.column.reporter` | "報告者" |
+| `admin.reports.column.reviewExcerpt` | "レビュー抜粋" |
+| `admin.reports.column.reason` | "理由" |
+| `admin.reports.column.status` | "ステータス" |
+| `admin.reports.column.createdAt` | "作成日" |
+| `admin.reports.stats.total` | "合計レポート数" |
+| `admin.reports.stats.pending` | "保留中" |
+| `admin.reports.stats.rejected` | "却下済み" |
+| `admin.reports.stats.completed` | "完了済み" |
+| `admin.reports.detail.title` | "レポート詳細" |
+| `admin.reports.detail.reporter` | "報告者" |
+| `admin.reports.detail.review` | "報告されたレビュー" |
+| `admin.reports.detail.reason` | "理由" |
+| `admin.reports.detail.detail` | "詳細" |
+| `admin.reports.detail.status` | "ステータス" |
+| `admin.reports.detail.resolvedBy` | "処理者" |
+| `admin.reports.detail.resolvedAt` | "処理日時" |
+| `admin.reports.detail.targetReviewActions` | "対象レビューの操作" |
+| `admin.reports.detail.reportActions` | "レポートの操作" |
+| `admin.reports.reject` | "レポートを却下" |
+| `admin.reports.complete` | "レポートを完了" |
+| `admin.reports.delete` | "レポートを削除" |
+| `admin.reports.confirmReject` | "このレポートを却下してもよろしいですか？" |
+| `admin.reports.confirmComplete` | "このレポートを完了してもよろしいですか？対象レビューは却下されます。" |
+| `admin.reports.confirmDelete` | "このレポートを完全に削除してもよろしいですか？この操作は取り消せません。" |
+| `admin.reports.success.rejected` | "レポートが却下されました" |
+| `admin.reports.success.completed` | "レポートが完了されました" |
+| `admin.reports.success.deleted` | "レポートが削除されました" |
+| `admin.reports.empty` | "レポートが見つかりません" |
+| `admin.reports.reason.spam` | "スパム" |
+| `admin.reports.reason.harassment` | "ハラスメント" |
+| `admin.reports.reason.false_info` | "虚偽情報" |
+| `admin.reports.reason.policy_violation` | "ポリシー違反" |
 
 ---
 
@@ -1813,6 +2107,28 @@ The Review & Content Moderation screens serve as the central administration hub 
 - [ ] Error messages announced via `role="alert"`
 - [ ] Color contrast meets WCAG 2.1 AA (4.5:1)
 - [ ] Focus indicators visible on all interactive elements
+
+### 12.14 Review Reports Management Tests
+
+- [ ] Reports list loads with correct data from API
+- [ ] Filter tabs (All, Pending, Rejected, Completed) filter reports correctly
+- [ ] Search filters reports by reporter name/email
+- [ ] Pagination works correctly (20, 50, 100 per page)
+- [ ] Status badges display with correct colors
+- [ ] Reason badges display with correct colors
+- [ ] Row actions dropdown opens correctly
+- [ ] "View Detail" opens Report Detail Modal
+- [ ] Report Detail Modal displays reporter info, review excerpt, report info
+- [ ] "Reject Report" action with confirmation dialog works
+- [ ] "Complete Report" action with confirmation dialog works
+- [ ] "Delete Report" action with confirmation dialog works
+- [ ] Target review actions (Approve/Reject/Delete) work from modal
+- [ ] Completed report auto-rejects target review
+- [ ] Stats bar updates after actions
+- [ ] Empty state displays when no reports found
+- [ ] Error handling for API failures
+- [ ] i18n keys render correctly in English and Japanese
+- [ ] Responsive design on different screen sizes
 
 ---
 

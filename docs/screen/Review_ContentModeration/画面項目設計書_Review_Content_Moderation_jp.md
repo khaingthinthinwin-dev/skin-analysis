@@ -4,9 +4,9 @@
 **対象画面:** レビュー・コンテンツ管理  
 **サブシステム:** 管理 — レビュー管理・コンテンツ管理  
 **機能ID:** FN-MOD-001  
-**バージョン:** 1.4  
+**バージョン:** 1.5  
 **作成日:** 2026-08-08  
-**最終更新日:** 2026-08-14  
+**最終更新日:** 2026-08-17  
 **著者:** シニアシステムエンジニア  
 **レビュー状態:** 承認済み  
 **分類:** 社内 — エンジニアリング部門
@@ -24,15 +24,16 @@
 | 1.2 | 2026-08-12 | シニアシステムエンジニア | ユーザー管理画面を追加（`/admin/users`）：ユーザーテーブル、ユーザー詳細モーダル、有効化/無効化フロー（UC-MOD-006, BR-MOD-040~042）、データベースマッピング、APIレスポンス、i18nキー、テストチェックリスト。`is_approved IS NULL`をBR-MOD-002に従い正しい`is_approved = FALSE`に修正。 |
 | 1.3 | 2026-08-13 | シニアシステムエンジニア | データベース設計に従い製品モデレーションステータスから`PENDING_REVIEW`ステータスを削除（`products`テーブルに`status`カラムなし）。`statPendingReviewCount`、「保留中」フィルタタブ、製品一覧データベースマッピングの`status`フィールドを削除。レイアウト図、i18nキー、挙動仕様、テストチェックリストを相应に更新。 |
 | 1.4 | 2026-08-14 | シニアシステムエンジニア | コア要件v1.5およびDB設計v2.0に合わせ、UUID ID、デフォルト承認済みレビュー（有効な保留中レビューフィルタなし）、出品者承認の基準となる`license_status`、ショップ公開状態の同期、関連文書パス、ウェブサイト通知を反映。 |
+| 1.5 | 2026-08-17 | シニアシステムエンジニア | レビュー報告機能を追加（SYS-REV-001~008）：報告一覧テーブル、報告詳細モーダル、報告解決フロー、review_reportsテーブルマッピング、APIレスポンス、i18nキー、テストチェックリスト。 |
 
 ### 1.2 関連ドキュメント
 
 | 番号 | ドキュメントID | ドキュメント名 | ファイルパス | 備考 |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフローのロジック、必須フィールド、ルール。 |
-| 2 | SKM-DBS-001 | データベース設計書 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`reviews`、`products`、`shops`、`users`）、制約。 |
-| 3 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
-| 4 | SKM-FDS-MOD-001 | 機能設計書 — レビュー・コンテンツ管理 | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | ユースケース、状態遷移、バリデーションルール、例外処理。 |
+| 1 | SKM-REQ-001 | 要件定義書（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフローのロジック、必須フィールド、ルール。 |
+| 2 | SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`reviews`、`products`、`shops`、`users`）、制約。 |
+| 3 | SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
+| 4 | SKM-FDS-MOD-001 | 機能設計書 — レビュー・コンテンツ管理（v1.5） | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | ユースケース、状態遷移、バリデーションルール、例外処理。 |
 
 ---
 
@@ -341,6 +342,74 @@
 │              │                             │            │
 │              │   [VV] アクションボタン       │            │
 │              │   [無効化] [有効化]           │            │
+│              └─────────────────────────────┘            │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### レビュー報告管理レイアウト（`/admin/reports`）
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    ブラウザビューポート                      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              [WW] ページヘッダー                    │   │
+│  │   ページタイトル: "レビュー報告管理"                    │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              [XX] 統計バー（条件付き）               │   │
+│  │   合計 | 保留中 | 解決済み | 却下済み                │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              [YY] フィルタタブ                      │   │
+│  │   すべて | 保留中 | 審査済み | 解決済み | 却下済み    │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │   [ZZ] 検索バー                                   │   │
+│  │   [検索入力]                                       │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              [AAA] 報告テーブル                     │   │
+│  │   チェックボックス | 報告者 | レビュー内容 | 理由      │   │
+│  │   ステータスバッジ | 作成日 | アクション              │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              [BBB] ページネーション                  │   │
+│  │   < 1 2 3 ... 10 >    ページサイズ: [20]           │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### 報告詳細モーダルレイアウト
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    モーダルオーバーレイ                     │
+│              ┌─────────────────────────────┐            │
+│              │   [CCC] モーダルヘッダー      │            │
+│              │   "報告詳細" [X 閉じる]       │            │
+│              ├─────────────────────────────┤            │
+│              │                             │            │
+│              │   [DDD] 報告情報カード       │            │
+│              │   報告者名 | 報告理由          │            │
+│              │   説明 | 報告日時             │            │
+│              │                             │            │
+│              │   [EEE] レビュー情報カード    │            │
+│              │   レビューコンテンツ           │            │
+│              │   製品名 | 評価              │            │
+│              │                             │            │
+│              │   [FFF] 解決アクション        │            │
+│              │   ステータス選択              │            │
+│              │   管理者メモ入力              │            │
+│              │   レビューアクション（任意）    │            │
+│              │                             │            │
+│              │   [GGG] アクションボタン      │            │
+│              │   [解決] [却下]              │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -717,6 +786,91 @@
 | 135 | `btnDeactivateUser` | 無効化ボタン | ボタン（`destructive`） | — | — | ユーザーが有効な場合に表示。テキスト: "無効化" | — | — | i18nキー: `admin.users.deactivate`。確認が必要。現在の管理者には非表示（BR-MOD-042）。 |
 | 136 | `btnReactivateUser` | 有効化ボタン | ボタン（`default`） | — | — | ユーザーが無効な場合に表示。テキスト: "有効化" | — | — | i18nキー: `admin.users.reactivate`。 |
 
+### 4.46 セクション [WW]：ページヘッダー — 報告管理
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 137 | `lblReportsTitle` | ページタイトル | 静的ラベル（`<h1>`） | String | — | 表示中。テキスト: "レビュー報告管理" | — | i18nキー: `admin.reports.title` | `text-2xl font-bold`。 |
+
+### 4.47 セクション [XX]：統計バー — 報告管理
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 138 | `statTotalReports` | 報告合計数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(review_reports)` | Tailwind: `bg-white rounded-lg p-4 shadow-sm`。 |
+| 139 | `statPendingReports` | 保留中報告数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(review_reports WHERE status = 'pending')` | アンバーバッジ。 |
+| 140 | `statResolvedReports` | 解決済み報告数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(review_reports WHERE status = 'resolved')` | グリーンバッジ。 |
+| 141 | `statRejectedReports` | 却下済み報告数 | 統計カード | Integer | — | 読み込み時に設定 | — | `COUNT(review_reports WHERE status = 'rejected')` | レッドバッジ。 |
+
+### 4.48 セクション [YY]：フィルタタブ — 報告管理
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 142 | `tabFilterReports` | フィルタタブ | タブグループ | Enum | — | デフォルト: "すべて" | 選択肢: すべて、保留中、審査済み、解決済み、却下済み | — | i18nキー: `admin.reports.tabs`。 |
+
+### 4.49 セクション [ZZ]：検索バー — 報告管理
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 143 | `txtReportSearch` | 報告検索入力 | 入力（`text`） | String(255) | いいえ | 空。プレースホルダー: "報告を検索..." | MaxLength: 255 | — | i18nキー: `admin.reports.search`。デバウンス（300ms）。 |
+
+### 4.50 セクション [AAA]：報告テーブル
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 144 | `chkSelectAllReports` | 全選択チェックボックス | チェックボックス | Boolean | いいえ | 未チェック | — | — | すべての行チェックボックスを切替。 |
+| 145 | `chkSelectReport` | 報告選択チェックボックス | チェックボックス | Boolean | いいえ | 行ごと。未チェック | — | — | — |
+| 146 | `lblReporterName` | 報告者名 | 静的ラベル | String | — | DBから設定 | — | `users.name` (review_reports.reported_by) | `font-medium text-sm`。 |
+| 147 | `lblReportedReview` | 報告されたレビュー | 静的ラベル | String | — | DBから設定 | — | `reviews.body` (review_reports.review_id) | 100文字で切り詰め。 |
+| 148 | `lblReportReason` | 報告理由 | バッジ | Enum | — | DBから設定 | — | `review_reports.reason` | spam, inappropriate, fake, other。 |
+| 149 | `badgeReportStatus` | 報告ステータスバッジ | バッジ | Enum | — | グリーン（解決済み）、アンバー（保留中）、レッド（却下済み）、ブルー（審査済み） | — | `review_reports.status` | 標準のステータスバッジカラー。 |
+| 150 | `lblReportCreatedDate` | 作成日 | 静的ラベル | DateTime | — | ISO 8601形式 | — | `review_reports.created_at` | i18nによるローカライズ日付形式。 |
+| 151 | `ddlReportActions` | アクションドロップダウン | ドロップダウンメニュー | — | — | 折りたたまれた状態 | 選択肢: 詳細表示 | — | — |
+
+### 4.51 セクション [BBB]：ページネーション — 報告管理
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 152 | `pagReports` | 報告ページネーション | ページネーション | — | — | ページ1、APIから総ページ数 | — | APIレスポンス `meta.totalPages` | ページサイズセレクタ: 20、50、100。 |
+
+### 4.52 セクション [CCC]：報告モーダルヘッダー
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 153 | `lblReportDetailTitle` | モーダルタイトル | 静的ラベル（`<h2>`） | String | — | テキスト: "報告詳細" | — | i18nキー: `admin.reports.detail.title` | `text-lg font-semibold`。 |
+| 154 | `btnCloseReportModal` | モーダル閉じるボタン | アイコンボタン | — | — | 表示中。Xアイコン。 | — | — | モーダルを閉じる。Escキーでも閉じる。 |
+
+### 4.53 セクション [DDD]：報告モーダル内報告情報カード
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 155 | `lblReportReporterName` | 報告者名 | 静的ラベル | String | — | DBから設定 | — | `users.name` | `font-semibold`。 |
+| 156 | `lblReportReasonValue` | 報告理由 | バッジ | Enum | — | DBから設定 | — | `review_reports.reason` | spam, inappropriate, fake, other。 |
+| 157 | `lblReportDescription` | 報告説明 | 静的ラベル（`<p>`） | Text | — | DBから設定または「—」 | — | `review_reports.description` | `text-sm text-muted-foreground`。 |
+| 158 | `lblReportCreatedValue` | 報告日時 | 静的ラベル | DateTime | — | ISO 8601形式 | — | `review_reports.created_at` | ローカライズ日付形式。 |
+
+### 4.54 セクション [EEE]：報告モーダル内レビュー情報カード
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 159 | `lblReportedReviewBody` | レビュー本文 | 静的ラベル（`<p>`） | Text | — | DBから設定 | — | `reviews.body` | `text-sm whitespace-pre-wrap`。 |
+| 160 | `lblReportedReviewProduct` | レビュープロダクト名 | 静的ラベル（リンク） | String | — | DBから設定 | — | `products.name` | `/products/:slug`へのリンク。 |
+| 161 | `ratingReportedReview` | レビュー評価 | スターレーティング | Integer (1-5) | — | DBから設定 | — | `reviews.rating` | 読み取り専用表示。 |
+
+### 4.55 セクション [FFF]：報告解決アクション
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 162 | `selReportStatus` | 解決ステータス | セレクト | Enum | いいえ | デフォルト: 保留中現在値 | 選択肢: 解決済み、却下済み | — | ステータス選択。 |
+| 163 | `txtAdminNote` | 管理者メモ | テキストエリア | String(1000) | 条件付き | 空。プレースホルダー: "メモを入力..." | MaxLength: 1000。解決時に必須。 | — | `min-h-[80px]`。 |
+| 164 | `selModerateReview` | レビューアクション | セレクト | Enum | いいえ | デフォルト: なし | 選択肢: なし、承認、却下、削除 | — | 報告解決時にレビューアクションを実行可能。 |
+
+### 4.56 セクション [GGG]：報告モーダルアクションボタン
+
+| 番号 | 項目ID | 項目名（論理名） | コンポーネントタイプ | データ型＆最大長 | 必須 | 初期状態／デフォルト値 | 入力制約／フォーマット | データソース／DBマッピング | 備考／ビジネスルール |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 165 | `btnResolveReport` | 解決ボタン | ボタン（`submit`、`default`） | — | — | 表示中。テキスト: "解決" | — | — | i18nキー: `admin.reports.resolve`。 |
+| 166 | `btnRejectReport` | 却下ボタン | ボタン（`destructive`） | — | — | 表示中。テキスト: "却下" | — | — | i18nキー: `admin.reports.reject`。 |
+
 ---
 
 ## 5. 各項目における挙動・イベント仕様
@@ -1044,6 +1198,47 @@
   3. テーブルを再レンダリング。
 - **例外処理:** 該当なし。
 
+### 5.34 報告フィルタタブ変更（`tabFilterReports` onChange）
+- **トリガー:** ユーザーがフィルタタブ（すべて、保留中、審査済み、解決済み、却下済み）をクリック。
+- **処理ロジック:**
+  1. URLクエリパラメータ `?status=pending|reviewed|resolved|rejected` を更新、または「すべて」の場合は `status` を削除。
+  2. ページネーションをページ1にリセット。
+  3. `GET /api/v1/admin/reports?status={status}&page=1&limit=20` からフィルタ済み報告を取得。
+  4. 新しいデータで報告テーブルを再レンダリング。
+- **例外処理:** ネットワークエラー: トースト「報告の読み込みに失敗しました。もう一度お試しください。」を表示。
+
+### 5.35 報告検索入力（`txtReportSearch` onInput）
+- **トリガー:** ユーザーが検索フィールドにテキストを入力。
+- **処理ロジック:**
+  1. 入力をデバウンス（300ms）。
+  2. URLクエリパラメータ `?search={query}` を更新。
+  3. 検索クエリでAPIからフィルタ済み報告を取得。
+  4. 報告テーブルを再レンダリング。
+- **例外処理:** ネットワークエラー: トーストエラーを表示。
+
+### 5.36 報告行クリック / 詳細表示（`ddlReportActions` → "詳細表示"）
+- **トリガー:** ユーザーがアクションドロップダウンの「詳細表示」または行をクリック。
+- **処理ロジック:**
+  1. `GET /api/v1/admin/reports/:id` から報告の完全データを取得。
+  2. 設定済みデータで報告詳細モーダルを開く。
+  3. 報告情報カード（報告者名、理由、説明、日時）を表示。
+  4. レビュー情報カード（本文、製品名、評価）を表示。
+  5. 解決アクション（ステータス選択、管理者メモ、レビューアクション）を表示。
+- **例外処理:** `404 NOT_FOUND`: トースト「報告が見つかりません」を表示。
+
+### 5.37 報告解決（`btnResolveReport` onClick）
+- **トリガー:** ユーザーが報告詳細モーダルの「解決」ボタンをクリック。
+- **処理ロジック:**
+  1. **クライアント側事前チェック:** ステータスが選択されていることを確認。解決ステータスの場合に管理者メモが空でないことをバリデーション（最大1000文字）。
+  2. **バックエンドディスパッチ:** `PATCH /api/v1/admin/reports/:id/resolve` に `{ status: 'resolved'|'rejected', adminNote: '...', reviewAction?: 'approve'|'reject'|'delete' }` を送信。
+  3. **バックエンド実行:** `review_reports.status` と `review_reports.admin_note` と `review_reports.resolved_at` と `review_reports.resolved_by` を更新。指定されたレビューアクションがある場合は `reviews.is_approved` を更新。監査ログを記録。
+  4. **実行後UI:** モーダルを閉じる。成功トースト「報告が解決されました」を表示。報告リストを更新。統計バーを再読み込み。
+- **例外処理:**
+  - `400 BAD_REQUEST`: トースト「管理者メモは解決時に必須です」を表示。
+  - `403 FORBIDDEN`: トースト「権限がありません」を表示。
+  - `404 NOT_FOUND`: トースト「報告が見つかりません」を表示。
+  - `500 INTERNAL_SERVER_ERROR`: トースト「問題が発生しました。もう一度お試しください」を表示。
+
 ---
 
 ## 6. バリデーション及びエラーメッセージマッピング
@@ -1089,6 +1284,17 @@
 | **MOD_031** | `alertError` | 製品が見つからない（404） | アラートバナー（破壊的） | "Product not found" | "製品が見つかりません" |
 | **MOD_032** | `alertError` | 製品が既にターゲット状態（409） | トースト通知（警告） | "Product is already active/inactive" | "製品は既に有効/無効です" |
 | **MOD_033** | `alertError` | サーバーエラー（500） | アラートバナー（破壊的） | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
+
+### 6.5 報告モデレーションバリデーションエラー
+
+| エラーコード | 対象フィールド | 条件／評価ロジック | UI/UX表示スタイル | デフォルトエラーメッセージテキスト（EN） | デフォルトエラーメッセージテキスト（JA） |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **VAL-MOD-030** | `txtAdminNote` | 解決ステータス = 'resolved' の場合にメモが空 | 赤いボーダー。フィールド下にテキスト。 | "Admin note is required when resolving" | "解決時に管理者メモは必須です" |
+| **VAL-MOD-031** | `txtAdminNote` | メモが1000文字を超える | 赤いボーダー。フィールド下にテキスト。 | "Note must not exceed 1000 characters" | "メモは1000文字以下である必要があります" |
+| **MOD_040** | `alertError` | 非管理者ユーザーが報告解決を試行（403） | アラートバナー（破壊的） | "You do not have permission to perform this action" | "このアクションを実行する権限がありません" |
+| **MOD_041** | `alertError` | 報告が見つからない（404） | アラートバナー（破壊的） | "Report not found" | "報告が見つかりません" |
+| **MOD_042** | `alertError` | 報告が既に解決済み（409） | トースト通知（警告） | "Report is already resolved" | "報告は既に解決済みです" |
+| **MOD_043** | `alertError` | サーバーエラー（500） | アラートバナー（破壊的） | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
 
 ---
 
@@ -1192,6 +1398,30 @@
 | `lastLoginAt` | `user.lastLoginAt` | `last_login_at` | `users` | TIMESTAMPTZ NULL |
 | `updatedAt` | `user.updatedAt` | `updated_at` | `users` | TIMESTAMPTZ |
 | `reviewCount` | `user.reviewCount` | (算出) | `reviews` | INTEGER |
+
+### 7.9 報告一覧 → データベース
+
+| テーブルフィールド | APIレスポンスフィールド | データベースカラム | テーブル | データ型 |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `report.id` | `id` | `review_reports` | UUID PK |
+| `reporter.name` | `report.reporter.name` | `name` | `users` | VARCHAR(255) |
+| `review.body` | `report.review.body` | `body` | `reviews` | TEXT NULL |
+| `reason` | `report.reason` | `reason` | `review_reports` | VARCHAR(50) |
+| `status` | `report.status` | `status` | `review_reports` | VARCHAR(20) |
+| `createdAt` | `report.createdAt` | `created_at` | `review_reports` | TIMESTAMPTZ |
+
+### 7.10 報告詳細 → データベース
+
+| テーブルフィールド | APIレスポンスフィールド | データベースカラム | テーブル | データ型 |
+| :--- | :--- | :--- | :--- | :--- |
+| `description` | `report.description` | `description` | `review_reports` | TEXT NULL |
+| `adminNote` | `report.adminNote` | `admin_note` | `review_reports` | TEXT NULL |
+| `resolvedAt` | `report.resolvedAt` | `resolved_at` | `review_reports` | TIMESTAMPTZ NULL |
+| `resolvedBy` | `report.resolvedBy` | `resolved_by` | `users` | UUID FK NULL |
+| `review.body` | `report.review.body` | `body` | `reviews` | TEXT NULL |
+| `review.rating` | `report.review.rating` | `rating` | `reviews` | INTEGER |
+| `review.product.name` | `report.review.product.name` | `name` | `products` | VARCHAR(255) |
+| `review.product.slug` | `report.review.product.slug` | `slug` | `products` | VARCHAR(255) |
 
 ---
 
@@ -1376,6 +1606,54 @@
 }
 ```
 
+### 8.10 報告一覧成功レスポンス
+
+```json
+{
+  "data": [
+    {
+      "id": "clxReport001",
+      "reporter": {
+        "id": "clxUser001",
+        "name": "John Doe"
+      },
+      "review": {
+        "id": "clxReview001",
+        "body": "This product is terrible and does not work as advertised...",
+        "product": {
+          "name": "Hydrating Serum",
+          "slug": "hydrating-serum"
+        }
+      },
+      "reason": "spam",
+      "status": "pending",
+      "createdAt": "2026-08-15T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 35,
+    "totalPages": 2
+  }
+}
+```
+
+### 8.11 報告解決成功レスポンス
+
+```json
+{
+  "data": {
+    "id": "clxReport001",
+    "status": "resolved",
+    "adminNote": "Reviewed content - spam confirmed",
+    "resolvedAt": "2026-08-17T14:00:00.000Z",
+    "resolvedBy": "clxAdmin001",
+    "updatedAt": "2026-08-17T14:00:00.000Z"
+  }
+}
+```
+
 ---
 
 ## 9. i18nキーリファレンス
@@ -1488,6 +1766,32 @@
 | `admin.users.stats.inactive` | "Inactive" |
 | `admin.users.stats.admin` | "Admin" |
 
+### 9.4.1 英語（en）— 報告管理
+
+| キー | 値 |
+| :--- | :--- |
+| `admin.reports.title` | "Review Report Management" |
+| `admin.reports.tabs.all` | "All" |
+| `admin.reports.tabs.pending` | "Pending" |
+| `admin.reports.tabs.reviewed` | "Reviewed" |
+| `admin.reports.tabs.resolved` | "Resolved" |
+| `admin.reports.tabs.rejected` | "Rejected" |
+| `admin.reports.search` | "Search reports..." |
+| `admin.reports.detail.title` | "Report Detail" |
+| `admin.reports.resolve` | "Resolve" |
+| `admin.reports.reject` | "Reject" |
+| `admin.reports.notePlaceholder` | "Enter admin note..." |
+| `admin.reports.success.resolved` | "Report resolved" |
+| `admin.reports.success.rejected` | "Report rejected" |
+| `admin.reports.stats.total` | "Total Reports" |
+| `admin.reports.stats.pending` | "Pending" |
+| `admin.reports.stats.resolved` | "Resolved" |
+| `admin.reports.stats.rejected` | "Rejected" |
+| `admin.reports.reason.spam` | "Spam" |
+| `admin.reports.reason.inappropriate` | "Inappropriate" |
+| `admin.reports.reason.fake` | "Fake" |
+| `admin.reports.reason.other` | "Other" |
+
 ### 9.5 日本語（ja）— レビュー
 
 | キー | 値 |
@@ -1595,6 +1899,32 @@
 | `admin.users.stats.active` | "有効" |
 | `admin.users.stats.inactive` | "無効" |
 | `admin.users.stats.admin` | "管理者" |
+
+### 9.8.1 日本語（ja）— 報告管理
+
+| キー | 値 |
+| :--- | :--- |
+| `admin.reports.title` | "レビュー報告管理" |
+| `admin.reports.tabs.all` | "すべて" |
+| `admin.reports.tabs.pending` | "保留中" |
+| `admin.reports.tabs.reviewed` | "審査済み" |
+| `admin.reports.tabs.resolved` | "解決済み" |
+| `admin.reports.tabs.rejected` | "却下済み" |
+| `admin.reports.search` | "報告を検索..." |
+| `admin.reports.detail.title` | "報告詳細" |
+| `admin.reports.resolve` | "解決" |
+| `admin.reports.reject` | "却下" |
+| `admin.reports.notePlaceholder` | "メモを入力..." |
+| `admin.reports.success.resolved` | "報告が解決されました" |
+| `admin.reports.success.rejected` | "報告が却下されました" |
+| `admin.reports.stats.total` | "合計報告数" |
+| `admin.reports.stats.pending` | "保留中" |
+| `admin.reports.stats.resolved` | "解決済み" |
+| `admin.reports.stats.rejected` | "却下済み" |
+| `admin.reports.reason.spam` | "スパム" |
+| `admin.reports.reason.inappropriate` | "不適切" |
+| `admin.reports.reason.fake` | "偽情報" |
+| `admin.reports.reason.other` | "その他" |
 
 ---
 
@@ -1816,6 +2146,42 @@
 - [ ] エラーメッセージが `role="alert"` で通知される
 - [ ] 色のコントラストがWCAG 2.1 AA（4.5:1）を満たす
 - [ ] すべてのインタラクティブ要素にフォーカスインジケータが表示される
+
+### 12.14 報告管理ダッシュボードテスト
+
+- [ ] ページが正しいタイトル「レビュー報告管理」で読み込まれる
+- [ ] 統計バーが正しいカウント（合計、保留中、解決済み、却下済み）を表示する
+- [ ] フィルタタブが報告を正しくフィルタする（すべて、保留中、審査済み、解決済み、却下済み）
+- [ ] 検索入力が報告者名、レビュー内容で報告をフィルタする
+- [ ] ページネーションがページサイズセレクタ（20、50、100）で動作する
+- [ ] ステータスバッジが正しいカラー（グリーン=解決済み、アンバー=保留中、レッド=却下済み、ブルー=審査済み）を表示する
+- [ ] 報告理由バッジが正しく表示される（spam, inappropriate, fake, other）
+- [ ] アクションドロップダウンが詳細表示を表示する
+
+### 12.15 報告詳細モーダルテスト
+
+- [ ] モーダルが正しい報告データで開く
+- [ ] 報告情報カードが報告者名、理由、説明、日時を表示する
+- [ ] レビュー情報カードが本文、製品名、評価を表示する
+- [ ] 解決ステータスセレクトが正しく動作する
+- [ ] 管理者メモ入力がプレースホルダーを表示する
+- [ ] 解決ステータスが「解決済み」の場合に管理者メモが必須になる
+- [ ] レビューアクションセレクトが正しく動作する（なし、承認、却下、削除）
+- [ ] 解決ボタンが正常に送信される
+- [ ] 却下ボタンが正常に送信される
+- [ ] 管理者メモなしで解決を試みた場合にバリデーションエラーが表示される
+- [ ] モーダルがEscキーで閉じる
+- [ ] モーダルがXボタンクリックで閉じる
+
+### 12.16 例外処理テスト（報告管理）
+
+- [ ] 403 Forbidden が「権限がありません」を表示する
+- [ ] 404 Not Found が「報告が見つかりません」を表示する
+- [ ] 409 Conflict が「報告は既に解決済みです」を表示する
+- [ ] 400 Bad Request が「管理者メモは解決時に必須です」を表示する
+- [ ] 500 Server Error が汎用エラーメッセージを表示する
+- [ ] ネットワークエラーが接続エラーメッセージを表示する
+- [ ] バリデーションエラーがフィールドにインライン表示される
 
 ---
 
