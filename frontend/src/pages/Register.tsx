@@ -49,7 +49,7 @@ export default function Register() {
       email: '',
       password: '',
       confirmPassword: '',
-      role: undefined,
+      role: 'buyer',
       licenseFile: null,
       agreeToTerms: false,
     },

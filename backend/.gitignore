@@ -14,3 +14,6 @@ package-lock.json
 
 # Build
 dist/
+
+# Uploads (local development)
+uploads/

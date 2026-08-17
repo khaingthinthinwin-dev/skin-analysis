@@ -36,6 +36,30 @@ export default function Profile() {
               <label className="text-sm font-medium">Role</label>
               <p className="text-muted-foreground capitalize">{user?.role || 'Not set'}</p>
             </div>
+            {user?.role === 'merchant' && (
+              <div>
+                <label className="text-sm font-medium">License Status</label>
+                <p className="mt-1">
+                  {user?.licenseStatus ? (
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      user.licenseStatus === 'approved'
+                        ? 'bg-green-100 text-green-800'
+                        : user.licenseStatus === 'rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {user.licenseStatus === 'approved'
+                        ? 'Approved'
+                        : user.licenseStatus === 'rejected'
+                          ? 'Rejected'
+                          : 'Pending'}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Not set</span>
+                  )}
+                </p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium">Member Since</label>
               <p className="text-muted-foreground">

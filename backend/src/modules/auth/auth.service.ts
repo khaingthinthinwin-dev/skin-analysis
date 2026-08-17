@@ -202,13 +202,34 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return {
+    const result: Record<string, unknown> = {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.roleCode,
       avatarUrl: user.avatarUrl,
+      merchantId: null,
+      licenseStatus: null,
+      licenseUrl: null,
     };
+
+    if (user.roleCode === 'merchant') {
+      const merchant = await this.prisma.merchant.findFirst({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          businessLicenseUrl: true,
+          licenseStatus: true,
+        },
+      });
+      if (merchant) {
+        result.merchantId = merchant.id;
+        result.licenseUrl = merchant.businessLicenseUrl;
+        result.licenseStatus = merchant.licenseStatus;
+      }
+    }
+
+    return result;
   }
 
   private saveLicenseFile(

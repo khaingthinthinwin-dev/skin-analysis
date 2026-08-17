@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form'
 import { useAuth } from '@/hooks/useAuth'
 import { loginSchema, type LoginFormData } from '@/schemas/auth.schema'
-import { ROUTES } from '@/lib/constants'
+import { getDashboardRoute, ROUTES } from '@/lib/constants'
 
 export default function Login() {
   const { t } = useTranslation()
@@ -48,9 +48,9 @@ export default function Login() {
     setIsLoading(true)
     setError(null)
     try {
-      await login(data)
+      const user = await login(data)
       toast.success(t('auth.login.success'))
-      navigate(ROUTES.PROFILE)
+      navigate(getDashboardRoute(user.role))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed'
       setError(errorMessage)

@@ -1,11 +1,16 @@
+export type UserRole = 'buyer' | 'merchant' | 'admin' | 'super_admin'
+
+export type LicenseStatus = 'pending' | 'approved' | 'rejected' | null
+
 export interface User {
   id: string
   email: string
   name: string
-  role: 'buyer' | 'merchant' | 'admin'
+  role: UserRole
+  merchantId?: string | null
   avatar?: string
   licenseUrl?: string | null
-  licenseStatus?: 'pending' | 'approved' | 'rejected' | null
+  licenseStatus?: LicenseStatus
   createdAt: string
 }
 

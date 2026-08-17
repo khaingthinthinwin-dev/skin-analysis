@@ -7,8 +7,8 @@ interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (credentials: LoginCredentials) => Promise<void>
-  register: (data: RegisterData) => Promise<void>
+  login: (credentials: LoginCredentials) => Promise<User>
+  register: (data: RegisterData) => Promise<User>
   logout: () => void
   refreshUser: () => Promise<void>
 }
@@ -45,13 +45,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('accessToken', response.accessToken)
     localStorage.setItem('refreshToken', response.refreshToken)
     setUser(response.user)
+    return response.user
   }, [])
 
   const register = useCallback(async (data: RegisterData) => {
     const response = await authService.register(data)
-    localStorage.setItem('accessToken', response.accessToken)
-    localStorage.setItem('refreshToken', response.refreshToken)
-    setUser(response.user)
+    return response.user
   }, [])
 
   const logout = useCallback(() => {
