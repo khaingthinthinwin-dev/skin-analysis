@@ -10,9 +10,9 @@
 | **Target Screen** | Sign-up / Login (新規登録 / ログイン) |
 | **Subsystem** | Authentication — User Registration & Session Management |
 | **Function ID** | FN-AUTH-001 |
-| **Version** | 3.0 |
+| **Version** | 3.1 |
 | **Created** | 2026-08-04 |
-| **Last Updated** | 2026-08-05 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -26,6 +26,7 @@
 | 1.0 | 2026-08-04 | Software Architect | Initial functional specification for Sign-up and Login pages covering use cases, business rules, validation, error handling, and permission control. |
 | 2.0 | 2026-08-04 | Software Architect | Updated structure to fully conform to standard functional specification template, integrating detailed specifications from Requirement, Database, and Development Rules documents. |
 | 3.0 | 2026-08-05 | Software Architect | Added merchant license file upload feature. When role = merchant, user must upload business license PDF (license.pdf, max 10MB). Includes use case, business rules, validation, and API changes. |
+| 3.1 | 2026-08-17 | Software Architect | Aligned with REQUIREMENT_SPEC v1.5 / DATABASE_SPEC v2.0: UUID primary keys, `merchants` table with license approval workflow (`license_status`), `users.merchant_id`, `super_admin` role, Argon2 password hashing. |
 
 ---
 
@@ -134,7 +135,7 @@ This screen is responsible for the following core functional areas:
 | UC-ID | Use Case Name | Precondition | Postcondition | Triggering Actor |
 |-------|---------------|--------------|---------------|------------------|
 | UC-AUTH-001 | Register New Account | User is not authenticated. | New user record created in `users` table with hashed password. User redirected to login page. | Visitor |
-| UC-AUTH-001A | Upload Merchant License | User selects "Merchant" role during registration. | License PDF file uploaded and stored. File path saved to user record. | Visitor |
+| UC-AUTH-001A | Upload Merchant License | User selects "Merchant" role during registration. | License PDF uploaded and stored. `merchants` record created with `license_status='pending'` awaiting admin approval. | Visitor |
 | UC-AUTH-002 | Login with Credentials | User has existing account. | JWT access token issued. Refresh token set as httpOnly cookie. User redirected to home page. | Visitor |
 | UC-AUTH-003 | Refresh Access Token | Valid refresh token exists in httpOnly cookie. | New access token issued. Old refresh token revoked and new one issued (rotation). | Authenticated User |
 | UC-AUTH-004 | Logout | User is authenticated. | Access token blacklisted in Redis. Refresh token revoked. User redirected to login page. | Authenticated User |
@@ -278,6 +279,7 @@ This screen is responsible for the following core functional areas:
 | BR-AUTH-021 | License File Type | License file must be PDF format only. | Backend (file validation) + Frontend (accept attribute) |
 | BR-AUTH-022 | License File Name | License file must be named 'license.pdf' (case-insensitive). | Backend (file validation) + Frontend (file name check) |
 | BR-AUTH-023 | License File Size | License file must not exceed 10MB. | Backend (file validation) + Frontend (size check) |
+| BR-AUTH-024 | Merchant License Status | Merchant registration creates `merchants` record with `license_status='pending'`; merchant features stay locked until admin sets `license_status='approved'`. | Backend (merchant creation, approval workflow) |
 
 ### 4.2 Login Rules
 
@@ -392,7 +394,7 @@ This screen is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/auth/register` |
 | **Request Content-Type** | `multipart/form-data` (when license file attached) or `application/json` |
 | **Pre-Submission Validation** | Full field validation (Zod schema). If role = merchant, license file validation. |
-| **Processing Steps** | 1. Validate email format and uniqueness. 2. Validate password strength. 3. If role = merchant, validate license file (PDF, named license.pdf, ≤10MB). 4. Hash password with Argon2. 5. Upload license file to storage. 6. Create user record with license_url. 7. Return user DTO (exclude password). 8. Log USER_REGISTERED event. |
+| **Processing Steps** | 1. Validate email format and uniqueness. 2. Validate password strength. 3. If role = merchant, validate license file (PDF, named license.pdf, ≤10MB). 4. Hash password with Argon2. 5. Upload license file to storage. 6. Create `users` record. 7. If role = merchant, create `merchants` record with `license_status='pending'` and link `users.merchant_id`. 8. Return user DTO (exclude password). 9. Log USER_REGISTERED event. |
 | **Success Response** | 201 Created with user data (including licenseUrl for merchants) |
 | **Post-Action** | Redirect to login page |
 
@@ -470,22 +472,26 @@ This screen is responsible for the following core functional areas:
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
 | `accessToken` | JWT Generation | Bearer token string |
-| `user.id` | `users.id` | CUID string |
+| `user.id` | `users.id` | UUID string |
 | `user.email` | `users.email` | String |
 | `user.name` | `users.name` | String |
 | `user.role` | `users.role` | Role enum string |
+| `user.merchantId` | `users.merchant_id` | UUID string or null |
+| `user.licenseStatus` | `merchants.license_status` | pending/approved/rejected or null |
 | `user.avatarUrl` | `users.avatar_url` | URL or null |
 
 ### 7.4 Output Specification — Registration Success (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `id` | `users.id` | CUID string |
+| `id` | `users.id` | UUID string |
 | `email` | `users.email` | String |
 | `name` | `users.name` | String |
 | `role` | `users.role` | Role enum string |
+| `merchantId` | `merchants.id` | UUID string or null (merchant only) |
+| `licenseStatus` | `merchants.license_status` | 'pending' / 'approved' / 'rejected', null (buyer) |
 | `emailVerified` | `users.email_verified` | Boolean |
-| `licenseUrl` | `users.license_url` | URL string or null (merchant only) |
+| `licenseUrl` | `merchants.business_license_url` | URL string or null (merchant only) |
 | `createdAt` | `users.created_at` | ISO 8601 timestamp |
 
 ---
@@ -608,6 +614,9 @@ Minimum Requirements:
 | `buyer` | ✓ | ✓ | Home page |
 | `merchant` | ✓ | ✓ | Merchant dashboard |
 | `admin` | ✗ (seeded) | ✓ | Admin dashboard |
+| `super_admin` | ✗ (seeded) | ✓ | Admin dashboard |
+
+Merchant accounts are created with `license_status = 'pending'`. Merchant features remain locked (per SECTION 2.6 / 2.7 of the Requirement Spec) until admin sets `license_status = 'approved'`; rejected merchants see a rejection banner and may resubmit.
 
 ### 10.4 Security Audit Logging
 
@@ -752,7 +761,8 @@ Defined via `.env` configuration:
 
 | Database Table | Relevant Functional Operations |
 |----------------|-------------------------------|
-| `users` | Registration (INSERT with license_url), Login (SELECT), Verify (SELECT) |
+| `users` | Registration (INSERT), Login (SELECT), Verify (SELECT) |
+| `merchants` | Registration (INSERT, merchant only — business license + `license_status='pending'`) |
 | `refresh_tokens` | Token storage (INSERT), Rotation (UPDATE), Revocation (UPDATE) |
 | `user_roles` | Role validation during registration |
 

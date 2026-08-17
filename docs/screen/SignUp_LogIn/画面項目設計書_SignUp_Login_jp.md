@@ -4,9 +4,9 @@
 **対象画面:** 認証（サインアップ / ログイン）  
 **サブシステム:** ユーザー認証  
 **機能ID:** FN-AUTH-001  
-**バージョン:** 3.0  
+**バージョン:** 3.1  
 **作成日:** 2026-08-04  
-**最終更新日:** 2026-08-05  
+**最終更新日:** 2026-08-17  
 **著者:** シニアシステムエンジニア  
 **レビュー状態:** 承認済み  
 **分類:** 社内 — エンジニアリング部門
@@ -22,6 +22,7 @@
 | 1.0 | 2026-08-04 | シニアシステムエンジニア | 初版リリース。サインアップおよびログインページの基本的な画面項目仕様。 |
 | 2.0 | 2026-08-05 | シニアシステムエンジニア | PRWM-SIS-SCR-001形式に完全準拠するよう全面改定。Item ID、コンポーネントタイプ、データソース、イベント仕様、バリデーションエラーコード、レスポンシブブレークポイント、アクセシビリティ要件を含む包括的な項目定義を追加。 |
 | 3.0 | 2026-08-05 | シニアシステムエンジニア | 出品者ロール用の条件付きライセンスファイルアップロードを追加。「出品者」ラジオ選択時に事業許可書（license.pdf）のPDFファイルアップロードフィールドが表示。バリデーションルール、ファイル制約、イベント仕様を含む。 |
+| 3.1 | 2026-08-17 | シニアシステムエンジニア | 要件定義書 v1.5 / DB設計書 v2.0 に整合。UUID主キー、ライセンスは `merchants.business_license_url` に保存し `license_status='pending'` の承認ワークフロー、Argon2パスワードハッシュ、ロールはVARCHAR(20)。 |
 
 ### 1.2 関連ドキュメント
 
@@ -213,14 +214,14 @@
 | 23 | `txtConfirmPassword` | パスワード確認入力 | 入力（`password`） | 文字列(128) | 必須 | 空。プレースホルダー: "パスワードを再入力" | `txtRegPassword`と一致すること。 | — | AutoComplete: `new-password`。表示/非表示切替可能。 |
 | 24 | `btnShowConfirmPassword` | パスワード表示/非表示 | アイコンボタン | — | — | 表示中。アイコン。 | — | — | `txtConfirmPassword`のタイプを切替。 |
 | 25 | `lblRoleSelection` | ロール選択ラベル | 静的ラベル（`<label>`） | 文字列 | — | テキスト: "私は：" | — | ハードコードUIテキスト | `rdoRole`グループに関連付け。 |
-| 26 | `rdoRole` | ロール選択 | ラジオグループ | 列挙型 | 必須 | デフォルト: `buyer` | 選択肢: buyer, merchant | `users.role` | `buyer`: ブラウズ＆購入。`merchant`: 商品販売。 |
+| 26 | `rdoRole` | ロール選択 | ラジオグループ | 列挙型 | 必須 | デフォルト: `buyer` | 選択肢: buyer, merchant | `users.role` | `buyer`: ブラウズ＆購入。`merchant`: 商品販売。登録時はbuyer/merchantのみ許可。admin/super_adminは自己登録不可。 |
 | 27 | `rdoBuyer` | 購入者ラジオ | ラジオボタン | — | — | デフォルトで選択済み | 値: `buyer` | — | ラベル: "購入者 — 商品を閲覧・購入する" |
 | 28 | `rdoMerchant` | 出品者ラジオ | ラジオボタン | — | — | 未選択 | 値: `merchant` | — | ラベル: "出品者 — スキンケア商品を販売する" |
 | 29 | `btnRegister` | アカウント作成ボタン | ボタン（`submit`、`default`） | — | — | 表示中。テキスト: "アカウント作成" | — | — | 全幅。ローディング: スピナー + "アカウント作成中..."。ローディング中は無効。 |
 | 30 | `lblHasAccount` | ログインプロンプト | 静的ラベル | 文字列 | — | テキスト: "すでにアカウントをお持ちですか？" | — | — | フッターテキスト。 |
 | 31 | `lnkSignIn` | ログインリンク | リンク（`<Link>`） | 文字列 | — | テキスト: "ログイン" | — | — | `/login`にナビゲート。 |
 | 32 | `lblLicenseUpload` | 事業許可書ラベル | 静的ラベル（`<label>`） | 文字列 | — | `rdoMerchant`選択時のみ表示。テキスト: "事業許可書（PDF）" | — | ハードコードUIテキスト | `htmlFor`/`id`で`uplLicense`に関連付け。必須インジケーター: 赤いアスタリスク`*`。 |
-| 33 | `uplLicense` | ライセンスファイルアップロード | ファイル入力（`file`） | ファイル（バイナリ） | 条件付き | デフォルト非表示。`rdoMerchant`選択時に表示。 | 許可MIME: `application/pdf`。最大サイズ: 10MB。ファイル名は`license.pdf`であること。 | `users.license_url`（S3/ローカルに保存） | PDFのみ。ドラッグ＆ドロップゾーン + ファイルピッカーボタン。 |
+| 33 | `uplLicense` | ライセンスファイルアップロード | ファイル入力（`file`） | ファイル（バイナリ） | 条件付き | デフォルト非表示。`rdoMerchant`選択時に表示。 | 許可MIME: `application/pdf`。最大サイズ: 10MB。ファイル名は`license.pdf`であること。 | `merchants.business_license_url`（S3/ローカルに保存） | PDFのみ。ドラッグ＆ドロップゾーン + ファイルピッカーボタン。送信時に`license_status='pending'`の`merchants`レコードを作成。 |
 | 34 | `lblLicenseFileName` | アップロード済みファイル名 | 静的ラベル | 文字列(255) | — | アップロード後に表示。アップロードされたファイル名を表示。 | — | — | アップロード時に"license.pdf"を表示。クリックでプレビュー/ダウンロード可能。 |
 | 35 | `btnRemoveLicense` | ライセンスファイル削除 | アイコンボタン（危険） | — | — | ファイルアップロード時のみ表示。ゴミ箱アイコン。 | — | — | アップロードされたファイルを削除。アップロードゾーンに戻る。 |
 | 36 | `lblLicenseHelper` | ライセンスヘルパーテキスト | 静的ラベル（ヘルパー） | 文字列 | — | テキスト: "事業許可書をPDF形式でアップロードしてください（最大10MB）。ファイル名はlicense.pdfである必要があります。" | — | — | アップロードゾーンの下に表示。Tailwind: `text-xs text-muted-foreground`。 |
@@ -386,7 +387,7 @@
 | フォームフィールド | APIフィールド | データベースカラム | テーブル | データ型 |
 | :--- | :--- | :--- | :--- | :--- |
 | `txtEmail` | `email` | `email` | `users` | VARCHAR(255) UNIQUE |
-| `txtPassword` | `password` | `password_hash` | `users` | VARCHAR(255)（bcryptハッシュ） |
+| `txtPassword` | `password` | `password_hash` | `users` | VARCHAR(255)（Argon2ハッシュ） |
 
 ### 7.2 登録フォーム → データベース
 
@@ -394,9 +395,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `txtFullName` | `name` | `name` | `users` | VARCHAR(200) |
 | `txtRegEmail` | `email` | `email` | `users` | VARCHAR(255) UNIQUE |
-| `txtRegPassword` | `password` | `password_hash` | `users` | VARCHAR(255)（bcryptハッシュ） |
-| `rdoRole` | `role` | `role` | `users` | ENUM('buyer', 'merchant') |
-| `uplLicense` | `license` | `license_url` | `users` | VARCHAR(500)（Nullable） |
+| `txtRegPassword` | `password` | `password_hash` | `users` | VARCHAR(255)（Argon2ハッシュ） |
+| `rdoRole` | `role` | `role` | `users` | VARCHAR(20)（buyer, merchant, admin, super_admin） |
+| `uplLicense` | `license` | `business_license_url` | `merchants` | TEXT（Nullable）— 登録時に`license_status='pending'`と設定 |
 
 ---
 
@@ -410,10 +411,12 @@
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
     "user": {
-      "id": "clx1234567890",
+      "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
       "email": "user@example.com",
       "name": "John Doe",
       "role": "buyer",
+      "merchantId": null,
+      "licenseStatus": null,
       "avatarUrl": null
     }
   }
@@ -438,18 +441,20 @@
 ```json
 {
   "data": {
-    "id": "clx1234567890",
+    "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
     "email": "user@example.com",
     "name": "John Doe",
     "role": "merchant",
-    "licenseUrl": "/uploads/licenses/license_clx1234567890.pdf",
+    "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "licenseStatus": "pending",
+    "licenseUrl": "/uploads/licenses/f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b.pdf",
     "emailVerified": false,
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
 }
 ```
 
-**注意:** `licenseUrl`は`role = "merchant"`の場合のみ存在。`role = "buyer"`の場合、このフィールドは`null`または省略。
+**注意:** `licenseUrl`、`merchantId`、`licenseStatus`は`role = "merchant"`の場合のみ存在。`role = "buyer"`の場合、これらのフィールドは`null`または省略。出品者アカウントは`licenseStatus = "pending"`で作成され、出品者機能へアクセスするには管理者の承認が必要。
 
 ### 8.4 登録エラーレスポンス（重複メール）
 

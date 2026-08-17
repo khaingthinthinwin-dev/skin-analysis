@@ -1,12 +1,12 @@
- rea# Screen Items Specification (画面項目設計書) — Sign-up / Login
+ # Screen Items Specification (画面項目設計書) — Sign-up / Login
 
 **Document ID:** SKM-SIS-SCR-001  
 **Target Screen:** Authentication (Sign-up / Login)  
 **Subsystem:** User Authentication  
 **Function ID:** FN-AUTH-001  
-**Version:** 3.0  
+**Version:** 3.1  
 **Created:** 2026-08-04  
-**Last Updated:** 2026-08-05  
+**Last Updated:** 2026-08-17  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -22,6 +22,7 @@
 | 1.0 | 2026-08-04 | Senior System Engineer | Initial release. Basic screen items specification for Sign-up and Login pages. |
 | 2.0 | 2026-08-05 | Senior System Engineer | Complete rewrite aligned with PRWM-SIS-SCR-001 format. Added comprehensive item definitions with Item IDs, component types, data sources, event specifications, validation error codes, responsive breakpoints, and accessibility requirements. |
 | 3.0 | 2026-08-05 | Senior System Engineer | Added conditional license file upload for Merchant role. When "Merchant" radio is selected, a PDF file upload field appears for business license (license.pdf). Includes validation rules, file constraints, and event specifications. |
+| 3.1 | 2026-08-17 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 / DATABASE_SPEC v2.0: UUID primary keys, license stored in `merchants.business_license_url` with `license_status='pending'` approval workflow, Argon2 password hashing, role VARCHAR(20). |
 
 ### 1.2 Related Documents
 
@@ -213,14 +214,14 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 | 23 | `txtConfirmPassword` | Confirm Password Input | Input (`password`) | String(128) | Mandatory | Empty. Placeholder: "Confirm your password" | Must match `txtRegPassword`. | — | AutoComplete: `new-password`. Toggleable show/hide. |
 | 24 | `btnShowConfirmPassword` | Show/Hide Password | Icon Button | — | — | Visible. Eye icon. | — | — | Toggles `txtConfirmPassword` type. |
 | 25 | `lblRoleSelection` | Role Selection Label | Static Label (`<label>`) | String | — | Text: "I am a:" | — | Hardcoded UI text | Associated with `rdoRole` group. |
-| 26 | `rdoRole` | Role Selection | Radio Group | Enum | Mandatory | Default: `buyer` | Options: buyer, merchant | `users.role` | `buyer`: Browse and purchase. `merchant`: Sell products. |
+| 26 | `rdoRole` | Role Selection | Radio Group | Enum | Mandatory | Default: `buyer` | Options: buyer, merchant | `users.role` | `buyer`: Browse and purchase. `merchant`: Sell products. Register allows only buyer/merchant; admin/super_admin are provisioned, not self-registered. |
 | 27 | `rdoBuyer` | Buyer Radio | Radio Button | — | — | Selected by default | Value: `buyer` | — | Label: "Buyer — Browse and purchase products" |
 | 28 | `rdoMerchant` | Merchant Radio | Radio Button | — | — | Unselected | Value: `merchant` | — | Label: "Merchant — Sell skincare products" |
 | 29 | `btnRegister` | Create Account Button | Button (`submit`, `default`) | — | — | Visible. Text: "Create Account" | — | — | Full width. Loading: Spinner + "Creating account...". Disabled when loading. |
 | 30 | `lblHasAccount` | Login Prompt | Static Label | String | — | Text: "Already have an account?" | — | — | Footer text. |
 | 31 | `lnkSignIn` | Login Link | Link (`<Link>`) | String | — | Text: "Sign in" | — | — | Navigates to `/login`. |
 | 32 | `lblLicenseUpload` | Business License Label | Static Label (`<label>`) | String | — | Visible only when `rdoMerchant` selected. Text: "Business License (PDF)" | — | Hardcoded UI text | Associated with `uplLicense` via `htmlFor`/`id`. Required indicator: red asterisk `*`. |
-| 33 | `uplLicense` | License File Upload | File Input (`file`) | File (Binary) | Conditional | Hidden by default. Visible when `rdoMerchant` selected. | Accepted MIME: `application/pdf`. Max size: 10MB. Filename must be `license.pdf`. | `users.license_url` (stored in S3/本地) | PDF only. Drag & drop zone + file picker button. |
+| 33 | `uplLicense` | License File Upload | File Input (`file`) | File (Binary) | Conditional | Hidden by default. Visible when `rdoMerchant` selected. | Accepted MIME: `application/pdf`. Max size: 10MB. Filename must be `license.pdf`. | `merchants.business_license_url` (stored in S3/本地) | PDF only. Drag & drop zone + file picker button. On submit creates `merchants` record with `license_status='pending'`. |
 | 34 | `lblLicenseFileName` | Uploaded File Name | Static Label | String(255) | — | Populated after upload. Displays uploaded filename. | — | — | Shows "license.pdf" when uploaded. Clickable to preview/download. |
 | 35 | `btnRemoveLicense` | Remove License File | Icon Button (Danger) | — | — | Visible only when file is uploaded. Trash icon. | — | — | Removes uploaded file. Reverts to upload zone. |
 | 36 | `lblLicenseHelper` | License Helper Text | Static Label (Helper) | String | — | Text: "Upload your business license as PDF (max 10MB). File must be named license.pdf." | — | — | Displayed below upload zone. Tailwind: `text-xs text-muted-foreground`. |
@@ -386,7 +387,7 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
 | `txtEmail` | `email` | `email` | `users` | VARCHAR(255) UNIQUE |
-| `txtPassword` | `password` | `password_hash` | `users` | VARCHAR(255) (bcrypt hash) |
+| `txtPassword` | `password` | `password_hash` | `users` | VARCHAR(255) (Argon2 hash) |
 
 ### 7.2 Register Form → Database
 
@@ -394,9 +395,9 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 | :--- | :--- | :--- | :--- | :--- |
 | `txtFullName` | `name` | `name` | `users` | VARCHAR(200) |
 | `txtRegEmail` | `email` | `email` | `users` | VARCHAR(255) UNIQUE |
-| `txtRegPassword` | `password` | `password_hash` | `users` | VARCHAR(255) (bcrypt hash) |
-| `rdoRole` | `role` | `role` | `users` | ENUM('buyer', 'merchant') |
-| `uplLicense` | `license` | `license_url` | `users` | VARCHAR(500) (nullable) |
+| `txtRegPassword` | `password` | `password_hash` | `users` | VARCHAR(255) (Argon2 hash) |
+| `rdoRole` | `role` | `role` | `users` | VARCHAR(20) (buyer, merchant, admin, super_admin) |
+| `uplLicense` | `license` | `business_license_url` | `merchants` | TEXT (nullable) — set with `license_status='pending'` on registration |
 
 ---
 
@@ -410,10 +411,12 @@ The Sign-up and Login pages are the entry points for user authentication in the 
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
     "user": {
-      "id": "clx1234567890",
+      "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
       "email": "user@example.com",
       "name": "John Doe",
       "role": "buyer",
+      "merchantId": null,
+      "licenseStatus": null,
       "avatarUrl": null
     }
   }
@@ -438,18 +441,20 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 ```json
 {
   "data": {
-    "id": "clx1234567890",
+    "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
     "email": "user@example.com",
     "name": "John Doe",
     "role": "merchant",
-    "licenseUrl": "/uploads/licenses/license_clx1234567890.pdf",
+    "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "licenseStatus": "pending",
+    "licenseUrl": "/uploads/licenses/f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b.pdf",
     "emailVerified": false,
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
 }
 ```
 
-**Note:** `licenseUrl` is only present when `role = "merchant"`. For `role = "buyer"`, this field is `null` or omitted.
+**Note:** `licenseUrl`, `merchantId`, and `licenseStatus` are only present when `role = "merchant"`. For `role = "buyer"`, these fields are `null` or omitted. Merchant accounts are created with `licenseStatus = "pending"` and must be approved by admin before accessing merchant features.
 
 ### 8.4 Register Error Response (Duplicate Email)
 

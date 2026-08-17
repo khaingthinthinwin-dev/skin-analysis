@@ -171,6 +171,8 @@ export class VerifyResponseDto {
   email: string;
   name: string;
   role: string;
+  merchantId: string | null;
+  licenseStatus: 'pending' | 'approved' | 'rejected' | null;
   avatarUrl: string | null;
   phone: string | null;
   emailVerified: boolean;
