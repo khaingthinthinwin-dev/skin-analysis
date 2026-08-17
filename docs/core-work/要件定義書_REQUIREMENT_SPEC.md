@@ -10,9 +10,9 @@
 | :--- | :--- |
 | **Document ID** | SKM-REQ-001 |
 | **System** | Cosmetics Finder |
-| **Version** | 1.0 |
+| **Version** | 1.6 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 
@@ -26,6 +26,7 @@
 | 1.3 | 2026-08-14 | Software Architect | Restricted shopping features (cart, wishlist, checkout) to Buyer role only; replaced email notifications with website notification system |
 | 1.4 | 2026-08-14 | Software Architect | Updated all entity definitions to use UUID primary keys; added SQL schema for all entities; added merchant_id field to users table |
 | 1.5 | 2026-08-14 | Software Architect | Removed duplicate order status flow section |
+| 1.6 | 2026-08-17 | Software Architect | Added Commission Management (§3.2.19), Revenue Tracking (§3.2.20), Ad Fee Revenue (§3.2.21) requirements; added commission_settings, revenue_targets, payouts database schemas; added commission, revenue, payout, ad fee business rules (§4.8-4.11); added commission & revenue API endpoints; updated frontend route structure |
 
 ---
 
@@ -1109,6 +1110,71 @@ CREATE TABLE ad_fee_history (
 - All fee changes are logged in `ad_fee_history`
 - Admin can view fee change history with timestamps and reasons
 
+#### Commission Settings Table
+```sql
+CREATE TABLE commission_settings (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  commission_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+  -- rate: 0.00 to 100.00 (percentage)
+  updated_by      UUID REFERENCES users(id),
+  updated_at      TIMESTAMP DEFAULT NOW(),
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Commission Settings Rules
+- Only one row exists (singleton table)
+- Rate must be between 0 and 100 with max 2 decimal places
+- Rate applies to all new transactions from the moment saved
+- Historical invoices are not affected by rate changes
+- All changes are logged in audit trail
+
+#### Revenue Targets Table
+```sql
+CREATE TABLE revenue_targets (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  target_amount   DECIMAL(12,2) NOT NULL,
+  period          VARCHAR(20) NOT NULL,
+  -- period: 'monthly', 'quarterly'
+  is_active       BOOLEAN DEFAULT true,
+  created_by      UUID REFERENCES users(id),
+  updated_at      TIMESTAMP DEFAULT NOW(),
+  created_at      TIMESTAMP DEFAULT NOW(),
+  UNIQUE(period, is_active)
+);
+```
+
+#### Revenue Targets Rules
+- Target amount must be positive (> 0) with max 2 decimal places
+- Only `monthly` and `quarterly` periods supported
+- Only one active target per period type (new overwrites old)
+- Progress calculated from completed/settled orders only
+
+#### Payouts Table
+```sql
+CREATE TABLE payouts (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id     UUID NOT NULL REFERENCES merchants(id),
+  total_amount    DECIMAL(12,2) NOT NULL,
+  commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  ad_fee_amount   DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'processing', 'completed', 'failed'
+  processed_by    UUID REFERENCES users(id),
+  processed_at    TIMESTAMP,
+  failure_reason  TEXT,
+  idempotency_key VARCHAR(255) UNIQUE,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Payout Rules
+- Payout status flows: pending → processing → completed, or pending → failed
+- Processing is idempotent (idempotency_key prevents double-pay)
+- Amount = commission earned + ad fees owed for the period
+- Payout only for status = pending
+
 ### 3.2 Functional Requirements by Module
 
 #### 3.2.1 Buyer Module - Authentication (購入者モジュール - 認証)
@@ -1387,6 +1453,11 @@ Admin reviews ad content, image, message, and due date
 | A-COMM-001 | Admin can set platform commission rate | High |
 | A-COMM-002 | System calculates commission per transaction | High |
 | A-COMM-003 | Admin can view commission reports by merchant | Medium |
+| A-COMM-004 | Commission rate must be between 0 and 100 with max 2 decimal places | High |
+| A-COMM-005 | Commission rate applies to all new transactions from the moment saved | High |
+| A-COMM-006 | Commission reports support date range filtering (from/to) | Medium |
+| A-COMM-007 | Commission reports support pagination and sorting | Medium |
+| A-COMM-008 | Commission rate changes are logged in audit trail | High |
 
 #### 3.2.20 Admin Module - Revenue Tracking (管理者モジュール - 収益追跡)
 
@@ -1394,8 +1465,30 @@ Admin reviews ad content, image, message, and due date
 |----|-------------|----------|
 | A-REV-001 | Admin can view revenue dashboard | High |
 | A-REV-002 | Admin can view revenue trends (charts) | High |
-| A-REV-003 | Admin can view payment status | High |
+| A-REV-003 | Admin can view payment status breakdown | High |
 | A-REV-004 | Admin can manage merchant payouts | Medium |
+| A-REV-005 | Admin can set monthly/quarterly revenue targets and view progress | Medium |
+| A-REV-006 | System can forecast revenue and platform fees using historical data | Medium |
+| A-REV-007 | Revenue KPIs include: total revenue, total commission, avg order value, net revenue | High |
+| A-REV-008 | Revenue trend chart supports 7d/30d/90d/1y range selection | High |
+| A-REV-009 | Revenue target progress displayed as gauge bar (0-100%) | Medium |
+| A-REV-010 | Payout processing is idempotent (no double-pay) | High |
+| A-REV-011 | Payout status flows: pending → processing → completed, or pending → failed | High |
+| A-REV-012 | Revenue target supports only monthly and quarterly periods | Medium |
+| A-REV-013 | Only one active target per period type (new overwrites old) | Medium |
+| A-REV-014 | Forecast is indicative only, never written to financial records | Low |
+
+#### 3.2.21 Admin Module - Ad Fee Revenue (管理者モジュール - 広告料収益)
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| A-ADFE-001 | Admin can view advertisement fee revenue in dashboard | Medium |
+| A-ADFE-002 | Ad fee revenue included in total platform income KPI | Medium |
+| A-ADFE-003 | Ad fee payment status tracked alongside order payment status | Medium |
+| A-ADFE-004 | Ad fee trend series displayed on revenue chart | Medium |
+| A-ADFE-005 | Ad fee revenue included in payout deduction calculation | Medium |
+| A-ADFE-006 | Ad fee revenue included in revenue target progress calculation | Low |
+| A-ADFE-007 | Ad fee revenue included in AI forecast calculation | Low |
 
 ---
 
@@ -1582,6 +1675,84 @@ function validateReview(req, res, next) {
 - Analysis results are cached for 24 hours
 - Users can re-analyze at any time
 - Analysis history is retained indefinitely
+
+### 4.8 Commission Rules (手数料ルール)
+
+#### Rule 4.8.1: Commission Rate
+- Commission rate must be between 0 and 100 (percentage)
+- Maximum 2 decimal places
+- Rate is stored as a string to preserve precision
+- Only one rate exists (singleton setting)
+- Rate applies to all new transactions from the moment saved
+- Historical invoices are not retroactively affected
+
+#### Rule 4.8.2: Commission Calculation
+- Commission = Order Total × (Commission Rate / 100)
+- Commission is calculated per transaction at order creation time
+- Commission amount is stored on the order record
+- Only completed/settled orders are included in commission reports
+
+#### Rule 4.8.3: Commission Reports
+- Reports support filtering by date range (from/to)
+- Reports support pagination and sorting
+- Reports show merchant-level commission breakdown
+
+### 4.9 Revenue Rules (収益ルール)
+
+#### Rule 4.9.1: Revenue KPIs
+- Total Revenue: Sum of all completed order amounts
+- Total Commission: Sum of all commission from completed orders
+- Avg Order Value: Total Revenue / Number of completed orders
+- Net Revenue: Total Revenue - Refunds
+- Only completed/settled orders are included
+- Refunds are excluded from net revenue
+
+#### Rule 4.9.2: Revenue Trend Chart
+- Supports 7d, 30d, 90d, and 1y ranges
+- Data points are grouped by day (7d, 30d) or month (90d, 1y)
+- Each point includes: date, revenue, commission, ad fee, total income
+
+#### Rule 4.9.3: Revenue Targets
+- Only `monthly` and `quarterly` periods supported
+- Target amount must be positive (> 0) with max 2 decimal places
+- Only one active target per period type (new overwrites old)
+- Progress = (actual revenue in period / target amount) × 100
+- Gauge clamps display to 0-100%; values above 100% shown as "over target"
+- Progress calculated from completed/settled orders only
+- Ad fee revenue included in progress calculation
+
+#### Rule 4.9.4: AI Revenue Forecast
+- Forecast derived from historical revenue data using trend extrapolation
+- Minimum 7 historical data points required
+- Produces predicted revenue and platform fee series
+- Rendered as dotted line on trend chart
+- Forecast is indicative only, never written to financial records
+- If insufficient data, forecast is hidden with informational note
+
+### 4.10 Payout Rules (支払いルール)
+
+#### Rule 4.10.1: Payout Processing
+- Payout status flows: pending → processing → completed, or pending → failed
+- Processing is idempotent (idempotency_key prevents double-pay)
+- Retry of already-processed payout returns 409 Conflict
+- Payout amount = commission earned + ad fees owed for the period
+
+#### Rule 4.10.2: Payout Scope
+- Only status = pending payouts can be processed
+- Payout includes both commission and ad fee deductions
+- Processed payouts are logged in audit trail
+
+### 4.11 Ad Fee Revenue Rules (広告料収益ルール)
+
+#### Rule 4.11.1: Ad Fee Scope
+- Ad fee revenue includes only completed ad payments
+- Ad fee trend series overlaid on revenue chart
+- Ad fee payment statuses summarized alongside order payment statuses
+
+#### Rule 4.11.2: Ad Fee in Platform Income
+- Total Platform Income = Commission Revenue + Ad Fee Revenue
+- Ad fee included in revenue target progress calculation
+- Ad fee included in AI forecast calculation
 
 ---
 
@@ -1805,7 +1976,19 @@ function validateReview(req, res, next) {
 │   ├── POST   /reviews/:id/moderate
 │   ├── GET    /ads                # List all ads / pending approval queue
 │   ├── POST   /ads/:id/approve   # Approve advertisement
-│   └── POST   /ads/:id/reject    # Reject advertisement (with reason)
+│   ├── POST   /ads/:id/reject    # Reject advertisement (with reason)
+│   ├── GET    /commission              # Get commission settings
+│   ├── PATCH  /commission              # Update commission rate
+│   ├── GET    /commission/reports      # Get commission reports
+│   ├── GET    /revenue                 # Get revenue KPI data
+│   ├── GET    /revenue/trends          # Get revenue trend series
+│   ├── GET    /revenue/targets         # Get revenue target & progress
+│   ├── PUT    /revenue/targets         # Save/update revenue target
+│   ├── GET    /revenue/forecast        # Get AI revenue forecast
+│   ├── GET    /revenue/ad-fees         # Get ad fee revenue data
+│   ├── GET    /revenue/payments        # Get payment status breakdown
+│   ├── GET    /revenue/payouts         # Get payout list
+│   └── POST   /revenue/payouts/:id/process  # Process a payout
 └── /health         # Health Check
     └── GET    /
 ```
@@ -1842,6 +2025,7 @@ Routes:
 │   ├── /merchants             # Merchant management
 │   ├── /reviews               # Review moderation
 │   ├── /analytics             # Analytics
+│   ├── /commission            # Commission management
 │   └── /revenue               # Revenue management
 ├── /unauthorized              # 403 page
 └── *                          # 404 page
@@ -1953,6 +2137,10 @@ Routes:
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │ ad_settings │     │   shops     │     │ audit_logs  │
 └─────────────┘     └─────────────┘     └─────────────┘
+
+┌──────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│commission_settings│     │ revenue_targets  │     │   payouts   │
+└──────────────────┘     └──────────────────┘     └─────────────┘
 ```
 
 #### Key Relationships
@@ -1968,6 +2156,8 @@ Routes:
 | merchants → advertisements | 1:N | One merchant has many ads |
 | advertisements → ad_payments | 1:1 | One ad has one payment |
 | ad_fee_settings → ad_fee_history | 1:N | Settings changes logged |
+| merchants → payouts | 1:N | One merchant has many payouts |
+| users → payouts | 1:N | Admin processes many payouts |
 
 ---
 
@@ -2046,38 +2236,8 @@ See: `docs/guides/ENVIRONMENT_SETUP.md`
 **Document Management (文書管理):**
 - Author: Software Architect
 - Created: 2026-08-03
-- Last Updated: 2026-08-14
+- Last Updated: 2026-08-17
 - Next Review: Phase 2 Planning
-
----
-
-## 9. Appendix B - Cross-File Consistency Check (Appendix B - ファイル間整合性チェック)
-
-### Final Consistency Check (最終整合性チェック)
-
-| Rule | Source File | Status |
-|------|-------------|--------|
-| Merchant license_status instead of merchant_status | Specification.xlsx | ✅ Consistent |
-| 403 authorization for product ownership | TharapheeHtet(Cosmetic Finder).xlsx | ✅ Consistent |
-| Password reset flow | AI Skin Analysis 1.xlsx | ✅ Consistent |
-| Ad fee calculation and refund | AI Skin Analysis 1.xlsx | ✅ Consistent |
-| Review validation rules | WaiYanTun(Cosmetic_Finder).xlsx | ✅ Consistent |
-| Order tracking states | ThainMyweOo(CosmeticFinder).xlsx | ✅ Consistent |
-| Ad slider on dashboard | PyaePhyoHein(cosmetic option).xlsx | ✅ Consistent |
-| Merchant rejection/resubmit flow | AI Skin Analysis 1.xlsx | ✅ Consistent |
-| Super Admin seeding | AI Skin Analysis 1.xlsx | ✅ Consistent |
-
-### Source Files (ソースファイル)
-
-| File | Focus Area |
-|------|------------|
-| `AI Skin Analysis 1.xlsx` | In-depth functional specs, edge cases, workflow rules, administrative controls |
-| `TharapheeHtet(Cosmetic Finder).xlsx` | Technical spec mapping: functions, permissions, API routes |
-| `ThainMyweOo(CosmeticFinder).xlsx` | Step-by-step user journeys and UI process flows |
-| `WaiYanTun(Cosmetic_Finder).xlsx` | Structured feature matrix and permission checklist |
-| `PyaePhyoHein(cosmetic option).xlsx` | Functional option breakdowns per role |
-| `Specification.xlsx` | Development guidelines, gap analysis, documentation strategy |
-| `AI_Cosmetic_Finder_System_Specification.md` | Comprehensive system specification with database schemas, API requirements, and detailed role rules |
 
 ---
 

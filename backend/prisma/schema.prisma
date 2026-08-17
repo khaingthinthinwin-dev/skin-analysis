@@ -81,6 +81,9 @@ model User {
   adApprovals     Advertisement[] @relation("AdminAdApprovals")
   adFeeHistories  AdFeeHistory[]  @relation("AdminAdFeeHistory")
   reviewedMerchants Merchant[]   @relation("AdminMerchantReviews")
+  commissionSettings CommissionSetting[]
+  revenueTargets    RevenueTarget[]
+  processedPayouts  Payout[]
 
   @@index([roleCode])
   @@index([email])
@@ -136,6 +139,7 @@ model Merchant {
   orders       Order[]
   orderItems   OrderItem[]
   adPayments   AdPayment[]
+  payouts      Payout[]
 
   @@index([userId])
   @@index([licenseStatus])
@@ -460,4 +464,63 @@ model AdFeeHistory {
 
   @@index([adFeeSettingId])
   @@map("ad_fee_history")
+}
+
+// ============================================
+// COMMISSION & REVENUE
+// ============================================
+
+model CommissionSetting {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commissionRate Decimal @default(0) @map("commission_rate") @db.Decimal(5, 2)
+  updatedBy     String?  @map("updated_by") @db.Uuid
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  updatedByAdmin User? @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@map("commission_settings")
+}
+
+model RevenueTarget {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  targetAmount Decimal  @map("target_amount") @db.Decimal(12, 2)
+  period       String   // 'monthly', 'quarterly'
+  isActive     Boolean  @default(true) @map("is_active")
+  createdBy    String?  @map("created_by") @db.Uuid
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  createdByAdmin User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([period, isActive])
+  @@index([period])
+  @@index([isActive])
+  @@map("revenue_targets")
+}
+
+model Payout {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId       String    @map("merchant_id") @db.Uuid
+  totalAmount      Decimal   @map("total_amount") @db.Decimal(12, 2)
+  commissionAmount Decimal   @default(0) @map("commission_amount") @db.Decimal(12, 2)
+  adFeeAmount      Decimal   @default(0) @map("ad_fee_amount") @db.Decimal(12, 2)
+  status           String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  processedBy      String?   @map("processed_by") @db.Uuid
+  processedAt      DateTime? @map("processed_at")
+  failureReason    String?   @map("failure_reason")
+  idempotencyKey   String?   @unique @map("idempotency_key")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  merchant         Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  processedByAdmin User?    @relation(fields: [processedBy], references: [id], onDelete: SetNull)
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payouts")
 }

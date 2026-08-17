@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 4.0 |
+| **Version** | 5.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Senior System Engineer |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -27,6 +27,7 @@
 | 2.0 | 2026-08-10 | Senior System Engineer | Updated structure to fully conform to standard functional specification template, integrating detailed specifications from Requirement and Development Rules documents. |
 | 3.0 | 2026-08-11 | Senior System Engineer | Added Revenue Target Progress (configurable gauge bar) and AI Revenue Forecast (dotted line chart) features to the Revenue Dashboard. |
 | 4.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID definitions to UUID format, released final specification. |
+| 5.0 | 2026-08-17 | Senior System Engineer | Expanded spec to include Advertisement Fee Revenue: added ad fee KPIs, ad fee trend chart series, ad fee payment status tracking, ad fee in payout calculations, and ad fee in revenue target progress. |
 
 ---
 
@@ -65,12 +66,13 @@ This screen suite is responsible for the following core functional areas:
 1. **Commission Rate Configuration** — Enabling admins to set and persist the platform commission rate applied to new transactions.
 2. **Commission Report Generation** — Generating merchant-level commission reports with filtering, sorting, and pagination.
 3. **Revenue Dashboard KPI** — Displaying revenue KPIs and trend visualization over configurable ranges.
-4. **Payment Status Breakdown** — Summarizing payment statuses across completed, pending, failed, and refunded records.
-5. **Merchant Payout Management** — Processing merchant payouts with idempotency and status tracking.
-6. **Revenue Target Progress** — Configuring monthly/quarterly revenue targets and displaying current progress via a gauge bar.
-7. **AI Revenue Forecast** — Predicting revenue and platform fees from historical data and rendering the forecast as a dotted line alongside the current trend.
-8. **Audit and Error Handling** — Logging financial actions and surfacing consistent error states.
-9. **Internationalization and Responsive UI** — Supporting EN / JA / MY and responsive layouts.
+4. **Ad Fee Revenue Tracking** — Tracking and displaying advertisement fee revenue alongside commission revenue in the dashboard.
+5. **Payment Status Breakdown** — Summarizing payment statuses across completed, pending, failed, and refunded records (order payments + ad payments).
+6. **Merchant Payout Management** — Processing merchant payouts with idempotency and status tracking (commission + ad fee deductions).
+7. **Revenue Target Progress** — Configuring monthly/quarterly revenue targets and displaying current progress via a gauge bar (commission + ad fee combined).
+8. **AI Revenue Forecast** — Predicting revenue and platform fees from historical data and rendering the forecast as a dotted line alongside the current trend.
+9. **Audit and Error Handling** — Logging financial actions and surfacing consistent error states.
+10. **Internationalization and Responsive UI** — Supporting EN / JA / MY and responsive layouts.
 
 ### 1.3 Target Users
 
@@ -108,16 +110,18 @@ This screen suite is responsible for the following core functional areas:
 | `status` | User Input | Payout status filter (pending/completed/failed) |
 | `targetPeriod` | User Input | Revenue target period (monthly/quarterly) |
 | `targetAmount` | User Input | Revenue target amount in the edit target dialog |
+| `adFeeRange` | User Input | Ad fee trend range selection (7d/30d/90d/1y) |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
 | `commissionRate` | Display Data | Commission rate shown on the rate card |
 | `reports` | Report Data | Merchant-level commission report rows |
-| `kpis` | KPI Data | Revenue KPI values (total, commission, avg order, net) |
-| `trendPoints` | Chart Data | Trend series data for the revenue chart |
-| `forecastPoints` | Chart Data | AI forecast series data (revenue + platform fees) drawn as a dotted line |
+| `kpis` | KPI Data | Revenue KPI values (total revenue, commission, ad fees, total income, avg order, net) |
+| `trendPoints` | Chart Data | Trend series data for the revenue chart (commission + ad fees + total) |
+| `forecastPoints` | Chart Data | AI forecast series data (revenue + platform fees + ad fees) drawn as a dotted line |
 | `target` | Display Data | Revenue target object (amount, period, progress percentage) |
-| `payouts` | Display Data | Payout list rows for the payout table |
+| `payouts` | Display Data | Payout list rows for the payout table (commission + ad fee deductions) |
+| `adFeeSummary` | Display Data | Ad fee revenue summary (total ad fees, active ads, pending payments) |
 | `message` | Notification | Success or error text delivered via toast / alert |
 
 ### 1.6 Related Documents
@@ -145,6 +149,8 @@ This screen suite is responsible for the following core functional areas:
 | UC-COMM-007 | Set Revenue Target | Admin authenticated | Revenue target saved and gauge bar updated | Admin |
 | UC-COMM-008 | View Target Progress | Admin authenticated | Gauge bar displays progress toward target | Admin |
 | UC-COMM-009 | View Revenue Forecast | Admin authenticated | Dotted forecast line displayed on trend chart | Admin |
+| UC-COMM-010 | View Ad Fee Revenue | Admin authenticated | Ad fee KPI and trend displayed in revenue dashboard | Admin |
+| UC-COMM-011 | View Ad Fee Payment Status | Admin authenticated | Ad fee payment breakdown displayed | Admin |
 
 ### 2.2 Primary Business Workflow
 
@@ -158,7 +164,8 @@ Admin navigates to /admin/commission or /admin/revenue
    Screen loads data in parallel
             │
             ▼
-   Commission: rate + reports  Revenue: KPI + chart + target + forecast + payouts
+   Commission: rate + reports
+   Revenue: KPI + chart + target + forecast + ad fees + payouts
             │
             ▼
    Admin performs actions:
@@ -169,6 +176,7 @@ Admin navigates to /admin/commission or /admin/revenue
       • Set revenue target
       • View target progress
       • View AI revenue forecast
+      • View ad fee revenue
             │
             ▼
    Backend validates action and updates data
@@ -201,6 +209,9 @@ Admin navigates to /admin/commission or /admin/revenue
 | A-REV-004 | Admin can manage merchant payouts |
 | A-REV-005 | Admin can set monthly/quarterly revenue targets and view progress |
 | A-REV-006 | System can forecast revenue and platform fees using historical data |
+| A-ADFE-001 | Admin can view advertisement fee revenue in dashboard |
+| A-ADFE-002 | Ad fee revenue included in total platform income KPI |
+| A-ADFE-003 | Ad fee payment status tracked alongside order payment status |
 
 ---
 
@@ -292,7 +303,19 @@ Admin navigates to /admin/commission or /admin/revenue
 | BR-REV-014 | Data Sufficiency | If historical data is insufficient (fewer than the minimum required points), the forecast is not generated and the dotted line is hidden with an informational note. | Backend (forecast service) + Frontend (empty state) |
 | BR-REV-015 | Non-Committing Output | Forecast values are indicative estimates; they are never written back to financial records or used in KPI/aggregation calculations. | Backend (service logic) |
 
-### 4.7 Security Rules
+### 4.7 Advertisement Fee Revenue Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-ADFE-001 | Ad Fee Scope | Ad fee revenue includes only completed ad payments with `paymentStatus = 'completed'`. | Backend (query aggregation) |
+| BR-ADFE-002 | Ad Fee KPI | Ad fee revenue is displayed as a separate KPI card and included in total platform income. | Backend (query aggregation) + Frontend (KPI cards) |
+| BR-ADFE-003 | Ad Fee Trend | Ad fee trend series is overlaid on the revenue chart as a separate line alongside commission revenue. | Backend (query aggregation) + Frontend (chart series) |
+| BR-ADFE-004 | Ad Fee in Payout | Merchant payout deductions include both commission and outstanding ad fees. | Backend (payout calculation service) |
+| BR-ADFE-005 | Ad Fee Payment Status | Ad fee payment statuses (completed, pending, refunded) are summarized alongside order payment statuses. | Backend (query aggregation) + Frontend (payment panel) |
+| BR-ADFE-006 | Ad Fee Forecast | Ad fee revenue is included in the AI forecast calculation as a separate series. | Backend (forecast service) |
+| BR-ADFE-007 | Ad Fee Target | Ad fee revenue is included in revenue target progress calculation (total income = commission + ad fees). | Backend (target progress calculation) |
+
+### 4.8 Security Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
@@ -359,29 +382,33 @@ Admin navigates to /admin/commission or /admin/revenue
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-18 | Page Title | Text | `revenue.title` | No | "Revenue" page heading |
-| EL-19 | KPI Cards | Card Group | — | Yes | Total revenue, total commission, avg order value, net revenue |
-| EL-20 | Total Revenue Card | Card | `revenue.totalRevenue` | Yes | Total revenue KPI |
+| EL-19 | KPI Cards | Card Group | — | Yes | Total revenue, total commission, ad fee revenue, total income, avg order value, net revenue |
+| EL-20 | Total Revenue Card | Card | `revenue.totalRevenue` | Yes | Total order revenue KPI |
 | EL-21 | Total Commission Card | Card | `revenue.totalCommission` | Yes | Total commission KPI |
-| EL-22 | Avg Order Value Card | Card | `revenue.avgOrderValue` | Yes | Average order value KPI |
-| EL-23 | Net Revenue Card | Card | `revenue.netRevenue` | Yes | Net revenue KPI |
-| EL-24 | Trend Chart | Chart | — | Yes | Area/line chart with revenue and commission series |
-| EL-25 | Range Toggle | Toggle Group | `revenue.range` | No | 7d / 30d / 90d / 1y range selection |
-| EL-26 | Payment Status Panel | Panel | — | No | Summary badges for completed/pending/failed/refunded |
-| EL-27 | Payout Table | Table | — | Yes | Merchant payouts with action button |
-| EL-28 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
-| EL-29 | Confirmation Dialog | Modal | — | No | Confirm payout processing |
-| EL-30 | Target Progress Card | Card | `revenue.targetProgress` | No | Card containing the revenue target gauge bar |
-| EL-31 | Target Period Toggle | Toggle Group | `revenue.targetPeriod` | No | Monthly / Quarterly period selection |
-| EL-32 | Target Amount Display | Text | `revenue.targetAmount` | No | Displays the configured target amount |
-| EL-33 | Gauge Bar | Progress Indicator | `revenue.progress` | No | Progress bar displaying current % toward target |
-| EL-34 | Progress Percentage | Text | `revenue.progressLabel` | No | Percentage label rendered beside the gauge bar |
-| EL-35 | Edit Target Button | Button (secondary) | `revenue.editTarget` | No | Opens the edit target dialog |
-| EL-36 | Target Amount Input | Input (number) | `revenue.targetPlaceholder` | No | Revenue target amount input in the edit dialog |
-| EL-37 | Target Period Select | Select | `revenue.targetPeriodLabel` | No | Monthly / quarterly selection in the edit dialog |
-| EL-38 | Save Target Button | Button (primary) | `revenue.saveTarget` | Yes | Saves the revenue target configuration |
-| EL-39 | Cancel Target Button | Button (secondary) | `revenue.cancelTarget` | No | Cancels target editing |
-| EL-40 | Forecast Legend | Text | `revenue.forecast` | No | "AI Forecast" dotted line legend |
-| EL-41 | Forecast Series | Chart Series | — | No | Dotted forecast line (revenue + platform fees) overlaid on the trend chart |
+| EL-22 | Ad Fee Revenue Card | Card | `revenue.adFeeRevenue` | Yes | Total advertisement fee revenue KPI |
+| EL-23 | Total Income Card | Card | `revenue.totalIncome` | Yes | Combined platform income (commission + ad fees) KPI |
+| EL-24 | Avg Order Value Card | Card | `revenue.avgOrderValue` | Yes | Average order value KPI |
+| EL-25 | Net Revenue Card | Card | `revenue.netRevenue` | Yes | Net revenue KPI (total income - refunds) |
+| EL-26 | Trend Chart | Chart | — | Yes | Area/line chart with commission, ad fee, and total income series |
+| EL-27 | Range Toggle | Toggle Group | `revenue.range` | No | 7d / 30d / 90d / 1y range selection |
+| EL-28 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending/failed/refunded) + ad payments |
+| EL-29 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded) |
+| EL-30 | Payout Table | Table | — | Yes | Merchant payouts with action button |
+| EL-31 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
+| EL-32 | Confirmation Dialog | Modal | — | No | Confirm payout processing |
+| EL-33 | Target Progress Card | Card | `revenue.targetProgress` | No | Card containing the revenue target gauge bar |
+| EL-34 | Target Period Toggle | Toggle Group | `revenue.targetPeriod` | No | Monthly / Quarterly period selection |
+| EL-35 | Target Amount Display | Text | `revenue.targetAmount` | No | Displays the configured target amount |
+| EL-36 | Gauge Bar | Progress Indicator | `revenue.progress` | No | Progress bar displaying current % toward target |
+| EL-37 | Progress Percentage | Text | `revenue.progressLabel` | No | Percentage label rendered beside the gauge bar |
+| EL-38 | Edit Target Button | Button (secondary) | `revenue.editTarget` | No | Opens the edit target dialog |
+| EL-39 | Target Amount Input | Input (number) | `revenue.targetPlaceholder` | No | Revenue target amount input in the edit dialog |
+| EL-40 | Target Period Select | Select | `revenue.targetPeriodLabel` | No | Monthly / quarterly selection in the edit dialog |
+| EL-41 | Save Target Button | Button (primary) | `revenue.saveTarget` | Yes | Saves the revenue target configuration |
+| EL-42 | Cancel Target Button | Button (secondary) | `revenue.cancelTarget` | No | Cancels target editing |
+| EL-43 | Forecast Legend | Text | `revenue.forecast` | No | "AI Forecast" dotted line legend |
+| EL-44 | Forecast Series | Chart Series | — | No | Dotted forecast line (revenue + platform fees + ad fees) overlaid on the trend chart |
+| EL-45 | Ad Fee Summary Card | Card | `revenue.adFeeSummary` | No | Summary of ad fee statistics (active ads, total collected, pending) |
 
 **Global:**
 
@@ -397,6 +424,7 @@ Admin navigates to /admin/commission or /admin/revenue
 - Forecast dotted line hidden when historical data is insufficient
 - Process buttons disabled for non-pending payouts
 - Confirmation dialog and edit target dialog closed
+- Ad payment status panel shows summary alongside order payment status
 
 ---
 
@@ -446,12 +474,12 @@ Admin navigates to /admin/commission or /admin/revenue
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | `/admin/revenue` route mounted |
-| **API Endpoint** | `GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts` |
+| **API Endpoint** | `GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts`, `GET /api/v1/admin/revenue/ad-fees` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
-| **Processing Steps** | 1. Fetch KPI, trend, target, forecast, payment, and payout data in parallel. 2. Populate cards, chart, gauge, panels, and tables. 3. On failure, show alert and preserve last known data if available. |
-| **Success Response** | 200 OK with dashboard data |
-| **Post-Action** | Populate KPI cards, trend chart, target gauge, forecast dotted line, payment status panel, and payout table |
+| **Processing Steps** | 1. Fetch KPI, trend, target, forecast, payment, payout, and ad fee data in parallel. 2. Populate cards (including ad fee revenue and total income), chart, gauge, panels, and tables. 3. On failure, show alert and preserve last known data if available. |
+| **Success Response** | 200 OK with dashboard data (including ad fee summary) |
+| **Post-Action** | Populate KPI cards (6 cards), trend chart (3 series), target gauge, forecast dotted line, payment status panels (order + ad), payout table, and ad fee summary card |
 | **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
 
 ### 6.5 Operation: Trend Range Change
@@ -514,9 +542,35 @@ Admin navigates to /admin/commission or /admin/revenue
 | **API Endpoint** | `GET /api/v1/admin/revenue/forecast` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token; range is one of `7d`, `30d`, `90d`, `1y` |
-| **Processing Steps** | 1. Fetch historical revenue and platform fee series for the selected range. 2. Compute trend extrapolation for the forecast horizon. 3. Return predicted revenue and platform fee points. 4. Render as a dotted line appended to the current trend line. 5. On insufficient data, return empty forecast and hide the dotted line with an informational note. |
+| **Processing Steps** | 1. Fetch historical revenue, platform fee, and ad fee series for the selected range. 2. Compute trend extrapolation for the forecast horizon. 3. Return predicted revenue, platform fee, and ad fee points. 4. Render as a dotted line appended to the current trend line. 5. On insufficient data, return empty forecast and hide the dotted line with an informational note. |
 | **Success Response** | 200 OK with forecast series data (or empty series when data is insufficient) |
 | **Post-Action** | Render dotted forecast line and update legend/tooltip labels |
+| **Error Response** | 400 Validation Error, 500 Internal Server Error |
+
+### 6.10 Operation: Ad Fee Revenue Load
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | `/admin/revenue` route mounted |
+| **API Endpoint** | `GET /api/v1/admin/revenue/ad-fees` |
+| **Request Content-Type** | `application/json` |
+| **Pre-Submission Validation** | Valid admin JWT access token |
+| **Processing Steps** | 1. Fetch ad fee KPI data (total ad fees collected, active ads, pending payments). 2. Fetch ad fee trend series for the selected range. 3. Fetch ad fee payment status breakdown. 4. Populate ad fee KPI card, ad fee trend series on chart, and ad payment status panel. 5. On failure, show alert and render ad fee card at 0. |
+| **Success Response** | 200 OK with ad fee summary, trend series, and payment status |
+| **Post-Action** | Render ad fee KPI card, ad fee trend line, and ad payment status badges |
+| **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
+
+### 6.11 Operation: Ad Fee Trend Range Change
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Select `7d` / `30d` / `90d` / `1y` on Range Toggle |
+| **API Endpoint** | `GET /api/v1/admin/revenue/ad-fees` |
+| **Request Content-Type** | `application/json` |
+| **Pre-Submission Validation** | Range value is one of `7d`, `30d`, `90d`, `1y` |
+| **Processing Steps** | 1. Fetch ad fee trend series for selected range. 2. Update ad fee series on the trend chart. 3. On failure, maintain previous chart state and show alert. |
+| **Success Response** | 200 OK with ad fee trend series data |
+| **Post-Action** | Update ad fee trend line on the chart |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
 
 ---
@@ -555,8 +609,8 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `kpis` | Revenue aggregation | Object of numeric KPI values |
-| `trendPoints` | Revenue trends query | Array of `{ date, revenue, commission }` points |
+| `kpis` | Revenue aggregation | Object of numeric KPI values (totalRevenue, totalCommission, adFeeRevenue, totalIncome, avgOrderValue, netRevenue) |
+| `trendPoints` | Revenue trends query | Array of `{ date, revenue, commission, adFee, totalIncome }` points |
 | `payouts` | Payout records | Array of payout list rows |
 | `message` | API response | Toast / alert text |
 
@@ -573,7 +627,21 @@ Admin navigates to /admin/commission or /admin/revenue
 |-------|-------------|----------------|
 | `target` | Revenue target record + aggregation | Object of `{ targetAmount, period, actualRevenue, progressPercent }` |
 | `progressPercent` | Backend calculation | Percentage string clamped to 0–100% for gauge display |
-| `forecastPoints` | Forecast service | Array of `{ date, forecastRevenue, forecastCommission }` points |
+| `forecastPoints` | Forecast service | Array of `{ date, forecastRevenue, forecastCommission, forecastAdFee }` points |
+
+### 7.8 Input Specification — Ad Fee Revenue (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `range` | Range | 期間 | ENUM | Yes | Toggle Group | One of `7d`, `30d`, `90d`, `1y` |
+
+### 7.9 Output Specification — Ad Fee Revenue (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `adFeeKpis` | Ad payment aggregation | Object of `{ totalAdFees, activeAds, pendingPayments, completedPayments }` |
+| `adFeeTrendPoints` | Ad payment trends query | Array of `{ date, adFee }` points |
+| `adFeePaymentStatus` | Ad payment status aggregation | Object of `{ completed, pending, refunded }` counts/amounts |
 
 ---
 
@@ -607,7 +675,13 @@ Admin navigates to /admin/commission or /admin/revenue
 | `targetAmount` | Required, must match `/^\d+(\.\d{1,2})?$/`, greater than 0 | "Target amount is required" / "Target amount must be a positive number with up to 2 decimal places" | "目標金額は必須です" / "目標金額は0より大きい小数第2位までの数値で入力してください" |
 | `targetPeriod` | Must be one of `monthly`, `quarterly` | "Invalid target period" | "無効な目標期間です" |
 
-### 8.5 Validation Enforcement Layers
+### 8.5 Ad Fee Revenue Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `range` | Must be one of `7d`, `30d`, `90d`, `1y` | "Invalid range" | "無効な期間です" |
+
+### 8.6 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
@@ -635,7 +709,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | `400` | `COMM_001` | Invalid commission rate | Inline field error on edit dialog |
 | `403` | `COMM_002` | Unauthorized access to admin route | Redirect to `/unauthorized` or alert |
 
-### 9.3 Error Classification Table — Revenue / Payout
+### 9.3 Error Classification Table — Revenue / Payout / Ad Fee
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
@@ -643,6 +717,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | `404` | `COMM_003` | Payout not found | Alert banner + refresh list |
 | `409` | `COMM_004` | Payout already processed | Alert banner + disable action |
 | `422` | `COMM_006` | Insufficient historical data for forecast | Informational note; forecast dotted line hidden |
+| `404` | `ADFE_001` | Ad fee record not found | Alert banner + refresh ad fee data |
 | `500` | `SYS_001` | Server error | Alert banner with retry option |
 | network | `NET_ERR` | Network failure | Alert banner for connectivity issue |
 
@@ -674,6 +749,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | `GET /api/v1/admin/revenue/targets` | Protected (Admin) | Fetch revenue target and progress |
 | `PUT /api/v1/admin/revenue/targets` | Protected (Admin) | Save/update revenue target |
 | `GET /api/v1/admin/revenue/forecast` | Protected (Admin) | Fetch AI revenue forecast series |
+| `GET /api/v1/admin/revenue/ad-fees` | Protected (Admin) | Fetch ad fee revenue data |
 | `GET /api/v1/admin/revenue/payments` | Protected (Admin) | Fetch payment status breakdown |
 | `GET /api/v1/admin/revenue/payouts` | Protected (Admin) | Fetch payout list |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Protected (Admin) | Process a payout |
@@ -792,6 +868,8 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Revenue target periods | `monthly`, `quarterly` (frontend toggle group, backend DTO) |
 | Forecast algorithm | Trend extrapolation (e.g., linear regression) over selected range |
 | Minimum forecast data points | Backend config (default: 7 historical points) |
+| Ad fee trend series color | Frontend chart config (default: orange/amber) |
+| Ad fee payment status mapping | Backend enum: `completed`, `pending`, `refunded` |
 
 ---
 
@@ -810,6 +888,9 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | A-REV-004 | Admin can manage merchant payouts | UC-COMM-005, Sec 6.6 |
 | A-REV-005 | Admin can set monthly/quarterly revenue targets and view progress | UC-COMM-007/008, BR-REV-006~010, Sec 6.7, 6.8 |
 | A-REV-006 | System can forecast revenue and platform fees using historical data | UC-COMM-009, BR-REV-011~015, Sec 6.9 |
+| A-ADFE-001 | Admin can view advertisement fee revenue in dashboard | UC-COMM-010, Sec 6.10 |
+| A-ADFE-002 | Ad fee revenue included in total platform income KPI | BR-ADFE-002, Sec 6.4 |
+| A-ADFE-003 | Ad fee payment status tracked alongside order payment status | BR-ADFE-005, Sec 6.10 |
 
 ### 15.2 API Endpoint Traceability
 
@@ -822,6 +903,7 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | `GET /api/v1/admin/revenue/targets` | Revenue Target Load (Sec 6.7) |
 | `PUT /api/v1/admin/revenue/targets` | Revenue Target Save (Sec 6.8) |
 | `GET /api/v1/admin/revenue/forecast` | Revenue Forecast Load (Sec 6.9) |
+| `GET /api/v1/admin/revenue/ad-fees` | Ad Fee Revenue Load (Sec 6.10) |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Payout Processing (Sec 6.6) |
 
 ### 15.3 Related Document References
@@ -838,6 +920,10 @@ No WebSocket or server-sent event integration is required for this release. UI n
 - [ ] Currency values never rendered as floats (string-safe formatting)
 - [ ] Target progress calculation excludes refunds (consistent with KPI scope)
 - [ ] Forecast values never written back to financial records or used in aggregations
+- [ ] Ad fee revenue included in total platform income KPI
+- [ ] Ad fee payment status tracked alongside order payment status
+- [ ] Ad fee trend series rendered as separate line on revenue chart
+- [ ] Ad fee included in payout deduction calculation
 
 ---
 

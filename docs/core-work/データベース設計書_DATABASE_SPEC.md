@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.0 |
+| **Version** | 2.1 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released (承認済み) |
 
@@ -22,6 +22,7 @@
 | 1.0 | 2026-08-03 | Lead Database Engineer | Initial technical design specification (新規作成) |
 | 1.1 | 2026-08-10 | Lead Database Engineer | Added new fields to advertisements table for approval workflow, payment tracking, and weekly limits |
 | 2.0 | 2026-08-14 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v1.5: UUID primary keys, merchants table, restructured orders, ad fee tables, updated FK relationships |
+| 2.1 | 2026-08-17 | Lead Database Engineer | Added commission_settings, revenue_targets, and payouts tables for Commission & Revenue management feature (手数料・売上管理機能テーブル追加) |
 
 ---
 
@@ -822,6 +823,135 @@ CREATE TABLE ad_fee_history (
 
 ---
 
+### 3.16 Commission Settings Table (`commission_settings` - 手数料設定テーブル)
+Manages platform commission rate settings for revenue calculation.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 0 | Commission rate (e.g., 10.00 = 10%). Check: `commission_rate >= 0 AND commission_rate <= 100`. |
+| 3 | 更新者ID | `updated_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_commission_settings_updated_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 4 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+| 5 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE commission_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    commission_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+    updated_by UUID,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate >= 0 AND commission_rate <= 100),
+    CONSTRAINT fk_commission_settings_updated_by FOREIGN KEY (updated_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Commission Settings Rules
+- Only one active commission rate configuration should exist at a time
+- Commission rate is used to calculate platform fees from merchant sales
+- Changes to commission rate are logged in the `payouts` table when applied
+- Admin can update commission rate via the Commission & Revenue management page
+
+---
+
+### 3.17 Revenue Targets Table (`revenue_targets` - 売上目標テーブル)
+Manages revenue targets for platform performance tracking.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 目標ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 目標金額 | `target_amount` | DECIMAL(12,2) | - | - | N | - | Revenue target amount. Check: `target_amount > 0`. |
+| 3 | 期間 | `period` | VARCHAR(20) | - | - | N | - | Target period: 'monthly' or 'quarterly'. |
+| 4 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Target active status. |
+| 5 | 作成者ID | `created_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_revenue_targets_created_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 6 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+| 7 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE revenue_targets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    target_amount DECIMAL(12,2) NOT NULL,
+    period VARCHAR(20) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by UUID,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_revenue_targets_amount CHECK (target_amount > 0),
+    CONSTRAINT chk_revenue_targets_period CHECK (period IN ('monthly', 'quarterly')),
+    CONSTRAINT uq_revenue_targets_period_active UNIQUE (period, is_active),
+    CONSTRAINT fk_revenue_targets_created_by FOREIGN KEY (created_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Revenue Target Rules
+- Only one active target per period (monthly or quarterly) is allowed
+- Target achievement is calculated as: (actual revenue / target amount) × 100%
+- Revenue data is aggregated from `order_items` table (total_price column)
+- Admin can set and update revenue targets via the Commission & Revenue management page
+
+---
+
+### 3.18 Payouts Table (`payouts` - 出金テーブル)
+Manages merchant payout transactions with commission and advertising fee deductions.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 出金ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_payouts_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 3 | 合計金額 | `total_amount` | DECIMAL(12,2) | - | - | N | - | Total payout amount before deductions. |
+| 4 | 手数料額 | `commission_amount` | DECIMAL(12,2) | - | - | N | 0 | Platform commission amount deducted. |
+| 5 | 広告料額 | `ad_fee_amount` | DECIMAL(12,2) | - | - | N | 0 | Advertising fee amount deducted. |
+| 6 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | Payout status: pending/processing/completed/failed. |
+| 7 | 処理者ID | `processed_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_payouts_processed_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 8 | 処理日時 | `processed_at` | TIMESTAMPTZ | - | - | Y | NULL | Payout processing timestamp. |
+| 9 | 失敗理由 | `failure_reason` | TEXT | - | - | Y | NULL | Reason for payout failure. |
+| 10 | 幂等性キー | `idempotency_key` | VARCHAR(255) | - | - | Y | NULL | Unique key for idempotent operations. |
+| 11 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 12 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE payouts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL,
+    total_amount DECIMAL(12,2) NOT NULL,
+    commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    ad_fee_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    processed_by UUID,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    failure_reason TEXT,
+    idempotency_key VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_payouts_status CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    CONSTRAINT chk_payouts_amounts CHECK (total_amount > 0 AND commission_amount >= 0 AND ad_fee_amount >= 0),
+    CONSTRAINT uq_payouts_idempotency_key UNIQUE (idempotency_key),
+    CONSTRAINT fk_payouts_merchant FOREIGN KEY (merchant_id)
+        REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_payouts_processed_by FOREIGN KEY (processed_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Payout Processing Rules
+- Payout calculation: `net_payout = total_amount - commission_amount - ad_fee_amount`
+- Commission amount is calculated using the rate from `commission_settings` table
+- Ad fee amounts are aggregated from `ad_payments` table for the merchant
+- Idempotency key ensures duplicate payouts are not processed
+- Payout status transitions: pending → processing → completed/failed
+- Failed payouts include a failure_reason for debugging
+- Admin can process payouts via the Commission & Revenue management page
+
+---
+
 ## 4. Performance Optimization Layer (Indexes)
 
 To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds) and optimize lookup times under concurrent access, we define specific B-Tree index structures.
@@ -874,6 +1004,12 @@ To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds)
 | 42 | `idx_ad_payments_merchant_id` | `ad_payments` | `merchant_id` | Speeds up merchant payment history. |
 | 43 | `idx_ad_fee_settings_placement_tier` | `ad_fee_settings` | `placement, tier` | Optimizes fee lookups by placement and tier. |
 | 44 | `idx_ad_fee_history_setting_id` | `ad_fee_history` | `ad_fee_setting_id` | Speeds up fee history lookups. |
+| 45 | `idx_commission_settings_updated_by` | `commission_settings` | `updated_by` | Optimizes commission setting update history lookups. |
+| 46 | `idx_revenue_targets_period` | `revenue_targets` | `period` | Speeds up revenue target filtering by period. |
+| 47 | `idx_revenue_targets_is_active` | `revenue_targets` | `is_active` | Optimizes active revenue target filtering. |
+| 48 | `idx_payouts_merchant_id` | `payouts` | `merchant_id` | Speeds up merchant payout history lookups. |
+| 49 | `idx_payouts_status` | `payouts` | `status` | Optimizes payout status filtering. |
+| 50 | `idx_payouts_created_at` | `payouts` | `created_at` | Speeds up payout date sorting and filtering. |
 
 ### 4.2 DDL Index Scripts
 
@@ -951,6 +1087,18 @@ CREATE INDEX idx_ad_fee_settings_placement_tier ON ad_fee_settings (placement, t
 
 -- Indexes for Ad Fee History Table
 CREATE INDEX idx_ad_fee_history_setting_id ON ad_fee_history (ad_fee_setting_id);
+
+-- Indexes for Commission Settings Table
+CREATE INDEX idx_commission_settings_updated_by ON commission_settings (updated_by);
+
+-- Indexes for Revenue Targets Table
+CREATE INDEX idx_revenue_targets_period ON revenue_targets (period);
+CREATE INDEX idx_revenue_targets_is_active ON revenue_targets (is_active);
+
+-- Indexes for Payouts Table
+CREATE INDEX idx_payouts_merchant_id ON payouts (merchant_id);
+CREATE INDEX idx_payouts_status ON payouts (status);
+CREATE INDEX idx_payouts_created_at ON payouts (created_at DESC);
 
 -- Partial Indexing for Active Products (Soft Delete Equivalent)
 CREATE INDEX idx_products_active_featured ON products (is_featured, created_at DESC) 
@@ -1178,9 +1326,13 @@ erDiagram
     users ||--o{ orders : "places"
     users ||--o{ refresh_tokens : "has"
     users ||--o| shops : "owns"
+    users ||--o{ commissionSettings : "updates"
+    users ||--o{ revenueTargets : "creates"
+    users ||--o{ processedPayouts : "processes"
     merchants ||--o{ products : "lists"
     merchants ||--o{ promotions : "creates"
     merchants ||--o{ ad_payments : "pays"
+    merchants ||--o{ payouts : "receives"
     categories ||--o{ products : "contains"
     categories ||--o| categories : "parent_of"
     products ||--o{ reviews : "receives"
@@ -1199,14 +1351,15 @@ erDiagram
 | **Master/Lookup** | 3 | user_roles, order_statuses, discount_types |
 | **Core Entities** | 12 | users, merchants, refresh_tokens, categories, products, reviews, wishlist, orders, order_items, shops, promotions, advertisements |
 | **Ad Fee Management** | 3 | ad_fee_settings, ad_payments, ad_fee_history |
-| **Total** | 18 | Complete database schema |
+| **Commission & Revenue** | 3 | commission_settings, revenue_targets, payouts |
+| **Total** | 21 | Complete database schema |
 
 ---
 
 **Document Management (文書管理):**
 - Author: Lead Database Engineer
 - Created: 2026-08-03
-- Last Updated: 2026-08-14
+- Last Updated: 2026-08-17
 - Next Review: Phase 2 Planning
 
 ---
