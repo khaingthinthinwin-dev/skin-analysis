@@ -4,9 +4,9 @@
 **Target Screen:** Search & Filter Page (検索・フィルタページ)  
 **Subsystem:** Buyer Module — Product Search, Filtering, Sorting & Pagination  
 **Function ID:** FN-SEARCH-001  
-**Version:** 2.0  
+**Version:** 2.1  
 **Created:** 2026-08-07  
-**Last Updated:** 2026-08-14  
+**Last Updated:** 2026-08-17  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -22,42 +22,43 @@
 | 1.0 | 2026-08-10 | Senior System Engineer | Initial release. Screen items specification for the Search & Filter page covering keyword search, category browsing, multi-dimensional filtering, sorting, pagination, active filter chips, and responsive filter drawer. Aligned with SKM-FDS-SEARCH-001 and PRWM-SIS-SCR-001 format. |
 | 1.1 | 2026-08-14 | Senior System Engineer | Added Grid/List view toggle specification: screen items `tglViewMode` / `btnGridMode` / `btnListMode` (Sec 4.4), behavior (Sec 5.14), i18n keys (Sec 9), shared ViewToggle component (Sec 10.7), UI/UX & accessibility notes (Sec 11), and test checklist (Sec 12.6). View mode defaults to Grid, persists to localStorage, and leaves URL-based search/filter/sort/pagination state unchanged. |
 | 2.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, corrected DB mapping types to UUID. |
+| 2.1 | 2026-08-17 | Senior System Engineer | Further alignment with SignUp_Login (画面項目設計書 SKM-SIS-SCR-001) format and naming conventions. Enhanced section organization, improved consistency across all table formats, and ensured all Item Definitions follow standardized component type and data type conventions per DEVELOPMENT_RULES v2.0. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields (B-SEARCH-*, B-MATCH-*), and rules (Rule 4.2.1, 4.2.2). |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `shops`), indexes. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules (Section 12.2), design tokens (Sections 9.1–9.6), API standards (8.3), performance standards (10.3). |
-| 4 | SKM-FDS-SEARCH-001 | Functional Specification — Search & Filter | `docs/screen/SearchAndFilter/機能設計書  _Search_And_Filter.md` | Use cases, business rules (BR-SEARCH-*), operations, state transitions, error handling. |
+| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields (B-SEARCH-*, B-MATCH-*), and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `shops`), constraints, data types. |
+| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses, naming conventions. |
+| 4 | SKM-FDS-SEARCH-001 | Functional Specification — Search & Filter | `docs/screen/SearchAndFilter/機能設計書  _Search_And_Filter.md` | Use cases, state transitions, business rules, error handling. |
 
 ---
 
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Search & Filter page is the discovery and exploration entry point within the Cosmetics Finder platform. It enables buyers (including guests) to locate skincare products by keyword, browse a hierarchical category tree, apply multi-dimensional filters (skin type, ingredients, price range, minimum rating), sort results, and paginate through the catalog. All search, filter, sort, and pagination state is persisted in URL query parameters as the single source of truth, making result sets shareable and back-button friendly.
+The Search & Filter page serves as the discovery and exploration entry point within the Cosmetics Finder platform. It enables buyers (authenticated and unauthenticated) to locate skincare products via keyword search, hierarchical category navigation, and multi-dimensional filtering (skin type, ingredients, price range, review rating). Results are sortable, paginated, and rendered in configurable Grid or List layouts. All search, filter, sort, and pagination state is persisted in URL query parameters as the authoritative state source, ensuring result sets remain shareable, bookmarkable, and navigation-compatible.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
 | Attribute | Value |
 | :--- | :--- |
 | **Primary Actors** | Visitors (unauthenticated), Buyers (authenticated), Merchants, Admins |
-| **Required Authentication** | None (public endpoints — search, category browse, and product detail are public) |
-| **Data Scope** | Global product catalog (active products from approved merchant shops) |
-| **Access Control** | Public routes — no guards applied. Rate limiting enforced on the public search endpoint. |
+| **Required Authentication** | None (public endpoints — search, category browsing, and product detail are open to all) |
+| **Data Scope** | Global product catalog (active, approved products from approved merchant shops) |
+| **Access Control** | Public routes — no authentication guards applied. Rate limiting enforced on public search endpoint. |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
-1. **Keyword Search** — Partial (case-insensitive) matching on name, short description, tags, and ingredients.
-2. **Category Browsing** — Nested category tree navigation; filtering by a category includes all descendant categories.
-3. **Multi-Dimensional Filtering** — Filter by skin type, ingredients, price range, and minimum review rating.
-4. **Sorting** — Sort results by price, average rating, or newest.
-5. **Pagination** — Page through results (default 20 per page, maximum 100).
-6. **URL-State Navigation** — All search/filter/sort/page state persisted in URL query parameters as single source of truth (BR-SEARCH-003).
-7. **Caching** — Repeat searches and category tree served from Redis (list TTL 2 min, category tree TTL 30 min).
-8. **Responsive Design** — Desktop filters sidebar, mobile filter drawer, responsive product grid.
-9. **View Mode Toggle** — Switch results between a responsive Grid layout (1–4 columns) and a mobile-friendly stacked List layout. Selection persists to `localStorage`, defaults to Grid, and does not alter URL query params or trigger a refetch.
+1. **Keyword Search** — Partial (case-insensitive) matching across product name, short description, tags, and ingredients fields.
+2. **Category Browsing** — Hierarchical category tree navigation with single-select filtering; includes all descendant categories in results.
+3. **Multi-Dimensional Filtering** — Simultaneous filtering by skin type (multi-select), ingredients (multi-select), price range (min/max bounds), and minimum review rating (1–5 stars).
+4. **Sorting** — Results sortable by newest-first, price (low-to-high or high-to-low), or highest rating.
+5. **Pagination** — Paged results with configurable page size (10, 20, or 50 items per page; default 20; max 100).
+6. **URL-State Navigation** — All search/filter/sort/page state encoded in URL query parameters as single source of truth (BR-SEARCH-003); supports browser back/forward and URL sharing.
+7. **Performance Caching** — Repeat queries and category tree served from Redis cache (product list TTL 2 min, category tree TTL 30 min).
+8. **Responsive Design** — Desktop: fixed filters sidebar + multi-column product grid. Mobile: bottom-sheet filter drawer + single-column product display.
+9. **View Mode Toggle** — Switch result layout between responsive Grid (1–4 columns, adaptive) and mobile-optimized List (single-column stacked rows). Selection persists to `localStorage`, defaults to Grid, and does not affect URL state or trigger refetch.
 
 ---
 
