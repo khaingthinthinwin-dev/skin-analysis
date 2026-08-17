@@ -255,7 +255,7 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 - **Action:**
   1. If role = merchant, validate license file (PDF, named license.pdf, max 10MB)
   2. Call `authService.register(formData)`
-  3. If role = merchant, upload license file via `authService.uploadLicense(userId, file)`
+  3. If role = merchant, upload license file via `authService.uploadLicense(userId, file)` (creates `merchants` record with `license_status='pending'`)
   4. Show success toast: "Account created! Please sign in."
   5. Redirect to `/login` with success message
 

@@ -28,6 +28,8 @@ import {
 export enum UserRole {
   BUYER = 'buyer',
   MERCHANT = 'merchant',
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin',
 }
 
 export class RegisterDto {
@@ -132,6 +134,8 @@ export class UserResponseDto {
   email: string;
   name: string;
   role: string;
+  merchantId: string | null;
+  licenseStatus: 'pending' | 'approved' | 'rejected' | null;
   avatarUrl: string | null;
   emailVerified: boolean;
   isActive: boolean;
@@ -149,6 +153,8 @@ export class RegisterResponseDto {
   email: string;
   name: string;
   role: string;
+  merchantId: string | null;
+  licenseStatus: 'pending' | 'approved' | 'rejected' | null;
   emailVerified: boolean;
   licenseUrl: string | null;
   createdAt: Date;
@@ -184,7 +190,7 @@ export class VerifyResponseDto {
 export interface AccessTokenPayload {
   sub: string;      // User ID
   email: string;    // User email
-  role: string;     // User role (buyer, merchant, admin)
+  role: string;     // User role (buyer, merchant, admin, super_admin)
   jti: string;      // Unique token ID for blacklisting
   iat: number;      // Issued at timestamp
   exp: number;      // Expiration timestamp (15 minutes)

@@ -30,10 +30,12 @@ Register a new user account.
   ```json
   {
     "data": {
-      "id": "clx1234567890abcdef",
+      "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
       "email": "user@example.com",
       "name": "John Doe",
       "role": "buyer",
+      "merchantId": null,
+      "licenseStatus": null,
       "emailVerified": false,
       "licenseUrl": null,
       "createdAt": "2026-08-10T12:00:00.000Z"
@@ -63,10 +65,12 @@ Authenticate user and issue tokens.
     "data": {
       "accessToken": "eyJhbGciOiJIUzI1NiIs...",
       "user": {
-        "id": "clx1234567890abcdef",
+        "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
         "email": "user@example.com",
         "name": "John Doe",
         "role": "buyer",
+        "merchantId": null,
+        "licenseStatus": null,
         "avatarUrl": null,
         "emailVerified": false
       }
@@ -133,10 +137,12 @@ Validate access token and return user profile.
   ```json
   {
     "data": {
-      "id": "clx1234567890abcdef",
+      "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
       "email": "user@example.com",
       "name": "John Doe",
       "role": "buyer",
+      "merchantId": null,
+      "licenseStatus": null,
       "avatarUrl": null,
       "emailVerified": false,
       "isActive": true,

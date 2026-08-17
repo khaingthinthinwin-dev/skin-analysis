@@ -15,8 +15,8 @@ The **Authentication Module** (認証モジュール) is the gateway for all use
 
 | ID | Use Case | Description |
 |---|----------|-------------|
-| UC-AUTH-01 | Register New Account | Create a new user account with email, password, name, and role selection (Buyer/Merchant). |
-| UC-AUTH-02 | Upload Merchant License | When registering as Merchant, upload business license PDF (license.pdf, max 10MB). |
+| UC-AUTH-01 | Register New Account | Create a new user account with email, password, name, and role selection (Buyer/Merchant). IDs use UUID primary keys. |
+| UC-AUTH-02 | Upload Merchant License | When registering as Merchant, upload business license PDF (license.pdf, max 10MB). Creates a `merchants` record with `license_status='pending'`; merchant features stay locked until license is APPROVED. |
 | UC-AUTH-03 | Login with Credentials | Authenticate with email and password, receive JWT access token (15min) and refresh token (7 days). |
 | UC-AUTH-04 | Refresh Access Token | Automatically refresh expired access token using refresh token cookie with rotation. |
 | UC-AUTH-05 | Logout | Terminate session by blacklisting access token in Redis and revoking refresh token. |
@@ -93,7 +93,7 @@ stateDiagram-v2
 | **Backend Strategies** | `jwt-access.strategy.ts`, `jwt-refresh.strategy.ts` |
 | **Backend Guards** | `jwt-auth.guard.ts`, `local-auth.guard.ts` |
 | **Backend Config** | `jwt.config.ts`, `argon2.config.ts` |
-| **Shared Services** | `prisma.service.ts` (users, refresh_tokens), `redis.service.ts` (blacklist) |
+| **Shared Services** | `prisma.service.ts` (users, merchants, refresh_tokens), `redis.service.ts` (blacklist) |
 
 ---
 
@@ -113,7 +113,8 @@ stateDiagram-v2
 
 | Table | Purpose | Operations |
 |-------|---------|------------|
-| `users` | Store user credentials, profile, role | SELECT (login), INSERT (register), SELECT (verify) |
+| `users` | Store user credentials, profile, role, `merchant_id` | SELECT (login), INSERT (register), SELECT (verify) |
+| `merchants` | Store merchant business info and license status | INSERT (register, merchant only) |
 | `refresh_tokens` | Store hashed refresh tokens with family tracking | INSERT (login), SELECT (refresh), UPDATE (revoke) |
 | `user_roles` | Master lookup for role validation | SELECT (registration validation) |
 

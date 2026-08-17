@@ -8,12 +8,12 @@
 |------|-----|
 | **ドキュメントID** | SKM-DEV-001 |
 | **システム** | Cosmetics Finder |
-| **バージョン** | 1.0 |
+| **バージョン** | 2.0 |
 | **作成日** | 2026-08-03 |
-| **最終更新日** | 2026-08-03 |
+| **最終更新日** | 2026-08-14 |
 | **著者** | プリンシパルソフトウェアアーキテクト＆エンタープライズエンジニアリングガバナンスリード |
 | **ステータス** | リリース済み |
-| **対象者** | 人間の開発者、Cursor AI、GitHub Copilot、Claude Code、Gemini Code Assist |
+| **対象者** | 人間の開発者、Cursor AI、Gemini Code Assist、Claude |
 
 ---
 
@@ -70,7 +70,7 @@
 | リレーション | 明示的な`@relation`名 | `@relation("UserProducts")` | 名前なしの暗黙的リレーション |
 | テーブルマップ | `snake_case`複数形 | `@@map("products")`, `@@map("order_items")` | `@@map("Products")` |
 | カラムマップ | `snake_case` | `@map("merchant_id")`, `@map("created_at")` | `@map("merchantId")` |
-| プライマリキー | `@default(cuid())`付き`id` | `id String @id @default(cuid())` | ビジネスエンティティの自動インクリメント |
+| プライマリキー | `@default(dbgenerated("gen_random_uuid()"))`または`@default(uuid())`付き`id` | `id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` | ビジネスエンティティの自動インクリメント |
 | フォーリンキー | `<model>Id`camelCase | `merchantId`, `categoryId` | Prismaフィールド名の`merchant_id` |
 | インデックス | `@@index([field])` | `@@index([merchantId])` | FKカラムにインデックスなし |
 | チェック制約 | Prisma内インライン | `@db.Decimal(10, 2)` | シンプル制約の生SQL |
@@ -80,7 +80,7 @@
 - `@unique`制約が複数カラムを含む場合、明示的に名前を付けること。
 - 常に`onDelete`と`onUpdate`を明示的に指定。データベースのデフォルトに依存しない。
 - 金額には`Decimal`を使用。`Float`や`Double`は使用しない。
-- ビジネスエンティティのプライマリキーには`String @id @default(cuid())`を使用。
+- ビジネスエンティティのプライマリキーには`String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid`（または`@default(uuid())`）を使用（データベースレベルのUUID形式に整合）。
 - ルックアップ/マスターテーブルには`Int @id @default(autoincrement())`のみ使用。
 
 ## 1.3 Reactコンポーネント命名
@@ -345,12 +345,20 @@ backend/src/
 │   │   ├── admin.service.ts
 │   │   ├── admin.service.spec.ts
 │   │   └── README.md                    # [PET/PPH] 所有者
-│   └── commission/                      # [PPH] 手数料＆収益
+│   ├── commission/                      # [PPH] 手数料＆収益
 │       ├── commission.module.ts
 │       ├── commission.controller.ts
 │       ├── commission.service.ts
 │       ├── commission.service.spec.ts
 │       └── README.md                    # [PPH] 所有者
+│   └── notifications/                   # [ATM] ウェブサイト通知システム
+│       ├── notifications.module.ts
+│       ├── notifications.controller.ts
+│       ├── notifications.service.ts
+│       ├── dto/
+│       │   └── notification-response.dto.ts
+│       ├── notifications.service.spec.ts
+│       └── README.md                    # [ATM] 所有者
 └── shared/                              # グローバル共有サービス
     ├── shared.module.ts
     ├── prisma/                          # PrismaModule, PrismaService（PostgreSQL）
@@ -410,7 +418,7 @@ frontend/src/
 │   │   ├── Promotions.tsx               # [ZSLS]
 │   │   ├── Advertisements.tsx           # [WYT]
 │   │   └── SalesAnalytics.tsx           # [WYT]
-│   └── admin/
+│   ├── admin/
 │       ├── Dashboard.tsx                # [PET]
 │       ├── Users.tsx                    # [PET]
 │       ├── Reviews.tsx                  # [PET]
@@ -418,6 +426,8 @@ frontend/src/
 │       ├── Reports.tsx                  # [PET]
 │       ├── Commission.tsx               # [PPH]
 │       └── Revenue.tsx                  # [PPH]
+│   └── notifications/                   # [ATM]
+│       └── Notifications.tsx
 ├── components/
 │   ├── ui/                              # shadcn/uiプリミティブ（手動編集禁止）
 │   │   ├── button.tsx
@@ -555,7 +565,7 @@ frontend/src/
 │   │   │   ├── advertisement.service.ts # [WYT]
 │   │   │   └── sales.service.ts         # [WYT]
 │   │   └── README.md                    # [ZSLS/WYT] 所有者
-│   └── admin/                           # [PET/PPH] 管理者
+│   ├── admin/                           # [PET/PPH] 管理者
 │       ├── components/
 │       │   ├── AdminStats.tsx
 │       │   ├── UsersTable.tsx           # [PET]
@@ -575,6 +585,15 @@ frontend/src/
 │       │   ├── report.service.ts        # [PET]
 │       │   └── commission.service.ts    # [PPH]
 │       └── README.md                    # [PET/PPH] 所有者
+│   └── notifications/                   # [ATM] 通知
+│       ├── components/
+│       │   ├── NotificationBell.tsx
+│       │   └── NotificationPanel.tsx
+│       ├── hooks/
+│       │   └── useNotifications.ts
+│       ├── services/
+│       │   └── notification.service.ts
+│       └── README.md                    # [ATM] 所有者
 ├── hooks/                               # 共有カスタムフック
 │   ├── useDebounce.ts
 │   ├── useLocalStorage.ts
@@ -983,7 +1002,7 @@ findAll() { ... }
 - フロントエンドのみの認可に依存しない。常にバックエンドで実行。
 - 管理者エンドポイントには`admin`roleが必須。例外なし。
 - 出品者エンドポイントには`merchant`または`admin`roleが必須。
-- 購入者固有機能（レビュー、お気に入り、AI分析）には`buyer`role以上が必須。
+- 購入者固有機能（レビュー、お気に入り、カート、チェックアウト、AI分析）には`buyer`roleが必須。出品者と管理者はこれらの機能にアクセスすることを厳格に禁止。
 
 ## 5.5 Argon2を使用したパスワードハッシュ化
 
@@ -1015,7 +1034,7 @@ findAll() { ... }
 - すべてのリクエストボディは`class-validator`デコレーター付きDTOで検証が必須。
 - グローバル`ValidationPipe`は`whitelist: true`、`forbidNonWhitelisted: true`、`transform: true`で設定が必須。
 - クエリパラメータはDTOクラスで検証が必須。
-- URLパラメータ（ID）は適切なCUID形式で検証が必須。
+- URLパラメータ（ID）は適切なUUID形式で検証が必須。
 
 **フロントエンド検証ルール:**
 - すべてのフォームはReact Hook Formで`zodResolver`を使用が必須。
@@ -1159,7 +1178,7 @@ console.log('debug info');  // console.logは使用しない
 ```json
 {
   "event": "USER_LOGIN",
-  "userId": "clx1234567890",
+  "userId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "email": "user@example.com",
   "ip": "192.168.1.1",
   "timestamp": "2026-08-03T12:00:00.000Z",
@@ -1316,7 +1335,7 @@ console.log('debug info');  // console.logは使用しない
 ```json
 {
   "data": {
-    "id": "clx1234567890",
+    "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
     "name": "Product Name",
     "price": "29.99"
   }
@@ -1328,8 +1347,8 @@ console.log('debug info');  // console.logは使用しない
 ```json
 {
   "data": [
-    { "id": "clx1234567890", "name": "Product 1" },
-    { "id": "clx0987654321", "name": "Product 2" }
+    { "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", "name": "Product 1" },
+    { "id": "a3b90f42-4b7d-4bad-9bdd-2b0d7b3dcb6d", "name": "Product 2" }
   ],
   "meta": {
     "page": 1,
@@ -1381,7 +1400,7 @@ GET /api/v1/products?page=1&limit=20&sort=createdAt&order=desc
 **カーソルベースページネーション（大規模データセット用）:**
 
 ```
-GET /api/v1/products?cursor=clx1234567890&limit=20
+GET /api/v1/products?cursor=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d&limit=20
 ```
 
 **カーソルレスポンス:**
@@ -1390,7 +1409,7 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 {
   "data": [...],
   "meta": {
-    "nextCursor": "clx0987654321",
+    "nextCursor": "a3b90f42-4b7d-4bad-9bdd-2b0d7b3dcb6d",
     "hasMore": true,
     "limit": 20
   }
@@ -1420,7 +1439,7 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
 ```json
 {
   "data": {
-    "analysisId": "clx1234567890",
+    "analysisId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
     "skinType": "combination",
     "conditions": [
       { "name": "mild_acne", "severity": "low", "confidence": 0.87 },
@@ -1429,7 +1448,7 @@ GET /api/v1/products?cursor=clx1234567890&limit=20
     "estimatedAge": 28,
     "recommendations": [
       {
-        "productId": "clx0987654321",
+        "productId": "a3b90f42-4b7d-4bad-9bdd-2b0d7b3dcb6d",
         "productName": "Gentle Foaming Cleanser",
         "reason": "Suitable for combination skin with mild acne",
         "matchScore": 0.94
@@ -2126,25 +2145,28 @@ async update(id: string, dto: UpdateProductDto, userId: string) {
 **ステータスフロー:**
 
 ```
-pending → confirmed → processing → delivered → done
-
+placed → confirmed → packed → shipped → out_for_delivery → delivered
+   ↓         ↓          ↓         ↓              ↓              ↓
+  出荷前のいずれの状態でもキャンセル可能 → cancelled
 ```
 
 **遷移ルール:**
 
 | から | 許可される先 | トリガー |
 |------|-----------|-------------|
-| pending | confirmed | 出品者 |
-| confirmed | processing | 出品者 |
-| processing | delivered | 出品者 |
-| delivered | done | システム（自動確認）または購入者 |
+| placed | confirmed | 出品者 |
+| confirmed | packed | 出品者 |
+| packed | shipped | 出品者 |
+| shipped | out_for_delivery | 配送業者/システム |
+| out_for_delivery | delivered | 購入者/システム |
+| placed/confirmed/packed | cancelled | 購入者または出品者 |
 
 **注文ルール:**
 - 注文作成時に在庫がアトミックに減少（`$transaction`）。
-- 価格は注文作時にロック。
+- 価格は注文作成時にロック。
 - 合計 = 小計 + 送料 + 税金。
 - 小計 = Σ（単価 × 数量）。
-- doneステータスはシステムによって自動確認または購入者によって確認。
+- deliveredステータスはシステムまたは購入者によって確認。
 
 ## 12.5 お気に入りルール
 
@@ -2348,9 +2370,9 @@ final = max(0, subtotal - discount)
 **ドキュメント管理:**
 - 著者: プリンシパルソフトウェアアーキテクト＆エンタープライズエンジニアリングガバナンスリード
 - 作成日: 2026-08-03
-- 最終更新日: 2026-08-03
+- 最終更新日: 2026-08-14
 - 次回レビュー: フェーズ2企画
-- 承認者: [保留中]
+- 承認者: [承認済み]
 
 ---
 

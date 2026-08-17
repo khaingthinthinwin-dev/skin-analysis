@@ -22,11 +22,12 @@ This document specifies the core business logic, token lifecycle management, and
    - Check email uniqueness in `users` table
    - If `dto.role === 'merchant'`, validate license file (PDF, named license.pdf, max 10MB)
    - Hash password with Argon2id (64MB memory, 3 iterations, 4 threads)
-   - Generate CUID for user ID
+   - Generate UUID (`gen_random_uuid()`) for user ID
    - Upload license file to storage (if merchant)
    - Insert `users` record with `is_active=true`, `email_verified=false`
+   - If `dto.role === 'merchant'`, insert `merchants` record with `license_status='pending'` and set `users.merchant_id = merchants.id` (starts in PENDING state; merchant features stay locked until license is APPROVED)
    - Log `USER_REGISTERED` event
-3. **Transaction Boundaries:** User creation and license file upload must be atomic
+3. **Transaction Boundaries:** User creation, merchant record creation, and license file upload must be atomic
 
 ### 2.2 login(dto)
 

@@ -19,8 +19,8 @@ Mock dependencies: `PrismaService`, `RedisService`, `JwtService`, `ConfigService
 
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
-| **register** | Valid data, no license | Creates user, hashes password, returns user DTO |
-| **register** | Valid data with merchant role and license | Creates user, uploads license, returns user with licenseUrl |
+| **register** | Valid data, no license (buyer) | Creates user, hashes password, returns user DTO with merchantId/licenseStatus null |
+| **register** | Valid data with merchant role and license | Creates user + merchants record with license_status='pending', uploads license, returns user with licenseUrl and licenseStatus='pending' |
 | **register** | Email already exists | Throws `ConflictException` (409) |
 | **register** | Invalid license file type (not PDF) | Throws `BadRequestException` (415) |
 | **register** | License file named incorrectly | Throws `BadRequestException` (400) |
