@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.0 |
+| **Version** | 2.2 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released（承認済み） |
 
@@ -22,6 +22,8 @@
 | 1.0 | 2026-08-03 | Lead Database Engineer | 初回技術設計仕様（新規作成） |
 | 1.1 | 2026-08-10 | Lead Database Engineer | 広告承認ワークフロー、支払い追跡、週間制限のためのadvertisementsテーブルにフィールドを追加 |
 | 2.0 | 2026-08-14 | Lead Database Engineer | REQUIREMENT_SPEC v1.5に整合: UUID主キー、merchantsテーブル、ordersの再構成、広告料金テーブル、FKリレーションシップの更新 |
+| 2.1 | 2026-08-17 | Lead Database Engineer | 手数料・売上管理機能テーブル追加: commission_settings, revenue_targets, payoutsテーブル追加 |
+| 2.2 | 2026-08-17 | Lead Database Engineer | AI肌分析・カート・監査・通知テーブル追加: skin_analyses, skin_analysis_conditions, skin_analysis_recommendations, carts, cart_items, order_status_history, inventory_transactions, review_reports, audit_logs, notificationsの10テーブル追加 |
 
 ---
 
@@ -823,6 +825,503 @@ CREATE TABLE ad_fee_history (
 
 ---
 
+### 3.16 Commission Settings Table（`commission_settings` - 手数料設定テーブル）
+売上計算用のプラットフォーム手数料率設定を管理します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 0 | 手数料率（例: 10.00 = 10%）。チェック: `commission_rate >= 0 AND commission_rate <= 100`。 |
+| 3 | 更新者ID | `updated_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_commission_settings_updated_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 4 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+| 5 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE commission_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    commission_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+    updated_by UUID,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate >= 0 AND commission_rate <= 100),
+    CONSTRAINT fk_commission_settings_updated_by FOREIGN KEY (updated_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Commission Settings Rules（手数料設定ルール）
+- 同時に有効な手数料率設定は1つのみ許可
+- 手数料率は出品者の売上からプラットフォーム手数料を計算するために使用
+- 手数料率の変更は、`payouts`テーブルに適用時にログ記録される
+- Adminは手数料・売上管理ページから手数料率を更新可能
+
+---
+
+### 3.17 Revenue Targets Table（`revenue_targets` - 売上目標テーブル）
+プラットフォームのパフォーマンス追跡用の売上目標を管理します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 目標ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | 目標金額 | `target_amount` | DECIMAL(12,2) | - | - | N | - | 売上目標金額。チェック: `target_amount > 0`。 |
+| 3 | 期間 | `period` | VARCHAR(20) | - | - | N | - | 目標期間: 'monthly' または 'quarterly'。 |
+| 4 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | 目標有効ステータス。 |
+| 5 | 作成者ID | `created_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_revenue_targets_created_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 6 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+| 7 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE revenue_targets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    target_amount DECIMAL(12,2) NOT NULL,
+    period VARCHAR(20) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by UUID,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_revenue_targets_amount CHECK (target_amount > 0),
+    CONSTRAINT chk_revenue_targets_period CHECK (period IN ('monthly', 'quarterly')),
+    CONSTRAINT uq_revenue_targets_period_active UNIQUE (period, is_active),
+    CONSTRAINT fk_revenue_targets_created_by FOREIGN KEY (created_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Revenue Target Rules（売上目標ルール）
+- 各期間（月次または四半期）で有効な目標は1つのみ許可
+- 目標達成率は次のように計算: (実績売上 / 目標金額) × 100%
+- 売上データは`order_items`テーブル（total_priceカラム）から集計
+- Adminは手数料・売上管理ページから売上目標を設定・更新可能
+
+---
+
+### 3.18 Payouts Table（`payouts` - 出金テーブル）
+手数料と広告料差引を伴う出品者の出金取引を管理します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 出金ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | フォーリンキー（`fk_payouts_merchant`）。`merchants(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
+| 3 | 合計金額 | `total_amount` | DECIMAL(12,2) | - | - | N | - | 差引前の出金合計金額。 |
+| 4 | 手数料額 | `commission_amount` | DECIMAL(12,2) | - | - | N | 0 | 差引されるプラットフォーム手数料額。 |
+| 5 | 広告料額 | `ad_fee_amount` | DECIMAL(12,2) | - | - | N | 0 | 差引される広告料額。 |
+| 6 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | 出金状態: pending/processing/completed/failed。 |
+| 7 | 処理者ID | `processed_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_payouts_processed_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 8 | 処理日時 | `processed_at` | TIMESTAMPTZ | - | - | Y | NULL | 出金処理タイムスタンプ。 |
+| 9 | 失敗理由 | `failure_reason` | TEXT | - | - | Y | NULL | 出金失敗の理由。 |
+| 10 | 幂等性キー | `idempotency_key` | VARCHAR(255) | - | - | Y | NULL | 冪等性操作のためのユニークキー。 |
+| 11 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 12 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE payouts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL,
+    total_amount DECIMAL(12,2) NOT NULL,
+    commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    ad_fee_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    processed_by UUID,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    failure_reason TEXT,
+    idempotency_key VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_payouts_status CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    CONSTRAINT chk_payouts_amounts CHECK (total_amount > 0 AND commission_amount >= 0 AND ad_fee_amount >= 0),
+    CONSTRAINT uq_payouts_idempotency_key UNIQUE (idempotency_key),
+    CONSTRAINT fk_payouts_merchant FOREIGN KEY (merchant_id)
+        REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_payouts_processed_by FOREIGN KEY (processed_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Payout Processing Rules（出金処理ルール）
+- 出金計算: `net_payout = total_amount - commission_amount - ad_fee_amount`
+- 手数料額は`commission_settings`テーブルのレートを使用して計算
+- 広告料額は出品者の`ad_payments`テーブルから集計
+- 幂等性キーにより重複出金を防止
+- 出金ステータス遷移: pending → processing → completed/failed
+- 失敗した出金にはデバッグ用のfailure_reasonが含まれる
+- Adminは手数料・売上管理ページから出金を処理可能
+
+---
+
+### 3.19 Skin Analyses Table（`skin_analyses` - AI肌分析テーブル）
+ユーザーのAI肌分析結果を保存します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 分析ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | フォーリンキー（`fk_skin_analyses_user`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | 画像URL | `image_url` | TEXT | - | - | N | - | アップロードされた顔画像のURL。 |
+| 4 | 肌タイプ | `skin_type` | VARCHAR(20) | - | - | Y | NULL | 検出された肌タイプ: dry, oily, combination, sensitive, normal。 |
+| 5 | 推定年齢 | `estimated_age` | INTEGER | - | - | Y | NULL | AI推定年齢（オプション）。 |
+| 6 | 分析状態 | `analysis_status` | VARCHAR(20) | - | - | N | 'pending' | 分析状態: pending, processing, completed, failed。 |
+| 7 | AIモデル | `ai_model` | VARCHAR(100) | - | - | Y | NULL | AIモデル識別子。 |
+| 8 | AIモデルバージョン | `ai_model_version` | VARCHAR(50) | - | - | Y | NULL | AIモデルバージョン。 |
+| 9 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 10 | 完了日時 | `completed_at` | TIMESTAMPTZ | - | - | Y | NULL | 分析完了タイムスタンプ。 |
+| 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE skin_analyses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    image_url TEXT NOT NULL,
+    skin_type VARCHAR(20),
+    estimated_age INTEGER,
+    analysis_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    ai_model VARCHAR(100),
+    ai_model_version VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_skin_analyses_status CHECK (analysis_status IN ('pending', 'processing', 'completed', 'failed')),
+    CONSTRAINT chk_skin_analyses_skin_type CHECK (skin_type IN ('dry', 'oily', 'combination', 'sensitive', 'normal')),
+    CONSTRAINT fk_skin_analyses_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.20 Skin Analysis Conditions Table（`skin_analysis_conditions` - AI肌分析条件テーブル）
+AI分析で検出された肌状態を保存します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 条件ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | 分析ID | `analysis_id` | UUID | - | Y | N | - | フォーリンキー（`fk_skin_analysis_conditions_analysis`）。`skin_analyses(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | 条件名 | `condition_name` | VARCHAR(100) | - | - | N | - | 条件名（acne, dark_spots, wrinkles, dryness, oilinessなど）。 |
+| 4 | 重篤度 | `severity` | VARCHAR(10) | - | - | N | - | 重篤度レベル: low, medium, high。 |
+| 5 | 信頼度 | `confidence` | DECIMAL(5,2) | - | - | N | - | AI信頼度スコア: 0.00〜1.00。 |
+| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE skin_analysis_conditions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_id UUID NOT NULL,
+    condition_name VARCHAR(100) NOT NULL,
+    severity VARCHAR(10) NOT NULL,
+    confidence DECIMAL(5,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_skin_analysis_conditions_severity CHECK (severity IN ('low', 'medium', 'high')),
+    CONSTRAINT chk_skin_analysis_conditions_confidence CHECK (confidence >= 0 AND confidence <= 1),
+    CONSTRAINT fk_skin_analysis_conditions_analysis FOREIGN KEY (analysis_id)
+        REFERENCES skin_analyses(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.21 Skin Analysis Recommendations Table（`skin_analysis_recommendations` - AI肌分析推薦テーブル）
+AI分析からの商品推薦を保存します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 推薦ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | 分析ID | `analysis_id` | UUID | - | Y | N | - | フォーリンキー（`fk_skin_analysis_recommendations_analysis`）。`skin_analyses(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | 商品ID | `product_id` | UUID | - | Y | N | - | フォーリンキー（`fk_skin_analysis_recommendations_product`）。`products(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 4 | 理由 | `reason` | TEXT | - | - | N | - | 推薦理由。 |
+| 5 | マッチスコア | `match_score` | INTEGER | - | - | N | - | マッチスコア: 0〜100。 |
+| 6 | 表示順序 | `display_order` | INTEGER | - | - | N | 0 | 推薦の表示順序。 |
+| 7 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE skin_analysis_recommendations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_id UUID NOT NULL,
+    product_id UUID NOT NULL,
+    reason TEXT NOT NULL,
+    match_score INTEGER NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_skin_analysis_recommendations_score CHECK (match_score >= 0 AND match_score <= 100),
+    CONSTRAINT fk_skin_analysis_recommendations_analysis FOREIGN KEY (analysis_id)
+        REFERENCES skin_analyses(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_skin_analysis_recommendations_product FOREIGN KEY (product_id)
+        REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.22 Carts Table（`carts` - カートテーブル）
+ユーザーのショッピングカートを保存します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | カートID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | フォーリンキー（`fk_carts_user`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。ユニーク制約。 |
+| 3 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 4 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE carts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_carts_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.23 Cart Items Table（`cart_items` - カート商品テーブル）
+ショッピングカート内のアイテムを保存します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | カート商品ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | カートID | `cart_id` | UUID | - | Y | N | - | フォーリンキー（`fk_cart_items_cart`）。`carts(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | 商品ID | `product_id` | UUID | - | Y | N | - | フォーリンキー（`fk_cart_items_product`）。`products(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 4 | 数量 | `quantity` | INTEGER | - | - | N | 1 | 数量。チェック: `quantity > 0`。 |
+| 5 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 6 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE cart_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    cart_id UUID NOT NULL,
+    product_id UUID NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_cart_items_quantity CHECK (quantity > 0),
+    CONSTRAINT uq_cart_items_cart_product UNIQUE (cart_id, product_id),
+    CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id)
+        REFERENCES carts(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_cart_items_product FOREIGN KEY (product_id)
+        REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.24 Order Status History Table（`order_status_history` - 注文ステータス履歴テーブル）
+追跡と監査のためにすべての注文ステータス遷移を記録します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 履歴ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | 注文ID | `order_id` | UUID | - | Y | N | - | フォーリンキー（`fk_order_status_history_order`）。`orders(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | ステータスID | `status_id` | INTEGER | - | Y | N | - | フォーリンキー（`fk_order_status_history_status`）。`order_statuses(status_id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
+| 4 | 変更者ID | `changed_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_order_status_history_changed_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 5 | 備考 | `note` | TEXT | - | - | Y | NULL | ステータス変更に関するオプションのメモ。 |
+| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE order_status_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL,
+    status_id INTEGER NOT NULL,
+    changed_by UUID,
+    note TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_order_status_history_order FOREIGN KEY (order_id)
+        REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_order_status_history_status FOREIGN KEY (status_id)
+        REFERENCES order_statuses(status_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_order_status_history_changed_by FOREIGN KEY (changed_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.25 Inventory Transactions Table（`inventory_transactions` - 在庫変動テーブル）
+監査と追跡のためにすべての在庫変動を記録します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 変動ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | 商品ID | `product_id` | UUID | - | Y | N | - | フォーリンキー（`fk_inventory_transactions_product`）。`products(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
+| 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | フォーリンキー（`fk_inventory_transactions_merchant`）。`merchants(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
+| 4 | 変動種別 | `transaction_type` | VARCHAR(30) | - | - | N | - | 取引種別: order_created, order_cancelled, restock, manual_adjustment, return。 |
+| 5 | 数量 | `quantity` | INTEGER | - | - | N | - | 変動数量（増加は正、減少は負）。 |
+| 6 | 変動前数量 | `before_quantity` | INTEGER | - | - | N | - | 変動前の在庫数。 |
+| 7 | 変動後数量 | `after_quantity` | INTEGER | - | - | N | - | 変動後の在庫数。 |
+| 8 | 参照種別 | `reference_type` | VARCHAR(50) | - | - | Y | NULL | 関連エンティティ種別（order, adjustmentなど）。 |
+| 9 | 参照ID | `reference_id` | UUID | - | - | Y | NULL | 関連エンティティID。 |
+| 10 | 理由 | `reason` | TEXT | - | - | Y | NULL | 在庫変動の理由。 |
+| 11 | 作成者ID | `created_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_inventory_transactions_created_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE inventory_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+    merchant_id UUID NOT NULL,
+    transaction_type VARCHAR(30) NOT NULL,
+    quantity INTEGER NOT NULL,
+    before_quantity INTEGER NOT NULL,
+    after_quantity INTEGER NOT NULL,
+    reference_type VARCHAR(50),
+    reference_id UUID,
+    reason TEXT,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_inventory_transactions_type CHECK (transaction_type IN ('order_created', 'order_cancelled', 'restock', 'manual_adjustment', 'return')),
+    CONSTRAINT fk_inventory_transactions_product FOREIGN KEY (product_id)
+        REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_inventory_transactions_merchant FOREIGN KEY (merchant_id)
+        REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_inventory_transactions_created_by FOREIGN KEY (created_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.26 Review Reports Table（`review_reports` - レビュー報告テーブル）
+モデレーション用のユーザー報告レビューを保存します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 報告ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | レビューID | `review_id` | UUID | - | Y | N | - | フォーリンキー（`fk_review_reports_review`）。`reviews(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | 報告者ID | `reported_by` | UUID | - | Y | N | - | フォーリンキー（`fk_review_reports_reported_by`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 4 | 理由 | `reason` | VARCHAR(50) | - | - | N | - | 報告理由: spam, inappropriate, fake, other。 |
+| 5 | 説明 | `description` | TEXT | - | - | Y | NULL | 報告者からのオプションの説明。 |
+| 6 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | 報告状態: pending, reviewed, resolved, rejected。 |
+| 7 | 管理者メモ | `admin_note` | TEXT | - | - | Y | NULL | 解決に関する管理者メモ。 |
+| 8 | 解決者ID | `resolved_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_review_reports_resolved_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 9 | 解決日時 | `resolved_at` | TIMESTAMPTZ | - | - | Y | NULL | 解決タイムスタンプ。 |
+| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE review_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    review_id UUID NOT NULL,
+    reported_by UUID NOT NULL,
+    reason VARCHAR(50) NOT NULL,
+    description TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    admin_note TEXT,
+    resolved_by UUID,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_review_reports_reason CHECK (reason IN ('spam', 'inappropriate', 'fake', 'other')),
+    CONSTRAINT chk_review_reports_status CHECK (status IN ('pending', 'reviewed', 'resolved', 'rejected')),
+    CONSTRAINT fk_review_reports_review FOREIGN KEY (review_id)
+        REFERENCES reviews(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_review_reports_reported_by FOREIGN KEY (reported_by)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_review_reports_resolved_by FOREIGN KEY (resolved_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.27 Audit Logs Table（`audit_logs` - 監査ログテーブル）
+重要なシステムアクションの追跡用の追記専用テーブル。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | ログID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_audit_logs_user`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
+| 3 | アクション | `action` | VARCHAR(100) | - | - | N | - | 実行されたアクション（例: merchant.approve, order.status_change）。 |
+| 4 | エンティティ種別 | `entity_type` | VARCHAR(100) | - | - | N | - | 影響を受けるエンティティ種別（例: Merchant, Order, Product）。 |
+| 5 | エンティティID | `entity_id` | UUID | - | - | Y | NULL | 影響を受けるレコードのID。 |
+| 6 | 旧値 | `old_value` | JSONB | - | - | Y | NULL | 以前の値（更新用）。 |
+| 7 | 新値 | `new_value` | JSONB | - | - | Y | NULL | 新しい値（作成/更新用）。 |
+| 8 | IPアドレス | `ip_address` | VARCHAR(45) | - | - | Y | NULL | クライアントIPアドレス。 |
+| 9 | ユーザーエージェント | `user_agent` | TEXT | - | - | Y | NULL | クライアントユーザーエージェント文字列。 |
+| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id UUID,
+    old_value JSONB,
+    new_value JSONB,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_audit_logs_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Audit Log Rules（監査ログルール）
+- 監査ログは追記専用（UPDATEまたはDELETEは不可）
+- パスワード、アクセストークン、リフレッシュトークン、認証シークレットはログに記録しない
+- IPアドレスとユーザーエージェントはオプション（システム生成アクション用）
+- old_valueとnew_valueは柔軟なデータ収集のためにJSONBを使用
+
+---
+
+### 3.28 Notifications Table（`notifications` - 通知テーブル）
+アプリ内ユーザー通知を保存します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 通知ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | フォーリンキー（`fk_notifications_user`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | 種別 | `type` | VARCHAR(50) | - | - | N | - | 通知種別（例: merchant.approved, order.shipped）。 |
+| 4 | タイトル | `title` | VARCHAR(255) | - | - | N | - | 通知タイトル。 |
+| 5 | メッセージ | `message` | TEXT | - | - | N | - | 通知メッセージ本文。 |
+| 6 | エンティティ種別 | `entity_type` | VARCHAR(100) | - | - | Y | NULL | 関連エンティティ種別。 |
+| 7 | エンティティID | `entity_id` | UUID | - | - | Y | NULL | 関連エンティティID。 |
+| 8 | 既読フラグ | `is_read` | BOOLEAN | - | - | N | FALSE | 既読ステータス。 |
+| 9 | 既読日時 | `read_at` | TIMESTAMPTZ | - | - | Y | NULL | 通知が既読になったタイムスタンプ。 |
+| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    entity_type VARCHAR(100),
+    entity_id UUID,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
 ## 4. Performance Optimization Layer (Indexes)（パフォーマンス最適化レイヤー）
 
 非機能要件**NFR-001**（ページロード時間 ≤ 2秒）を満たし、同時アクセス下でのルックアップ時間を最適化するために、特定のB-Treeインデックス構造を定義します。
@@ -875,6 +1374,33 @@ CREATE TABLE ad_fee_history (
 | 42 | `idx_ad_payments_merchant_id` | `ad_payments` | `merchant_id` | 出品者の支払い履歴を高速化。 |
 | 43 | `idx_ad_fee_settings_placement_tier` | `ad_fee_settings` | `placement, tier` | 配置場所とティアによる料金ルックアップを最適化。 |
 | 44 | `idx_ad_fee_history_setting_id` | `ad_fee_history` | `ad_fee_setting_id` | 料金履歴ルックアップを高速化。 |
+| 45 | `idx_commission_settings_updated_by` | `commission_settings` | `updated_by` | 手数料設定更新履歴ルックアップを最適化。 |
+| 46 | `idx_revenue_targets_period` | `revenue_targets` | `period` | 期間による売上目標フィルタを高速化。 |
+| 47 | `idx_revenue_targets_is_active` | `revenue_targets` | `is_active` | 有効売上目標フィルタを最適化。 |
+| 48 | `idx_payouts_merchant_id` | `payouts` | `merchant_id` | 出品者出金履歴ルックアップを高速化。 |
+| 49 | `idx_payouts_status` | `payouts` | `status` | 出金状態フィルタを最適化。 |
+| 50 | `idx_payouts_created_at` | `payouts` | `created_at` | 出金日ソーティングとフィルタを高速化。 |
+| 51 | `idx_skin_analyses_user_id` | `skin_analyses` | `user_id` | ユーザー分析履歴ルックアップを最適化。 |
+| 52 | `idx_skin_analyses_status` | `skin_analyses` | `analysis_status` | 分析状態フィルタを高速化。 |
+| 53 | `idx_skin_analysis_conditions_analysis_id` | `skin_analysis_conditions` | `analysis_id` | 分析による条件ルックアップを最適化。 |
+| 54 | `idx_skin_analysis_recommendations_analysis_id` | `skin_analysis_recommendations` | `analysis_id` | 分析による推薦ルックアップを高速化。 |
+| 55 | `idx_skin_analysis_recommendations_product_id` | `skin_analysis_recommendations` | `product_id` | 商品推薦ルックアップを最適化。 |
+| 56 | `idx_carts_user_id` | `carts` | `user_id` | ユーザーカートルックアップを高速化。 |
+| 57 | `idx_cart_items_cart_id` | `cart_items` | `cart_id` | カート商品のロードを最適化。 |
+| 58 | `idx_cart_items_product_id` | `cart_items` | `product_id` | 商品カートルックアップを高速化。 |
+| 59 | `idx_order_status_history_order_id` | `order_status_history` | `order_id` | 注文履歴のロードを最適化。 |
+| 60 | `idx_inventory_transactions_product_id` | `inventory_transactions` | `product_id` | 商品在庫履歴を高速化。 |
+| 61 | `idx_inventory_transactions_merchant_id` | `inventory_transactions` | `merchant_id` | 出品者在庫ルックアップを最適化。 |
+| 62 | `idx_inventory_transactions_type` | `inventory_transactions` | `transaction_type` | 取引種別フィルタを高速化。 |
+| 63 | `idx_review_reports_review_id` | `review_reports` | `review_id` | レビュー報告ルックアップを最適化。 |
+| 64 | `idx_review_reports_status` | `review_reports` | `status` | 報告状態フィルタを高速化。 |
+| 65 | `idx_audit_logs_user_id` | `audit_logs` | `user_id` | ユーザー監査履歴を最適化。 |
+| 66 | `idx_audit_logs_action` | `audit_logs` | `action` | アクション種別フィルタを高速化。 |
+| 67 | `idx_audit_logs_entity` | `audit_logs` | `entity_type, entity_id` | エンティティ監査ルックアップを最適化。 |
+| 68 | `idx_audit_logs_created_at` | `audit_logs` | `created_at` | 監査ログ日ソーティングを高速化。 |
+| 69 | `idx_notifications_user_id` | `notifications` | `user_id` | ユーザー通知ロードを最適化。 |
+| 70 | `idx_notifications_is_read` | `notifications` | `is_read` | 未読通知フィルタを高速化。 |
+| 71 | `idx_notifications_created_at` | `notifications` | `created_at` | 通知日ソーティングを最適化。 |
 
 ### 4.2 DDL Index Scripts（DDLインデックススクリプト）
 
@@ -952,6 +1478,59 @@ CREATE INDEX idx_ad_fee_settings_placement_tier ON ad_fee_settings (placement, t
 
 -- Indexes for Ad Fee History Table
 CREATE INDEX idx_ad_fee_history_setting_id ON ad_fee_history (ad_fee_setting_id);
+
+-- Indexes for Commission Settings Table
+CREATE INDEX idx_commission_settings_updated_by ON commission_settings (updated_by);
+
+-- Indexes for Revenue Targets Table
+CREATE INDEX idx_revenue_targets_period ON revenue_targets (period);
+CREATE INDEX idx_revenue_targets_is_active ON revenue_targets (is_active);
+
+-- Indexes for Payouts Table
+CREATE INDEX idx_payouts_merchant_id ON payouts (merchant_id);
+CREATE INDEX idx_payouts_status ON payouts (status);
+CREATE INDEX idx_payouts_created_at ON payouts (created_at DESC);
+
+-- Indexes for Skin Analyses Table
+CREATE INDEX idx_skin_analyses_user_id ON skin_analyses (user_id);
+CREATE INDEX idx_skin_analyses_status ON skin_analyses (analysis_status);
+
+-- Indexes for Skin Analysis Conditions Table
+CREATE INDEX idx_skin_analysis_conditions_analysis_id ON skin_analysis_conditions (analysis_id);
+
+-- Indexes for Skin Analysis Recommendations Table
+CREATE INDEX idx_skin_analysis_recommendations_analysis_id ON skin_analysis_recommendations (analysis_id);
+CREATE INDEX idx_skin_analysis_recommendations_product_id ON skin_analysis_recommendations (product_id);
+
+-- Indexes for Carts Table
+CREATE INDEX idx_carts_user_id ON carts (user_id);
+
+-- Indexes for Cart Items Table
+CREATE INDEX idx_cart_items_cart_id ON cart_items (cart_id);
+CREATE INDEX idx_cart_items_product_id ON cart_items (product_id);
+
+-- Indexes for Order Status History Table
+CREATE INDEX idx_order_status_history_order_id ON order_status_history (order_id);
+
+-- Indexes for Inventory Transactions Table
+CREATE INDEX idx_inventory_transactions_product_id ON inventory_transactions (product_id);
+CREATE INDEX idx_inventory_transactions_merchant_id ON inventory_transactions (merchant_id);
+CREATE INDEX idx_inventory_transactions_type ON inventory_transactions (transaction_type);
+
+-- Indexes for Review Reports Table
+CREATE INDEX idx_review_reports_review_id ON review_reports (review_id);
+CREATE INDEX idx_review_reports_status ON review_reports (status);
+
+-- Indexes for Audit Logs Table
+CREATE INDEX idx_audit_logs_user_id ON audit_logs (user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs (action);
+CREATE INDEX idx_audit_logs_entity ON audit_logs (entity_type, entity_id);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
+
+-- Indexes for Notifications Table
+CREATE INDEX idx_notifications_user_id ON notifications (user_id);
+CREATE INDEX idx_notifications_is_read ON notifications (is_read);
+CREATE INDEX idx_notifications_created_at ON notifications (created_at DESC);
 
 -- Partial Indexing for Active Products (Soft Delete Equivalent)
 CREATE INDEX idx_products_active_featured ON products (is_featured, created_at DESC) 
@@ -1179,9 +1758,13 @@ erDiagram
     users ||--o{ orders : "places"
     users ||--o{ refresh_tokens : "has"
     users ||--o| shops : "owns"
+    users ||--o{ commissionSettings : "updates"
+    users ||--o{ revenueTargets : "creates"
+    users ||--o{ processedPayouts : "processes"
     merchants ||--o{ products : "lists"
     merchants ||--o{ promotions : "creates"
     merchants ||--o{ ad_payments : "pays"
+    merchants ||--o{ payouts : "receives"
     categories ||--o{ products : "contains"
     categories ||--o| categories : "parent_of"
     products ||--o{ reviews : "receives"
@@ -1200,14 +1783,21 @@ erDiagram
 | **Master/Lookup** | 3 | user_roles, order_statuses, discount_types |
 | **Core Entities** | 12 | users, merchants, refresh_tokens, categories, products, reviews, wishlist, orders, order_items, shops, promotions, advertisements |
 | **Ad Fee Management** | 3 | ad_fee_settings, ad_payments, ad_fee_history |
-| **Total** | 18 | 完全なデータベーススキーマ |
+| **Commission & Revenue** | 3 | commission_settings, revenue_targets, payouts |
+| **AI Skin Analysis** | 3 | skin_analyses, skin_analysis_conditions, skin_analysis_recommendations |
+| **Shopping Cart** | 2 | carts, cart_items |
+| **Order Tracking** | 1 | order_status_history |
+| **Inventory Management** | 1 | inventory_transactions |
+| **Moderation** | 1 | review_reports |
+| **Audit & Notifications** | 2 | audit_logs, notifications |
+| **Total** | 31 | Complete database schema（完全なデータベーススキーマ） |
 
 ---
 
 **Document Management（文書管理）:**
 - Author: Lead Database Engineer
 - Created: 2026-08-03
-- Last Updated: 2026-08-14
+- Last Updated: 2026-08-17
 - Next Review: Phase 2 Planning
 
 ---

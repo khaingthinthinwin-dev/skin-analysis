@@ -10,9 +10,9 @@
 | :--- | :--- |
 | **Document ID** | SKM-REQ-001 |
 | **System** | Cosmetics Finder |
-| **Version** | 1.5 |
+| **Version** | 1.7 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Software Architect |
 | **Status** | Released（承認済み） |
 
@@ -26,6 +26,8 @@
 | 1.3 | 2026-08-14 | Software Architect | ショッピング機能（カート、お気に入り、チェックアウト）を購入者ロールのみに制限。メール通知をウェブサイト通知システムに置換 |
 | 1.4 | 2026-08-14 | Software Architect | 全エンティティ定義をUUID主キーに更新。全エンティティのSQLスキーマを追加。usersテーブルにmerchant_idフィールドを追加 |
 | 1.5 | 2026-08-14 | Software Architect | 重複していた注文ステータスフローセクションを削除 |
+| 1.6 | 2026-08-17 | Software Architect | 手数料管理（§3.2.19）、収益追跡（§3.2.20）、広告料収益（§3.2.21）の要件を追加。commission_settings、revenue_targets、payoutsのデータベーススキーマを追加。手数料、収益、支払い、広告料のビジネスルール（§4.8-4.11）を追加。手数料＆収益APIエンドポイントを追加。フロントエンドルート構成を更新 |
+| 1.7 | 2026-08-17 | Software Architect | AI肌分析の詳細要件（B-AI-009~021）、カートライフサイクルルール（B-CART-008~014）、注文ステータス履歴（§3.2.22）、在庫変動（§3.2.23）、レビュー報告（§3.2.24）、監査ログ（§3.2.25）、通知（§3.2.26）を追加。skin_analyses、skin_analysis_conditions、skin_analysis_recommendations、carts、cart_items、order_status_history、inventory_transactions、review_reports、audit_logs、notificationsのデータベーススキーマを追加 |
 
 ---
 
@@ -677,15 +679,13 @@ CREATE TABLE categories (
 
 **Attributes（属性）:**
 - OrderID (Primary Key, UUID)
-- UserID (Foreign Key to Users)
+- BuyerID (Foreign Key to Users)
+- MerchantID (Foreign Key to Merchants)
 - Status (VARCHAR(30), Default: 'placed') - 値: 'placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'
-- Subtotal (DECIMAL(10,2))
-- ShippingCost (DECIMAL(10,2), Default: 0)
-- Tax (DECIMAL(10,2), Default: 0)
-- Total (DECIMAL(10,2))
+- TotalAmount (DECIMAL(10,2))
 - ShippingAddress (JSONB)
-- PaymentMethod (VARCHAR(50), Optional)
-- PaymentStatus (VARCHAR(20), Default: 'pending')
+- PaymentMethod (VARCHAR(50))
+- PaymentStatus (VARCHAR(20), Default: 'pending') - 値: 'pending', 'completed', 'failed', 'refunded'
 - CouponCode (VARCHAR(50), Optional)
 - DiscountAmount (DECIMAL(10,2), Default: 0)
 - Notes (TEXT, Optional)
@@ -705,6 +705,7 @@ CREATE TABLE orders (
   payment_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
   coupon_code     VARCHAR(50),
   discount_amount DECIMAL(10,2) DEFAULT 0,
+  notes           TEXT,
   created_at      TIMESTAMP DEFAULT NOW(),
   updated_at      TIMESTAMP DEFAULT NOW()
 );
@@ -1112,6 +1113,224 @@ CREATE TABLE ad_fee_history (
 - すべての料金変更は `ad_fee_history` にログ記録される
 - Adminはタイムスタンプと理由付きの料金変更履歴を閲覧できる
 
+#### Commission Settings Table（手数料設定テーブル）
+```sql
+CREATE TABLE commission_settings (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  commission_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+  -- rate: 0.00 to 100.00 (percentage)
+  updated_by      UUID REFERENCES users(id),
+  updated_at      TIMESTAMP DEFAULT NOW(),
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Commission Settings Rules（手数料設定ルール）
+- 行は1つだけ存在する（シングルトンテーブル）
+- 手数料率は0から100の間で、小数点以下最大2桁であること
+- 手数料率は保存された瞬間からすべての新規取引に適用される
+- 正の手数料は過去の請求書に影響しない
+- すべての変更は監査証跡にログ記録される
+
+#### Revenue Targets Table（収益目標テーブル）
+```sql
+CREATE TABLE revenue_targets (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  target_amount   DECIMAL(12,2) NOT NULL,
+  period          VARCHAR(20) NOT NULL,
+  -- period: 'monthly', 'quarterly'
+  is_active       BOOLEAN DEFAULT true,
+  created_by      UUID REFERENCES users(id),
+  updated_at      TIMESTAMP DEFAULT NOW(),
+  created_at      TIMESTAMP DEFAULT NOW(),
+  UNIQUE(period, is_active)
+);
+```
+
+#### Revenue Targets Rules（収益目標ルール）
+- 目標金額は正の値（> 0）で、小数点以下最大2桁であること
+- サポートされる期間は `monthly` と `quarterly` のみ
+- 期間タイプごとにアクティブな目標は1つだけ（新しいものが上書き）
+- 進捗は完了/決済済みの注文のみから計算
+
+#### Payouts Table（支払いテーブル）
+```sql
+CREATE TABLE payouts (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id     UUID NOT NULL REFERENCES merchants(id),
+  total_amount    DECIMAL(12,2) NOT NULL,
+  commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  ad_fee_amount   DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'processing', 'completed', 'failed'
+  processed_by    UUID REFERENCES users(id),
+  processed_at    TIMESTAMP,
+  failure_reason  TEXT,
+  idempotency_key VARCHAR(255) UNIQUE,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Payout Rules（支払いルール）
+- 支払いステータスの遷移: pending → processing → completed、または pending → failed
+- 処理は冪等（idempotency_keyで二重払い防止）
+- 金額 = 期間中の獲得手数料 + 請求広告料
+- ステータス = pending のみ支払い可能
+
+#### Skin Analyses Table（肌分析テーブル）
+```sql
+CREATE TABLE skin_analyses (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES users(id),
+  image_url       TEXT NOT NULL,
+  skin_type       VARCHAR(20),
+  -- skin_type: 'dry', 'oily', 'combination', 'sensitive', 'normal'
+  estimated_age   INTEGER,
+  analysis_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'processing', 'completed', 'failed'
+  ai_model        VARCHAR(100),
+  ai_model_version VARCHAR(50),
+  created_at      TIMESTAMP DEFAULT NOW(),
+  completed_at    TIMESTAMP,
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Skin Analysis Conditions Table（肌分析状態テーブル）
+```sql
+CREATE TABLE skin_analysis_conditions (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  analysis_id     UUID NOT NULL REFERENCES skin_analyses(id) ON DELETE CASCADE,
+  condition_name  VARCHAR(100) NOT NULL,
+  -- condition_name: 'acne', 'dark_spots', 'wrinkles', 'dryness', 'oiliness', etc.
+  severity        VARCHAR(10) NOT NULL,
+  -- severity: 'low', 'medium', 'high'
+  confidence      DECIMAL(5,2) NOT NULL,
+  -- confidence: 0.00 to 1.00
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Skin Analysis Recommendations Table（肌分析レコメンドテーブル）
+```sql
+CREATE TABLE skin_analysis_recommendations (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  analysis_id     UUID NOT NULL REFERENCES skin_analyses(id) ON DELETE CASCADE,
+  product_id      UUID NOT NULL REFERENCES products(id),
+  reason          TEXT NOT NULL,
+  match_score     INTEGER NOT NULL,
+  -- match_score: 0 to 100
+  display_order   INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Carts Table（カートテーブル）
+```sql
+CREATE TABLE carts (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID UNIQUE NOT NULL REFERENCES users(id),
+  created_at  TIMESTAMP DEFAULT NOW(),
+  updated_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Cart Items Table（カートアイテムテーブル）
+```sql
+CREATE TABLE cart_items (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cart_id     UUID NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+  product_id  UUID NOT NULL REFERENCES products(id),
+  quantity    INTEGER NOT NULL DEFAULT 1,
+  created_at  TIMESTAMP DEFAULT NOW(),
+  updated_at  TIMESTAMP DEFAULT NOW(),
+  UNIQUE(cart_id, product_id)
+);
+```
+
+#### Order Status History Table（注文ステータス履歴テーブル）
+```sql
+CREATE TABLE order_status_history (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id    UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  status_id   INTEGER NOT NULL REFERENCES order_statuses(status_id),
+  changed_by  UUID REFERENCES users(id),
+  note        TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Inventory Transactions Table（在庫変動テーブル）
+```sql
+CREATE TABLE inventory_transactions (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id        UUID NOT NULL REFERENCES products(id),
+  merchant_id       UUID NOT NULL REFERENCES merchants(id),
+  transaction_type  VARCHAR(30) NOT NULL,
+  -- transaction_type: 'order_created', 'order_cancelled', 'restock', 'manual_adjustment', 'return'
+  quantity          INTEGER NOT NULL,
+  before_quantity   INTEGER NOT NULL,
+  after_quantity    INTEGER NOT NULL,
+  reference_type    VARCHAR(50),
+  reference_id      UUID,
+  reason            TEXT,
+  created_by        UUID REFERENCES users(id),
+  created_at        TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Review Reports Table（レビュー報告テーブル）
+```sql
+CREATE TABLE review_reports (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  review_id     UUID NOT NULL REFERENCES reviews(id),
+  reported_by   UUID NOT NULL REFERENCES users(id),
+  reason        VARCHAR(50) NOT NULL,
+  -- reason: 'spam', 'inappropriate', 'fake', 'other'
+  description   TEXT,
+  status        VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'reviewed', 'resolved', 'rejected'
+  admin_note    TEXT,
+  resolved_by   UUID REFERENCES users(id),
+  resolved_at   TIMESTAMP,
+  created_at    TIMESTAMP DEFAULT NOW(),
+  updated_at    TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Audit Logs Table（監査ログテーブル）
+```sql
+CREATE TABLE audit_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES users(id),
+  action      VARCHAR(100) NOT NULL,
+  entity_type VARCHAR(100) NOT NULL,
+  entity_id   UUID,
+  old_value   JSONB,
+  new_value   JSONB,
+  ip_address  VARCHAR(45),
+  user_agent  TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Notifications Table（通知テーブル）
+```sql
+CREATE TABLE notifications (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id),
+  type        VARCHAR(50) NOT NULL,
+  title       VARCHAR(255) NOT NULL,
+  message     TEXT NOT NULL,
+  entity_type VARCHAR(100),
+  entity_id   UUID,
+  is_read     BOOLEAN DEFAULT FALSE,
+  read_at     TIMESTAMP,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
 ### 3.2 Functional Requirements by Module（モジュール別機能要件）
 
 #### 3.2.1 Buyer Module - Authentication（購入者モジュール - 認証）
@@ -1155,6 +1374,42 @@ CREATE TABLE ad_fee_history (
 | B-AI-006 | システムは時間経過に伴う肌状態のトレンドを表示する | Medium |
 | B-AI-007 | 対応画像形式: JPG, PNG, WebP | High |
 | B-AI-008 | 最大画像サイズ: 10MB | High |
+| B-AI-009 | 画像には分析を進めるために顔が含まれていること | High |
+| B-AI-010 | 各分析には一意の分析IDがある | High |
+| B-AI-011 | 分析には処理ステータスがある（pending, processing, completed, failed） | High |
+| B-AI-012 | 分析は肌タイプ（乾燥、脂性、混合、敏感、普通）を返す | High |
+| B-AI-013 | 分析は検出された肌状態の重大度と信頼度を返す | High |
+| B-AI-014 | AIは推定年齢を返す場合がある（オプション） | Medium |
+| B-AI-015 | 各レコメンドにはマッチスコア（0-100）がある | High |
+| B-AI-016 | 各レコメンドにはレコメンド理由がある | High |
+| B-AI-017 | レコメンドはマッチスコア降順で並べられる | High |
+| B-AI-018 | ユーザーはいつでも別の分析を実行できる | High |
+| B-AI-019 | 分析失敗はエラーメッセージで適切に処理される | High |
+| B-AI-020 | 分析結果は既存のキャッシングルールに従ってキャッシュされる場合がある | Medium |
+| B-AI-021 | 分析履歴は無期限に保持される | Medium |
+
+##### AI Skin Analysis Flow（AI肌分析フロー）
+```
+ユーザーが顔画像をアップロード
+    ↓
+システムが画像を検証（形式、サイズ、顔検出）
+    ↓
+画像をAI分析サービスに送信
+    ↓
+分析が返す: skin_type, conditions[], estimated_age
+    ↓
+システムが結果に基づいて商品レコメンドを生成
+    ↓
+結果が分析ステータスとともにデータベースに保存
+    ↓
+ユーザーが分析結果とレコメンドを閲覧
+```
+
+##### Skin Conditions Structure（肌状態構造）
+各検出された状態には以下が含まれる:
+- **condition_name**: 例: "acne", "dark_spots", "wrinkles", "dryness", "oiliness"
+- **severity**: low, medium, high
+- **confidence**: 0.00 to 1.00（AI信頼度スコア）
 
 #### 3.2.4 Buyer Module - Smart Product Matching（購入者モジュール - スマート商品マッチング）
 
@@ -1211,6 +1466,31 @@ CREATE TABLE ad_fee_history (
 | B-CART-005 | カートは利用可能な在庫を表示する | High |
 | B-CART-006 | カートはセッション間で保持される（ログインユーザー） | High |
 | B-CART-007 | カートは商品画像と名前を表示する | High |
+| B-CART-008 | 数量はゼロ greater than zeroでなければならない | High |
+| B-CART-009 | 同じ商品が重複したカート行として表示されない | High |
+| B-CART-010 | カート価格はチェックアウト時の現在の商品価格を使用する | High |
+| B-CART-011 | カート追加時に在庫が検証される | High |
+| B-CART-012 | チェックアウト時に再度在庫が検証される | High |
+| B-CART-013 | ユーザーはカートをすべてクリアできる | Medium |
+| B-CART-014 | カートは合計価格（すべてのアイテム小計の合計）を表示する | High |
+
+##### Cart Lifecycle（カートライフサイクル）
+```
+空カート → アイテム追加 → アイテム付きカート → チェックアウト → 注文作成 → カートクリア
+                                        ↓
+                                数量更新
+                                        ↓
+                                アイテム削除
+                                        ↓
+                                カートクリア
+```
+
+##### Cart Business Rules（カートビジネスルール）
+- 購入者ごとに1つのカート（アクティブカート）
+- カートアイテムは追加時点の現在の商品価格を参照
+- 在庫検証は追加時とチェックアウト時に実行
+- チェックアウト前に商品が在庫切れになった場合、ユーザーに通知
+- 注文作成成功後にカートがクリアされる
 
 #### 3.2.9 Buyer Module - Checkout & Payment（購入者モジュール - 注文・決済）
 
@@ -1391,6 +1671,11 @@ draft → pending_payment → pending_approval → approved → active → expir
 | A-COMM-001 | 管理者はプラットフォーム手数料率を設定できる | High |
 | A-COMM-002 | システムは取引ごとの手数料を計算する | High |
 | A-COMM-003 | 管理者は出品者別の手数料レポートを閲覧できる | Medium |
+| A-COMM-004 | 手数料率は0から100の間で、小数点以下最大2桁であること | High |
+| A-COMM-005 | 手数料率は保存された瞬間からすべての新規取引に適用される | High |
+| A-COMM-006 | 手数料レポートは日付範囲フィルタ（from/to）をサポートする | Medium |
+| A-COMM-007 | 手数料レポートはページネーションとソートをサポートする | Medium |
+| A-COMM-008 | 手数料率の変更は監査証跡にログ記録される | High |
 
 #### 3.2.20 Admin Module - Revenue Tracking（管理者モジュール - 収益追跡）
 
@@ -1400,6 +1685,145 @@ draft → pending_payment → pending_approval → approved → active → expir
 | A-REV-002 | 管理者は収益トレンド（チャート）を閲覧できる | High |
 | A-REV-003 | 管理者は決済ステータスを閲覧できる | High |
 | A-REV-004 | 管理者は出品者への支払いを管理できる | Medium |
+| A-REV-005 | 管理者は月次/四半期の収益目標を設定し、進捗を閲覧できる | Medium |
+| A-REV-006 | システムは過去のデータを使用して収益とプラットフォーム手数料を予測できる | Medium |
+| A-REV-007 | 収益KPIには以下が含まれる: 総収益、総手数料、平均注文価値、純収益 | High |
+| A-REV-008 | 収益トレンドチャートは7d/30d/90d/1yの範囲選択をサポートする | High |
+| A-REV-009 | 収益目標の進捗はゲージバー（0-100%）で表示される | Medium |
+| A-REV-010 | 支払い処理は冪等である（二重払い防止） | High |
+| A-REV-011 | 支払いステータスの遷移: pending → processing → completed、または pending → failed | High |
+| A-REV-012 | 収益目標は月次と四半期のみサポートする | Medium |
+| A-REV-013 | 期間タイプごとにアクティブな目標は1つだけ（新しいものが上書き） | Medium |
+| A-REV-014 | 予測は参考情報であり、財務記録に書き込まれない | Low |
+
+#### 3.2.21 Admin Module - Ad Fee Revenue（管理者モジュール - 広告料収益）
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| A-ADFE-001 | 管理者はダッシュボードで広告料料収益を閲覧できる | Medium |
+| A-ADFE-002 | 広告料収益はプラットフォーム総収入KPIに含まれる | Medium |
+| A-ADFE-003 | 広告料の支払いステータスは注文の支払いステータスとともに追跡される | Medium |
+| A-ADFE-004 | 広告料トレンドシリーズは収益チャートに表示される | Medium |
+| A-ADFE-005 | 広告料収益は支払い控除計算に含まれる | Medium |
+| A-ADFE-006 | 広告料広告料収益は収益目標進捗計算に含まれる | Low |
+| A-ADFE-007 | 広告料収益はAI予測計算に含まれる | Low |
+
+#### 3.2.22 Buyer Module - Order Status History（購入者モジュール - 注文ステータス履歴）
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| B-OSH-001 | すべての注文ステータス遷移は履歴に記録される | High |
+| B-OSH-002 | 購入者は注文追跡/履歴タイムラインを閲覧できる | High |
+| B-OSH-003 | ステータス履歴は各遷移のタイムスタンプを表示する | High |
+| B-OSH-004 | ステータス履歴は変更を開始したユーザー/システムを表示する | High |
+| B-OSH-005 | ステータス履歴にはオプションのメモを含めることができる | Medium |
+| B-OSH-006 | システム生成のステータス変更も記録される | High |
+
+##### Order Status Flow (Official)（公式注文ステータスフロー）
+```
+placed → confirmed → packed → shipped → out_for_delivery → delivered
+   ↓         ↓          ↓         ↓              ↓              ↓
+  任意の状態はキャンセル可能（発送前） → cancelled
+```
+
+##### Status Authorization Rules（ステータス認可ルール）
+| Status | 変更先 | 変更者 |
+|--------|--------|--------|
+| placed | confirmed, cancelled | Merchant |
+| confirmed | packed, cancelled | Merchant |
+| packed | shipped, cancelled | Merchant |
+| shipped | out_for_delivery | Courier/System |
+| out_for_delivery | delivered | Buyer/System |
+| delivered | (ターミナル) | - |
+| cancelled | (ターミナル) | - |
+
+#### 3.2.23 System Module - Inventory Transactions（システムモジュール - 在庫変動）
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-INV-001 | 在庫変動のある操作はすべて在庫変動を生成する | High |
+| SYS-INV-002 | 在庫はマイナスにならない | High |
+| SYS-INV-003 | 注文が正常に作成されると在庫が減少する | High |
+| SYS-INV-004 | 出品者が在庫を補充すると在庫が増加する | High |
+| SYS-INV-005 | 手動の在庫調整は記録される | High |
+| SYS-INV-006 | 注文キャンセル時の在庫変更がサポートされている場合は記録される | Medium |
+| SYS-INV-007 | 出品者は関連する在庫情報を閲覧できる | High |
+| SYS-INV-008 | 管理者は権限がある場合に在庫変更を監査できる | Medium |
+
+##### Transaction Types（取引タイプ）
+| Type | Description | Stock Change |
+|------|-------------|--------------|
+| order_created | 注文時に在庫が減少 | -quantity |
+| order_cancelled | キャンセル時に在庫が復元 | +quantity |
+| restock | 出品者が在庫を補充 | +quantity |
+| manual_adjustment | 管理者/出品者による手動修正 | ±quantity |
+| return | 顧客返品の処理 | +quantity |
+
+#### 3.2.24 System Module - Review Reports（システムモジュール - レビュー報告）
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-REV-001 | 購入者はレビューをモデレーションのために報告できる | High |
+| SYS-REV-002 | 報告理由: spam, inappropriate, fake, other | High |
+| SYS-REV-003 | 報告にはオプションの説明を含めることができる | Medium |
+| SYS-REV-004 | 報告にはステータスがある: pending, reviewed, resolved, rejected | High |
+| SYS-REV-005 | 管理者は報告されたレビューを確認できる | High |
+| SYS-REV-006 | 管理者はメモ付きで報告を解決できる | High |
+| SYS-REV-007 | 報告時に元のレビューは自動削除されない | High |
+| SYS-REV-008 | 管理者は報告に基づいてレビューにアクションを実行できる | High |
+
+##### Report Status Flow（報告ステータスフロー）
+```
+pending → reviewed → resolved (アクション実行)
+                   → rejected (アクション不要)
+```
+
+#### 3.2.25 System Module - Audit Logs（システムモジュール - 監査ログ）
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-AUD-001 | 重要なアクションは監査証跡にログ記録される | High |
+| SYS-AUD-002 | 監査ログは以下を記録: 誰が、何を、どのエンティティ、どのレコード | High |
+| SYS-AUD-003 | 監査ログは適宜、変更前と変更後の値を記録する | Medium |
+| SYS-AUD-004 | 監査ログはタイムスタンプを記録する | High |
+| SYS-AUD-005 | 監査ログは追加専用（変更や削除はできない） | High |
+| SYS-AUD-006 | パスワード、トークン、シークレットはログに記録されない | High |
+
+##### Actions to Audit（監査対象アクション）
+| Category | Examples |
+|----------|----------|
+| 出品者管理 | 承認、却下、ステータス変更 |
+| ユーザー管理 | ステータス変更、ロール変更 |
+| 広告 | 承認、却下、支払い |
+| 商品 | 作成、更新、削除、在庫変更 |
+| 手数料 | 手数料率変更 |
+| レビュー | モデレーション操作 |
+| 支払い | 処理、完了、失敗 |
+| セキュリティ | ログイン、ログアウト、パスワードリセット |
+
+#### 3.2.26 System Module - Notifications（システムモジュール - 通知）
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-NOT-001 | システムは関連するイベントのアプリ内通知をサポートする | High |
+| SYS-NOT-002 | 通知の受信者はuser_idで識別される | High |
+| SYS-NOT-003 | 通知にはタイプ、タイトル、メッセージがある | High |
+| SYS-NOT-004 | 通知には既読/未読状態がある | High |
+| SYS-NOT-005 | 通知は読み取りタイムスタンプを記録する | Medium |
+| SYS-NOT-006 | 通知は作成日順（新しい順）に並べられる | High |
+| SYS-NOT-007 | 該当する場合、関連するエンティティをリンクできる | Medium |
+
+##### Notification Events（通知イベント）
+| Event | Recipient | Title Example |
+|-------|-----------|---------------|
+| 出品者承認 | Merchant | "店舗承認済み" |
+| 出品者却下 | Merchant | "店舗却下" |
+| 広告承認 | Merchant | "広告承認済み" |
+| 広告却下 | Merchant | "広告却下" |
+| 注文ステータス更新 | Buyer | "注文発送済み" |
+| 低在庫警告 | Merchant | "低在庫アラート" |
+| 新規注文受信 | Merchant | "新規注文" |
+| 支払い処理完了 | Merchant | "支払い完了" |
 
 ---
 
@@ -1586,6 +2010,84 @@ function validateReview(req, res, next) {
 - 分析結果は24時間キャッシュされる
 - ユーザーはいつでも再分析可能
 - 分析履歴は無期限に保持される
+
+### 4.8 Commission Rules（手数料ルール）
+
+#### Rule 4.8.1: Commission Rate（手数料率）
+- 手数料率は0から100の間であること（パーセンテージ）
+- 小数点以下最大2桁
+- 手数料率は精度を保つために文字列として保存される
+- 手数料率は1つだけ存在する（シングルトン設定）
+- 手数料率は保存された瞬間からすべての新規取引に適用される
+- 過去の請求書は遡及的に影響を受けない
+
+#### Rule 4.8.2: Commission Calculation（手数料計算）
+- 手数料 = 注文合計 × (手数料率 / 100)
+- 手数料は注文作成時に取引ごとに計算される
+- 手数料金額は注文レコードに保存される
+- 完了/決済済みの注文のみ手数料レポートに含まれる
+
+#### Rule 4.8.3: Commission Reports（手数料レポート）
+- レポートは日付範囲（from/to）によるフィルタをサポート
+- レポートはページネーションとソートをサポート
+- レポートは出品者レベルの手数料内訳を表示
+
+### 4.9 Revenue Rules（収益ルール）
+
+#### Rule 4.9.1: Revenue KPIs（収益KPI）
+- 総収益: すべての完了注文金額の合計
+- 総手数料: すべての完了注文からの手数料の合計
+- 平均注文価値: 総収益 / 完了注文数
+- 純収益: 総収益 - 返金
+- 完了/決済済みの注文のみが含まれる
+- 返金は純収益から除外される
+
+#### Rule 4.9.2: Revenue Trend Chart（収益トレンドチャート）
+- 7d、30d、90d、1yの範囲をサポート
+- データポイントは日別（7d、30d）または月別（90d、1y）にグループ化
+- 各ポイントには日付、収益、手数料、広告料、総収入が含まれる
+
+#### Rule 4.9.3: Revenue Targets（収益目標）
+- サポートされる期間は `monthly` と `quarterly` のみ
+- 目標金額は正の値（> 0）で、小数点以下最大2桁であること
+- 期間タイプごとにアクティブな目標は1つだけ（新しいものが上書き）
+- 進捗 = (期間中の実績収益 / 目標金額) × 100
+- ゲージは表示を0-100%にクランプ; 100%超は「目標超過」として表示
+- 進捗は完了/決済済みの注文のみから計算
+- 広告料収益は進捗計算に含まれる
+
+#### Rule 4.9.4: AI Revenue Forecast（AI収益予測）
+- 予測はトレンド外挿法を使用して過去の収益データから導出
+- 最小7つの過去データポイントが必要
+- 予測された収益とプラットフォーム手数料シリーズを生成
+- トレンドチャートに破線として描画
+- 予測は参考情報であり、財務記録に書き込まれない
+- データが不十分な場合、予測は情報メッセージ付きで非表示
+
+### 4.10 Payout Rules（支払いルール）
+
+#### Rule 4.10.1: Payout Processing（支払い処理）
+- 支払いステータスの遷移: pending → processing → completed、または pending → failed
+- 処理は冪等（idempotency_keyで二重払い防止）
+- すでに処理された支払いの再試行は409 Conflictを返す
+- 支払い金額 = 期間中の獲得手数料 + 請求広告料
+
+#### Rule 4.10.2: Payout Scope（支払い範囲）
+- ステータス = pending のみ支払い可能
+- 支払いには手数料と広告料控除の両方が含まれる
+- 処理済みの支払いは監査証跡にログ記録される
+
+### 4.11 Ad Fee Revenue Rules（広告料収益ルール）
+
+#### Rule 4.11.1: Ad Fee Scope（広告料範囲）
+- 広告料収益には完了した広告支払いのみが含まれる
+- 広告料トレンドシリーズは収益チャートにオーバーレイ表示
+- 広告料の支払いステータスは注文の支払いステータスとともに要約表示
+
+#### Rule 4.11.2: Ad Fee in Platform Income（プラットフォーム収入における広告料）
+- プラットフォーム総収入 = 手数料収益 + 広告料収益
+- 広告料は収益目標進捗計算に含まれる
+- 広告料はAI予測計算に含まれる
 
 ---
 
@@ -1817,7 +2319,19 @@ function validateReview(req, res, next) {
 │   ├── POST   /reviews/:id/moderate
 │   ├── GET    /ads                # List all ads / pending approval queue
 │   ├── POST   /ads/:id/approve   # Approve advertisement
-│   └── POST   /ads/:id/reject    # Reject advertisement (with reason)
+│   ├── POST   /ads/:id/reject    # Reject advertisement (with reason)
+│   ├── GET    /commission              # 手数料設定を取得
+│   ├── PATCH  /commission              # 手数料率を更新
+│   ├── GET    /commission/reports      # 手数料レポートを取得
+│   ├── GET    /revenue                 # 収益KPIデータを取得
+│   ├── GET    /revenue/trends          # 収益トレンドシリーズを取得
+│   ├── GET    /revenue/targets         # 収益目標と進捗を取得
+│   ├── PUT    /revenue/targets         # 収益目標を保存/更新
+│   ├── GET    /revenue/forecast        # AI収益予測を取得
+│   ├── GET    /revenue/ad-fees         # 広告料収益データを取得
+│   ├── GET    /revenue/payments        # 決済ステータス内訳を取得
+│   ├── GET    /revenue/payouts         # 支払い一覧を取得
+│   └── POST   /revenue/payouts/:id/process  # 支払いを処理
 └── /health         # Health Check（ヘルスチェック）
     └── GET    /
 ```
@@ -1854,6 +2368,7 @@ Routes:
 │   ├── /merchants             # Merchant management
 │   ├── /reviews               # Review moderation
 │   ├── /analytics             # Analytics
+│   ├── /commission            # Commission management
 │   └── /revenue               # Revenue management
 ├── /unauthorized              # 403 page
 └── *                          # 404 page
@@ -1965,6 +2480,10 @@ Routes:
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │ ad_settings │     │   shops     │     │ audit_logs  │
 └─────────────┘     └─────────────┘     └─────────────┘
+
+┌──────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│commission_settings│     │ revenue_targets  │     │   payouts   │
+└──────────────────┘     └──────────────────┘     └─────────────┘
 ```
 
 #### Key Relationships（主要なリレーションシップ）
@@ -1980,6 +2499,8 @@ Routes:
 | merchants → advertisements | 1:N | 1人の出品者は多くの広告を持つ |
 | advertisements → ad_payments | 1:1 | 1つの広告には1つの支払いがある |
 | ad_fee_settings → ad_fee_history | 1:N | 設定変更がログ記録される |
+| merchants → payouts | 1:N | 1人の出品者は多くの支払いを持つ |
+| users → payouts | 1:N | 管理者は多くの支払いを処理する |
 
 ---
 
@@ -2088,7 +2609,7 @@ See: `docs/guides/ENVIRONMENT_SETUP.md`
 **Document Management（文書管理）:**
 - Author: Software Architect
 - Created: 2026-08-03
-- Last Updated: 2026-08-14
+- Last Updated: 2026-08-17
 - Next Review: Phase 2 Planning
 
 ---

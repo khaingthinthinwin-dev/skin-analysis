@@ -9,7 +9,7 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.1 |
+| **Version** | 2.2 |
 | **Created** | 2026-08-03 |
 | **Last Updated** | 2026-08-17 |
 | **Author** | Lead Database Engineer |
@@ -23,6 +23,7 @@
 | 1.1 | 2026-08-10 | Lead Database Engineer | Added new fields to advertisements table for approval workflow, payment tracking, and weekly limits |
 | 2.0 | 2026-08-14 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v1.5: UUID primary keys, merchants table, restructured orders, ad fee tables, updated FK relationships |
 | 2.1 | 2026-08-17 | Lead Database Engineer | Added commission_settings, revenue_targets, and payouts tables for Commission & Revenue management feature (手数料・売上管理機能テーブル追加) |
+| 2.2 | 2026-08-17 | Lead Database Engineer | Added 10 new tables: skin_analyses, skin_analysis_conditions, skin_analysis_recommendations, carts, cart_items, order_status_history, inventory_transactions, review_reports, audit_logs, notifications (AI肌分析・カート・監査・通知テーブル追加) |
 
 ---
 
@@ -952,6 +953,374 @@ CREATE TABLE payouts (
 
 ---
 
+### 3.19 Skin Analyses Table (`skin_analyses` - AI肌分析テーブル)
+Stores AI skin analysis results for users.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 分析ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Foreign key (`fk_skin_analyses_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 画像URL | `image_url` | TEXT | - | - | N | - | URL of uploaded facial image. |
+| 4 | 肌タイプ | `skin_type` | VARCHAR(20) | - | - | Y | NULL | Detected skin type: dry, oily, combination, sensitive, normal. |
+| 5 | 推定年齢 | `estimated_age` | INTEGER | - | - | Y | NULL | AI-estimated age (optional). |
+| 6 | 分析状態 | `analysis_status` | VARCHAR(20) | - | - | N | 'pending' | Analysis status: pending, processing, completed, failed. |
+| 7 | AIモデル | `ai_model` | VARCHAR(100) | - | - | Y | NULL | AI model identifier. |
+| 8 | AIモデルバージョン | `ai_model_version` | VARCHAR(50) | - | - | Y | NULL | AI model version. |
+| 9 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 10 | 完了日時 | `completed_at` | TIMESTAMPTZ | - | - | Y | NULL | Analysis completion timestamp. |
+| 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE skin_analyses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    image_url TEXT NOT NULL,
+    skin_type VARCHAR(20),
+    estimated_age INTEGER,
+    analysis_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    ai_model VARCHAR(100),
+    ai_model_version VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_skin_analyses_status CHECK (analysis_status IN ('pending', 'processing', 'completed', 'failed')),
+    CONSTRAINT chk_skin_analyses_skin_type CHECK (skin_type IN ('dry', 'oily', 'combination', 'sensitive', 'normal')),
+    CONSTRAINT fk_skin_analyses_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.20 Skin Analysis Conditions Table (`skin_analysis_conditions` - AI肌分析条件テーブル)
+Stores detected skin conditions from AI analysis.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 条件ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 分析ID | `analysis_id` | UUID | - | Y | N | - | Foreign key (`fk_skin_analysis_conditions_analysis`). References `skin_analyses(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 条件名 | `condition_name` | VARCHAR(100) | - | - | N | - | Condition name (acne, dark_spots, wrinkles, dryness, oiliness, etc.). |
+| 4 | 重篤度 | `severity` | VARCHAR(10) | - | - | N | - | Severity level: low, medium, high. |
+| 5 | 信頼度 | `confidence` | DECIMAL(5,2) | - | - | N | - | AI confidence score: 0.00 to 1.00. |
+| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE skin_analysis_conditions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_id UUID NOT NULL,
+    condition_name VARCHAR(100) NOT NULL,
+    severity VARCHAR(10) NOT NULL,
+    confidence DECIMAL(5,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_skin_analysis_conditions_severity CHECK (severity IN ('low', 'medium', 'high')),
+    CONSTRAINT chk_skin_analysis_conditions_confidence CHECK (confidence >= 0 AND confidence <= 1),
+    CONSTRAINT fk_skin_analysis_conditions_analysis FOREIGN KEY (analysis_id)
+        REFERENCES skin_analyses(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.21 Skin Analysis Recommendations Table (`skin_analysis_recommendations` - AI肌分析推薦テーブル)
+Stores product recommendations from AI analysis.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 推薦ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 分析ID | `analysis_id` | UUID | - | Y | N | - | Foreign key (`fk_skin_analysis_recommendations_analysis`). References `skin_analyses(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 商品ID | `product_id` | UUID | - | Y | N | - | Foreign key (`fk_skin_analysis_recommendations_product`). References `products(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 4 | 理由 | `reason` | TEXT | - | - | N | - | Recommendation reason. |
+| 5 | マッチスコア | `match_score` | INTEGER | - | - | N | - | Match score: 0 to 100. |
+| 6 | 表示順序 | `display_order` | INTEGER | - | - | N | 0 | Display order for recommendations. |
+| 7 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE skin_analysis_recommendations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_id UUID NOT NULL,
+    product_id UUID NOT NULL,
+    reason TEXT NOT NULL,
+    match_score INTEGER NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_skin_analysis_recommendations_score CHECK (match_score >= 0 AND match_score <= 100),
+    CONSTRAINT fk_skin_analysis_recommendations_analysis FOREIGN KEY (analysis_id)
+        REFERENCES skin_analyses(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_skin_analysis_recommendations_product FOREIGN KEY (product_id)
+        REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.22 Carts Table (`carts` - カートテーブル)
+Stores user shopping carts.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | カートID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Foreign key (`fk_carts_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. Unique constraint. |
+| 3 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 4 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE carts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_carts_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.23 Cart Items Table (`cart_items` - カート商品テーブル)
+Stores items within a shopping cart.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | カート商品ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | カートID | `cart_id` | UUID | - | Y | N | - | Foreign key (`fk_cart_items_cart`). References `carts(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 商品ID | `product_id` | UUID | - | Y | N | - | Foreign key (`fk_cart_items_product`). References `products(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 4 | 数量 | `quantity` | INTEGER | - | - | N | 1 | Quantity. Check: `quantity > 0`. |
+| 5 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 6 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE cart_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    cart_id UUID NOT NULL,
+    product_id UUID NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_cart_items_quantity CHECK (quantity > 0),
+    CONSTRAINT uq_cart_items_cart_product UNIQUE (cart_id, product_id),
+    CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id)
+        REFERENCES carts(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_cart_items_product FOREIGN KEY (product_id)
+        REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.24 Order Status History Table (`order_status_history` - 注文ステータス履歴テーブル)
+Records all order status transitions for tracking and audit.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 履歴ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 注文ID | `order_id` | UUID | - | Y | N | - | Foreign key (`fk_order_status_history_order`). References `orders(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | ステータスID | `status_id` | INTEGER | - | Y | N | - | Foreign key (`fk_order_status_history_status`). References `order_statuses(status_id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 4 | 変更者ID | `changed_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_order_status_history_changed_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 5 | 備考 | `note` | TEXT | - | - | Y | NULL | Optional note about the status change. |
+| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE order_status_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL,
+    status_id INTEGER NOT NULL,
+    changed_by UUID,
+    note TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_order_status_history_order FOREIGN KEY (order_id)
+        REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_order_status_history_status FOREIGN KEY (status_id)
+        REFERENCES order_statuses(status_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_order_status_history_changed_by FOREIGN KEY (changed_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.25 Inventory Transactions Table (`inventory_transactions` - 在庫変動テーブル)
+Records all inventory changes for audit and tracking.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 変動ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | 商品ID | `product_id` | UUID | - | Y | N | - | Foreign key (`fk_inventory_transactions_product`). References `products(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_inventory_transactions_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 4 | 変動種別 | `transaction_type` | VARCHAR(30) | - | - | N | - | Transaction type: order_created, order_cancelled, restock, manual_adjustment, return. |
+| 5 | 数量 | `quantity` | INTEGER | - | - | N | - | Quantity changed (positive for increase, negative for decrease). |
+| 6 | 変動前数量 | `before_quantity` | INTEGER | - | - | N | - | Stock quantity before change. |
+| 7 | 変動後数量 | `after_quantity` | INTEGER | - | - | N | - | Stock quantity after change. |
+| 8 | 参照種別 | `reference_type` | VARCHAR(50) | - | - | Y | NULL | Related entity type (order, adjustment, etc.). |
+| 9 | 参照ID | `reference_id` | UUID | - | - | Y | NULL | Related entity ID. |
+| 10 | 理由 | `reason` | TEXT | - | - | Y | NULL | Reason for the inventory change. |
+| 11 | 作成者ID | `created_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_inventory_transactions_created_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE inventory_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+    merchant_id UUID NOT NULL,
+    transaction_type VARCHAR(30) NOT NULL,
+    quantity INTEGER NOT NULL,
+    before_quantity INTEGER NOT NULL,
+    after_quantity INTEGER NOT NULL,
+    reference_type VARCHAR(50),
+    reference_id UUID,
+    reason TEXT,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_inventory_transactions_type CHECK (transaction_type IN ('order_created', 'order_cancelled', 'restock', 'manual_adjustment', 'return')),
+    CONSTRAINT fk_inventory_transactions_product FOREIGN KEY (product_id)
+        REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_inventory_transactions_merchant FOREIGN KEY (merchant_id)
+        REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_inventory_transactions_created_by FOREIGN KEY (created_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.26 Review Reports Table (`review_reports` - レビュー報告テーブル)
+Stores user-reported reviews for moderation.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 報告ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | レビューID | `review_id` | UUID | - | Y | N | - | Foreign key (`fk_review_reports_review`). References `reviews(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 報告者ID | `reported_by` | UUID | - | Y | N | - | Foreign key (`fk_review_reports_reported_by`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 4 | 理由 | `reason` | VARCHAR(50) | - | - | N | - | Report reason: spam, inappropriate, fake, other. |
+| 5 | 説明 | `description` | TEXT | - | - | Y | NULL | Optional description from reporter. |
+| 6 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | Report status: pending, reviewed, resolved, rejected. |
+| 7 | 管理者メモ | `admin_note` | TEXT | - | - | Y | NULL | Admin note on resolution. |
+| 8 | 解決者ID | `resolved_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_review_reports_resolved_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 9 | 解決日時 | `resolved_at` | TIMESTAMPTZ | - | - | Y | NULL | Resolution timestamp. |
+| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE review_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    review_id UUID NOT NULL,
+    reported_by UUID NOT NULL,
+    reason VARCHAR(50) NOT NULL,
+    description TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    admin_note TEXT,
+    resolved_by UUID,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_review_reports_reason CHECK (reason IN ('spam', 'inappropriate', 'fake', 'other')),
+    CONSTRAINT chk_review_reports_status CHECK (status IN ('pending', 'reviewed', 'resolved', 'rejected')),
+    CONSTRAINT fk_review_reports_review FOREIGN KEY (review_id)
+        REFERENCES reviews(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_review_reports_reported_by FOREIGN KEY (reported_by)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_review_reports_resolved_by FOREIGN KEY (resolved_by)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+---
+
+### 3.27 Audit Logs Table (`audit_logs` - 監査ログテーブル)
+Append-only table for tracking significant system actions.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | ログID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | Y | NULL | Foreign key (`fk_audit_logs_user`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 3 | アクション | `action` | VARCHAR(100) | - | - | N | - | Action performed (e.g., merchant.approve, order.status_change). |
+| 4 | エンティティ種別 | `entity_type` | VARCHAR(100) | - | - | N | - | Entity type affected (e.g., Merchant, Order, Product). |
+| 5 | エンティティID | `entity_id` | UUID | - | - | Y | NULL | ID of the affected record. |
+| 6 | 旧値 | `old_value` | JSONB | - | - | Y | NULL | Previous value (for updates). |
+| 7 | 新値 | `new_value` | JSONB | - | - | Y | NULL | New value (for creates/updates). |
+| 8 | IPアドレス | `ip_address` | VARCHAR(45) | - | - | Y | NULL | Client IP address. |
+| 9 | ユーザーエージェント | `user_agent` | TEXT | - | - | Y | NULL | Client user agent string. |
+| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id UUID,
+    old_value JSONB,
+    new_value JSONB,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_audit_logs_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+```
+
+#### Audit Log Rules
+- Audit logs are append-only (no UPDATE or DELETE allowed)
+- Never log passwords, access tokens, refresh tokens, or authentication secrets
+- IP address and user agent are optional (for system-generated actions)
+- old_value and new_value are JSONB for flexible data capture
+
+---
+
+### 3.28 Notifications Table (`notifications` - 通知テーブル)
+Stores in-app notifications for users.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 通知ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Foreign key (`fk_notifications_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | 種別 | `type` | VARCHAR(50) | - | - | N | - | Notification type (e.g., merchant.approved, order.shipped). |
+| 4 | タイトル | `title` | VARCHAR(255) | - | - | N | - | Notification title. |
+| 5 | メッセージ | `message` | TEXT | - | - | N | - | Notification message body. |
+| 6 | エンティティ種別 | `entity_type` | VARCHAR(100) | - | - | Y | NULL | Related entity type. |
+| 7 | エンティティID | `entity_id` | UUID | - | - | Y | NULL | Related entity ID. |
+| 8 | 既読フラグ | `is_read` | BOOLEAN | - | - | N | FALSE | Read status. |
+| 9 | 既読日時 | `read_at` | TIMESTAMPTZ | - | - | Y | NULL | Timestamp when notification was read. |
+| 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    entity_type VARCHAR(100),
+    entity_id UUID,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
 ## 4. Performance Optimization Layer (Indexes)
 
 To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds) and optimize lookup times under concurrent access, we define specific B-Tree index structures.
@@ -1010,6 +1379,27 @@ To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds)
 | 48 | `idx_payouts_merchant_id` | `payouts` | `merchant_id` | Speeds up merchant payout history lookups. |
 | 49 | `idx_payouts_status` | `payouts` | `status` | Optimizes payout status filtering. |
 | 50 | `idx_payouts_created_at` | `payouts` | `created_at` | Speeds up payout date sorting and filtering. |
+| 51 | `idx_skin_analyses_user_id` | `skin_analyses` | `user_id` | Optimizes user analysis history lookups. |
+| 52 | `idx_skin_analyses_status` | `skin_analyses` | `analysis_status` | Speeds up analysis status filtering. |
+| 53 | `idx_skin_analysis_conditions_analysis_id` | `skin_analysis_conditions` | `analysis_id` | Optimizes condition lookups by analysis. |
+| 54 | `idx_skin_analysis_recommendations_analysis_id` | `skin_analysis_recommendations` | `analysis_id` | Speeds up recommendation lookups by analysis. |
+| 55 | `idx_skin_analysis_recommendations_product_id` | `skin_analysis_recommendations` | `product_id` | Optimizes product recommendation lookups. |
+| 56 | `idx_carts_user_id` | `carts` | `user_id` | Speeds up user cart lookups. |
+| 57 | `idx_cart_items_cart_id` | `cart_items` | `cart_id` | Optimizes cart item loading. |
+| 58 | `idx_cart_items_product_id` | `cart_items` | `product_id` | Speeds up product cart lookups. |
+| 59 | `idx_order_status_history_order_id` | `order_status_history` | `order_id` | Optimizes order history loading. |
+| 60 | `idx_inventory_transactions_product_id` | `inventory_transactions` | `product_id` | Speeds up product inventory history. |
+| 61 | `idx_inventory_transactions_merchant_id` | `inventory_transactions` | `merchant_id` | Optimizes merchant inventory lookups. |
+| 62 | `idx_inventory_transactions_type` | `inventory_transactions` | `transaction_type` | Speeds up transaction type filtering. |
+| 63 | `idx_review_reports_review_id` | `review_reports` | `review_id` | Optimizes review report lookups. |
+| 64 | `idx_review_reports_status` | `review_reports` | `status` | Speeds up report status filtering. |
+| 65 | `idx_audit_logs_user_id` | `audit_logs` | `user_id` | Optimizes user audit history. |
+| 66 | `idx_audit_logs_action` | `audit_logs` | `action` | Speeds up action type filtering. |
+| 67 | `idx_audit_logs_entity` | `audit_logs` | `entity_type, entity_id` | Optimizes entity audit lookups. |
+| 68 | `idx_audit_logs_created_at` | `audit_logs` | `created_at` | Speeds up audit log date sorting. |
+| 69 | `idx_notifications_user_id` | `notifications` | `user_id` | Optimizes user notification loading. |
+| 70 | `idx_notifications_is_read` | `notifications` | `is_read` | Speeds up unread notification filtering. |
+| 71 | `idx_notifications_created_at` | `notifications` | `created_at` | Optimizes notification date sorting. |
 
 ### 4.2 DDL Index Scripts
 
@@ -1099,6 +1489,47 @@ CREATE INDEX idx_revenue_targets_is_active ON revenue_targets (is_active);
 CREATE INDEX idx_payouts_merchant_id ON payouts (merchant_id);
 CREATE INDEX idx_payouts_status ON payouts (status);
 CREATE INDEX idx_payouts_created_at ON payouts (created_at DESC);
+
+-- Indexes for Skin Analyses Table
+CREATE INDEX idx_skin_analyses_user_id ON skin_analyses (user_id);
+CREATE INDEX idx_skin_analyses_status ON skin_analyses (analysis_status);
+
+-- Indexes for Skin Analysis Conditions Table
+CREATE INDEX idx_skin_analysis_conditions_analysis_id ON skin_analysis_conditions (analysis_id);
+
+-- Indexes for Skin Analysis Recommendations Table
+CREATE INDEX idx_skin_analysis_recommendations_analysis_id ON skin_analysis_recommendations (analysis_id);
+CREATE INDEX idx_skin_analysis_recommendations_product_id ON skin_analysis_recommendations (product_id);
+
+-- Indexes for Carts Table
+CREATE INDEX idx_carts_user_id ON carts (user_id);
+
+-- Indexes for Cart Items Table
+CREATE INDEX idx_cart_items_cart_id ON cart_items (cart_id);
+CREATE INDEX idx_cart_items_product_id ON cart_items (product_id);
+
+-- Indexes for Order Status History Table
+CREATE INDEX idx_order_status_history_order_id ON order_status_history (order_id);
+
+-- Indexes for Inventory Transactions Table
+CREATE INDEX idx_inventory_transactions_product_id ON inventory_transactions (product_id);
+CREATE INDEX idx_inventory_transactions_merchant_id ON inventory_transactions (merchant_id);
+CREATE INDEX idx_inventory_transactions_type ON inventory_transactions (transaction_type);
+
+-- Indexes for Review Reports Table
+CREATE INDEX idx_review_reports_review_id ON review_reports (review_id);
+CREATE INDEX idx_review_reports_status ON review_reports (status);
+
+-- Indexes for Audit Logs Table
+CREATE INDEX idx_audit_logs_user_id ON audit_logs (user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs (action);
+CREATE INDEX idx_audit_logs_entity ON audit_logs (entity_type, entity_id);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
+
+-- Indexes for Notifications Table
+CREATE INDEX idx_notifications_user_id ON notifications (user_id);
+CREATE INDEX idx_notifications_is_read ON notifications (is_read);
+CREATE INDEX idx_notifications_created_at ON notifications (created_at DESC);
 
 -- Partial Indexing for Active Products (Soft Delete Equivalent)
 CREATE INDEX idx_products_active_featured ON products (is_featured, created_at DESC) 
@@ -1352,7 +1783,13 @@ erDiagram
 | **Core Entities** | 12 | users, merchants, refresh_tokens, categories, products, reviews, wishlist, orders, order_items, shops, promotions, advertisements |
 | **Ad Fee Management** | 3 | ad_fee_settings, ad_payments, ad_fee_history |
 | **Commission & Revenue** | 3 | commission_settings, revenue_targets, payouts |
-| **Total** | 21 | Complete database schema |
+| **AI Skin Analysis** | 3 | skin_analyses, skin_analysis_conditions, skin_analysis_recommendations |
+| **Shopping Cart** | 2 | carts, cart_items |
+| **Order Tracking** | 1 | order_status_history |
+| **Inventory Management** | 1 | inventory_transactions |
+| **Moderation** | 1 | review_reports |
+| **Audit & Notifications** | 2 | audit_logs, notifications |
+| **Total** | 31 | Complete database schema |
 
 ---
 

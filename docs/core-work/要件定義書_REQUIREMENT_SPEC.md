@@ -10,7 +10,7 @@
 | :--- | :--- |
 | **Document ID** | SKM-REQ-001 |
 | **System** | Cosmetics Finder |
-| **Version** | 1.6 |
+| **Version** | 1.7 |
 | **Created** | 2026-08-03 |
 | **Last Updated** | 2026-08-17 |
 | **Author** | Software Architect |
@@ -27,6 +27,7 @@
 | 1.4 | 2026-08-14 | Software Architect | Updated all entity definitions to use UUID primary keys; added SQL schema for all entities; added merchant_id field to users table |
 | 1.5 | 2026-08-14 | Software Architect | Removed duplicate order status flow section |
 | 1.6 | 2026-08-17 | Software Architect | Added Commission Management (§3.2.19), Revenue Tracking (§3.2.20), Ad Fee Revenue (§3.2.21) requirements; added commission_settings, revenue_targets, payouts database schemas; added commission, revenue, payout, ad fee business rules (§4.8-4.11); added commission & revenue API endpoints; updated frontend route structure |
+| 1.7 | 2026-08-17 | Software Architect | Added AI Skin Analysis detailed requirements (B-AI-009~021), Cart lifecycle rules (B-CART-008~014), Order Status History (§3.2.22), Inventory Transactions (§3.2.23), Review Reports (§3.2.24), Audit Logs (§3.2.25), Notifications (§3.2.26); added database schemas for skin_analyses, skin_analysis_conditions, skin_analysis_recommendations, carts, cart_items, order_status_history, inventory_transactions, review_reports, audit_logs, notifications |
 
 ---
 
@@ -675,15 +676,13 @@ Represents a customer order.
 
 **Attributes:**
 - OrderID (Primary Key, UUID)
-- UserID (Foreign Key to Users)
+- BuyerID (Foreign Key to Users)
+- MerchantID (Foreign Key to Merchants)
 - Status (VARCHAR(30), Default: 'placed') - Values: 'placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'
-- Subtotal (DECIMAL(10,2))
-- ShippingCost (DECIMAL(10,2), Default: 0)
-- Tax (DECIMAL(10,2), Default: 0)
-- Total (DECIMAL(10,2))
+- TotalAmount (DECIMAL(10,2))
 - ShippingAddress (JSONB)
-- PaymentMethod (VARCHAR(50), Optional)
-- PaymentStatus (VARCHAR(20), Default: 'pending')
+- PaymentMethod (VARCHAR(50))
+- PaymentStatus (VARCHAR(20), Default: 'pending') - Values: 'pending', 'completed', 'failed', 'refunded'
 - CouponCode (VARCHAR(50), Optional)
 - DiscountAmount (DECIMAL(10,2), Default: 0)
 - Notes (TEXT, Optional)
@@ -703,6 +702,7 @@ CREATE TABLE orders (
   payment_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
   coupon_code     VARCHAR(50),
   discount_amount DECIMAL(10,2) DEFAULT 0,
+  notes           TEXT,
   created_at      TIMESTAMP DEFAULT NOW(),
   updated_at      TIMESTAMP DEFAULT NOW()
 );
@@ -973,6 +973,7 @@ CREATE TABLE orders (
   payment_status  VARCHAR(20) NOT NULL DEFAULT 'pending',
   coupon_code     VARCHAR(50),
   discount_amount DECIMAL(10,2) DEFAULT 0,
+  notes           TEXT,
   created_at      TIMESTAMP DEFAULT NOW(),
   updated_at      TIMESTAMP DEFAULT NOW()
 );
@@ -1175,6 +1176,159 @@ CREATE TABLE payouts (
 - Amount = commission earned + ad fees owed for the period
 - Payout only for status = pending
 
+#### Skin Analyses Table
+```sql
+CREATE TABLE skin_analyses (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES users(id),
+  image_url       TEXT NOT NULL,
+  skin_type       VARCHAR(20),
+  -- skin_type: 'dry', 'oily', 'combination', 'sensitive', 'normal'
+  estimated_age   INTEGER,
+  analysis_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'processing', 'completed', 'failed'
+  ai_model        VARCHAR(100),
+  ai_model_version VARCHAR(50),
+  created_at      TIMESTAMP DEFAULT NOW(),
+  completed_at    TIMESTAMP,
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Skin Analysis Conditions Table
+```sql
+CREATE TABLE skin_analysis_conditions (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  analysis_id     UUID NOT NULL REFERENCES skin_analyses(id) ON DELETE CASCADE,
+  condition_name  VARCHAR(100) NOT NULL,
+  -- condition_name: 'acne', 'dark_spots', 'wrinkles', 'dryness', 'oiliness', etc.
+  severity        VARCHAR(10) NOT NULL,
+  -- severity: 'low', 'medium', 'high'
+  confidence      DECIMAL(5,2) NOT NULL,
+  -- confidence: 0.00 to 1.00
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Skin Analysis Recommendations Table
+```sql
+CREATE TABLE skin_analysis_recommendations (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  analysis_id     UUID NOT NULL REFERENCES skin_analyses(id) ON DELETE CASCADE,
+  product_id      UUID NOT NULL REFERENCES products(id),
+  reason          TEXT NOT NULL,
+  match_score     INTEGER NOT NULL,
+  -- match_score: 0 to 100
+  display_order   INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Carts Table
+```sql
+CREATE TABLE carts (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID UNIQUE NOT NULL REFERENCES users(id),
+  created_at  TIMESTAMP DEFAULT NOW(),
+  updated_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Cart Items Table
+```sql
+CREATE TABLE cart_items (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cart_id     UUID NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+  product_id  UUID NOT NULL REFERENCES products(id),
+  quantity    INTEGER NOT NULL DEFAULT 1,
+  created_at  TIMESTAMP DEFAULT NOW(),
+  updated_at  TIMESTAMP DEFAULT NOW(),
+  UNIQUE(cart_id, product_id)
+);
+```
+
+#### Order Status History Table
+```sql
+CREATE TABLE order_status_history (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id    UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  status_id   INTEGER NOT NULL REFERENCES order_statuses(status_id),
+  changed_by  UUID REFERENCES users(id),
+  note        TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Inventory Transactions Table
+```sql
+CREATE TABLE inventory_transactions (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id        UUID NOT NULL REFERENCES products(id),
+  merchant_id       UUID NOT NULL REFERENCES merchants(id),
+  transaction_type  VARCHAR(30) NOT NULL,
+  -- transaction_type: 'order_created', 'order_cancelled', 'restock', 'manual_adjustment', 'return'
+  quantity          INTEGER NOT NULL,
+  before_quantity   INTEGER NOT NULL,
+  after_quantity    INTEGER NOT NULL,
+  reference_type    VARCHAR(50),
+  reference_id      UUID,
+  reason            TEXT,
+  created_by        UUID REFERENCES users(id),
+  created_at        TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Review Reports Table
+```sql
+CREATE TABLE review_reports (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  review_id     UUID NOT NULL REFERENCES reviews(id),
+  reported_by   UUID NOT NULL REFERENCES users(id),
+  reason        VARCHAR(50) NOT NULL,
+  -- reason: 'spam', 'inappropriate', 'fake', 'other'
+  description   TEXT,
+  status        VARCHAR(20) NOT NULL DEFAULT 'pending',
+  -- status: 'pending', 'reviewed', 'resolved', 'rejected'
+  admin_note    TEXT,
+  resolved_by   UUID REFERENCES users(id),
+  resolved_at   TIMESTAMP,
+  created_at    TIMESTAMP DEFAULT NOW(),
+  updated_at    TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Audit Logs Table
+```sql
+CREATE TABLE audit_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES users(id),
+  action      VARCHAR(100) NOT NULL,
+  entity_type VARCHAR(100) NOT NULL,
+  entity_id   UUID,
+  old_value   JSONB,
+  new_value   JSONB,
+  ip_address  VARCHAR(45),
+  user_agent  TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Notifications Table
+```sql
+CREATE TABLE notifications (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id),
+  type        VARCHAR(50) NOT NULL,
+  title       VARCHAR(255) NOT NULL,
+  message     TEXT NOT NULL,
+  entity_type VARCHAR(100),
+  entity_id   UUID,
+  is_read     BOOLEAN DEFAULT FALSE,
+  read_at     TIMESTAMP,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
 ### 3.2 Functional Requirements by Module
 
 #### 3.2.1 Buyer Module - Authentication (購入者モジュール - 認証)
@@ -1218,6 +1372,42 @@ CREATE TABLE payouts (
 | B-AI-006 | System shows skin condition trends over time | Medium |
 | B-AI-007 | Supported image formats: JPG, PNG, WebP | High |
 | B-AI-008 | Maximum image size: 10MB | High |
+| B-AI-009 | Image must contain a face for analysis to proceed | High |
+| B-AI-010 | Each analysis has a unique analysis ID | High |
+| B-AI-011 | Analysis has a processing status (pending, processing, completed, failed) | High |
+| B-AI-012 | Analysis returns skin type (dry, oily, combination, sensitive, normal) | High |
+| B-AI-013 | Analysis returns detected skin conditions with severity and confidence | High |
+| B-AI-014 | AI may return estimated age (optional) | Medium |
+| B-AI-015 | Each recommendation has a match score (0-100) | High |
+| B-AI-016 | Each recommendation has a reason for recommendation | High |
+| B-AI-017 | Recommendations are ordered by match score (descending) | High |
+| B-AI-018 | User can perform another analysis at any time | High |
+| B-AI-019 | Analysis failure is handled gracefully with error message | High |
+| B-AI-020 | Analysis results may be cached according to existing caching rules | Medium |
+| B-AI-021 | Analysis history is retained indefinitely | Medium |
+
+##### AI Skin Analysis Flow
+```
+User uploads facial image
+    ↓
+System validates image (format, size, face detection)
+    ↓
+Image sent to AI analysis service
+    ↓
+Analysis returns: skin_type, conditions[], estimated_age
+    ↓
+System generates product recommendations based on results
+    ↓
+Results stored in database with analysis status
+    ↓
+User views analysis results and recommendations
+```
+
+##### Skin Conditions Structure
+Each detected condition includes:
+- **condition_name**: e.g., "acne", "dark_spots", "wrinkles", "dryness", "oiliness"
+- **severity**: low, medium, high
+- **confidence**: 0.00 to 1.00 (AI confidence score)
 
 #### 3.2.4 Buyer Module - Smart Product Matching (購入者モジュール - スマート商品マッチング)
 
@@ -1274,6 +1464,31 @@ CREATE TABLE payouts (
 | B-CART-005 | Cart shows available stock | High |
 | B-CART-006 | Cart persists across sessions (logged-in users) | High |
 | B-CART-007 | Cart shows product images and names | High |
+| B-CART-008 | Quantity must be greater than zero | High |
+| B-CART-009 | Same product cannot appear as duplicate cart lines | High |
+| B-CART-010 | Cart price uses current product price at time of checkout | High |
+| B-CART-011 | Stock is validated when adding to cart | High |
+| B-CART-012 | Stock is validated again at checkout | High |
+| B-CART-013 | User can clear entire cart | Medium |
+| B-CART-014 | Cart shows total price (sum of all item subtotals) | High |
+
+##### Cart Lifecycle
+```
+Empty Cart → Add Item → Cart with Items → Checkout → Order Created → Cart Cleared
+                                    ↓
+                            Update Quantity
+                                    ↓
+                            Remove Item
+                                    ↓
+                            Clear Cart
+```
+
+##### Cart Business Rules
+- One cart per buyer (active cart)
+- Cart items reference current product price at time of add
+- Stock validation occurs at add-time and checkout-time
+- If product goes out of stock before checkout, user is notified
+- Cart is cleared after successful order creation
 
 #### 3.2.9 Buyer Module - Checkout & Payment (購入者モジュール - 注文・決済)
 
@@ -1489,6 +1704,123 @@ Admin reviews ad content, image, message, and due date
 | A-ADFE-005 | Ad fee revenue included in payout deduction calculation | Medium |
 | A-ADFE-006 | Ad fee revenue included in revenue target progress calculation | Low |
 | A-ADFE-007 | Ad fee revenue included in AI forecast calculation | Low |
+
+#### 3.2.22 Buyer Module - Order Status History (購入者モジュール - 注文ステータス履歴)
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| B-OSH-001 | Every order status transition is recorded in history | High |
+| B-OSH-002 | Buyer can view order tracking/history timeline | High |
+| B-OSH-003 | Status history shows timestamp for each transition | High |
+| B-OSH-004 | Status history shows who initiated the change (user/system) | High |
+| B-OSH-005 | Status history may include optional note | Medium |
+| B-OSH-006 | System-generated status changes are also recorded | High |
+
+##### Order Status Flow (Official)
+```
+placed → confirmed → packed → shipped → out_for_delivery → delivered
+   ↓         ↓          ↓         ↓              ↓              ↓
+  Any state can be cancelled (before shipped) → cancelled
+```
+
+##### Status Authorization Rules
+| Status | Can Change To | Changed By |
+|--------|---------------|------------|
+| placed | confirmed, cancelled | Merchant |
+| confirmed | packed, cancelled | Merchant |
+| packed | shipped, cancelled | Merchant |
+| shipped | out_for_delivery | Courier/System |
+| out_for_delivery | delivered | Buyer/System |
+| delivered | (terminal) | - |
+| cancelled | (terminal) | - |
+
+#### 3.2.23 System Module - Inventory Transactions (システムモジュール - 在庫変動)
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-INV-001 | Every stock-changing operation creates an inventory transaction | High |
+| SYS-INV-002 | Stock cannot become negative | High |
+| SYS-INV-003 | Stock decreases when order is successfully created | High |
+| SYS-INV-004 | Stock increases when inventory is restocked by merchant | High |
+| SYS-INV-005 | Manual inventory adjustment must be recorded | High |
+| SYS-INV-006 | Order cancellation stock changes are recorded if supported | Medium |
+| SYS-INV-007 | Merchant can view relevant stock information | High |
+| SYS-INV-008 | Admin can audit inventory changes where authorized | Medium |
+
+##### Transaction Types
+| Type | Description | Stock Change |
+|------|-------------|--------------|
+| order_created | Stock decremented on order | -quantity |
+| order_cancelled | Stock restored on cancellation | +quantity |
+| restock | Merchant restocks inventory | +quantity |
+| manual_adjustment | Admin/merchant manual correction | ±quantity |
+| return | Customer return processed | +quantity |
+
+#### 3.2.24 System Module - Review Reports (システムモジュール - レビュー報告)
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-REV-001 | Buyer can report a review for moderation | High |
+| SYS-REV-002 | Report reasons: spam, inappropriate, fake, other | High |
+| SYS-REV-003 | Report may include optional description | Medium |
+| SYS-REV-004 | Report has status: pending, reviewed, resolved, rejected | High |
+| SYS-REV-005 | Admin can review reported reviews | High |
+| SYS-REV-006 | Admin can resolve reports with note | High |
+| SYS-REV-007 | Original review is not automatically deleted when reported | High |
+| SYS-REV-008 | Admin can take action on review based on report | High |
+
+##### Report Status Flow
+```
+pending → reviewed → resolved (action taken)
+                   → rejected (no action needed)
+```
+
+#### 3.2.25 System Module - Audit Logs (システムモジュール - 監査ログ)
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-AUD-001 | Significant actions are logged in audit trail | High |
+| SYS-AUD-002 | Audit log records: who, what, which entity, which record | High |
+| SYS-AUD-003 | Audit log records previous and new values where appropriate | Medium |
+| SYS-AUD-004 | Audit log records timestamp | High |
+| SYS-AUD-005 | Audit logs are append-only (cannot be modified or deleted) | High |
+| SYS-AUD-006 | Passwords, tokens, and secrets are never logged | High |
+
+##### Actions to Audit
+| Category | Examples |
+|----------|----------|
+| Merchant Management | approval, rejection, status change |
+| User Management | status changes, role changes |
+| Advertisement | approval, rejection, payment |
+| Product | create, update, delete, stock change |
+| Commission | rate changes |
+| Review | moderation actions |
+| Payout | processing, completion, failure |
+| Security | login, logout, password reset |
+
+#### 3.2.26 System Module - Notifications (システムモジュール - 通知)
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| SYS-NOT-001 | System supports in-app notifications for relevant events | High |
+| SYS-NOT-002 | Notification recipient is identified by user_id | High |
+| SYS-NOT-003 | Notification has type, title, and message | High |
+| SYS-NOT-004 | Notification has read/unread state | High |
+| SYS-NOT-005 | Notification records read timestamp | Medium |
+| SYS-NOT-006 | Notifications are ordered by creation date (newest first) | High |
+| SYS-NOT-007 | Related entity can be linked when applicable | Medium |
+
+##### Notification Events
+| Event | Recipient | Title Example |
+|-------|-----------|---------------|
+| Merchant approved | Merchant | "Shop Approved" |
+| Merchant rejected | Merchant | "Shop Rejected" |
+| Advertisement approved | Merchant | "Ad Approved" |
+| Advertisement rejected | Merchant | "Ad Rejected" |
+| Order status update | Buyer | "Order Shipped" |
+| Low-stock warning | Merchant | "Low Stock Alert" |
+| New order received | Merchant | "New Order" |
+| Payout processed | Merchant | "Payout Completed" |
 
 ---
 
