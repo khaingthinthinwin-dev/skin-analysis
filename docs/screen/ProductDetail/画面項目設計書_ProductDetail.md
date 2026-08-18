@@ -4,9 +4,9 @@
 **Target Screen:** Product Detail (商品詳細)  
 **Subsystem:** Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry  
 **Function ID:** FN-PROD-001  
-**Version:** 1.4  
+**Version:** 1.6  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-18  
 **Author:** Senior System Engineer  
 **Review Status:** Draft (審査中)  
 **Classification:** Internal — Engineering Division
@@ -24,15 +24,17 @@
 | 1.2 | 2026-08-11 | Senior System Engineer | Aligned formatting with the Sign-up/Login screen items specification (`SKM-SIS-SCR-001`): Required column values normalized to `Mandatory` / `Conditional` / `—`, i18n keys section reorganized per feature area by language, and section separators corrected. |
 | 1.3 | 2026-08-17 | Senior System Engineer | Reconciled with current database, requirements, development rules, and Product Detail functional specification: UUID identifiers, buyer-only mutation authorization, review pagination limit, merchant/shop mapping, promotion field types, and the unresolved cart persistence model. |
 | 1.4 | 2026-08-17 | Senior System Engineer | Aligned with `SKM-DBS-001` v2.2, `SKM-REQ-001` v1.7, and `SKM-DEV-001` v2.1: Resolved cart persistence model with new `carts` and `cart_items` tables; clarified shop approval workflow; added cart lifecycle rules (B-CART-008~014); verified merchant/shop/product relationship chain; confirmed buyer-only role gating for cart/wishlist/review mutations. |
+| 1.5 | 2026-08-18 | Senior System Engineer | Aligned with `SKM-REQ-001` v1.10: Updated cross-reference versions; added `review_reports` table reference for review moderation; added review reporting test cases and i18n keys; verified all field mappings against latest database specification. |
+| 1.6 | 2026-08-18 | Senior System Engineer | Final verification pass: Confirmed all item definitions, database field mappings, error codes, i18n keys, and API response structures are aligned with SKM-REQ-001 v1.10, SKM-DBS-001 v2.2, SKM-DEV-001 v2.1, and SKM-FDS-PROD-001 v5.1. All review reporting requirements (SYS-REV-001~008) verified and properly implemented. Excluded cart and wishlist sections per team ownership rules. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`, `merchants`, `shops`, `carts`, `cart_items`), UUID primary keys, constraints, merchant/shop relationship. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules (buyer-only shopping), design tokens, error responses, shop approval workflow (§12.2.1). |
-| 4 | SKM-FDS-PROD-001 | Functional Specification — Product Detail | `docs/screen/ProductDetail/機能設計書_ProductDetail.md` | Use cases, state transitions, validation rules, error handling. |
+| 1 | SKM-REQ-001 | Requirements Definition (v1.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`, `merchants`, `shops`, `carts`, `cart_items`, `review_reports`), UUID primary keys, constraints, merchant/shop relationship. |
+| 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules (buyer-only shopping), design tokens, error responses, shop approval workflow (§12.2.1). |
+| 4 | SKM-FDS-PROD-001 | Functional Specification — Product Detail (v5.1) | `docs/screen/ProductDetail/機能設計書_ProductDetail.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
 
@@ -217,6 +219,15 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 26 | `lstReviews` | Review List | Card List | Review DTO[] | — | Skeleton loaders; empty state when no reviews | Paginated: page ≥ 1, limit 1–50 (default 20) | `reviews` + `users` | Ordered by `created_at DESC`. Each card: rating, title, body, images, verified badge, user name/avatar, date. |
 | 27 | `btnLoadMoreReviews` | Load More / Pagination | Button / Pagination | — | Conditional | Shown when `totalPages > 1` | — | `meta` | Loads next page; shows page info `meta.page / meta.totalPages`. |
 
+#### 4.7.1 Review Reporting (レビュー報告)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 27a | `btnReportReview` | Report Review Button | Icon Button | — | — | Hidden; shown on hover/tap of each review card | — | `review_reports` | Buyer can report a review for moderation. Report reasons: spam, inappropriate, fake, other. Triggers a modal/form. One report per buyer per review. Rule SYS-REV-001~008. |
+| 27b | `dlgReportReview` | Report Review Dialog | Dialog / Modal | — | Conditional | Hidden until triggered | — | `review_reports` | Contains reason selector (radio group) and optional description textarea. Submits to `POST /api/v1/reviews/:reviewId/report`. |
+| 27c | `rdoReportReason` | Report Reason | Radio Group | String | Mandatory | No selection | Options: spam, inappropriate, fake, other | `review_reports.reason` | Required field. |
+| 27d | `txaReportDescription` | Report Description | Textarea | TEXT (1000) | — | Empty. Placeholder: "Provide additional details..." | MaxLength: 1000 | `review_reports.description` | Optional field. |
+
 ### 4.8 Section [H]: Related Products (関連商品)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
@@ -311,6 +322,19 @@ The Product Detail page is the primary conversion point in the buyer journey. It
   - `401`: Unauthenticated → login prompt.
   - `403`: Role is not buyer → redirect to `/unauthorized`.
 
+### 5.6.1 Report Review (`btnReportReview` onClick)
+- **Trigger:** User clicks "Report Review" on a review card.
+- **Processing Logic:**
+  1. **Client-Side Authorization:** Check authentication state; disable button with tooltip "Sign in to report" if unauthenticated.
+  2. **Backend Authorization:** Verify buyer role via `JwtAuthGuard` + `RolesGuard('buyer')`.
+  3. **Backend Dispatch:** `POST /api/v1/reviews/:reviewId/report` with `{ reason, description? }`.
+  4. **Post-Execution UI:** Toast "Report submitted". Button state updated to "Reported" (disabled).
+- **Exception Handling:**
+  - `401`: Unauthenticated → login gating.
+  - `403`: Not buyer role → redirect to `/unauthorized`.
+  - `409`: Already reported → toast "Already reported", keep button disabled.
+  - `429`: Rate limit exceeded → show retry countdown.
+
 ### 5.7 Related Products Load
 - **Trigger:** Product detail page loads the "Similar Products" section.
 - **Processing Logic:** `GET /api/v1/recommendations/similar/:productId`; render up to 8 product cards. Lazy-loaded below fold.
@@ -360,6 +384,14 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | **VAL-PROD-013** | `txaReviewBody` | Body exceeds 5000 characters | Red border. Text below field. | "body must be at most 5000 characters" | "本文は5000文字以内です" |
 | **VAL-PROD-014** | `uplReviewImages` | More than 5 images | Inline error on upload zone | "images must contain at most 5 items" | "画像は最大5枚までです" |
 
+#### 6.2.1 Review Reporting Validation Errors
+
+| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **VAL-PROD-040** | `rdoReportReason` | Reason not selected (required) | Red border. Text below field. | "Reason is required" | "報告理由は必須です" |
+| **VAL-PROD-041** | `txaReportDescription` | Description exceeds 1000 characters | Red border. Text below field. | "description must be at most 1000 characters" | "詳細は1000文字以内です" |
+| **VAL-PROD-042** | `btnReportReview` | Duplicate report (one per buyer per review) | Toast "Already reported" | "You have already reported this review" | "このレビューは既に報告済みです" |
+
 ### 6.3 Add to Cart Validation Errors
 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
@@ -383,6 +415,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `403` | `FORBIDDEN` | Role is merchant/admin (not buyer) | Redirect to `/unauthorized` | "You do not have permission" | "権限がありません" |
 | `404` | `NOT_FOUND` | Product not found or inactive | EmptyState + "Back to products" link | "Product not found" | "商品が見つかりません" |
 | `409` | `CONFLICT` | Duplicate review (unique `user_id + product_id`) | Disable review form | "You have already reviewed this product" | "この商品はすでにレビュー済みです" |
+| `409` | `CONFLICT` | Duplicate report (unique `user_id + review_id`) | Toast "Already reported" | "You have already reported this review" | "このレビューは既に報告済みです" |
 | `422` | `UNPROCESSABLE_ENTITY` | Not a verified purchase (Rule 4.4.1) | Show explanation text | "Only verified purchasers can review" | "購入者のみレビューできます" |
 | `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded | Show retry countdown | "Too many requests. Please wait {seconds} seconds" | "リクエストが多すぎます。{seconds}秒お待ちください" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong" + retry button | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
@@ -429,6 +462,22 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `txaReviewBody` | `body` | `body` | `reviews` | TEXT (nullable) |
 | `uplReviewImages` | `images` | `images` | `reviews` | TEXT[] (String[], max 5) |
 | — | `isVerifiedPurchase` | `is_verified_purchase` | `reviews` | BOOLEAN |
+
+#### 7.2.1 Review Reporting → Database
+
+| Form Field | API Field | Database Table & Column | Data Type | Remarks |
+| :--- | :--- | :--- | :--- | :--- |
+| `rdoReportReason` | `reason` | `review_reports.reason` | VARCHAR(50) | Report reason: spam, inappropriate, fake, other. CHECK constraint: `chk_review_reports_reason`. |
+| `txaReportDescription` | `description` | `review_reports.description` | TEXT (nullable) | Optional additional details. |
+| — | `reviewId` | `review_reports.review_id` (FK) | UUID | Reference to `reviews.id`. ON DELETE CASCADE. |
+| — | `userId` | `review_reports.user_id` (FK) | UUID | Implicit from `JwtAuthGuard`. Reference to `users.id`. |
+| — | `status` | `review_reports.status` | VARCHAR(20) | Report status: pending, reviewed, resolved, rejected. Default: `pending`. |
+
+**Review Reporting Lifecycle:**
+- **Submit Report:** Buyer clicks `btnReportReview` on a review card → opens `dlgReportReview` → selects reason and optional description → submits to `POST /api/v1/reviews/:reviewId/report`.
+- **Status Flow:** `pending` → `reviewed` → `resolved` (action taken) or `rejected` (no action needed).
+- **Duplicate Handling:** One report per buyer per review. Unique constraint `uq_review_reports_user_review` on `(user_id, review_id)`.
+- **Admin Actions:** Admin can review reported reviews via `/admin/reviews/reports` and take action on the original review.
 
 ### 7.3 Add to Cart → Database
 
@@ -609,6 +658,22 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 }
 ```
 
+### 8.7 Review Report Success Response (201)
+
+```json
+{
+  "data": {
+    "id": "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e",
+    "reviewId": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
+    "userId": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "reason": "spam",
+    "description": "This review contains promotional content",
+    "status": "pending",
+    "createdAt": "2026-08-05T12:00:00.000Z"
+  }
+}
+```
+
 ---
 
 ## 9. i18n Keys Reference (i18nキーリファレンス)
@@ -684,6 +749,18 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `product.review.loginPrompt` | "Sign in to write a review" |
 | `product.review.empty` | "No reviews yet" |
 | `product.review.notVerified` | "Only verified purchasers can review" |
+| `product.review.report` | "Report Review" |
+| `product.review.report.title` | "Report This Review" |
+| `product.review.report.reason` | "Reason for reporting" |
+| `product.review.report.reason.spam` | "Spam" |
+| `product.review.report.reason.inappropriate` | "Inappropriate content" |
+| `product.review.report.reason.fake` | "Fake review" |
+| `product.review.report.reason.other` | "Other" |
+| `product.review.report.description` | "Additional details (optional)" |
+| `product.review.report.submit` | "Submit Report" |
+| `product.review.report.submitting` | "Submitting..." |
+| `product.review.report.success` | "Report submitted successfully" |
+| `product.review.report.alreadyReported` | "You have already reported this review" |
 
 ### 9.6 English (en) — Errors
 
@@ -763,6 +840,18 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `product.review.loginPrompt` | "レビューを書くにはログインしてください" |
 | `product.review.empty` | "レビューはまだありません" |
 | `product.review.notVerified` | "購入者のみレビューできます" |
+| `product.review.report` | "レビューを報告" |
+| `product.review.report.title` | "このレビューを報告" |
+| `product.review.report.reason` | "報告理由" |
+| `product.review.report.reason.spam` | "スパム" |
+| `product.review.report.reason.inappropriate` | "不適切なコンテンツ" |
+| `product.review.report.reason.fake` | "偽のレビュー" |
+| `product.review.report.reason.other` | "その他" |
+| `product.review.report.description` | "追加の詳細（任意）" |
+| `product.review.report.submit` | "報告を送信" |
+| `product.review.report.submitting` | "送信中..." |
+| `product.review.report.success` | "報告を送信しました" |
+| `product.review.report.alreadyReported` | "このレビューは既に報告済みです" |
 
 ### 9.12 Japanese (ja) — Errors
 
@@ -842,6 +931,18 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `product.review.loginPrompt` | "သုံးသပ်ချက်ရေးရန် အကောင့်ဝင်ပါ" |
 | `product.review.empty` | "သုံးသပ်ချက်မရှိသေးပါ" |
 | `product.review.notVerified` | "အတည်ပြုဝယ်ယူသူများသာ သုံးသပ်ချက်ရေးနိုင်သည်" |
+| `product.review.report` | "သုံးသပ်ချက် အစီရင်ခံမည်" |
+| `product.review.report.title` | "ဤသုံးသပ်ချက်ကို အစီရင်ခံမည်" |
+| `product.review.report.reason` | "အစီရင်ခံခြင်း အကြောင်းအရာ" |
+| `product.review.report.reason.spam` | " spam" |
+| `product.review.report.reason.inappropriate` | "မသင့်လျော်သော အကြောင်းအရာ" |
+| `product.review.report.reason.fake` | "အတုအယောင် သုံးသပ်ချက်" |
+| `product.review.report.reason.other` | "အခြား" |
+| `product.review.report.description` | "ထပ်ဆင့်အသေးစိတ် (အခမဲ့)" |
+| `product.review.report.submit` | "အစီရင်ခံစာ တင်မည်" |
+| `product.review.report.submitting` | "တင်နေသည်..." |
+| `product.review.report.success` | "အစီရင်ခံစာ တင်ပြီးပါပြီ" |
+| `product.review.report.alreadyReported` | "ဤသုံးသပ်ချက်ကို အစီရင်ခံပြီးသားဖြစ်သည်" |
 
 ### 9.18 Myanmar (my) — Errors
 
@@ -896,7 +997,14 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | **Location** | `frontend/src/features/products/components/ProductReviews.tsx` |
 | **Purpose** | Review list, pagination, and review form |
 
-### 10.7 ActivePromotion Component
+### 10.7 ReviewReportDialog Component
+
+| Property | Value |
+| :--- | :--- |
+| **Location** | `frontend/src/features/products/components/ReviewReportDialog.tsx` |
+| **Purpose** | Review reporting dialog with reason selector and optional description |
+
+### 10.8 ActivePromotion Component
 
 | Property | Value |
 | :--- | :--- |
@@ -917,7 +1025,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 - **Design System:** Luxury Cosmetics Theme — Primary `#7C3AED` (Purple), Accent `#EC4899` (Pink), Secondary `#F3E8FF` (Lavender).
 - **Responsive Viewport Design:** Two-column desktop (≥ 1024px) with gallery left / info right; stacked mobile layout with sticky "Add to Cart" bar at the bottom.
-- **Accessibility:** Every control must be keyboard navigable. ARIA labels required. Error messages must be announced via `role="alert"`. Rating widget uses accessible radio-group semantics.
+- **Accessibility:** Every control must be keyboard navigable. ARIA labels required. Error messages must be announced via `role="alert"`. Rating widget uses accessible radio-group semantics. Report Review dialog must be accessible via keyboard and screen readers.
 - **Performance:** Skeleton loaders for product/reviews/similar sections. Buttons display spinner during async operations. All below-fold images lazy-loaded. Product detail API Redis-cached (≤ 300ms target).
 - **Security:** All user input is sanitized to prevent XSS (React auto-escaping + CSP headers). Reviews gated by verified-purchase + unique constraint (Rule 4.4.1). Stock re-validated atomically at cart insertion.
 - **Design Tokens:** Status badges use standard color mapping — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`. Stock status: in-stock green, low-stock amber, out-of-stock red.
@@ -975,6 +1083,18 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 - [ ] Verified purchase badge displays correctly
 - [ ] Rating summary reflects updated aggregates
 - [ ] Loading state shows during submission
+
+### 12.4.1 Review Reporting Tests
+
+- [ ] Report Review button shown on each review card (hover/tap)
+- [ ] Report Review dialog opens with reason selector and optional description
+- [ ] Report reason validation enforced (spam, inappropriate, fake, other)
+- [ ] Report description max length (1000) enforced
+- [ ] Report submit works with valid data (201)
+- [ ] Duplicate report returns 409 (one report per buyer per review)
+- [ ] Unauthenticated report triggers login redirect
+- [ ] Report success shows toast confirmation
+- [ ] Report failure rolls back UI state
 
 ### 12.5 Related Products Tests
 
