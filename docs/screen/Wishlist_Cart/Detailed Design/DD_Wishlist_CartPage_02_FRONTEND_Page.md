@@ -1,7 +1,7 @@
 # DD_WISH-CART_02 — Frontend Page (Wishlist & Cart)
 
-> **Doc ID:** SKM-DD-WISH-CART-02 | **Version:** 1.0 | **Status:** Released
-> **Last Updated:** 2026-08-12
+> **Doc ID:** SKM-DD-WISH-CART-02 | **Version:** 1.1 | **Status:** Released
+> **Last Updated:** 2026-08-18
 
 ---
 

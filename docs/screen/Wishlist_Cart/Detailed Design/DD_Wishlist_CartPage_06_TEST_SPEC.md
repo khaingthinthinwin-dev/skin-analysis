@@ -1,7 +1,7 @@
 # DD_WISH_CART_06 — Test Specification
 
-> **Doc ID:** SKM-DD-WISH-CART-06 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-11
+> **Doc ID:** SKM-DD-WISH-CART-06 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-17
 
 ---
 

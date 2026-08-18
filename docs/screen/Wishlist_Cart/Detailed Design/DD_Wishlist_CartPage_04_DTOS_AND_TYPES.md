@@ -1,7 +1,7 @@
 # DD_WISH_CART_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-WISH-CART-04 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-12
+> **Doc ID:** SKM-DD-WISH-CART-04 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-18
 
 ---
 

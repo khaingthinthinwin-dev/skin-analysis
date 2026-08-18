@@ -1,7 +1,7 @@
 # DD_WISH-CART_01 — Module Overview
 
-> **Doc ID:** SKM-DD-WISH-CART-01 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-14
+> **Doc ID:** SKM-DD-WISH-CART-01 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-17
 
 ---
 
@@ -21,7 +21,7 @@ The Wishlist subsystem enables users to save products for future reference, whil
 | UC-WISH-002 | Remove Product from Wishlist | Authenticated user removes a saved product from their wishlist. |
 | UC-WISH-003 | View Wishlist | Authenticated user views all saved products with images, prices, and availability status. |
 | UC-WISH-004 | Move Wishlist Item to Cart | Authenticated user transfers a wishlist item directly into the shopping cart. |
-| UC-WISH-005 | Guest User Attempt to Add to Wishlist | Unauthenticated user attempts to add items to wishlist, triggering login modal. |
+| UC-WISH-005 | Guest User Add to Wishlist Attempt | Unauthenticated user attempts to add items to wishlist, triggering login modal. |
 | UC-CART-001 | Add Product to Cart | Authenticated user adds an in-stock product to their shopping cart with quantity 1. |
 | UC-CART-002 | Update Cart Item Quantity | Authenticated user modifies the quantity of an existing cart item, with stock validation. |
 | UC-CART-003 | Remove Item from Cart | Authenticated user removes an item from their shopping cart. |
@@ -80,7 +80,7 @@ stateDiagram-v2
 4. **Stock Validation**: Server-side stock checks prevent adding out-of-stock items or exceeding available quantities.
 5. **Price Integrity**: Prices fetched from database, not client-provided, preventing manipulation.
 6. **Atomic Operations**: Stock decrements and cart updates use Prisma transactions to prevent race conditions.
-7. **Guest User Handling**: Unauthenticated users cannot add items to wishlist or cart; login modal prompts authentication.
+7. **Guest User Handling**: Unauthenticated users cannot add items to wishlist or cart; alert modal directs to login page.
 8. **IDOR Prevention**: Ownership validation ensures users cannot access other users' wishlist or cart items.
 
 ---

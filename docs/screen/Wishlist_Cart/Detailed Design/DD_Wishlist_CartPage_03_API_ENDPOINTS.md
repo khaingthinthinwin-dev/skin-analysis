@@ -1,7 +1,7 @@
 # DD_WISH_CART_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-WISH-CART-03 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-12
+> **Doc ID:** SKM-DD-WISH-CART-03 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-17
 
 ---
 
