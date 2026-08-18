@@ -4,7 +4,7 @@
 **Target Screen:** Product Detail (商品詳細)  
 **Subsystem:** Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry  
 **Function ID:** FN-PROD-001  
-**Version:** 1.3  
+**Version:** 1.4  
 **Created:** 2026-08-10  
 **Last Updated:** 2026-08-17  
 **Author:** Senior System Engineer  
@@ -23,14 +23,15 @@
 | 1.1 | 2026-08-11 | Senior System Engineer | Cross-checked against `SKM-DBS-001` and `SKM-DEV-001`. Fixed SKU length (`VARCHAR(100)`), review rating type (`INTEGER`), array column types (`TEXT[]`), `discount_type` storage (`VARCHAR(20)` + CHECK), pagination and authorization wording, document ID reference (`SKM-FDS-PROD-001`), and added Myanmar (my) i18n reference. |
 | 1.2 | 2026-08-11 | Senior System Engineer | Aligned formatting with the Sign-up/Login screen items specification (`SKM-SIS-SCR-001`): Required column values normalized to `Mandatory` / `Conditional` / `—`, i18n keys section reorganized per feature area by language, and section separators corrected. |
 | 1.3 | 2026-08-17 | Senior System Engineer | Reconciled with current database, requirements, development rules, and Product Detail functional specification: UUID identifiers, buyer-only mutation authorization, review pagination limit, merchant/shop mapping, promotion field types, and the unresolved cart persistence model. |
+| 1.4 | 2026-08-17 | Senior System Engineer | Aligned with `SKM-DBS-001` v2.2, `SKM-REQ-001` v1.7, and `SKM-DEV-001` v2.1: Resolved cart persistence model with new `carts` and `cart_items` tables; clarified shop approval workflow; added cart lifecycle rules (B-CART-008~014); verified merchant/shop/product relationship chain; confirmed buyer-only role gating for cart/wishlist/review mutations. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`), constraints. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`, `merchants`, `shops`, `carts`, `cart_items`), UUID primary keys, constraints, merchant/shop relationship. |
+| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules (buyer-only shopping), design tokens, error responses, shop approval workflow (§12.2.1). |
 | 4 | SKM-FDS-PROD-001 | Functional Specification — Product Detail | `docs/screen/ProductDetail/機能設計書_ProductDetail.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
@@ -192,7 +193,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 14 | `lblSoldBy` | Sold By Label | Static Label | String | — | Text: "Sold by" | — | Hardcoded UI text | Tailwind: `text-sm text-muted-foreground`. |
-| 15 | `lnkShop` | Shop Name Link | Link (`<Link>`) | String(255) | — | Merchant shop name | — | `products.merchant_id` → `merchants.id`; `merchants.user_id` → `shops.user_id`; `shops.name`, `shops.slug`, `shops.logo_url` | "Visit Shop →" navigates to `/shops/:shopSlug`. Shows shop logo when `shops.logo_url` is available. |
+| 15 | `lnkShop` | Shop Name Link | Link (`<Link>`) | String(255) | — | Merchant shop name | — | `products.merchant_id` → `merchants.id` → `merchants.user_id` → `shops.user_id`; then load `shops.name`, `shops.slug`, `shops.logo_url`, `shops.is_approved` | "Visit Shop →" navigates to `/shops/:shopSlug`. Shows shop logo when `shops.logo_url` is available. Shop must be `is_approved = true` to appear on product detail (Rule MRCH-005, SKM-DEV-001 §12.2.1). |
 
 ### 4.6 Section [F]: Product Tabs (商品タブ)
 
@@ -265,27 +266,37 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 ### 5.4 Add to Cart (`btnAddToCart` onClick)
 - **Trigger:** User clicks "Add to Cart".
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** quantity ≥ 1, product in stock.
-  2. **Backend Dispatch:** `POST /api/v1/cart/items` with `{ productId, quantity }`.
-  3. **Backend Execution:** Re-validate stock atomically; insert or merge cart line (Rule 4.2.2).
-  4. **Post-Execution UI:** Toast "Added to cart". Cart badge count invalidated and refreshed.
+  1. **Client-Side Pre-Check:** quantity ≥ 1, product in stock (`stock_quantity ≥ requested_quantity`).
+  2. **Backend Authorization:** Verify buyer role via `JwtAuthGuard` + `RolesGuard('buyer')` (Rule B-CART-001).
+  3. **Backend Dispatch:** `POST /api/v1/cart/items` with `{ productId, quantity }`.
+  4. **Backend Execution:** 
+     - Re-validate stock atomically; reject if `stock_quantity < quantity` (Rule B-CART-011).
+     - Fetch or create buyer's active cart via `carts` table (one per buyer).
+     - Insert or update `cart_items` record (unique constraint: `(cart_id, product_id)`). If exists, increment quantity (Rule B-CART-009).
+     - Return updated cart with all items.
+  5. **Post-Execution UI:** Toast "Added to cart". Cart badge count invalidated and refreshed. Quantity stepper resets to 1.
 - **Exception Handling:**
-  - `400`: Insufficient stock → inline error, disable CTA.
-  - `422`: Product out of stock → disabled Add to Cart + "Out of stock" badge.
+  - `400`: Insufficient stock → inline error, disable CTA, update stock badge.
   - `401`: Unauthenticated → open login modal / redirect to `/login`.
+  - `403`: Not buyer role → redirect to `/unauthorized` (Rule B-CART-001).
+  - `404`: Product not found → EmptyState.
+  - `422`: Product out of stock (`stock_quantity = 0`) → disabled Add to Cart + "Out of stock" badge (Rule B-CART-011).
 
 ### 5.5 Add to Wishlist (`btnWishlist` onClick)
 - **Trigger:** User clicks the ♡ button (off → on).
 - **Processing Logic:**
-  1. **Optimistic Update:** Immediately fill the heart.
-  2. **Backend Dispatch:** `POST /api/v1/wishlist/:productId`.
-  3. **Post-Execution UI:** Confirm success; on failure roll back optimistic state.
+  1. **Client-Side Authorization:** Check authentication state; disable button with tooltip "Sign in to save" if unauthenticated.
+  2. **Optimistic Update:** Immediately fill the heart (♡ → ♥).
+  3. **Backend Authorization:** Verify buyer role via `JwtAuthGuard` + `RolesGuard('buyer')`.
+  4. **Backend Dispatch:** `POST /api/v1/wishlist/:productId`.
+  5. **Post-Execution UI:** Confirm success with toast; on failure roll back optimistic state and show error.
 - **Exception Handling:**
-  - `409`: Already in wishlist → toast "Already in wishlist", keep ♡ filled.
   - `401`: Unauthenticated → login gating (button disabled with tooltip).
+  - `403`: Not buyer role → redirect to `/unauthorized` (Rule B-WISH-001).
   - `404`: Product not found → EmptyState.
+  - `409`: Already in wishlist → toast "Already in wishlist", keep ♥ filled.
 
-> Note: Wishlist removal/deletion is handled by the dedicated Wishlist screen/module and is out of scope for this screen.
+> Note: Wishlist removal/deletion is handled by the dedicated Wishlist screen/module and is out of scope for this screen. Rule B-WISH-005 allows moving wishlist items to cart.
 
 ### 5.6 Write Review (`btnSubmitReview` onClick)
 - **Trigger:** User clicks "Submit Review".
@@ -407,7 +418,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `wgtRatingSummary` | `avgRating` | `avg_rating` | `products` | DECIMAL(3,2) |
 | `wgtRatingSummary` | `reviewCount` | `review_count` | `products` | INT |
 | `bcBreadcrumb` | `category` | `category_id` | `products` (FK) | FK → `categories` |
-| `lnkShop` | `merchant` / `shop` | `merchant_id` / `user_id` / `name`, `slug`, `logo_url` | `products` → `merchants` → `shops` | UUID FK chain: `products.merchant_id` → `merchants.id`; `merchants.user_id` → `shops.user_id` |
+| `lnkShop` | `merchant` / `shop` | `merchant_id` / `user_id` / `name`, `slug`, `logo_url`, `is_approved` | `products` → `merchants` → `shops` | UUID FK chain: `products.merchant_id` → `merchants.id`; `merchants.user_id` → `shops.user_id`. Shop must be `is_approved = true` (Rule MRCH-005, SKM-DEV-001 §2.1). |
 
 ### 7.2 Review Form → Database
 
@@ -421,12 +432,20 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 ### 7.3 Add to Cart → Database
 
-| Form Field | API Field | Database Column | Table | Data Type |
+| Form Field | API Field | Database Table & Column | Data Type | Remarks |
 | :--- | :--- | :--- | :--- | :--- |
-| `stepperQuantity` | `quantity` | Not defined | — | INT (≥ 1) request value |
-| — | `productId` | Not defined | — | UUID request value |
+| `stepperQuantity` | `quantity` | `cart_items.quantity` | INT (≥ 1) | Request body value; validated min 1, max `stock_quantity`. Unique constraint with `product_id` per cart (Rule B-CART-009). |
+| — | `productId` | `cart_items.product_id` (FK) | UUID | Reference to `products.id`. ON DELETE CASCADE. |
+| — | `cartId` | `cart_items.cart_id` (FK) | UUID | Reference to `carts.id`. ON DELETE CASCADE. Auto-fetched from `carts` table (one per authenticated buyer). |
+| — | `userId` | `carts.user_id` (FK) | UUID | Implicit from `JwtAuthGuard`. Reference to `users.id`. Unique constraint `uq_carts_user_id` ensures one active cart per buyer (Rule B-CART-001, B-CART-006). |
 
-> **Schema gap:** `SKM-DBS-001` has no `cart_items` (or equivalent cart) table. `order_items` is a finalized order-line table and requires `order_id`, `merchant_id`, `unit_price`, and `total_price`; it must not be used as cart persistence. `POST /api/v1/cart/items` remains the functional contract, but its persistence model requires database design before implementation.
+**Cart Lifecycle (Rule B-CART-008~014):**
+- **Empty Cart:** Buyer authenticates; auto-create `carts` record if not exists.
+- **Add Item:** Insert or update `cart_items` (same product → increment quantity, Rule B-CART-009).
+- **Update Quantity:** PATCH `/api/v1/cart/items/:cartItemId` updates `cart_items.quantity`; re-validate stock.
+- **Remove Item:** DELETE `/api/v1/cart/items/:cartItemId` removes row from `cart_items`.
+- **Checkout:** POST `/api/v1/checkout` creates `orders` + `order_items` (copy from `cart_items`); then TRUNCATE or DELETE from `cart_items` and reset `carts` (Rule B-CART-014).
+- **Persistence:** Cart persists across sessions for authenticated buyers (Rule B-CART-006, stored in `carts` + `cart_items` tables).
 
 ### 7.4 Active Promotion → Database
 
