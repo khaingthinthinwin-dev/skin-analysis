@@ -4,11 +4,11 @@
 **Target Screen:** Admin Commission / Revenue Dashboard (手数料・収益管理)  
 **Subsystem:** Commission Management & Revenue Tracking  
 **Function ID:** FN-COMM-001  
-**Version:** 2.3  
+**Version:** 2.5  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-18  
 **Author:** Senior System Engineer  
-**Review Status:** Released (Aligned with DATABASE_SPEC v2.2)  
+**Review Status:** Released (Aligned with REQUIREMENT_SPEC v1.10, DATABASE_SPEC v2.2)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -24,12 +24,14 @@
 | 2.1 | 2026-08-17 | System Engineer | Aligned database field mappings with DATABASE_SPEC v2.0 (UUID PKs, Decimal types). Updated table references, FK data types (UUID instead of VARCHAR(25)), and data type precision. Verified consistency with REQUIREMENT_SPEC v1.5 and DEVELOPMENT_RULES v2.0. |
 | 2.2 | 2026-08-17 | Senior System Engineer | Updated version references to REQUIREMENT_SPEC v1.7, DATABASE_SPEC v2.2, DEVELOPMENT_RULES v2.1, Functional Spec v5.0. Added ad fee revenue sections, behaviors, i18n keys, and test cases. |
 | 2.3 | 2026-08-17 | Senior System Engineer | Added ad payment status panel, ad fee summary card, ad fee trend series, and ad fee API responses. Aligned all content with Functional Specification v5.0. |
+| 2.4 | 2026-08-18 | Senior System Engineer | Fixed database column mappings to match DATABASE_SPEC v2.2 (commission_settings.commission_rate, orders.total_amount, ad_payments.payment_status). Added missing payout DB columns (commission_amount, ad_fee_amount, idempotency_key, failure_reason). Updated payout API response. Aligned with REQUIREMENT_SPEC v1.10. |
+| 2.5 | 2026-08-18 | Senior System Engineer | Reconciled commission bounds and financial-report mappings with REQUIREMENT_SPEC v1.10 and DATABASE_SPEC v2.2. Explicitly scoped commission and revenue aggregates to completed payments, corrected merchant source mappings, and documented the schema gap for a per-order commission snapshot. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Version | Remarks |
 | :-- | :--- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 1.7 | Business workflow logic, user roles, merchant states, and rules. |
+| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 1.10 | Business workflow logic, user roles, merchant states, and rules. |
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.2 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
 | 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 5.0 | Use cases, state transitions, validation rules, business rules, and error handling. |
@@ -235,7 +237,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 5 | `lblCurrentRate` | Current Rate Label | Static Label (`<label>`) | String | — | Text: "Commission Rate" | — | Hardcoded UI text | i18n key: `commission.rate`. |
-| 6 | `txtCurrentRate` | Current Rate Value | Text | String | Mandatory | Skeleton while loading. | Format: Percentage string (e.g., "10.00%"). | `commission_settings.rate` | Rendered as string to preserve precision. |
+| 6 | `txtCurrentRate` | Current Rate Value | Text | String | Mandatory | Skeleton while loading. | Format: Percentage string (e.g., "10.00%"). | `commission_settings.commission_rate` | Rendered as string to preserve precision. |
 | 7 | `btnEditRate` | Edit Rate Button | Button (`primary`) | — | Mandatory | Visible. Text: "Edit Rate" | — | — | Opens the edit rate dialog (Section [G]). i18n key: `commission.editRate`. |
 
 ### 4.4 Section [D]: Report Filter Panel (レポートフィルターパネル)
@@ -254,10 +256,10 @@ The Commission and Revenue pages are the admin-side financial management screens
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 14 | `tblReport` | Commission Report Table | Table | — | Mandatory | Skeleton while loading. | — | Commission report query | Columns: Merchant, Orders, Revenue, Commission. |
-| 15 | `tblReportMerchant` | Merchant Column | Column (`sortable`) | String(200) | — | — | Sortable. | `users.name` / `shops.name` | Merchant-level grouping. |
-| 16 | `tblReportOrders` | Orders Column | Column (`sortable`) | Integer | — | — | Sortable. | Order count | Number of orders in range. |
-| 17 | `tblReportRevenue` | Revenue Column | Column (`sortable`) | Decimal(10,2) | — | — | Rendered as currency string. | Sum of order totals | Currency formatting via locale. |
-| 18 | `tblReportCommission` | Commission Column | Column (`sortable`) | Decimal(10,2) | — | — | Rendered as currency string. | Calculated commission | Commission = revenue × rate. |
+| 15 | `tblReportMerchant` | Merchant Column | Column (`sortable`) | String(255) | — | — | Sortable. | `merchants.shop_name` via `orders.merchant_id` | Merchant-level grouping. |
+| 16 | `tblReportOrders` | Orders Column | Column (`sortable`) | Integer | — | — | Sortable. | Count of `orders.id` where `payment_status = 'completed'` | Number of completed/settled orders in range. |
+| 17 | `tblReportRevenue` | Revenue Column | Column (`sortable`) | Decimal(12,2) | — | — | Rendered as currency string. | Sum of `orders.total_amount` where `payment_status = 'completed'` | Currency formatting via locale; only completed/settled orders are included. |
+| 18 | `tblReportCommission` | Commission Column | Column (`sortable`) | Decimal(12,2) | — | — | Rendered as currency string. | Application-level aggregation using the rate effective when each transaction was created | Commission = completed-order total × transaction-time commission rate. Historical transactions must not be recomputed using the current setting. |
 | 19 | `pgReport` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the report table. Per DEVELOPMENT_RULES, admin-only endpoints must validate `@UseGuards(JwtAuthGuard, RolesGuard)` and `@Roles('admin')`. |
 
 ### 4.6 Section [G]: Edit Rate Dialog (手数料率編集ダイアログ)
@@ -266,7 +268,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 20 | `dlgEditRate` | Edit Rate Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via `btnEditRate`. Close on save/cancel/backdrop. |
 | 21 | `lblRateTitle` | Dialog Title | Static Label | String | — | Text: "Edit Commission Rate" | — | Hardcoded UI text | i18n key: `commission.editRateTitle`. |
-| 22 | `txtRateInput` | Rate Input | Input (`number`) | Decimal(5,2) | Mandatory | Pre-filled with current rate. | Regex `/^\d+(\.\d{1,2})?$/`, 0 < value < 100. | `commission_settings.rate` | Rendered/transmitted as string. AutoFocus: true. i18n key: `commission.ratePlaceholder`. |
+| 22 | `txtRateInput` | Rate Input | Input (`number`) | Decimal(5,2) | Mandatory | Pre-filled with current rate. | Regex `/^\d+(\.\d{1,2})?$/`, 0 <= value <= 100. | `commission_settings.commission_rate` | Rendered/transmitted as string. AutoFocus: true. i18n key: `commission.ratePlaceholder`. |
 | 23 | `btnRateCancel` | Cancel Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without saving. i18n key: `commission.cancel`. |
 | 24 | `btnRateSave` | Save Button | Button (`primary`) | — | Mandatory | Visible. Text: "Save" | — | — | Validates and submits rate update. Loading: Spinner + disabled. i18n key: `commission.save`. |
 
@@ -274,12 +276,12 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 25 | `lblTotalRevenue` | Total Revenue Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Revenue aggregation | i18n key: `revenue.totalRevenue`. |
-| 26 | `lblTotalCommission` | Total Commission Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Commission aggregation | i18n key: `revenue.totalCommission`. |
-| 27 | `lblAvgOrderValue` | Avg Order Value Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Avg order value aggregation | i18n key: `revenue.avgOrderValue`. |
-| 28 | `lblNetRevenue` | Net Revenue Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Net revenue aggregation | Excludes refunds. i18n key: `revenue.netRevenue`. |
-| 48 | `lblAdFeeRevenue` | Ad Fee Revenue Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Ad fee revenue aggregation | Total advertisement fee revenue. i18n key: `revenue.adFeeRevenue`. |
-| 49 | `lblTotalIncome` | Total Income Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Total income aggregation | Combined platform income (commission + ad fees). i18n key: `revenue.totalIncome`. |
+| 25 | `lblTotalRevenue` | Total Revenue Card | Card | Decimal(12,2) | Mandatory | Skeleton while loading. | Currency string. | Sum of completed `orders.total_amount` | i18n key: `revenue.totalRevenue`. |
+| 26 | `lblTotalCommission` | Total Commission Card | Card | Decimal(12,2) | Mandatory | Skeleton while loading. | Currency string. | Commission aggregation for completed orders | i18n key: `revenue.totalCommission`. |
+| 27 | `lblAvgOrderValue` | Avg Order Value Card | Card | Decimal(12,2) | Mandatory | Skeleton while loading. | Currency string. | Total completed order revenue / completed-order count | i18n key: `revenue.avgOrderValue`. |
+| 28 | `lblNetRevenue` | Net Revenue Card | Card | Decimal(12,2) | Mandatory | Skeleton while loading. | Currency string. | Completed order revenue less refunds | Excludes refunds. i18n key: `revenue.netRevenue`. |
+| 48 | `lblAdFeeRevenue` | Ad Fee Revenue Card | Card | Decimal(12,2) | Mandatory | Skeleton while loading. | Currency string. | Sum of completed `ad_payments.amount` | Total advertisement fee revenue. i18n key: `revenue.adFeeRevenue`. |
+| 49 | `lblTotalIncome` | Total Income Card | Card | Decimal(12,2) | Mandatory | Skeleton while loading. | Currency string. | Total income aggregation | Combined platform income (commission + completed ad fees). i18n key: `revenue.totalIncome`. |
 
 ### 4.8 Section [I]: Trend Chart & Range Toggle (トレンドチャート・期間切替)
 
@@ -302,12 +304,15 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 35 | `tblPayout` | Payout Table | Table | — | Mandatory | Skeleton while loading. | — | Payout records | Columns: Merchant, Amount, Status, Date, Action. |
-| 36 | `tblPayoutMerchant` | Merchant Column | Column | String(200) | — | — | — | `shops.name` | Merchant display name. |
-| 37 | `tblPayoutAmount` | Amount Column | Column | Decimal(10,2) | — | — | Currency string. | Payout amount | Rendered as string. |
-| 38 | `tblPayoutStatus` | Status Column | Column (Badge) | Enum | — | — | `pending` / `completed` / `failed`. | Payout status | Badge color by status. |
-| 39 | `tblPayoutDate` | Date Column | Column | Timestamp | — | — | Locale-aware date format. | Payout created date | — |
-| 40 | `btnProcessPayout` | Process Button | Button (`primary`) | — | No | Visible only for `pending` rows. Disabled for others. Text: "Process" | — | — | Opens confirmation dialog (Section [L]). i18n key: `revenue.process`. |
+| 35 | `tblPayout` | Payout Table | Table | — | Mandatory | Skeleton while loading. | — | Payout records | Columns: Merchant, Total, Commission, Ad Fee, Net, Status, Date, Action. |
+| 36 | `tblPayoutMerchant` | Merchant Column | Column | String(255) | — | — | — | `merchants.shop_name` via `payouts.merchant_id` | Merchant display name. |
+| 37 | `tblPayoutTotal` | Total Amount Column | Column | Decimal(12,2) | — | — | Currency string. | `payouts.total_amount` | Gross payout before deductions. |
+| 38 | `tblPayoutCommission` | Commission Column | Column | Decimal(12,2) | — | — | Currency string. | `payouts.commission_amount` | Platform commission deducted. |
+| 39 | `tblPayoutAdFee` | Ad Fee Column | Column | Decimal(12,2) | — | — | Currency string. | `payouts.ad_fee_amount` | Advertising fee deducted. |
+| 40 | `tblPayoutNet` | Net Amount Column | Column | Decimal(12,2) | — | — | Currency string. | Calculated: `total_amount - commission_amount - ad_fee_amount` | Net payout to merchant. |
+| 41 | `tblPayoutStatus` | Status Column | Column (Badge) | Enum | — | — | `pending` / `processing` / `completed` / `failed`. | Payout status | Badge color by status. |
+| 42 | `tblPayoutDate` | Date Column | Column | Timestamp | — | — | Locale-aware date format. | `payouts.created_at` | — |
+| 43 | `btnProcessPayout` | Process Button | Button (`primary`) | — | No | Visible only for `pending` rows. Disabled for others. Text: "Process" | — | — | Opens confirmation dialog (Section [L]). i18n key: `revenue.process`. |
 
 ### 4.11 Section [M]: Revenue Target Progress Card (収益目標進捗カード)
 
@@ -344,7 +349,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 41 | `dlgPayoutConfirm` | Confirmation Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via `btnProcessPayout`. Confirm/cancel/backdrop closes. |
 | 42 | `lblPayoutConfirmMsg` | Confirmation Message | Static Label | String | — | Text: "Process payout for {merchant}?" | — | Hardcoded UI text | i18n key: `revenue.confirmMessage`. |
-| 43 | `txtPayoutAmount` | Payout Amount | Static Label | Decimal(10,2) | — | Shows payout amount. | Currency string. | Payout amount | Read-only summary. |
+| 43 | `txtPayoutAmount` | Payout Amount | Static Label | Decimal(12,2) | — | Shows net payout amount. | Currency string. | `payouts.total_amount - payouts.commission_amount - payouts.ad_fee_amount` | Read-only summary of the amount payable to the merchant. |
 | 44 | `btnPayoutCancel` | Cancel Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without processing. |
 | 45 | `btnPayoutConfirm` | Confirm Button | Button (`primary`) | — | Mandatory | Visible. Text: "Confirm" | — | — | Submits payout processing. Loading: Spinner + disabled. |
 
@@ -536,7 +541,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-COMM-001** | `txtRateInput` | Rate is empty | Red border. Text below field. | "Commission rate is required" | "手数料率は必須です" |
 | **VAL-COMM-002** | `txtRateInput` | Rate not a valid decimal with up to 2 decimal places | Red border. Text below field. | "Commission rate must be a number with up to 2 decimal places" | "手数料率は小数第2位までの数値で入力してください" |
-| **VAL-COMM-003** | `txtRateInput` | Rate out of range (≤ 0 or ≥ 100) | Red border. Text below field. | "Commission rate must be between 0 and 100" | "手数料率は0から100の範囲で入力してください" |
+| **VAL-COMM-003** | `txtRateInput` | Rate out of range (< 0 or > 100) | Red border. Text below field. | "Commission rate must be between 0 and 100" | "手数料率は0から100の範囲で入力してください" |
 | **VAL-COMM-004** | `txtFromDate` / `txtToDate` | Date is invalid or `from > to` | Red border. Text below field. | "From date must be earlier than or equal to To date" | "開始日は終了日以前である必要があります" |
 | **VAL-COMM-005** | `tglRange` | Range value is not `7d`/`30d`/`90d`/`1y` | Alert banner | "Invalid range" | "無効な期間です" |
 | **VAL-COMM-006** | Payout filter | Status value is not `pending`/`completed`/`failed` | Alert banner | "Invalid status" | "無効なステータスです" |
@@ -565,25 +570,25 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `txtRateInput` | `rate` | `rate` | `commission_settings` | Decimal(5,2) |
+| `txtRateInput` | `rate` | `commission_rate` | `commission_settings` | Decimal(5,2) |
 
 ### 7.2 Commission Report → Database
 
 | Table Column | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- |
-| Merchant | `merchant_id` | `merchants` (via orders → products → merchants) | UUID FK |
-| Revenue | `total` | `orders` | Decimal(10,2) |
-| Commission | Calculated | — | `revenue × commission_settings.rate` |
+| Merchant | `merchant_id` | `orders` → `merchants` | UUID FK |
+| Revenue | `total_amount` | `orders` where `payment_status = 'completed'` | Decimal(10,2) |
+| Commission | Application-level aggregation | — | Completed-order amount × the rate effective at transaction creation; DATABASE_SPEC v2.2 does not define a persisted per-order commission amount or rate snapshot. |
 
 ### 7.3 Revenue Dashboard → Database
 
 | KPI | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- |
-| Total Revenue | `total` | `orders` | Decimal(10,2) |
-| Total Commission | Calculated | — | `total × rate` |
-| Avg Order Value | `total` | `orders` | Decimal(10,2) |
-| Net Revenue | `total` | `orders` (with `status != 'cancelled'`) | Decimal(10,2) (excludes refunds) |
-| Ad Fee Revenue | `amount` | `ad_payments` (with `paymentStatus = 'completed'`) | Decimal(10,2) |
+| Total Revenue | `total_amount` | `orders` where `payment_status = 'completed'` | Decimal(10,2) |
+| Total Commission | Application-level aggregation | — | Completed-order amount × transaction-time commission rate; see commission snapshot note above. |
+| Avg Order Value | `total_amount` | `orders` where `payment_status = 'completed'` | Decimal(10,2) |
+| Net Revenue | `total_amount` | Completed orders, net of refunded payments | Decimal(10,2) (excludes refunds) |
+| Ad Fee Revenue | `amount` | `ad_payments` (with `payment_status = 'completed'`) | Decimal(10,2) |
 | Total Income | Calculated | — | `total commission + ad fee revenue` |
 
 ### 7.4 Payout → Database
@@ -591,8 +596,14 @@ The Commission and Revenue pages are the admin-side financial management screens
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
 | Payout Merchant | `merchantId` | `merchant_id` | `payouts` | UUID FK (references `merchants.id`) |
-| Payout Amount | `amount` | `amount` | `payouts` | Decimal(10,2) |
-| Payout Status | `status` | `status` | `payouts` | VARCHAR(20) (`'pending'`, `'completed'`, `'failed'`) |
+| Total Amount | `totalAmount` | `total_amount` | `payouts` | Decimal(12,2) |
+| Commission Amount | `commissionAmount` | `commission_amount` | `payouts` | Decimal(12,2) |
+| Ad Fee Amount | `adFeeAmount` | `ad_fee_amount` | `payouts` | Decimal(12,2) |
+| Payout Status | `status` | `status` | `payouts` | VARCHAR(20) (`'pending'`, `'processing'`, `'completed'`, `'failed'`) |
+| Failure Reason | `failureReason` | `failure_reason` | `payouts` | TEXT (nullable) |
+| Idempotency Key | `idempotencyKey` | `idempotency_key` | `payouts` | VARCHAR(255) (nullable, unique) |
+| Processed By | `processedBy` | `processed_by` | `payouts` | UUID FK (references `users.id`, nullable) |
+| Processed At | `processedAt` | `processed_at` | `payouts` | TIMESTAMPTZ (nullable) |
 
 ### 7.5 Revenue Target → Database
 
@@ -605,10 +616,10 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 | KPI | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- |
-| Total Ad Fees | `amount` | `ad_payments` (with `paymentStatus = 'completed'`) | Decimal(10,2) |
+| Total Ad Fees | `amount` | `ad_payments` (with `payment_status = 'completed'`) | Decimal(10,2) |
 | Active Ads | COUNT | `advertisements` (with `status = 'active'`) | Integer |
-| Pending Payments | COUNT | `ad_payments` (with `paymentStatus = 'pending'`) | Integer |
-| Completed Payments | COUNT | `ad_payments` (with `paymentStatus = 'completed'`) | Integer |
+| Pending Payments | COUNT | `ad_payments` (with `payment_status = 'pending'`) | Integer |
+| Completed Payments | COUNT | `ad_payments` (with `payment_status = 'completed'`) | Integer |
 
 ---
 
@@ -680,9 +691,12 @@ The Commission and Revenue pages are the admin-side financial management screens
   "data": {
     "payoutId": "clx1234567890",
     "merchantId": "clx0987654321",
-    "amount": "5000.00",
+    "totalAmount": "8000.00",
+    "commissionAmount": "800.00",
+    "adFeeAmount": "200.00",
     "status": "completed",
-    "processedAt": "2026-08-10T12:00:00.000Z"
+    "processedAt": "2026-08-10T12:00:00.000Z",
+    "idempotencyKey": "payout-2026-08-10-clx0987654321"
   }
 }
 ```
