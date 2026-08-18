@@ -4,11 +4,11 @@
 **Target Screen:** Admin Commission / Revenue Dashboard (手数料・収益管理)  
 **Subsystem:** Commission Management & Revenue Tracking  
 **Function ID:** FN-COMM-001  
-**Version:** 2.1  
+**Version:** 2.3  
 **Created:** 2026-08-10  
 **Last Updated:** 2026-08-17  
 **Author:** Senior System Engineer  
-**Review Status:** Final (Aligned with DATABASE_SPEC v2.0)  
+**Review Status:** Released (Aligned with DATABASE_SPEC v2.2)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -22,22 +22,24 @@
 | 1.0 | 2026-08-10 | Senior System Engineer | Initial release. Screen items specification for the Admin Commission and Revenue pages, aligned with SKM-FDS-COMM-001 (機能設計書). |
 | 2.0 | 2026-08-11 | Senior System Engineer | Added Revenue Target Progress (configurable gauge bar) and AI Revenue Forecast (dotted line) sections, behaviors, validation errors, database/API mappings, i18n keys, and tests. Aligned with SKM-FDS-COMM-001 v3.0. |
 | 2.1 | 2026-08-17 | System Engineer | Aligned database field mappings with DATABASE_SPEC v2.0 (UUID PKs, Decimal types). Updated table references, FK data types (UUID instead of VARCHAR(25)), and data type precision. Verified consistency with REQUIREMENT_SPEC v1.5 and DEVELOPMENT_RULES v2.0. |
+| 2.2 | 2026-08-17 | Senior System Engineer | Updated version references to REQUIREMENT_SPEC v1.7, DATABASE_SPEC v2.2, DEVELOPMENT_RULES v2.1, Functional Spec v5.0. Added ad fee revenue sections, behaviors, i18n keys, and test cases. |
+| 2.3 | 2026-08-17 | Senior System Engineer | Added ad payment status panel, ad fee summary card, ad fee trend series, and ad fee API responses. Aligned all content with Functional Specification v5.0. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Version | Remarks |
 | :-- | :--- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 1.5 | Business workflow logic, user roles, merchant states, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.0 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.0 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
-| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 3.0 (referenced) | Use cases, state transitions, validation rules, business rules, and error handling. |
+| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 1.7 | Business workflow logic, user roles, merchant states, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.2 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
+| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
+| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 5.0 | Use cases, state transitions, validation rules, business rules, and error handling. |
 
 ---
 
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Commission and Revenue pages are the admin-side financial management screens of the Cosmetics Finder platform. They enable platform administrators to configure the platform commission rate, browse merchant-level commission reports, monitor revenue KPIs and trends, review payment status, and process merchant payouts. Additionally, administrators can configure monthly/quarterly revenue targets and monitor current progress via a gauge bar, and view AI-generated revenue and platform fee forecasts overlaid on the trend chart as a dotted line.
+The Commission and Revenue pages are the admin-side financial management screens of the Cosmetics Finder platform. They enable platform administrators to configure the platform commission rate, browse merchant-level commission reports, monitor revenue KPIs and trends including ad fee revenue, review payment status for both orders and advertisements, and process merchant payouts. Additionally, administrators can configure monthly/quarterly revenue targets and monitor current progress via a gauge bar, and view AI-generated revenue and platform fee forecasts overlaid on the trend chart as a dotted line.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -45,14 +47,14 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :--- | :--- |
 | **Primary Actors** | Platform Administrator (Admin) |
 | **Required Authentication** | JWT access token |
-| **Data Scope** | Commission settings, reports, revenue KPIs, revenue targets, forecast data, payout records |
+| **Data Scope** | Commission settings, reports, revenue KPIs, revenue targets, forecast data, ad fee revenue, ad payment status, payout records |
 | **Access Control** | Protected routes — admin-only (`ProtectedRoute roles={['admin']}`) |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
 1. **Commission Rate Configuration** — Set and persist the platform commission rate applied to new transactions.
 2. **Commission Report Generation** — Merchant-level commission reports with filtering, sorting, and pagination.
-3. **Revenue Dashboard KPI** — Display revenue KPIs and trend visualization over configurable ranges.
-4. **Payment Status Breakdown** — Summarize payment statuses across completed, pending, failed, and refunded records.
+3. **Revenue Dashboard KPI** — Display revenue KPIs and trend visualization over configurable ranges, including ad fee revenue.
+4. **Payment Status Breakdown** — Summarize payment statuses across completed, pending, failed, and refunded records for both orders and advertisements.
 5. **Merchant Payout Management** — Process merchant payouts with idempotency and status tracking.
 6. **Revenue Target Progress** — Configure monthly/quarterly revenue targets and display current progress via a gauge bar.
 7. **AI Revenue Forecast** — Predict revenue and platform fees from historical data, rendered as a dotted line alongside the current trend.
@@ -132,10 +134,12 @@ The Commission and Revenue pages are the admin-side financial management screens
 │  │   [H] KPI CARDS                                   │  │
 │  │   [H1] Total Revenue  [H2] Total Commission       │  │
 │  │   [H3] Avg Order Value [H4] Net Revenue           |  |
+│  │   [H5] Ad Fee Revenue  [H6] Total Income          |  |
 │  └───────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │   [I] TREND CHART + RANGE TOGGLE                  │  │
 │  │   [I1] Area/Line Chart + [O1] Forecast Dotted Line│  │
+│  │   [I3] Ad Fee Trend Series (overlaid)             │  │
 │  │   [O2] "AI Forecast" Legend (cond.)               │  │
 │  │   [O3] Forecast Unavailable Note (cond.)          │  │
 │  │   [I2] 7d | 30d | 90d | 1y Toggle Group           |  |
@@ -150,6 +154,15 @@ The Commission and Revenue pages are the admin-side financial management screens
 │  │   [J] PAYMENT STATUS PANEL                        │  │
 │  │   [J1] Completed  [J2] Pending                    │  │
 │  │   [J3] Failed     [J4] Refunded                   │  │
+│  └───────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │   [P] AD PAYMENT STATUS PANEL                     │  │
+│  │   [P1] Ad Completed  [P2] Ad Pending              │  │
+│  │   [P3] Ad Refunded                                │  │
+│  └───────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │   [Q] AD FEE SUMMARY CARD                         │  │
+│  │   Active Ads / Total Collected / Pending          │  │
 │  └───────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │   [K] PAYOUT TABLE                                │  │
@@ -265,6 +278,8 @@ The Commission and Revenue pages are the admin-side financial management screens
 | 26 | `lblTotalCommission` | Total Commission Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Commission aggregation | i18n key: `revenue.totalCommission`. |
 | 27 | `lblAvgOrderValue` | Avg Order Value Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Avg order value aggregation | i18n key: `revenue.avgOrderValue`. |
 | 28 | `lblNetRevenue` | Net Revenue Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Net revenue aggregation | Excludes refunds. i18n key: `revenue.netRevenue`. |
+| 48 | `lblAdFeeRevenue` | Ad Fee Revenue Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Ad fee revenue aggregation | Total advertisement fee revenue. i18n key: `revenue.adFeeRevenue`. |
+| 49 | `lblTotalIncome` | Total Income Card | Card | Decimal(10,2) | Mandatory | Skeleton while loading. | Currency string. | Total income aggregation | Combined platform income (commission + ad fees). i18n key: `revenue.totalIncome`. |
 
 ### 4.8 Section [I]: Trend Chart & Range Toggle (トレンドチャート・期間切替)
 
@@ -272,6 +287,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 29 | `chtTrend` | Trend Chart | Chart (Area/Line) | — | Mandatory | Skeleton while loading. | — | Revenue trend query | Series: revenue + commission. |
 | 30 | `tglRange` | Range Toggle | Toggle Group | Enum | No | Default: `30d` | Options: `7d`, `30d`, `90d`, `1y`. | Query param `range` | Refetches trend series on change. i18n key: `revenue.range`. |
+| 50 | `serAdFeeTrend` | Ad Fee Trend Series | Chart Series | — | No | Hidden by default. Shown when ad fee data is available. | Line series overlaid on the trend chart. | Ad fee trend aggregation | Separate line alongside commission revenue series. i18n key: `revenue.adFeeRevenue`. |
 
 ### 4.9 Section [J]: Payment Status Panel (決済ステータスパネル)
 
@@ -339,6 +355,21 @@ The Commission and Revenue pages are the admin-side financial management screens
 | 46 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
 | 47 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
 
+### 4.16 Section [P]: Ad Payment Status Panel (広告決済ステータスパネル)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 51 | `pnlAdPaymentStatus` | Ad Payment Status Panel | Panel | — | No | Skeleton while loading. | — | Ad payment status aggregation | Summary badges for ad fee payments alongside order payment status. i18n key: `revenue.adPaymentStatus`. |
+| 52 | `lblAdPayCompleted` | Ad Completed Badge | Badge (`success`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | `bg-green-100 text-green-800`. i18n key: `revenue.adPaymentCompleted`. |
+| 53 | `lblAdPayPending` | Ad Pending Badge | Badge (`warning`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | `bg-amber-100 text-amber-800`. i18n key: `revenue.adPaymentPending`. |
+| 54 | `lblAdPayRefunded` | Ad Refunded Badge | Badge (`secondary`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | Neutral styling. i18n key: `revenue.adPaymentRefunded`. |
+
+### 4.17 Section [Q]: Ad Fee Summary Card (広告料金サマリーカード)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 55 | `lblAdFeeSummary` | Ad Fee Summary Card | Card | — | No | Skeleton while loading. | — | Ad fee summary aggregation | Shows active ads, total collected, and pending payments. i18n key: `revenue.adFeeSummary`. |
+
 ---
 
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
@@ -389,26 +420,38 @@ The Commission and Revenue pages are the admin-side financial management screens
 - **RBAC Validation:** `ProtectedRoute` validates admin role per REQUIREMENT_SPEC §2.5 and DEVELOPMENT_RULES §2.7. Returns `403 Forbidden` error code `COMM_002` if user lacks admin role.
 - **Processing Logic:**
   1. Validate JWT auth and admin role via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')`.
-  2. Fetch KPI, trend, target, forecast, payment, and payout data concurrently (`GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts`).
-  3. Populate KPI cards, trend chart, target gauge bar, forecast dotted line, payment status panel, and payout table.
+  2. Fetch KPI, trend, target, forecast, payment, payout, and ad fee data concurrently (`GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts`, `GET /api/v1/admin/revenue/ad-fees`).
+  3. Populate KPI cards (including ad fee revenue and total income), trend chart, target gauge bar, forecast dotted line, payment status panel, ad payment status panel, ad fee summary card, and payout table.
   4. On failure, show alert and preserve last known data if available.
 - **Exception Handling:**
   - `403 COMM_002`: Admin role validation failed. Redirect to `/unauthorized`.
   - `500 SYS_001`: Server error. Alert banner with retry option.
 
-### 5.6 Trend Range Change (`tglRange` onChange)
+### 5.6 Ad Fee Revenue Load (page mount)
+- **Trigger:** `/admin/revenue` route mounted.
+- **RBAC Validation:** `ProtectedRoute` validates admin role per REQUIREMENT_SPEC §2.5 and DEVELOPMENT_RULES §2.7. Returns `403 Forbidden` error code `COMM_002` if user lacks admin role.
+- **Processing Logic:**
+  1. Validate JWT auth and admin role via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')`.
+  2. Fetch ad fee KPI data, ad fee trend series, and ad fee payment status breakdown concurrently (`GET /api/v1/admin/revenue/ad-fees`).
+  3. Populate ad fee KPI card (`lblAdFeeRevenue`), total income card (`lblTotalIncome`), ad fee trend series on the chart (`serAdFeeTrend`), ad payment status panel (`pnlAdPaymentStatus`), and ad fee summary card (`lblAdFeeSummary`).
+  4. On failure, show alert and render ad fee card at 0.
+- **Exception Handling:**
+  - `403 COMM_002`: Admin role validation failed. Redirect to `/unauthorized`.
+  - `500 SYS_001`: Server error. Alert banner with retry option.
+
+### 5.8 Trend Range Change (`tglRange` onChange)
 - **Trigger:** User selects `7d` / `30d` / `90d` / `1y` on the range toggle.
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** Validate range value is one of `7d`, `30d`, `90d`, `1y`.
   2. **Backend Dispatch:** `GET /api/v1/admin/revenue/trends` with query param `range`.
-  3. Fetch forecast series for the selected range (Section 5.10).
+  3. Fetch forecast series for the selected range (Section 5.12).
   4. **Post-Execution UI:** Update chart, forecast dotted line, and tooltip labels.
   5. On failure, maintain previous chart state and show alert.
 - **Exception Handling:**
   - `400`: Alert banner "Invalid range".
   - `500` (`SYS_001`): Alert banner with retry option.
 
-### 5.7 Payout Processing (`btnProcessPayout` onClick → `btnPayoutConfirm` onClick)
+### 5.9 Payout Processing (`btnProcessPayout` onClick → `btnPayoutConfirm` onClick)
 - **Trigger:** User clicks "Process" on a pending payout, then "Confirm" in the dialog.
 - **Processing Logic:**
   1. Open confirmation dialog (`dlgPayoutConfirm`) showing merchant and amount.
@@ -420,7 +463,7 @@ The Commission and Revenue pages are the admin-side financial management screens
   - `409` (`COMM_004`): Alert banner + disable action (idempotency guard).
   - `500` (`SYS_001`): Alert banner with retry option.
 
-### 5.8 Revenue Target Load (page mount / `tglTargetPeriod` onChange)
+### 5.10 Revenue Target Load (page mount / `tglTargetPeriod` onChange)
 - **Trigger:** `/admin/revenue` route mounted, or user changes the target period toggle.
 - **Processing Logic:**
   1. Fetch active revenue target and current period actual revenue (`GET /api/v1/admin/revenue/targets`).
@@ -431,7 +474,7 @@ The Commission and Revenue pages are the admin-side financial management screens
   - `400`: Alert banner "Invalid target period".
   - `500` (`SYS_001`): Alert banner with retry option.
 
-### 5.9 Revenue Target Save (`btnEditTarget` onClick → `btnTargetSave` onClick)
+### 5.11 Revenue Target Save (`btnEditTarget` onClick → `btnTargetSave` onClick)
 - **Trigger:** User clicks "Edit Target" on the target card, then "Save" in the dialog.
 - **Processing Logic:**
   1. Open edit dialog (`dlgEditTarget`), pre-fill `txtTargetAmount` and `selTargetPeriod` with current values (if any, amount as string per DATABASE_SPEC).
@@ -442,7 +485,7 @@ The Commission and Revenue pages are the admin-side financial management screens
   - `400 COMM_005`: Invalid target amount or period. Inline field error on `txtTargetAmount` / `selTargetPeriod`.
   - `NET_ERR`: Network connectivity issue. Alert banner.
 
-### 5.10 Revenue Forecast Load (page mount / `tglRange` onChange)
+### 5.12 Revenue Forecast Load (page mount / `tglRange` onChange)
 - **Trigger:** `/admin/revenue` route mounted, or trend range change.
 - **Processing Logic:**
   1. Fetch historical revenue and platform fee series for the selected range (`GET /api/v1/admin/revenue/forecast`).
@@ -453,7 +496,7 @@ The Commission and Revenue pages are the admin-side financial management screens
   - `422` (`COMM_006`): Hide dotted line, show informational note (forecast not generated).
   - `500` (`SYS_001`): Alert banner with retry option.
 
-### 5.11 Language Toggle (`btnLanguageToggle` onClick)
+### 5.13 Language Toggle (`btnLanguageToggle` onClick)
 - **Trigger:** User clicks language toggle button.
 - **Processing Logic:**
   1. Cycle through languages: EN → JA → MY → EN.
@@ -462,13 +505,24 @@ The Commission and Revenue pages are the admin-side financial management screens
   4. Re-render all translated labels and locale-aware currency/date formatting.
 - **Exception Handling:** None applicable.
 
-### 5.12 Theme Toggle (`btnThemeToggle` onClick)
+### 5.14 Theme Toggle (`btnThemeToggle` onClick)
 - **Trigger:** User clicks theme toggle button.
 - **Processing Logic:**
   1. Cycle through themes: light → dark → system.
   2. Update `next-themes` theme via `setTheme()`.
   3. Persist preference to `localStorage`.
 - **Exception Handling:** None applicable.
+
+### 5.15 Ad Fee Trend Range Change (`tglRange` onChange)
+- **Trigger:** User selects `7d` / `30d` / `90d` / `1y` on the range toggle.
+- **Processing Logic:**
+  1. **Client-Side Pre-Check:** Validate range value is one of `7d`, `30d`, `90d`, `1y`.
+  2. **Backend Dispatch:** `GET /api/v1/admin/revenue/ad-fees` with query param `range`.
+  3. **Post-Execution UI:** Update ad fee series on the trend chart.
+  4. On failure, maintain previous chart state and show alert.
+- **Exception Handling:**
+  - `400`: Alert banner "Invalid range".
+  - `500` (`SYS_001`): Alert banner with retry option.
 
 ---
 
@@ -529,6 +583,8 @@ The Commission and Revenue pages are the admin-side financial management screens
 | Total Commission | Calculated | — | `total × rate` |
 | Avg Order Value | `total` | `orders` | Decimal(10,2) |
 | Net Revenue | `total` | `orders` (with `status != 'cancelled'`) | Decimal(10,2) (excludes refunds) |
+| Ad Fee Revenue | `amount` | `ad_payments` (with `paymentStatus = 'completed'`) | Decimal(10,2) |
+| Total Income | Calculated | — | `total commission + ad fee revenue` |
 
 ### 7.4 Payout → Database
 
@@ -544,6 +600,15 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :--- | :--- | :--- | :--- | :--- |
 | `txtTargetAmount` | `targetAmount` | `target_amount` | `revenue_targets` | Decimal(12,2) |
 | `selTargetPeriod` | `targetPeriod` | `period` | `revenue_targets` | VARCHAR(20) (`'monthly'`, `'quarterly'`) |
+
+### 7.6 Ad Fee Revenue → Database
+
+| KPI | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- |
+| Total Ad Fees | `amount` | `ad_payments` (with `paymentStatus = 'completed'`) | Decimal(10,2) |
+| Active Ads | COUNT | `advertisements` (with `status = 'active'`) | Integer |
+| Pending Payments | COUNT | `ad_payments` (with `paymentStatus = 'pending'`) | Integer |
+| Completed Payments | COUNT | `ad_payments` (with `paymentStatus = 'completed'`) | Integer |
 
 ---
 
@@ -591,10 +656,12 @@ The Commission and Revenue pages are the admin-side financial management screens
       "totalRevenue": "125000.00",
       "totalCommission": "12500.00",
       "avgOrderValue": "8200.00",
-      "netRevenue": "112500.00"
+      "netRevenue": "112500.00",
+      "adFeeRevenue": "35000.00",
+      "totalIncome": "47500.00"
     },
     "trendPoints": [
-      { "date": "2026-08-09", "revenue": "4200.00", "commission": "420.00" }
+      { "date": "2026-08-09", "revenue": "4200.00", "commission": "420.00", "adFee": "1200.00", "totalIncome": "1620.00" }
     ],
     "payments": {
       "completed": 120,
@@ -667,7 +734,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 {
   "data": {
     "forecastPoints": [
-      { "date": "2026-08-10", "forecastRevenue": "4400.00", "forecastCommission": "440.00" }
+      { "date": "2026-08-10", "forecastRevenue": "4400.00", "forecastCommission": "440.00", "forecastAdFee": "1300.00" }
     ]
   }
 }
@@ -711,6 +778,50 @@ The Commission and Revenue pages are the admin-side financial management screens
 ```
 
 **Note:** Per REQUIREMENT_SPEC §2.5 and DEVELOPMENT_RULES §2.7, all Commission and Revenue endpoints are admin-only. Backend must enforce via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')`. Non-admin users (buyer, merchant) receive this error.
+
+### 8.13 Ad Fee Revenue Success Response
+
+```json
+{
+  "data": {
+    "adFeeKpis": {
+      "totalAdFees": "35000.00",
+      "activeAds": 12,
+      "pendingPayments": 3,
+      "completedPayments": 45
+    },
+    "adFeeTrendPoints": [
+      { "date": "2026-08-09", "adFee": "1200.00" }
+    ],
+    "adFeePaymentStatus": {
+      "completed": 45,
+      "pending": 3,
+      "refunded": 1
+    }
+  }
+}
+```
+
+### 8.14 Ad Fee Revenue Empty Response
+
+```json
+{
+  "data": {
+    "adFeeKpis": {
+      "totalAdFees": "0.00",
+      "activeAds": 0,
+      "pendingPayments": 0,
+      "completedPayments": 0
+    },
+    "adFeeTrendPoints": [],
+    "adFeePaymentStatus": {
+      "completed": 0,
+      "pending": 0,
+      "refunded": 0
+    }
+  }
+}
+```
 
 ---
 
@@ -774,6 +885,16 @@ The Commission and Revenue pages are the admin-side financial management screens
 | `revenue.targetSaveSuccess` | "Revenue target updated successfully" |
 | `revenue.forecast` | "AI Forecast" |
 | `revenue.forecastUnavailable` | "Not enough historical data to generate a forecast" |
+| `revenue.adFeeRevenue` | "Ad Fee Revenue" |
+| `revenue.totalIncome` | "Total Income" |
+| `revenue.adPaymentCompleted` | "Ad Completed" |
+| `revenue.adPaymentPending` | "Ad Pending" |
+| `revenue.adPaymentRefunded` | "Ad Refunded" |
+| `revenue.adFeeSummary` | "Ad Fee Summary" |
+| `revenue.activeAds` | "Active Ads" |
+| `revenue.totalCollected` | "Total Collected" |
+| `revenue.pendingPayments` | "Pending Payments" |
+| `revenue.adPaymentStatus` | "Ad Payment Status" |
 | `errors.unauthorized` | "You do not have permission to access this page" |
 | `errors.serverError` | "Something went wrong. Please try again" |
 | `errors.networkError` | "Network error. Please check your connection" |
@@ -836,6 +957,16 @@ The Commission and Revenue pages are the admin-side financial management screens
 | `revenue.targetSaveSuccess` | "収益目標が正常に更新されました" |
 | `revenue.forecast` | "AI予測" |
 | `revenue.forecastUnavailable` | "予測を生成するのに十分な履歴データがありません" |
+| `revenue.adFeeRevenue` | "広告料金収益" |
+| `revenue.totalIncome` | "総収入" |
+| `revenue.adPaymentCompleted` | "広告完了" |
+| `revenue.adPaymentPending` | "広告保留中" |
+| `revenue.adPaymentRefunded` | "広告返金" |
+| `revenue.adFeeSummary` | "広告料金サマリー" |
+| `revenue.activeAds` | "アクティブ広告" |
+| `revenue.totalCollected` | "回収総額" |
+| `revenue.pendingPayments` | "保留中の支払い" |
+| `revenue.adPaymentStatus` | "広告決済ステータス" |
 | `errors.unauthorized` | "このページへのアクセス権限がありません" |
 | `errors.serverError` | "問題が発生しました。もう一度お試しください" |
 | `errors.networkError` | "ネットワークエラー。接続を確認してください" |
@@ -915,10 +1046,11 @@ The Commission and Revenue pages are the admin-side financial management screens
 - **Accessibility:** Every control must be keyboard navigable. ARIA labels required. Error messages must be announced via `role="alert"`. Dialog focus traps enforced.
 - **RBAC Implementation:** Commission & Revenue pages are **admin-only** per REQUIREMENT_SPEC §2.5. Backend must enforce `@UseGuards(JwtAuthGuard, RolesGuard)` with `@Roles('admin')` on all endpoints. Frontend must validate role via `<ProtectedRoute roles={['admin']} />`. Unauthorized access (non-admin users) returns `403 Forbidden` with error code `COMM_002`.
 - **Design Tokens:** Status badges use standard color mapping (per DEVELOPMENT_RULES §9) — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`.
-- **Naming Conventions:** Table/column names follow DATABASE_SPEC v2.0 (snake_case in DB, camelCase in API/JSON). UUIDs used as primary and foreign keys per DATABASE_SPEC §1.4.
+- **Naming Conventions:** Table/column names follow DATABASE_SPEC v2.2 (snake_case in DB, camelCase in API/JSON). UUIDs used as primary and foreign keys per DATABASE_SPEC §1.4.
 - **Audit Trail:** Commission rate updates, revenue target updates, and payout processing are logged with admin identity and retained per audit policy (90 days / 30 days, per DEVELOPMENT_RULES).
 - **Revenue Target Gauge:** Progress above 100% is clamped for gauge display and shown separately as "over target" (BR-REV-008). Only one active target per period type is stored; saving for the same period overwrites it (BR-REV-009).
 - **AI Forecast:** Forecast values are non-committing estimates — they are never written back to financial records or used in KPI/aggregation calculations (BR-REV-015). The dotted line is hidden with an informational note when historical data is insufficient (BR-REV-014).
+- **Ad Fee Revenue:** Ad fee revenue is displayed as a separate KPI card and included in total platform income. Ad fee trend series is overlaid on the revenue chart as a separate line. Ad fee payment statuses (completed, pending, refunded) are summarized alongside order payment statuses in a dedicated panel.
 
 ---
 
@@ -973,6 +1105,12 @@ The Commission and Revenue pages are the admin-side financial management screens
 - [ ] AI forecast dotted line renders alongside the trend for 7d/30d/90d/1y
 - [ ] Forecast hidden with informational note when data is insufficient (COMM_006)
 - [ ] Forecast values never affect KPI or aggregation totals
+- [ ] Ad fee KPI card displays correct value with currency formatting
+- [ ] Ad fee trend series renders on the chart alongside commission series
+- [ ] Ad payment status panel shows correct counts and colors for completed, pending, and refunded
+- [ ] Ad fee summary card displays correctly with active ads, total collected, and pending payments
+- [ ] Total income card shows combined commission + ad fees
+- [ ] Changing range refetches ad fee trend data
 
 ### 12.3 Global Tests
 

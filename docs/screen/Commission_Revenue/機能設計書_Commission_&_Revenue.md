@@ -128,9 +128,9 @@ This screen suite is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
+| 1 | SKM-REQ-001 | Requirements Definition (v1.7) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints. |
+| 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
 
@@ -241,7 +241,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | TR-COMM-05 | active | active | Target updated | new amount > 0, valid period |
 | TR-COMM-06 | active | none | Target cleared | admin removes target |
 
-### 3.3 Payout State Transitions
+### 3.4 Payout State Transitions
 
 | Transition ID | Origin | Target | Trigger | Guard |
 |---------------|--------|--------|---------|-------|
@@ -414,8 +414,8 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-42 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
-| EL-43 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
+| EL-46 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
+| EL-47 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
 
 **Default State:**
 - Skeleton loading displayed until API responses arrive
@@ -882,20 +882,38 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | A-COMM-001 | Admin can set platform commission rate | UC-COMM-002, Sec 6.2 |
 | A-COMM-002 | System calculates commission per transaction | BR-COMM-002, Sec 4.1 |
 | A-COMM-003 | Admin can view commission reports by merchant | UC-COMM-003, Sec 6.3 |
+| A-COMM-004 | Commission rate is decimal 0–100, max 2dp | BR-COMM-001, Sec 4.1, 8.1 |
+| A-COMM-005 | Rate applies to new transactions only | BR-COMM-002, Sec 4.1 |
+| A-COMM-006 | Commission reports support date range filtering | BR-COMM-004, Sec 4.2, 6.3 |
+| A-COMM-007 | Commission reports support pagination and sorting | BR-COMM-005, Sec 4.2 |
+| A-COMM-008 | Audit trail for commission rate changes | BR-COMM-007, Sec 10.4 |
 | A-REV-001 | Admin can view revenue dashboard | UC-COMM-004, Sec 6.4 |
 | A-REV-002 | Admin can view revenue trends (charts) | UC-COMM-006, Sec 6.5 |
 | A-REV-003 | Admin can view payment status | BR-REV-003, Sec 5.2 |
 | A-REV-004 | Admin can manage merchant payouts | UC-COMM-005, Sec 6.6 |
 | A-REV-005 | Admin can set monthly/quarterly revenue targets and view progress | UC-COMM-007/008, BR-REV-006~010, Sec 6.7, 6.8 |
 | A-REV-006 | System can forecast revenue and platform fees using historical data | UC-COMM-009, BR-REV-011~015, Sec 6.9 |
+| A-REV-007 | Revenue KPIs include avg order value and net revenue | Sec 5.2, 7.5 |
+| A-REV-008 | Revenue trend supports 7d/30d/90d/1y ranges | BR-REV-002, Sec 4.3, 6.5 |
+| A-REV-009 | Gauge bar clamps to 0–100%, over-target shown separately | BR-REV-008, Sec 4.5, 6.7 |
+| A-REV-010 | Payout processing is idempotent | BR-REV-004, Sec 4.4, 6.6 |
+| A-REV-011 | Payout status flow: pending → processing → completed / failed | BR-REV-005, Sec 3.4, 6.6 |
+| A-REV-012 | Revenue targets support monthly and quarterly only | BR-REV-006, Sec 4.5, 7.6 |
+| A-REV-013 | Only one active target per period type | BR-REV-009, Sec 4.5, 6.8 |
+| A-REV-014 | Forecast is indicative, never written to financial records | BR-REV-015, Sec 4.6 |
 | A-ADFE-001 | Admin can view advertisement fee revenue in dashboard | UC-COMM-010, Sec 6.10 |
 | A-ADFE-002 | Ad fee revenue included in total platform income KPI | BR-ADFE-002, Sec 6.4 |
 | A-ADFE-003 | Ad fee payment status tracked alongside order payment status | BR-ADFE-005, Sec 6.10 |
+| A-ADFE-004 | Ad fee trend series overlaid on revenue chart | BR-ADFE-003, Sec 4.7, 6.11 |
+| A-ADFE-005 | Ad fee included in payout deduction | BR-ADFE-004, Sec 4.7, 6.6 |
+| A-ADFE-006 | Ad fee included in revenue target progress | BR-ADFE-007, Sec 4.7, 6.7 |
+| A-ADFE-007 | Ad fee included in AI forecast as separate series | BR-ADFE-006, Sec 4.7, 6.9 |
 
 ### 15.2 API Endpoint Traceability
 
 | API Endpoint | Functional Operation |
 |--------------|----------------------|
+| `GET /api/v1/admin/commission` | Commission Dashboard Load (Sec 6.1) |
 | `PATCH /api/v1/admin/commission` | Commission Rate Edit (Sec 6.2) |
 | `GET /api/v1/admin/commission/reports` | Report Filter (Sec 6.3) |
 | `GET /api/v1/admin/revenue` | Revenue Dashboard Load (Sec 6.4) |
@@ -904,6 +922,8 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | `PUT /api/v1/admin/revenue/targets` | Revenue Target Save (Sec 6.8) |
 | `GET /api/v1/admin/revenue/forecast` | Revenue Forecast Load (Sec 6.9) |
 | `GET /api/v1/admin/revenue/ad-fees` | Ad Fee Revenue Load (Sec 6.10) |
+| `GET /api/v1/admin/revenue/payments` | Revenue Dashboard Load — payment status (Sec 6.4) |
+| `GET /api/v1/admin/revenue/payouts` | Revenue Dashboard Load — payout list (Sec 6.4) |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Payout Processing (Sec 6.6) |
 
 ### 15.3 Related Document References
