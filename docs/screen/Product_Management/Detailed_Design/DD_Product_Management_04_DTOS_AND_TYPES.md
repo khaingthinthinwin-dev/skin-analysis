@@ -1,7 +1,7 @@
 # DD_PROD_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-PROD-04 | **Version:** 1.3 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-PROD-04 | **Version:** 1.4 | **Status:** Released  
+> **Last Updated:** 2026-08-18
 
 ---
 
@@ -297,6 +297,33 @@ export class ProductQueryDto {
 }
 ```
 
+### 2.7 InventoryTransactionQueryDto
+
+Used for `GET /products/:id/inventory-transactions` query parameters.
+
+```typescript
+import { IsOptional, IsString, IsIn, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class InventoryTransactionQueryDto {
+  @IsOptional()
+  @IsString()
+  @IsIn(['sale', 'adjustment', 'return', 'manual', 'restock'])
+  type?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+}
+```
+
 ---
 
 ## 3. Response DTOs
@@ -397,7 +424,44 @@ export class BulkOperationError {
 }
 ```
 
-### 3.6 DeleteAllProductsResponseDto
+### 3.6 InventoryTransactionResponseDto
+
+Returned by inventory transaction history endpoint.
+
+```typescript
+export class InventoryTransactionResponseDto {
+  id: string;
+  productId: string;
+  merchantId: string;
+  transactionType: 'sale' | 'adjustment' | 'return' | 'manual' | 'restock';
+  quantity: number;
+  beforeQuantity: number;
+  afterQuantity: number;
+  referenceType: string | null;
+  referenceId: string | null;
+  reason: string | null;
+  createdBy: string;
+  createdAt: Date;
+}
+```
+
+### 3.7 InventoryTransactionListResponseDto
+
+Returned by list endpoint with pagination metadata.
+
+```typescript
+export class InventoryTransactionListResponseDto {
+  data: InventoryTransactionResponseDto[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+```
+
+### 3.9 DeleteAllProductsResponseDto
 
 Returned by the `DELETE /products/all` endpoint.
 
@@ -551,6 +615,28 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
 
 ```typescript
 export type ProductListQuery = Prisma.ProductFindManyArgs;
+```
+
+### 6.3 InventoryTransactionWithRelations
+
+```typescript
+export type InventoryTransactionWithRelations = Prisma.InventoryTransactionGetPayload<{
+  include: {
+    product: {
+      select: {
+        id: true;
+        name: true;
+        sku: true;
+      };
+    };
+    merchant: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+  };
+}>;
 ```
 
 ---

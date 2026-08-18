@@ -1,7 +1,7 @@
 # DD_PROD_05 — Business Logic
 
-> **Doc ID:** SKM-DD-PROD-05 | **Version:** 1.4 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-PROD-05 | **Version:** 1.5 | **Status:** Released  
+> **Last Updated:** 2026-08-18
 
 ---
 
@@ -53,8 +53,9 @@ This document specifies the core business logic, state transitions, and validati
    - Check SKU uniqueness if provided
    - Upload images to storage (UUID-based filenames)
    - Insert `products` record with generated data
-   - Log `PRODUCT_CREATED` audit event
-3. **Transaction:** Product creation and image upload must be atomic.
+   - Insert `inventory_transactions` record (transaction_type='manual', quantity=stockQuantity, beforeQuantity=0, afterQuantity=stockQuantity)
+   - Insert `audit_logs` record with action='PRODUCT_CREATED', merchantId, productId, timestamp
+3. **Transaction:** Product creation, image upload, inventory_transactions insert, and audit_logs insert must be atomic.
 4. **Cache:** Invalidate `cache:products:list:*` pattern.
 5. **Return:** `ProductResponseDto`
 
@@ -70,7 +71,7 @@ This document specifies the core business logic, state transitions, and validati
    - Handle image additions (upload new files)
    - Handle image removals (delete from storage)
    - Update product record
-   - Log `PRODUCT_UPDATED` audit event
+   - Insert `audit_logs` record with action='PRODUCT_UPDATED', merchantId, productId, changes object, timestamp
 3. **Cache:** Invalidate `cache:product:{id}` and `cache:products:list:*`.
 4. **Return:** `ProductResponseDto`
 
@@ -79,7 +80,7 @@ This document specifies the core business logic, state transitions, and validati
 1. **Logic:**
    - Verify product exists
    - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`.
-   - **Active Order Guard (BR-PROD-024):** Check if product has any orders with status NOT IN resolved states:
+   - **Active Order Guard (BR-PROD-024):** Check if product has any orders with status NOT IN resolved states. Query `order_status_history` to verify terminal states:
      ```typescript
      const activeOrders = await this.prisma.orderItem.findMany({
        where: {
@@ -96,7 +97,7 @@ This document specifies the core business logic, state transitions, and validati
      }
      ```
    - Set `isActive = false` (soft delete)
-   - Log `PRODUCT_DELETED` audit event
+   - Insert `audit_logs` record with action='PRODUCT_DELETED', merchantId, productId, timestamp
 2. **Cache:** Invalidate `cache:product:{id}` and `cache:products:list:*`.
 3. **Return:** `204 No Content`
 
@@ -106,10 +107,12 @@ This document specifies the core business logic, state transitions, and validati
 2. **Logic:**
    - Verify product exists
    - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`.
+   - Fetch current `stockQuantity` for before/after comparison
    - Update `stockQuantity` atomically
-   - Check `stockQuantity <= lowStockThreshold` → set `isLowStock` flag
+   - Insert `inventory_transactions` record (transaction_type='manual', quantity=delta, beforeQuantity=oldQty, afterQuantity=newQty, reason='Manual stock update')
+   - Insert `audit_logs` record with action='STOCK_UPDATED', merchantId, productId, oldQty, newQty, timestamp
+   - Check `stockQuantity <= lowStockThreshold` → set `isLowStock` flag. If breached, insert `notifications` record for low stock alert.
    - Check `stockQuantity === 0` → set `isOutOfStock` flag
-   - Log `STOCK_UPDATED` audit event with old and new quantities
 3. **Cache:** Invalidate `cache:product:{id}`.
 4. **Return:** `StockUpdateResponseDto`
 
@@ -456,27 +459,125 @@ private async invalidateProductCache(productId: string, slug?: string): Promise<
 
 ---
 
-## 9. Audit Logging
+## 9. Inventory Transaction Management
 
-### 9.1 Audit Event Types
+### 9.1 Transaction Types
 
-| Event | Data Logged | Retention |
-|-------|-------------|-----------|
-| `PRODUCT_CREATED` | merchantId, productId, timestamp | 90 days |
-| `PRODUCT_UPDATED` | merchantId, productId, changes, timestamp | 90 days |
-| `PRODUCT_DELETED` | merchantId, productId, timestamp | 90 days |
-| `PRODUCT_IMAGE_UPLOADED` | merchantId, productId, fileSize, timestamp | 30 days |
-| `STOCK_UPDATED` | merchantId, productId, oldQty, newQty, timestamp | 90 days |
-| `BULK_OPERATION` | merchantId, productIds, action, timestamp | 90 days |
-| `BULK_DELETE` | merchantId, productIds, timestamp | 90 days |
-| `DELETE_ALL_PRODUCTS` | merchantId, deletedCount, skippedCount, timestamp | 90 days |
+| Type | Description | Created By |
+|------|-------------|------------|
+| `sale` | Stock decremented on order creation | Order service |
+| `adjustment` | Manual stock correction | Merchant |
+| `return` | Stock incremented on order return | Order service |
+| `manual` | Direct stock update via API | Merchant |
+| `restock` | Stock replenishment from supplier | Merchant |
 
-### 9.2 Audit Log Format
+### 9.2 Inventory Transaction Creation
 
 ```typescript
-private logAuditEvent(event: string, data: Record<string, unknown>): void {
+async createInventoryTransaction(
+  productId: string,
+  merchantId: string,
+  transactionType: string,
+  quantity: number,
+  beforeQuantity: number,
+  afterQuantity: number,
+  referenceType?: string,
+  referenceId?: string,
+  reason?: string,
+  createdBy?: string,
+): Promise<void> {
+  await this.prisma.inventoryTransaction.create({
+    data: {
+      productId,
+      merchantId,
+      transactionType,
+      quantity,
+      beforeQuantity,
+      afterQuantity,
+      referenceType: referenceType || null,
+      referenceId: referenceId || null,
+      reason: reason || null,
+      createdBy: createdBy || merchantId,
+    },
+  });
+}
+```
+
+### 9.3 Inventory Transaction Query
+
+```typescript
+async getInventoryTransactions(
+  productId: string,
+  query: InventoryTransactionQueryDto,
+): Promise<InventoryTransactionListResponseDto> {
+  const { type, page = 1, limit = 20 } = query;
+  
+  const where = {
+    productId,
+    ...(type ? { transactionType: type } : {}),
+  };
+  
+  const [transactions, total] = await Promise.all([
+    this.prisma.inventoryTransaction.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    this.prisma.inventoryTransaction.count({ where }),
+  ]);
+  
+  return {
+    data: transactions,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+```
+
+---
+
+## 10. Audit Logging
+
+### 10.1 Audit Event Types
+
+| Event | Data Logged | Target | Retention |
+|-------|-------------|--------|-----------|
+| `PRODUCT_CREATED` | merchantId, productId, timestamp | `audit_logs` table | 90 days |
+| `PRODUCT_UPDATED` | merchantId, productId, changes, timestamp | `audit_logs` table | 90 days |
+| `PRODUCT_DELETED` | merchantId, productId, timestamp | `audit_logs` table | 90 days |
+| `PRODUCT_IMAGE_UPLOADED` | merchantId, productId, fileSize, timestamp | `audit_logs` table | 30 days |
+| `STOCK_UPDATED` | merchantId, productId, oldQty, newQty, timestamp | `audit_logs` table + `inventory_transactions` table | 90 days |
+| `BULK_OPERATION` | merchantId, productIds, action, timestamp | `audit_logs` table | 90 days |
+| `BULK_DELETE` | merchantId, productIds, timestamp | `audit_logs` table | 90 days |
+| `DELETE_ALL_PRODUCTS` | merchantId, deletedCount, skippedCount, timestamp | `audit_logs` table | 90 days |
+
+### 10.2 Audit Log Persistence
+
+```typescript
+private async logAuditEvent(
+  action: string,
+  merchantId: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  await this.prisma.auditLog.create({
+    data: {
+      merchantId,
+      action,
+      entityType: 'product',
+      entityId: data.productId as string,
+      changes: data,
+      createdAt: new Date(),
+    },
+  });
+  
+  // Also log to console for development visibility
   this.logger.log(JSON.stringify({
-    event,
+    action,
     ...data,
     timestamp: new Date().toISOString(),
   }));
@@ -485,7 +586,7 @@ private logAuditEvent(event: string, data: Record<string, unknown>): void {
 
 ---
 
-## 10. Cross-References
+## 11. Cross-References
 
 | Related Document | Purpose |
 |-----------------|---------|
