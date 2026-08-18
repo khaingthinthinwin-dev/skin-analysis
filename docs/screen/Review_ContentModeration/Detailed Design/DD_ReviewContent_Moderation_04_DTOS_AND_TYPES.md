@@ -1,7 +1,16 @@
 # DD_MOD_04 — DTOs and Types (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-18
+
+---
+
+## 0. Document Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 1.0 | 2026-08-17 | Senior System Engineer | Initial DTOs and types for Review & Content Moderation. |
+| 1.1 | 2026-08-18 | Senior System Engineer | Added Review Reports DTOs: UpdateReportStatusDto, ReportsQueryDto, ReportResponseDto, ReportDetailResponseDto. Added report-related enums (ReportStatus, ReportReason, ReportStatusFilter), entity type, frontend types, and error codes. |
 
 ---
 
@@ -99,7 +108,26 @@ export class ModerateUserDto {
 }
 ```
 
-### 2.5 BulkModerateReviewsDto
+### 2.5 UpdateReportStatusDto
+
+Used for `PATCH /admin/reports/:id/status` to reject or complete a report.
+
+```typescript
+import { IsEnum, IsNotEmpty } from 'class-validator';
+
+export enum ReportAction {
+  REJECTED = 'rejected',
+  COMPLETED = 'completed',
+}
+
+export class UpdateReportStatusDto {
+  @IsEnum(ReportAction, { message: "status must be one of the following values: rejected, completed" })
+  @IsNotEmpty({ message: 'Status is required' })
+  status: ReportAction;
+}
+```
+
+### 2.6 BulkModerateReviewsDto
 
 Used for `POST /admin/reviews/bulk/moderate` to bulk approve/reject reviews.
 
@@ -125,7 +153,7 @@ export class BulkModerateReviewsDto {
 }
 ```
 
-### 2.6 BulkDeleteReviewsDto
+### 2.7 BulkDeleteReviewsDto
 
 Used for `DELETE /admin/reviews/bulk` to bulk delete reviews.
 
@@ -140,7 +168,7 @@ export class BulkDeleteReviewsDto {
 }
 ```
 
-### 2.7 BulkModerateProductsDto
+### 2.8 BulkModerateProductsDto
 
 Used for `PATCH /admin/content/bulk/status` to bulk deactivate/reactivate products.
 
@@ -366,6 +394,54 @@ export class UsersQueryDto {
   @IsOptional()
   @IsEnum(UserStatusFilter)
   status?: UserStatusFilter;
+
+  @IsOptional()
+  @IsString()
+  @Max(255)
+  search?: string;
+}
+```
+
+### 3.5 ReportsQueryDto
+
+Used for `GET /admin/reports` to filter and paginate review reports.
+
+```typescript
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+import { SortOrder } from './reviews-query.dto';
+
+export enum ReportStatusFilter {
+  PENDING = 'pending',
+  REJECTED = 'rejected',
+  COMPLETED = 'completed',
+}
+
+export class ReportsQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+
+  @IsOptional()
+  @IsString()
+  sort?: string = 'createdAt';
+
+  @IsOptional()
+  @IsEnum(SortOrder)
+  order?: SortOrder = SortOrder.DESC;
+
+  @IsOptional()
+  @IsEnum(ReportStatusFilter)
+  status?: ReportStatusFilter;
 
   @IsOptional()
   @IsString()
@@ -654,7 +730,80 @@ export class ModerateUserResponseDto {
 }
 ```
 
-### 4.13 BulkOperationResponseDto
+### 4.13 ReportResponseDto
+
+Returned in report list endpoint.
+
+```typescript
+export class ReportReporterDto {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
+export class ReportReviewProductDto {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export class ReportReviewDto {
+  id: string;
+  body: string;
+  rating: number;
+  product: ReportReviewProductDto;
+}
+
+export class ReportResponseDto {
+  id: string;
+  reviewId: string;
+  reporter: ReportReporterDto;
+  review: ReportReviewDto;
+  reason: string;
+  detail: string | null;
+  status: string;
+  resolvedBy: string | null;
+  resolvedAt: Date | null;
+  createdAt: Date;
+}
+```
+
+### 4.14 ReportDetailResponseDto
+
+Returned by report detail endpoint with full data.
+
+```typescript
+export class ReportDetailResponseDto {
+  id: string;
+  reviewId: string;
+  reporter: ReportReporterDto;
+  review: ReportReviewDto;
+  reason: string;
+  detail: string | null;
+  status: string;
+  resolvedBy: string | null;
+  resolvedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### 4.15 UpdateReportStatusResponseDto
+
+Returned after report status update action.
+
+```typescript
+export class UpdateReportStatusResponseDto {
+  id: string;
+  status: string;
+  resolvedBy: string | null;
+  resolvedAt: Date | null;
+  updatedAt: Date;
+}
+```
+
+### 4.16 BulkOperationResponseDto
 
 Returned after bulk moderation actions.
 
@@ -672,7 +821,7 @@ export class BulkOperationResponseDto {
 }
 ```
 
-### 4.14 PaginatedResponseDto
+### 4.17 PaginatedResponseDto
 
 Generic wrapper for paginated list responses.
 
@@ -759,7 +908,38 @@ export enum SortOrder {
 }
 ```
 
-### 5.8 ReviewSortField
+### 5.8 ReportStatus
+
+```typescript
+export enum ReportStatus {
+  PENDING = 'pending',
+  REJECTED = 'rejected',
+  COMPLETED = 'completed',
+}
+```
+
+### 5.9 ReportReason
+
+```typescript
+export enum ReportReason {
+  SPAM = 'spam',
+  HARASSMENT = 'harassment',
+  FALSE_INFO = 'false_info',
+  POLICY_VIOLATION = 'policy_violation',
+}
+```
+
+### 5.10 ReportStatusFilter
+
+```typescript
+export enum ReportStatusFilter {
+  PENDING = 'pending',
+  REJECTED = 'rejected',
+  COMPLETED = 'completed',
+}
+```
+
+### 5.11 ReviewSortField
 
 ```typescript
 export enum ReviewSortField {
@@ -768,7 +948,7 @@ export enum ReviewSortField {
 }
 ```
 
-### 5.9 ProductSortField
+### 5.12 ProductSortField
 
 ```typescript
 export enum ProductSortField {
@@ -812,6 +992,9 @@ export enum ModerationErrorCode {
   USER_ALREADY_ACTIVE = 'USER_ALREADY_ACTIVE',
   USER_ALREADY_INACTIVE = 'USER_ALREADY_INACTIVE',
   SELF_DEACTIVATION_PREVENTED = 'SELF_DEACTIVATION_PREVENTED',
+  REPORT_NOT_FOUND = 'REPORT_NOT_FOUND',
+  REPORT_ALREADY_COMPLETED = 'REPORT_ALREADY_COMPLETED',
+  REPORT_COMPLETED_CANNOT_DELETE = 'REPORT_COMPLETED_CANNOT_DELETE',
   FORBIDDEN = 'FORBIDDEN',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   REJECTION_REASON_REQUIRED = 'REJECTION_REASON_REQUIRED',
@@ -850,7 +1033,7 @@ export interface AuditLogEntry {
   id: string;
   adminId: string;
   action: string;
-  targetType: 'review' | 'merchant' | 'product' | 'user';
+  targetType: 'review' | 'merchant' | 'product' | 'user' | 'report';
   targetId: string;
   details: Record<string, any>;
   timestamp: Date;
@@ -951,14 +1134,31 @@ export interface UserEntity {
 }
 ```
 
-### 8.6 AuditLogEntity
+### 8.6 ReportEntity
+
+```typescript
+export interface ReportEntity {
+  id: string;                    // UUID PK
+  reviewId: string;              // FK -> reviews.id
+  reportedBy: string;            // FK -> users.id (reporter)
+  reason: string;                // VARCHAR(50) ('spam' | 'harassment' | 'false_info' | 'policy_violation')
+  description: string | null;    // TEXT NULL (optional detail)
+  status: string;                // VARCHAR(20) ('pending' | 'rejected' | 'completed')
+  resolvedBy: string | null;     // UUID FK -> users.id NULL (admin who resolved)
+  resolvedAt: Date | null;       // TIMESTAMPTZ NULL
+  createdAt: Date;               // TIMESTAMPTZ
+  updatedAt: Date;               // TIMESTAMPTZ
+}
+```
+
+### 8.7 AuditLogEntity
 
 ```typescript
 export interface AuditLogEntity {
   id: string;                    // UUID PK
   adminId: string;               // FK -> users.id
   action: string;                // VARCHAR(100)
-  targetType: string;            // VARCHAR(50) ('review' | 'merchant' | 'product' | 'user')
+  targetType: string;            // VARCHAR(50) ('review' | 'merchant' | 'product' | 'user' | 'report')
   targetId: string;              // UUID
   details: Record<string, any>;  // JSONB
   timestamp: Date;               // TIMESTAMPTZ
@@ -1049,7 +1249,46 @@ export interface AdminUser {
 }
 ```
 
-### 9.5 PaginationMeta
+### 9.5 AdminReport
+
+```typescript
+export interface AdminReport {
+  id: string;
+  reviewId: string;
+  reporter: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+  review: {
+    id: string;
+    body: string;
+    rating: number;
+    product: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  };
+  reason: string;
+  detail: string | null;
+  status: string;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+```
+
+### 9.6 AdminReportDetail
+
+```typescript
+export interface AdminReportDetail extends AdminReport {
+  updatedAt: string;
+}
+```
+
+### 9.7 PaginationMeta
 
 ```typescript
 export interface PaginationMeta {
@@ -1060,7 +1299,7 @@ export interface PaginationMeta {
 }
 ```
 
-### 9.6 PaginatedResponse
+### 9.8 PaginatedResponse
 
 ```typescript
 export interface PaginatedResponse<T> {

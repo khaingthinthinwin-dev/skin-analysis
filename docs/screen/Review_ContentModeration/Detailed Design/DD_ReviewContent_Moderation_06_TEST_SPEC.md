@@ -1,7 +1,16 @@
 # DD_MOD_06 — Test Specification (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-06 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-MOD-06 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-18
+
+---
+
+## 0. Document Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 1.0 | 2026-08-17 | Software Architect | Initial test specification for Review & Content Moderation. |
+| 1.1 | 2026-08-18 | Software Architect | Added Review Reports test specifications: backend unit tests for report-admin.service, frontend component tests for ReportsTable and ReportDetailModal, and E2E scenarios for report management flows. |
 
 ---
 
@@ -81,9 +90,27 @@ Mock dependencies: `PrismaService`, `RedisService`.
 | **revokeAllUserTokens** | User deactivated | Sets `is_revoked = true` for all active refresh tokens |
 | **invalidateUserCache** | User status changed | Deletes `cache:user:{id}` and `cache:user:profile:{id}` |
 
-### 2.5 `admin.controller.spec.ts`
+### 2.5 `report-admin.service.spec.ts`
 
-Mock dependencies: `AdminService`, `MerchantAdminService`, `ContentModerationService`, `UserAdminService`.
+Mock dependencies: `PrismaService`, `RedisService`.
+
+| Test Suite | Scenario | Expected Outcome |
+|------------|----------|------------------|
+| **updateReportStatus** | Complete pending report | Updates `status = 'completed'`, sets `resolved_by` and `resolved_at`, rejects target review (`is_approved = false`), recalculates product stats, invalidates cache, logs audit |
+| **updateReportStatus** | Reject pending report | Updates `status = 'rejected'`, sets `resolved_by` and `resolved_at`, logs audit |
+| **updateReportStatus** | Attempt to change completed report | Returns 409 with `REPORT_ALREADY_COMPLETED` |
+| **updateReportStatus** | Report not found | Returns 404 with `REPORT_NOT_FOUND` |
+| **updateReportStatus** | Complete auto-rejects target review | Updates `reviews.is_approved = false` for the report's review |
+| **updateReportStatus** | Complete recalculates product stats | Updates `products.avg_rating` and `review_count` from remaining approved reviews |
+| **updateReportStatus** | Complete invalidates product cache | Deletes `cache:product:{id}` and `cache:products:list:*` |
+| **deleteReport** | Delete pending report | Hard deletes report, logs audit |
+| **deleteReport** | Delete rejected report | Hard deletes report, logs audit |
+| **deleteReport** | Attempt to delete completed report | Returns 409 with `REPORT_COMPLETED_CANNOT_DELETE` |
+| **deleteReport** | Report not found | Returns 404 with `REPORT_NOT_FOUND` |
+
+### 2.6 `admin.controller.spec.ts`
+
+Mock dependencies: `AdminService`, `MerchantAdminService`, `ContentModerationService`, `UserAdminService`, `ReportAdminService`.
 
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
@@ -106,8 +133,19 @@ Mock dependencies: `AdminService`, `MerchantAdminService`, `ContentModerationSer
 | **GET /admin/users/:id** | Valid ID | Calls service, returns 200 with user detail |
 | **PATCH /admin/users/:id/status** | Deactivate user | Calls service, returns 200 |
 | **PATCH /admin/users/:id/status** | Self-deactivation | Returns 400 Bad Request |
+| **GET /admin/reports** | Valid admin token | Calls service, returns 200 with paginated data |
+| **GET /admin/reports** | Filter by status | Calls service with status param, returns filtered data |
+| **GET /admin/reports** | Search by reporter name | Calls service with search param, returns filtered data |
+| **GET /admin/reports** | Non-admin token | Returns 403 Forbidden |
+| **PATCH /admin/reports/:id/status** | Complete pending report | Calls service, returns 200 |
+| **PATCH /admin/reports/:id/status** | Reject pending report | Calls service, returns 200 |
+| **PATCH /admin/reports/:id/status** | Attempt to change completed report | Returns 409 Conflict |
+| **PATCH /admin/reports/:id/status** | Report not found | Returns 404 Not Found |
+| **DELETE /admin/reports/:id** | Delete pending report | Calls service, returns 204 No Content |
+| **DELETE /admin/reports/:id** | Delete completed report | Returns 409 Conflict |
+| **DELETE /admin/reports/:id** | Report not found | Returns 404 Not Found |
 
-### 2.6 `audit.interceptor.spec.ts`
+### 2.7 `audit.interceptor.spec.ts`
 
 Mock dependencies: `AuditService`.
 
@@ -225,7 +263,45 @@ Using Vitest + React Testing Library.
 | Reactivate confirm | Calls `adminService.moderateUser` with `isActive: true` |
 | Deactivate hidden for self | Button not shown when viewing current admin |
 
-### 3.9 `ModerationReasonForm.test.tsx`
+### 3.9 `ReportsTable.test.tsx`
+
+| Scenario | Expected Outcome |
+|----------|------------------|
+| Initial render | Displays table with columns: checkbox, reporter, review excerpt, reason badge, status badge, date, actions |
+| Empty state | Shows "No reports found" message |
+| Select all checkbox | Toggles all row checkboxes |
+| Select single row | Enables bulk action buttons |
+| Deselect all | Disables bulk action buttons |
+| Actions dropdown | Shows options: View Detail, Reject Report, Complete Report, Delete Report |
+| Status badge colors | Amber for pending, Green for completed, Red for rejected |
+| Reason badge colors | Spam (orange), Harassment (red), False Info (yellow), Policy Violation (purple) |
+| Filter tabs | All, Pending, Rejected, Completed |
+| Search input | Filters reports by reporter name or email |
+| Pagination | Shows page numbers and page size selector |
+
+### 3.10 `ReportDetailModal.test.tsx`
+
+| Scenario | Expected Outcome |
+|----------|------------------|
+| Open modal | Fetches report data, displays reporter info, review info, report info |
+| Reporter info card | Shows avatar, name, email |
+| Review info card | Shows rating stars, body, product link |
+| Report info | Shows reason badge, detail text, status badge, resolved by, resolved at |
+| Target review actions | Shows Approve, Reject, Delete buttons for target review |
+| Report actions | Shows Reject, Complete, Delete buttons for report |
+| Reject report button | Shows confirmation dialog |
+| Reject report confirm | Calls `adminService.updateReportStatus` with `status: 'rejected'` |
+| Complete report button | Shows confirmation dialog "The target review will be rejected" |
+| Complete report confirm | Calls `adminService.updateReportStatus` with `status: 'completed'` |
+| Delete report button | Shows confirmation dialog |
+| Delete report confirm | Calls `adminService.deleteReport` |
+| Completed report actions hidden | Reject/Complete/Delete buttons not shown when status is 'completed' |
+| Target review reject | Shows reason textarea, calls `adminService.moderateReview` |
+| Target review delete | Shows confirmation dialog, calls `adminService.deleteReview` |
+| Close on Escape | Modal closes |
+| Close on X button | Modal closes |
+
+### 3.11 `ModerationReasonForm.test.tsx`
 
 | Scenario | Expected Outcome |
 |----------|------------------|
@@ -235,7 +311,7 @@ Using Vitest + React Testing Library.
 | Character count | Displays current/max character count |
 | Valid input | No error shown |
 
-### 3.10 `ConfirmationDialog.test.tsx`
+### 3.12 `ConfirmationDialog.test.tsx`
 
 | Scenario | Expected Outcome |
 |----------|------------------|
@@ -270,6 +346,16 @@ Using Vitest + React Testing Library.
 | **E2E-MOD-18** | **Responsive Layout**<br>1. Login as admin on desktop (1024px+).<br>2. Verify full sidebar + table layout.<br>3. Resize to tablet (768px).<br>4. Verify collapsible sidebar + responsive table.<br>5. Resize to mobile (< 768px).<br>6. Verify stacked layout. |
 | **E2E-MOD-19** | **Stats Bar Accuracy**<br>1. Login as admin.<br>2. Navigate to /admin/reviews.<br>3. Verify "Total Reviews" count matches table total.<br>4. Verify "Approved" count matches approved filter count.<br>5. Verify "Rejected" count matches rejected filter count. |
 | **E2E-MOD-20** | **Cache Invalidation Verification**<br>1. Login as admin.<br>2. Navigate to /admin/reviews.<br>3. Approve a review for product X.<br>4. Navigate to product X detail page.<br>5. Verify product rating and review count are updated. |
+| **E2E-MOD-21** | **Reports List — Load and Display**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Verify stats bar shows Total Reports, Pending, Rejected, Completed counts.<br>4. Verify reports table loads with correct columns: reporter, review excerpt, reason badge, status badge, date, actions.<br>5. Verify status badge colors: amber for pending, red for rejected, green for completed.<br>6. Verify reason badge shows correct label and color. |
+| **E2E-MOD-22** | **Reports — Filter and Search**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Click "Pending" tab.<br>4. Verify only pending reports shown.<br>5. Click "Rejected" tab.<br>6. Verify only rejected reports shown.<br>7. Click "Completed" tab.<br>8. Verify only completed reports shown.<br>9. Click "All" tab.<br>10. Type reporter name in search input.<br>11. Verify table filters by reporter name.<br>12. Clear search, verify all reports shown. |
+| **E2E-MOD-23** | **Report Detail — View**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Click "View Detail" on a pending report.<br>4. Verify modal opens with: reporter info (avatar, name, email), review excerpt (rating, body, product link), report info (reason, detail, status).<br>5. Verify report action buttons are shown: Reject, Complete, Delete.<br>6. Verify target review actions are shown: Approve, Reject, Delete. |
+| **E2E-MOD-24** | **Report — Reject**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Click "View Detail" on a pending report.<br>4. Click "Reject Report" button.<br>5. Verify confirmation dialog appears.<br>6. Click "Cancel".<br>7. Verify dialog closes, report status unchanged.<br>8. Click "Reject Report" again.<br>9. Click "Confirm".<br>10. Verify success toast "Report rejected".<br>11. Verify report status badge changes to red (Rejected). |
+| **E2E-MOD-25** | **Report — Complete (Auto-Reject Review)**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Click "View Detail" on a pending report.<br>4. Click "Complete Report" button.<br>5. Verify confirmation dialog: "The target review will be rejected and the merchant will be notified".<br>6. Click "Confirm".<br>7. Verify success toast "Report completed".<br>8. Verify report status badge changes to green (Completed).<br>9. Verify target review status changes to rejected (red badge).<br>10. Navigate to product detail page.<br>11. Verify product rating and review count are updated. |
+| **E2E-MOD-26** | **Report — Delete**<br>1. Login as admin.<br>2. Navigate to /admin/reviews (reject a review first).<br>3. Navigate to /admin/reports.<br>4. Click "View Detail" on a pending report.<br>5. Click "Delete Report" button.<br>6. Verify confirmation dialog appears.<br>7. Click "Cancel".<br>8. Verify dialog closes, report not deleted.<br>9. Click "Delete Report" again.<br>10. Click "Confirm".<br>11. Verify success toast "Report deleted".<br>12. Verify report removed from table. |
+| **E2E-MOD-27** | **Completed Report — Action Buttons Hidden**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Click "Completed" tab.<br>4. Click "View Detail" on a completed report.<br>5. Verify Reject Report, Complete Report, Delete Report buttons are NOT shown.<br>6. Verify target review actions are NOT shown.<br>7. Close modal. |
+| **E2E-MOD-28** | **Reports — Pagination**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Verify page 1 is active.<br>4. Click page 2 (if available).<br>5. Verify table updates with page 2 data.<br>6. Change page size to 50.<br>7. Verify table shows 50 items per page. |
+| **E2E-MOD-29** | **Reports — Empty State**<br>1. Login as admin.<br>2. Navigate to /admin/reports.<br>3. Mock API to return empty list.<br>4. Verify "No reports found" message displayed. |
+| **E2E-MOD-30** | **Reports — Stats Bar Accuracy**<br>1. Login as admin.<br>2. Navigate to /admin/reviews (approve or reject a review to create report).<br>3. Navigate to /admin/reports.<br>4. Verify "Total Reports" count matches table total.<br>5. Verify "Pending" count matches pending filter count.<br>6. Verify "Rejected" count matches rejected filter count.<br>7. Verify "Completed" count matches completed filter count. |
 
 ---
 

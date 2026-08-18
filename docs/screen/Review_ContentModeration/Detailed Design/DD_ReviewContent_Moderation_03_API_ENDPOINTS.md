@@ -1,7 +1,16 @@
 # DD_MOD_03 — API Endpoints (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-18
+
+---
+
+## 0. Document Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 1.0 | 2026-08-17 | Software Architect | Initial API endpoints for Review & Content Moderation. |
+| 1.1 | 2026-08-18 | Software Architect | Added Review Reports endpoints: GET /admin/reports, PATCH /admin/reports/:id/status, DELETE /admin/reports/:id. Added report-related audit logging events. |
 
 ---
 
@@ -612,6 +621,132 @@ Activate or deactivate a user account.
 
 ---
 
+### 2.16 GET /admin/reports
+
+View all review reports with filters, search, and pagination.
+
+- **Auth Required:** Yes (Admin)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Query Parameters:**
+  - `page` (integer, optional, default: `1`) — Page number
+  - `limit` (integer, optional, default: `20`, max: `100`) — Items per page
+  - `sort` (string, optional, default: `createdAt`) — Sort field: `createdAt`
+  - `order` (string, optional, default: `desc`) — Sort order: `asc`, `desc`
+  - `status` (enum, optional) — Filter: `pending`, `rejected`, `completed` (omit for all)
+  - `search` (string, optional) — Search by reporter name, email, or review content
+- **Response:** `200 OK`
+  ```json
+  {
+    "data": [
+      {
+        "id": "clxReport001",
+        "reviewId": "clxReview001",
+        "reporter": {
+          "id": "clxUser002",
+          "name": "Jane Doe",
+          "email": "jane@example.com",
+          "avatarUrl": "https://cdn.example.com/avatars/jane.jpg"
+        },
+        "review": {
+          "id": "clxReview001",
+          "body": "This product is amazing! It completely transformed my skin in just two weeks...",
+          "rating": 5,
+          "product": {
+            "id": "clxProd001",
+            "name": "Hydrating Serum",
+            "slug": "hydrating-serum"
+          }
+        },
+        "reason": "spam",
+        "detail": "This review appears to be fake promotional content",
+        "status": "pending",
+        "resolvedBy": null,
+        "resolvedAt": null,
+        "createdAt": "2026-08-15T10:30:00.000Z"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "limit": 20,
+      "total": 45,
+      "totalPages": 3
+    }
+  }
+  ```
+- **Error Responses:**
+  - `401 UNAUTHORIZED` — Invalid or expired access token
+  - `403 FORBIDDEN` — Non-admin role
+  - `500 INTERNAL_SERVER_ERROR` — Server error
+- **Logic:** Validates JWT + admin role. Queries `review_reports` table with optional status filter. Joins `users` (reporter) and `reviews` for display data. Applies pagination.
+- **Rate Limit:** 100 requests per minute per admin
+
+---
+
+### 2.17 PATCH /admin/reports/:id/status
+
+Update report status (reject or complete).
+
+- **Auth Required:** Yes (Admin)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Path Parameters:**
+  - `id` (UUID, required) — Report ID
+- **Body:** `UpdateReportStatusDto`
+  - `status` (enum: `'rejected'` | `'completed'`, required)
+- **Response:** `200 OK`
+  ```json
+  {
+    "data": {
+      "id": "clxReport001",
+      "status": "completed",
+      "resolvedBy": "clxAdmin001",
+      "resolvedAt": "2026-08-17T14:00:00.000Z",
+      "updatedAt": "2026-08-17T14:00:00.000Z"
+    }
+  }
+  ```
+- **Side Effects:**
+  - Updates `review_reports.status`
+  - Sets `review_reports.resolved_by` and `resolved_at`
+  - If status = `'completed'`: rejects the target review (`reviews.is_approved = false`)
+  - Recalculates product `avg_rating` and `review_count` from approved reviews only
+  - Invalidates product cache in Redis
+  - Invalidates product list cache in Redis
+  - Logs moderation action to audit trail
+- **Error Responses:**
+  - `400 BAD_REQUEST` — Validation failed (missing status)
+  - `401 UNAUTHORIZED` — Invalid or expired access token
+  - `403 FORBIDDEN` — Non-admin role
+  - `404 NOT_FOUND` — Report not found
+  - `409 CONFLICT` — Attempting to change an already completed report
+  - `500 INTERNAL_SERVER_ERROR` — Server error
+- **Logic:** Validates JWT + admin role. Finds report by ID. If report is already completed, returns 409. If status = `'completed'`, rejects the target review. Updates report status. Sets `resolved_by` and `resolved_at`. Logs audit.
+- **Rate Limit:** 100 requests per minute per admin
+
+---
+
+### 2.18 DELETE /admin/reports/:id
+
+Delete a review report.
+
+- **Auth Required:** Yes (Admin)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Path Parameters:**
+  - `id` (UUID, required) — Report ID
+- **Response:** `204 No Content`
+- **Side Effects:**
+  - Hard deletes report from `review_reports` table
+  - Logs deletion action to audit trail
+- **Error Responses:**
+  - `401 UNAUTHORIZED` — Invalid or expired access token
+  - `403 FORBIDDEN` — Non-admin role
+  - `404 NOT_FOUND` — Report not found
+  - `409 CONFLICT` — Completed reports cannot be deleted
+  - `500 INTERNAL_SERVER_ERROR` — Server error
+- **Logic:** Validates JWT + admin role. Finds report by ID. If report is completed, returns 409. Hard deletes report. Logs audit.
+- **Rate Limit:** 100 requests per minute per admin
+
+---
+
 ## 3. Protected Endpoint Guards
 
 All admin endpoints execute guards sequentially:
@@ -655,6 +790,7 @@ After moderation actions, real-time notifications are sent via WebSocket:
 | `USER_STATUS_CHANGED` | Server -> Client | Affected user | `{ userId, isActive }` | User activated/deactivated notification |
 | `NEW_MERCHANT_REGISTRATION` | Server -> Client | Admin dashboard | `{ merchantId, shopName }` | New merchant pending approval |
 | `REVIEW_CREATED` | Server -> Client | Admin dashboard | `{ reviewId, productName }` | New review submitted (approved by default) |
+| `REPORT_STATUS_CHANGED` | Server -> Client | Admin dashboard | `{ reportId, status, reviewId }` | Report status updated (rejected/completed) |
 
 ---
 
@@ -673,6 +809,9 @@ All moderation actions are logged to the `audit_logs` table:
 | `PRODUCT_REACTIVATED` | adminId, productId, timestamp | 2 years |
 | `USER_DEACTIVATED` | adminId, userId, timestamp | 2 years |
 | `USER_ACTIVATED` | adminId, userId, timestamp | 2 years |
+| `REPORT_REJECTED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_COMPLETED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_DELETED` | adminId, reportId, timestamp | 2 years |
 | `RBAC_VIOLATION` | userId, endpoint, requiredRole, timestamp | 30 days |
 
 ---
