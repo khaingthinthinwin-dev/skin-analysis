@@ -1,15 +1,13 @@
 # DD_WISH-CART_01 — Module Overview
 
-> **Doc ID:** SKM-DD-WISH-CART-01 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-14
+> **Doc ID:** SKM-DD-WISH-CART-01 | **Version:** 1.0 | **Status:** Released
+> **Last Updated:** 2026-08-12
 
 ---
 
 ## 1. Module Overview
 
-The **Wishlist & Cart Module** (お気に入り & カートモジュール) is the core e-commerce workflow component for the Cosmetics Finder platform. It manages product curation through wishlists, shopping cart operations, stock validation, and price calculation to support a seamless purchasing experience. This module bridges product browsing and order placement, ensuring authenticated users can save products, manage quantities, validate stock availability, and proceed to checkout.
-
-The Wishlist subsystem enables users to save products for future reference, while the Cart subsystem manages the complete purchase workflow from product selection through checkout initiation. Both subsystems enforce strict ownership rules and stock validation to maintain data integrity and prevent inventory issues.
+The **Wishlist & Cart Module** (お気に入り＆カートモジュール) is a core e-commerce module that bridges product browsing and order placement in the Cosmetics Finder platform. The Wishlist subsystem enables authenticated users to save products for future reference, while the Cart subsystem manages the complete pre-purchase workflow including product selection, quantity management, stock validation, and price calculation. Both subsystems ensure seamless product curation and persistence across sessions for logged-in users, while providing a guest user experience that encourages authentication through login modals.
 
 ---
 
@@ -17,21 +15,20 @@ The Wishlist subsystem enables users to save products for future reference, whil
 
 | ID | Use Case | Description |
 |---|----------|-------------|
-| UC-WISH-001 | Add Product to Wishlist | Authenticated user saves a product to their wishlist for future reference. |
+| UC-WISH-001 | Add Product to Wishlist | Authenticated user saves a product to their wishlist by clicking the heart icon. |
 | UC-WISH-002 | Remove Product from Wishlist | Authenticated user removes a saved product from their wishlist. |
-| UC-WISH-003 | View Wishlist | Authenticated user views all saved products with images, prices, and availability status. |
+| UC-WISH-003 | View Wishlist | Authenticated user views all saved products with images, prices, and availability. |
 | UC-WISH-004 | Move Wishlist Item to Cart | Authenticated user transfers a wishlist item directly into the shopping cart. |
-| UC-CART-001 | Add Product to Cart | Authenticated user adds an in-stock product to their shopping cart with quantity 1. |
-| UC-CART-002 | Update Cart Item Quantity | Authenticated user modifies the quantity of an existing cart item, with stock validation. |
-| UC-CART-003 | Remove Item from Cart | Authenticated user removes an item from their shopping cart. |
-| UC-CART-004 | View Cart | Authenticated user views all cart items with images, names, prices, quantities, subtotals, and stock status. |
-| UC-CART-005 | Guest User Add to Cart Attempt | Unauthenticated user attempts to add items to cart, triggering login modal. |
+| UC-CART-001 | Add Product to Cart | Authenticated user adds an in-stock product to the cart with quantity 1. |
+| UC-CART-002 | Update Cart Item Quantity | Authenticated user adjusts item quantity via stepper or direct input. |
+| UC-CART-003 | Remove Item from Cart | Authenticated user deletes an item from the cart. |
+| UC-CART-004 | View Cart | Authenticated user reviews all cart items with quantities, subtotals, and stock status. |
+| UC-CART-005 | Guest User Add to Cart Attempt | Unauthenticated user sees alert modal with [Log in] button navigating to `/login?redirect={currentPath}`. |
+| UC-CART-006 | Clear All Cart Items | Authenticated user removes all items from the cart via confirmation dialog. |
 
 ---
 
 ## 3. State Transition Specification
-
-The Wishlist & Cart module manages two primary state machines: Wishlist Item States and Cart Item States.
 
 ### 3.1 Wishlist Item States
 
@@ -42,12 +39,14 @@ stateDiagram-v2
     OUT_OF_STOCK --> SAVED : Stock replenished
     SAVED --> MOVED_TO_CART : Move to Cart
     SAVED --> [*] : Remove from Wishlist
+    MOVED_TO_CART --> [*] : Removed after Transfer
 ```
 
 | State | Description | Visible in Wishlist | Can Move to Cart |
 |-------|-------------|:-------------------:|:----------------:|
 | `SAVED` | Product saved in wishlist, in stock | ✓ | ✓ |
 | `OUT_OF_STOCK` | Product saved but currently out of stock | ✓ | ✗ |
+| `PRODUCT_DELETED` | Saved product was removed from platform | ✓ (with notice) | ✗ |
 | `MOVED_TO_CART` | Item transferred to cart (optional auto-remove) | ✗ (if removed) | — |
 
 ### 3.2 Cart Item States
@@ -57,30 +56,46 @@ stateDiagram-v2
     [*] --> ACTIVE : Add to Cart
     ACTIVE --> ACTIVE : Update Quantity
     ACTIVE --> QUANTITY_EXCEEDED : Stock drops below qty
-    ACTIVE --> OUT_OF_STOCK : Stock becomes 0
     QUANTITY_EXCEEDED --> ACTIVE : Quantity corrected
+    ACTIVE --> OUT_OF_STOCK : Stock becomes 0
     ACTIVE --> [*] : Remove from Cart
 ```
 
 | State | Description | Visible in Cart | Can Checkout |
 |-------|-------------|:---------------:|:------------:|
 | `ACTIVE` | Item in cart with valid stock | ✓ | ✓ |
-| `LOW_STOCK` | Item in cart, stock below threshold (≤10) | ✓ (warning) | ✓ |
+| `LOW_STOCK` | Item in cart, stock ≤ threshold (≤10) | ✓ (warning) | ✓ |
 | `OUT_OF_STOCK` | Item in cart, stock = 0 | ✓ (error) | ✗ |
 | `QUANTITY_EXCEEDED` | Requested quantity exceeds available stock | ✓ (error) | ✗ |
+| `PRODUCT_DELETED` | Cart item's product was removed | ✓ (with notice) | ✗ |
 
 ---
 
-## 4. Security & Permissions
+## 4. Business Rules
 
-1. **Authentication Required**: All wishlist and cart endpoints require valid JWT Bearer token via `Authorization` header.
-2. **Role-Based Access**: Only `buyer` role can access wishlist and cart features. Merchants and Admins receive 403 Forbidden.
-3. **Ownership Validation**: Users can only view/modify their own wishlist and cart items (filtered by `user_id` from JWT).
-4. **Stock Validation**: Server-side stock checks prevent adding out-of-stock items or exceeding available quantities.
-5. **Price Integrity**: Prices fetched from database, not client-provided, preventing manipulation.
-6. **Atomic Operations**: Stock decrements and cart updates use Prisma transactions to prevent race conditions.
-7. **Guest User Handling**: Unauthenticated users cannot add items to cart; alert modal directs to login page.
-8. **IDOR Prevention**: Ownership validation ensures users cannot access other users' wishlist or cart items.
+### 4.1 Wishlist Rules
+
+| Rule ID | Rule | Description |
+|---------|------|-------------|
+| BR-WISH-001 | Authentication Required | Only authenticated users can manage wishlists. |
+| BR-WISH-002 | One Wishlist Per Product | Each user can save a product only once. Unique constraint on `[user_id, product_id]`. |
+| BR-WISH-003 | Active Product Only | Only active products can be added to wishlist. |
+| BR-WISH-004 | Owner-Only Access | Users can only view/modify their own wishlist items. |
+| BR-WISH-005 | Move to Cart Validation | Moving to cart requires `stock_quantity > 0`. |
+
+### 4.2 Cart Rules
+
+| Rule ID | Rule | Description |
+|---------|------|-------------|
+| BR-CART-001 | Authentication Required | Only authenticated users can manage cart. |
+| BR-CART-002 | Stock Availability | Cannot add product to cart if `stock_quantity = 0`. |
+| BR-CART-003 | Quantity Limit | Cart item quantity cannot exceed available `stock_quantity`. |
+| BR-CART-004 | Quantity Minimum | Cart item quantity must be ≥ 1. |
+| BR-CART-005 | Active Product Only | Only active products can be added to cart. |
+| BR-CART-006 | Cart Persistence | Cart items are stored in database for logged-in users. |
+| BR-CART-007 | Subtotal Calculation | Subtotal = `unit_price × quantity`. Discounts/coupons are applied at checkout, not cart. |
+| BR-CART-008 | Duplicate Handling | Adding an existing cart item increments quantity instead of creating duplicate. |
+| BR-CART-009 | Guest User Restriction | Unauthenticated users see alert modal: "Please log in to add items to your cart." |
 
 ---
 
@@ -89,20 +104,22 @@ stateDiagram-v2
 | Layer | Files |
 |-------|-------|
 | **Frontend Pages** | `Wishlist.tsx`, `Cart.tsx` |
-| **Frontend Components** | `WishlistItemCard.tsx`, `CartItemRow.tsx`, `CartSummary.tsx`, `QuantityStepper.tsx`, `GuestLoginModal.tsx`, `EmptyState.tsx` |
+| **Frontend Components** | `WishlistItemCard.tsx`, `CartItemRow.tsx`, `CartSummaryPanel.tsx`, `GuestLoginAlertModal.tsx`, `EmptyState.tsx` |
 | **Frontend Hooks** | `useWishlist.ts`, `useCart.ts` |
 | **Frontend Services** | `wishlist.service.ts`, `cart.service.ts` |
-| **Frontend Schemas** | `wishlist.schema.ts`, `cart.schema.ts` |
+| **Frontend Schemas** | `cart.schema.ts` (quantity validation) |
+| **Frontend UI** | `Badge.tsx`, `Button.tsx`, `Dialog.tsx`, `Skeleton.tsx`, `Toast.tsx` |
 | **Backend API** | `wishlist.controller.ts`, `cart.controller.ts` |
 | **Backend Service** | `wishlist.service.ts`, `cart.service.ts` |
-| **Backend DTOs** | `wishlist-item.dto.ts`, `cart-item.dto.ts`, `cart-summary.dto.ts` |
-| **Backend Guards** | `jwt-auth.guard.ts`, `roles.guard.ts` |
-| **Backend Strategies** | `jwt-access.strategy.ts` |
-| **Shared Services** | `prisma.service.ts` (wishlists, carts, products), `redis.service.ts` (optional caching) |
+| **Backend DTOs** | `wishlist-response.dto.ts`, `cart-response.dto.ts`, `update-quantity.dto.ts` |
+| **Backend Guards** | `jwt-auth.guard.ts` (all endpoints protected) |
+| **Shared Services** | `prisma.service.ts` (wishlists, cart_items, products) |
 
 ---
 
 ## 6. API Endpoints
+
+### 6.1 Wishlist Endpoints
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|:-------------:|
@@ -110,10 +127,16 @@ stateDiagram-v2
 | `POST` | `/api/v1/wishlist/:productId` | Add product to wishlist | Yes |
 | `DELETE` | `/api/v1/wishlist/:productId` | Remove product from wishlist | Yes |
 | `POST` | `/api/v1/wishlist/:productId/move-to-cart` | Move wishlist item to cart | Yes |
-| `GET` | `/api/v1/cart` | Get user's cart items with summary | Yes |
+
+### 6.2 Cart Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|:-------------:|
+| `GET` | `/api/v1/cart` | Get user's cart with items and summary | Yes |
 | `POST` | `/api/v1/cart/items` | Add product to cart | Yes |
 | `PATCH` | `/api/v1/cart/items/:id` | Update cart item quantity | Yes |
 | `DELETE` | `/api/v1/cart/items/:id` | Remove item from cart | Yes |
+| `DELETE` | `/api/v1/cart` | Clear all cart items | Yes |
 
 ---
 
@@ -121,10 +144,9 @@ stateDiagram-v2
 
 | Table | Purpose | Operations |
 |-------|---------|------------|
-| `wishlists` | Store user's saved products | INSERT (add), DELETE (remove), SELECT (view), DELETE (move to cart) |
-| `carts` | Store user's cart items with quantities | INSERT (add), UPDATE (quantity), DELETE (remove), SELECT (view) |
-| `products` | Product details, stock, pricing | SELECT (validation, display), UPDATE (stock decrement on order) |
-| `users` | User authentication and role validation | SELECT (JWT validation) |
+| `wishlists` | Store user-product wishlist associations | SELECT, INSERT, DELETE |
+| `cart_items` | Store user cart with product and quantity | SELECT, INSERT, UPDATE, DELETE |
+| `products` | Read product details, stock, and pricing | SELECT (join) |
 
 ---
 
@@ -132,9 +154,8 @@ stateDiagram-v2
 
 | Dependency | Purpose | Configuration |
 |------------|---------|---------------|
-| Redis | Optional caching for product details | `REDIS_URL` |
-| Prisma ORM | Database operations and transactions | `DATABASE_URL` |
-| JWT Library | Token verification for authentication | `JWT_ACCESS_SECRET` |
+| Prisma ORM | Database access for wishlists, cart_items, products | `DATABASE_URL` |
+| Redis | Optional: cart caching (currently no caching for user-specific data) | `REDIS_URL` |
 
 ---
 
@@ -148,3 +169,4 @@ stateDiagram-v2
 | [DD_WISH-CART_05](./DD_Wishlist_CartPage_05_BUSINESS_LOGIC.md) | Backend business rules and state transitions |
 | [DD_WISH-CART_06](./DD_Wishlist_CartPage_06_TEST_SPEC.md) | Test specification |
 | [機能設計書_Wishlist_CartPage](../機能設計書_Wishlist_CartPage.md) | Full functional specification |
+| [画面項目設計書_Wishlist_CartPage](../画面項目設計書_Wishlist_CartPage.md) | Screen items specification |

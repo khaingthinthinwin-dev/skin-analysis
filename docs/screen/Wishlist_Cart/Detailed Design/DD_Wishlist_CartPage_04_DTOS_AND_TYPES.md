@@ -1,398 +1,351 @@
-# DD_WISH-CART_04 — DTOs and Types
+# DD_WISH_CART_04 — DTOs and Types
 
 > **Doc ID:** SKM-DD-WISH-CART-04 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-14
+> **Last Updated:** 2026-08-12
 
 ---
 
 ## 1. Overview
 
-This document specifies the Data Transfer Objects (DTOs) and TypeScript types used by the Wishlist & Cart module's API endpoints. These DTOs utilize `class-validator` for request validation and `class-transformer` for data transformation.
+This document specifies the Data Transfer Objects (DTOs) used by the Wishlist & Cart module's API endpoints. These DTOs utilize `class-validator` for request validation and `class-transformer` for data transformation.
 
-- **Location (Wishlist):** `src/modules/wishlist/dto/`
-- **Location (Cart):** `src/modules/cart/dto/`
+- **Wishlist DTOs Location:** `src/modules/wishlist/dto/`
+- **Cart DTOs Location:** `src/modules/cart/dto/`
 
 ---
 
-## 2. Request DTOs
+## 2. Enums
 
-### 2.1 AddToWishlistDto
-
-Used for `POST /wishlist/:productId` to add a product to the user's wishlist.
+### 2.1 StockStatus
 
 ```typescript
-import { IsUUID, IsNotEmpty } from 'class-validator';
+export enum StockStatus {
+  IN_STOCK = 'IN_STOCK',
+  LOW_STOCK = 'LOW_STOCK',
+  OUT_OF_STOCK = 'OUT_OF_STOCK',
+}
+```
+
+### 2.2 WishCartErrorCode
+
+```typescript
+export enum WishCartErrorCode {
+  VALIDATION_FAILED = 'VALIDATION_ERROR',
+  PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND',
+  PRODUCT_INACTIVE = 'PRODUCT_INACTIVE',
+  PRODUCT_OUT_OF_STOCK = 'PRODUCT_OUT_OF_STOCK',
+  INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK',
+  ALREADY_IN_WISHLIST = 'ALREADY_IN_WISHLIST',
+  WISHLIST_ITEM_NOT_FOUND = 'WISHLIST_ITEM_NOT_FOUND',
+  CART_ITEM_NOT_FOUND = 'CART_ITEM_NOT_FOUND',
+  ALREADY_IN_CART = 'ALREADY_IN_CART',
+  QUANTITY_EXCEEDS_STOCK = 'QUANTITY_EXCEEDS_STOCK',
+  QUANTITY_INVALID = 'QUANTITY_INVALID',
+  WISHLIST_LIMIT_REACHED = 'WISHLIST_LIMIT_REACHED',
+  CART_LIMIT_REACHED = 'CART_LIMIT_REACHED',
+}
+```
+
+---
+
+## 3. Request DTOs — Wishlist
+
+### 3.1 AddToWishlistDto
+
+Used for `POST /wishlist/:productId` to add a product to the wishlist.
+
+```typescript
+import { IsString, IsNotEmpty, Matches } from 'class-validator';
 
 export class AddToWishlistDto {
-  @IsUUID('4', { message: 'Invalid product ID format' })
+  @IsString()
   @IsNotEmpty({ message: 'Product ID is required' })
+  @Matches(/^c[a-z0-9]{24,}$/, { message: 'Invalid product ID format' })
   productId: string;
 }
 ```
 
-### 2.2 AddToCartDto
+---
 
-Used for `POST /cart/items` to add a product to the user's shopping cart.
+## 4. Request DTOs — Cart
+
+### 4.1 AddToCartDto
+
+Used for `POST /cart/items` to add a product to the cart.
 
 ```typescript
-import { IsUUID, IsInt, Min, Max, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, Min, Max, Matches } from 'class-validator';
 
 export class AddToCartDto {
-  @IsUUID('4', { message: 'Invalid product ID format' })
+  @IsString()
   @IsNotEmpty({ message: 'Product ID is required' })
+  @Matches(/^c[a-z0-9]{24,}$/, { message: 'Invalid product ID format' })
   productId: string;
 
   @IsOptional()
-  @IsInt({ message: 'Quantity must be a whole number' })
+  @IsInt({ message: 'Quantity must be an integer' })
   @Min(1, { message: 'Quantity must be at least 1' })
   @Max(99, { message: 'Quantity cannot exceed 99' })
   quantity?: number = 1;
 }
 ```
 
-### 2.3 UpdateCartQuantityDto
+### 4.2 UpdateCartQuantityDto
 
-Used for `PATCH /cart/items/:id` to update the quantity of a cart item.
+Used for `PATCH /cart/items/:id` to update cart item quantity.
 
 ```typescript
-import { IsInt, Min, Max, IsNotEmpty } from 'class-validator';
+import { IsInt, Min, Max } from 'class-validator';
 
 export class UpdateCartQuantityDto {
-  @IsInt({ message: 'Quantity must be a whole number' })
+  @IsInt({ message: 'Quantity must be an integer' })
   @Min(1, { message: 'Quantity must be at least 1' })
   @Max(99, { message: 'Quantity cannot exceed 99' })
-  @IsNotEmpty({ message: 'Quantity is required' })
   quantity: number;
 }
 ```
 
-### 2.4 MoveToCartDto
-
-Used internally for `POST /wishlist/:productId/move-to-cart` to process wishlist item transfer.
-
-```typescript
-import { IsUUID, IsNotEmpty } from 'class-validator';
-
-export class MoveToCartDto {
-  @IsUUID('4', { message: 'Invalid product ID format' })
-  @IsNotEmpty({ message: 'Product ID is required' })
-  productId: string;
-}
-```
-
 ---
 
-## 3. Response DTOs
+## 5. Response DTOs — Wishlist
 
-### 3.1 WishlistItemResponseDto
+### 5.1 WishlistItemResponseDto
 
-Returned by wishlist endpoints with product details.
+Returned in wishlist list and single-item responses.
 
 ```typescript
 export class WishlistItemResponseDto {
-  id: string;                    // Wishlist record ID (UUID)
-  productId: string;             // Product ID (UUID)
-  productName: string;           // Product name
-  productSlug: string;           // URL-friendly slug
-  productImage: string;          // First product image URL
-  productPrice: number;          // Current price in yen
-  compareAtPrice: number | null; // Original price if discounted
-  stockStatus: StockStatus;      // Stock status enum
-  isInStock: boolean;            // Stock availability flag
-  createdAt: Date;               // When item was added to wishlist
+  id: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
+  productImage: string;
+  productPrice: number;
+  compareAtPrice: number | null;
+  stockStatus: StockStatus;
+  isInStock: boolean;
+  createdAt: Date;
 }
 ```
 
-### 3.2 CartItemResponseDto
+### 5.2 WishlistResponseDto
 
-Returned by cart endpoints with product details and calculations.
-
-```typescript
-export class CartItemResponseDto {
-  id: string;                    // Cart item ID (UUID)
-  productId: string;             // Product ID (UUID)
-  productName: string;           // Product name
-  productSlug: string;           // URL-friendly slug
-  productImage: string;          // First product image URL
-  unitPrice: number;             // Price per unit in yen
-  quantity: number;              // Quantity in cart
-  subtotal: number;              // unitPrice × quantity
-  stockQuantity: number;         // Available stock quantity
-  stockStatus: StockStatus;      // Stock status enum
-  isAvailable: boolean;          // stockQuantity >= quantity
-}
-```
-
-### 3.3 CartSummaryResponseDto
-
-Returned by GET /cart with cart summary and items.
-
-```typescript
-export class CartSummaryResponseDto {
-  items: CartItemResponseDto[];  // Array of cart items
-  summary: CartSummaryDto;       // Summary calculations
-}
-
-export class CartSummaryDto {
-  totalItems: number;            // Sum of all quantities
-  subtotal: number;              // Sum of all subtotals (before discounts)
-  hasOutOfStock: boolean;        // Any item with stock = 0
-  canCheckout: boolean;          // All items in stock
-}
-```
-
-### 3.4 WishlistResponseDto
-
-Returned by GET /wishlist with all wishlist items.
+Returned by `GET /wishlist` with all wishlist items.
 
 ```typescript
 export class WishlistResponseDto {
-  items: WishlistItemResponseDto[];  // Array of wishlist items
-  totalCount: number;                // Total number of items
+  items: WishlistItemResponseDto[];
+  totalCount: number;
 }
 ```
 
-### 3.5 MoveToCartResponseDto
+### 5.3 MoveToCartResponseDto
 
-Returned by POST /wishlist/:productId/move-to-cart.
+Returned by `POST /wishlist/:productId/move-to-cart`.
 
 ```typescript
 export class MoveToCartResponseDto {
-  cartItem: CartItemResponseDto;  // Created/updated cart item
-  wishlistRemoved: boolean;       // Whether wishlist item was removed
-}
-```
-
-### 3.6 OperationSuccessResponseDto
-
-Returned by delete endpoints.
-
-```typescript
-export class OperationSuccessResponseDto {
-  message: string;  // Success message
+  cartItem: CartItemResponseDto;
+  wishlistRemoved: boolean;
 }
 ```
 
 ---
 
-## 4. Enum Types
+## 6. Response DTOs — Cart
 
-### 4.1 StockStatus
+### 6.1 CartItemResponseDto
+
+Returned in cart list and single-item responses.
 
 ```typescript
-export enum StockStatus {
-  IN_STOCK = 'in_stock',
-  LOW_STOCK = 'low_stock',
-  OUT_OF_STOCK = 'out_of_stock',
+export class CartItemResponseDto {
+  id: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
+  productImage: string;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
+  stockQuantity: number;
+  stockStatus: StockStatus;
+  isAvailable: boolean;
 }
 ```
 
-### 4.2 UserRole
+### 6.2 CartSummaryResponseDto
+
+Nested within cart response, provides aggregate information.
 
 ```typescript
-export enum UserRole {
-  BUYER = 'buyer',
-  MERCHANT = 'merchant',
-  ADMIN = 'admin',
+export class CartSummaryResponseDto {
+  totalItems: number;
+  subtotal: number;
+  hasOutOfStock: boolean;
+  canCheckout: boolean;
 }
 ```
 
-### 4.3 WishlistItemState
+### 6.3 CartResponseDto
+
+Returned by `GET /cart` with all cart items and summary.
 
 ```typescript
-export enum WishlistItemState {
-  SAVED = 'SAVED',
-  OUT_OF_STOCK = 'OUT_OF_STOCK',
-  PRODUCT_DELETED = 'PRODUCT_DELETED',
-  MOVED_TO_CART = 'MOVED_TO_CART',
+export class CartResponseDto {
+  items: CartItemResponseDto[];
+  summary: CartSummaryResponseDto;
 }
 ```
 
-### 4.4 CartItemState
+### 6.4 ClearCartResponseDto
+
+Returned by `DELETE /cart` after clearing all items.
 
 ```typescript
-export enum CartItemState {
-  ACTIVE = 'ACTIVE',
-  LOW_STOCK = 'LOW_STOCK',
-  OUT_OF_STOCK = 'OUT_OF_STOCK',
-  QUANTITY_EXCEEDED = 'QUANTITY_EXCEEDED',
-  PRODUCT_DELETED = 'PRODUCT_DELETED',
-}
-```
-
----
-
-## 5. Database Entity Types
-
-### 5.1 Wishlist
-
-```typescript
-export interface Wishlist {
-  id: string;              // UUID primary key
-  userId: string;          // Foreign key to users
-  productId: string;       // Foreign key to products
-  createdAt: Date;         // Record creation timestamp
-  updatedAt: Date;         // Record update timestamp
-}
-```
-
-### 5.2 Cart
-
-```typescript
-export interface Cart {
-  id: string;              // UUID primary key
-  userId: string;          // Foreign key to users
-  productId: string;       // Foreign key to products
-  quantity: number;        // Quantity in cart (min: 1, max: 99)
-  createdAt: Date;         // Record creation timestamp
-  updatedAt: Date;         // Record update timestamp
-}
-```
-
-### 5.3 Product (Relevant Fields)
-
-```typescript
-export interface Product {
-  id: string;              // UUID primary key
-  name: string;            // Product name
-  slug: string;            // URL-friendly slug
-  price: number;           // Current price in yen
-  compareAtPrice: number | null;  // Original price if discounted
-  images: string[];        // Array of image URLs
-  stockQuantity: number;   // Available stock quantity
-  isActive: boolean;       // Product active status
-  lowStockThreshold: number;  // Default: 10
+export class ClearCartResponseDto {
+  deletedCount: number;
+  message: string;
 }
 ```
 
 ---
 
-## 6. Service Interface Types
+## 7. Response DTOs — Common
 
-### 6.1 WishlistServiceInterface
+### 7.1 OperationResultResponseDto
 
-```typescript
-export interface WishlistServiceInterface {
-  addToWishlist(userId: string, productId: string): Promise<WishlistItemResponseDto>;
-  removeFromWishlist(userId: string, productId: string): Promise<OperationSuccessResponseDto>;
-  getWishlist(userId: string): Promise<WishlistResponseDto>;
-  moveToCart(userId: string, productId: string): Promise<MoveToCartResponseDto>;
-  checkIfInWishlist(userId: string, productId: string): Promise<boolean>;
-}
-```
-
-### 6.2 CartServiceInterface
+Returned by delete and move-to-cart operations.
 
 ```typescript
-export interface CartServiceInterface {
-  addToCart(userId: string, dto: AddToCartDto): Promise<CartItemResponseDto>;
-  updateQuantity(userId: string, cartItemId: string, dto: UpdateCartQuantityDto): Promise<CartItemResponseDto>;
-  removeFromCart(userId: string, cartItemId: string): Promise<OperationSuccessResponseDto>;
-  getCart(userId: string): Promise<CartSummaryResponseDto>;
-  getCartItemCount(userId: string): Promise<number>;
+export class OperationResultResponseDto {
+  success: boolean;
+  message: string;
 }
 ```
 
 ---
 
-## 7. Error Response Types
+## 8. Validation Configuration
 
-### 7.1 ErrorResponse
+### 8.1 Configurable Limits
+
+Defined via `.env` and injected into DTOs at runtime:
+
+```typescript
+export interface WishCartConfig {
+  wishlistMaxItems: number;       // Default: 100
+  cartMaxItems: number;           // Default: 50
+  cartMaxQuantityPerItem: number; // Default: 99
+  lowStockThreshold: number;      // Default: 10
+}
+
+export const DEFAULT_WISH_CART_CONFIG: WishCartConfig = {
+  wishlistMaxItems: Number(process.env.WISHLIST_MAX_ITEMS) || 100,
+  cartMaxItems: Number(process.env.CART_MAX_ITEMS) || 50,
+  cartMaxQuantityPerItem: Number(process.env.CART_MAX_QUANTITY_PER_ITEM) || 99,
+  lowStockThreshold: Number(process.env.LOW_STOCK_THRESHOLD) || 10,
+};
+```
+
+### 8.2 Stock Status Calculation
+
+```typescript
+export function calculateStockStatus(
+  stockQuantity: number,
+  lowStockThreshold: number = 10,
+): StockStatus {
+  if (stockQuantity <= 0) return StockStatus.OUT_OF_STOCK;
+  if (stockQuantity <= lowStockThreshold) return StockStatus.LOW_STOCK;
+  return StockStatus.IN_STOCK;
+}
+```
+
+### 8.3 Subtotal Calculation
+
+```typescript
+export function calculateSubtotal(unitPrice: number, quantity: number): number {
+  return unitPrice * quantity;
+}
+```
+
+---
+
+## 9. Prisma Model Types
+
+### 9.1 WishlistInclude
+
+Prisma include configuration for wishlist queries with product details.
+
+```typescript
+import { Prisma } from '@prisma/client';
+
+export const wishlistInclude = Prisma.validator<Prisma.wishlistsInclude>()({
+  product: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      images: true,
+      price: true,
+      compare_at_price: true,
+      stock_quantity: true,
+      is_active: true,
+    },
+  },
+});
+
+export type WishlistWithProduct = Prisma.wishlistsGetPayload<{
+  include: typeof wishlistInclude;
+}>;
+```
+
+### 9.2 CartItemInclude
+
+Prisma include configuration for cart queries with product details.
+
+```typescript
+export const cartItemInclude = Prisma.validator<Prisma.cart_itemsInclude>()({
+  product: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      images: true,
+      price: true,
+      stock_quantity: true,
+      is_active: true,
+    },
+  },
+});
+
+export type CartItemWithProduct = Prisma.cart_itemsGetPayload<{
+  include: typeof cartItemInclude;
+}>;
+```
+
+---
+
+## 10. Error Response Types
+
+### 10.1 ErrorResponse
 
 ```typescript
 export interface ErrorResponse {
   statusCode: number;
   error: string;
   message: string | string[];
-  details?: ErrorDetail[];
   timestamp: string;
   path: string;
 }
-
-export interface ErrorDetail {
-  field: string;
-  message: string;
-}
-```
-
-### 7.2 Common Error Codes
-
-```typescript
-export enum WishlistErrorCode {
-  VALIDATION_FAILED = 'VALIDATION_ERROR',
-  PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND',
-  PRODUCT_INACTIVE = 'PRODUCT_INACTIVE',
-  ALREADY_IN_WISHLIST = 'ALREADY_IN_WISHLIST',
-  WISHLIST_ITEM_NOT_FOUND = 'WISHLIST_ITEM_NOT_FOUND',
-  PRODUCT_OUT_OF_STOCK = 'PRODUCT_OUT_OF_STOCK',
-  MAX_WISHLIST_ITEMS = 'MAX_WISHLIST_ITEMS',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-}
-
-export enum CartErrorCode {
-  VALIDATION_FAILED = 'VALIDATION_ERROR',
-  PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND',
-  PRODUCT_INACTIVE = 'PRODUCT_INACTIVE',
-  PRODUCT_OUT_OF_STOCK = 'PRODUCT_OUT_OF_STOCK',
-  QUANTITY_EXCEEDS_STOCK = 'QUANTITY_EXCEEDS_STOCK',
-  QUANTITY_INVALID = 'QUANTITY_INVALID',
-  CART_ITEM_NOT_FOUND = 'CART_ITEM_NOT_FOUND',
-  MAX_CART_ITEMS = 'MAX_CART_ITEMS',
-  MAX_QUANTITY_PER_ITEM = 'MAX_QUANTITY_PER_ITEM',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-}
 ```
 
 ---
 
-## 8. Configuration Types
-
-### 8.1 WishlistConfig
-
-```typescript
-export interface WishlistConfig {
-  maxItems: number;  // Maximum items per user wishlist (default: 100)
-}
-
-export const WISHLIST_CONFIG: WishlistConfig = {
-  maxItems: parseInt(process.env.WISHLIST_MAX_ITEMS || '100', 10),
-};
-```
-
-### 8.2 CartConfig
-
-```typescript
-export interface CartConfig {
-  maxItems: number;           // Maximum items per user cart (default: 50)
-  maxQuantityPerItem: number; // Maximum quantity per cart item (default: 99)
-}
-
-export const CART_CONFIG: CartConfig = {
-  maxItems: parseInt(process.env.CART_MAX_ITEMS || '50', 10),
-  maxQuantityPerItem: parseInt(process.env.CART_MAX_QUANTITY_PER_ITEM || '99', 10),
-};
-```
-
-### 8.3 StockConfig
-
-```typescript
-export interface StockConfig {
-  lowStockThreshold: number;  // Default low stock warning threshold (default: 10)
-}
-
-export const STOCK_CONFIG: StockConfig = {
-  lowStockThreshold: parseInt(process.env.LOW_STOCK_THRESHOLD || '10', 10),
-};
-```
-
----
-
-## 9. Cross-References
+## 11. Cross-References
 
 | Related Document | Purpose |
 |-----------------|---------|
-| [DD_WISH-CART_03](./DD_Wishlist_CartPage_03_API_ENDPOINTS.md) | Endpoints that consume these DTOs |
-| [DD_WISH-CART_05](./DD_Wishlist_CartPage_05_BUSINESS_LOGIC.md) | Business rules for validation |
+| [DD_WISH_CART_03](./DD_Wishlist_CartPage_03_API_ENDPOINTS.md) | Endpoints that consume these DTOs |
+| [DD_WISH_CART_05](./DD_Wishlist_CartPage_05_BUSINESS_LOGIC.md) | Business rules for validation |
 | [機能設計書_Wishlist_CartPage](../機能設計書_Wishlist_CartPage.md) | Full functional specification |
