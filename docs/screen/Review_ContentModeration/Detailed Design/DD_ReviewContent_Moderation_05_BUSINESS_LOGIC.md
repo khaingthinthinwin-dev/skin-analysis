@@ -1,7 +1,16 @@
 # DD_MOD_05 — Business Logic (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-05 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-MOD-05 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-18
+
+---
+
+## 0. Document Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 1.0 | 2026-08-17 | Software Architect | Initial business logic for Review & Content Moderation. |
+| 1.1 | 2026-08-18 | Software Architect | Added Review Reports business logic (UC-MOD-007): report status update, report deletion, report state machine, validation rules, audit logging, and cache invalidation. |
 
 ---
 
@@ -9,7 +18,7 @@
 
 This document specifies the core business logic, state transition rules, cache invalidation, and audit logging implemented in the `AdminService` and related moderation services.
 
-- **Location:** `src/modules/admin/admin.service.ts`, `src/modules/admin/merchant-admin.service.ts`, `src/modules/admin/content-moderation.service.ts`, `src/modules/admin/user-admin.service.ts`
+- **Location:** `src/modules/admin/admin.service.ts`, `src/modules/admin/merchant-admin.service.ts`, `src/modules/admin/content-moderation.service.ts`, `src/modules/admin/user-admin.service.ts`, `src/modules/admin/report-admin.service.ts`
 
 ---
 
@@ -140,6 +149,36 @@ This document specifies the core business logic, state transition rules, cache i
    - **Audit log:** Insert `USER_DEACTIVATED` or `USER_ACTIVATED` with `adminId`, `userId`, `timestamp`.
 3. **Transaction Boundaries:** User update, token revocation, and audit log must be atomic.
 
+### 2.9 updateReportStatus(reportId, dto)
+
+1. **Validation:** Handled by `UpdateReportStatusDto` with class-validator.
+2. **Logic:**
+   - Find report by `id` in `review_reports` table. If not found, return 404 with `REPORT_NOT_FOUND`.
+   - Check current `status`. If already `'completed'`, return 409 with `REPORT_ALREADY_COMPLETED`.
+   - Update `review_reports.status` to `dto.status`.
+   - Set `review_reports.resolved_by` to `adminId`.
+   - Set `review_reports.resolved_at` to current timestamp.
+   - **If status = `'completed'`:**
+     - Reject the target review: Update `reviews.is_approved = false` WHERE `id = report.reviewId`.
+     - **Recalculate product statistics:**
+       - Query `SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = :productId AND is_approved = true`
+       - Update `products.avg_rating` and `products.review_count`
+     - **Invalidate caches:**
+       - Delete `cache:product:{productId}` from Redis
+       - Delete all keys matching `cache:products:list:*` from Redis
+   - **Audit log:** Insert `REPORT_REJECTED` or `REPORT_COMPLETED` with `adminId`, `reportId`, `reviewId`, `timestamp`.
+3. **Transaction Boundaries:** Report update, review rejection (if completed), product stat recalculation, cache invalidation, and audit log must be atomic.
+
+### 2.10 deleteReport(reportId)
+
+1. **Validation:** Report ID is valid UUID.
+2. **Logic:**
+   - Find report by `id` in `review_reports` table. If not found, return 404 with `REPORT_NOT_FOUND`.
+   - Check current `status`. If `'completed'`, return 409 with `REPORT_COMPLETED_CANNOT_DELETE`.
+   - Hard delete report from `review_reports` table.
+   - **Audit log:** Insert `REPORT_DELETED` with `adminId`, `reportId`, `timestamp`.
+3. **Transaction Boundaries:** Report deletion and audit log must be atomic.
+
 ---
 
 ## 3. State Transition Logic
@@ -225,6 +264,30 @@ function transitionUserState(user: User, adminId: string, isActive: boolean): bo
 }
 ```
 
+### 3.5 Report State Machine
+
+| Transition | Origin | Target | Guard Conditions |
+|------------|--------|--------|------------------|
+| TR-MOD-09 | `status = 'pending'` | `status = 'rejected'` | Admin role, report exists |
+| TR-MOD-10 | `status = 'pending'` | `status = 'completed'` | Admin role, report exists |
+| TR-MOD-11 | `status = 'pending'` or `'rejected'` | Deleted | Admin role, report exists, not completed |
+
+```typescript
+function transitionReportState(report: Report, status: ReportAction): boolean {
+  if (report.status === 'completed') return false; // Already completed (409)
+  if (status === 'rejected') {
+    report.status = 'rejected';
+  } else if (status === 'completed') {
+    report.status = 'completed';
+  }
+  return true;
+}
+
+function canDeleteReport(report: Report): boolean {
+  return report.status !== 'completed'; // Completed reports cannot be deleted
+}
+```
+
 ---
 
 ## 4. Product Statistics Recalculation
@@ -259,6 +322,7 @@ async recalculateProductStats(productId: string): Promise<void> {
 | Review approved | Yes — product `avg_rating` and `review_count` |
 | Review rejected | Yes — product `avg_rating` and `review_count` |
 | Review deleted | Yes — product `avg_rating` and `review_count` |
+| Report completed (auto-rejects review) | Yes — product `avg_rating` and `review_count` |
 | Merchant rejected | No — products deactivated, but stats unchanged |
 | Product deactivated | No — product hidden, stats preserved |
 | Product reactivated | No — product restored, stats preserved |
@@ -313,7 +377,7 @@ interface AuditLogEntry {
   id: string;           // UUID
   adminId: string;      // Who performed the action
   action: string;       // Event type
-  targetType: string;   // 'review' | 'merchant' | 'product' | 'user'
+  targetType: string;   // 'review' | 'merchant' | 'product' | 'user' | 'report'
   targetId: string;     // ID of the affected record
   details: Record<string, any>; // Additional context
   timestamp: Date;      // When the action occurred
@@ -333,6 +397,9 @@ interface AuditLogEntry {
 | `PRODUCT_REACTIVATED` | adminId, productId, timestamp | 2 years |
 | `USER_DEACTIVATED` | adminId, userId, timestamp | 2 years |
 | `USER_ACTIVATED` | adminId, userId, timestamp | 2 years |
+| `REPORT_REJECTED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_COMPLETED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_DELETED` | adminId, reportId, timestamp | 2 years |
 | `RBAC_VIOLATION` | userId, endpoint, requiredRole, timestamp | 30 days |
 
 ### 6.3 Audit Interceptor
@@ -455,6 +522,21 @@ async revokeAllUserTokens(userId: string): Promise<void> {
 | Field | Rule | Error Message (EN) | Error Message (JA) |
 |-------|------|--------------------|--------------------|
 | `isActive` | Required, boolean | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
+
+### 9.5 Report Status Validation
+
+| Field | Rule | Error Message (EN) | Error Message (JA) |
+|-------|------|--------------------|--------------------|
+| `status` | Required, 'rejected' or 'completed' | "Status must be 'rejected' or 'completed'" | "ステータスは'rejected'または'completed'である必要があります" |
+| — | Report must not be already completed | "This report has already been completed" | "このレポートは既に完了しています" |
+| — | Report must exist | "Report not found" | "レポートが見つかりません" |
+
+### 9.6 Report Deletion Validation
+
+| Field | Rule | Error Message (EN) | Error Message (JA) |
+|-------|------|--------------------|--------------------|
+| — | Report must exist | "Report not found" | "レポートが見つかりません" |
+| — | Completed reports cannot be deleted | "Completed reports cannot be deleted" | "完了済みレポートは削除できません" |
 
 ---
 

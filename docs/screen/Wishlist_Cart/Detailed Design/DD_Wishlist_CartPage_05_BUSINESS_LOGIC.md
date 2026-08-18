@@ -1,7 +1,7 @@
 # DD_WISH_CART_05 — Business Logic
 
-> **Doc ID:** SKM-DD-WISH-CART-05 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-13
+> **Doc ID:** SKM-DD-WISH-CART-05 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-17
 
 ---
 

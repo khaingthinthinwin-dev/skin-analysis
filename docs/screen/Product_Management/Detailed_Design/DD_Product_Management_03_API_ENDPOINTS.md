@@ -1,7 +1,7 @@
 # DD_PROD_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-PROD-03 | **Version:** 1.4 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-PROD-03 | **Version:** 1.5 | **Status:** Released  
+> **Last Updated:** 2026-08-18
 
 ---
 
@@ -388,6 +388,58 @@ Delete all products of the authenticated merchant. Applies BR-PROD-024 active or
   - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
 - **Logic:** Calls `service.deleteAllByMerchant(userId)`. Iterates all merchant products, attempts soft delete for each. Products with active orders (status NOT IN 'delivered', 'cancelled') are added to `skippedProductIds` array.
 - **Side Effects:** Invalidates all product caches for the merchant
+
+### 2.11 GET /products/:id/inventory-transactions
+
+Get inventory transaction history for a product (merchant/admin).
+
+- **Auth Required:** Yes (`JwtAuthGuard`)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Roles:** `merchant`, `admin`
+- **Guard:** `@requireApprovedMerchant` — Requires `licenseStatus === 'approved'`
+- **Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `type` | string | No | Filter by transaction_type (sale, adjustment, return, manual, restock) |
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 20, max: 100) |
+
+- **Response:** `200 OK`
+  ```json
+  {
+    "data": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "productId": "550e8400-e29b-41d4-a716-446655440000",
+        "merchantId": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+        "transactionType": "manual",
+        "quantity": 10,
+        "beforeQuantity": 50,
+        "afterQuantity": 60,
+        "referenceType": null,
+        "referenceId": null,
+        "reason": "Inventory count correction",
+        "createdBy": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+        "createdAt": "2026-08-18T12:00:00.000Z"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "totalPages": 1
+    }
+  }
+  ```
+- **Error Responses:**
+  - `401 UNAUTHORIZED` — Missing or invalid JWT
+  - `403 FORBIDDEN` — Not product owner (merchant) or not admin
+  - `403 MERCHANT_NOT_APPROVED` — Merchant license status is `pending`
+  - `403 MERCHANT_REJECTED` — Merchant license status is `rejected` (includes rejection reason)
+  - `404 NOT_FOUND` — Product not found
+- **Logic:** Queries `inventory_transactions` table filtered by `productId` and optional `type`. Returns paginated results ordered by `createdAt` descending.
+- **Cache:** No caching (transaction history is volatile)
 
 ---
 

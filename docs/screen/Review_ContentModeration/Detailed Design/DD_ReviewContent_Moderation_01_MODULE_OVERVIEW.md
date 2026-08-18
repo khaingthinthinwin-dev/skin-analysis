@@ -1,13 +1,22 @@
 # DD_MOD_01 — Module Overview
 
-> **Doc ID:** SKM-DD-MOD-01 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-MOD-01 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-08-18
+
+---
+
+## 0. Document Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 1.0 | 2026-08-17 | Software Architect | Initial module overview for Review & Content Moderation. |
+| 1.1 | 2026-08-18 | Software Architect | Added Review Reports feature (UC-MOD-007): report management endpoints, `review_reports` table, `notifications` table, report-related architectural components, and audit log events. |
 
 ---
 
 ## 1. Module Overview
 
-The **Review & Content Moderation Module** (レビュー・コンテンツ管理モジュール) is the central administration hub for maintaining platform integrity within the Cosmetics Finder platform. It provides administrators with complete tools to moderate product reviews (approve/reject/delete), manage merchant registrations (approve/reject), moderate product content (activate/deactivate), and perform user account moderation (activate/deactivate). All actions are protected by admin-only RBAC enforcement with comprehensive audit logging.
+The **Review & Content Moderation Module** (レビュー・コンテンツ管理モジュール) is the central administration hub for maintaining platform integrity within the Cosmetics Finder platform. It provides administrators with complete tools to moderate product reviews (approve/reject/delete), manage merchant registrations (approve/reject), moderate product content (activate/deactivate), manage review reports (confirm/reject/complete), and perform user account moderation (activate/deactivate). All actions are protected by admin-only RBAC enforcement with comprehensive audit logging.
 
 ---
 
@@ -21,6 +30,7 @@ The **Review & Content Moderation Module** (レビュー・コンテンツ管理
 | UC-MOD-004 | Remove Violating Content | Admin deactivates products that violate platform policy by setting `is_active = false`. Products are soft-deleted to preserve order history integrity. |
 | UC-MOD-005 | Approve/Reject Merchant Registration | Admin approves or rejects a merchant. `merchants.license_status` is updated and `shops.is_approved` is synchronized. On rejection, merchant's products are deactivated. Website notification is created. |
 | UC-MOD-006 | Activate/Deactivate User Account | Admin activates or deactivates user accounts. Deactivation revokes all active sessions (refresh tokens). Admin cannot deactivate their own account. |
+| UC-MOD-007 | Manage Review Reports | Admin processes reported reviews: confirms, rejects, or completes reports. When a report is completed, the target review is automatically rejected. Reports start with `pending` status. Completed reports cannot be changed. |
 
 ---
 
@@ -87,6 +97,23 @@ stateDiagram-v2
 | `ACTIVE` | Account is active | Yes | Yes |
 | `INACTIVE` | Account deactivated by admin | No | No |
 
+### 3.5 Review Report States
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING : Buyer reports review (BR-MOD-050)
+    PENDING --> REJECTED : Admin rejects report
+    PENDING --> COMPLETED : Admin completes report (rejects target review)
+    REJECTED --> [*] : Admin deletes report
+    COMPLETED --> [*] : No further changes
+```
+
+| State | Description | Can Be Changed | Can Be Deleted |
+|-------|-------------|:--------------:|:--------------:|
+| `PENDING` | New report awaiting admin review | Yes | Yes |
+| `REJECTED` | Report rejected by admin | No | Yes |
+| `COMPLETED` | Report resolved; target review auto-rejected | No | No |
+
 ---
 
 ## 4. Security & Permissions
@@ -96,7 +123,7 @@ stateDiagram-v2
 3. **Self-Deactivation Prevention**: Admin cannot deactivate their own account (BR-MOD-042).
 4. **Session Termination**: Deactivating a user revokes all active refresh tokens (BR-MOD-041).
 5. **Confirmation Dialogs**: Required for all destructive actions (delete review, reject merchant, deactivate product/user).
-6. **Audit Logging**: All moderation actions logged with admin ID, target ID, action, and timestamp. Retention: 2 years.
+6. **Audit Logging**: All moderation actions logged with admin ID, target ID, action, and timestamp. Retention: 2 years. Events include: `REVIEW_APPROVED`, `REVIEW_REJECTED`, `REVIEW_DELETED`, `MERCHANT_APPROVED`, `MERCHANT_REJECTED`, `USER_DEACTIVATED`, `USER_ACTIVATED`, `REPORT_REJECTED`, `REPORT_COMPLETED`, `REPORT_DELETED`, `RBAC_VIOLATION`.
 7. **Rate Limiting**: Admin API endpoints limited to 100 requests per minute.
 8. **Data Isolation**: Admin can moderate any record. Merchants can only view their own products.
 9. **Input Sanitization**: All user input sanitized to prevent XSS. Backend ValidationPipe + class-validator DTOs on all endpoints.
@@ -108,17 +135,17 @@ stateDiagram-v2
 
 | Layer | Files |
 |-------|-------|
-| **Frontend Pages** | `AdminReviews.tsx`, `AdminMerchants.tsx`, `AdminContent.tsx`, `AdminUsers.tsx` |
-| **Frontend Components** | `ReviewsTable.tsx`, `ReviewDetailModal.tsx`, `MerchantsTable.tsx`, `MerchantDetailModal.tsx`, `ProductsTable.tsx`, `ProductModerationModal.tsx`, `UsersTable.tsx`, `UserDetailModal.tsx`, `ModerationReasonForm.tsx`, `BulkActions.tsx` |
-| **Frontend Hooks** | `useAdminReviews.ts`, `useAdminMerchants.ts`, `useAdminContent.ts`, `useAdminUsers.ts` |
+| **Frontend Pages** | `AdminReviews.tsx`, `AdminMerchants.tsx`, `AdminContent.tsx`, `AdminUsers.tsx`, `AdminReports.tsx` |
+| **Frontend Components** | `ReviewsTable.tsx`, `ReviewDetailModal.tsx`, `MerchantsTable.tsx`, `MerchantDetailModal.tsx`, `ProductsTable.tsx`, `ProductModerationModal.tsx`, `UsersTable.tsx`, `UserDetailModal.tsx`, `ReportsTable.tsx`, `ReportDetailModal.tsx`, `ModerationReasonForm.tsx`, `BulkActions.tsx` |
+| **Frontend Hooks** | `useAdminReviews.ts`, `useAdminMerchants.ts`, `useAdminContent.ts`, `useAdminUsers.ts`, `useAdminReports.ts` |
 | **Frontend Services** | `admin.service.ts` |
 | **Frontend Schemas** | `admin.schema.ts` (moderation reason validation) |
 | **Backend API** | `admin.controller.ts` |
-| **Backend Service** | `admin.service.ts` (review moderation), `merchant-admin.service.ts`, `content-moderation.service.ts`, `user-admin.service.ts` |
-| **Backend DTOs** | `moderate-review.dto.ts`, `moderate-merchant.dto.ts`, `moderate-product.dto.ts`, `moderate-user.dto.ts` |
+| **Backend Service** | `admin.service.ts` (review moderation), `merchant-admin.service.ts`, `content-moderation.service.ts`, `user-admin.service.ts`, `report-admin.service.ts` |
+| **Backend DTOs** | `moderate-review.dto.ts`, `moderate-merchant.dto.ts`, `moderate-product.dto.ts`, `moderate-user.dto.ts`, `update-report-status.dto.ts` |
 | **Backend Guards** | `jwt-auth.guard.ts`, `roles.guard.ts` |
 | **Backend Interceptors** | `audit.interceptor.ts` |
-| **Shared Services** | `prisma.service.ts` (reviews, products, shops, merchants, users), `redis.service.ts` (cache invalidation), `notification.service.ts` (website notifications) |
+| **Shared Services** | `prisma.service.ts` (reviews, products, shops, merchants, users, review_reports), `redis.service.ts` (cache invalidation), `notification.service.ts` (website notifications for merchant status changes) |
 
 ---
 
@@ -141,6 +168,9 @@ stateDiagram-v2
 | `GET` | `/api/v1/admin/users` | View all users with filters and pagination | Admin |
 | `GET` | `/api/v1/admin/users/:id` | View user detail | Admin |
 | `PATCH` | `/api/v1/admin/users/:id/status` | Activate or deactivate a user account | Admin |
+| `GET` | `/api/v1/admin/reports` | View all review reports with filters and pagination | Admin |
+| `PATCH` | `/api/v1/admin/reports/:id/status` | Update report status (reject/complete) | Admin |
+| `DELETE` | `/api/v1/admin/reports/:id` | Delete a review report | Admin |
 
 ---
 
@@ -155,7 +185,9 @@ stateDiagram-v2
 | `users` | Store user accounts, active status | SELECT (list/detail), UPDATE (is_active) |
 | `categories` | Store product categories | SELECT (product detail) |
 | `refresh_tokens` | Store hashed refresh tokens | DELETE (revoke all on user deactivation) |
+| `review_reports` | Store buyer-submitted review reports | SELECT (list/detail), UPDATE (status, resolved_by, resolved_at), DELETE (pending/rejected reports only) |
 | `audit_logs` | Append-only audit trail for all moderation actions | INSERT (every moderation action) |
+| `notifications` | Store website notifications for merchant status changes | INSERT (on merchant approve/reject) |
 
 ---
 

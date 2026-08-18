@@ -1,7 +1,7 @@
 # DD_PROD_06 — Test Specification
 
-> **Doc ID:** SKM-DD-PROD-06 | **Version:** 1.2 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-PROD-06 | **Version:** 1.3 | **Status:** Released  
+> **Last Updated:** 2026-08-18
 
 ---
 
@@ -79,6 +79,16 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **deleteAllByMerchant** | Mixed: some with active orders, some without | Deletes eligible, skips products with active orders |
 | **deleteAllByMerchant** | Merchant with no products | Returns deleted=0, skipped=0 |
 | **deleteAllByMerchant** | Cache invalidation | Invalidates all product caches |
+| **getInventoryTransactions** | Valid product ID, no filters | Returns all transactions for product |
+| **getInventoryTransactions** | Filter by type='sale' | Returns only sale transactions |
+| **getInventoryTransactions** | Pagination | Returns correct page with limit |
+| **getInventoryTransactions** | Product not found | Returns empty list |
+| **create** (audit_logs) | Valid data | Creates audit_logs record with action, merchantId, productId |
+| **update** (audit_logs) | Valid data | Creates audit_logs record with changes object |
+| **softDelete** (audit_logs) | Valid data | Creates audit_logs record with action='PRODUCT_DELETED' |
+| **updateStock** (audit_logs) | Valid data | Creates audit_logs record with oldQty, newQty |
+| **updateStock** (inventory_transactions) | Valid data | Creates inventory_transactions record with beforeQuantity, afterQuantity |
+| **updateStock** (inventory_transactions) | Stock below threshold | Creates notifications record for low stock alert |
 
 ### 2.2 `products.controller.spec.ts`
 
@@ -109,6 +119,10 @@ Mock dependencies: `ProductsService`.
 | **DELETE /products/all** | Valid merchant | Calls `service.deleteAllByMerchant`, returns 200 |
 | **DELETE /products/all** | Missing auth | Returns 401 Unauthorized |
 | **DELETE /products/all** | Merchant not approved | Returns 403 Forbidden |
+| **GET /products/:id/inventory-transactions** | Valid product ID | Calls `service.getInventoryTransactions`, returns 200 |
+| **GET /products/:id/inventory-transactions** | Filter by type | Returns filtered transactions |
+| **GET /products/:id/inventory-transactions** | Not owner | Returns 403 Forbidden |
+| **GET /products/:id/inventory-transactions** | Product not found | Returns 404 Not Found |
 
 ### 2.3 `require-approved-merchant.guard.spec.ts`
 
