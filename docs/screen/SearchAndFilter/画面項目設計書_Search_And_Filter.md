@@ -2,11 +2,11 @@
 
 **Document ID:** SKM-SIS-SCR-002  
 **Target Screen:** Search & Filter Page (検索・フィルタページ)  
-**Subsystem:** Buyer Module — Product Search, Filtering, Sorting & Pagination  
+**Subsystem:** All Roles — Product Search, Filtering, Sorting & Pagination  
 **Function ID:** FN-SEARCH-001  
-**Version:** 2.1  
+**Version:** 2.2  
 **Created:** 2026-08-07  
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-18  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -23,31 +23,32 @@
 | 1.1 | 2026-08-14 | Senior System Engineer | Added Grid/List view toggle specification: screen items `tglViewMode` / `btnGridMode` / `btnListMode` (Sec 4.4), behavior (Sec 5.14), i18n keys (Sec 9), shared ViewToggle component (Sec 10.7), UI/UX & accessibility notes (Sec 11), and test checklist (Sec 12.6). View mode defaults to Grid, persists to localStorage, and leaves URL-based search/filter/sort/pagination state unchanged. |
 | 2.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, corrected DB mapping types to UUID. |
 | 2.1 | 2026-08-17 | Senior System Engineer | Further alignment with SignUp_Login (画面項目設計書 SKM-SIS-SCR-001) format and naming conventions. Enhanced section organization, improved consistency across all table formats, and ensured all Item Definitions follow standardized component type and data type conventions per DEVELOPMENT_RULES v2.0. |
+| 2.2 | 2026-08-18 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.10, DATABASE_SPEC v2.2, and DEVELOPMENT_RULES v2.1. Updated subsystem from "Buyer Module" to "All Roles". Added sponsored advertisement display (Sec 4.4 item39, Sec 5.15, Sec 8.5). Added 401/403 error codes for guest/merchant/admin shopping restrictions (Sec 6.2). Added guest alert modal behavior (Sec 11). Added Myanmar (MY) i18n translations (Sec 9.3). Fixed CUID→UUID in validation messages. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields (B-SEARCH-*, B-MATCH-*), and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `shops`), constraints, data types. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses, naming conventions. |
-| 4 | SKM-FDS-SEARCH-001 | Functional Specification — Search & Filter | `docs/screen/SearchAndFilter/機能設計書  _Search_And_Filter.md` | Use cases, state transitions, business rules, error handling. |
+| 1 | SKM-REQ-001 | Requirements Definition (要件定義書) v1.10 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields (B-SEARCH-*, B-MATCH-*), and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification (データベース設計書) v2.2 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `shops`), constraints, data types. |
+| 3 | SKM-DEV-001 | Development Rules (開発ルール) v2.1 | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses, naming conventions. |
+| 4 | SKM-FDS-SEARCH-001 | Functional Specification (機能設計書) v2.2 — Search & Filter | `docs/screen/SearchAndFilter/機能設計書  _Search_And_Filter.md` | Use cases, state transitions, business rules, error handling. |
 
 ---
 
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Search & Filter page serves as the discovery and exploration entry point within the Cosmetics Finder platform. It enables buyers (authenticated and unauthenticated) to locate skincare products via keyword search, hierarchical category navigation, and multi-dimensional filtering (skin type, ingredients, price range, review rating). Results are sortable, paginated, and rendered in configurable Grid or List layouts. All search, filter, sort, and pagination state is persisted in URL query parameters as the authoritative state source, ensuring result sets remain shareable, bookmarkable, and navigation-compatible.
+The Search & Filter page serves as the discovery and exploration entry point within the Cosmetics Finder platform. It enables all users (Visitor, Buyer, Merchant, Admin) to locate skincare products via keyword search, hierarchical category navigation, and multi-dimensional filtering (skin type, ingredients, price range, review rating). Results are sortable, paginated, and rendered in configurable Grid or List layouts. All search, filter, sort, and pagination state is persisted in URL query parameters as the authoritative state source, ensuring result sets remain shareable, bookmarkable, and navigation-compatible.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
 | Attribute | Value |
 | :--- | :--- |
-| **Primary Actors** | Visitors (unauthenticated), Buyers (authenticated), Merchants, Admins |
-| **Required Authentication** | None (public endpoints — search, category browsing, and product detail are open to all) |
+| **Primary Actors** | All roles — Visitor (unauthenticated), Buyer (authenticated), Merchant (authenticated), Admin (authenticated) |
+| **Required Authentication** | None for search/browse/filter/sort/paginate (public endpoints). Shopping actions (add to cart/wishlist) require authentication. |
 | **Data Scope** | Global product catalog (active, approved products from approved merchant shops) |
-| **Access Control** | Public routes — no authentication guards applied. Rate limiting enforced on public search endpoint. |
+| **Access Control** | Public routes — no authentication guards applied for search/filter/sort/paginate. Shopping actions restricted: Buyer ✓, Guest → alert modal (no auto-close) → `/login?redirect=<path>`, Merchant/Admin → 403 `SHOPPING_NOT_ALLOWED`. Rate limiting enforced on public search endpoint. |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
 1. **Keyword Search** — Partial (case-insensitive) matching across product name, short description, tags, and ingredients fields.
@@ -59,6 +60,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 7. **Performance Caching** — Repeat queries and category tree served from Redis cache (product list TTL 2 min, category tree TTL 30 min).
 8. **Responsive Design** — Desktop: fixed filters sidebar + multi-column product grid. Mobile: bottom-sheet filter drawer + single-column product display.
 9. **View Mode Toggle** — Switch result layout between responsive Grid (1–4 columns, adaptive) and mobile-optimized List (single-column stacked rows). Selection persists to `localStorage`, defaults to Grid, and does not affect URL state or trigger refetch.
+10. **Sponsored Advertisements** — Render search result sponsored ad slot (top placement) from `GET /api/v1/ads?placement=search_top` with 5-min Redis TTL. Cached ad slot data rendered without blocking product results.
 
 ---
 
@@ -196,7 +198,8 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | 33 | `pnlEmpty` | Empty State | EmptyState | — | Conditional | Shown when query returns `total = 0`. | — | `meta.total === 0` | "No products found" + description + `btnResetFilters`. i18n keys `search.empty.*`. |
 | 34 | `alertError` | Error Banner | Alert (`destructive`) | String | Conditional | Hidden by default. Shown on API/network error. | — | API error response | Tailwind: `border-destructive/50 text-destructive`. Dismissible. Includes Retry button. |
 | 35 | `pgnPagination` | Pagination | Pagination | — | No | Visible when `totalPages > 1`. | `page` ≥ 1, `limit` 1–100 | `meta.page`, `meta.totalPages` | Previous/next + page numbers. First/last page boundaries disable buttons (Sec 3.3). |
-| 36 | `selPageSize` | Page Size Select | Select | Enum | No | Default: 20 | Options: 10 / 20 / 50 | Query param `limit` | Changing page size resets `page` to 1. |
+| 36 | `selPageSize` | Page Size Select | Select | Enum | No | Default: 20 | Options: 10 / 20 / 50 / 100 | Query param `limit` | Changing page size resets `page` to 1. |
+| 39 | `slotAdTop` | Sponsored Ad Slot — Search Results Top | Container (`div`) | — | Conditional | Hidden until ad response arrives. Rendered above the first product row. | — | `GET /api/v1/ads?placement=search_top` (5-min Redis TTL, `cache:ads:search-top`) | Displays sponsored advertisement content (image, link, CTA) for the search top placement. Ad loaded independently of product results (parallel fetch). On ad fetch error or no active ads: hidden (graceful degradation). CTA click tracked via `ad.click` analytics event. Rule 4.6.4: ad slot must be visually distinct from organic results (e.g., "Sponsored" label badge). |
 
 ### 4.5 Section [E]: Footer Controls (フッターコントロール)
 
@@ -241,7 +244,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
   1. Set/clear `categoryId` param.
   2. Reset `page` to 1 (BR-SEARCH-011).
   3. Refetch — backend includes all descendant categories (BR-SEARCH-010).
-- **Exception Handling:** Invalid CUID rejected with `VAL-SEARCH-002`.
+- **Exception Handling:** Invalid UUID rejected with `VAL-SEARCH-002` / `VAL-SEARCH-013`.
 
 ### 5.5 Apply Filters (`btnApplyFilters` onClick)
 - **Trigger:** User clicks "Apply Filters" button (or mobile drawer Apply).
@@ -332,6 +335,16 @@ The Search & Filter page serves as the discovery and exploration entry point wit
   4. Persist the selection to `localStorage` key `search.viewMode`. On page load, restore the stored value; if absent or invalid, fall back to `grid` (Grid view).
 - **Exception Handling:** None applicable (local UI state only). Invalid stored value silently falls back to `grid`.
 
+### 5.15 Sponsored Advertisement Display (`slotAdTop` on mount)
+- **Trigger:** Component mounts (Search & Filter page loaded).
+- **Processing Logic:**
+  1. **Fetch ad slot:** `GET /api/v1/ads?placement=search_top` — parallel to product results fetch, does not block or defer product loading.
+  2. **Cache:** Ad slot response cached in Redis with key `cache:ads:search-top`, TTL 5 minutes (BR-SEARCH-025).
+  3. **Render:** If response returns active ad(s), render the top ad in `slotAdTop` container. Display "Sponsored" label badge (Rule 4.6.4) to distinguish from organic results.
+  4. **Error handling:** On ad fetch error or empty response, hide `slotAdTop` (graceful degradation — ad failure never blocks product results).
+  5. **Click tracking:** CTA click triggers `ad.click` analytics event with `ad_id` and `placement`.
+- **Exception Handling:** None (ad slot failure is non-critical; page functions normally without ads).
+
 ---
 
 ## 6. Validation & Error Message Mapping (バリデーション及びエラーメッセージマッピング)
@@ -342,6 +355,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-SEARCH-001** | `txtSearch` (`q`) | Keyword exceeds 255 characters | Red border. Text below field. | "Keyword must be 255 characters or fewer" | "キーワードは255文字以内である必要があります" |
 | **VAL-SEARCH-002** | `chkCategory` (`categoryId`) | Invalid category ID format (UUID) | Red border. Text below field. | "Invalid category ID" | "無効なカテゴリIDです" |
+| **VAL-SEARCH-013** | `chkCategory` (`categoryId`) | Invalid UUID format | Red border. Text below field. | "Invalid UUID format" | "無効なUUID形式です" |
 | **VAL-SEARCH-003** | `chkSkinType` (`skinTypes`) | Invalid skin type enum value | Red border. Text below field. | "Invalid skin type" | "無効な肌タイプです" |
 | **VAL-SEARCH-004** | `chkIngredient` (`ingredients`) | Ingredients is not an array of strings | Red border. Text below field. | "Invalid ingredients" | "無効な成分です" |
 | **VAL-SEARCH-005** | `txtMinPrice` | Min price is less than 0 | Red border. Text below field. | "Minimum price must be 0 or more" | "最低価格は0以上である必要があります" |
@@ -352,12 +366,16 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | **VAL-SEARCH-010** | `selSort` (`order`) | Sort direction not asc/desc | Red border. Text below field. | "Invalid sort direction" | "無効な並び順です" |
 | **VAL-SEARCH-011** | `pgnPagination` (`page`) | Page is less than 1 | Red border. Text below field. | "Page must be at least 1" | "ページは1以上である必要があります" |
 | **VAL-SEARCH-012** | `selPageSize` (`limit`) | Limit is outside 1–100 | Red border. Text below field. | "Limit must be between 1 and 100" | "件数は1〜100の間である必要があります" |
+| **VAL-SEARCH-014** | `alertError` (401) | Guest attempts shopping action without authentication | Alert modal (no auto-close) → redirect to `/login?redirect=<path>` | "Please log in to continue" | "ログインしてください" |
+| **VAL-SEARCH-015** | `alertError` (403) | Merchant/Admin attempts shopping action | Alert banner (destructive, no auto-close) | "Shopping features are only available to buyers" | "買い物機能はバイヤーのみ利用できます" |
 
 ### 6.2 Search API Error Responses
 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **BAD_REQUEST** (400) | `alertError` | Validation failures (invalid query params) | Inline validation hint + top banner | "Invalid search parameters" | "無効な検索条件です" |
+| **UNAUTHORIZED** (401) | `alertError` | Guest attempts shopping action (add to cart/wishlist) without authentication | Alert modal (no auto-close). "Login required" message. "OK" button → redirect to `/login?redirect=<encoded_path>` | "Please log in to continue" | "ログインしてください" |
+| **FORBIDDEN** (403) | `alertError` | Merchant or Admin attempts shopping action (add to cart/wishlist) | Alert banner (destructive). No auto-close. | "Shopping features are only available to buyers" | "買い物機能はバイヤーのみ利用できます" |
 | **NOT_FOUND** (404) | `alertError` | Product detail not found (invalid slug) | Empty state / banner | "Product not found" | "商品が見つかりません" |
 | **TOO_MANY_REQUESTS** (429) | `alertError` | Rate limit exceeded on public search | Alert banner (destructive) + retry countdown | "Too many requests. Please wait {seconds} seconds" | "リクエストが多すぎます。{seconds}秒お待ちください" |
 | **INTERNAL_SERVER_ERROR** (500) | `alertError` | Server error | Alert banner (destructive) + retry button | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
@@ -381,6 +399,19 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | `selPageSize` | `limit` | — (take) | `products` | INTEGER |
 | — | — | `is_active` | `products` | BOOLEAN (filter: active only, BR-SEARCH-012) |
 | — | — | `is_approved` | `shops` | BOOLEAN (filter: approved shop only, BR-SEARCH-013) |
+| `slotAdTop` | `ad` | `id` | `advertisements` | UUID PK |
+| — | — | `placement` | `advertisements` | VARCHAR (`search_top`) |
+| — | — | `title` | `advertisements` | VARCHAR(255) |
+| — | — | `description` | `advertisements` | TEXT |
+| — | — | `image_url` | `advertisements` | VARCHAR(500) |
+| — | — | `cta_text` | `advertisements` | VARCHAR(100) |
+| — | — | `cta_url` | `advertisements` | VARCHAR(500) |
+| — | — | `impression_url` | `advertisements` | VARCHAR(500) |
+| — | — | `tier` | `advertisements` | VARCHAR (premium/standard/basic) |
+| — | — | `urgency` | `advertisements` | INTEGER |
+| — | — | `approval_status` | `advertisements` | VARCHAR (pending/approved/rejected) |
+| — | — | `starts_at` | `advertisements` | TIMESTAMP |
+| — | — | `expires_at` | `advertisements` | TIMESTAMP |
 
 ---
 
@@ -470,6 +501,56 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 }
 ```
 
+### 8.5 Sponsored Advertisement Response (Search Top Placement)
+
+```json
+{
+  "data": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "placement": "search_top",
+      "title": "Summer Skincare Sale",
+      "description": "Up to 40% off premium skincare products",
+      "imageUrl": "https://cdn.example.com/ads/a1b2c3d4-e5f6-7890-abcd-ef1234567890/banner.webp",
+      "ctaText": "Shop Now",
+      "ctaUrl": "/products?category=skincare&sort=newest",
+      "impressionUrl": "https://analytics.example.com/impression?ad_id=a1b2c3d4",
+      "tier": "premium",
+      "urgency": 8,
+      "approvalStatus": "approved",
+      "startsAt": "2026-08-01T00:00:00.000Z",
+      "expiresAt": "2026-09-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Note:** Ad response is fetched independently and cached in Redis (key `cache:ads:search-top`, TTL 5 min). Ad failure never blocks product results.
+
+### 8.6 Shopping Restriction Error Response (401 Guest)
+
+```json
+{
+  "statusCode": 401,
+  "error": "UNAUTHORIZED",
+  "message": ["Please log in to continue"],
+  "timestamp": "2026-08-05T12:00:00.000Z",
+  "path": "/api/v1/cart"
+}
+```
+
+### 8.7 Shopping Restriction Error Response (403 Merchant/Admin)
+
+```json
+{
+  "statusCode": 403,
+  "error": "SHOPPING_NOT_ALLOWED",
+  "message": ["Shopping features are only available to buyers"],
+  "timestamp": "2026-08-05T12:00:00.000Z",
+  "path": "/api/v1/cart"
+}
+```
+
 ---
 
 ## 9. i18n Keys Reference (i18nキーリファレンス)
@@ -525,6 +606,10 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | `search.errors.serverError` | "Something went wrong. Please try again" |
 | `search.errors.tooManyRequests` | "Too many requests. Please wait {seconds} seconds" |
 | `search.errors.retry` | "Retry" |
+| `search.sponsored` | "Sponsored" |
+| `search.sponsored.label` | "Sponsored Ad" |
+| `search.errors.loginRequired` | "Please log in to continue" |
+| `search.errors.shoppingNotAllowed` | "Shopping features are only available to buyers" |
 
 ### 9.2 Japanese (ja) — Search & Filter
 
@@ -577,12 +662,70 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | `search.errors.serverError` | "問題が発生しました。もう一度お試しください" |
 | `search.errors.tooManyRequests` | "リクエストが多すぎます。{seconds}秒お待ちください" |
 | `search.errors.retry` | "再試行" |
+| `search.sponsored` | " sponsor" |
+| `search.sponsored.label` | " sponsor広告" |
+| `search.errors.loginRequired` | "ログインしてください" |
+| `search.errors.shoppingNotAllowed` | "買い物機能はバイヤーのみ利用できます" |
+
+### 9.3 Myanmar (my) — Search & Filter
+
+| Key | Value |
+| :--- | :--- |
+| `search.title` | "အသုံးပြု၍ ရှာဖွေပါ" |
+| `search.searchPlaceholder` | "အမည်၊ ဖော်ပြချက် သို့မဟုတ် ပါဝင်ပစ္စည်းဖြင့် ရှာဖွေပါ..." |
+| `search.searchButton` | "ရှာဖွေရန်" |
+| `search.clear` | "ရှင်းရန်" |
+| `search.resultsCount` | "'{q}' အတွက် ထုတ်ကုန် {total}ခု" |
+| `search.resultsCountDefault` | "ထုတ်ကုန် {total}ခု" |
+| `search.sort` | "စဉ်တန်းရန်" |
+| `search.sort.newest` | "အသစ်ဆုံး" |
+| `search.sort.priceAsc` | "စျေးနည်း → မြင့်" |
+| `search.sort.priceDesc` | "စျေးမြင့် → နည်း" |
+| `search.sort.rating` | "အမြင့်ဆုံးအဆင့်သတ်မှတ်ချက်" |
+| `search.view` | "ကြည့်ရန်" |
+| `search.view.grid` | "ဇယား" |
+| `search.view.list` | "စာရင်း" |
+| `search.view.gridLabel` | "ဇယားပုံစံသို့ ပြောင်းရန်" |
+| `search.view.listLabel` | "စာရင်းပုံစံသို့ ပြောင်းရန်" |
+| `search.filtersTitle` | "စစ်ထုတ်မှုများ" |
+| `search.openFilters` | "စစ်ထုတ်မှုများကို ဖွင့်ရန်" |
+| `search.categories` | "အမျိုးအစားများ" |
+| `search.skinType` | "အရေပြားအမျိုးအစား" |
+| `search.skinType.dry` | "အခြောက်ခံအရေပြား" |
+| `search.skinType.oily` | "ဆီပြန်အရေပြား" |
+| `search.skinType.combination` | "ပေါင်းစပ်အရေပြား" |
+| `search.skinType.sensitive` | "ထိလွယ်ချောအရေပြား" |
+| `search.skinType.normal** | "ပုံမှန်အရေပြား" |
+| `search.ingredients` | "ပါဝင်ပစ္စည်းများ" |
+| `search.priceRange` | "စျေးနှုန်းအပိုင်းအခြား" |
+| `search.minPrice` | "အနည်းဆုံးစျေး" |
+| `search.maxPrice` | "အမြင့်ဆုံးစျေး" |
+| `search.rating` | "အနည်းဆုံးအဆင့်သတ်မှတ်ချက်" |
+| `search.applyFilters` | "စစ်ထုတ်မှုများကို အသုံးပြုရန်" |
+| `search.resetFilters` | "စစ်ထုတ်မှုများကို ပြန်ဖွင့်ရန်" |
+| `search.clearAllFilters` | "အားလုံးကို ရှင်းရန်" |
+| `search.pagination` | "စာမျက်နှာခွဲခြမ်းခြင်း" |
+| `search.pagination.previous` | "ရှေ့သို့" |
+| `search.pagination.next** | "နောက်သို့" |
+| `search.pageSize** | "တစ်စာမျက်နှာပါ ပစ္စည်းများ" |
+| `search.empty.title** | "ထုတ်ကုန်မတွေ့ပါ" |
+| `search.empty.description** | "စစ်ထုတ်မှုများကို ရှင်းပါ သို့မဟုတ် သင့်စကားလုံးကို ကျယ်ပြန့်အောင်လုပ်ပါ" |
+| `search.chip.skinType** | "အရေပြားအမျိုးအစား: {value}" |
+| `search.chip.ingredient** | "ပါဝင်ပစ္စည်း: {value}" |
+| `search.chip.category** | "အမျိုးအစား: {value}" |
+| `search.chip.priceRange** | "${min}–${max}" |
+| `search.chip.rating** | "အဆင့်သတ်မှတ်ချက်: {value}+" |
+| `search.errors.serverError** | "တစ်ခုခုမှားသွားပါတယ်။ ထပ်ကြိုးစားကြည့်ပါ" |
+| `search.errors.tooManyRequests** | "တောင်းဆိုမှုများလွန်းပါတယ်။ {seconds}စက္ကန့်စောင့်ပါ" |
+| `search.errors.retry** | "ပြန်ကြိုးစားရန်" |
+| `search.sponsored** | "ကြော်ငြာ" |
+| `search.sponsored.label** | "ကြော်ငြာ" |
+| `search.errors.loginRequired** | "ဆက်လက်ဆောင်ရွက်ရန် ဝင်ရောက်ပါ" |
+| `search.errors.shoppingNotAllowed** | "စျေးဝယ်လုပ်ဆောင်ချက်များကို ဘိုင်ယာများသာ အသုံးပြုနိုင်ပါသည်" |
 
 ---
 
-## 10. Shared Components (共有コンポーネント)
-
-### 10.1 ProductCard Component
+## 10. Shared Components
 
 | Property | Value |
 | :--- | :--- |
@@ -650,6 +793,10 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - **Performance:** Skeleton shimmer grid during fetch; 300ms debounce on keyword input; TanStack Query caching; `keepPreviousData` on pagination. Cache-aside Redis pattern (list TTL 2 min, category tree TTL 30 min).
 - **Security:** All user input sanitized (Prisma parameterized queries; React auto-escaping). Never log full response body. Rate limiting on public search.
 - **Design Tokens:** Status badges use standard color mapping — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`. Rating stars use Beauty Pink.
+- **Guest Alert Modal (401):** When a guest (unauthenticated user) attempts a shopping action (add to cart/wishlist), display an alert modal with "Please log in to continue" message and an "OK" button. The modal must NOT auto-close. Clicking "OK" redirects to `/login?redirect=<encoded_current_path>`. The redirect preserves the user's search context after login.
+- **Merchant/Admin Shopping Restriction (403):** When a Merchant or Admin user attempts a shopping action (add to cart/wishlist), display an alert banner with "Shopping features are only available to buyers" message. The banner does NOT auto-close. Merchant/Admin users are strictly prohibited from shopping features per DEVELOPMENT_RULES Section 5.4.
+- **Sponsored Ad Slot:** Ad slot rendered in `slotAdTop` above the first product row. Must display "Sponsored" label badge to distinguish from organic results (Rule 4.6.4). Ad fetch is independent of product results — never blocks or defers product loading.
+- **Guest Data Leakage:** Guest user search state (filters, keywords) must not persist across sessions. No shopping-related data (cart count, wishlist) exposed to guests.
 
 ---
 
@@ -742,6 +889,35 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - [ ] Focus ring (primary) visible on toggle segments
 - [ ] Screen reader announces the active view mode
 - [ ] Touch targets ≥ 44px on mobile
+
+### 12.7 Sponsored Advertisement Tests
+
+- [ ] Ad slot fetched from `GET /api/v1/ads?placement=search_top`
+- [ ] Ad slot rendered above first product row in `slotAdTop`
+- [ ] "Sponsored" label badge displayed (Rule 4.6.4)
+- [ ] Ad slot failure (error/empty) gracefully hidden — product results unaffected
+- [ ] Ad slot cached in Redis (`cache:ads:search-top`, TTL 5 min)
+- [ ] Ad CTA click triggers `ad.click` analytics event
+- [ ] Ad slot independent of product results fetch (parallel, non-blocking)
+
+### 12.8 Role-Based Access Tests
+
+- [ ] Guest: search, browse, filter, sort, paginate work without authentication
+- [ ] Guest: shopping action (add to cart/wishlist) triggers alert modal (no auto-close)
+- [ ] Guest: alert modal "OK" button redirects to `/login?redirect=<encoded_path>`
+- [ ] Guest: no shopping-related data (cart count, wishlist) exposed
+- [ ] Buyer: search and shopping actions both work
+- [ ] Merchant: search works; shopping action returns 403 `SHOPPING_NOT_ALLOWED`
+- [ ] Merchant: alert banner "Shopping features are only available to buyers" displayed
+- [ ] Admin: search works; shopping action returns 403 `SHOPPING_NOT_ALLOWED`
+- [ ] Admin: alert banner displayed, does not auto-close
+
+### 12.9 My Language Tests
+
+- [ ] Language toggle switches to Myanmar (my) labels
+- [ ] All Myanmar translations render correctly (search.title, filters, chips, errors)
+- [ ] Sponsored ad i18n keys render in Myanmar
+- [ ] Guest/merchant/admin error messages render in Myanmar
 
 ---
 

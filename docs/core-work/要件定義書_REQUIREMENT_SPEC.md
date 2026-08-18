@@ -12,7 +12,7 @@
 | **System** | Cosmetics Finder |
 | **Version** | 1.10 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-18 |
+| **Last Updated** | 2026-08-07 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 
@@ -22,9 +22,9 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-03 | Software Architect | Initial requirements definition |
 | 2.0 | 2026-08-07 | Software Architect | Simplified: removed SQL schemas (moved to データベース設計書), removed code pseudocode (moved to 開発ルール), fixed Japanese terminology (ステート→ステータス), added missing section headings, standardized symbols | — | — |
-| 1.8 | 2026-08-18 | Software Architect | Removed remaining SQL schema blocks and code pseudocode blocks from the document | 2.0 | — |
-| 1.9 | 2026-08-18 | Software Architect | Removed duplicate schema-like sections (entity attribute data types, DB relationships, Prisma reference), guard logic prose, and API/route tree lists (6.2, 6.3) | 1.8 | — |
-| 1.10 | 2026-08-18 | Software Architect | Added Resend (email delivery) and n8n (workflow automation) as platform services in the technology stack and system architecture | 1.9 | — |
+| 1.8 | 2026-08-07 | Software Architect | Removed remaining SQL schema blocks and code pseudocode blocks from the document | 2.0 | — |
+| 1.9 | 2026-08-07 | Software Architect | Removed duplicate schema-like sections (entity attribute data types, DB relationships, Prisma reference), guard logic prose, and API/route tree lists (6.2, 6.3) | 1.8 | — |
+| 1.10 | 2026-08-07 | Software Architect | Added Resend (email delivery) and n8n (workflow automation) as platform services in the technology stack and system architecture | 1.9 | — |
 
 ---
 
@@ -58,8 +58,7 @@ The system provides the Cosmetics Finder platform that connects buyers seeking p
 
 ### 1.4 Project Scope (プロジェクト範囲)
 - **Included:** User authentication/authorization, AI skin analysis, product management, shopping cart, checkout, order management, merchant dashboard, admin panel, multi-language support (EN/MY/JA)
-- **Excluded:** Physical product delivery logistics, payment gateway integration (stubbed), mobile native apps, advanced ML model training
-
+- **Excluded:** Physical product delivery logistics, payment gateway integration (stubbed), mobile native apps
 ### 1.5 Technology Stack (技術スタック)
 
 **Backend:**
@@ -85,8 +84,8 @@ The system provides the Cosmetics Finder platform that connects buyers seeking p
 - Testing: Vitest, Testing Library, MSW v2
 
 **Services (サービス/外部サービス):**
-- Email Delivery: Resend (transactional emails: email verification, password reset, order confirmation, shipping updates, notifications)
-- Workflow Automation: n8n (scheduled jobs, event-driven workflows, third-party integrations, internal automation)
+- Email Delivery: Resend (transactional emails: email verification, password reset)
+- Workflow Automation: n8n (scheduled jobs, event-driven workflows, thiord-party integrations, internal automation)
 
 ---
 
@@ -868,8 +867,7 @@ Admin reviews ad content, image, message, and due date
 | M-SHOP-001 | Merchant can create/edit shop profile | High |
 | M-SHOP-002 | Shop profile includes: name, description, logo, banner | High |
 | M-SHOP-003 | Shop profile includes: address, phone, email | Medium |
-| M-SHOP-004 | Shop profile includes GPS coordinates for shop finder | Low |
-| M-SHOP-005 | Shop must be approved by admin before going live | High |
+| M-SHOP-004 | Shop must be approved by admin before going live | High |
 
 #### 3.2.16 Admin Module - Review Moderation (管理者モジュール - レビュー管理)
 
@@ -1509,7 +1507,7 @@ See: `docs/guides/ENVIRONMENT_SETUP.md`
 **Document Management (文書管理):**
 - Author: Software Architect
 - Created: 2026-08-03
-- Last Updated: 2026-08-18
+- Last Updated: 2026-08-07
 - Next Review: Phase 2 Planning
 
 ---
