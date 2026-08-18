@@ -4,7 +4,7 @@
 **Target Screen:** Product Detail (商品詳細)  
 **Subsystem:** Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry  
 **Function ID:** FN-PROD-001  
-**Version:** 1.6  
+**Version:** 1.7  
 **Created:** 2026-08-10  
 **Last Updated:** 2026-08-18  
 **Author:** Senior System Engineer  
@@ -26,6 +26,7 @@
 | 1.4 | 2026-08-17 | Senior System Engineer | Aligned with `SKM-DBS-001` v2.2, `SKM-REQ-001` v1.7, and `SKM-DEV-001` v2.1: Resolved cart persistence model with new `carts` and `cart_items` tables; clarified shop approval workflow; added cart lifecycle rules (B-CART-008~014); verified merchant/shop/product relationship chain; confirmed buyer-only role gating for cart/wishlist/review mutations. |
 | 1.5 | 2026-08-18 | Senior System Engineer | Aligned with `SKM-REQ-001` v1.10: Updated cross-reference versions; added `review_reports` table reference for review moderation; added review reporting test cases and i18n keys; verified all field mappings against latest database specification. |
 | 1.6 | 2026-08-18 | Senior System Engineer | Final verification pass: Confirmed all item definitions, database field mappings, error codes, i18n keys, and API response structures are aligned with SKM-REQ-001 v1.10, SKM-DBS-001 v2.2, SKM-DEV-001 v2.1, and SKM-FDS-PROD-001 v5.1. All review reporting requirements (SYS-REV-001~008) verified and properly implemented. Excluded cart and wishlist sections per team ownership rules. |
+| 1.7 | 2026-08-18 | Senior System Engineer | Added clear team ownership disclaimers to all cart & wishlist sections (4.4, 5.4, 5.5, 6.3, 6.6, 7.3). Added ℹ️ note in Section 2.3 identifying items owned by Cart Team and Wishlist Team. Document remains comprehensive reference with sections marked as "Reference Only" for cart and wishlist functionality. |
 
 ### 1.2 Related Documents
 
@@ -53,13 +54,16 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | **Access Control** | Read endpoints are public; review, wishlist, and add-to-cart mutations require an authenticated `buyer` role (JwtAuthGuard + RolesGuard). |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
+
+> ℹ️ **TEAM OWNERSHIP NOTE** — Items 6 & 7 (Add to Cart & Wishlist Management) are maintained by their respective teams. This section documents Product Detail's context and integration points.
+
 1. **Product Detail Display** — Render name, description, price, compare-at price, SKU, stock, tags, ingredients, category, merchant, and shop.
 2. **Image Gallery** — Multiple images with thumbnail navigation; `images[0]` is the primary/cover image (Rule 4.2.3).
 3. **Reviews** — Paginated, approved reviews with ratings; create a review (verified-purchase only).
 4. **Skin Type Compatibility** — Badge group showing matched skin types.
 5. **Related Products** — "Similar Products" section based on category, skin types, and tags.
-6. **Add to Cart** — Quantity stepper with atomic stock validation at insertion.
-7. **Wishlist Management** — Add to wishlist with optimistic UI update (removal handled by the dedicated Wishlist screen/module).
+6. **Add to Cart** ⚠️ — Quantity stepper with atomic stock validation at insertion. [**Cart Team**]
+7. **Wishlist Management** ⚠️ — Add to wishlist with optimistic UI update (removal handled by the dedicated Wishlist screen/module). [**Wishlist Team**]
 8. **Active Promotion Display** — Merchant's active promotions with discount details, validity period, and remaining balance (`max_uses - used_count`).
 9. **Error Handling** — Field-level inline errors, form-level banner, and toast notifications.
 10. **Internationalization** — Full i18n support for EN, JA, MY.
@@ -184,6 +188,8 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 ### 4.4 Section [D]: Purchase Actions (購入アクション)
 
+> ⚠️ **OWNED BY OTHER TEAMS** — Items 11-13 (Quantity Stepper, Add to Cart, Wishlist) are maintained by the Cart and Wishlist teams respectively. This section is provided as reference only for Product Detail context.
+
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 11 | `stepperQuantity` | Quantity Stepper | Number Stepper | INT | — | Default: 1 | Min: 1. Max: `stock_quantity`. | — | `[ - ] 1 [ + ]`. `-` disabled at 1. `+` disabled at `stock_quantity`. |
@@ -275,6 +281,9 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 - **Exception Handling:** None applicable.
 
 ### 5.4 Add to Cart (`btnAddToCart` onClick)
+
+> ⚠️ **OWNED BY CART TEAM** — This section documents expected behavior from Product Detail perspective. Implementation maintained by Cart & Checkout team.
+
 - **Trigger:** User clicks "Add to Cart".
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** quantity ≥ 1, product in stock (`stock_quantity ≥ requested_quantity`).
@@ -294,6 +303,9 @@ The Product Detail page is the primary conversion point in the buyer journey. It
   - `422`: Product out of stock (`stock_quantity = 0`) → disabled Add to Cart + "Out of stock" badge (Rule B-CART-011).
 
 ### 5.5 Add to Wishlist (`btnWishlist` onClick)
+
+> ⚠️ **OWNED BY WISHLIST TEAM** — This section documents expected behavior from Product Detail perspective. Implementation maintained by Wishlist Management team.
+
 - **Trigger:** User clicks the ♡ button (off → on).
 - **Processing Logic:**
   1. **Client-Side Authorization:** Check authentication state; disable button with tooltip "Sign in to save" if unauthenticated.
@@ -394,6 +406,8 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 ### 6.3 Add to Cart Validation Errors
 
+> ⚠️ **OWNED BY CART TEAM** — Reference only. Validation and error handling maintained by Cart team.
+
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-PROD-020** | `stepperQuantity` | Quantity < 1 | Disabled `-` button + inline text | "quantity must be at least 1" | "数量は1以上である必要があります" |
@@ -420,6 +434,8 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded | Show retry countdown | "Too many requests. Please wait {seconds} seconds" | "リクエストが多すぎます。{seconds}秒お待ちください" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong" + retry button | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
 | `NET_ERR` | — | Network error | Banner + retry button | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+
+> ⚠️ **OWNED BY CART & WISHLIST TEAMS** — Reference only. Error handling contracts maintained by respective teams.
 
 ### 6.6 API Error Mapping — Wishlist & Cart
 
@@ -478,6 +494,8 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 - **Status Flow:** `pending` → `reviewed` → `resolved` (action taken) or `rejected` (no action needed).
 - **Duplicate Handling:** One report per buyer per review. Unique constraint `uq_review_reports_user_review` on `(user_id, review_id)`.
 - **Admin Actions:** Admin can review reported reviews via `/admin/reviews/reports` and take action on the original review.
+
+> ⚠️ **OWNED BY CART TEAM** — Cart data models maintained by Cart team. Mapping provided for reference only.
 
 ### 7.3 Add to Cart → Database
 
