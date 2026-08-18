@@ -4,9 +4,9 @@
 **Target Screen:** Advertisement Management (広告管理) — Merchant List, Create/Edit Dialog, Admin Moderation  
 **Subsystem:** Advertisement — Shop Advertisement Management  
 **Function ID:** FN-AD-001  
-**Version:** 1.0  
+**Version:** 2.0  
 **Created:** 2026-08-11  
-**Last Updated:** 2026-08-11  
+**Last Updated:** 2026-08-18  
 **Author:** Senior System Engineer  
 **Review Status:** Draft (レビュー中)  
 **Classification:** Internal — Engineering Division
@@ -20,22 +20,23 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-11 | Senior System Engineer | Initial release. Screen items specification for the Advertisement Management subsystem (Merchant list, Create/Edit dialog, Payment & Submission panel, Admin moderation, Public banner display), aligned with SKM-FDS-AD-001 v1.1 and the `advertisements` table structure in SKM-DBS-001 v1.1. |
+| 2.0 | 2026-08-18 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.7, DATABASE_SPEC v2.2, DEVELOPMENT_RULES, and FDS-AD v2.1. Added 7–30 day duration validation, the two-active-ads-per-merchant approval limit, dynamic fee/transaction mapping, canonical payment values, and lifecycle traceability. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~009 business workflow, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements` table (v1.1 fields), check constraints, and indexes. |
+| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~014 business workflow, state flow, duration, and active-ad limits. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements`, `ad_fee_settings`, `ad_payments`, and `ad_fee_history` (v2.2). |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses, RBAC. |
-| 4 | SKM-FDS-AD-001 | Functional Specification — Advertisements | `docs/screen/Advertisement_Management/機能設計書_Advertisement_Management.md` | Use cases, state transitions, validation rules, error handling. |
+| 4 | SKM-FDS-AD-001 | Functional Specification — Advertisements | `docs/screen/Advertisement_Management/機能設計書_Advertisement_Management.md` | v2.1 use cases, state transitions, validation rules, and error handling. |
 
 ---
 
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Advertisement Management screens enable merchants to create, schedule, pay for, and manage promotional banners tied to their approved shop, and admins to approve or reject submitted advertisements. Paid, approved, active, in-schedule advertisements are served to the public storefront as banners with an announcement message. A platform-wide weekly limit of 5 active advertisements is enforced.
+The Advertisement Management screens enable merchants to create, schedule, pay for, and manage promotional banners tied to their approved shop, and admins to approve or reject submitted advertisements. Advertisements whose payment is `completed`, approval is `approved`, `is_active` is true, and schedule is current are served to the public storefront with an announcement message. A platform-wide weekly limit of five and a per-merchant simultaneous limit of two active advertisements are enforced.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -52,13 +53,15 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 3. **Image Upload** — Upload ad image (JPG/PNG/WebP, max 5MB) with client-side validation.
 4. **Advertising Fee Payment** — Pay the fee (stubbed gateway); record amount, status, and reference.
 5. **Admin Approval Workflow** — Approve/reject with reason; rejected ads refunded and resubmittable.
-6. **Weekly Ad Limit** — Platform-wide maximum of 5 active ads per week validated at approval.
+6. **Approval Limits** — Platform-wide maximum of 5 active ads per ISO week and a maximum of 2 active ads per merchant, both validated at approval.
 7. **Status Control** — Derived lifecycle (draft/pending/approved/rejected/scheduled/active/inactive/expired).
 8. **Soft Delete** — Delete sets `is_active = false`, retaining the record for history.
 9. **Platform Display** — Public banner carousel with announcement message for active ads.
 10. **Form Validation** — Client-side (Zod) + server-side (class-validator) validation with real-time feedback.
 11. **Internationalization** — Full i18n support for EN, JA, MY.
-12. **Responsive Design** — Mobile-first card grid layout; dialog becomes a full-screen sheet on mobile.
+12. **Duration & Responsive Design** — Date range must be 7–30 days inclusive; the mobile-first dialog becomes a full-screen sheet on mobile.
+
+**Lifecycle representation:** The required business flow is `draft → pending_payment → pending_approval → approved → active → expired`, with `rejected → resubmitted` as the recovery path. These are UI/business states derived from `payment_status`, `approval_status`, `is_active`, and the UTC schedule; they are not an additional database column. In particular, only a submitted ad with `payment_status = completed` may be shown in the pending-approval queue.
 
 ---
 
@@ -192,7 +195,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 | 1 | `lblPageTitle` | Page Title | Heading (`<h5>`) | String | Yes | Text: "Advertisements" | — | — | i18n key: `merchant.ads.title`. |
 | 2 | `lblPageSubtitle` | Page Subtitle | Static Label (`<p>`) | String | No | Text: "Create, pay for and manage your shop's promotional banners." | — | — | i18n key: `merchant.ads.subtitle`. Tailwind: `text-muted-foreground`. |
 | 3 | `btnNewAd` | New Ad Button | Button (`primary`) | — | Yes | Visible. Text: "+ New Ad" | — | — | Opens Create Advertisement dialog. i18n key: `merchant.ads.new`. |
-| 4 | `cardStatActive` | Active Ads Stat | Card | Number | Yes | Value: 0 | — | Derived from `advertisements` (approved + paid + in-schedule) | i18n key: `merchant.ads.statActive`. Count of currently running ads. |
+| 4 | `cardStatActive` | Active Ads Stat | Card | Number | Yes | Value: 0 | — | Derived from `advertisements` (`is_active = true`, `approval_status = 'approved'`, `payment_status = 'completed'`, in schedule) | i18n key: `merchant.ads.statActive`. The UI label “Paid” represents DB value `completed`. |
 | 5 | `cardStatPending` | Pending Approval Stat | Card | Number | Yes | Value: 0 | — | Derived from `advertisements.approval_status = 'pending'` | i18n key: `merchant.ads.statPending`. Count of ads awaiting admin review. |
 | 6 | `cardStatExpired` | Expired Stat | Card | Number | Yes | Value: 0 | — | Derived from `advertisements.expires_at < now` | i18n key: `merchant.ads.statExpired`. Count of past campaigns. |
 
@@ -213,12 +216,12 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 | 12 | `lblAdTitle` | Ad Title | Static Label | String(200) | Yes | — | — | `advertisements.title` | Card heading. Truncated to 1 line. |
 | 13 | `badgeStatus` | Status Badge | Badge | Enum | Yes | Derived from data | Values: Active / Inactive / Expired | Derived from `is_active`, `approval_status`, `payment_status`, schedule | Color: active `bg-green-100 text-green-800`, inactive `bg-gray-100 text-gray-800`, expired `bg-amber-100 text-amber-800`. |
 | 14 | `badgeApproval` | Approval Status Badge | Badge | Enum | Yes | Derived from data | Values: Pending / Approved / Rejected | `advertisements.approval_status` | Color: pending `bg-amber-100 text-amber-800`, approved `bg-green-100 text-green-800`, rejected `bg-red-100 text-red-800`. |
-| 15 | `badgePayment` | Payment Status Badge | Badge | Enum | Yes | Derived from data | Values: Paid / Pending / Failed / Refunded | `advertisements.payment_status` | Color: paid `bg-green-100 text-green-800`, pending `bg-amber-100 text-amber-800`, failed `bg-red-100 text-red-800`, refunded `bg-gray-100 text-gray-800`. |
+| 15 | `badgePayment` | Payment Status Badge | Badge | Enum | Yes | Derived from data | DB values: pending / completed / failed / refunded; display: Pending / Paid / Failed / Refunded | `advertisements.payment_status` | `completed` is displayed as “Paid”. Colors: completed green, pending amber, failed red, refunded gray. |
 | 16 | `lblContent` | Ad Content | Static Label | TEXT(5000) | No | — | — | `advertisements.content` | Truncated to 2 lines; tooltip for full content. |
 | 17 | `lblAnnouncement` | Announcement Message | Static Label | VARCHAR(500) | Yes | — | — | `advertisements.announcement_message` | Banner message shown on storefront. Truncated; tooltip for full text. |
 | 18 | `lblSchedule` | Schedule Display | Static Label | — | Yes | — | Format: "Aug 01, 2026 → Sep 15, 2026" | `advertisements.starts_at`, `expires_at` | Locale-aware date formatting. |
 | 19 | `lnkLinkUrl` | Link URL | Link | URL(500) | No | Hidden when null | Valid URL | `advertisements.link_url` | Displayed truncated; opens in new tab. |
-| 20 | `btnPaySubmit` | Pay & Submit Button | Button (`primary`) | — | No | Shown when draft / payment pending | — | — | i18n key: `merchant.ads.paySubmit`. Navigates to payment panel in edit dialog. |
+| 20 | `btnPaySubmit` | Pay & Submit Button | Button (`primary`) | — | No | Shown when lifecycle is draft or pending payment | — | `advertisements.payment_status`; `ad_payments` | i18n key: `merchant.ads.paySubmit`. Navigates to payment panel; submission remains disabled until the payment transaction is `completed`. |
 | 21 | `btnResubmit` | Resubmit Button | Button (`primary`) | — | No | Shown when `approval_status = rejected` | — | — | i18n key: `merchant.ads.resubmit`. Opens edit dialog for rejected ad; saving re-submits to pending. |
 | 22 | `alertRejection` | Rejection Reason Alert | Alert (`warning`) | TEXT(2000) | No | Hidden by default | — | `advertisements.rejection_reason` | Shown on rejected ads. Displays the admin's rejection reason. |
 | 23 | `btnEdit` | Edit Button | Button (`ghost`) | — | Yes | Visible. Pencil icon | — | — | Opens Edit Advertisement dialog. |
@@ -251,9 +254,9 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 | 40 | `lblLinkUrl` | Link URL Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Link URL" | — | — | Associated with `txtLinkUrl` via `htmlFor`/`id`. |
 | 41 | `txtLinkUrl` | Link URL Input | Input (`url`) | URL(500) | Optional | Empty | Format: valid URL (http/https). MaxLength: 500. | `advertisements.link_url` | Optional. Click-through link. |
 | 42 | `lblStartDate` | Start Date Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Start Date" | — | — | Associated with `txtStartDate` via `htmlFor`/`id`. Required indicator: `*`. |
-| 43 | `txtStartDate` | Start Date Input | Input (`datetime-local`) | TIMESTAMPTZ | Mandatory | Empty (Create) / populated (Edit) | Valid datetime. | `advertisements.starts_at` | Required. `week_number` derived from this value. |
+| 43 | `txtStartDate` | Start Date Input | Input (`datetime-local`) | TIMESTAMPTZ | Mandatory | Empty (Create) / populated (Edit) | Valid datetime; stored as UTC. | `advertisements.starts_at` | Required. `week_number` is derived from the ISO week of this value. |
 | 44 | `lblEndDate` | End Date Label | Static Label (`<label>`) | String | — | Always displayed. Text: "End Date" | — | — | Associated with `txtEndDate` via `htmlFor`/`id`. Required indicator: `*`. |
-| 45 | `txtEndDate` | End Date Input | Input (`datetime-local`) | TIMESTAMPTZ | Mandatory | Default: Start Date + 30 days (Create) | Must be after `txtStartDate`. | `advertisements.expires_at` | Required. Date-range refine validation. |
+| 45 | `txtEndDate` | End Date Input | Input (`datetime-local`) | TIMESTAMPTZ | Mandatory | Default: Start Date + 30 days (Create) | Must be after `txtStartDate`; duration is 7–30 days inclusive. | `advertisements.expires_at` | Required. UI validates the DB constraint (`expires_at > starts_at`) and requirement limits M-AD-013/014. |
 | 46 | `lblActiveToggle` | Active Toggle Label | Static Label (`<label>`) | String | — | Text: "Visible to buyers during the scheduled period" | — | — | Associated with `swActive`. |
 | 47 | `swActive` | Active Toggle | Switch | BOOLEAN | Yes | Default: ON | Values: true / false | `advertisements.is_active` | i18n key: `merchant.ads.isActive`. |
 | 48 | `btnCancel` | Cancel Button | Button (`outline`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without saving. |
@@ -263,10 +266,10 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 50 | `lblFeeSummary` | Fee Summary | Static Label | — | Yes | Text: "Advertising Fee: $50.00" | — | Configurable `AD_FEE_AMOUNT` | i18n key: `merchant.ads.fee`. Fee shown before payment. |
-| 51 | `lblPaymentStatus` | Payment Status Text | Static Label | Enum | Yes | Text: "Payment: Pending" | Values: Pending / Paid / Failed / Refunded | `advertisements.payment_status` | Mirrors `badgePayment` in card view. |
-| 52 | `btnPayFee` | Pay Fee Button | Button (`primary`) | — | No | Shown when `payment_status = pending` | — | — | i18n key: `merchant.ads.pay`. Invokes payment (stubbed); sets `payment_status = paid`. |
-| 53 | `btnSubmitApproval` | Submit for Approval Button | Button (`primary`) | — | No | Disabled unless `payment_status = paid` | — | — | i18n key: `merchant.ads.submit`. Sets `approval_status = pending`. |
+| 50 | `lblFeeSummary` | Fee Summary | Static Label | Currency (DECIMAL(10,2)) | Yes | Calculated fee, initially loading | Placement/tier daily rate × selected duration; show configured currency. | `ad_fee_settings.daily_rate`; `ad_payments.amount` after payment | Resolve the active `(placement, tier)` fee setting. A later fee change must not change an already-paid amount. |
+| 51 | `lblPaymentStatus` | Payment Status Text | Static Label | Enum | Yes | Text: "Payment: Pending" | DB: pending / completed / failed / refunded; UI: Pending / Paid / Failed / Refunded. | `advertisements.payment_status`; latest `ad_payments.payment_status` | The user-facing word “Paid” maps to canonical DB value `completed`. |
+| 52 | `btnPayFee` | Pay Fee Button | Button (`primary`) | — | No | Shown when payment is pending or failed and the ad is editable | — | Creates/updates `ad_payments` transaction; mirrors result to `advertisements.payment_status` | i18n key: `merchant.ads.pay`. On success, store amount, method, transaction/reference and paid timestamp; status becomes `completed`. |
+| 53 | `btnSubmitApproval` | Submit for Approval Button | Button (`primary`) | — | No | Disabled unless payment is `completed` | — | `advertisements.payment_status`, `approval_status` | i18n key: `merchant.ads.submit`. Submission moves merchant-visible lifecycle to pending approval; do not enable merely because a payment reference exists. |
 | 54 | `lblApprovalStatus` | Approval Status Text | Static Label | Enum | Yes | Text: "Approval: Pending" | Values: Pending / Approved / Rejected + `rejection_reason` | `advertisements.approval_status`, `rejection_reason` | Shows rejection reason when rejected. |
 
 ### 4.7 Section [G]: Admin Advertisement Moderation (広告審査画面)
@@ -274,10 +277,10 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 55 | `lblAdminTitle` | Admin Page Title | Heading (`<h5>`) | String | Yes | Text: "Advertisement Moderation" | — | — | i18n key: `admin.ads.title`. |
-| 56 | `listPendingQueue` | Pending Queue | Card / List | — | Yes | Loaded with `approval_status = pending` + `payment_status = paid` ads | Sorted oldest first | `advertisements` (filtered) | i18n key: `admin.ads.pendingQueue`. |
+| 56 | `listPendingQueue` | Pending Queue | Card / List | — | Yes | Loaded with `approval_status = pending` + `payment_status = completed` submitted ads | Sorted oldest first | `advertisements` joined to `ad_payments` as needed | i18n key: `admin.ads.pendingQueue`. Exclude unpaid drafts even though their default approval field is `pending`. |
 | 57 | `cardAdPreview` | Ad Preview | Card | — | Yes | Shows thumbnail, title, content, announcement, schedule, link, shop name, fee/payment info | — | `advertisements` + `shops.name` | Full preview before decision. |
-| 58 | `lblWeeklyLimit` | Weekly Limit Indicator | Static Label | String | Yes | Text: "3 of 5 active ads this week" | — | Count of approved active ads by `week_number` | i18n key: `admin.ads.weeklyLimit`. |
-| 59 | `btnApprove` | Approve Button | Button (`success`) | — | Yes | Visible. Text: "Approve" | — | — | i18n key: `admin.ads.approve`. Validates weekly limit (≤ 5) before approving. |
+| 58 | `lblWeeklyLimit` | Weekly Limit Indicator | Static Label | String | Yes | Text: "3 of 5 active ads this week" | 0–5; ISO week derived from `starts_at` in UTC. | Count of eligible active ads by `week_number` | i18n key: `admin.ads.weeklyLimit`. It is a platform-wide limit, not a merchant quota. |
+| 59 | `btnApprove` | Approve Button | Button (`success`) | — | Yes | Visible. Text: "Approve" | Only eligible paid submissions. | Updates `advertisements.approval_status`, `approved_by`, `approved_at` | i18n key: `admin.ads.approve`. Atomically validate weekly limit (max 5) and merchant simultaneous active limit (max 2) before approving. |
 | 60 | `btnReject` | Reject Button | Button (`destructive`) | — | Yes | Visible. Text: "Reject" | — | — | i18n key: `admin.ads.reject`. Reveals `txtRejectReason`. |
 | 61 | `txtRejectReason` | Rejection Reason Input | Textarea | TEXT(2000) | Conditional | Hidden until Reject clicked | MaxLength: 2000. Required to submit rejection. | `advertisements.rejection_reason` | Required when rejecting. |
 | 62 | `tblAllAds` | All Ads Table | Table | — | No | All ads with filterable approval/payment status | — | `advertisements` (all) | i18n key: `admin.ads.all`. Includes pagination. |
@@ -316,7 +319,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 ### 5.2 Open Create / Edit Dialog (`btnNewAd` / `btnEdit` / `btnResubmit` onClick)
 - **Trigger:** User clicks "+ New Ad", "Edit", or "Resubmit".
 - **Processing Logic:**
-  1. **Create:** Open empty form dialog. Auto-focus `txtTitle`. Default `swActive` ON, `txtEndDate` = `txtStartDate` + 30 days.
+  1. **Create:** Open empty form dialog. Auto-focus `txtTitle`. Default `swActive` ON; default `txtEndDate` = `txtStartDate` + 30 days, which remains within the allowed 7–30 day range.
   2. **Edit / Resubmit:** Populate all fields from existing ad data. Show current image preview in `uplImage`. Show `alertRejection` and the Payment & Submission panel when applicable.
   3. For rejected ads, saving re-submits (`approval_status` → `pending`).
 - **Exception Handling:** None applicable.
@@ -324,9 +327,9 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 ### 5.3 Save Advertisement (`btnSaveAd` onClick)
 - **Trigger:** User clicks "Save Ad" (create) or "Update Ad" (edit).
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** Zod validation — title required (≤ 200), announcement required (≤ 500), content ≤ 5000, link valid URL if present, `expiresAt` after `startsAt`, image valid if attached.
-  2. **Create:** `POST /api/v1/ads` (multipart/form-data if image attached). Backend derives `week_number` from `starts_at`, creates record with `approval_status = pending`, `payment_status = pending`.
-  3. **Edit:** `PATCH /api/v1/ads/:id` with partial fields; recompute `week_number` if `starts_at` changed; if ad was `rejected`, reset `approval_status = pending`.
+  1. **Client-Side Pre-Check:** Zod validation — title required (≤ 200), announcement required (≤ 500), content ≤ 5000, link valid URL if present, image valid if attached, `expiresAt > startsAt`, and duration of 7–30 days inclusive.
+  2. **Create:** `POST /api/v1/ads` (multipart/form-data if image attached). Backend derives ISO `week_number` from `starts_at`, creates an unpaid draft/pending-payment lifecycle record with `payment_status = pending`; the default approval column value must not place it in the admin queue before submission.
+  3. **Edit:** `PATCH /api/v1/ads/:id` with partial fields; recompute `week_number` if `starts_at` changed. A rejected ad may be edited and resubmitted; it must not be treated as a fresh approval submission until payment is `completed` and submit is invoked.
   4. Backend invalidates cache `DEL cache:ads:active`; logs `AD_CREATED`/`AD_UPDATED` audit event.
   5. **Post-Execution UI:** Close dialog, refresh ad list, show success toast. New ad appears as draft with `btnPaySubmit`.
 - **Exception Handling:**
@@ -341,18 +344,18 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 - **Trigger:** User clicks "Pay Fee" on a draft ad.
 - **Processing Logic:**
   1. `POST /api/v1/ads/:id/pay` with optional `paymentReference`.
-  2. Backend verifies ownership and `payment_status = pending`; processes payment (stubbed) for `AD_FEE_AMOUNT`.
-  3. Backend sets `payment_status = paid`, records `payment_amount` and `payment_reference`; logs `AD_PAID`.
+  2. Backend verifies ownership and a payable state; resolves the active `ad_fee_settings` rate for the selected placement/tier and duration, then creates/updates the associated `ad_payments` transaction.
+  3. On confirmed payment, backend sets `ad_payments.payment_status` and `advertisements.payment_status` to `completed`, and records amount, payment method, transaction/reference, and `paid_at`; logs `AD_PAID`.
   4. **Post-Execution UI:** Update `lblPaymentStatus`, `badgePayment`, enable `btnSubmitApproval`, show success toast.
 - **Exception Handling:**
   - `422`: "Advertising fee must be paid before submission" (idempotency guard).
   - `500`: payment verification failure → `SYS_001` message.
 
 ### 5.5 Submit for Approval (`btnSubmitApproval` onClick)
-- **Trigger:** User clicks "Submit for Approval" (enabled only when `payment_status = paid`).
+- **Trigger:** User clicks "Submit for Approval" (enabled only when `payment_status = completed`).
 - **Processing Logic:**
   1. `POST /api/v1/ads/:id/submit`.
-  2. Backend verifies ownership and `payment_status = paid`; sets `approval_status = pending`.
+  2. Backend verifies ownership and `payment_status = completed`; the ad enters the pending-approval lifecycle and is eligible for the admin queue.
   3. Backend invalidates cache; notifies admin of pending approval; logs `AD_SUBMITTED`.
   4. **Post-Execution UI:** Ad becomes read-only for the merchant until admin decision. Show toast "Ad submitted for approval".
 - **Exception Handling:**
@@ -364,7 +367,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 - **Processing Logic:**
   1. `POST /api/v1/admin/ads/:id/approve`.
   2. Backend verifies admin role and `approval_status = pending`.
-  3. Backend validates weekly limit: count approved active ads with same `week_number`; if ≥ 5, return `409 WEEKLY_LIMIT_REACHED`.
+  3. Backend atomically validates the platform weekly limit (approved active ads with the same `week_number`, maximum 5) and the merchant simultaneous active-ad limit (maximum 2); return the applicable conflict error if either would be exceeded.
   4. Backend sets `approval_status = approved`, `approved_by` (admin id), `approved_at` (now); invalidates cache; logs `AD_APPROVED`.
   5. **Post-Execution UI:** Remove ad from pending queue, refresh `lblWeeklyLimit`, notify merchant, show success toast.
 - **Exception Handling:**
@@ -377,7 +380,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
   1. Clicking "Reject" reveals `txtRejectReason` (required).
   2. Submit `POST /api/v1/admin/ads/:id/reject` with `{ rejectionReason }`.
   3. Backend verifies admin role and `approval_status = pending`; validates `rejection_reason` (required, ≤ 2000).
-  4. Backend sets `approval_status = rejected`, `approved_by`, `approved_at`, `rejection_reason`; triggers automatic refund → `payment_status = refunded`; invalidates cache; logs `AD_REJECTED`; notifies merchant.
+  4. Backend sets `approval_status = rejected`, `approved_by`, `approved_at`, and `rejection_reason`; creates the refund record on `ad_payments` (`refund_amount`, `refund_reason`, `refunded_at`) and mirrors `payment_status = refunded` to the advertisement; invalidates cache; logs `AD_REJECTED`; notifies merchant.
   5. **Post-Execution UI:** Remove ad from pending queue, show success toast.
 - **Exception Handling:**
   - `VAL-AD-050`: "Rejection reason is required" inline on `txtRejectReason`.
@@ -388,7 +391,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 - **Processing Logic:**
   1. Debounce search input (300ms).
   2. Re-fetch `GET /api/v1/ads?page=1&limit=20&status=...&approvalStatus=...&search=...`.
-  3. Backend applies status filter (active: `is_active = true` AND approved AND paid AND in schedule) and approval filter.
+  3. Backend applies status filter (active: `is_active = true` AND `approval_status = approved` AND `payment_status = completed` AND in schedule) and approval filter.
   4. Update pagination meta (`lblPageInfo`) and stat cards.
   5. Show loading skeleton during fetch; empty state when no matches.
 - **Exception Handling:**
@@ -429,7 +432,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 - **Trigger:** User toggles the active switch in the edit dialog.
 - **Processing Logic:**
   1. Store new value in form state; saved on "Update Ad" (`PATCH /api/v1/ads/:id`).
-  2. An ad is only displayed when `is_active = true` AND approved AND paid AND in-schedule.
+  2. An ad is only displayed when `is_active = true`, `approval_status = approved`, `payment_status = completed`, and its UTC schedule is current.
   3. Backend invalidates cache on save.
 - **Exception Handling:** None applicable.
 
@@ -443,7 +446,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 ### 5.14 Public Banner Display (`lnkBanner` onClick)
 - **Trigger:** Buyer/visitor clicks an active banner on the storefront.
 - **Processing Logic:**
-  1. `GET /api/v1/ads/active` returns paid, approved, active, in-schedule ads (Redis cache `cache:ads:active`, TTL 5 min).
+  1. `GET /api/v1/ads/active` returns completed-payment, approved, active, in-schedule ads (Redis cache `cache:ads:active`, TTL 5 min), capped at five for the storefront rotation.
   2. Render banner image + announcement message in carousel.
   3. Click navigates to `link_url` (new tab).
 - **Exception Handling:** On cache miss, backend re-queries DB; no user-visible error.
@@ -468,6 +471,8 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 | **VAL-AD-040** | `txtStartDate` | Start date empty / invalid | Red border. Text below field. | "Start date is required" / "Invalid start date" | "開始日時は必須です" / "開始日時が無効です" |
 | **VAL-AD-041** | `txtEndDate` | End date empty / invalid | Red border. Text below field. | "End date is required" / "Invalid end date" | "終了日時は必須です" / "終了日時が無効です" |
 | **VAL-AD-042** | `txtEndDate` | End date not after start date | Red border. Text below field. | "End date must be after start date" | "終了日時は開始日時より後の日時を入力してください" |
+| **AD_DURATION_TOO_SHORT** | `txtEndDate` | Duration (`expiresAt - startsAt`) is less than 7 days | Red border. Text below field. | "Advertisement must run for at least 7 days" | "広告は最低7日間は表示する必要があります" |
+| **AD_DURATION_TOO_LONG** | `txtEndDate` | Duration (`expiresAt - startsAt`) exceeds 30 days | Red border. Text below field. | "Advertisement duration must not exceed 30 days" | "広告の表示期間は30日以内にしてください" |
 | **VAL-AD-050** | `txtRejectReason` | Rejection reason empty | Red border. Text below field. | "Rejection reason is required" | "却下理由は必須です" |
 
 ### 6.2 API / Business Rule Errors (Merchant)
@@ -479,6 +484,8 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 | **AD-403-SHOP** | `alertError` | Shop not approved (403) | Alert banner (destructive) | "Your shop must be approved before creating advertisements" | "広告を作成するには店舗の承認が必要です" |
 | **AD-404** | `alertError` | Advertisement not found (404) | Alert banner (destructive) | "Advertisement not found" | "広告が見つかりません" |
 | **AD-409** | `alertError` | Invalid schedule dates (409) | Alert banner (destructive) | "Invalid schedule dates" | "広告期間が不正です" |
+| **AD_DURATION_TOO_SHORT** | `txtEndDate` | Advertisement duration is less than 7 days (400) | Inline error and form summary | "Advertisement must run for at least 7 days" | "広告は最低7日間は表示する必要があります" |
+| **AD_DURATION_TOO_LONG** | `txtEndDate` | Advertisement duration exceeds 30 days (400) | Inline error and form summary | "Advertisement duration must not exceed 30 days" | "広告の表示期間は30日以内にしてください" |
 | **AD-422** | `alertError` | Submit without payment (422) | Alert banner (destructive) | "Advertising fee must be paid before submission" | "提出前に広告料金をお支払いください" |
 | **AD-429** | `alertError` | Rate limit exceeded (429) | Alert banner (destructive) | "Too many requests. Please wait {seconds} seconds" | "リクエストが多すぎます。{seconds}秒お待ちください" |
 | **SYS_001** | `alertError` | Server error (500) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
@@ -489,6 +496,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **AD-LIMIT** | `alertError` | Weekly limit (5/week) reached on approve (409) | Alert banner (destructive) | "Weekly advertisement limit reached (max 5)" | "今週の広告枠上限(5件)に達しました" |
+| **MERCHANT_AD_LIMIT_REACHED** | `alertError` | Merchant already has two simultaneous active ads (409) | Alert banner (destructive) | "Maximum 2 active ads per merchant reached" | "出品者ごとの同時掲載広告上限（2件）に達しました" |
 | **VAL-AD-050** | `txtRejectReason` | Rejection without reason | Red border. Text below field. | "Rejection reason is required" | "却下理由は必須です" |
 | **AD-403** | `alertError` | Non-admin attempts approve/reject (403) | Redirect to `/unauthorized` | "Admin access required" | "管理者権限が必要です" |
 
@@ -500,16 +508,16 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `txtTitle` | `title` | `title` | `advertisements` | VARCHAR(200) NOT NULL |
+| `txtTitle` | `title` | `title` | `advertisements` | VARCHAR(255) NOT NULL (UI/business maximum: 200) |
 | `txtContent` | `content` | `content` | `advertisements` | TEXT (nullable) |
 | `txtAnnouncement` | `announcementMessage` | `announcement_message` | `advertisements` | VARCHAR(500) NOT NULL |
-| `uplImage` | `imageUrl` | `image_url` | `advertisements` | VARCHAR(500) (nullable) |
-| `txtLinkUrl` | `linkUrl` | `link_url` | `advertisements` | VARCHAR(500) (nullable) |
+| `uplImage` | `imageUrl` | `image_url` | `advertisements` | TEXT (nullable; UI/API maximum: 500) |
+| `txtLinkUrl` | `linkUrl` | `link_url` | `advertisements` | TEXT (nullable; UI/API maximum: 500) |
 | `swActive` | `isActive` | `is_active` | `advertisements` | BOOLEAN DEFAULT TRUE |
 | `txtStartDate` | `startsAt` | `starts_at` | `advertisements` | TIMESTAMPTZ NOT NULL |
 | `txtEndDate` | `expiresAt` | `expires_at` | `advertisements` | TIMESTAMPTZ NOT NULL |
 | — (system) | — | `week_number` | `advertisements` | INTEGER (derived from `starts_at`) |
-| — (system) | — | `shop_id` | `advertisements` | VARCHAR(25) FK → `shops.id` |
+| — (system) | — | `shop_id` | `advertisements` | UUID FK → `shops.id` |
 | — (system) | — | `approval_status` | `advertisements` | VARCHAR(20) DEFAULT 'pending' |
 | — (system) | — | `payment_status` | `advertisements` | VARCHAR(20) DEFAULT 'pending' |
 
@@ -517,13 +525,16 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `btnPayFee` (result) | `paymentStatus` | `payment_status` | `advertisements` | VARCHAR(20) ('pending'/'paid'/'failed'/'refunded') |
+| `btnPayFee` (result) | `paymentStatus` | `payment_status` | `advertisements` | VARCHAR(20) (`pending`/`completed`/`failed`/`refunded`; `completed` displays as Paid) |
 | `btnPayFee` (result) | `paymentAmount` | `payment_amount` | `advertisements` | DECIMAL(10,2) (nullable) |
-| `btnPayFee` (result) | `paymentReference` | `payment_reference` | `advertisements` | VARCHAR(100) (nullable) |
+| `btnPayFee` (result) | `paymentReference` | `payment_reference` | `advertisements` | VARCHAR(255) (nullable) |
 | `btnApprove` (result) | `approvalStatus` | `approval_status` | `advertisements` | VARCHAR(20) ('pending'/'approved'/'rejected') |
-| `btnApprove` (result) | `approvedBy` | `approved_by` | `advertisements` | VARCHAR(25) FK → `users.id` (nullable) |
+| `btnApprove` (result) | `approvedBy` | `approved_by` | `advertisements` | UUID FK → `users.id` (nullable) |
 | `btnApprove` (result) | `approvedAt` | `approved_at` | `advertisements` | TIMESTAMPTZ (nullable) |
 | `txtRejectReason` | `rejectionReason` | `rejection_reason` | `advertisements` | TEXT (nullable) |
+| — (system) | fee lookup | `daily_rate` | `ad_fee_settings` | DECIMAL(10,2), selected by active `placement` + `tier` |
+| — (system) | payment transaction | `ad_id`, `merchant_id`, `amount`, `payment_method`, `payment_status`, `transaction_id`, `paid_at` | `ad_payments` | UUID FKs / DECIMAL(10,2) / VARCHAR(50) / VARCHAR(20) / VARCHAR(255) / TIMESTAMPTZ |
+| — (system) | refund transaction | `refund_amount`, `refund_reason`, `refunded_at` | `ad_payments` | DECIMAL(10,2) / TEXT / TIMESTAMPTZ (nullable until refund) |
 
 ---
 
@@ -569,7 +580,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
       "imageUrl": "/uploads/ads/9f2c.../banner.webp",
       "isActive": true,
       "approvalStatus": "approved",
-      "paymentStatus": "paid",
+      "paymentStatus": "completed",
       "startsAt": "2026-08-15T00:00:00.000Z",
       "expiresAt": "2026-09-14T23:59:59.000Z"
     }
@@ -592,7 +603,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
     "approvalStatus": "approved",
     "approvedBy": "clxadmin00001",
     "approvedAt": "2026-08-11T06:00:00.000Z",
-    "paymentStatus": "paid"
+    "paymentStatus": "completed"
   }
 }
 ```
@@ -857,7 +868,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 ## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
 
 - **Design System:** Luxury Cosmetics Theme — Primary `#7C3AED` (Purple), Accent `#EC4899` (Pink), Secondary `#F3E8FF` (Lavender).
-- **Status Badge Colors:** Active `bg-green-100 text-green-800`, Inactive `bg-gray-100 text-gray-800`, Expired `bg-amber-100 text-amber-800`; Approval Pending `bg-amber-100 text-amber-800`, Approved `bg-green-100 text-green-800`, Rejected `bg-red-100 text-red-800`; Payment Paid `bg-green-100 text-green-800`, Pending `bg-amber-100 text-amber-800`, Failed `bg-red-100 text-red-800`, Refunded `bg-gray-100 text-gray-800`.
+- **Status Badge Colors:** Active `bg-green-100 text-green-800`, Inactive `bg-gray-100 text-gray-800`, Expired `bg-amber-100 text-amber-800`; Approval Pending `bg-amber-100 text-amber-800`, Approved `bg-green-100 text-green-800`, Rejected `bg-red-100 text-red-800`; canonical payment value `completed` (displayed as Paid) `bg-green-100 text-green-800`, Pending `bg-amber-100 text-amber-800`, Failed `bg-red-100 text-red-800`, Refunded `bg-gray-100 text-gray-800`.
 - **Responsive Viewport Design:** Desktop three-column card grid with sidebar; tablet two-column; mobile single-column with full-screen sheet dialog (max-width 640px on desktop).
 - **Accessibility:** Every control keyboard navigable. ARIA labels required for edit/delete/pay/submit icon buttons. Error messages announced via `role="alert"`. Focus trap in dialog; visible focus ring.
 - **Performance:** Loading skeletons during fetch; spinners during async operations; active ads served from Redis cache (`cache:ads:active`, TTL 5 min) and invalidated on mutation.
@@ -892,6 +903,8 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 - [ ] Content optional, max 5000 chars (VAL-AD-010)
 - [ ] Link URL validated if present (VAL-AD-032/033)
 - [ ] End date must be after start date (VAL-AD-042)
+- [ ] Schedule duration below 7 days is rejected (`AD_DURATION_TOO_SHORT`)
+- [ ] Schedule duration above 30 days is rejected (`AD_DURATION_TOO_LONG`)
 - [ ] End date defaults to start date + 30 days on create
 - [ ] Image upload accepts JPG/PNG/WebP, rejects others (VAL-AD-030)
 - [ ] Image > 5MB rejected (VAL-AD-031)
@@ -905,18 +918,19 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 ### 12.3 Payment & Submission Tests
 
 - [ ] Pay Fee button shown when payment status is pending
-- [ ] Pay Fee records amount + reference; badge updates to Paid
-- [ ] Submit for Approval disabled until payment is paid
+- [ ] Pay Fee records an `ad_payments` amount, method, transaction/reference and `paid_at`; badge displays Paid for `completed`
+- [ ] Submit for Approval is disabled until payment status is `completed`
 - [ ] Submit sets approval status to pending
 - [ ] Ad becomes read-only after submission until admin decision
 - [ ] Submit without payment shows error (AD-422)
 
 ### 12.4 Admin Moderation Tests
 
-- [ ] Pending queue shows paid + pending ads, oldest first
+- [ ] Pending queue shows submitted `completed`-payment + pending-approval ads, oldest first; unpaid drafts are excluded
 - [ ] Weekly limit indicator shows correct count
 - [ ] Approve sets approval status to approved, sets approvedBy/approvedAt
-- [ ] Approve blocked with weekly-limit error when 5 ads active (AD-LIMIT)
+- [ ] Approve blocked with weekly-limit error when 5 ads are active (AD-LIMIT)
+- [ ] Approve blocked with `MERCHANT_AD_LIMIT_REACHED` when the merchant already has 2 simultaneous active ads
 - [ ] Reject requires rejection reason (VAL-AD-050)
 - [ ] Reject sets status to rejected and refunds payment (payment_status = refunded)
 - [ ] Merchant is notified of approval/rejection with reason
@@ -926,7 +940,7 @@ The Advertisement Management screens enable merchants to create, schedule, pay f
 ### 12.5 Public Banner Display Tests
 
 - [ ] Active ads endpoint (GET /ads/active) public, no auth required
-- [ ] Only paid + approved + active + in-schedule ads returned
+- [ ] Only `completed` + approved + active + in-schedule ads returned (the UI renders `completed` as Paid)
 - [ ] Redis cache used (cache:ads:active, TTL 5 min)
 - [ ] Cache invalidated on create/update/delete/approve/reject/pay
 - [ ] Banner carousel renders image + announcement message
