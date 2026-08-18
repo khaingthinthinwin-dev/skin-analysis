@@ -10,9 +10,9 @@
 | **Target Screen** | Product Detail (商品詳細) |
 | **Subsystem** | Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry |
 | **Function ID** | FN-PROD-001 |
-| **Version** | 5.0 |
+| **Version** | 5.1 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-17 |
 | **Author** | Software Architect |
 | **Status** | Draft (審査中) |
 | **Classification** | Internal — Engineering Division |
@@ -28,6 +28,7 @@
 | 3.0 | 2026-08-07 | Software Architect | Removed UI wireframe, layout behavior, folder structure, and frontend implementation details (routes, types, Zod schema, service layer, hooks) from Section 5 to conform to the standard screen specification template (UI Elements only), matching the structure of other screen specification documents. |
 | 4.0 | 2026-08-10 | Software Architect | Removed the Wishlist deletion (Remove from Wishlist) section and all deletion-related references from the Product Detail scope since deletion is handled by a separate module; added the Active Promotion display section including the promotion balance; corrected database table references (`cart_items` does not exist in the DB design — replaced with `promotions` / `order_items`). |
 | 5.0 | 2026-08-14 | Software Architect | Aligned with DATABASE_SPEC v2.0: replaced all CUID references with UUID (all PKs now use `gen_random_uuid()`); updated merchant data model to reference `merchants` table (display name is `shopName`, not `name`); corrected wishlist table name from `wishlists` to `wishlist` (singular) with matching constraint/index names; clarified verified-purchase check to use `delivered` order status (terminal state per DB spec); updated all JSON examples and Prisma queries accordingly. |
+| 5.1 | 2026-08-17 | Software Architect | Aligned with DATABASE_SPEC v2.2 / REQUIREMENT_SPEC v1.7 / DEVELOPMENT_RULES v2.1: updated cart functionality to reference new `carts` and `cart_items` tables (replacing `order_items` reference for cart operations); added cart lifecycle rules (B-CART-008~014); updated database traceability section with `carts` and `cart_items` tables; added `review_reports` table reference for review moderation. Note: Cart and Wishlist sections remain unchanged as they are maintained by other teams. |
 
 ---
 
@@ -127,9 +128,9 @@ This screen is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.0) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`), UUID PKs, merchants table, constraints. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
+| 1 | SKM-REQ-001 | Requirements Definition (v1.7) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x, B-CART-008~014). |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `carts`, `cart_items`, `review_reports`), UUID PKs, merchants table, constraints. |
+| 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
 
@@ -1046,6 +1047,11 @@ Defined via `.env` configuration and service constants:
 | B-PROD-006 | Skin type compatibility | UC-PROD-001, EL-10 |
 | B-PROD-007 | Average rating and review count | UC-PROD-002, EL-05, Sec 6.2 |
 | B-CART-001 | Add products to cart | UC-PROD-006, Sec 6.6 (Rule 4.2.2) |
+| B-CART-008 | Quantity must be greater than zero | BR-PROD-011 (quantity validation) |
+| B-CART-009 | Same product cannot appear as duplicate cart lines | UC-PROD-006 (unique constraint `uq_cart_items_cart_product`) |
+| B-CART-010 | Cart price uses current product price at time of checkout | Out of scope for ProductDetail (handled by Cart module) |
+| B-CART-011 | Stock is validated when adding to cart | BR-PROD-010, BR-PROD-011 (atomic stock validation) |
+| B-CART-012 | Stock is validated again at checkout | Out of scope for ProductDetail (handled by Checkout module) |
 | B-WISH-001 | Add product to wishlist | UC-PROD-005, Sec 6.5 |
 | B-MATCH-006 | "Recommended for You" section | UC-PROD-004, Sec 6.4 |
 
@@ -1059,9 +1065,12 @@ Defined via `.env` configuration and service constants:
 | `users` | Reviewer info (name, avatarUrl) | `pk_users` |
 | `shops` | Shop profile for "Sold by" — linked via `shops.user_id` | `idx_shops_user_id`, `uq_shops_slug`, `idx_shops_is_approved` |
 | `reviews` | Review list (SELECT), create review (INSERT) | `idx_reviews_product_id`, `uq_reviews_user_product`, `chk_reviews_rating` |
+| `review_reports` | Review moderation (SELECT / INSERT) — for reporting inappropriate reviews | `idx_review_reports_review_id`, `idx_review_reports_status`, `chk_review_reports_reason`, `chk_review_reports_status` |
 | `wishlist` | Add to wishlist (SELECT / INSERT) — table name is singular | `idx_wishlist_user_id`, `uq_wishlist_user_product` |
 | `promotions` | Active promotion display (SELECT), balance computed from `max_uses` / `used_count` | `idx_promotions_merchant_id`, `idx_promotions_is_active`, `idx_promotions_expires_at`, `uq_promotions_code`, `chk_promotions_discount_value`, `chk_promotions_dates` |
-| `order_items` | Verified purchase check (SELECT) and add to cart (INSERT / MERGE). The database design (`SKM-DBS-001`) has **no `cart_items` table** — the actual table used for cart/order lines is `order_items`. | `idx_order_items_product_id`, `idx_order_items_merchant_id`, `fk_order_items_product`, `fk_order_items_merchant`, `chk_order_items_quantity`, `chk_order_items_total` |
+| `carts` | User cart management (SELECT / INSERT) — DATABASE_SPEC v2.2: new table for cart persistence | `idx_carts_user_id`, `uq_carts_user_id` |
+| `cart_items` | Cart line items (SELECT / INSERT / UPDATE / DELETE) — DATABASE_SPEC v2.2: new table for cart items | `idx_cart_items_cart_id`, `uq_cart_items_cart_product`, `chk_cart_items_quantity` |
+| `order_items` | Verified purchase check (SELECT) for review validation. Note: Cart operations now use `carts`/`cart_items` tables (DATABASE_SPEC v2.2). | `idx_order_items_product_id`, `idx_order_items_merchant_id`, `fk_order_items_product`, `fk_order_items_merchant`, `chk_order_items_quantity`, `chk_order_items_total` |
 
 **Reference Prisma Queries:**
 

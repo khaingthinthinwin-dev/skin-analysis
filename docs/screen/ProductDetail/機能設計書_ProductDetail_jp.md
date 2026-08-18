@@ -10,9 +10,9 @@
 | **対象画面** | 商品詳細ページ |
 | **サブシステム** | 商品カタログ — 商品詳細、レビュー、お気に入り＆カート追加 |
 | **機能ID** | FN-PROD-001 |
-| **バージョン** | 5.0 |
+| **バージョン** | 5.1 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-14 |
+| **最終更新日** | 2026-08-17 |
 | **作成者** | ソフトウェアアーキテクト |
 | **ステータス** | ドラフト（審査中） |
 | **分類** | 社内 — 技術部門 |
@@ -28,6 +28,7 @@
 | 3.0 | 2026-08-07 | ソフトウェアアーキテクト | 他の画面仕様書と構成を揃えるため、第5章からUIワイヤーフレーム、レイアウト動作、フォルダ構成、フロントエンド実装詳細（ルート、型、Zodスキーマ、サービス層、フック）を削除（UI要素のみ）。 |
 | 4.0 | 2026-08-10 | ソフトウェアアーキテクト | 削除は別モジュールで処理されるため、商品詳細のスコープからお気に入り削除セクションおよび削除関連の参照をすべて削除。有効プロモーション表示セクション（残数を含む）を追加。データベーステーブル参照を修正（DB設計に`cart_items`テーブルは存在しない — `promotions` / `order_items`に置換）。 |
 | 5.0 | 2026-08-14 | ソフトウェアアーキテクト | DB設計書v2.0に整合。CUID参照をすべてUUIDに置換（全PKが`gen_random_uuid()`を使用）。マーチャントデータモデルを`merchants`テーブル参照に更新（表示名は`name`ではなく`shopName`）。お気に入りテーブル名を`wishlists`から`wishlist`（単数形）に修正、制約/インデックス名も修正。検証済み購入チェックを`delivered`注文ステータス（DB設計の終端状態）を使用するよう明確化。すべてのJSON例とPrismaクエリを更新。 |
+| 5.1 | 2026-08-17 | ソフトウェアアーキテクト | DB設計書v2.2 / 要件定義書v1.7 / 開発ルールv2.1に整合。カート機能を新しい`carts`および`cart_items`テーブル参照に更新（`order_items`参照をカート操作に置換）。カートライフサイクルルール（B-CART-008~014）を追加。データベーストレーサビリティセクションに`carts`および`cart_items`テーブルを追加。レビュー管理用に`review_reports`テーブル参照を追加。注：カートおよびお気に入りセクションは他のチームが管理するため変更なし。 |
 
 ---
 
@@ -127,9 +128,9 @@
 
 | No. | 文書ID | 文書名 | ファイルパス/参照 | 備考 |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフロー論理、必須フィールド、ルール（ルール4.2.x、4.4.x）。 |
-| 2 | SKM-DBS-001 | データベース設計書（v2.0） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`products`、`reviews`、`wishlist`、`promotions`、`order_items`）、UUID PK、`merchants`テーブル、制約。 |
-| 3 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
+| 1 | SKM-REQ-001 | 要件定義書（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフロー論理、必須フィールド、ルール（ルール4.2.x、4.4.x、B-CART-008~014）。 |
+| 2 | SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`products`、`reviews`、`wishlist`、`promotions`、`carts`、`cart_items`、`review_reports`）、UUID PK、`merchants`テーブル、制約。 |
+| 3 | SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
 
 ---
 
@@ -1045,6 +1046,11 @@ slug validated (URL slug format, max 255 chars)
 | B-PROD-006 | 肌タイプ適合性 | UC-PROD-001、EL-10 |
 | B-PROD-007 | 平均レーティングとレビュー件数 | UC-PROD-002、EL-05、第6.2節 |
 | B-CART-001 | 商品をカートに追加 | UC-PROD-006、第6.6節（ルール4.2.2） |
+| B-CART-008 | 数量はゼロより大きくなければならない | BR-PROD-011（数量バリデーション） |
+| B-CART-009 | 同じ商品がカート行として重複して出现することはできない | UC-PROD-006（一意制約`uq_cart_items_cart_product`） |
+| B-CART-010 | カート価格はチェックアウト時に現在の商品価格を使用 | 商品詳細のスコープ外（カートモジュールで処理） |
+| B-CART-011 | カートに追加時に在庫が検証される | BR-PROD-010、BR-PROD-011（アトミック在庫検証） |
+| B-CART-012 | チェックアウト時に再び在庫が検証される | 商品詳細のスコープ外（チェックアウトモジュールで処理） |
 | B-WISH-001 | 商品をお気に入りに追加 | UC-PROD-005、第6.5節 |
 | B-MATCH-006 | 「あなたへのおすすめ」セクション | UC-PROD-004、第6.4節 |
 
@@ -1058,9 +1064,12 @@ slug validated (URL slug format, max 255 chars)
 | `users` | レビュー投稿者情報（名前、avatarUrl） | `pk_users` |
 | `shops` | 「販売者」のショッププロフィール — `shops.user_id`でリンク | `idx_shops_user_id`、`uq_shops_slug`、`idx_shops_is_approved` |
 | `reviews` | レビュー一覧（SELECT）、レビュー作成（INSERT） | `idx_reviews_product_id`、`uq_reviews_user_product`、`chk_reviews_rating` |
+| `review_reports` | レビュー管理（SELECT / INSERT） — 不適切レビューの報告用 | `idx_review_reports_review_id`、`idx_review_reports_status`、`chk_review_reports_reason`、`chk_review_reports_status` |
 | `wishlist` | お気に入り追加（SELECT / INSERT） — テーブル名は単数形 | `idx_wishlist_user_id`、`uq_wishlist_user_product` |
 | `promotions` | 有効プロモーション表示（SELECT）、`max_uses` / `used_count`から残数計算 | `idx_promotions_merchant_id`、`idx_promotions_is_active`、`idx_promotions_expires_at`、`uq_promotions_code`、`chk_promotions_discount_value`、`chk_promotions_dates` |
-| `order_items` | カートに追加（INSERT / MERGE）。データベース設計（`SKM-DBS-001`）には**`cart_items`テーブルは存在しない** — カート/注文ラインに実際に使用されるテーブルは`order_items`。 | `idx_order_items_product_id`、`idx_order_items_merchant_id`、`fk_order_items_product`、`fk_order_items_merchant`、`chk_order_items_quantity`、`chk_order_items_total` |
+| `carts` | ユーザーカート管理（SELECT / INSERT） — DB設計書v2.2：カート永続化用の新テーブル | `idx_carts_user_id`、`uq_carts_user_id` |
+| `cart_items` | カート商品行（SELECT / INSERT / UPDATE / DELETE） — DB設計書v2.2：カート商品用の新テーブル | `idx_cart_items_cart_id`、`uq_cart_items_cart_product`、`chk_cart_items_quantity` |
+| `order_items` | レビュー検ビュー検証用の検証済み購入チェック（SELECT）。注：カート操作は`carts`/`cart_items`テーブルを使用（DB設計書v2.2）。 | `idx_order_items_product_id`、`idx_order_items_merchant_id`、`fk_order_items_product`、`fk_order_items_merchant`、`chk_order_items_quantity`、`chk_order_items_total` |
 
 **参照Prismaクエリ：**
 
@@ -1142,9 +1151,9 @@ await prisma.$transaction(async (tx) => {
 
 | 文書ID | 文書名 | ファイルパス |
 |-------------|---------------|-----------|
-| SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` |
-| SKM-DBS-001 | データベース設計書 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
-| SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
+| SKM-REQ-001 | 要件定義書（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` |
+| SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
+| SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
 
 ---
 

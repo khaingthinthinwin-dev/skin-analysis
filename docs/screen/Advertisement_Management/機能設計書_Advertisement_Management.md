@@ -10,9 +10,9 @@
 | **Target Screen** | Advertisement Management (広告管理) |
 | **Subsystem** | Advertisement — Shop Advertisement Management |
 | **Function ID** | FN-AD-001 |
-| **Version** | 2.0 |
+| **Version** | 2.1 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-18 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -27,6 +27,7 @@
 | 1.0 | 2026-08-05 | Software Architect | Initial functional specification for Advertisement Management covering merchant ad creation, scheduling, image upload, status control, and platform display. |
 | 1.1 | 2026-08-10 | Software Architect | Aligned with Requirement Spec v1.1 / Database Spec v1.1. Added admin approval workflow (M-AD-006), advertising fee payment (M-AD-007), weekly ad limit (M-AD-008), and announcement message (M-AD-009). Added `approval_status`, `payment_status`, `payment_amount`, `payment_reference`, `approved_by`, `approved_at`, `rejection_reason`, `week_number`, and `announcement_message` fields. |
 | 2.0 | 2026-08-14 | Software Architect | Aligned with DATABASE_SPEC v2.0 & REQUIREMENT_SPEC v1.5: replaced CUID references with UUID (`gen_random_uuid()`); integrated dynamic fee pricing via `ad_fee_settings` (placement × tier), payment transaction ledger via `ad_payments` (linked to `merchants`), and fee audit log via `ad_fee_history`; updated DB traceability matrix. |
+| 2.1 | 2026-08-18 | Software Architect | Aligned with DATABASE_SPEC v2.2 & REQUIREMENT_SPEC v1.7: corrected `payment_status` enum to `pending/completed/refunded/failed` (DB canonical); added ad duration limits (7–30 days, M-AD-013/014), per-merchant max 2 active ads (M-AD-012), ad states flow (M-AD-010), auto-refund on rejection (M-AD-011); updated traceability matrix. |
 
 ---
 
@@ -56,7 +57,7 @@
 
 This subsystem manages the complete lifecycle of shop advertisements within the Cosmetics Finder marketplace. It provides merchants with the ability to create, schedule, pay the advertising fee, submit for admin approval, activate/deactivate, and manage promotional banners tied to their approved shop. Admins approve or reject submitted advertisements with a reason, and only paid, approved, in-schedule advertisements are exposed to the storefront for platform-wide display (banner/image + announcement message).
 
-The Advertisement Management subsystem connects merchant promotional intent with buyer visibility. Active, in-schedule, approved advertisements are served to the public storefront through a cacheable endpoint, ensuring consistent banner rendering without exposing merchant management operations. A weekly limit of 5 active advertisements is enforced platform-wide.
+The Advertisement Management subsystem connects merchant promotional intent with buyer visibility. Active, in-schedule, approved advertisements are served to the public storefront through a cacheable endpoint, ensuring consistent banner rendering without exposing merchant management operations. A weekly limit of 5 active advertisements is enforced platform-wide. Per-merchant limit of 2 active ads simultaneously is enforced. Ad duration is constrained to 7–30 days.
 
 ### 1.2 Functional Responsibilities
 
@@ -69,11 +70,13 @@ This subsystem is responsible for the following core functional areas:
 5. **Advertising Fee Payment** — Merchants must pay the advertising fee before the ad is submitted for approval. Payment transaction is recorded with amount, status, and reference.
 6. **Admin Approval Workflow** — After verified payment, the ad enters `PENDING_APPROVAL`; admin approves or rejects with reason. Rejected ads can be edited and resubmitted.
 7. **Weekly Ad Limit** — A maximum of 5 active advertisements per week is enforced platform-wide (Monday 00:00 to Sunday 23:59 UTC), validated before an ad is approved for display.
-8. **Status Control** — Merchant-visible lifecycle (scheduled/active/inactive/expired) is derived from `is_active`, `approval_status`, `payment_status`, and the schedule.
-9. **Soft Delete** — Deleting an advertisement sets `is_active = false`, retaining the record for history.
-10. **Platform Display** — Paid, approved, active, in-schedule advertisements are exposed via a public endpoint for storefront banner and announcement message rendering.
-11. **Cache Management** — Active ads are cached in Redis with a 5-minute TTL; cache is invalidated on any mutation.
-12. **Audit Logging** — All advertisement mutations and approval/payment actions are logged for audit (90-day retention).
+8. **Per-Merchant Ad Limit** — A maximum of 2 active advertisements per merchant is enforced simultaneously, validated at approval time.
+9. **Ad Duration Limits** — Advertisement duration must be between 7 and 30 days (inclusive), validated at creation/update time.
+10. **Status Control** — Merchant-visible lifecycle (scheduled/active/inactive/expired) is derived from `is_active`, `approval_status`, `payment_status`, and the schedule.
+11. **Soft Delete** — Deleting an advertisement sets `is_active = false`, retaining the record for history.
+12. **Platform Display** — Paid, approved, active, in-schedule advertisements are exposed via a public endpoint for storefront banner and announcement message rendering.
+13. **Cache Management** — Active ads are cached in Redis with a 5-minute TTL; cache is invalidated on any mutation.
+14. **Audit Logging** — All advertisement mutations and approval/payment actions are logged for audit (90-day retention).
 
 ### 1.3 Target Users
 
@@ -154,9 +157,9 @@ This subsystem is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~009, Merchant Shop Advertisement module, Advertisement Rules (4.6) |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.0) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements`, `ad_fee_settings`, `ad_payments`, `ad_fee_history`, `merchants`, `shops` tables, UUID PKs, indexes, check constraints |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Advertisement Rules (12.7), naming conventions, RBAC |
+| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~014, Merchant Shop Advertisement module, Advertisement Rules (4.6) |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements`, `ad_fee_settings`, `ad_payments`, `ad_fee_history`, `merchants`, `shops` tables, UUID PKs, indexes, check constraints |
+| 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Advertisement Rules (12.7), naming conventions, RBAC |
 
 ---
 
@@ -314,11 +317,11 @@ This subsystem is responsible for the following core functional areas:
 | 2 | Merchant clicks "New Ad" | — | Form Displayed | System |
 | 3 | Merchant fills ad form (title, announcement, schedule, image) | — | — | Merchant |
 | 4 | Merchant submits advertisement (draft) | — | `payment_status = pending`, `approval_status = pending` | System |
-| 5 | Merchant pays advertising fee | `payment_status = pending` | `payment_status = paid` (amount, reference recorded) | Merchant / Payment System |
-| 6 | Merchant submits for approval | `payment_status = paid` | `approval_status = pending` | Merchant |
+| 5 | Merchant pays advertising fee | `payment_status = pending` | `payment_status = completed` (amount, reference recorded) | Merchant / Payment System |
+| 6 | Merchant submits for approval | `payment_status = completed` | `approval_status = pending` | Merchant |
 | 7 | Admin reviews pending ad | `approval_status = pending` | — | Admin |
 | 8a | Admin approves ad (weekly limit validated ≤ 5) | `approval_status = pending` | `approval_status = approved`, `approved_by`/`approved_at` set | Admin |
-| 8b | Admin rejects ad with reason | `approval_status = pending` | `approval_status = rejected`, refund processed | Admin |
+| 8b | Admin rejects ad with reason | `approval_status = pending` | `approval_status = rejected`, `payment_status = refunded` (auto-refund) | Admin |
 | 9 | Ad appears in merchant ad list with approval badge | — | — | System |
 | 10 | Active ads cache invalidated | — | Cache Cleared | System |
 | 11 | Buyer loads storefront | Public | — | Buyer |
@@ -338,6 +341,11 @@ This subsystem is responsible for the following core functional areas:
 | M-AD-007 | Merchants must pay advertising fee before submission |
 | M-AD-008 | Maximum 5 active advertisements per week |
 | M-AD-009 | Advertisements display with banner/image and announcement message |
+| M-AD-010 | Ad states: draft → pending_payment → pending_approval → approved → active → expired |
+| M-AD-011 | Rejected ads auto-refund payment to merchant |
+| M-AD-012 | Per merchant: maximum 2 active ads simultaneously |
+| M-AD-013 | Minimum ad duration: 7 days |
+| M-AD-014 | Maximum ad duration: 30 days |
 
 ---
 
@@ -348,13 +356,16 @@ This subsystem is responsible for the following core functional areas:
 | State | Description | Visible to Buyers | Can Edit | Can Delete |
 |-------|-------------|:-----------------:|:--------:|:----------:|
 | `DRAFT` | `approval_status = pending`, `payment_status = pending` | ✗ | ✓ | ✓ |
-| `PENDING_APPROVAL` | `payment_status = paid`, `approval_status = pending` | ✗ | ✗ (unless rejected) | ✓ |
-| `APPROVED` | `approval_status = approved`, `payment_status = paid` | depends on schedule + `is_active` | ✓ | ✓ |
+| `PENDING_APPROVAL` | `payment_status = completed`, `approval_status = pending` | ✗ | ✗ (unless rejected) | ✓ |
+| `APPROVED` | `approval_status = approved`, `payment_status = completed` | depends on schedule + `is_active` | ✓ | ✓ |
 | `REJECTED` | `approval_status = rejected` (refund processed) | ✗ | ✓ (resubmission) | ✓ |
 | `SCHEDULED` | approved, `is_active = true` and `starts_at > now` | ✗ | ✓ | ✓ |
 | `ACTIVE` | approved, `is_active = true`, `starts_at <= now <= expires_at` | ✓ | ✓ | ✓ |
 | `INACTIVE` | `is_active = false` (hidden or soft deleted) | ✗ | ✓ | ✓ |
 | `EXPIRED` | `expires_at < now` | ✗ | ✓ | ✓ |
+
+> **Ad States Flow (M-AD-010):** `draft → pending_payment → pending_approval → approved → active → expired`
+> Rejected ads at any approval stage → refund fee → resubmit → pending_approval
 
 ### 3.2 Approval Status States (`approval_status`)
 
@@ -368,9 +379,9 @@ This subsystem is responsible for the following core functional areas:
 
 | State | DB Value | Description | Transition Allowed |
 |-------|----------|-------------|-------------------|
-| `PENDING` | `'pending'` | Advertising fee not yet paid | → `paid`, `failed` |
-| `PAID` | `'paid'` | Fee paid and verified; required before approval submission | → `refunded` |
-| `FAILED` | `'failed'` | Payment attempt failed | → `pending`, `paid` |
+| `PENDING` | `'pending'` | Advertising fee not yet paid | → `completed`, `failed` |
+| `COMPLETED` | `'completed'` | Fee paid and verified; required before approval submission | → `refunded` |
+| `FAILED` | `'failed'` | Payment attempt failed | → `pending`, `completed` |
 | `REFUNDED` | `'refunded'` | Auto-refunded on rejection | terminal |
 
 ### 3.4 Advertisement Lifecycle Transitions
@@ -378,7 +389,7 @@ This subsystem is responsible for the following core functional areas:
 | Transition ID | Origin State | Target State | Trigger Action | Guard Conditions |
 |---------------|--------------|--------------|----------------|------------------|
 | TR-AD-01 | — | `DRAFT` | Create ad (draft) | Valid data, shop approved, announcement message required |
-| TR-AD-02 | `DRAFT` | `PENDING_APPROVAL` | Pay fee + submit for approval | `payment_status = paid`; weekly limit check at approval time |
+| TR-AD-02 | `DRAFT` | `PENDING_APPROVAL` | Pay fee + submit for approval | `payment_status = completed`; weekly limit check at approval time |
 | TR-AD-03 | `PENDING_APPROVAL` | `APPROVED` | Admin approves | Weekly limit ≤ 5 for target week |
 | TR-AD-04 | `PENDING_APPROVAL` | `REJECTED` | Admin rejects with reason | Reason required; refund auto-processed |
 | TR-AD-05 | `REJECTED` | `PENDING_APPROVAL` | Edit + resubmit | Ad belongs to merchant; new content valid |
@@ -421,7 +432,7 @@ This subsystem is responsible for the following core functional areas:
 |---------|-----------|-------------|-------------------|
 | BR-AD-008 | Schedule Required | Both `startsAt` and `expiresAt` are required. | Backend (DTO validation) |
 | BR-AD-009 | Schedule Validity | `expires_at` > `starts_at` enforced by DB check constraint. | Backend (DB constraint `chk_advertisements_dates`) |
-| BR-AD-010 | Active Window | An ad is active when `is_active = true` AND `approval_status = approved` AND `payment_status = paid` AND `starts_at <= now` AND `expires_at >= now`. | Backend (query filter) |
+| BR-AD-010 | Active Window | An ad is active when `is_active = true` AND `approval_status = approved` AND `payment_status = completed` AND `starts_at <= now` AND `expires_at >= now`. | Backend (query filter) |
 | BR-AD-025 | Week Number | `week_number` (ISO week) is derived from `starts_at` and stored for weekly limit tracking. | Backend (service logic) |
 
 ### 4.3 Advertisement Status Rules
@@ -433,7 +444,7 @@ This subsystem is responsible for the following core functional areas:
 | BR-AD-013 | Expired Visibility | Expired ads hidden from buyers, visible to merchant. | Backend (role-based query) |
 | BR-AD-014 | Derived Status | Display status (active/inactive/expired) derived client-side from `is_active`, `approval_status`, `payment_status`, and schedule; never persisted. | Frontend (display logic) |
 | BR-AD-026 | Approval Status Enum | `approval_status` restricted to `pending/approved/rejected` via DB check constraint `chk_advertisements_approval_status`. | Backend (DB constraint) |
-| BR-AD-027 | Payment Status Enum | `payment_status` restricted to `pending/paid/failed/refunded` via DB check constraint `chk_advertisements_payment_status`. | Backend (DB constraint) |
+| BR-AD-027 | Payment Status Enum | `payment_status` restricted to `pending/completed/refunded/failed` via DB check constraint `chk_advertisements_payment_status`. | Backend (DB constraint) |
 
 ### 4.4 Advertisement Image Rules
 
@@ -457,7 +468,7 @@ This subsystem is responsible for the following core functional areas:
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-AD-028 | Approval Required | All advertisements require admin approval before display. | Backend (service logic) |
-| BR-AD-029 | Submission Requires Payment | Ad only transitions to `PENDING_APPROVAL` after `payment_status = paid` is verified. | Backend (service logic) |
+| BR-AD-029 | Submission Requires Payment | Ad only transitions to `PENDING_APPROVAL` after `payment_status = completed` is verified. | Backend (service logic) |
 | BR-AD-030 | Approve/Reject with Reason | Admin approves or rejects; rejection requires `rejection_reason` and sets `approved_by`/`approved_at`. | Backend (service logic + DTO validation) |
 | BR-AD-031 | Rejection Refund | Rejected ads trigger automatic refund; `payment_status` set to `refunded`. | Backend (payment service) |
 | BR-AD-032 | Resubmission | Rejected ads can be edited and resubmitted, returning to `approval_status = pending`. | Backend (service logic) |
@@ -469,7 +480,7 @@ This subsystem is responsible for the following core functional areas:
 | BR-AD-033 | Payment Required Before Submission | Merchants must pay the advertising fee before ad submission. | Backend (service logic) |
 | BR-AD-034 | Dynamic Fee Rate | Advertising fee is calculated dynamically based on ad placement (`homepage_slider`, `product_sidebar`, `category_banner`, `search_top`) and pricing tier (`basic`, `standard`, `premium`) from `ad_fee_settings`. | Backend (ad_fee_settings query) |
 | BR-AD-035 | Payment Record & Ledger | Payment details recorded in `ad_payments` ledger table with `ad_id`, `merchant_id` (referencing `merchants.id`), `amount`, `payment_method`, `payment_status`, and `transaction_id`. | Backend (payment service) |
-| BR-AD-036 | Payment Verification | Payment must be verified (`payment_status = paid`) before ad transitions to `PENDING_APPROVAL`. | Backend (service logic) |
+| BR-AD-036 | Payment Verification | Payment must be verified (`payment_status = completed`) before ad transitions to `PENDING_APPROVAL`. | Backend (service logic) |
 | BR-AD-037 | Fee Modification Audit | Rate changes by admins apply only to new ads created after the change effective date and are logged in `ad_fee_history`. | Backend (audit logic) |
 
 ### 4.8 Weekly Ad Limit Rules
@@ -481,7 +492,23 @@ This subsystem is responsible for the following core functional areas:
 | BR-AD-038 | Limit Validation Timing | Limit validated before approving an ad for display (approval time). | Backend (service logic) |
 | BR-AD-039 | Limit Exceeded Response | Approval blocked with `409 Conflict` and clear message when limit reached. | Backend (service logic) |
 
-### 4.9 Cache Rules
+### 4.9 Per-Merchant Ad Limit Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-AD-040 | Per-Merchant Active Limit | Maximum 2 active (approved + paid + in-schedule) advertisements per merchant simultaneously. | Backend (service logic, query on `shop_id`) |
+| BR-AD-041 | Per-Merchant Limit Timing | Limit validated when an ad transitions to `approved` (approval time). | Backend (service logic) |
+| BR-AD-042 | Per-Merchant Limit Exceeded | Approval blocked with `409 Conflict` and message "Maximum 2 active ads per merchant reached." | Backend (service logic) |
+
+### 4.10 Ad Duration Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-AD-043 | Minimum Duration | Advertisement duration (`expires_at - starts_at`) must be at least 7 days. | Backend (DTO validation) + Frontend (Zod schema) |
+| BR-AD-044 | Maximum Duration | Advertisement duration (`expires_at - starts_at`) must not exceed 30 days. | Backend (DTO validation) + Frontend (Zod schema) |
+| BR-AD-045 | Duration Validation Error | If duration < 7 days or > 30 days, return `400 Bad Request` with message. | Backend (service logic) |
+
+### 4.11 Cache Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
@@ -526,7 +553,7 @@ This subsystem is responsible for the following core functional areas:
 | EL-11 | Ad Title | Text | — | Yes | Advertisement title |
 | EL-12 | Status Badge | Badge | — | Yes | Active/Inactive/Expired badge |
 | EL-12a | Approval Status Badge | Badge | — | Yes | Pending/Approved/Rejected badge |
-| EL-12b | Payment Status Badge | Badge | — | Yes | Paid/Pending/Failed/Refunded badge |
+| EL-12b | Payment Status Badge | Badge | — | Yes | Completed/Pending/Failed/Refunded badge |
 | EL-13 | Ad Content | Text | — | No | Advertisement content/description |
 | EL-13a | Announcement Message | Text | — | Yes | Banner announcement message (truncated, tooltip for full) |
 | EL-14 | Schedule Display | Text | — | Yes | "Aug 01, 2026 → Sep 15, 2026" |
@@ -590,13 +617,13 @@ This subsystem is responsible for the following core functional areas:
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-34 | Fee Summary | Text | `merchant.ads.fee` | Yes | Advertising fee amount displayed before payment (e.g., "Advertising Fee: $XX.XX") |
-| EL-35 | Payment Status Text | Text | — | Yes | Shows `payment_status` (Pending / Paid / Failed / Refunded) |
-| EL-36 | Pay Fee Button | Button (primary) | `merchant.ads.pay` | No | Invokes payment (stubbed); sets `payment_status = paid` |
-| EL-37 | Submit for Approval Button | Button (primary) | `merchant.ads.submit` | No | Enabled only when `payment_status = paid`; sets `approval_status = pending` |
+| EL-35 | Payment Status Text | Text | — | Yes | Shows `payment_status` (Pending / Completed / Failed / Refunded) |
+| EL-36 | Pay Fee Button | Button (primary) | `merchant.ads.pay` | No | Invokes payment (stubbed); sets `payment_status = completed` |
+| EL-37 | Submit for Approval Button | Button (primary) | `merchant.ads.submit` | No | Enabled only when `payment_status = completed`; sets `approval_status = pending` |
 | EL-38 | Approval Status Text | Text | — | Yes | Shows `approval_status` (Pending / Approved / Rejected) and `rejection_reason` when rejected |
 
 **Behavior:**
-- The ad cannot be submitted for approval until the fee is paid (`payment_status = paid`).
+- The ad cannot be submitted for approval until the fee is paid (`payment_status = completed`).
 - Once submitted, the ad is read-only for the merchant until admin decision.
 - A rejected ad returns to editable state with the rejection reason shown; saving re-submits (back to pending).
 
@@ -645,7 +672,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/ads/:id/pay` |
 | **Request Content-Type** | `application/json` (payment info; payment gateway stubbed) |
 | **Pre-Submission Validation** | Advertisement ownership check; ad must be in `payment_status = pending` |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Confirm ad is not yet paid. 5. Resolve fee rate from `ad_fee_settings` by placement & tier. 6. Process payment (stubbed) for `payment_amount`. 7. Record transaction in `ad_payments` with `payment_status = paid`, `payment_amount`, `transaction_id`. 8. Log `AD_PAID` audit event. 9. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Confirm ad is not yet paid. 5. Resolve fee rate from `ad_fee_settings` by placement & tier. 6. Process payment (stubbed) for `payment_amount`. 7. Record transaction in `ad_payments` with `payment_status = completed`, `payment_amount`, `transaction_id`. 8. Update advertisement `payment_status = completed`, `payment_amount`, `payment_reference`. 9. Log `AD_PAID` audit event. 10. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Enable "Submit for Approval" button; show success toast |
 
@@ -656,8 +683,8 @@ This subsystem is responsible for the following core functional areas:
 | **Trigger** | "Submit for Approval" button click (requires `payment_status = paid`) |
 | **API Endpoint** | `POST /api/v1/ads/:id/submit` |
 | **Request Content-Type** | None |
-| **Pre-Submission Validation** | Advertisement ownership check; `payment_status = paid` required |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Verify `payment_status = paid`. 5. Set `approval_status = pending` (submit). 6. Invalidate active ads cache. 7. Notify admin of pending approval. 8. Log `AD_SUBMITTED` audit event. 9. Return updated advertisement DTO. |
+| **Pre-Submission Validation** | Advertisement ownership check; `payment_status = completed` required |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Verify `payment_status = completed`. 5. Set `approval_status = pending` (submit). 6. Invalidate active ads cache. 7. Notify admin of pending approval. 8. Log `AD_SUBMITTED` audit event. 9. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Ad becomes read-only for merchant until admin decision |
 
@@ -669,7 +696,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/admin/ads/:id/approve` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Admin role; ad in `approval_status = pending` |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate weekly limit: count approved active ads with same `week_number`; if ≥ 5 return 409 Conflict. 5. Set `approval_status = approved`, `approved_by` (admin id), `approved_at` (now). 6. Invalidate active ads cache. 7. Log `AD_APPROVED` audit event. 8. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate weekly limit: count approved active ads with same `week_number`; if ≥ 5 return 409 Conflict. 5. Validate per-merchant limit: count approved active ads for same `shop_id`; if ≥ 2 return 409 Conflict. 6. Set `approval_status = approved`, `approved_by` (admin id), `approved_at` (now). 7. Invalidate active ads cache. 8. Log `AD_APPROVED` audit event. 9. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Ad is eligible for storefront display within its schedule |
 
@@ -681,7 +708,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/admin/ads/:id/reject` |
 | **Request Content-Type** | `application/json` (rejectionReason) |
 | **Pre-Submission Validation** | Admin role; ad in `approval_status = pending`; reason required |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate `rejection_reason` (required). 5. Set `approval_status = rejected`, `approved_by`, `approved_at`, `rejection_reason`. 6. Trigger automatic refund → `payment_status = refunded` in `ad_payments`. 7. Invalidate active ads cache. 8. Log `AD_REJECTED` audit event. 9. Notify merchant of rejection and reason. 10. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate `rejection_reason` (required). 5. Set `approval_status = rejected`, `approved_by`, `approved_at`, `rejection_reason`. 6. Trigger automatic refund → `payment_status = refunded` in `ad_payments`. 7. Update advertisement `payment_status = refunded`. 8. Invalidate active ads cache. 9. Log `AD_REJECTED` audit event. 10. Notify merchant of rejection and reason. 11. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Merchant sees rejection reason; can edit + resubmit |
 
@@ -693,7 +720,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `GET /api/v1/ads` |
 | **Request Content-Type** | None (query parameters) |
 | **Pre-Submission Validation** | Query params validated (page, limit, status, approvalStatus) |
-| **Processing Steps** | 1. Validate query parameters. 2. Resolve merchant's shop id. 3. Build Prisma WHERE with `shop_id = <merchant shop id>`. 4. Apply status filter (active: `is_active = true` AND approved AND paid AND in schedule) and approval status filter. 5. Apply pagination via `idx_advertisements_shop_id`. 6. Return paginated response with meta. |
+| **Processing Steps** | 1. Validate query parameters. 2. Resolve merchant's shop id. 3. Build Prisma WHERE with `shop_id = <merchant shop id>`. 4. Apply status filter (active: `is_active = true` AND approved AND completed AND in schedule) and approval status filter. 5. Apply pagination via `idx_advertisements_shop_id`. 6. Return paginated response with meta. |
 | **Success Response** | 200 OK with advertisement list and pagination meta |
 | **Cache** | None (per-merchant, not cached) |
 
@@ -729,7 +756,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `GET /api/v1/ads/active` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | None (public route) |
-| **Processing Steps** | 1. `@Public()` route (no JWT required). 2. Check Redis cache `cache:ads:active`. 3. On cache miss: query `WHERE is_active = true AND approval_status = 'approved' AND payment_status = 'paid' AND starts_at <= now() AND expires_at >= now() ORDER BY created_at DESC`. 4. Seed Redis cache with 5-minute TTL. 5. Return active ad list (banner/image + announcement message). |
+| **Processing Steps** | 1. `@Public()` route (no JWT required). 2. Check Redis cache `cache:ads:active`. 3. On cache miss: query `WHERE is_active = true AND approval_status = 'approved' AND payment_status = 'completed' AND starts_at <= now() AND expires_at >= now() ORDER BY created_at DESC`. 4. Seed Redis cache with 5-minute TTL. 5. Return active ad list (banner/image + announcement message). |
 | **Success Response** | 200 OK with active advertisement list |
 | **Cache** | Redis: `cache:ads:active` TTL 5 minutes |
 
@@ -741,7 +768,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `GET /api/v1/admin/ads?approvalStatus=pending` |
 | **Request Content-Type** | None (query parameters) |
 | **Pre-Submission Validation** | Admin role |
-| **Processing Steps** | 1. Validate query parameters. 2. Query ads with `approval_status = pending` (and `payment_status = paid`) via `idx_advertisements_approval_status` + `idx_advertisements_payment_status`. 3. Include shop name and payment info. 4. Return paginated list. |
+| **Processing Steps** | 1. Validate query parameters. 2. Query ads with `approval_status = pending` (and `payment_status = completed`) via `idx_advertisements_approval_status` + `idx_advertisements_payment_status`. 3. Include shop name and payment info. 4. Return paginated list. |
 | **Success Response** | 200 OK with paginated pending ad list |
 | **Cache** | None |
 
@@ -797,7 +824,7 @@ Same as Create Advertisement, with all fields optional (partial update).
 | `linkUrl` | `advertisements.link_url` | URL string or null |
 | `isActive` | `advertisements.is_active` | Boolean |
 | `approvalStatus` | `advertisements.approval_status` | 'pending' / 'approved' / 'rejected' |
-| `paymentStatus` | `advertisements.payment_status` | 'pending' / 'paid' / 'failed' / 'refunded' |
+| `paymentStatus` | `advertisements.payment_status` | 'pending' / 'completed' / 'failed' / 'refunded' |
 | `paymentAmount` | `advertisements.payment_amount` | Decimal string or null |
 | `paymentReference` | `advertisements.payment_reference` | String or null |
 | `approvedBy` | `advertisements.approved_by` | UUID string or null |
@@ -845,15 +872,17 @@ Same as Create Advertisement, with all fields optional (partial update).
 |-------|-----------------|--------------------|--------------------|
 | `expiresAt` | Must be strictly after `startsAt` | "End date must be after start date" | "終了日時は開始日時より後の日時を入力してください" |
 | `startsAt` / `expiresAt` | DB check constraint `chk_advertisements_dates` | "Advertisement dates are invalid" | "広告期間が不正です" |
+| Duration | Must be at least 7 days (`expiresAt - startsAt >= 7 days`) | "Advertisement must run for at least 7 days" | "広告は最低7日間は表示する必要があります" |
+| Duration | Must not exceed 30 days (`expiresAt - startsAt <= 30 days`) | "Advertisement duration must not exceed 30 days" | "広告の表示期間は30日以内にしてください" |
 
 ### 8.3 Approval / Payment / Weekly Limit Validation
 
 | Field / Rule | Validation Rule | Error Message (EN) | Error Message (JA) |
 |--------------|-----------------|--------------------|--------------------|
 | `approvalStatus` | Enum `pending/approved/rejected` (DB constraint `chk_advertisements_approval_status`) | "Invalid approval status" | "承認状態が不正です" |
-| `paymentStatus` | Enum `pending/paid/failed/refunded` (DB constraint `chk_advertisements_payment_status`) | "Invalid payment status" | "支払い状態が不正です" |
+| `paymentStatus` | Enum `pending/completed/refunded/failed` (DB constraint `chk_advertisements_payment_status`) | "Invalid payment status" | "支払い状態が不正です" |
 | `rejectionReason` | Required when rejecting | "Rejection reason is required" | "却下理由は必須です" |
-| Submit action | Requires `payment_status = paid` | "Advertising fee must be paid before submission" | "提出前に広告料金をお支払いください" |
+| Submit action | Requires `payment_status = completed` | "Advertising fee must be paid before submission" | "提出前に広告料金をお支払いください" |
 | Weekly limit | Max 5 approved active ads per week | "Weekly advertisement limit reached (max 5)" | "今週の広告枠上限(5件)に達しました" |
 
 ### 8.4 Validation Enforcement Layers
@@ -888,6 +917,9 @@ Same as Create Advertisement, with all fields optional (partial update).
 | `404` | `NOT_FOUND` | Advertisement not found | "Advertisement not found" with refresh option |
 | `409` | `CONFLICT` | `expires_at <= starts_at` | "Invalid schedule dates" with inline date error |
 | `409` | `WEEKLY_LIMIT_REACHED` | Weekly ad limit (5/week) reached on approve | "Weekly advertisement limit reached (max 5)" |
+| `409` | `MERCHANT_AD_LIMIT_REACHED` | Per-merchant active ad limit (2) reached on approve | "Maximum 2 active ads per merchant reached" |
+| `400` | `AD_DURATION_TOO_SHORT` | Ad duration < 7 days | "Advertisement must run for at least 7 days" |
+| `400` | `AD_DURATION_TOO_LONG` | Ad duration > 30 days | "Advertisement duration must not exceed 30 days" |
 | `422` | `UNPROCESSABLE_ENTITY` | Submit without payment / approve non-pending ad | "Advertising fee must be paid before submission" |
 | `413` | `PAYLOAD_TOO_LARGE` | Ad image file > 5MB | "Image file must not exceed 5MB" |
 | `415` | `UNSUPPORTED_MEDIA_TYPE` | Invalid image format | "Only JPG, PNG, and WebP images are supported" |
@@ -1094,6 +1126,9 @@ Defined via `.env` configuration:
 | `AD_ACTIVE_CACHE_KEY` | `cache:ads:active` | Redis key for active ads cache |
 | `AD_FEE_SETTINGS_TABLE` | `ad_fee_settings` | Dynamic placement/tier fee settings master |
 | `AD_WEEKLY_LIMIT` | `5` | Maximum active advertisements per week (platform-wide) |
+| `AD_MERCHANT_ACTIVE_LIMIT` | `2` | Maximum active advertisements per merchant simultaneously |
+| `AD_MIN_DURATION_DAYS` | `7` | Minimum advertisement duration in days |
+| `AD_MAX_DURATION_DAYS` | `30` | Maximum advertisement duration in days |
 | `AD_ANNOUNCEMENT_MAX_LENGTH` | `500` | Maximum length of announcement message |
 
 ---
@@ -1113,6 +1148,11 @@ Defined via `.env` configuration:
 | M-AD-007 | Merchants must pay advertising fee before submission | UC-AD-009/010, BR-AD-029/033~035, Sec 6.2~6.3 |
 | M-AD-008 | Maximum 5 active advertisements per week | BR-AD-036~039, Sec 6.4 (step 4), Sec 8.3 |
 | M-AD-009 | Advertisements display with banner/image and announcement message | BR-AD-024, EL-24a/EL-13a, Sec 7.6 |
+| M-AD-010 | Ad states: draft → pending_payment → pending_approval → approved → active → expired | Sec 3.1, Sec 3.4 |
+| M-AD-011 | Rejected ads auto-refund payment to merchant | BR-AD-031, Sec 6.5 (step 6) |
+| M-AD-012 | Per merchant: maximum 2 active ads simultaneously | BR-AD-040~042, Sec 6.4 (step 5) |
+| M-AD-013 | Minimum ad duration: 7 days | BR-AD-043, Sec 8.2 |
+| M-AD-014 | Maximum ad duration: 30 days | BR-AD-044~045, Sec 8.2 |
 
 ### 15.2 Database Design Traceability
 

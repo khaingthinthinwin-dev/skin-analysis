@@ -10,9 +10,9 @@
 | **対象画面** | 広告管理 (Advertisement Management) |
 | **サブシステム** | 広告 — ショップ広告管理 |
 | **機能ID** | FN-AD-001 |
-| **バージョン** | 2.0 |
+| **バージョン** | 2.1 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-14 |
+| **最終更新日** | 2026-08-17 |
 | **作成者** | Software Architect |
 | **ステータス** | 公開済み (承認済み) |
 | **分類** | 社内 — エンジニアリング部門 |
@@ -26,6 +26,7 @@
 | 1.0 | 2026-08-05 | Software Architect | 広告管理の初期機能設計書。マーチャントによる広告作成、スケジュール設定、画像アップロード、ステータス管理、プラットフォーム表示をカバー。 |
 | 1.1 | 2026-08-10 | Software Architect | 要件定義書v1.1 / DB設計書v1.1に整合。管理者承認ワークフロー(M-AD-006)、広告掲載料支払い(M-AD-007)、週間広告件数上限(M-AD-008)、告知メッセージ(M-AD-009)を追加。`approval_status`、`payment_status`、`payment_amount`、`payment_reference`、`approved_by`、`approved_at`、`rejection_reason`、`week_number`、`announcement_message` フィールドを追加。 |
 | 2.0 | 2026-08-14 | Software Architect | 要件定義書v1.5 / DB設計書v2.0に整合。UUID化対応(CUID→UUID)。広告掲載料の動的価格設定を`ad_fee_settings`テーブルから取得。広告支払い取引を`ad_payments`テーブルに分離して追跡。料金設定変更監査用`ad_fee_history`テーブル追加。DBトレーサビリティ更新。 |
+| 2.1 | 2026-08-17 | Software Architect | 要件定義書v1.7 / DB設計書v2.2 / 開発ルールv2.1に整合。`payment_status`列挙値`paid`→`completed`に修正（DB正規値に合わせる）。広告ステータスフロー(M-AD-010)、却下時自動払い戻し(M-AD-011)、マーチャントあたり最大有効広告数(M-AD-012)、最小掲載期間7日(M-AD-013)、最大掲載期間30日(M-AD-014)を追加。業務ルールBR-AD-040〜045、エラーコード3件、設定項目3件を追加。 |
 
 ---
 
@@ -154,9 +155,9 @@
 
 | No. | ドキュメントID | ドキュメント名 | ファイルパス / 参照 | 備考 |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~009、マーチャントショップ広告モジュール、広告ルール（4.6） |
-| 2 | SKM-DBS-001 | データベース設計書（v2.0） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements`、`ad_fee_settings`、`ad_payments`、`ad_fee_history`、`merchants`、`shops` テーブル、UUID PK、インデックス、チェック制約 |
-| 3 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 広告ルール（12.7）、命名規則、RBAC |
+| 1 | SKM-REQ-001 | 要件定義書（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | M-AD-001~014、マーチャントショップ広告モジュール、広告ルール（4.6） |
+| 2 | SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | `advertisements`、`ad_fee_settings`、`ad_payments`、`ad_fee_history`、`merchants`、`shops` テーブル、UUID PK、インデックス、チェック制約 |
+| 3 | SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 広告ルール（12.7）、命名規則、RBAC |
 
 ---
 
@@ -174,8 +175,8 @@
 | UC-AD-006 | 広告を削除する（ソフト削除） | マーチャントが認証済み。広告がマーチャントの店舗に属する | 広告の `is_active` が false に設定される。有効広告キャッシュが無効化される | マーチャント |
 | UC-AD-007 | 広告の有効/無効を切り替える | マーチャントが認証済み。広告がマーチャントの店舗に属する | 広告の表示可否が切り替わる | マーチャント |
 | UC-AD-008 | 有効広告を表示する | なし（公開） | 支払済み・承認済み・有効・期間内の広告がストアフロント表示用に返される | 購入者/訪問者 |
-| UC-AD-009 | 広告掲載料を支払う | マーチャントが認証済み。広告が作成済み（下書き） | 支払いが `payment_amount` / `payment_reference` とともに記録され、`payment_status` が `paid` に設定される | マーチャント / 支払いシステム |
-| UC-AD-010 | 広告を承認申請に提出する | マーチャントが認証済み。広告の `payment_status = paid` | 広告が管理者レビュー用に `approval_status = pending` となる | マーチャント |
+| UC-AD-009 | 広告掲載料を支払う | マーチャントが認証認証済み。広告が作成済み（下書き） | 支払いが `payment_amount` / `payment_reference` とともに記録され、`payment_status` が `completed` に設定される | マーチャント / 支払いシステム |
+| UC-AD-010 | 広告を承認申請に提出する | マーチャントが認証済み。広告の `payment_status = completed` | 広告が管理者レビュー用に `approval_status = pending` となる | マーチャント |
 | UC-AD-011 | 広告を承認する | 管理者が認証済み。広告が承認待ちかつ支払済み | 週間上限が検証され、広告の `approval_status = approved`、`approved_by` / `approved_at` が設定され、キャッシュが無効化される | 管理者 |
 | UC-AD-012 | 広告を却下する | 管理者が認証済み。広告が承認待ち | 広告の `approval_status = rejected`、`rejection_reason` が保存され、自動的に払い戻しが処理される | 管理者 |
 | UC-AD-013 | 却下された広告を再提出する | マーチャントが認証済み。広告が却下済み | 却下済み広告が編集・再提出され、`approval_status` が `pending` に戻る | マーチャント |
@@ -308,8 +309,8 @@
 | 2 | マーチャントが「新規広告」をクリック | — | フォーム表示 | システム |
 | 3 | マーチャントが広告フォームを入力（タイトル、告知、スケジュール、画像） | — | — | マーチャント |
 | 4 | マーチャントが広告を提出（下書き） | — | `payment_status = pending`、`approval_status = pending` | システム |
-| 5 | マーチャントが広告掲載料を支払う | `payment_status = pending` | `payment_status = paid`（金額、参照番号を記録） | マーチャント / 支払いシステム |
-| 6 | マーチャントが承認申請に提出 | `payment_status = paid` | `approval_status = pending` | マーチャント |
+| 5 | マーチャントが広告掲載料を支払う | `payment_status = pending` | `payment_status = completed`（金額、参照番号を記録） | マーチャント / 支払いシステム |
+| 6 | マーチャントが承認申請に提出 | `payment_status = completed` | `approval_status = pending` | マーチャント |
 | 7 | 管理者が承認待ち広告をレビュー | `approval_status = pending` | — | 管理者 |
 | 8a | 管理者が広告を承認（週間上限を検証、≤ 5件） | `approval_status = pending` | `approval_status = approved`、`approved_by` / `approved_at` 設定 | 管理者 |
 | 8b | 管理者が理由付きで広告を却下 | `approval_status = pending` | `approval_status = rejected`、払い戻し処理 | 管理者 |
@@ -332,6 +333,11 @@
 | M-AD-007 | マーチャントは提出前に広告掲載料を支払う必要がある |
 | M-AD-008 | 週間の有効広告は最大5件 |
 | M-AD-009 | 広告はバナー/画像と告知メッセージとともに表示される |
+| M-AD-010 | 広告は明確なステータスフロー（下書き→支払い済み→承認待ち→承認済み/却下済み）を持つ |
+| M-AD-011 | 却下された広告は自動的に払い戻される |
+| M-AD-012 | マーチャントあたり最大2件の有効（承認済み+支払い済み+期間内）広告を同時に保有可能 |
+| M-AD-013 | 広告の最小掲載期間は7日間 |
+| M-AD-014 | 広告の最大掲載期間は30日間 |
 
 ---
 
@@ -342,8 +348,8 @@
 | 状態 | 説明 | 購入者に表示 | 編集可能 | 削除可能 |
 |-------|-------------|:-----------------:|:--------:|:----------:|
 | `DRAFT` | `approval_status = pending`、`payment_status = pending` | ✗ | ✓ | ✓ |
-| `PENDING_APPROVAL` | `payment_status = paid`、`approval_status = pending` | ✗ | ✗（却下済みの場合を除く） | ✓ |
-| `APPROVED` | `approval_status = approved`、`payment_status = paid` | スケジュールと `is_active` に依存 | ✓ | ✓ |
+| `PENDING_APPROVAL` | `payment_status = completed`、`approval_status = pending` | ✗ | ✗（却下済みの場合を除く） | ✓ |
+| `APPROVED` | `approval_status = approved`、`payment_status = completed` | スケジュールと `is_active` に依存 | ✓ | ✓ |
 | `REJECTED` | `approval_status = rejected`（払い戻し処理済み） | ✗ | ✓（再提出用） | ✓ |
 | `SCHEDULED` | 承認済み、`is_active = true` かつ `starts_at > now` | ✗ | ✓ | ✓ |
 | `ACTIVE` | 承認済み、`is_active = true`、`starts_at <= now <= expires_at` | ✓ | ✓ | ✓ |
@@ -362,9 +368,9 @@
 
 | 状態 | DB値 | 説明 | 遷移許可 |
 |-------|----------|-------------|-------------------|
-| `PENDING` | `'pending'` | 広告掲載料が未払い | → `paid`、`failed` |
-| `PAID` | `'paid'` | 料金支払い済み・検証済み。承認提出の前提条件 | → `refunded` |
-| `FAILED` | `'failed'` | 支払い試行が失敗 | → `pending`、`paid` |
+| `PENDING` | `'pending'` | 広告掲載料が未払い | → `completed`、`failed` |
+| `COMPLETED` | `'completed'` | 料金支払い済み・検証済み。承認提出の前提条件 | → `refunded` |
+| `FAILED` | `'failed'` | 支払い試行が失敗 | → `pending`、`completed` |
 | `REFUNDED` | `'refunded'` | 却下時に自動払い戻し済み | 終端状態 |
 
 ### 3.4 広告ライフサイクル遷移
@@ -372,7 +378,7 @@
 | 遷移ID | 遷移元状態 | 遷移先状態 | トリガーアクション | ガード条件 |
 |---------------|--------------|--------------|----------------|------------------|
 | TR-AD-01 | — | `DRAFT` | 広告を作成（下書き） | データが有効、店舗が承認済み、告知メッセージ必須 |
-| TR-AD-02 | `DRAFT` | `PENDING_APPROVAL` | 料金支払い＋承認申請に提出 | `payment_status = paid`。週間上限は承認時にチェック |
+| TR-AD-02 | `DRAFT` | `PENDING_APPROVAL` | 料金支払い＋承認申請に提出 | `payment_status = completed`。週間上限は承認時にチェック |
 | TR-AD-03 | `PENDING_APPROVAL` | `APPROVED` | 管理者が承認 | 対象週の週間上限 ≤ 5件 |
 | TR-AD-04 | `PENDING_APPROVAL` | `REJECTED` | 管理者が理由付きで却下 | 理由必須。払い戻しは自動処理 |
 | TR-AD-05 | `REJECTED` | `PENDING_APPROVAL` | 編集＋再提出 | 広告がマーチャントに属する。新内容が有効 |
@@ -383,6 +389,8 @@
 | TR-AD-10 | `INACTIVE` | `ACTIVE` | 有効をオンに切り替え（期間内） | 広告がマーチャントに属する、広告が承認済み |
 | TR-AD-11 | `ACTIVE` | `INACTIVE` | ソフト削除 | 広告がマーチャントに属する |
 | TR-AD-12 | `EXPIRED` | `ACTIVE` | `expires_at` を延長 / 再スケジュール | 新しい日付範囲が有効 |
+
+> **M-AD-010 注記：** 広告は明確なステータスフロー（下書き→支払い済み→承認待ち→承認済み/却下済み）を持つ。このフローは、TR-AD-01（作成）→ TR-AD-02（支払い＋提出）→ TR-AD-03/04（承認/却下）の遷移で表現される。却下された広告はTR-AD-05（再提出）で再提出可能。
 
 ### 3.5 キャッシュ状態（Redis `cache:ads:active`）
 
@@ -415,7 +423,7 @@
 |---------|-----------|-------------|-------------------|
 | BR-AD-008 | スケジュール必須 | `startsAt` と `expiresAt` の両方が必須 | バックエンド（DTOバリデーション） |
 | BR-AD-009 | スケジュールの有効性 | `expires_at` > `starts_at` はDBのチェック制約で強制 | バックエンド（DB制約 `chk_advertisements_dates`） |
-| BR-AD-010 | 有効期間 | 広告は `is_active = true` AND `approval_status = approved` AND `payment_status = paid` AND `starts_at <= now` AND `expires_at >= now` の場合に有効 | バックエンド（クエリフィルタ） |
+| BR-AD-010 | 有効期間 | 広告は `is_active = true` AND `approval_status = approved` AND `payment_status = completed` AND `starts_at <= now` AND `expires_at >= now` の場合に有効 | バックエンド（クエリフィルタ） |
 | BR-AD-025 | 週番号 | `week_number`（ISO週）は `starts_at` から導出され、週間上限追跡用に保存される | バックエンド（サービスロジック） |
 
 ### 4.3 広告ステータスルール
@@ -427,7 +435,7 @@
 | BR-AD-013 | 期限切れの可視性 | 期限切れ広告は購入者には非表示、マーチャントには表示 | バックエンド（ロールベースのクエリ） |
 | BR-AD-014 | 導出ステータス | 表示ステータス（有効/無効/期限切れ）は `is_active`、`approval_status`、`payment_status`、スケジュールからクライアント側で導出され、永続化されない | フロントエンド（表示ロジック） |
 | BR-AD-026 | 承認ステータス列挙型 | `approval_status` はDBチェック制約 `chk_advertisements_approval_status` により `pending/approved/rejected` に制限 | バックエンド（DB制約） |
-| BR-AD-027 | 支払いステータス列挙型 | `payment_status` はDBチェック制約 `chk_advertisements_payment_status` により `pending/paid/failed/refunded` に制限 | バックエンド（DB制約） |
+| BR-AD-027 | 支払いステータス列挙型 | `payment_status` はDBチェック制約 `chk_advertisements_payment_status` により `pending/completed/failed/refunded` に制限 | バックエンド（DB制約） |
 
 ### 4.4 広告画像ルール
 
@@ -451,7 +459,7 @@
 | ルールID | ルール名 | 説明 | 適用レイヤー |
 |---------|-----------|-------------|-------------------|
 | BR-AD-028 | 承認必須 | すべての広告は表示前に管理者承認が必要 | バックエンド（サービスロジック） |
-| BR-AD-029 | 提出には支払い必須 | 広告は `payment_status = paid` が検証された後にのみ `PENDING_APPROVAL` に遷移する | バックエンド（サービスロジック） |
+| BR-AD-029 | 提出には支払い必須 | 広告は `payment_status = completed` が検証された後にのみ `PENDING_APPROVAL` に遷移する | バックエンド（サービスロジック） |
 | BR-AD-030 | 理由付き承認/却下 | 管理者は承認または却下を行う。却下には `rejection_reason` が必要で、`approved_by` / `approved_at` が設定される | バックエンド（サービスロジック＋DTOバリデーション） |
 | BR-AD-031 | 却下時の払い戻し | 却下された広告は自動払い戻しが実行され、`payment_status` が `refunded` に設定される | バックエンド（支払いサービス） |
 | BR-AD-032 | 再提出 | 却下済み広告は編集・再提出でき、`approval_status = pending` に戻る | バックエンド（サービスロジック） |
@@ -472,6 +480,12 @@
 | BR-AD-037 | 週の定義 | 週は月曜00:00〜日曜23:59（UTC）。ISO週番号を使用 | バックエンド（日付ユーティリティ） |
 | BR-AD-038 | 上限検証タイミング | 上限は広告の表示承認時（承認時点）に検証される | バックエンド（サービスロジック） |
 | BR-AD-039 | 上限超過時の応答 | 上限到達時は `409 Conflict` と明確なメッセージで承認をブロック | バックエンド（サービスロジック） |
+| BR-AD-040 | マーチャントあたり有効広告上限 | マーチャントあたり最大2件の有効（承認済み+支払い済み+期間内）広告を同時に保有可能 | バックエンド（サービスロジック、`shop_id` でクエリ） |
+| BR-AD-041 | マーチャント上限検証タイミング | マーチャント上限は広告の表示承認時（承認時点）に検証される | バックエンド（サービスロジック） |
+| BR-AD-042 | マーチャント上限超過時の応答 | マーチャント上限到達時は `409 Conflict` と `MERCHANT_AD_LIMIT_REACHED` エラーコードで承認をブロック | バックエンド（サービスロジック） |
+| BR-AD-043 | 最小掲載期間 | 広告の最小掲載期間は7日間 | バックエンド（バリデーション） |
+| BR-AD-044 | 最大掲載期間 | 広告の最大掲載期間は30日間 | バックエンド（バリデーション） |
+| BR-AD-045 | 期間バリデーションエラー | 最小/最大期間に違反する場合は `400 Bad Request` と `AD_DURATION_TOO_SHORT` / `AD_DURATION_TOO_LONG` エラーコード | バックエンド（バリデーション） |
 
 ### 4.9 キャッシュルール
 
@@ -582,13 +596,13 @@
 | 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-34 | 料金サマリー | テキスト | `merchant.ads.fee` | はい | 支払い前に表示する広告掲載料の金額（例："Advertising Fee: $XX.XX"） |
-| EL-35 | 支払いステータステキスト | テキスト | — | はい | `payment_status` を表示（Pending / Paid / Failed / Refunded） |
-| EL-36 | 料金支払いボタン | ボタン（プライマリ） | `merchant.ads.pay` | いいえ | 支払いを実行（スタブ）。`payment_status = paid` に設定 |
-| EL-37 | 承認申請に提出ボタン | ボタン（プライマリ） | `merchant.ads.submit` | いいえ | `payment_status = paid` の場合のみ有効。`approval_status = pending` に設定 |
+| EL-35 | 支払いステータステキスト | テキスト | — | はい | `payment_status` を表示（Pending / Completed / Failed / Refunded） |
+| EL-36 | 料金支払いボタン | ボタン（プライマリ） | `merchant.ads.pay` | いいえ | 支払いを実行（スタブ）。`payment_status = completed` に設定 |
+| EL-37 | 承認申請に提出ボタン | ボタン（プライマリ） | `merchant.ads.submit` | いいえ | `payment_status = completed` の場合のみ有効。`approval_status = pending` に設定 |
 | EL-38 | 承認ステータステキスト | テキスト | — | はい | `approval_status` を表示（Pending / Approved / Rejected）。却下時は `rejection_reason` も表示 |
 
 **挙動：**
-- 料金が支払われる（`payment_status = paid`）まで広告を承認申請に提出できない。
+- 料金が支払われる（`payment_status = completed`）まで広告を承認申請に提出できない。
 - 提出後、管理者の判断までは広告はマーチャントにとって読み取り専用になる。
 - 却下された広告は却下理由が表示された編集可能な状態に戻り、保存すると再提出される（承認待ちに戻る）。
 
@@ -601,7 +615,7 @@
 | 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-40 | ページタイトル | 見出し（h5） | `admin.ads.title` | はい | "Advertisement Moderation" |
-| EL-41 | 承認待ちキュー | カード/テーブル | `admin.ads.pendingQueue` | はい | `approval_status = pending`、`payment_status = paid` の広告 |
+| EL-41 | 承認待ちキュー | カード/テーブル | `admin.ads.pendingQueue` | はい | `approval_status = pending`、`payment_status = completed` の広告 |
 | EL-42 | 広告プレビュー | カード | — | はい | サムネイル、タイトル、内容、告知メッセージ、スケジュール、リンク、店舗名、料金/支払い情報 |
 | EL-43 | 承認ボタン | ボタン（成功） | `admin.ads.approve` | はい | 広告を承認（週間上限を検証） |
 | EL-44 | 却下ボタン | ボタン（破壊的） | `admin.ads.reject` | はい | 理由付きで広告を却下 |
@@ -637,7 +651,7 @@
 | **APIエンドポイント** | `POST /api/v1/ads/:id/pay` |
 | **リクエストContent-Type** | `application/json`（支払い情報。支払いゲートウェイはスタブ実装） |
 | **提出前バリデーション** | 広告の所有権チェック。広告が `payment_status = pending` であること |
-| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. 広告が未支払いであることを確認。5. `payment_amount`（設定可能な料金）で支払いを処理（スタブ）。6. `payment_status = paid`、`payment_amount`、`payment_reference` を記録。7. `AD_PAID` 監査イベントを記録。8. 更新された広告DTOを返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. 広告が未支払いであることを確認。5. `payment_amount`（設定可能な料金）で支払いを処理（スタブ）。6. `payment_status = completed`、`payment_amount`、`payment_reference` を記録。7. `AD_PAID` 監査イベントを記録。8. 更新された広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **後続アクション** | 「承認申請に提出」ボタンを有効化。成功トーストを表示 |
 
@@ -645,11 +659,11 @@
 
 | 属性 | 仕様 |
 |-----------|---------------|
-| **トリガー** | 「Submit for Approval」ボタンクリック（`payment_status = paid` が必要） |
+| **トリガー** | 「Submit for Approval」ボタンクリック（`payment_status = completed` が必要） |
 | **APIエンドポイント** | `POST /api/v1/ads/:id/submit` |
 | **リクエストContent-Type** | なし |
-| **提出前バリデーション** | 広告の所有権チェック。`payment_status = paid` 必須 |
-| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. `payment_status = paid` を検証。5. `approval_status = pending` に設定（提出）。6. 有効広告キャッシュを無効化。7. 管理者に承認待ちを通知。8. `AD_SUBMITTED` 監査イベントを記録。9. 更新された広告DTOを返す。 |
+| **提出前バリデーション** | 広告の所有権チェック。`payment_status = completed` 必須 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンとマーチャントロールを検証。3. 広告を検索し、所有権を確認。4. `payment_status = completed` を検証。5. `approval_status = pending` に設定（提出）。6. 有効広告キャッシュを無効化。7. 管理者に承認待ちを通知。8. `AD_SUBMITTED` 監査イベントを記録。9. 更新された広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **後続アクション** | 管理者の判断まで広告はマーチャントにとって読み取り専用になる |
 
@@ -721,7 +735,7 @@
 | **APIエンドポイント** | `GET /api/v1/ads/active` |
 | **リクエストContent-Type** | なし |
 | **提出前バリデーション** | なし（公開ルート） |
-| **処理ステップ** | 1. `@Public()` ルート（JWT不要）。2. Redisキャッシュ `cache:ads:active` を確認。3. キャッシュミス時：`WHERE is_active = true AND approval_status = 'approved' AND payment_status = 'paid' AND starts_at <= now() AND expires_at >= now() ORDER BY created_at DESC` をクエリ。4. RedisキャッシュにTTL 5分で投入。5. 有効広告一覧（バナー/画像＋告知メッセージ）を返す。 |
+| **処理ステップ** | 1. `@Public()` ルート（JWT不要）。2. Redisキャッシュ `cache:ads:active` を確認。3. キャッシュミス時：`WHERE is_active = true AND approval_status = 'approved' AND payment_status = 'completed' AND starts_at <= now() AND expires_at >= now() ORDER BY created_at DESC` をクエリ。4. RedisキャッシュにTTL 5分で投入。5. 有効広告一覧（バナー/画像＋告知メッセージ）を返す。 |
 | **成功レスポンス** | 200 OK、有効広告一覧付き |
 | **キャッシュ** | Redis：`cache:ads:active` TTL 5分 |
 
@@ -733,7 +747,7 @@
 | **APIエンドポイント** | `GET /api/v1/admin/ads?approvalStatus=pending` |
 | **リクエストContent-Type** | なし（クエリパラメータ） |
 | **提出前バリデーション** | 管理者ロール |
-| **処理ステップ** | 1. クエリパラメータを検証。2. `idx_advertisements_approval_status` ＋ `idx_advertisements_payment_status` を使用して `approval_status = pending`（かつ `payment_status = paid`）の広告をクエリ。3. 店舗名と支払い情報を含める。4. ページネーション付き一覧を返す。 |
+| **処理ステップ** | 1. クエリパラメータを検証。2. `idx_advertisements_approval_status` ＋ `idx_advertisements_payment_status` を使用して `approval_status = pending`（かつ `payment_status = completed`）の広告をクエリ。3. 店舗名と支払い情報を含める。4. ページネーション付き一覧を返す。 |
 | **成功レスポンス** | 200 OK、ページネーション付き承認待ち広告一覧 |
 | **キャッシュ** | なし |
 
@@ -789,7 +803,7 @@
 | `linkUrl` | `advertisements.link_url` | URL文字列または null |
 | `isActive` | `advertisements.is_active` | 真偽値 |
 | `approvalStatus` | `advertisements.approval_status` | 'pending' / 'approved' / 'rejected' |
-| `paymentStatus` | `advertisements.payment_status` | 'pending' / 'paid' / 'failed' / 'refunded' |
+| `paymentStatus` | `advertisements.payment_status` | 'pending' / 'completed' / 'failed' / 'refunded' |
 | `paymentAmount` | `advertisements.payment_amount` | Decimal文字列または null |
 | `paymentReference` | `advertisements.payment_reference` | 文字列または null |
 | `approvedBy` | `advertisements.approved_by` | UUID文字列または null |
@@ -843,9 +857,9 @@
 | フィールド / ルール | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |--------------|-----------------|--------------------|--------------------|
 | `approvalStatus` | 列挙値 `pending/approved/rejected`（DB制約 `chk_advertisements_approval_status`） | "Invalid approval status" | "承認状態が不正です" |
-| `paymentStatus` | 列挙値 `pending/paid/failed/refunded`（DB制約 `chk_advertisements_payment_status`） | "Invalid payment status" | "支払い状態が不正です" |
+| `paymentStatus` | 列挙値 `pending/completed/failed/refunded`（DB制約 `chk_advertisements_payment_status`） | "Invalid payment status" | "支払い状態が不正です" |
 | `rejectionReason` | 却下時に必須 | "Rejection reason is required" | "却下理由は必須です" |
-| 提出アクション | `payment_status = paid` が必要 | "Advertising fee must be paid before submission" | "提出前に広告料金をお支払いください" |
+| 提出アクション | `payment_status = completed` が必要 | "Advertising fee must be paid before submission" | "提出前に広告料金をお支払いください" |
 | 週間上限 | 週間の承認済み有効広告は最大5件 | "Weekly advertisement limit reached (max 5)" | "今週の広告枠上限(5件)に達しました" |
 
 ### 8.4 バリデーション適用レイヤー
@@ -880,6 +894,9 @@
 | `404` | `NOT_FOUND` | 広告が存在しない | "Advertisement not found"（更新オプション付き） |
 | `409` | `CONFLICT` | `expires_at <= starts_at` | "Invalid schedule dates"（日付のインラインエラー付き） |
 | `409` | `WEEKLY_LIMIT_REACHED` | 承認時に週間広告上限（5件/週）に到達 | "Weekly advertisement limit reached (max 5)" |
+| `409` | `MERCHANT_AD_LIMIT_REACHED` | 承認時にマーチャントあたり有効広告上限（2件）に到達 | "Merchant active advertisement limit reached (max 2)" |
+| `400` | `AD_DURATION_TOO_SHORT` | 広告の掲載期間が7日未満 | "Advertisement duration must be at least 7 days" |
+| `400` | `AD_DURATION_TOO_LONG` | 広告の掲載期間が30日超過 | "Advertisement duration must not exceed 30 days" |
 | `422` | `UNPROCESSABLE_ENTITY` | 支払いなしで提出 / 承認待ちでない広告を承認 | "Advertising fee must be paid before submission" |
 | `413` | `PAYLOAD_TOO_LARGE` | 広告画像ファイル > 5MB | "Image file must not exceed 5MB" |
 | `415` | `UNSUPPORTED_MEDIA_TYPE` | 無効な画像形式 | "Only JPG, PNG, and WebP images are supported" |
@@ -1087,6 +1104,9 @@ export class AdminAdvertisementsController {
 | `AD_FEE_SETTINGS_TABLE` | `ad_fee_settings` | プレースメント×ティアの動的掲載料設定マスタ |
 | `AD_WEEKLY_LIMIT` | `5` | 週間の最大有効広告数（プラットフォーム全体） |
 | `AD_ANNOUNCEMENT_MAX_LENGTH` | `500` | 告知メッセージの最大長 |
+| `AD_MERCHANT_ACTIVE_LIMIT` | `2` | マーチャントあたりの最大有効広告数 |
+| `AD_MIN_DURATION_DAYS` | `7` | 広告の最小掲載期間（日数） |
+| `AD_MAX_DURATION_DAYS` | `30` | 広告の最大掲載期間（日数） |
 
 ---
 
@@ -1099,12 +1119,17 @@ export class AdminAdvertisementsController {
 | M-AD-001 | マーチャントはショップ広告を作成できる | UC-AD-001、第6.1節 |
 | M-AD-002 | マーチャントは広告のスケジュール（開始/終了日時）を設定できる | UC-AD-002、BR-AD-008~010、BR-AD-025、第8.2節 |
 | M-AD-003 | マーチャントは広告画像をアップロードできる | UC-AD-003、BR-AD-015~018、第7.1節 |
-| M-AD-004 | マーチャントは自社広告を閲覧・管理できる | UC-AD-004、第5.1節、第6.6~6.8節 |
+| M-AD-004 | マーチャントは自社は自社広告を閲覧・管理できる | UC-AD-004、第5.1節、第6.6~6.8節 |
 | M-AD-005 | 有効広告はプラットフォームに表示される | UC-AD-008、第6.9節、第11.2節 |
 | M-AD-006 | 管理者は広告を承認/却下できる | UC-AD-011/012、BR-AD-028~032、第5.3節、第6.4~6.5節、第6.10節 |
 | M-AD-007 | マーチャントは提出前に広告掲載料を支払う必要がある | UC-AD-009/010、BR-AD-029/033~035、第6.2~6.3節 |
 | M-AD-008 | 週間の有効広告は最大5件 | BR-AD-036~039、第6.4節（ステップ4）、第8.3節 |
 | M-AD-009 | 広告はバナー/画像と告知メッセージとともに表示される | BR-AD-024、EL-24a/EL-13a、第7.6節 |
+| M-AD-010 | 広告は明確なステータスフロー（下書き→支払い済み→承認待ち→承認済み/却下済み）を持つ | TR-AD-01~06、第3節 |
+| M-AD-011 | 却下された広告は自動的に払い戻される | UC-AD-012、第6.5節（ステップ6）、BR-AD-032 |
+| M-AD-012 | マーチャントあたり最大2件の有効（承認済み+支払い済み+期間内）広告を同時に保有可能 | BR-AD-040~042、第6.4節（ステップ4追加） |
+| M-AD-013 | 広告の最小掲載期間は7日間 | BR-AD-043、第8.2節 |
+| M-AD-014 | 広告の最大掲載期間は30日間 | BR-AD-044、第8.2節 |
 
 ### 15.2 データベース設計とのトレーサビリティ
 
@@ -1122,9 +1147,9 @@ export class AdminAdvertisementsController {
 
 | ドキュメントID | ドキュメント名 | ファイルパス |
 |-------------|---------------|-----------|
-| SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` |
-| SKM-DBS-001 | データベース設計書 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
-| SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
+| SKM-REQ-001 | 要件定義書（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` |
+| SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
+| SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
 
 ---
 
