@@ -1,0 +1,761 @@
+// Prisma Schema for Cosmetics Finder (Aligned with DATABASE_SPEC v2.0)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// LOOKUP TABLES
+// ============================================
+
+model UserRole {
+  id          Int      @id @default(autoincrement())
+  roleCode    String   @unique @map("role_code")
+  roleName    String   @unique @map("role_name")
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users User[]
+
+  @@map("user_roles")
+}
+
+model OrderStatus {
+  id              Int      @id @default(autoincrement())
+  statusCode      String   @unique @map("status_code")
+  statusName      String   @unique @map("status_name")
+  displayOrder    Int      @map("display_order")
+  isTerminalState Boolean  @default(false) @map("is_terminal_state")
+  description     String?
+
+  orders Order[]
+  statusHistory OrderStatusHistory[]
+
+  @@map("order_statuses")
+}
+
+model DiscountType {
+  id        Int      @id @default(autoincrement())
+  typeCode  String   @unique @map("type_code")
+  typeName  String   @unique @map("type_name")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  promotions Promotion[]
+
+  @@map("discount_types")
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model User {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique
+  name          String
+  passwordHash  String   @map("password_hash")
+  roleCode      String   @default("buyer") @map("role")
+  merchantId    String?  @map("merchant_id") @db.Uuid
+  phone         String?
+  avatarUrl     String?  @map("avatar_url")
+  isActive      Boolean  @default(true) @map("is_active")
+  emailVerified Boolean  @default(false) @map("email_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  role            UserRole       @relation(fields: [roleCode], references: [roleCode], onDelete: Restrict, onUpdate: Cascade)
+  merchantProfile Merchant?      @relation("UserMerchantProfile")
+  merchantRef     Merchant?      @relation("UserMerchantRef", fields: [merchantId], references: [id], onDelete: SetNull)
+  refreshTokens   RefreshToken[]
+  reviews         Review[]
+  wishlists       Wishlist[]
+  orders          Order[]
+  shop            Shop?
+  adApprovals     Advertisement[] @relation("AdminAdApprovals")
+  adFeeHistories  AdFeeHistory[]  @relation("AdminAdFeeHistory")
+  reviewedMerchants Merchant[]   @relation("AdminMerchantReviews")
+  commissionSettings CommissionSetting[]
+  revenueTargets    RevenueTarget[]
+  processedPayouts  Payout[]
+  skinAnalyses      SkinAnalysis[]
+  cart              Cart?
+  orderStatusHistory OrderStatusHistory[] @relation("OrderStatusHistoryChangedBy")
+  inventoryTransactions InventoryTransaction[] @relation("InventoryTransactionCreator")
+  reviewReportsReported ReviewReport[] @relation("ReportedBy")
+  reviewReportsResolved ReviewReport[] @relation("ResolvedBy")
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+
+  @@index([roleCode])
+  @@index([email])
+  @@index([isActive])
+  @@index([merchantId])
+  @@map("users")
+}
+
+model RefreshToken {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  tokenHash       String   @map("token_hash")
+  family          String
+  deviceInfo      Json?    @map("device_info")
+  ipAddress       String?  @map("ip_address")
+  isRevoked       Boolean  @default(false) @map("is_revoked")
+  absoluteLimitAt DateTime @map("absolute_limit_at")
+  expiresAt       DateTime @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// ============================================
+// MERCHANT WORKFLOW
+// ============================================
+
+model Merchant {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @unique @map("user_id") @db.Uuid
+  shopName           String    @map("shop_name")
+  businessLicenseUrl String    @map("business_license_url")
+  licenseStatus      String    @default("pending") @map("license_status")
+  rejectionReason    String?   @map("rejection_reason")
+  reviewedAt         DateTime? @map("reviewed_at")
+  reviewedBy         String?   @map("reviewed_by") @db.Uuid
+  licenseExpiresAt   DateTime? @map("license_expires_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user         User        @relation("UserMerchantProfile", fields: [userId], references: [id], onDelete: Cascade)
+  userRefs     User[]      @relation("UserMerchantRef")
+  reviewer     User?       @relation("AdminMerchantReviews", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  products     Product[]
+  promotions   Promotion[]
+  orders       Order[]
+  orderItems   OrderItem[]
+  adPayments   AdPayment[]
+  payouts      Payout[]
+  inventoryTransactions InventoryTransaction[]
+
+  @@index([userId])
+  @@index([licenseStatus])
+  @@map("merchants")
+}
+
+// ============================================
+// PRODUCT MANAGEMENT
+// ============================================
+
+model Category {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String     @unique
+  parentId  String?    @map("parent_id") @db.Uuid
+  iconUrl   String?    @map("icon_url")
+  sortOrder Int        @default(0) @map("sort_order")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([parentId])
+  @@index([slug])
+  @@map("categories")
+}
+
+model Product {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId        String   @map("merchant_id") @db.Uuid
+  categoryId        String   @map("category_id") @db.Uuid
+  name              String
+  slug              String   @unique
+  description       String?
+  shortDescription  String?  @map("short_description")
+  price             Decimal  @db.Decimal(10, 2)
+  compareAtPrice    Decimal? @map("compare_at_price") @db.Decimal(10, 2)
+  sku               String?  @unique
+  stockQuantity     Int      @default(0) @map("stock_quantity")
+  lowStockThreshold Int      @default(10) @map("low_stock_threshold")
+  images            String[]
+  tags              String[]
+  skinTypes         String[] @map("skin_types")
+  ingredients       String[]
+  isActive          Boolean  @default(true) @map("is_active")
+  isFeatured        Boolean  @default(false) @map("is_featured")
+  avgRating         Decimal  @default(0) @map("avg_rating") @db.Decimal(3, 2)
+  reviewCount       Int      @default(0) @map("review_count")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  merchant   Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id])
+  reviews    Review[]
+  wishlists  Wishlist[]
+  orderItems OrderItem[]
+  skinAnalysisRecommendations SkinAnalysisRecommendation[]
+  cartItems  CartItem[]
+  inventoryTransactions InventoryTransaction[]
+
+  @@index([merchantId])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([price])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("products")
+}
+
+// ============================================
+// REVIEWS
+// ============================================
+
+model Review {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  productId          String   @map("product_id") @db.Uuid
+  rating             Int
+  title              String?
+  body               String?
+  images             String[]
+  isVerifiedPurchase Boolean  @default(false) @map("is_verified_purchase")
+  isApproved         Boolean  @default(true) @map("is_approved")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reports ReviewReport[]
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+// ============================================
+// WISHLIST
+// ============================================
+
+model Wishlist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlists")
+}
+
+// ============================================
+// ORDERS
+// ============================================
+
+model Order {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buyerId         String   @map("buyer_id") @db.Uuid
+  merchantId      String   @map("merchant_id") @db.Uuid
+  statusCode      String   @default("placed") @map("status")
+  totalAmount     Decimal  @map("total_amount") @db.Decimal(10, 2)
+  shippingAddress Json     @map("shipping_address")
+  paymentMethod   String   @map("payment_method")
+  paymentStatus   String   @default("pending") @map("payment_status")
+  couponCode      String?  @map("coupon_code")
+  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  buyer    User        @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  merchant Merchant    @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  status   OrderStatus @relation(fields: [statusCode], references: [statusCode], onDelete: Restrict)
+  items    OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([buyerId])
+  @@index([merchantId])
+  @@index([statusCode])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String  @map("order_id") @db.Uuid
+  productId  String  @map("product_id") @db.Uuid
+  merchantId String  @map("merchant_id") @db.Uuid
+  quantity   Int
+  unitPrice  Decimal @map("unit_price") @db.Decimal(10, 2)
+  totalPrice Decimal @map("total_price") @db.Decimal(10, 2)
+
+  // Relations
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([merchantId])
+  @@map("order_items")
+}
+
+// ============================================
+// SHOP (Merchant)
+// ============================================
+
+model Shop {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  logoUrl     String?  @map("logo_url")
+  bannerUrl   String?  @map("banner_url")
+  address     String?
+  phone       String?
+  email       String?
+  latitude    Decimal? @db.Decimal(10, 7)
+  longitude   Decimal? @db.Decimal(10, 7)
+  isApproved  Boolean  @default(false) @map("is_approved")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  advertisements Advertisement[]
+
+  @@index([userId])
+  @@index([slug])
+  @@index([isApproved])
+  @@map("shops")
+}
+
+// ============================================
+// PROMOTIONS
+// ============================================
+
+model Promotion {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId       String       @map("merchant_id") @db.Uuid
+  code             String       @unique
+  description      String?
+  discountTypeCode String       @map("discount_type")
+  discountValue    Decimal      @map("discount_value") @db.Decimal(10, 2)
+  minOrderAmount   Decimal?     @map("min_order_amount") @db.Decimal(10, 2)
+  maxUses          Int?         @map("max_uses")
+  usedCount        Int          @default(0) @map("used_count")
+  startsAt         DateTime     @map("starts_at")
+  expiresAt        DateTime     @map("expires_at")
+  isActive         Boolean      @default(true) @map("is_active")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  merchant     Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  discountType DiscountType @relation(fields: [discountTypeCode], references: [typeCode], onDelete: Restrict)
+
+  @@index([merchantId])
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("promotions")
+}
+
+// ============================================
+// ADVERTISEMENTS & FEES
+// ============================================
+
+model Advertisement {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopId              String    @map("shop_id") @db.Uuid
+  title               String
+  content             String?
+  announcementMessage String    @map("announcement_message")
+  imageUrl            String?   @map("image_url")
+  linkUrl             String?   @map("link_url")
+  isActive            Boolean   @default(true) @map("is_active")
+  approvalStatus      String    @default("pending") @map("approval_status")
+  paymentStatus       String    @default("pending") @map("payment_status")
+  paymentAmount       Decimal?  @map("payment_amount") @db.Decimal(10, 2)
+  paymentReference    String?   @map("payment_reference")
+  approvedBy          String?   @map("approved_by") @db.Uuid
+  approvedAt          DateTime? @map("approved_at")
+  rejectionReason     String?   @map("rejection_reason")
+  weekNumber          Int       @map("week_number")
+  startsAt            DateTime  @map("starts_at")
+  expiresAt           DateTime  @map("expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  shop        Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  approver    User?       @relation("AdminAdApprovals", fields: [approvedBy], references: [id], onDelete: SetNull)
+  adPayments  AdPayment[]
+
+  @@index([shopId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([approvalStatus])
+  @@index([paymentStatus])
+  @@index([weekNumber])
+  @@map("advertisements")
+}
+
+model AdFeeSetting {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  placement String
+  tier      String
+  dailyRate Decimal  @map("daily_rate") @db.Decimal(10, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  history AdFeeHistory[]
+
+  @@unique([placement, tier])
+  @@index([placement, tier])
+  @@map("ad_fee_settings")
+}
+
+model AdPayment {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adId          String    @map("ad_id") @db.Uuid
+  merchantId    String    @map("merchant_id") @db.Uuid
+  amount        Decimal   @db.Decimal(10, 2)
+  paymentMethod String    @map("payment_method")
+  paymentStatus String    @default("pending") @map("payment_status")
+  transactionId String?   @map("transaction_id")
+  paidAt        DateTime? @map("paid_at")
+  refundAmount  Decimal?  @map("refund_amount") @db.Decimal(10, 2)
+  refundReason  String?   @map("refund_reason")
+  refundedAt    DateTime? @map("refunded_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  advertisement Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+  merchant      Merchant      @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@index([adId])
+  @@index([merchantId])
+  @@map("ad_payments")
+}
+
+model AdFeeHistory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adFeeSettingId String   @map("ad_fee_setting_id") @db.Uuid
+  oldDailyRate   Decimal? @map("old_daily_rate") @db.Decimal(10, 2)
+  newDailyRate   Decimal  @map("new_daily_rate") @db.Decimal(10, 2)
+  changedBy      String   @map("changed_by") @db.Uuid
+  changeReason   String?  @map("change_reason")
+  effectiveFrom  DateTime @map("effective_from")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  setting        AdFeeSetting @relation(fields: [adFeeSettingId], references: [id], onDelete: Cascade)
+  changedByAdmin User         @relation("AdminAdFeeHistory", fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@index([adFeeSettingId])
+  @@map("ad_fee_history")
+}
+
+// ============================================
+// COMMISSION & REVENUE
+// ============================================
+
+model CommissionSetting {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commissionRate Decimal @default(0) @map("commission_rate") @db.Decimal(5, 2)
+  updatedBy     String?  @map("updated_by") @db.Uuid
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  updatedByAdmin User? @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@map("commission_settings")
+}
+
+model RevenueTarget {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  targetAmount Decimal  @map("target_amount") @db.Decimal(12, 2)
+  period       String   // 'monthly', 'quarterly'
+  isActive     Boolean  @default(true) @map("is_active")
+  createdBy    String?  @map("created_by") @db.Uuid
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  createdByAdmin User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([period, isActive])
+  @@index([period])
+  @@index([isActive])
+  @@map("revenue_targets")
+}
+
+model Payout {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId       String    @map("merchant_id") @db.Uuid
+  totalAmount      Decimal   @map("total_amount") @db.Decimal(12, 2)
+  commissionAmount Decimal   @default(0) @map("commission_amount") @db.Decimal(12, 2)
+  adFeeAmount      Decimal   @default(0) @map("ad_fee_amount") @db.Decimal(12, 2)
+  status           String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  processedBy      String?   @map("processed_by") @db.Uuid
+  processedAt      DateTime? @map("processed_at")
+  failureReason    String?   @map("failure_reason")
+  idempotencyKey   String?   @unique @map("idempotency_key")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  merchant         Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  processedByAdmin User?    @relation(fields: [processedBy], references: [id], onDelete: SetNull)
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payouts")
+}
+
+// ============================================
+// AI SKIN ANALYSIS
+// ============================================
+
+model SkinAnalysis {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  imageUrl        String    @map("image_url")
+  skinType        String?   @map("skin_type")
+  estimatedAge    Int?      @map("estimated_age")
+  analysisStatus  String    @default("pending") @map("analysis_status")
+  aiModel         String?   @map("ai_model")
+  aiModelVersion  String?   @map("ai_model_version")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  completedAt     DateTime? @map("completed_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user          User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conditions    SkinAnalysisCondition[]
+  recommendations SkinAnalysisRecommendation[]
+
+  @@index([userId])
+  @@index([analysisStatus])
+  @@map("skin_analyses")
+}
+
+model SkinAnalysisCondition {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisId    String   @map("analysis_id") @db.Uuid
+  conditionName String   @map("condition_name")
+  severity      String
+  confidence    Decimal  @db.Decimal(5, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@map("skin_analysis_conditions")
+}
+
+model SkinAnalysisRecommendation {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisId    String   @map("analysis_id") @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  reason        String
+  matchScore    Int      @map("match_score")
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  product  Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([productId])
+  @@map("skin_analysis_recommendations")
+}
+
+// ============================================
+// SHOPPING CART
+// ============================================
+
+model Cart {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@index([userId])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId    String   @map("cart_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+// ============================================
+// ORDER TRACKING
+// ============================================
+
+model OrderStatusHistory {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String   @map("order_id") @db.Uuid
+  statusId  Int      @map("status_id")
+  changedBy String?  @map("changed_by") @db.Uuid
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  changedByUser User?   @relation("OrderStatusHistoryChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+// ============================================
+// INVENTORY MANAGEMENT
+// ============================================
+
+model InventoryTransaction {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  merchantId      String   @map("merchant_id") @db.Uuid
+  transactionType String   @map("transaction_type")
+  quantity        Int
+  beforeQuantity  Int      @map("before_quantity")
+  afterQuantity   Int      @map("after_quantity")
+  referenceType   String?  @map("reference_type")
+  referenceId     String?  @map("reference_id") @db.Uuid
+  reason          String?
+  createdBy       String?  @map("created_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  creator  User?    @relation("InventoryTransactionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([merchantId])
+  @@index([transactionType])
+  @@map("inventory_transactions")
+}
+
+// ============================================
+// MODERATION
+// ============================================
+
+model ReviewReport {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewId    String    @map("review_id") @db.Uuid
+  reportedBy  String    @map("reported_by") @db.Uuid
+  reason      String
+  description String?
+  status      String    @default("pending")
+  adminNote   String?   @map("admin_note")
+  resolvedBy  String?   @map("resolved_by") @db.Uuid
+  resolvedAt  DateTime? @map("resolved_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  review     Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter   User   @relation("ReportedBy", fields: [reportedBy], references: [id], onDelete: Cascade)
+  resolver   User?  @relation("ResolvedBy", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([reviewId])
+  @@index([status])
+  @@map("review_reports")
+}
+
+// ============================================
+// AUDIT & NOTIFICATIONS
+// ============================================
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  type       String
+  title      String
+  message    String
+  entityType String?   @map("entity_type")
+  entityId   String?   @map("entity_id") @db.Uuid
+  isRead     Boolean   @default(false) @map("is_read")
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}

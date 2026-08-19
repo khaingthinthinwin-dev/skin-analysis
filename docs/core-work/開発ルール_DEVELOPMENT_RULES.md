@@ -191,185 +191,206 @@ import { SomeType } from './types';
 ## 2.1 Backend Module Structure (NestJS + PostgreSQL)
 
 ```
-backend/src/
-├── main.ts                              # Bootstrap entry point
-├── app.module.ts                        # Root module
-├── config/                              # Environment validation & app config
+backend/src
+│
+├── main.ts                                         # Bootstrap entry point
+├── app.module.ts                                   # Root module
+│
+├── config/
 │   ├── config.module.ts
 │   ├── config.service.ts
-│   └── validation.ts                    # Zod env schema
-├── common/                              # Cross-cutting concerns (SHARED)
-│   ├── decorators/                      # @Roles(), @CurrentUser(), @Public()
+│   └── validation.ts
+│
+├── common/                             # Co-developed
+│   ├── decorators/
 │   │   ├── roles.decorator.ts
 │   │   ├── current-user.decorator.ts
 │   │   └── public.decorator.ts
-│   ├── guards/                          # JwtAuthGuard, RolesGuard
+│   │
+│   ├── guards/
 │   │   ├── jwt-auth.guard.ts
 │   │   └── roles.guard.ts
-│   ├── filters/                         # AllExceptionsFilter
+│   │
+│   ├── filters/
 │   │   └── all-exceptions.filter.ts
-│   ├── interceptors/                    # Logging, Transform, Timeout
+│   │
+│   ├── interceptors/
 │   │   ├── logging.interceptor.ts
 │   │   ├── transform.interceptor.ts
 │   │   └── timeout.interceptor.ts
-│   ├── pipes/                           # ValidationPipe
+│   │
+│   ├── pipes/
 │   │   └── validation.pipe.ts
-│   ├── dto/                             # Shared DTOs (pagination, etc.)
+│   │
+│   ├── dto/
 │   │   ├── pagination.dto.ts
 │   │   └── pagination-response.dto.ts
-│   ├── interfaces/                      # Shared interfaces
-│   │   ├── pagination.interface.ts
-│   │   └── api-response.interface.ts
-│   └── utils/                           # Pure utility functions
-│       ├── slug.util.ts
-│       └── date.util.ts
-├── modules/                             # Feature modules
-│   ├── auth/                            # [ATM] Authentication
+│   │
+│   ├── interfaces/
+│   │   ├── api-response.interface.ts
+│   │   └── pagination.interface.ts
+│   │
+│   └── utils/
+│       ├── date.util.ts
+│       └── slug.util.ts
+│
+├── modules/
+│   │
+│   ├── auth/                           # [ATM]
 │   │   ├── auth.module.ts
 │   │   ├── auth.controller.ts
 │   │   ├── auth.service.ts
-│   │   ├── strategies/                  # JWT strategies
-│   │   │   ├── jwt-access.strategy.ts
-│   │   │   └── jwt-refresh.strategy.ts
-│   │   ├── guards/                      # LocalAuthGuard
-│   │   │   └── local-auth.guard.ts
-│   │   ├── dto/                         # LoginDto, RegisterDto
+│   │   ├── dto/
 │   │   │   ├── login.dto.ts
 │   │   │   └── register.dto.ts
-│   │   ├── auth.service.spec.ts
-│   │   └── README.md                    # [ATM] Ownership
-│   ├── users/                           # [ATM] User management
+│   │   ├── guards/
+│   │   └── strategies/
+│   │
+│   ├── users/                          # [ATM]
 │   │   ├── users.module.ts
 │   │   ├── users.controller.ts
 │   │   ├── users.service.ts
-│   │   ├── dto/
-│   │   │   ├── update-user.dto.ts
-│   │   │   └── user-response.dto.ts
-│   │   ├── users.service.spec.ts
-│   │   └── README.md                    # [ATM] Ownership
-│   ├── skin-analysis/                   # [ATM] AI skin analysis
-│   │   ├── skin-analysis.module.ts
-│   │   ├── skin-analysis.controller.ts
-│   │   ├── skin-analysis.service.ts
-│   │   ├── dto/
-│   │   │   └── skin-analysis.dto.ts
-│   │   ├── skin-analysis.service.spec.ts
-│   │   └── README.md                    # [ATM] Ownership
-│   ├── matching/                        # [HAML] Matching & Recommendation
-│   │   ├── matching.module.ts
-│   │   ├── matching.controller.ts
-│   │   ├── matching.service.ts
-│   │   ├── dto/
-│   │   │   └── match-query.dto.ts
-│   │   ├── matching.service.spec.ts
-│   │   └── README.md                    # [HAML] Ownership
-│   ├── products/                        # [TMO] Product management
-│   │   ├── products.module.ts
-│   │   ├── products.controller.ts
-│   │   ├── products.service.ts
-│   │   ├── dto/
-│   │   │   ├── create-product.dto.ts
-│   │   │   ├── update-product.dto.ts
-│   │   │   └── product-query.dto.ts
-│   │   ├── products.service.spec.ts
-│   │   └── README.md                    # [TMO] Ownership
-│   ├── search/                          # [TRPH] Search & Filter
-│   │   ├── search.module.ts
-│   │   ├── search.controller.ts
-│   │   ├── search.service.ts
-│   │   ├── dto/
-│   │   │   └── search-query.dto.ts
-│   │   ├── search.service.spec.ts
-│   │   └── README.md                    # [TRPH] Ownership
-│   ├── categories/                      # [TRPH] Category filter
-│   │   ├── categories.module.ts
-│   │   ├── categories.controller.ts
-│   │   ├── categories.service.ts
-│   │   ├── categories.service.spec.ts
-│   │   └── README.md                    # [TRPH] Ownership
-│   ├── wishlist/                        # [EEM] Wishlist
-│   │   ├── wishlist.module.ts
-│   │   ├── wishlist.controller.ts
-│   │   ├── wishlist.service.ts
-│   │   ├── wishlist.service.spec.ts
-│   │   └── README.md                    # [EEM] Ownership
-│   ├── cart/                            # [EEM] Shopping cart
-│   │   ├── cart.module.ts
-│   │   ├── cart.controller.ts
-│   │   ├── cart.service.ts
-│   │   ├── dto/
-│   │   │   └── add-to-cart.dto.ts
-│   │   ├── cart.service.spec.ts
-│   │   └── README.md                    # [EEM] Ownership
-│   ├── orders/                          # [EEM] Order & Payment
-│   │   ├── orders.module.ts
-│   │   ├── orders.controller.ts
-│   │   ├── orders.service.ts
-│   │   ├── dto/
-│   │   │   ├── create-order.dto.ts
-│   │   │   └── update-order-status.dto.ts
-│   │   ├── orders.service.spec.ts
-│   │   └── README.md                    # [EEM] Ownership
-│   ├── promotions/                      # [ZSLS] Promotions
-│   │   ├── promotions.module.ts
-│   │   ├── promotions.controller.ts
-│   │   ├── promotions.service.ts
-│   │   ├── dto/
-│   │   │   ├── create-promotion.dto.ts
-│   │   │   └── validate-promotion.dto.ts
-│   │   ├── promotions.service.spec.ts
-│   │   └── README.md                    # [ZSLS] Ownership
-│   ├── advertisements/                  # [WYT] Advertisement management
-│   │   ├── advertisements.module.ts
-│   │   ├── advertisements.controller.ts
-│   │   ├── advertisements.service.ts
-│   │   ├── advertisements.service.spec.ts
-│   │   └── README.md                    # [WYT] Ownership
-│   ├── reviews/                         # [PET] Review moderation
-│   │   ├── reviews.module.ts
-│   │   ├── reviews.controller.ts
-│   │   ├── reviews.service.ts
-│   │   ├── dto/
-│   │   │   └── create-review.dto.ts
-│   │   ├── reviews.service.spec.ts
-│   │   └── README.md                    # [PET] Ownership
-│   ├── analytics/                       # [PET/WYT] Analytics dashboard
-│   │   ├── analytics.module.ts
-│   │   ├── analytics.controller.ts
-│   │   ├── analytics.service.ts
-│   │   ├── analytics.service.spec.ts
-│   │   └── README.md                    # [PET/WYT] Ownership
-│   ├── admin/                           # [PET/PPH] Admin panel
-│   │   ├── admin.module.ts
-│   │   ├── admin.controller.ts
-│   │   ├── admin.service.ts
-│   │   ├── admin.service.spec.ts
-│   │   └── README.md                    # [PET/PPH] Ownership
-│   ├── commission/                      # [PPH] Commission & Revenue
-│   │   ├── commission.module.ts
-│   │   ├── commission.controller.ts
-│   │   ├── commission.service.ts
-│   │   ├── commission.service.spec.ts
-│   │   └── README.md                    # [PPH] Ownership
-│   └── notifications/                   # [ATM] Website Notification System
-│       ├── notifications.module.ts
-│       ├── notifications.controller.ts
-│       ├── notifications.service.ts
-│       ├── dto/
-│       │   └── notification-response.dto.ts
-│       ├── notifications.service.spec.ts
-│       └── README.md                    # [ATM] Ownership
-└── shared/                              # Global shared services
-    ├── shared.module.ts
-    ├── prisma/                          # PrismaModule, PrismaService (PostgreSQL)
-    │   ├── prisma.module.ts
-    │   └── prisma.service.ts
-    ├── redis/                           # RedisModule, RedisService
-    │   ├── redis.module.ts
-    │   └── redis.service.ts
-    └── mail/                            # MailModule (future)
-        ├── mail.module.ts
-        └── mail.service.ts
+│   │   └── dto/
+│   │
+│   ├── buyer/
+│   │   ├── skin-analysis/              # [ATM]
+│   │   │   ├── skin-analysis.module.ts
+│   │   │   ├── skin-analysis.controller.ts
+│   │   │   └── skin-analysis.service.ts
+│   │   │
+│   │   ├── matching/                   # [ATM]
+│   │   │   ├── matching.module.ts
+│   │   │   ├── matching.controller.ts
+│   │   │   └── matching.service.ts
+│   │   │
+│   │   ├── wishlist/                   # [EEM]
+│   │   │   ├── wishlist.module.ts
+│   │   │   ├── wishlist.controller.ts
+│   │   │   └── wishlist.service.ts
+│   │   │
+│   │   ├── cart/                       # [EEM]
+│   │   │   ├── cart.module.ts
+│   │   │   ├── cart.controller.ts
+│   │   │   └── cart.service.ts
+│   │   │
+│   │   └── orders/                     # [EEM]
+│   │       ├── orders.module.ts
+│   │       ├── orders.controller.ts
+│   │       ├── orders.service.ts
+│   │       └── dto/
+│   │
+│   ├── catalog/
+│   │   ├── products/                   # [TMO]
+│   │   │   ├── products.module.ts
+│   │   │   ├── products.controller.ts
+│   │   │   ├── products.service.ts
+│   │   │   └── dto/
+│   │   │
+│   │   ├── categories/                 # [TRPH]
+│   │   │   ├── categories.module.ts
+│   │   │   ├── categories.controller.ts
+│   │   │   └── categories.service.ts
+│   │   │
+│   │   └── search/                     # [TRPH]
+│   │       ├── search.module.ts
+│   │       ├── search.controller.ts
+│   │       ├── search.service.ts
+│   │       └── dto/
+│   │
+│   ├── merchant/
+│   │   ├── products/                   # [ZSLS]
+│   │   │   ├── merchant-products.module.ts
+│   │   │   ├── merchant-products.controller.ts
+│   │   │   └── merchant-products.service.ts
+│   │   │
+│   │   ├── promotions/                 # [ZSLS]
+│   │   │   ├── promotions.module.ts
+│   │   │   ├── promotions.controller.ts
+│   │   │   └── promotions.service.ts
+│   │   │
+│   │   └── advertisements/             # [WYT]
+│   │       ├── advertisements.module.ts
+│   │       ├── advertisements.controller.ts
+│   │       └── advertisements.service.ts
+│   │
+│   ├── admin/
+│   │   ├── user-management/            # [PET]
+│   │   │   ├── user-management.module.ts
+│   │   │   ├── user-management.controller.ts
+│   │   │   └── user-management.service.ts
+│   │   │
+│   │   ├── merchant-management/        # [PET]
+│   │   │   ├── merchant-management.module.ts
+│   │   │   ├── merchant-management.controller.ts
+│   │   │   └── merchant-management.service.ts
+│   │   │
+│   │   ├── review-management/          # [PET]
+│   │   │   ├── reviews.module.ts
+│   │   │   ├── reviews.controller.ts
+│   │   │   └── reviews.service.ts
+│   │   │
+│   │   ├── content-moderation/         # [PET]
+│   │   │   ├── moderation.module.ts
+│   │   │   ├── moderation.controller.ts
+│   │   │   └── moderation.service.ts
+│   │   │
+│   │   ├── advertisement-management/   # [PET]
+│   │   │   ├── advertisement-approval.module.ts
+│   │   │   ├── advertisement-approval.controller.ts
+│   │   │   └── advertisement-approval.service.ts
+│   │   │
+│   │   ├── commission-revenue/         # [PPH]
+│   │   │   ├── commission.module.ts
+│   │   │   ├── commission.controller.ts
+│   │   │   └── commission.service.ts
+│   │   │
+│   │   └── audit-logs/                 # [ATM]
+│   │       ├── audit-logs.module.ts
+│   │       ├── audit-logs.controller.ts
+│   │       └── audit-logs.service.ts
+│   │
+│   └── shared/
+│       │
+│       ├── profile/                    # [ATM]
+│       │   ├── profile.module.ts
+│       │   ├── profile.controller.ts
+│       │   └── profile.service.ts
+│       │
+│       ├── notifications/              # [ATM]
+│       │   ├── notifications.module.ts
+│       │   ├── notifications.controller.ts
+│       │   └── notifications.service.ts
+│       │
+│       └── order-insights/             # [HAML]
+│           ├── order-insights.module.ts
+│           ├── order-insights.controller.ts
+│           ├── order-insights.service.ts
+│           ├── dto/
+│           │   ├── order-history-query.dto.ts
+│           └── README.md
+│
+├── shared/
+│   ├── shared.module.ts
+│   │
+│   ├── prisma/                         # Shared
+│   │   ├── prisma.module.ts
+│   │   └── prisma.service.ts
+│   │
+│   ├── redis/                          # Shared
+│   │   ├── redis.module.ts
+│   │   └── redis.service.ts
+│   │
+│   └── mail/                           # Shared (future)
+│       ├── mail.module.ts
+│       └── mail.service.ts
+│
+└── database/                           # Shared
+    ├── prisma/
+    │   ├── schema.prisma
+    │   ├── migrations/
+    │   └── seed.ts
+    │
+    └── seeds/
 ```
 
 **Backend Module Rules:**
@@ -382,260 +403,150 @@ backend/src/
 - Controllers handle HTTP concerns only. Business logic belongs in services.
 - Services contain business logic and data access. Never call Prisma directly from controllers.
 
+### 2.1.1 Developer Ownership Tags
+
+| Tag | Developer | Modules |
+|-----|-----------|---------|
+| **[ATM]** | ATM | Auth, Users, Skin Analysis, Notifications, Profile, Matching & Recommendation, Audit Logs |
+| **[TMO]** | TMO | Products (catalog) |
+| **[TRPH]** | TRPH | Search, Categories |
+| **[EEM]** | EEM | Wishlist, Cart, Orders |
+| **[ZSLS]** | ZSLS | Promotions, Merchant Products |
+| **[WYT]** | WYT | Advertisements |
+| **[HAML]** | HAML | Order Insights |
+| **[PET]** | PET | Reviews, Admin (user/merchant/content moderation, Advertisements) |
+| **[PPH]** | PPH | Commission, Revenue |
+
 ## 2.2 Frontend Page Structure (React + TypeScript)
 
 ```
-frontend/src/
-├── app/                                 # App shell & routing
-│   ├── App.tsx                          # Root component
-│   └── routes.tsx                       # Route definitions
-├── pages/                               # Route-level components
-│   ├── Home.tsx
-│   ├── Login.tsx                        # [ATM]
-│   ├── Register.tsx                     # [ATM]
-│   ├── Profile.tsx                      # [ATM]
-│   ├── Settings.tsx
-│   ├── NotFound.tsx
-│   ├── Unauthorized.tsx
-│   ├── products/
-│   │   ├── ProductList.tsx
-│   │   ├── ProductDetail.tsx            # [TMO]
-│   │   └── ProductSearch.tsx            # [TRPH]
-│   ├── cart/
-│   │   └── Cart.tsx                     # [EEM]
-│   ├── checkout/
-│   │   └── Checkout.tsx                 # [EEM]
-│   ├── wishlist/
-│   │   └── Wishlist.tsx                 # [EEM]
-│   ├── skin-analysis/
-│   │   └── SkinAnalysis.tsx             # [ATM]
-│   ├── matching/
-│   │   └── Recommendations.tsx          # [HAML]
+frontend/src
+│
+├── app/
+│   ├── App.tsx                                        # Root application component
+│   └── routes.tsx                                     # Route configuration
+│
+├── pages/
+│   │
+│   ├── About.tsx                          # About page
+│   ├── NotFound.tsx                       # 404 page
+│   ├── Settings.tsx                       # User settings page
+│   ├── Unauthorized.tsx                   # Unauthorized access page
+│   │
+│   ├── auth/                           # [ATM]
+│   │   ├── Login.tsx                   # [ATM] User login page
+│   │   └── Register.tsx                # [ATM] User registration page
+│   │
+│   ├── buyer/
+│   │   ├── Dashboard.tsx               # [TRPH] Search & Filter Home
+│   │   ├── SearchFilter.tsx            # [TRPH] Product search and filtering
+│   │   ├── ProductDetail.tsx           # [TMO] Product details and reviews
+│   │   ├── Wishlist.tsx                # [EEM] Saved products
+│   │   ├── Cart.tsx                    # [EEM] Shopping cart
+│   │   ├── Checkout.tsx                # [EEM] Checkout & payment
+│   │   ├── SkinAnalysis.tsx            # [ATM] Skin analysis/profile setup
+│   │   ├── MatchingRecommendations.tsx # [ATM] Product recommendations
+│   │   └── RecommendationHistory.tsx   # [ATM] Recommendation history
+│   │
 │   ├── merchant/
-│   │   ├── Dashboard.tsx                # [WYT]
-│   │   ├── Products.tsx                 # [ZSLS]
-│   │   ├── ProductForm.tsx              # [ZSLS]
-│   │   ├── Promotions.tsx               # [ZSLS]
-│   │   ├── Advertisements.tsx           # [WYT]
-│   │   └── SalesAnalytics.tsx           # [WYT]
-│   └── admin/
-│       ├── Dashboard.tsx                # [PET]
-│       ├── Users.tsx                    # [PET]
-│       ├── Reviews.tsx                  # [PET]
-│       ├── ContentModeration.tsx        # [PET]
-│       ├── Reports.tsx                  # [PET]
-│       ├── Commission.tsx               # [PPH]
-│       └── Revenue.tsx                  # [PPH]
-│   └── notifications/                   # [ATM]
-│       └── Notifications.tsx
+│   │   ├── Dashboard.tsx               # [ZSLS] Product Management Home
+│   │   ├── ProductManagement.tsx       # [ZSLS] Product CRUD
+│   │   ├── Advertisements.tsx          # [WYT] Advertisement management
+│   │   └── Promotions.tsx              # [ZSLS] Promotion management
+│   │
+│   ├── admin/
+│   │   ├── Dashboard.tsx               # [PET] Admin dashboard overview
+│   │   ├── ReviewManagement.tsx        # [PET]
+│   │   ├── ContentModeration.tsx       # [PET]
+│   │   ├── UserManagement.tsx          # [PET]
+│   │   ├── MerchantManagement.tsx      # [PET]
+│   │   ├── AdvertisementManagement.tsx # [PET]
+│   │   ├── CommissionRevenue.tsx       # [PPH]
+│   │   └── AuditLog.tsx                # [ATM]
+│   │
+│   └── shared/
+│       ├── Profile.tsx                 # [ATM] Profile settings
+│       ├── Notifications.tsx           # [ATM] Notification center
+│       └── OrderInsights.tsx           # [HAML] Orders & reporting dashboard
+│
+├── features/
+│   │
+│   ├── auth/                           # [ATM]
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   └── schemas/
+│   │
+│   ├── buyer/
+│   │   ├── skin-analysis/              # [ATM]
+│   │   ├── matching/                   # [ATM]
+│   │   ├── products/                   # [TMO]
+│   │   ├── wishlist/                   # [EEM]
+│   │   ├── cart/                       # [EEM]
+│   │   └── checkout/                   # [EEM]
+│   │
+│   ├── merchant/
+│   │   ├── products/                   # [ZSLS]
+│   │   ├── promotions/                 # [ZSLS]
+│   │   └── advertisements/             # [WYT]
+│   │
+│   ├── admin/
+│   │   ├── user-management/            # [PET]
+│   │   ├── merchant-management/        # [PET]
+│   │   ├── content-moderation/         # [PET]
+│   │   ├── review-management/          # [PET]
+│   │   ├── advertisement-management/   # [PET]
+│   │   ├── commission-revenue/         # [PPH]
+│   │   └── audit-log/                  # [ATM]
+│   │
+│   └── shared/
+│       ├── profile/                    # [ATM]
+│       │   ├── components/
+│       │   ├── hooks/
+│       │   └── services/
+│       │
+│       ├── notifications/              # [ATM]
+│       │   ├── components/
+│       │   ├── hooks/
+│       │   └── services/
+│       │
+│       └── order-insights/             # [HAML]
+│           ├── components/
+│           │   ├── OrderHistoryTable.tsx
+│           │   ├── OrderDetailModal.tsx
+│           │   └── OrderStatusChart.tsx
+│           ├── hooks/
+│           │   └── useOrderInsights.ts
+│           └── services/
+│               └── orderInsights.service.ts
+│
 ├── components/
-│   ├── ui/                              # shadcn/ui primitives (DO NOT EDIT manually)
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── label.tsx
-│   │   ├── card.tsx
-│   │   ├── dialog.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── table.tsx
-│   │   ├── badge.tsx
-│   │   ├── select.tsx
-│   │   ├── textarea.tsx
-│   │   ├── toast.tsx
-│   │   ├── form.tsx
-│   │   ├── avatar.tsx
-│   │   ├── skeleton.tsx
-│   │   └── separator.tsx
-│   ├── layout/                          # Header, Footer, Sidebar, MainLayout
-│   │   ├── Header.tsx
-│   │   ├── Footer.tsx
-│   │   ├── Sidebar.tsx
-│   │   ├── MainLayout.tsx
-│   │   ├── DashboardLayout.tsx
-│   │   └── AuthLayout.tsx
-│   ├── common/                          # ThemeToggle, LanguageToggle, ErrorBoundary
-│   │   ├── ThemeToggle.tsx
-│   │   ├── LanguageToggle.tsx
-│   │   ├── ErrorBoundary.tsx
-│   │   ├── LoadingSpinner.tsx
-│   │   └── EmptyState.tsx
-│   └── auth/                            # ProtectedRoute
-│       └── ProtectedRoute.tsx
-├── features/                            # Feature-specific components & logic
-│   ├── auth/                            # [ATM] Authentication
-│   │   ├── components/
-│   │   │   ├── LoginForm.tsx
-│   │   │   ├── RegisterForm.tsx
-│   │   │   └── AuthTabs.tsx
-│   │   ├── hooks/
-│   │   │   └── useAuth.ts
-│   │   ├── schemas/
-│   │   │   └── auth.schema.ts
-│   │   ├── services/
-│   │   │   └── auth.service.ts
-│   │   └── README.md                    # [ATM] Ownership
-│   ├── skin-analysis/                   # [ATM] Skin analysis
-│   │   ├── components/
-│   │   │   ├── AnalysisUpload.tsx
-│   │   │   ├── AnalysisResults.tsx
-│   │   │   └── AnalysisHistory.tsx
-│   │   ├── hooks/
-│   │   │   └── useSkinAnalysis.ts
-│   │   ├── services/
-│   │   │   └── analysis.service.ts
-│   │   └── README.md                    # [ATM] Ownership
-│   ├── matching/                        # [HAML] Matching & Recommendation
-│   │   ├── components/
-│   │   │   ├── RecommendationCard.tsx
-│   │   │   ├── MatchResultList.tsx
-│   │   │   └── SkinTypeFilter.tsx
-│   │   ├── hooks/
-│   │   │   └── useMatching.ts
-│   │   ├── services/
-│   │   │   └── matching.service.ts
-│   │   └── README.md                    # [HAML] Ownership
-│   ├── products/                        # [TMO] Products
-│   │   ├── components/
-│   │   │   ├── ProductCard.tsx
-│   │   │   ├── ProductGrid.tsx
-│   │   │   ├── ProductDetail.tsx
-│   │   │   └── ProductReviews.tsx
-│   │   ├── hooks/
-│   │   │   ├── useProducts.ts
-│   │   │   └── useProductDetail.ts
-│   │   ├── services/
-│   │   │   └── product.service.ts
-│   │   └── README.md                    # [TMO] Ownership
-│   ├── search/                          # [TRPH] Search & Filter
-│   │   ├── components/
-│   │   │   ├── SearchBar.tsx
-│   │   │   ├── FilterPanel.tsx
-│   │   │   └── SearchResults.tsx
-│   │   ├── hooks/
-│   │   │   └── useSearch.ts
-│   │   ├── services/
-│   │   │   └── search.service.ts
-│   │   └── README.md                    # [TRPH] Ownership
-│   ├── wishlist/                        # [EEM] Wishlist
-│   │   ├── components/
-│   │   │   ├── WishlistItem.tsx
-│   │   │   └── WishlistGrid.tsx
-│   │   ├── hooks/
-│   │   │   └── useWishlist.ts
-│   │   ├── services/
-│   │   │   └── wishlist.service.ts
-│   │   └── README.md                    # [EEM] Ownership
-│   ├── cart/                            # [EEM] Cart
-│   │   ├── components/
-│   │   │   ├── CartItem.tsx
-│   │   │   ├── CartSummary.tsx
-│   │   │   └── CartDrawer.tsx
-│   │   ├── hooks/
-│   │   │   └── useCart.ts
-│   │   ├── services/
-│   │   │   └── cart.service.ts
-│   │   └── README.md                    # [EEM] Ownership
-│   ├── checkout/                        # [EEM] Checkout
-│   │   ├── components/
-│   │   │   ├── CheckoutForm.tsx
-│   │   │   ├── PaymentMethod.tsx
-│   │   │   └── OrderSummary.tsx
-│   │   ├── hooks/
-│   │   │   └── useCheckout.ts
-│   │   ├── services/
-│   │   │   └── checkout.service.ts
-│   │   └── README.md                    # [EEM] Ownership
-│   ├── merchant/                        # [ZSLS/WYT] Merchant
-│   │   ├── components/
-│   │   │   ├── DashboardStats.tsx       # [WYT]
-│   │   │   ├── OrdersTable.tsx
-│   │   │   ├── ProductForm.tsx          # [ZSLS]
-│   │   │   ├── PromotionForm.tsx        # [ZSLS]
-│   │   │   ├── AdvertisementForm.tsx    # [WYT]
-│   │   │   └── SalesChart.tsx           # [WYT]
-│   │   ├── hooks/
-│   │   │   ├── useMerchant.ts
-│   │   │   ├── useProducts.ts           # [ZSLS]
-│   │   │   ├── usePromotions.ts         # [ZSLS]
-│   │   │   ├── useAdvertisements.ts     # [WYT]
-│   │   │   └── useSalesAnalytics.ts     # [WYT]
-│   │   ├── services/
-│   │   │   ├── merchant.service.ts
-│   │   │   ├── product.service.ts       # [ZSLS]
-│   │   │   ├── promotion.service.ts     # [ZSLS]
-│   │   │   ├── advertisement.service.ts # [WYT]
-│   │   │   └── sales.service.ts         # [WYT]
-│   │   └── README.md                    # [ZSLS/WYT] Ownership
-│   └── admin/                           # [PET/PPH] Admin
-│       ├── components/
-│       │   ├── AdminStats.tsx
-│       │   ├── UsersTable.tsx           # [PET]
-│       │   ├── ReviewsTable.tsx         # [PET]
-│       │   ├── ContentModeration.tsx    # [PET]
-│       │   ├── ReportChart.tsx          # [PET]
-│       │   ├── CommissionTable.tsx      # [PPH]
-│       │   └── RevenueChart.tsx         # [PPH]
-│       ├── hooks/
-│       │   ├── useAdmin.ts
-│       │   ├── useModeration.ts         # [PET]
-│       │   ├── useReports.ts            # [PET]
-│       │   └── useCommission.ts         # [PPH]
-│       ├── services/
-│       │   ├── admin.service.ts
-│       │   ├── moderation.service.ts    # [PET]
-│       │   ├── report.service.ts        # [PET]
-│       │   └── commission.service.ts    # [PPH]
-│       └── README.md                    # [PET/PPH] Ownership
-│   └── notifications/                   # [ATM] Notifications
-│       ├── components/
-│       │   ├── NotificationBell.tsx
-│       │   └── NotificationPanel.tsx
-│       ├── hooks/
-│       │   └── useNotifications.ts
-│       ├── services/
-│       │   └── notification.service.ts
-│       └── README.md                    # [ATM] Ownership
-├── hooks/                               # Shared custom hooks
-│   ├── useDebounce.ts
-│   ├── useLocalStorage.ts
-│   └── useMediaQuery.ts
-├── providers/                           # Context providers
-│   ├── AuthProvider.tsx
-│   ├── ThemeProvider.tsx
-│   ├── QueryProvider.tsx
-│   └── I18nProvider.tsx
-├── services/                            # API service layer
-│   ├── api-client.ts                    # axios/fetch config
-│   └── queryKeys.ts                     # TanStack Query keys
-├── schemas/                             # Shared Zod schemas
-│   ├── pagination.schema.ts
-│   └── common.schema.ts
-├── types/                               # Shared TypeScript types
-│   ├── api.types.ts
-│   ├── user.types.ts
-│   ├── product.types.ts
-│   └── index.ts
-├── lib/                                 # Utilities, API client, constants
-│   ├── utils.ts                         # cn() utility
-│   ├── constants.ts                     # App constants
-│   └── api.ts                           # API client
-└── i18n/                                # i18next configuration
-    ├── index.ts
-    └── locales/
-        ├── en/
-        │   ├── common.json
-        │   ├── auth.json
-        │   ├── products.json
-        │   └── cart.json
-        ├── ja/
-        │   ├── common.json
-        │   ├── auth.json
-        │   ├── products.json
-        │   └── cart.json
-        └── my/
-            ├── common.json
-            ├── auth.json
-            ├── products.json
-            └── cart.json
+│   ├── ui/                             # Co-developed
+│   ├── layout/                         # Co-developed
+│   ├── navigation/
+│   │   ├── BuyerNavbar.tsx             # Co-developed
+│   │   ├── MerchantNavbar.tsx          # Co-developed
+│   │   ├── AdminNavbar.tsx             # Co-developed
+│   │   └── RoleBasedMenu.tsx           # Co-developed
+│   │
+│   ├── common/                         # Co-developed
+│   └── auth/                           # [ATM]
+│
+├── layouts/
+│   ├── MainLayout.tsx                 # Co-developed
+│   ├── DashboardLayout.tsx            # Co-developed
+│   ├── BuyerLayout.tsx                 # Co-developed
+│   ├── MerchantLayout.tsx              # Co-developed
+│   ├── AdminLayout.tsx                 # Co-developed
+│   └── AuthLayout.tsx                  # [ATM]
+│
+├── hooks/                              # Co-developed
+├── providers/                          # Co-developed
+├── services/                           # Co-developed
+├── schemas/                            # Co-developed
+├── types/                              # Co-developed
+├── lib/                                # Co-developed
+└── i18n/                               # Co-developed
 ```
 
 **Frontend Structure Rules:**
@@ -645,6 +556,27 @@ frontend/src/
 - Each feature folder MUST contain a `README.md` documenting developer ownership.
 - One component per file. Named exports for types, default exports for components.
 - Route-level components are in `pages/`. Reusable components go in `components/` or `features/`.
+- Layouts are top-level components that wrap page content (admin sidebar, auth forms, main header/footer).
+- `features/shared/` contains cross-feature shared components (analytics charts, profile) used by multiple roles.
+
+### 2.2.1 Developer Ownership Tags
+
+| Tag | Developer | Modules |
+|-----|-----------|---------|
+| **[ATM]** | ATM | Authentication, Users, Skin Analysis, Notifications, Profile, Matching & Recommendation, Audit Logs |
+| **[HAML]** | HAML | Order Insights |
+| **[TMO]** | TMO | Products (catalog) |
+| **[TRPH]** | TRPH | Search, Categories |
+| **[EEM]** | EEM | Wishlist, Cart, Orders, Checkout |
+| **[ZSLS]** | ZSLS | Promotions, Merchant Products |
+| **[WYT]** | WYT | Advertisements |
+| **[PET]** | PET | Reviews, Admin (user/merchant/content moderation, Advertisements) |
+| **[PPH]** | PPH | Commission, Revenue |
+
+**Ownership Rules:**
+- Each module folder MUST have a `README.md` with the assigned developer tag.
+- `Shared` / `Co-developed` modules are maintained collaboratively.
+- Admin pages use `[PET/PPH]` for shared admin functionality.
 
 ## 2.3 Shared Folder Restrictions
 
