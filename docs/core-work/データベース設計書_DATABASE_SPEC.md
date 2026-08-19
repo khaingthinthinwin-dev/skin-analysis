@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.2 |
+| **Version** | 2.3 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-17 |
+| **Last Updated** | 2026-08-19 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released (承認済み) |
 
@@ -24,6 +24,7 @@
 | 2.0 | 2026-08-14 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v1.5: UUID primary keys, merchants table, restructured orders, ad fee tables, updated FK relationships |
 | 2.1 | 2026-08-17 | Lead Database Engineer | Added commission_settings, revenue_targets, and payouts tables for Commission & Revenue management feature (手数料・売上管理機能テーブル追加) |
 | 2.2 | 2026-08-17 | Lead Database Engineer | Added 10 new tables: skin_analyses, skin_analysis_conditions, skin_analysis_recommendations, carts, cart_items, order_status_history, inventory_transactions, review_reports, audit_logs, notifications (AI肌分析・カート・監査・通知テーブル追加) |
+| 2.3 | 2026-08-19 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v2.0: Added duration_days and max_ads to ad_fee_settings, updated ad_fee_history to track duration/max_ads changes, fixed commission rate at 12% (admin cannot adjust) |
 
 ---
 
@@ -133,8 +134,7 @@ INSERT INTO order_statuses (status_code, status_name, display_order, is_terminal
 ('packed', 'Packed', 3, FALSE, 'Order packed and ready to ship'),
 ('shipped', 'Shipped', 4, FALSE, 'Order sent to courier'),
 ('out_for_delivery', 'Out for Delivery', 5, FALSE, 'Order on the way to buyer'),
-('delivered', 'Delivered', 6, TRUE, 'Buyer received order'),
-('cancelled', 'Cancelled', 7, TRUE, 'Order cancelled (buyer or merchant)');
+('delivered', 'Delivered', 6, TRUE, 'Buyer received order');
 
 -- Seed Discount Types
 INSERT INTO discount_types (type_code, type_name, is_active) VALUES
@@ -468,7 +468,7 @@ Manages customer order information.
 | 1 | 注文ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
 | 2 | 購入者ID | `buyer_id` | UUID | - | Y | N | - | Foreign key (`fk_orders_buyer`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
 | 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_orders_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 4 | ステータス | `status` | VARCHAR(30) | - | - | N | 'placed' | Order status (placed, confirmed, packed, shipped, out_for_delivery, delivered, cancelled). |
+| 4 | ステータス | `status` | VARCHAR(30) | - | - | N | 'placed' | Order status (placed, confirmed, packed, shipped, out_for_delivery, delivered). |
 | 5 | 合計金額 | `total_amount` | DECIMAL(10,2) | - | - | N | - | Check constraint: `total_amount > 0`. |
 | 6 | 配送先住所 | `shipping_address` | JSONB | - | - | N | - | Shipping address details (JSON). |
 | 7 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | Payment method used. |
@@ -496,7 +496,7 @@ CREATE TABLE orders (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_orders_total CHECK (total_amount > 0),
-    CONSTRAINT chk_orders_status CHECK (status IN ('placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled')),
+    CONSTRAINT chk_orders_status CHECK (status IN ('placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered')),
     CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('pending', 'completed', 'failed', 'refunded')),
     CONSTRAINT fk_orders_buyer FOREIGN KEY (buyer_id)
         REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -700,7 +700,7 @@ CREATE TABLE advertisements (
 ---
 
 ### 3.13 Ad Fee Settings Table (`ad_fee_settings` - 広告料金設定テーブル)
-Manages advertising fee rates by placement and tier.
+Manages advertising fee rates by placement and tier, including package duration and slot limits.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
@@ -709,9 +709,11 @@ Manages advertising fee rates by placement and tier.
 | 2 | 配置場所 | `placement` | VARCHAR(50) | - | - | N | - | Ad placement location (homepage_slider, product_sidebar, category_banner, search_top). |
 | 3 | ティア | `tier` | VARCHAR(20) | - | - | N | - | Pricing tier (basic, standard, premium). |
 | 4 | 日額料金 | `daily_rate` | DECIMAL(10,2) | - | - | N | - | Daily advertising rate. |
-| 5 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Setting active status. |
-| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
-| 7 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+| 5 | 期間（日数） | `duration_days` | INTEGER | - | - | N | - | Ad duration in days for this placement. Check: `duration_days > 0`. |
+| 6 | 最大広告数 | `max_ads` | INTEGER | - | - | N | - | Maximum ads allowed for this placement. Check: `max_ads > 0`. |
+| 7 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Setting active status. |
+| 8 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 9 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
 
 #### Reference SQL DDL
 ```sql
@@ -720,20 +722,24 @@ CREATE TABLE ad_fee_settings (
     placement VARCHAR(50) NOT NULL,
     tier VARCHAR(20) NOT NULL,
     daily_rate DECIMAL(10,2) NOT NULL,
+    duration_days INTEGER NOT NULL,
+    max_ads INTEGER NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_ad_fee_settings_placement_tier UNIQUE (placement, tier)
+    CONSTRAINT uq_ad_fee_settings_placement_tier UNIQUE (placement, tier),
+    CONSTRAINT chk_ad_fee_settings_duration CHECK (duration_days > 0),
+    CONSTRAINT chk_ad_fee_settings_max_ads CHECK (max_ads > 0)
 );
 ```
 
 #### Default Fee Settings
-| Placement | Basic | Standard | Premium |
-|-----------|-------|----------|---------|
-| Homepage Slider | $3.00/day | $5.00/day | $8.00/day |
-| Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day |
-| Category Banner | $2.50/day | $4.00/day | $7.00/day |
-| Search Results Top | $1.50/day | $2.50/day | $5.00/day |
+| Placement | Basic | Standard | Premium | Duration | Max Ads |
+|-----------|-------|----------|---------|----------|---------|
+| Homepage Slider | $3.00/day | $5.00/day | $8.00/day | 7 Days | 1 |
+| Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day | 15 Days | 3 |
+| Category Banner | $2.50/day | $4.00/day | $7.00/day | 30 Days | 5 |
+| Search Results Top | $1.50/day | $2.50/day | $5.00/day | 7 Days | 6 |
 
 ---
 
@@ -793,10 +799,14 @@ Tracks changes to advertising fee settings over time.
 | 2 | 料金設定ID | `ad_fee_setting_id` | UUID | - | Y | N | - | Foreign key (`fk_ad_fee_history_setting`). References `ad_fee_settings(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
 | 3 | 旧日額料金 | `old_daily_rate` | DECIMAL(10,2) | - | - | Y | NULL | Previous daily rate (NULL for initial creation). |
 | 4 | 新日額料金 | `new_daily_rate` | DECIMAL(10,2) | - | - | N | - | New daily rate after change. |
-| 5 | 変更者ID | `changed_by` | UUID | - | Y | N | - | Foreign key (`fk_ad_fee_history_changed_by`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 6 | 変更理由 | `change_reason` | TEXT | - | - | Y | NULL | Reason for fee change. |
-| 7 | 適用開始日時 | `effective_from` | TIMESTAMPTZ | - | - | N | - | When the new rate takes effect. |
-| 8 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 5 | 旧期間（日数） | `old_duration_days` | INTEGER | - | - | Y | NULL | Previous duration in days (NULL for initial creation). |
+| 6 | 新期間（日数） | `new_duration_days` | INTEGER | - | - | N | - | New duration in days after change. |
+| 7 | 旧最大広告数 | `old_max_ads` | INTEGER | - | - | Y | NULL | Previous max ads (NULL for initial creation). |
+| 8 | 新最大広告数 | `new_max_ads` | INTEGER | - | - | N | - | New max ads after change. |
+| 9 | 変更者ID | `changed_by` | UUID | - | Y | N | - | Foreign key (`fk_ad_fee_history_changed_by`). References `users(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 10 | 変更理由 | `change_reason` | TEXT | - | - | Y | NULL | Reason for fee change. |
+| 11 | 適用開始日時 | `effective_from` | TIMESTAMPTZ | - | - | N | - | When the new rate takes effect. |
+| 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 
 #### Reference SQL DDL
 ```sql
@@ -805,6 +815,10 @@ CREATE TABLE ad_fee_history (
     ad_fee_setting_id UUID NOT NULL,
     old_daily_rate DECIMAL(10,2),
     new_daily_rate DECIMAL(10,2) NOT NULL,
+    old_duration_days INTEGER,
+    new_duration_days INTEGER NOT NULL,
+    old_max_ads INTEGER,
+    new_max_ads INTEGER NOT NULL,
     changed_by UUID NOT NULL,
     change_reason TEXT,
     effective_from TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -825,13 +839,13 @@ CREATE TABLE ad_fee_history (
 ---
 
 ### 3.16 Commission Settings Table (`commission_settings` - 手数料設定テーブル)
-Manages platform commission rate settings for revenue calculation.
+Manages platform commission rate settings. **Commission rate is fixed at 12% and cannot be adjusted by admin.**
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
-| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 0 | Commission rate (e.g., 10.00 = 10%). Check: `commission_rate >= 0 AND commission_rate <= 100`. |
+| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 12.00 | Fixed commission rate (12%). **Admin cannot adjust.** Check: `commission_rate = 12`. |
 | 3 | 更新者ID | `updated_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_commission_settings_updated_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
 | 4 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
 | 5 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
@@ -840,21 +854,21 @@ Manages platform commission rate settings for revenue calculation.
 ```sql
 CREATE TABLE commission_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    commission_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+    commission_rate DECIMAL(5,2) NOT NULL DEFAULT 12.00,
     updated_by UUID,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate >= 0 AND commission_rate <= 100),
+    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate = 12),
     CONSTRAINT fk_commission_settings_updated_by FOREIGN KEY (updated_by)
         REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 ```
 
 #### Commission Settings Rules
-- Only one active commission rate configuration should exist at a time
-- Commission rate is used to calculate platform fees from merchant sales
-- Changes to commission rate are logged in the `payouts` table when applied
-- Admin can update commission rate via the Commission & Revenue management page
+- **Commission rate is fixed at 12% and cannot be changed**
+- Only one commission rate configuration should exist
+- Commission is calculated as: `Order Total × 12%`
+- Admin can view commission settings but cannot modify the rate
 
 ---
 
@@ -1159,7 +1173,7 @@ Records all inventory changes for audit and tracking.
 | 1 | 変動ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
 | 2 | 商品ID | `product_id` | UUID | - | Y | N | - | Foreign key (`fk_inventory_transactions_product`). References `products(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
 | 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_inventory_transactions_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 4 | 変動種別 | `transaction_type` | VARCHAR(30) | - | - | N | - | Transaction type: order_created, order_cancelled, restock, manual_adjustment, return. |
+| 4 | 変動種別 | `transaction_type` | VARCHAR(30) | - | - | N | - | Transaction type: order_created,  restock, manual_adjustment, return. |
 | 5 | 数量 | `quantity` | INTEGER | - | - | N | - | Quantity changed (positive for increase, negative for decrease). |
 | 6 | 変動前数量 | `before_quantity` | INTEGER | - | - | N | - | Stock quantity before change. |
 | 7 | 変動後数量 | `after_quantity` | INTEGER | - | - | N | - | Stock quantity after change. |
@@ -1184,7 +1198,7 @@ CREATE TABLE inventory_transactions (
     reason TEXT,
     created_by UUID,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_inventory_transactions_type CHECK (transaction_type IN ('order_created', 'order_cancelled', 'restock', 'manual_adjustment', 'return')),
+    CONSTRAINT chk_inventory_transactions_type CHECK (transaction_type IN ('order_created', 'restock', 'manual_adjustment', 'return')),
     CONSTRAINT fk_inventory_transactions_product FOREIGN KEY (product_id)
         REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_inventory_transactions_merchant FOREIGN KEY (merchant_id)

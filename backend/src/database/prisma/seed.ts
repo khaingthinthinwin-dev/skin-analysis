@@ -23,13 +23,12 @@ async function main() {
 
   // Order Statuses
   const orderStatuses = [
-    { statusCode: 'pending', statusName: 'Pending', displayOrder: 1, isTerminalState: false, description: 'Order placed, awaiting processing' },
-    { statusCode: 'confirmed', statusName: 'Confirmed', displayOrder: 2, isTerminalState: false, description: 'Order confirmed by merchant' },
-    { statusCode: 'processing', statusName: 'Processing', displayOrder: 3, isTerminalState: false, description: 'Order is being prepared' },
-    { statusCode: 'shipped', statusName: 'Shipped', displayOrder: 4, isTerminalState: false, description: 'Order has been shipped' },
-    { statusCode: 'delivered', statusName: 'Delivered', displayOrder: 5, isTerminalState: true, description: 'Order delivered to customer' },
-    { statusCode: 'cancelled', statusName: 'Cancelled', displayOrder: 6, isTerminalState: true, description: 'Order cancelled' },
-    { statusCode: 'refunded', statusName: 'Refunded', displayOrder: 7, isTerminalState: true, description: 'Order refunded' },
+    { statusCode: 'placed', statusName: 'Placed', displayOrder: 1, isTerminalState: false, description: 'Order created, awaiting confirmation' },
+    { statusCode: 'confirmed', statusName: 'Confirmed', displayOrder: 2, isTerminalState: false, description: 'Merchant accepted order' },
+    { statusCode: 'packed', statusName: 'Packed', displayOrder: 3, isTerminalState: false, description: 'Order packed and ready to ship' },
+    { statusCode: 'shipped', statusName: 'Shipped', displayOrder: 4, isTerminalState: false, description: 'Order sent to courier' },
+    { statusCode: 'out_for_delivery', statusName: 'Out for Delivery', displayOrder: 5, isTerminalState: false, description: 'Order on the way to buyer' },
+    { statusCode: 'delivered', statusName: 'Delivered', displayOrder: 6, isTerminalState: true, description: 'Buyer received order' },
   ];
 
   for (const status of orderStatuses) {

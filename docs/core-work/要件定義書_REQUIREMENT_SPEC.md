@@ -10,9 +10,9 @@
 | :--- | :--- |
 | **Document ID** | SKM-REQ-001 |
 | **System** | Cosmetics Finder |
-| **Version** | 1.10 |
+| **Version** | 2.00 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-07 |
+| **Last Updated** | 2026-08-19 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 
@@ -21,1493 +21,506 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-03 | Software Architect | Initial requirements definition |
-| 2.0 | 2026-08-07 | Software Architect | Simplified: removed SQL schemas (moved to データベース設計書), removed code pseudocode (moved to 開発ルール), fixed Japanese terminology (ステート→ステータス), added missing section headings, standardized symbols | — | — |
-| 1.8 | 2026-08-07 | Software Architect | Removed remaining SQL schema blocks and code pseudocode blocks from the document | 2.0 | — |
-| 1.9 | 2026-08-07 | Software Architect | Removed duplicate schema-like sections (entity attribute data types, DB relationships, Prisma reference), guard logic prose, and API/route tree lists (6.2, 6.3) | 1.8 | — |
-| 1.10 | 2026-08-07 | Software Architect | Added Resend (email delivery) and n8n (workflow automation) as platform services in the technology stack and system architecture | 1.9 | — |
+| 2.0 | 2026-08-19 | Software Architect | Clean rewrite: focused on roles, permissions, and features. Removed duplicate content and unnecessary technical details. |
 
 ---
 
 ## Table of Contents (目次)
 
-1. [Project Overview & Background](#1-project-overview--background)
+1. [Project Overview](#1-project-overview)
 2. [User Roles & Permissions](#2-user-roles--permissions)
-3. [Functional Requirements](#3-functional-requirements)
-4. [Special Business Rules](#4-special-business-rules)
-5. [Non-Functional Requirements](#5-non-functional-requirements)
-6. [System Architecture Context](#6-system-architecture-context)
+3. [Buyer Features](#3-buyer-features)
+4. [Merchant Features](#4-merchant-features)
+5. [Admin Features](#5-admin-features)
+6. [Shared Features](#6-shared-features)
+7. [Business Rules](#7-business-rules)
+8. [Acceptance Criteria](#8-acceptance-criteria)
 
 ---
 
-## 1. Project Overview & Background
+## 1. Project Overview
 
-### 1.1 Project Name (プロジェクト名)
+### 1.1 Project Name
 **Cosmetics Finder**
 
-### 1.2 Purpose & objectives (目的と目標)
-The system provides the Cosmetics Finder platform that connects buyers seeking personalized skincare solutions with merchants selling skincare products. The platform features AI skin analysis, smart product recommendations, and a complete e-commerce workflow from browsing to checkout.
+### 1.2 Purpose
+AI-powered skincare marketplace that analyzes user skin conditions and recommends personalized products, connecting buyers with merchants.
 
-### 1.3 Business Context (ビジネス背景)
-- **Problem Statement:** Consumers struggle to find skincare products suited to their individual skin types and concerns. Traditional e-commerce lacks personalization, leading to poor product choices and wasted spending.
-- **Solution Approach:** Implement an AI-powered marketplace that analyzes user skin conditions and recommends personalized products, connecting buyers with suitable merchants.
-- **Expected Outcomes:**
-  - Personalized skincare product recommendations based on AI analysis
-  - Increased conversion rates through targeted product matching
-  - Merchant tools for product management and sales analytics
-  - Platform growth through multi-vendor marketplace model
-
-### 1.4 Project Scope (プロジェクト範囲)
-- **Included:** User authentication/authorization, AI skin analysis, product management, shopping cart, checkout, order management, merchant dashboard, admin panel, multi-language support (EN/MY/JA)
-- **Excluded:** Physical product delivery logistics, payment gateway integration (stubbed), mobile native apps
-### 1.5 Technology Stack (技術スタック)
-
-**Backend:**
-- Runtime: Node.js v22+ (LTS)
-- Framework: NestJS v11
-- Language: TypeScript v5.7+
-- ORM: Prisma v6
-- Database: PostgreSQL v16
-- Cache: Redis v7 (ioredis v6)
-- Auth: JWT (access + refresh tokens), Argon2 password hashing
-- API Docs: Swagger/OpenAPI v11
-
-**Frontend:**
-- UI Library: React v19
-- Bundler: Vite v6
-- Language: TypeScript v5.7+ (strict)
-- Routing: React Router v7
-- State: TanStack Query v5
-- Forms: React Hook Form + Zod
-- UI Components: shadcn/ui (Radix UI)
-- Styling: Tailwind CSS v4
-- i18n: i18next (English, Myanmar, Japanese)
-- Testing: Vitest, Testing Library, MSW v2
-
-**Services (サービス/外部サービス):**
-- Email Delivery: Resend (transactional emails: email verification, password reset)
-- Workflow Automation: n8n (scheduled jobs, event-driven workflows, thiord-party integrations, internal automation)
+### 1.3 Key Features
+- AI skin analysis and personalized product recommendations
+- Multi-vendor marketplace for skincare products
+- Complete e-commerce workflow (browse → cart → checkout → order)
+- Merchant tools for product and advertisement management
+- Admin panel for platform management
+- Multi-language support (English, Myanmar, Japanese)
 
 ---
 
 ## 2. User Roles & Permissions
 
-### 2.0 Guest / Unauthorized User Rules (未認証ユーザールール)
+### 2.1 Roles Overview
 
-#### Allowed Actions
-- View Home Page without login
-- Browse public product listings
-- Search products by keyword
-- Filter products (category, price, rating)
-- View product detail pages
-- View public shop profiles and locations
-- View advertisements displayed on storefront
-- View product reviews (read only)
+| Role | Description | Access Level |
+|------|-------------|--------------|
+| **Guest** | Non-logged-in visitor | Public pages only |
+| **Buyer** | End user who browses and purchases | Shopping features, AI analysis |
+| **Merchant** | Seller on the marketplace | Product/order management, advertisements |
+| **Admin** | Platform administrator | Full platform management |
 
-#### Restricted Actions (Trigger Redirect to Login)
+### 2.2 Permission Matrix
 
-| Action | Behavior |
-|--------|----------|
-| Add to Cart | Show alert modal with login button → redirect to `/login` |
-| Add to Wishlist | Show alert modal with login button → redirect to `/login` |
-| AI Skin Analysis | Redirect to `/register` |
-| Checkout & Payment | Redirect to `/login` |
-| Write Reviews | Redirect to `/login` |
-| View Order History | Redirect to `/login` |
-| Chat with Merchant | Redirect to `/login` |
-| Order Tracking | Redirect to `/login` |
+| Feature | Guest | Buyer | Merchant | Admin |
+|---------|:-----:|:-----:|:--------:|:-----:|
+| **Authentication** | | | | |
+| Register/Login | ✅ | ✅ | ✅ | ✅ |
+| View/Edit Own Profile | ❌ | ✅ | ✅ | ✅ |
+| **Products** | | | | |
+| Browse/Search Products | ✅ | ✅ | ✅ | ✅ |
+| View Product Details | ✅ | ✅ | ✅ | ✅ |
+| Create/Edit Products | ❌ | ❌ | ✅ | ❌ |
+| Delete Products | ❌ | ❌ | ✅ | ✅ |
+| **AI Skin Analysis** | | | | |
+| Upload Photo & Analysis | ❌ | ✅ | ❌ | ❌ |
+| View Analysis History | ❌ | ✅ | ❌ | ❌ |
+| Compare Analyses | ❌ | ✅ | ❌ | ❌ |
+| **Shopping** | | | | |
+| Add to Cart | ❌ | ✅ | ❌ | ❌ |
+| Checkout & Payment | ❌ | ✅ | ❌ | ❌ |
+| View Order History | ❌ | ✅ | ❌ | ❌ |
+| **Wishlist** | | | | |
+| Add/Remove from Wishlist | ❌ | ✅ | ❌ | ❌ |
+| **Reviews** | | | | |
+| Write Reviews | ❌ | ✅ | ❌ | ❌ |
+| View Reviews | ✅ | ✅ | ✅ | ✅ |
+| Moderate Reviews | ❌ | ❌ | ❌ | ✅ |
+| **Merchant Features** | | | | |
+| Manage Shop Profile | ❌ | ❌ | ✅ | ✅ |
+| Manage Promotions | ❌ | ❌ | ✅ | ❌ |
+| Purchase Advertisements | ❌ | ❌ | ✅ | ❌ |
+| View Order Insights | ❌ | ❌ | ✅ | ✅ |
+| **Admin Features** | | | | |
+| User Management | ❌ | ❌ | ❌ | ✅ |
+| Merchant Approval | ❌ | ❌ | ❌ | ✅ |
+| Advertisement Management | ❌ | ❌ | ❌ | ✅ |
+| Revenue & Commission | ❌ | ❌ | ❌ | ✅ |
+| Audit Log | ❌ | ❌ | ❌ | ✅ |
 
-#### Implementation Notes
-- All restricted actions must check `req.user` or equivalent auth state before executing
-- Alert modal must NOT dismiss without user action (no auto-close)
-- Redirect URL should include `?redirect=<original_path>` for post-login navigation
-- Public routes must not expose any private user data or session tokens
+### 2.3 Merchant Approval States
 
-### 2.1 User Roles Overview (ユーザーロール概要)
+| State | Can Do | Cannot Do |
+|-------|--------|-----------|
+| **Pending** | Login, view dashboard, edit profile | Create products, manage ads, view analytics |
+| **Approved** | All merchant features | Shopping features (cart, checkout) |
+| **Rejected** | Login, view rejection reason, resubmit | Any merchant business features |
 
-| Role | Japanese Name | Primary Responsibility | Key Permissions |
-|------|---------------|----------------------|-----------------|
-| **Buyer** | 購入者 | Browse products, AI analysis, purchase | • Register/login<br>• AI skin analysis<br>• Browse/search products<br>• Add to cart/wishlist<br>• Checkout & payment<br>• Write reviews<br>• View order history |
-| **Merchant** | 出品者 | Sell skincare products | • Register/login<br>• Browse products<br>• Manage products (CRUD)<br>• Manage shop profile<br>• Create promotions/coupons<br>• Manage advertisements<br>• View sales dashboard<br>• View analytics |
-| **Admin** | 管理者 | Platform management | • Register/login<br>• User management<br>• Merchant approval<br>• Review moderation<br>• Content moderation<br>• Analytics & reports<br>• Revenue & commission management |
+### 2.4 Dashboard (After Login)
 
-### 2.2 Role-Based Access Control (RBAC) (ロールベースアクセス制御)
+| Role | Dashboard | What User Sees |
+|------|-----------|----------------|
+| **Buyer** | Product Discovery Home | Search bar, product categories, featured products, personalized recommendations, promotional banners |
+| **Merchant** | Product Management Home | Product list, quick actions (add product), order notifications, shop status summary |
+| **Admin** | Platform Overview | User count, merchant count, pending approvals, revenue summary, recent activity |
 
-**Permission Matrix:**
+#### Buyer Dashboard
 
-| Feature | Buyer | Merchant | Admin |
-|---------|:-----:|:--------:|:-----:|
-| **User Management** | | | |
-| Register/Login | ✅ | ✅ | ✅ |
-| View/Edit Own Profile | ✅ | ✅ | ✅ |
-| Manage Users | ❌ | ❌ | ✅ |
-| **Product Management** | | | |
-| Browse Products | ✅ | ✅ | ✅ |
-| Search/Filter Products | ✅ | ✅ | ✅ |
-| View Product Details | ✅ | ✅ | ✅ |
-| Create/Edit Products | ❌ | ✅ | ✅ |
-| Delete Products | ❌ | ✅ | ✅ |
-| **AI Skin Analysis** | | | |
-| Upload Photo | ✅ | ❌ | ❌ |
-| View Analysis Results | ✅ | ❌ | ❌ |
-| View Recommendations | ✅ | ❌ | ❌ |
-| **Shopping** | | | |
-| Add to Cart | ✅ | ❌ | ❌ |
-| Manage Cart | ✅ | ❌ | ❌ |
-| Checkout | ✅ | ❌ | ❌ |
-| View Orders | ✅ | ❌ | ❌ |
-| **Wishlist** | | | |
-| Add/Remove Wishlist | ✅ | ❌ | ❌ |
-| View Wishlist | ✅ | ❌ | ❌ |
-| **Reviews** | | | |
-| Write Reviews | ✅ | ❌ | ❌ |
-| View Reviews | ✅ | ✅ | ✅ |
-| Moderate Reviews | ❌ | ❌ | ✅ |
-| **Merchant Features** | | | |
-| Manage Shop Profile | ❌ | ✅ | ✅ |
-| View Sales Dashboard | ❌ | ✅ | ✅ |
-| Create Promotions | ❌ | ✅ | ✅ |
-| Manage Advertisements | ❌ | ✅ | ✅ |
-| View Analytics | ❌ | ✅ | ✅ |
-| **Admin Features** | | | |
-| Approve Merchants | ❌ | ❌ | ✅ |
-| Moderate Content | ❌ | ❌ | ✅ |
-| Revenue Tracking | ❌ | ❌ | ✅ |
-| Commission Management | ❌ | ❌ | ✅ |
+- Search bar for products
+- Product categories for browsing
+- Featured/promoted products
+- Personalized recommendations (based on AI analysis)
+- Promotional advertisement banners
+- Quick access to wishlist and cart
 
-### 2.3 Buyer / Authorized User Rules (認証済み購入者ルール)
+#### Merchant Dashboard
 
-#### Authentication Requirements
-- Must be logged in with valid JWT/session token
-- Account status must be `active` (not `inactive` or `banned`)
+- Product list with stock status
+- Quick action: Add new product
+- Recent orders requiring attention
+- Shop profile status
+- Advertisement performance summary
 
-#### Allowed Actions
-- Full product browsing and search
-- AI Skin Analysis (photo upload and results)
-- Personalized product recommendations
-- **Shopping features (Buyer only):**
-  - Wishlist management (add/remove/move to cart)
-  - Cart management (add/remove/update quantity)
-  - Checkout and payment processing
-  - Order placement and tracking
-- Write reviews for purchased products
-- Manage own profile
-- Chat with merchants (future feature)
-- Request password reset
-- Request forget password
+#### Admin Dashboard
 
-#### Buyer-Specific Validations
-- Profile must include skin type and concerns for AI features
-- Photo upload: JPG, PNG, WebP only, max 10MB
-- Only one review per customer per product
-- Reviews allowed only after confirmed product arrival
-- Coupon codes validated at checkout (expiry, minimum amount, single use)
-
-#### Shopping Restriction
-- **Merchant and Admin users CANNOT access shopping features**
-- Cart, wishlist, checkout, and order features are restricted to Buyer role only
-- Attempting restricted actions returns `403 Forbidden` with message: "Shopping features are only available to buyers"
-
-#### Session Management
-- JWT token expiry: 24 hours
-- Refresh token expiry: 7 days
-- Invalid/expired tokens return `401 Unauthorized`
-
-### 2.4 Merchant Rules (出品者ルール)
-
-#### Merchant Allowed Actions
-- Register/login
-- Browse and search products (view only)
-- View product details
-- Manage own products (CRUD)
-- Manage shop profile
-- Create promotions/coupons
-- Manage advertisements
-- View sales dashboard and analytics
-- View reviews (read only)
-- Dispute management (report false/abusive reviews)
-
-#### Merchant Restricted Actions
-- **CANNOT access shopping features (cart, wishlist, checkout)**
-- **CANNOT write reviews**
-- **CANNOT use AI skin analysis**
-- Attempting restricted actions returns `403 Forbidden` with message: "This feature is not available for merchant accounts"
-
-### 2.5 Admin Rules (管理者ルール)
-
-#### Admin Allowed Actions
-- Register/login
-- User management (view, toggle status)
-- Merchant approval/rejection
-- Review moderation (approve/reject/flag)
-- Content moderation
-- Advertisement management and approval
-- Revenue and commission management
-- Platform analytics and reports
-- System configuration
-
-#### Admin Restricted Actions
-- **CANNOT access shopping features (cart, wishlist, checkout)**
-- **CANNOT write reviews**
-- **CANNOT use AI skin analysis**
-- **CANNOT create/edit products (except for moderation purposes)**
-- Attempting restricted actions returns `403 Forbidden` with message: "This feature is not available for admin accounts"
-
-### 2.6 Merchant State Management (出品者ステート管理)
-
-#### State Definitions
-
-| State | Code | Description |
-|-------|------|-------------|
-| **Pending** | `pending` | Registration submitted, awaiting admin approval |
-| **Approved** | `approved` | License verified, full access granted |
-| **Rejected** | `rejected` | License denied, access blocked |
-
-#### State Transitions
-
-```
-[New Registration]
-       ↓
-    PENDING ────────→ APPROVED
-       ↓                  ↑
-    REJECTED ─── Resubmit ┘
-```
-
-#### Pending State Rules
-- Can login with email/password
-- Can access merchant dashboard
-- Can view and edit own profile
-- Can view license status and rejection reason
-- **CANNOT:** Create/edit/delete products
-- **CANNOT:** Create promotions or coupons
-- **CANNOT:** Create advertisements
-- **CANNOT:** Access sales analytics
-- **CANNOT:** Shop is not publicly visible
-- **CANNOT:** Access shopping features (cart, wishlist, checkout)
-- Attempting restricted actions returns `403 Forbidden` with message: "Your account is pending approval"
-
-#### Approved State Rules
-- Full access to all merchant features (except shopping)
-- Shop publicly visible
-- Products appear in search results
-- Can create/manage products, promotions, advertisements
-- Can view sales dashboard and analytics
-- Can generate order invoices
-- **CANNOT:** Access shopping features (cart, wishlist, checkout)
-
-#### Rejected State Rules
-- Can login with email/password
-- See alert banner: "Your account has been rejected. Reason: [reason]"
-- Can view rejection details
-- Can resubmit license for review
-- **CANNOT:** Access any merchant features
-- **CANNOT:** Access shopping features (cart, wishlist, checkout)
-- Attempting restricted actions returns `403 Forbidden` with message: "Your account has been rejected"
-
-### 2.7 Strict APPROVED-Only Merchant Feature Gate
-
-#### Protected Endpoints (Merchant Only)
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/products` | POST | Create product |
-| `/products/:id` | PATCH | Edit product |
-| `/products/:id` | DELETE | Soft delete product |
-| `/products/:id/stock` | PATCH | Update stock |
-| `/promotions` | POST | Create promotion |
-| `/promotions/:id` | PATCH | Edit promotion |
-| `/promotions/:id` | DELETE | Delete promotion |
-| `/ads` | POST | Create advertisement |
-| `/ads/:id/pay` | POST | Pay ad fee |
-| `/ads/:id/submit` | POST | Submit ad for approval |
-| `/shops/merchant` | PATCH | Edit shop profile |
-| `/analytics/merchant/dashboard` | GET | View dashboard |
-| `/analytics/merchant/sales` | GET | View analytics |
-
-#### Protected Endpoints (Buyer Only - Shopping)
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/cart` | GET | View cart |
-| `/cart/items` | POST | Add item to cart |
-| `/cart/items/:id` | PATCH | Update cart item |
-| `/cart/items/:id` | DELETE | Remove cart item |
-| `/wishlist` | GET | View wishlist |
-| `/wishlist/:productId` | POST | Add to wishlist |
-| `/wishlist/:productId` | DELETE | Remove from wishlist |
-| `/orders` | POST | Place order |
-| `/orders` | GET | View order history |
-| `/orders/:id` | GET | View order detail |
-| `/checkout` | POST | Process checkout |
-
-### 2.8 Product Ownership & 403 Authorization
-
-#### Ownership Rules
-- Products can only be created by `approved` merchants
-- Each product is linked to exactly one merchant via `merchant_id`
-- Only the owning merchant can edit/delete their own products
-- Admin can view all products regardless of ownership
-
-#### 403 Error Responses
-| Scenario | Error Code | Message |
-|----------|------------|---------|
-| Buyer tries to access merchant features | `UNAUTHORIZED_ROLE` | "You do not have merchant permissions" |
-| Merchant/Admin tries to access shopping features | `SHOPPING_NOT_ALLOWED` | "Shopping features are only available to buyers" |
-| Pending merchant tries to create product | `MERCHANT_NOT_APPROVED` | "Your account is pending approval" |
-| Rejected merchant tries any merchant action | `MERCHANT_REJECTED` | "Your account has been rejected" |
-| Merchant tries to edit another's product | `PRODUCT_OWNERSHIP_REQUIRED` | "You can only manage your own products" |
-| Unauthorized user tries protected action | `AUTHENTICATION_REQUIRED` | "Please login to continue" |
-
-### 2.9 Password Reset / Forgot Password
-
-#### Flow
-```
-User clicks "Forgot Password"
-    ↓
-Enters email address
-    ↓
-System generates password reset token (6-digit code or link)
-    ↓
-Display website notification with reset code/link
-    ↓
-User enters code or clicks link
-    ↓
-User enters new password (min 8 chars, 1 uppercase, 1 number, 1 special char)
-    ↓
-Password updated, all existing sessions invalidated
-    ↓
-Redirect to login with success message
-```
-
-#### API Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/forgot-password` | Request password reset |
-| POST | `/auth/reset-password` | Reset password with token |
-| POST | `/auth/verify-reset-code` | Verify 6-digit code |
-
-#### Security Rules
-- Reset token expires after 15 minutes
-- Maximum 3 reset requests per email per hour
-- Reset code is 6 digits, valid for 10 minutes
-- After successful reset, invalidate all existing sessions
-- Log password reset events in audit trail
-
-### 2.10 Website Notification System (ウェブサイト通知システム)
-
-#### Notification Types
-| Type | Trigger | Target User |
-|------|---------|-------------|
-| `merchant_approved` | Admin approves merchant registration | Merchant |
-| `merchant_rejected` | Admin rejects merchant registration | Merchant |
-| `order_placed` | Buyer places new order | Merchant |
-| `order_status_changed` | Merchant updates order status | Buyer |
-| `ad_approved` | Admin approves advertisement | Merchant |
-| `ad_rejected` | Admin rejects advertisement | Merchant |
-| `review_submitted` | Buyer writes product review | Merchant |
-| `review_moderated` | Admin moderates review | Buyer |
-| `password_reset` | User requests password reset | User (all roles) |
-| `stock_low_warning` | Product stock below threshold | Merchant |
-| `license_expiring` | Merchant license expiring soon | Merchant |
-
-#### Notification Data Structure
-```json
-{
-  "id": "uuid",
-  "user_id": "uuid",
-  "type": "merchant_approved",
-  "title": "Merchant Registration Approved",
-  "message": "Your merchant registration has been approved. You can now access all merchant features.",
-  "data": {
-    "merchant_id": "uuid",
-    "shop_name": "Beauty Shop"
-  },
-  "is_read": false,
-  "created_at": "2026-08-14T10:30:00Z"
-}
-```
-
-#### Notification Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/notifications` | Get user notifications (paginated) |
-| GET | `/notifications/unread-count` | Get unread notification count |
-| PATCH | `/notifications/:id/read` | Mark notification as read |
-| PATCH | `/notifications/read-all` | Mark all notifications as read |
-| DELETE | `/notifications/:id` | Delete notification |
-
-#### Notification Display Rules
-- Notifications display in header as bell icon with unread count badge
-- Clicking bell icon shows notification dropdown panel
-- Notifications ordered by creation date (newest first)
-- Unread notifications highlighted with bold text
-- Clicking notification marks it as read and navigates to relevant page (if applicable)
-- Maximum 100 notifications per user (older auto-deleted)
-- Notifications older than 90 days auto-deleted
-
-### 2.11 Merchant Rejection Reason & Review Information
-
-#### Rejection Data Structure
-```json
-{
-  "merchant_id": "uuid",
-  "license_status": "rejected",
-  "rejection_reason": "Business license is expired or unreadable",
-  "rejection_details": {
-    "category": "expired_license | invalid_document | mismatch | other",
-    "message": "The uploaded license shows an expiration date of 2024-12-31",
-    "suggested_action": "Please upload a current valid business license",
-    "resubmit_allowed": true
-  },
-  "reviewed_at": "2026-08-10T10:30:00Z",
-  "reviewed_by": "admin_user_id"
-}
-```
-
-#### Website Notification for Rejection
-```json
-{
-  "type": "merchant_rejected",
-  "title": "Merchant Registration Update",
-  "message": "Your merchant registration has been reviewed. Reason: Business license is expired or unreadable. Please resubmit with a valid license.",
-  "data": {
-    "merchant_id": "uuid",
-    "rejection_reason": "Business license is expired or unreadable",
-    "resubmit_url": "/merchant/license/resubmit"
-  }
-}
-```
+- Total users, merchants, orders
+- Pending merchant approvals
+- Pending advertisement approvals
+- Platform revenue summary
+- Recent system activity
 
 ---
 
-## 3. Functional Requirements
+## 3. Buyer Features
 
-### 3.1 Business Rules & Status Flows
+### 3.1 AI Skin Analysis
 
-The detailed database schema (tables, columns, data types, constraints) is defined in the
-[データベース設計書_DATABASE_SPEC.md](./データベース設計書_DATABASE_SPEC.md). The requirement spec
-below covers only business rules and flows relevant to the order/ad/fee domains.
+| Feature | Description |
+|---------|-------------|
+| Upload Photo | Upload facial image (JPG, PNG, WebP, max 10MB) |
+| View Analysis Results | Skin type, conditions with severity, estimated age |
+| View Recommendations | Personalized product recommendations with match scores |
+| Analysis History | View all past analyses with date/time |
+| Analysis Comparison | Compare multiple analyses side-by-side |
+| Recommendation Explanation | Understand why each product was recommended |
+| Recommendation Feedback | Rate recommendations as helpful/not helpful |
 
-#### Order Status Flow
+#### Analysis Flow
 ```
-placed → confirmed → packed → shipped → out_for_delivery → delivered
-   ↓         ↓          ↓         ↓              ↓              ↓
-  Any state can be cancelled (before shipped) → cancelled
-```
-
-#### Order Status Updates
-| Status | Description | Updated By |
-|--------|-------------|------------|
-| `placed` | Order created, awaiting confirmation | System |
-| `confirmed` | Merchant accepted order | Merchant |
-| `packed` | Order packed and ready to ship | Merchant |
-| `shipped` | Order sent to courier | Merchant |
-| `out_for_delivery` | Order on the way to buyer | Courier/System |
-| `delivered` | Buyer received order | Buyer/System |
-| `cancelled` | Order cancelled (buyer or merchant) | Buyer/Merchant |
-
-#### Tracking Response
-```json
-{
-  "order_id": "uuid",
-  "status": "shipped",
-  "timeline": [
-    { "status": "placed", "timestamp": "2026-08-10T10:00:00Z" },
-    { "status": "confirmed", "timestamp": "2026-08-10T14:30:00Z" },
-    { "status": "packed", "timestamp": "2026-08-11T09:00:00Z" },
-    { "status": "shipped", "timestamp": "2026-08-11T15:00:00Z" }
-  ],
-  "estimated_delivery": "2026-08-14",
-  "carrier": "YANGON_EXPRESS",
-  "tracking_number": "YOE123456789"
-}
+Upload Photo → AI Analysis → View Results → Get Recommendations → Save to History
 ```
 
-#### Default Fee Settings
-| Placement | Basic | Standard | Premium |
-|-----------|-------|----------|---------|
-| Homepage Slider | $3.00/day | $5.00/day | $8.00/day |
-| Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day |
-| Category Banner | $2.50/day | $4.00/day | $7.00/day |
-| Search Results Top | $1.50/day | $2.50/day | $5.00/day |
+### 3.2 Shopping
+
+| Feature | Description |
+|---------|-------------|
+| Browse Products | Search and filter products by category and price |
+| Product Details | View images, description, price, reviews, skin type compatibility |
+| Wishlist | Save products for later |
+| Cart | Add products, update quantities, view totals |
+| Checkout | Enter shipping address, select payment method, review order |
+| Order History | View past orders with status timeline |
+| Order Tracking | Track order status from placed to delivered |
+| Write Reviews | Rate and review purchased products |
+
+### 3.3 Order Insights (Buyer)
+
+| Feature | Description |
+|---------|-------------|
+| Order History | View all past orders |
+| Order Detail | View order items, totals, payment status |
+| Order Tracking | Track status timeline (placed → confirmed → shipped → delivered) |
+
+---
+
+## 4. Merchant Features
+
+### 4.1 Product Management
+
+| Feature | Description |
+|---------|-------------|
+| Create Products | Add new products with name, description, price, images |
+| Edit Products | Update product information |
+| Delete Products | Soft delete (deactivate) products |
+| Manage Inventory | Update stock quantities |
+| Product Images | Upload up to 10 images (JPG, PNG, WebP, max 5MB each) |
+
+### 4.2 Shop Management
+
+| Feature | Description |
+|---------|-------------|
+| Shop Profile | Create/edit shop name, description, logo, banner |
+| Shop Settings | Address, phone, email, location |
+
+### 4.3 Promotions
+
+| Feature | Description |
+|---------|-------------|
+| Create Coupons | Discount codes (percentage or fixed amount) |
+| Set Rules | Min order amount, max uses, expiry date |
+| Manage Promotions | Edit/delete promotions, view usage statistics |
+
+### 4.4 Advertisements
+
+| Feature | Description |
+|---------|-------------|
+| View Packages | Browse available advertisement packages |
+| Purchase Ad | Select package, upload image, set schedule, pay fee |
+| Submit for Approval | Admin must approve before display |
+| View Analytics | Impressions, clicks, click-through rate |
+| Resubmit Rejected Ads | Edit and resubmit after rejection |
+
+#### Advertisement Flow
+```
+Select Package → Upload Content → Pay Fee → Admin Review → Approved → Displayed
+```
+
+### 4.5 Order Insights (Merchant)
+
+| Feature | Description |
+|---------|-------------|
+| Order History | View orders for own shop |
+| Order Detail | View order items, customer info |
+| Order Tracking | Track order status |
+| Sales Summary | Daily/monthly sales overview |
+| Revenue Summary | Total sales, average order value |
+| Order Statistics | Orders by status (placed, confirmed, shipped, etc.) |
+
+---
+
+## 5. Admin Features
+
+### 5.1 User Management
+
+| Feature | Description |
+|---------|-------------|
+| View Users | List all users with search and filter |
+| Toggle Status | Activate/deactivate user accounts |
+| View User Details | Profile information and activity |
+
+### 5.2 Merchant Management
+
+| Feature | Description |
+|---------|-------------|
+| Review Applications | View merchant registration requests |
+| Approve Merchants | Grant full merchant access |
+| Reject Merchants | Reject with reason |
+| View Merchant Status | Track approval history |
+
+### 5.3 Advertisement Management
+
+| Feature | Description |
+|---------|-------------|
+| Manage Packages | Create, edit, activate/deactivate ad packages |
+| Set Pricing | Configure placement rates and tiers |
+| Review Advertisements | Approve/reject merchant ads |
+| View Ad Analytics | Platform-wide ad performance |
+| Package History | Track pricing changes |
+
+#### Advertisement Package Fields
+
+| Placement | Where It Appears | Basic | Standard | Premium | Duration | Max Ads |
+|-----------|------------------|-------|----------|---------|----------|---------|
+| Homepage Banner | Top of home page | $3.00/day | $5.00/day | $8.00/day | 7 Days | 1 |
+| Product Detail Sidebar | Side of product detail page | $2.00/day | $3.50/day | $6.00/day | 15 Days | 3 |
+| Category Banner | Top of category pages | $2.50/day | $4.00/day | $7.00/day | 30 Days | 5 |
+| Search Results Top | Above search results | $1.50/day | $2.50/day | $5.00/day | 7 Days | 6 |
+
+#### Advertisement Display Rules
+
+| Rule | Description |
+|------|-------------|
+| Approval Required | Only approved and active advertisements are displayed |
+| Multiple Merchants | Multiple merchants may purchase the same advertisement package |
+| Slider Limit | Maximum 5 advertisements are shown in each slider rotation |
+| Priority Order | Advertisements are prioritized: Premium > Standard > Basic |
+| Round-Robin | Advertisements within the same priority level are displayed using round-robin rotation |
+| Auto Rotation | Slider automatically rotates every 5 seconds |
+| Expiry Handling | Expired or inactive advertisements are excluded |
+| Rejection Handling | Rejected advertisements are removed from all rotations |
+
+### 5.4 Review Moderation
+
+| Feature | Description |
+|---------|-------------|
+| View Reviews | All platform reviews |
+| Moderate Reviews | Approve, reject, or flag reviews |
+| Handle Reports | Review reported content |
+
+### 5.5 Content Moderation
+
+| Feature | Description |
+|---------|-------------|
+| Merchant Registration | Approve/reject new merchants |
+| Product Moderation | Review reported products |
+| Content Reports | Handle user-reported content |
+
+### 5.6 Order Insights (Admin)
+
+| Feature | Description |
+|---------|-------------|
+| All Orders | View all platform orders |
+| Orders by Merchant | Filter orders by shop |
+| Orders by Status | Filter by order status |
+
+### 5.7 Revenue & Commission
+
+| Feature | Description |
+|---------|-------------|
+| Platform Sales | Total revenue, order counts, and ad fees |
+| Revenue Dashboard | Platform revenue trends |
+| Commission Fee | Platform commission: 12% on each sale (fixed rate) |
+| Ad Fee | Advertising fees from merchant ad purchases |
+| Payouts | Process merchant payouts (net of commission and ad fees) |
+| Revenue Targets | Set and track monthly/quarterly targets |
+
+#### Commission Calculation
+```
+Commission = Order Total × 12%
+
+Example:
+- Order Total: $100.00
+- Commission Rate: 12% (fixed)
+- Commission: $100.00 × 0.12 = $12.00
+- Merchant Receives: $88.00
+```
+
+#### Default Ad Fee Settings
+
+| Placement | Where It Appears | Basic | Standard | Premium |
+|-----------|------------------|-------|----------|---------|
+| Homepage Banner | Top of home page | $3.00/day | $5.00/day | $8.00/day |
+| Product Detail Sidebar | Side of product detail page | $2.00/day | $3.50/day | $6.00/day |
+| Category Banner | Top of category pages | $2.50/day | $4.00/day | $7.00/day |
+| Search Results Top | Above search results | $1.50/day | $2.50/day | $5.00/day |
 
 #### Ad Fee Calculation Formula
 ```
-Total Fee = daily_rate × number_of_days × tier_multiplier
+Total Fee = Daily Rate × Number of Days × Tier Multiplier
 
 Tier Multipliers:
-- basic: 1.0x
-- standard: 1.5x
-- premium: 2.0x
+- Basic: 1.0x
+- Standard: 1.5x
+- Premium: 2.0x
+
+Example:
+- Placement: Homepage Slider
+- Tier: Standard
+- Duration: 7 days
+- Calculation: $5.00 × 7 × 1.5 = $52.50
 ```
 
-#### Fee History Rules
-- Fee changes do not affect already-paid advertisements
-- New fees apply only to ads created after the change effective date
-- All fee changes are logged in `ad_fee_history`
-- Admin can view fee change history with timestamps and reasons
-
-#### Commission Settings Rules
-- Only one row exists (singleton table)
-- Rate must be between 0 and 100 with max 2 decimal places
-- Rate applies to all new transactions from the moment saved
-- Historical invoices are not affected by rate changes
-- All changes are logged in audit trail
-
-#### Revenue Targets Rules
-- Target amount must be positive (> 0) with max 2 decimal places
-- Only `monthly` and `quarterly` periods supported
-- Only one active target per period type (new overwrites old)
-- Progress calculated from completed/settled orders only
-
-#### Payout Rules
-- Payout status flows: pending → processing → completed, or pending → failed
-- Processing is idempotent (idempotency_key prevents double-pay)
-- Amount = commission earned + ad fees owed for the period
-- Payout only for status = pending
-
-### 3.2 Functional Requirements by Module
-
-#### 3.2.1 Buyer Module - Authentication (購入者モジュール - 認証)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-AUTH-001 | User can register with email and password | High |
-| B-AUTH-002 | User can login with email and password | High |
-| B-AUTH-003 | System issues JWT access token (15 min) and refresh token (7 days) | High |
-| B-AUTH-004 | User can logout (token blacklisted in Redis) | High |
-| B-AUTH-005 | Access token auto-refreshes via refresh token | High |
-| B-AUTH-006 | Password is hashed with Argon2 | High |
-| B-AUTH-007 | Refresh token rotation on every use | High |
-| B-AUTH-008 | Token family tracking for breach detection | Medium |
-| B-AUTH-009 | User can request password reset via website | High |
-| B-AUTH-010 | User can reset password with 6-digit code | High |
-| B-AUTH-011 | Reset token expires after 15 minutes | High |
-| B-AUTH-012 | Maximum 3 reset requests per email per hour | Medium |
-| B-AUTH-013 | Password reset invalidates all existing sessions | High |
-
-#### 3.2.2 Buyer Module - Profile Setup (購入者モジュール - プロフィール設定)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-PROF-001 | User can view own profile | High |
-| B-PROF-002 | User can edit name, email, phone | High |
-| B-PROF-003 | User can upload/change avatar | Medium |
-| B-PROF-004 | User can set skin type (dry, oily, combination, sensitive, normal) | High |
-| B-PROF-005 | User can set skin concerns (acne, dark spots, wrinkles, etc.) | High |
-| B-PROF-006 | Profile auto-populates during registration | High |
-
-#### 3.2.3 Buyer Module - AI Skin Analysis (購入者モジュール - AI肌分析)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-AI-001 | User can upload facial photo or use camera for analysis | High |
-| B-AI-002 | System performs AI-based skin condition analysis | High |
-| B-AI-003 | System displays analysis results (skin type, condition, age estimation) | High |
-| B-AI-004 | System recommends products based on analysis results | High |
-| B-AI-005 | User can view analysis history | Medium |
-| B-AI-006 | System shows skin condition trends over time | Medium |
-| B-AI-007 | Supported image formats: JPG, PNG, WebP | High |
-| B-AI-008 | Maximum image size: 10MB | High |
-| B-AI-009 | Image must contain a face for analysis to proceed | High |
-| B-AI-010 | Each analysis has a unique analysis ID | High |
-| B-AI-011 | Analysis has a processing status (pending, processing, completed, failed) | High |
-| B-AI-012 | Analysis returns skin type (dry, oily, combination, sensitive, normal) | High |
-| B-AI-013 | Analysis returns detected skin conditions with severity and confidence | High |
-| B-AI-014 | AI may return estimated age (optional) | Medium |
-| B-AI-015 | Each recommendation has a match score (0-100) | High |
-| B-AI-016 | Each recommendation has a reason for recommendation | High |
-| B-AI-017 | Recommendations are ordered by match score (descending) | High |
-| B-AI-018 | User can perform another analysis at any time | High |
-| B-AI-019 | Analysis failure is handled gracefully with error message | High |
-| B-AI-020 | Analysis results may be cached according to existing caching rules | Medium |
-| B-AI-021 | Analysis history is retained indefinitely | Medium |
-
-##### AI Skin Analysis Flow
+#### Payout Calculation
 ```
-User uploads facial image
-    ↓
-System validates image (format, size, face detection)
-    ↓
-Image sent to AI analysis service
-    ↓
-Analysis returns: skin_type, conditions[], estimated_age
-    ↓
-System generates product recommendations based on results
-    ↓
-Results stored in database with analysis status
-    ↓
-User views analysis results and recommendations
+Net Payout = Total Sales - Commission (12%) - Ad Fees
+
+Example:
+- Total Sales: $1,000.00
+- Commission (12%): $120.00
+- Ad Fees: $52.50
+- Net Payout: $827.50
 ```
 
-##### Skin Conditions Structure
-Each detected condition includes:
-- **condition_name**: e.g., "acne", "dark_spots", "wrinkles", "dryness", "oiliness"
-- **severity**: low, medium, high
-- **confidence**: 0.00 to 1.00 (AI confidence score)
+### 5.8 Audit Log
 
-#### 3.2.4 Buyer Module - Smart Product Matching (購入者モジュール - スマート商品マッチング)
+| Feature | Description |
+|---------|-------------|
+| View Audit Trail | All significant system actions |
+| Track Changes | Who did what, when, with before/after values |
+| Filter by Action | Search by user, action type, entity |
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-MATCH-001 | System provides personalized recommendations based on skin analysis | High |
-| B-MATCH-002 | User can filter products by skin type | High |
-| B-MATCH-003 | User can filter products by ingredients | Medium |
-| B-MATCH-004 | User can filter products by price range | High |
-| B-MATCH-005 | User can filter products by review rating | Medium |
-| B-MATCH-006 | System displays "Recommended for You" section | High |
-
-#### 3.2.5 Buyer Module - Search & Filter (購入者モジュール - 検索・フィルタ)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-SEARCH-001 | User can search products by keyword | High |
-| B-SEARCH-002 | User can browse products by category | High |
-| B-SEARCH-003 | User can sort by price, rating, newest | High |
-| B-SEARCH-004 | Results are paginated (default 20 per page) | High |
-| B-SEARCH-005 | Search supports partial matching | High |
-| B-SEARCH-006 | Category tree supports nested navigation | Medium |
-
-#### 3.2.6 Buyer Module - Product Details (購入者モジュール - 商品詳細)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-PROD-001 | Product detail shows images, description, price, ingredients | High |
-| B-PROD-002 | Product detail shows multiple images with gallery view | Medium |
-| B-PROD-003 | Product detail shows reviews with ratings | High |
-| B-PROD-004 | User can write reviews (login required) | High |
-| B-PROD-005 | Product detail shows related products | Medium |
-| B-PROD-006 | Product detail shows skin type compatibility | High |
-| B-PROD-007 | Product detail shows average rating and review count | High |
-
-#### 3.2.7 Buyer Module - Wishlist (購入者モジュール - お気に入り)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-WISH-001 | User can add product to wishlist | High |
-| B-WISH-002 | User can remove product from wishlist | High |
-| B-WISH-003 | User can view wishlist list | High |
-| B-WISH-004 | Wishlist shows product images, prices, availability | High |
-| B-WISH-005 | User can move wishlist items to cart | Medium |
-
-#### 3.2.8 Buyer Module - Cart (購入者モジュール - カート)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-CART-001 | User can add products to cart | High |
-| B-CART-002 | User can update item quantities | High |
-| B-CART-003 | User can remove items from cart | High |
-| B-CART-004 | Cart shows item subtotal calculation | High |
-| B-CART-005 | Cart shows available stock | High |
-| B-CART-006 | Cart persists across sessions (logged-in users) | High |
-| B-CART-007 | Cart shows product images and names | High |
-| B-CART-008 | Quantity must be greater than zero | High |
-| B-CART-009 | Same product cannot appear as duplicate cart lines | High |
-| B-CART-010 | Cart price uses current product price at time of checkout | High |
-| B-CART-011 | Stock is validated when adding to cart | High |
-| B-CART-012 | Stock is validated again at checkout | High |
-| B-CART-013 | User can clear entire cart | Medium |
-| B-CART-014 | Cart shows total price (sum of all item subtotals) | High |
-
-##### Cart Lifecycle
-```
-Empty Cart → Add Item → Cart with Items → Checkout → Order Created → Cart Cleared
-                                    ↓
-                            Update Quantity
-                                    ↓
-                            Remove Item
-                                    ↓
-                            Clear Cart
-```
-
-##### Cart Business Rules
-- One cart per buyer (active cart)
-- Cart items reference current product price at time of add
-- Stock validation occurs at add-time and checkout-time
-- If product goes out of stock before checkout, user is notified
-- Cart is cleared after successful order creation
-
-#### 3.2.9 Buyer Module - Checkout & Payment (購入者モジュール - 注文・決済)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-CHECK-001 | User can enter shipping address | High |
-| B-CHECK-002 | User can select payment method | High |
-| B-CHECK-003 | User can review order before confirming | High |
-| B-CHECK-004 | System calculates subtotal, shipping, tax, total | High |
-| B-CHECK-005 | Order is created with status "pending" | High |
-| B-CHECK-006 | Stock is decremented on order creation | High |
-| B-CHECK-007 | User can view order confirmation | High |
-| B-CHECK-008 | User can view order history | High |
-| B-CHECK-009 | User can view order details | High |
-| B-CHECK-010 | Order confirmation notification is sent | Medium |
-
-#### 3.2.10 Merchant Module - Product Management (マーチャントモジュール - 商品管理)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| M-PROD-001 | Merchant can create new products | High |
-| M-PROD-002 | Merchant can edit existing products | High |
-| M-PROD-003 | Merchant can delete products (soft delete) | High |
-| M-PROD-004 | Merchant can upload product images | High |
-| M-PROD-005 | Merchant can manage inventory (stock quantity) | High |
-| M-PROD-006 | Merchant can view own product list | High |
-| M-PROD-007 | Merchant can toggle product active/inactive | High |
-| M-PROD-008 | Merchant can set product as featured | Medium |
-| M-PROD-009 | Product creation requires: name, category, price, description | High |
-| M-PROD-010 | Product images support JPG, PNG, WebP (max 5MB each) | High |
-
-#### 3.2.11 Merchant Module - Sales Dashboard (マーチャントモジュール - セールスダッシュボード)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| M-DASH-001 | Merchant can view daily/monthly sales overview | High |
-| M-DASH-002 | Merchant can view order list | High |
-| M-DASH-003 | Merchant can update order status | High |
-| M-DASH-004 | Merchant can view best-selling products ranking | Medium |
-| M-DASH-005 | Dashboard shows key metrics: total sales, orders, avg order value | High |
-
-#### 3.2.12 Merchant Module - Analytics (マーチャントモジュール - 分析)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| M-ANAL-001 | Merchant can view sales trends (charts) | Medium |
-| M-ANAL-002 | Merchant can view product performance (views, sales) | Medium |
-| M-ANAL-003 | Merchant can view customer demographics | Low |
-
-#### 3.2.13 Merchant Module - Promotions (マーチャントモジュール - プロモーション)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| M-PROMO-001 | Merchant can create discount coupons | High |
-| M-PROMO-002 | Merchant can set discount type (percentage or fixed) | High |
-| M-PROMO-003 | Merchant can set min order amount | Medium |
-| M-PROMO-004 | Merchant can set max uses and expiry date | High |
-| M-PROMO-005 | Merchant can view coupon usage statistics | Medium |
-| M-PROMO-006 | Merchant can edit/delete coupons | High |
-
-#### 3.2.14 Merchant Module - Shop Advertisement (マーチャントモジュール - 店舗広告)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| M-AD-001 | Merchant can create shop advertisements | Medium |
-| M-AD-002 | Merchant can set ad schedule (start/end date) | Medium |
-| M-AD-003 | Merchant can upload ad images | Medium |
-| M-AD-004 | Merchant can view/manage own ads | Medium |
-| M-AD-005 | Active ads display on platform | Medium |
-| M-AD-006 | Admin can approve/reject advertisements | High |
-| M-AD-007 | Merchants must pay advertising fee before submission | High |
-| M-AD-008 | Maximum 5 active advertisements per week | High |
-| M-AD-009 | Advertisements display with banner/image and announcement message | Medium |
-| M-AD-010 | Ad states: draft → pending_payment → pending_approval → approved → active → expired | High |
-| M-AD-011 | Rejected ads auto-refund payment to merchant | High |
-| M-AD-012 | Per merchant: maximum 2 active ads simultaneously | Medium |
-| M-AD-013 | Minimum ad duration: 7 days | Medium |
-| M-AD-014 | Maximum ad duration: 30 days | Medium |
-
-#### Advertisement Ad States Flow
-```
-draft → pending_payment → pending_approval → approved → active → expired
-                                    ↓
-                                rejected (refund fee)
-                                    ↓
-                                resubmitted
-```
-
-#### Ad Creation Flow
-```
-Merchant creates advertisement
-    ↓
-Uploads content (image, title, description, date range)
-    ↓
-System calculates fee based on duration and placement
-    ↓
-Merchant pays advertisement fee
-    ↓
-Ad enters admin approval queue
-    ↓
-Admin reviews ad content, image, message, and due date
-    ↓
-├── Approved → Ad displayed on storefront
-└── Rejected → Fee refunded, reason sent to merchant
-```
-
-#### Advertisement Slider on Product Dashboard
-
-##### Display Rules
-- Slider appears on the main product dashboard/home page
-- Shows only `approved` and `active` advertisements
-- Maximum 5 ads in rotation
-- Auto-rotate every 5 seconds
-- Manual navigation (prev/next buttons)
-
-##### Slider Response
-```json
-{
-  "ads": [
-    {
-      "id": "uuid",
-      "title": "Summer Sale - 20% Off",
-      "image_url": "https://...",
-      "link": "/products?promo=summer20",
-      "shop_name": "Beauty Shop",
-      "start_date": "2026-08-01",
-      "end_date": "2026-08-31"
-    }
-  ]
-}
-```
-
-##### Display Priority
-1. Ads with higher payment tier (premium > standard > basic)
-2. Ads ending soonest (urgency)
-3. Random rotation within same priority
-
-#### 3.2.15 Merchant Module - Shop Profile (マーチャントモジュール - 店舗プロフィール)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| M-SHOP-001 | Merchant can create/edit shop profile | High |
-| M-SHOP-002 | Shop profile includes: name, description, logo, banner | High |
-| M-SHOP-003 | Shop profile includes: address, phone, email | Medium |
-| M-SHOP-004 | Shop must be approved by admin before going live | High |
-
-#### 3.2.16 Admin Module - Review Moderation (管理者モジュール - レビュー管理)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| A-REV-001 | Admin can view all reviews | High |
-| A-REV-002 | Admin can approve/reject reviews | High |
-| A-REV-003 | Admin can delete inappropriate reviews | High |
-
-#### 3.2.17 Admin Module - Content Moderation (管理者モジュール - コンテンツ管理)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| A-CONT-002 | Admin can approve/reject merchant registrations | High |
-| A-CONT-004 | Admin can remove violating content | High |
-
-#### 3.2.18 Admin Module - Analytics & Reports (管理者モジュール - 分析・レポート)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| A-ANAL-001 | Admin can view platform-wide dashboard | High |
-| A-ANAL-002 | Admin can view user growth analytics | Medium |
-| A-ANAL-003 | Admin can view sales reports (monthly/yearly) | High |
-| A-ANAL-004 | Admin can view category performance | Medium |
-| A-ANAL-005 | Admin can view merchant performance | Medium |
-
-#### 3.2.19 Admin Module - Commission Management (管理者モジュール - 手数料管理)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| A-COMM-001 | Admin can set platform commission rate | High |
-| A-COMM-002 | System calculates commission per transaction | High |
-| A-COMM-003 | Admin can view commission reports by merchant | Medium |
-| A-COMM-004 | Commission rate must be between 0 and 100 with max 2 decimal places | High |
-| A-COMM-005 | Commission rate applies to all new transactions from the moment saved | High |
-| A-COMM-006 | Commission reports support date range filtering (from/to) | Medium |
-| A-COMM-007 | Commission reports support pagination and sorting | Medium |
-| A-COMM-008 | Commission rate changes are logged in audit trail | High |
-
-#### 3.2.20 Admin Module - Revenue Tracking (管理者モジュール - 収益追跡)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| A-REV-001 | Admin can view revenue dashboard | High |
-| A-REV-002 | Admin can view revenue trends (charts) | High |
-| A-REV-003 | Admin can view payment status breakdown | High |
-| A-REV-004 | Admin can manage merchant payouts | Medium |
-| A-REV-005 | Admin can set monthly/quarterly revenue targets and view progress | Medium |
-| A-REV-006 | System can forecast revenue and platform fees using historical data | Medium |
-| A-REV-007 | Revenue KPIs include: total revenue, total commission, avg order value, net revenue | High |
-| A-REV-008 | Revenue trend chart supports 7d/30d/90d/1y range selection | High |
-| A-REV-009 | Revenue target progress displayed as gauge bar (0-100%) | Medium |
-| A-REV-010 | Payout processing is idempotent (no double-pay) | High |
-| A-REV-011 | Payout status flows: pending → processing → completed, or pending → failed | High |
-| A-REV-012 | Revenue target supports only monthly and quarterly periods | Medium |
-| A-REV-013 | Only one active target per period type (new overwrites old) | Medium |
-| A-REV-014 | Forecast is indicative only, never written to financial records | Low |
-
-#### 3.2.21 Admin Module - Ad Fee Revenue (管理者モジュール - 広告料収益)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| A-ADFE-001 | Admin can view advertisement fee revenue in dashboard | Medium |
-| A-ADFE-002 | Ad fee revenue included in total platform income KPI | Medium |
-| A-ADFE-003 | Ad fee payment status tracked alongside order payment status | Medium |
-| A-ADFE-004 | Ad fee trend series displayed on revenue chart | Medium |
-| A-ADFE-005 | Ad fee revenue included in payout deduction calculation | Medium |
-| A-ADFE-006 | Ad fee revenue included in revenue target progress calculation | Low |
-| A-ADFE-007 | Ad fee revenue included in AI forecast calculation | Low |
-
-#### 3.2.22 Buyer Module - Order Status History (購入者モジュール - 注文ステータス履歴)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| B-OSH-001 | Every order status transition is recorded in history | High |
-| B-OSH-002 | Buyer can view order tracking/history timeline | High |
-| B-OSH-003 | Status history shows timestamp for each transition | High |
-| B-OSH-004 | Status history shows who initiated the change (user/system) | High |
-| B-OSH-005 | Status history may include optional note | Medium |
-| B-OSH-006 | System-generated status changes are also recorded | High |
-
-##### Order Status Flow (Official)
-```
-placed → confirmed → packed → shipped → out_for_delivery → delivered
-   ↓         ↓          ↓         ↓              ↓              ↓
-  Any state can be cancelled (before shipped) → cancelled
-```
-
-##### Status Authorization Rules
-| Status | Can Change To | Changed By |
-|--------|---------------|------------|
-| placed | confirmed, cancelled | Merchant |
-| confirmed | packed, cancelled | Merchant |
-| packed | shipped, cancelled | Merchant |
-| shipped | out_for_delivery | Courier/System |
-| out_for_delivery | delivered | Buyer/System |
-| delivered | (terminal) | - |
-| cancelled | (terminal) | - |
-
-#### 3.2.23 System Module - Inventory Transactions (システムモジュール - 在庫変動)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| SYS-INV-001 | Every stock-changing operation creates an inventory transaction | High |
-| SYS-INV-002 | Stock cannot become negative | High |
-| SYS-INV-003 | Stock decreases when order is successfully created | High |
-| SYS-INV-004 | Stock increases when inventory is restocked by merchant | High |
-| SYS-INV-005 | Manual inventory adjustment must be recorded | High |
-| SYS-INV-006 | Order cancellation stock changes are recorded if supported | Medium |
-| SYS-INV-007 | Merchant can view relevant stock information | High |
-| SYS-INV-008 | Admin can audit inventory changes where authorized | Medium |
-
-##### Transaction Types
-| Type | Description | Stock Change |
-|------|-------------|--------------|
-| order_created | Stock decremented on order | -quantity |
-| order_cancelled | Stock restored on cancellation | +quantity |
-| restock | Merchant restocks inventory | +quantity |
-| manual_adjustment | Admin/merchant manual correction | ±quantity |
-| return | Customer return processed | +quantity |
-
-#### 3.2.24 System Module - Review Reports (システムモジュール - レビュー報告)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| SYS-REV-001 | Buyer can report a review for moderation | High |
-| SYS-REV-002 | Report reasons: spam, inappropriate, fake, other | High |
-| SYS-REV-003 | Report may include optional description | Medium |
-| SYS-REV-004 | Report has status: pending, reviewed, resolved, rejected | High |
-| SYS-REV-005 | Admin can review reported reviews | High |
-| SYS-REV-006 | Admin can resolve reports with note | High |
-| SYS-REV-007 | Original review is not automatically deleted when reported | High |
-| SYS-REV-008 | Admin can take action on review based on report | High |
-
-##### Report Status Flow
-```
-pending → reviewed → resolved (action taken)
-                   → rejected (no action needed)
-```
-
-#### 3.2.25 System Module - Audit Logs (システムモジュール - 監査ログ)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| SYS-AUD-001 | Significant actions are logged in audit trail | High |
-| SYS-AUD-002 | Audit log records: who, what, which entity, which record | High |
-| SYS-AUD-003 | Audit log records previous and new values where appropriate | Medium |
-| SYS-AUD-004 | Audit log records timestamp | High |
-| SYS-AUD-005 | Audit logs are append-only (cannot be modified or deleted) | High |
-| SYS-AUD-006 | Passwords, tokens, and secrets are never logged | High |
-
-##### Actions to Audit
-| Category | Examples |
-|----------|----------|
-| Merchant Management | approval, rejection, status change |
-| User Management | status changes, role changes |
-| Advertisement | approval, rejection, payment |
-| Product | create, update, delete, stock change |
-| Commission | rate changes |
-| Review | moderation actions |
-| Payout | processing, completion, failure |
-| Security | login, logout, password reset |
-
-#### 3.2.26 System Module - Notifications (システムモジュール - 通知)
-
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| SYS-NOT-001 | System supports in-app notifications for relevant events | High |
-| SYS-NOT-002 | Notification recipient is identified by user_id | High |
-| SYS-NOT-003 | Notification has type, title, and message | High |
-| SYS-NOT-004 | Notification has read/unread state | High |
-| SYS-NOT-005 | Notification records read timestamp | Medium |
-| SYS-NOT-006 | Notifications are ordered by creation date (newest first) | High |
-| SYS-NOT-007 | Related entity can be linked when applicable | Medium |
-
-##### Notification Events
-| Event | Recipient | Title Example |
-|-------|-----------|---------------|
-| Merchant approved | Merchant | "Shop Approved" |
-| Merchant rejected | Merchant | "Shop Rejected" |
-| Advertisement approved | Merchant | "Ad Approved" |
-| Advertisement rejected | Merchant | "Ad Rejected" |
-| Order status update | Buyer | "Order Shipped" |
-| Low-stock warning | Merchant | "Low Stock Alert" |
-| New order received | Merchant | "New Order" |
-| Payout processed | Merchant | "Payout Completed" |
+#### Audited Actions
+- User login/logout, password reset
+- Merchant approval/rejection
+- Product create/update/delete
+- Advertisement create/approve/reject
+- Order status changes
+- Commission rate changes
+- Payout processing
 
 ---
 
-## 4. Special Business Rules
+## 6. Shared Features
 
-### 4.1 Authentication Rules (認証ルール)
+### 6.1 Profile & Settings
 
-#### Rule 4.1.1: Dual-Token Architecture
-- Access Token: 15-minute expiry, signed with `JWT_ACCESS_SECRET`
-- Refresh Token: 7-day expiry, signed with `JWT_REFRESH_SECRET` (different secret)
-- Refresh tokens hashed (Argon2) before database storage
-- Token rotation: issue new refresh token on every use
-- Absolute time limit: 90-day hard session cap regardless of rotations
-- Token family tracking for breach detection (reuse detection)
-- On reuse of revoked token: revoke ALL tokens for the user
+| Feature | Description | Roles |
+|---------|-------------|-------|
+| View Profile | View own profile information | All |
+| Edit Profile | Update name, email, phone, avatar | All |
+| Change Password | Update account password | All |
+| Language Settings | Switch language (EN/MY/JA) | All |
+| Notification Preferences | Configure notification settings | All |
 
-#### Rule 4.1.2: Redis Blacklisting
-- On logout, blacklist access token in Redis for remaining TTL
-- JwtAuthGuard checks Redis blacklist on every request (sub-millisecond)
-- Prevents stolen tokens from being used after logout
+### 6.2 Notification System
 
-#### Rule 4.1.3: Password Security
-- Passwords must be at least 8 characters
-- Passwords hashed with Argon2 (memory-hard, GPU-resistant)
-- Never store plain text passwords
+| Notification Type | Trigger | Recipient |
+|-------------------|---------|-----------|
+| Order Confirmed | Merchant confirms order | Buyer |
+| Order Shipped | Merchant ships order | Buyer |
+| Order Delivered | Order received | Buyer |
+| AI Analysis Ready | Analysis completed | Buyer |
+| New Recommendation | Products matched | Buyer |
+| Merchant Approved | Admin approves | Merchant |
+| Merchant Rejected | Admin rejects | Merchant |
+| New Order | Buyer places order | Merchant |
+| Ad Approved | Admin approves ad | Merchant |
+| Ad Rejected | Admin rejects ad | Merchant |
+| New Merchant Registration | Merchant registers | Admin |
+| New Advertisement | Merchant submits ad | Admin |
+| Review Reported | Buyer reports review | Admin |
 
-### 4.2 Product Rules (商品ルール)
+### 6.3 Order Insights (Shared)
 
-#### Rule 4.2.1: Product Status
-- Products can be active or inactive
+All roles see only their own data:
+- **Buyer**: Own order history and tracking
+- **Merchant**: Orders for own shop only
+- **Admin**: All platform orders
+
+---
+
+## 7. Business Rules
+
+### 7.1 Authentication
+- JWT access token: 15-minute expiry
+- Refresh token: 7-day expiry with rotation
+- Password: Minimum 8 characters, hashed with Argon2
+- Rate limiting: 3 reset requests per email per hour
+
+### 7.2 Products
 - Only active products appear in search results
-- Inactive products are hidden from buyers but visible to merchant
-
-#### Rule 4.2.2: Stock Management
-- Stock quantity cannot go below 0
-- Low stock threshold triggers warning (default: 10 units)
-- Stock is decremented atomically on order creation
-- Out-of-stock products cannot be added to cart
-
-#### Rule 4.2.3: Product Images
+- Stock cannot go below 0
+- Low stock threshold: 10 units (default)
 - Maximum 10 images per product
-- Supported formats: JPG, PNG, WebP
-- Maximum file size: 5MB per image
-- First image is the primary/cover image
 
-### 4.3 Order Rules (注文ルール)
+### 7.3 Orders
+- Status flow: placed → confirmed → packed → shipped → out_for_delivery → delivered
+- Prices locked at order creation time
+- Stock decremented atomically on order
 
-#### Rule 4.3.1: Order Completion
-- Delivered status is auto-confirmed by system or confirmed by buyer
-
-#### Rule 4.3.2: Price Calculation
-- Subtotal = sum of (unit_price × quantity) for all items
-- Tax is calculated based on shipping address location
-- Total = Subtotal + Shipping Cost + Tax
-- Prices are locked at order creation time (not affected by later price changes)
-
-### 4.4 Review Rules (レビュールール)
-
-#### Rule 4.4.1: Review Eligibility
-- Only users who purchased a product can review it (verified purchase)
+### 7.4 Reviews
+- Only verified purchasers can review
 - One review per user per product
-- Reviews are approved by default but can be moderated by admin
+- Rating: 1-5 stars
+- Reviews approved by default, can be moderated
 
-#### Rule 4.4.2: Review Rating
-- Rating must be between 1 and 5 (inclusive)
-- Average rating is auto-calculated from all approved reviews
-- Review count is auto-updated
+### 7.5 Promotions
+- One coupon per order
+- Code must be unique
+- Cannot exceed max uses
+- Discount cannot go below $0
 
-#### Rule 4.4.3: Review Validation Rules
-1. **Purchase Required:** Reviewer must have a confirmed order containing the product
-2. **Arrival Confirmed:** Order status must be `delivered` or buyer confirmed arrival
-3. **One Review Per Product:** Each buyer can review a product only once
-4. **Rating Range:** Star rating must be between 1 and 5 (integer)
-5. **Content Rules:**
-   - No external website links
-   - No phone numbers
-   - No store advertisements
-   - No inappropriate images
-   - No unrelated content
-6. **Image Limits:** Maximum 5 images per review, max 5MB each, JPG/PNG only
+### 7.6 Advertisements
+- Maximum 5 active ads per week
+- Payment required before submission
+- Admin approval required before display
+- Rejected ads can be resubmitted
+- Refund on rejection
 
-#### Review Validation
-The system must enforce the following before allowing a review submission:
-- Verify the reviewer has a confirmed order containing the product; otherwise return `403` (PURCHASE_REQUIRED)
-- Verify the order is `delivered` or arrival confirmed; otherwise return `403` (DELIVERY_REQUIRED)
-- Verify the buyer has not already reviewed the product; otherwise return `409` (REVIEW_EXISTS)
+### 7.7 Monetization
+- Platform commission on each sale (configurable rate)
+- Advertisement fees (placement-based pricing)
+- Merchant payouts (net of commission and ad fees)
 
-#### Admin Moderation Actions
-| Action | Description |
-|--------|-------------|
-| Approve | Make review visible to public |
-| Reject | Remove review, notify buyer |
-| Flag | Mark for further investigation |
-
-### 4.5 Promotion Rules (プロモーションルール)
-
-#### Rule 4.5.1: Coupon Validation
-- Coupon code must be unique
-- Coupon must be active and not expired
-- Order amount must meet minimum requirement (if set)
-- Total usage must not exceed max uses (if set)
-- Only one coupon can be applied per order
-
-#### Rule 4.5.2: Discount Calculation
-- Percentage discount: applied to subtotal
-- Fixed discount: subtracted from subtotal (cannot exceed subtotal)
-- Discounted amount cannot go below 0
-
-### 4.6 Advertisement Rules (広告ルール)
-
-#### Rule 4.6.1: Advertisement Approval
-- All advertisements require admin approval before display
-- Advertisements are in `PENDING_APPROVAL` status after payment
-- Admin can approve or reject with reason
-- Rejected ads can be edited and resubmitted
-
-#### Rule 4.6.2: Advertisement Payment
-- Merchants must pay advertising fee before ad submission
-- Payment must be verified before ad transitions to `PENDING_APPROVAL`
-- Payment transaction recorded with amount, status, reference
-- Refund automatically processed if ad is rejected
-
-#### Rule 4.6.3: Weekly Ad Limit
-- Maximum 5 active advertisements per week across all merchants
-- Week runs Monday 00:00 to Sunday 23:59 (UTC)
-- Limit validated before approving ad for display
-
-#### Rule 4.6.4: Advertisement Display
-- Advertisements display with banner/image and announcement message
-- Only approved ads within schedule are shown to buyers
-- Active ads cached in Redis with 5-minute TTL
-
-### 4.7 Merchant Rules (出品者ルール)
-
-#### Rule 4.6.1: Shop Approval
-- New merchant shops require admin approval
-- Shops are inactive until approved
-- Admin can reject shops with reason
-
-#### Rule 4.6.2: Product Ownership
-- Merchants can only edit/delete their own products
-- Products are linked to merchant's user account
-
-### 4.7 AI Skin Analysis Rules (AI肌分析ルール)
-
-#### Rule 4.7.1: Image Requirements
-- Image must contain a face
-- Image should be well-lit and clear
-- Maximum image size: 10MB
-- Supported formats: JPG, PNG, WebP
-
-#### Rule 4.7.2: Analysis Results
-- Analysis results are cached for 24 hours
-- Users can re-analyze at any time
-- Analysis history is retained indefinitely
-
-### 4.8 Commission Rules (手数料ルール)
-
-#### Rule 4.8.1: Commission Rate
-- Commission rate must be between 0 and 100 (percentage)
-- Maximum 2 decimal places
-- Rate is stored as a string to preserve precision
-- Only one rate exists (singleton setting)
-- Rate applies to all new transactions from the moment saved
-- Historical invoices are not retroactively affected
-
-#### Rule 4.8.2: Commission Calculation
-- Commission = Order Total × (Commission Rate / 100)
-- Commission is calculated per transaction at order creation time
-- Commission amount is stored on the order record
-- Only completed/settled orders are included in commission reports
-
-#### Rule 4.8.3: Commission Reports
-- Reports support filtering by date range (from/to)
-- Reports support pagination and sorting
-- Reports show merchant-level commission breakdown
-
-### 4.9 Revenue Rules (収益ルール)
-
-#### Rule 4.9.1: Revenue KPIs
-- Total Revenue: Sum of all completed order amounts
-- Total Commission: Sum of all commission from completed orders
-- Avg Order Value: Total Revenue / Number of completed orders
-- Net Revenue: Total Revenue - Refunds
-- Only completed/settled orders are included
-- Refunds are excluded from net revenue
-
-#### Rule 4.9.2: Revenue Trend Chart
-- Supports 7d, 30d, 90d, and 1y ranges
-- Data points are grouped by day (7d, 30d) or month (90d, 1y)
-- Each point includes: date, revenue, commission, ad fee, total income
-
-#### Rule 4.9.3: Revenue Targets
-- Only `monthly` and `quarterly` periods supported
-- Target amount must be positive (> 0) with max 2 decimal places
-- Only one active target per period type (new overwrites old)
-- Progress = (actual revenue in period / target amount) × 100
-- Gauge clamps display to 0-100%; values above 100% shown as "over target"
-- Progress calculated from completed/settled orders only
-- Ad fee revenue included in progress calculation
-
-#### Rule 4.9.4: AI Revenue Forecast
-- Forecast derived from historical revenue data using trend extrapolation
-- Minimum 7 historical data points required
-- Produces predicted revenue and platform fee series
-- Rendered as dotted line on trend chart
-- Forecast is indicative only, never written to financial records
-- If insufficient data, forecast is hidden with informational note
-
-### 4.10 Payout Rules (支払いルール)
-
-#### Rule 4.10.1: Payout Processing
-- Payout status flows: pending → processing → completed, or pending → failed
-- Processing is idempotent (idempotency_key prevents double-pay)
-- Retry of already-processed payout returns 409 Conflict
-- Payout amount = commission earned + ad fees owed for the period
-
-#### Rule 4.10.2: Payout Scope
-- Only status = pending payouts can be processed
-- Payout includes both commission and ad fee deductions
-- Processed payouts are logged in audit trail
-
-### 4.11 Ad Fee Revenue Rules (広告料収益ルール)
-
-#### Rule 4.11.1: Ad Fee Scope
-- Ad fee revenue includes only completed ad payments
-- Ad fee trend series overlaid on revenue chart
-- Ad fee payment statuses summarized alongside order payment statuses
-
-#### Rule 4.11.2: Ad Fee in Platform Income
-- Total Platform Income = Commission Revenue + Ad Fee Revenue
-- Ad fee included in revenue target progress calculation
-- Ad fee included in AI forecast calculation
+### 7.8 Security
+- Role-based access control (RBAC) enforced on backend
+- Ownership verification for all resources
+- Audit logging for sensitive actions
+- Never expose passwords, tokens, or secrets
 
 ---
 
-## 5. Non-Functional Requirements
+## 8. Acceptance Criteria
 
-### 5.1 Performance (パフォーマンス)
-
-| ID | Requirement | Target |
-|----|-------------|--------|
-| NFR-001 | Page load time for dashboards | ≤ 2 seconds |
-| NFR-002 | Search and filter operations | ≤ 3 seconds (10,000 records) |
-| NFR-003 | API response time (p95) | ≤ 500 milliseconds |
-| NFR-004 | AI skin analysis processing | ≤ 10 seconds |
-| NFR-005 | Database query optimization | Proper indexing on FK and filter columns |
-
-### 5.2 Security (セキュリティ)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-006 | Role-based authorization | All API endpoints enforce RBAC |
-| NFR-007 | Authentication required | All non-public endpoints require JWT |
-| NFR-008 | Input validation | Validate all user inputs at every layer |
-| NFR-009 | SQL injection prevention | Use Prisma parameterized queries |
-| NFR-010 | XSS prevention | React auto-escaping + CSP headers |
-| NFR-011 | CSRF protection | SameSite cookies + CSRF tokens |
-| NFR-012 | Rate limiting | API rate limits per IP/user |
-| NFR-013 | Audit logging | Log all significant actions |
-| NFR-014 | Sensitive data protection | Never log passwords, tokens, PII |
-| NFR-015 | HTTPS enforcement | All production traffic over HTTPS |
-
-### 5.3 Data Storage & File Management (データストレージ・ファイル管理)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-016 | File storage abstraction | Interface for future cloud migration |
-| NFR-017 | Image optimization | Multiple resolutions (thumbnail, medium, full) |
-| NFR-018 | File size limits | Product images: 5MB, User avatar: 5MB, Analysis photos: 10MB |
-| NFR-019 | Supported file types | JPG, PNG, WebP for images |
-| NFR-020 | File naming convention | UUID-based to prevent conflicts |
-
-### 5.4 Caching (Redis) (キャッシング)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-021 | Session management | Redis for session storage with configurable TTL |
-| NFR-022 | API caching | Cache frequently accessed data (products, categories) |
-| NFR-023 | Token blacklisting | Redis for access token blacklist |
-| NFR-024 | Rate limiting | Redis-based rate limiting counters |
-| NFR-025 | Cache invalidation | Automatic expiration + manual invalidation on updates |
-
-### 5.5 Database (データベース)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-026 | PostgreSQL v16 | Primary relational database |
-| NFR-027 | Prisma ORM | Type-safe database access |
-| NFR-028 | Migrations | Version-controlled schema changes |
-| NFR-029 | Indexing | Indexes on FK columns and frequent query filters |
-| NFR-030 | Backups | Automated daily backups |
-
-### 5.6 Internationalization (国際化)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-031 | Multi-language support | English, Myanmar, Japanese |
-| NFR-032 | Language detection | Auto-detect from browser settings |
-| NFR-033 | Language toggle | User can manually switch languages |
-| NFR-034 | Localized content | UI text, error messages, notifications |
-| NFR-035 | Locale-aware formatting | Dates, numbers, currencies |
-
-### 5.7 Accessibility (アクセシビリティ)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-036 | WCAG 2.1 AA compliance | Semantic HTML, keyboard navigation |
-| NFR-037 | Screen reader support | ARIA labels, roles, descriptions |
-| NFR-038 | Color contrast | Minimum 4.5:1 for normal text |
-| NFR-039 | Focus indicators | Visible focus on all interactive elements |
-| NFR-034 | Skip navigation | Skip-to-main-content link |
-
-### 5.8 Scalability (スケーラビリティ)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-040 | Horizontal scaling | Backend supports multiple instances |
-| NFR-041 | Connection pooling | Database connection pool management |
-| NFR-042 | CDN ready | Image delivery via CDN |
-| NFR-043 | API versioning | URI-based versioning (/api/v1/) |
-
-### 5.9 Monitoring & Logging (モニタリング・ログ)
-
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| NFR-044 | Structured logging | JSON format logs |
-| NFR-045 | Error tracking | Sentry or equivalent |
-| NFR-046 | Health check endpoint | GET /health |
-| NFR-047 | Performance monitoring | Response time, error rate metrics |
-
----
-
-## 6. System Architecture Context
-
-### 6.1 High-Level Architecture (ハイレベルアーキテクチャ)
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                      CLIENT LAYER                                   │
-│  +-------------------------------------------------------------+   │
-│  |  React SPA (Vite + TypeScript)                              |   │
-│  |  |-- shadcn/ui Components                                   |   │
-│  |  |-- React Router (Lazy Routes)                             |   │
-│  |  |-- TanStack Query (Server State)                          |   │
-│  |  |-- React Hook Form + Zod (Forms)                          |   │
-│  |  |-- i18next (EN/MY/JA)                                     |   │
-│  |  +-- next-themes (Light/Dark)                               |   │
-│  +----------------------------+--------------------------------+   │
-│                               | HTTPS (JWT Bearer)                 │
-+-------------------------------+------------------------------------+
-|                          API LAYER                                 |
-|  +----------------------------+--------------------------------+   │
-|  |  NestJS REST API (v11 + TypeScript)                         |   │
-|  |  |-- Auth Module (JWT + Refresh Rotation)                   |   │
-|  |  |-- Guards (JWT, RBAC)                                     |   │
-|  |  |-- Pipes (ValidationPipe + class-validator)               |   │
-|  |  |-- Interceptors (Logging, Serialization, Timeout)         |   │
-|  |  |-- Filters (ExceptionFilter -> Structured Errors)         |   │
-|  |  +-- Swagger/OpenAPI Documentation                          |   │
-|  +----------+-------------------------------+------------------+   │
-|             |                               |                     |
-+-------------+-------------------------------+---------------------+
-|          DATA LAYER                    CACHE LAYER                |
-|  +----------+----------+      +----------+----------+             |
-|  |  PostgreSQL v16     |      |  Redis v7            |             |
-|  |  |-- Prisma ORM v6  |      |  |-- Session Store   |             |
-|  |  |-- Migrations     |      |  |-- Token Blacklist |             |
-|  |  |-- Indexes        |      |  |-- API Cache       |             |
-|  |  +-- Transactions   |      |  +-- Rate Limiting   |             |
-|  +---------------------+      +---------------------+             |
-|                                                                    |
-|                    SERVICES LAYER                                 |
-|  +-----------------------------+  +----------------------------+  |
-|  |  Resend (Email Delivery)    |  |  n8n (Workflow Automation) |  |
--- Scheduled Jobs        |  |
-|  |  |-- Password Reset         |  |  |-- Event-Driven Flows    |  |
-|  |  |-- Order Confirmation     |  |  |-- Integrations          |  |
-|  |  +-- Notification Emails    |  |  +-- Internal Automation   |  |
-|  +-----------------------------+  +----------------------------+  |
-+--------------------------------------------------------------------+
-```
-
----
-
-## 7. Acceptance Criteria & Success Metrics
-
-### 7.1 Functional Acceptance Criteria (機能的受入基準)
-
-- [ ] All three user roles can login and access their respective dashboards
-- [ ] User registration and authentication work end-to-end
+### 8.1 Functional
+- [ ] All roles can login and access their dashboards
 - [ ] AI skin analysis processes images and returns results
 - [ ] Product browsing, search, and filtering work correctly
-- [ ] Shopping cart operations (add, update, remove) function properly
-- [ ] Checkout flow creates orders and updates inventory
-- [ ] Merchant can manage products (CRUD operations)
-- [ ] Merchant dashboard shows sales data
-- [ ] Admin can moderate reviews and content
-- [ ] All API endpoints enforce role-based access control
+- [ ] Shopping cart and checkout flow complete successfully
+- [ ] Merchant can manage products and promotions
+- [ ] Admin can approve merchants and moderate content
+- [ ] Advertisement lifecycle works end-to-end
+- [ ] Order tracking shows correct status timeline
+- [ ] Notifications delivered for all event types
 - [ ] Multi-language support works for EN, MY, JA
 
-### 7.2 Non-Functional Acceptance Criteria (非機能的受入基準)
+### 8.2 Security
+- [ ] Buyer cannot access another buyer's data
+- [ ] Merchant cannot access another merchant's orders
+- [ ] Pending merchant cannot create products or ads
+- [ ] Rejected merchant cannot access business features
+- [ ] Unapproved advertisements never shown to buyers
+- [ ] Audit logs cannot be modified or deleted
+- [ ] Sensitive data never logged
 
+### 8.3 Performance
 - [ ] Dashboard pages load in ≤ 2 seconds
 - [ ] API response time ≤ 500ms (p95)
-- [ ] All role-based access control enforced
-- [ ] SQL injection and XSS vulnerabilities mitigated
-- [ ] Database schema created via Prisma migrations
-- [ ] Test coverage ≥ 80%
-
-### 7.3 Success Metrics (成功指標)
-
-- **User Registration:** > 100 users within first month
-- **AI Analysis Usage:** > 50 analyses per day
-- **Conversion Rate:** > 5% from browse to purchase
-- **Merchant Adoption:** > 10 merchants within first quarter
-- **System Uptime:** > 99% availability
-- **User Satisfaction:** > 4.0 average rating
+- [ ] Search results returned in ≤ 3 seconds
 
 ---
 
-## 8. Appendix
-
-### 8.1 Reference Terminology (用語集)
-
-| Term | Definition |
-|------|-----------|
-| **AI Skin Analysis** | Machine learning-based analysis of facial images to determine skin type and conditions |
-| **Smart Product Matching** | Algorithm that recommends products based on user's skin analysis results |
-| **Merchant** | Seller who lists products on the marketplace |
-| **Buyer** | End user who browses and purchases products |
-| **Admin** | Platform administrator with full access |
-| **SKU** | Stock Keeping Unit - unique product identifier |
-| **RBAC** | Role-Based Access Control |
-| **JWT** | JSON Web Token for authentication |
-| **Soft Delete** | Logical deletion using is_active flag; records retained |
-
-### 8.2 API Documentation (APIドキュメント)
-
-Swagger/OpenAPI documentation is available at:
-```
-http://localhost:8080/api/docs
-```
-
-### 8.3 Environment Setup (環境構築)
-
-See: `docs/guides/ENVIRONMENT_SETUP.md`
-
----
-
-**Document Management (文書管理):**
+**Document Management:**
 - Author: Software Architect
 - Created: 2026-08-03
-- Last Updated: 2026-08-07
+- Last Updated: 2026-08-19
 - Next Review: Phase 2 Planning
 
 ---

@@ -2078,8 +2078,6 @@ User submits review → is_approved = true → Visible on product
 
 ```
 placed → confirmed → packed → shipped → out_for_delivery → delivered
-   ↓         ↓          ↓         ↓              ↓              ↓
-  Any state can be cancelled (before shipped) → cancelled
 ```
 
 **Transition Rules:**
@@ -2091,7 +2089,6 @@ placed → confirmed → packed → shipped → out_for_delivery → delivered
 | packed | shipped | Merchant |
 | shipped | out_for_delivery | Courier/System |
 | out_for_delivery | delivered | Buyer/System |
-| placed/confirmed/packed | cancelled | Buyer or Merchant |
 
 **Order Rules:**
 - Stock is decremented atomically on order creation (`$transaction`).
