@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router'
-import { Sidebar } from './Sidebar'
+import { Sidebar } from '@/components/layout/Sidebar'
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
