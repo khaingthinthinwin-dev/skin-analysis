@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.2 |
+| **Version** | 2.4 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-17 |
+| **Last Updated** | 2026-08-20 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released（承認済み） |
 
@@ -24,6 +24,7 @@
 | 2.0 | 2026-08-14 | Lead Database Engineer | REQUIREMENT_SPEC v1.5に整合: UUID主キー、merchantsテーブル、ordersの再構成、広告料金テーブル、FKリレーションシップの更新 |
 | 2.1 | 2026-08-17 | Lead Database Engineer | 手数料・売上管理機能テーブル追加: commission_settings, revenue_targets, payoutsテーブル追加 |
 | 2.2 | 2026-08-17 | Lead Database Engineer | AI肌分析・カート・監査・通知テーブル追加: skin_analyses, skin_analysis_conditions, skin_analysis_recommendations, carts, cart_items, order_status_history, inventory_transactions, review_reports, audit_logs, notificationsの10テーブル追加 |
+| 2.4 | 2026-08-20 | Lead Database Engineer | 手数料率を管理者設定可能に変更、出品者支払いを簡素化（広告料なし）、password_reset_tokensテーブル追加 |
 
 ---
 
@@ -155,6 +156,7 @@ erDiagram
     users ||--o{ wishlist : "saves"
     users ||--o{ orders : "places"
     users ||--o{ refresh_tokens : "has"
+    users ||--o{ password_reset_tokens : "resets"
     users ||--o| shops : "owns"
     merchants ||--o{ products : "lists"
     merchants ||--o{ promotions : "creates"
@@ -289,7 +291,45 @@ CREATE TABLE refresh_tokens (
 
 ---
 
-### 3.4 Categories Table（`categories` - カテゴリテーブル）
+### 3.4 Password Reset Tokens Table（`password_reset_tokens` - パスワードリセットトークンテーブル）
+パスワード忘れフロー用のパスワードリセットトークンを管理します。
+
+#### Data Dictionary（データ辞書）
+| No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
+|---|---|---|---|---|---|---|---|---|
+| 1 | トークンID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | フォーリンキー（`fk_password_reset_tokens_user`）。`users(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
+| 3 | トークンハッシュ | `token_hash` | VARCHAR(255) | - | - | N | - | ハッシュ化されたパスワードリセットトークン。 |
+| 4 | 有効期限 | `expires_at` | TIMESTAMPTZ | - | - | N | - | トークン有効期限（作成から24時間）。 |
+| 5 | 使用済み | `used` | BOOLEAN | - | - | N | FALSE | トークンが使用されたかどうか。 |
+| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens (user_id);
+CREATE INDEX idx_password_reset_tokens_token_hash ON password_reset_tokens (token_hash);
+```
+
+#### Password Reset Token Rules（パスワードリセットトークンルール）
+- トークンは作成から24時間有効
+- レート制限：メールごとに1時間あたり最大3回のリセット要求
+- トークンは単一使用（成功後に`used = TRUE`を設定）
+- 新しいリセットが要求されると、古いトークンは無効化
+
+---
+
+### 3.5 Categories Table（`categories` - カテゴリテーブル）
 階層ツリー構造を持つ商品カテゴリを管理します。
 
 #### Data Dictionary（データ辞書）
@@ -826,13 +866,13 @@ CREATE TABLE ad_fee_history (
 ---
 
 ### 3.16 Commission Settings Table（`commission_settings` - 手数料設定テーブル）
-売上計算用のプラットフォーム手数料率設定を管理します。
+プラットフォーム手数料率設定を管理します。**手数料率は管理者が設定可能（デフォルト12%）。**
 
 #### Data Dictionary（データ辞書）
 | No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
-| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 0 | 手数料率（例: 10.00 = 10%）。チェック: `commission_rate >= 0 AND commission_rate <= 100`。 |
+| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 12.00 | 管理者設定可能な手数料率（%）。チェック: `commission_rate > 0 AND commission_rate <= 100`。 |
 | 3 | 更新者ID | `updated_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_commission_settings_updated_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
 | 4 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
 | 5 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
@@ -841,21 +881,22 @@ CREATE TABLE ad_fee_history (
 ```sql
 CREATE TABLE commission_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    commission_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+    commission_rate DECIMAL(5,2) NOT NULL DEFAULT 12.00,
     updated_by UUID,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate >= 0 AND commission_rate <= 100),
+    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate > 0 AND commission_rate <= 100),
     CONSTRAINT fk_commission_settings_updated_by FOREIGN KEY (updated_by)
         REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 ```
 
 #### Commission Settings Rules（手数料設定ルール）
+- **手数料率は管理者が設定可能（デフォルト12%）**
 - 同時に有効な手数料率設定は1つのみ許可
-- 手数料率は出品者の売上からプラットフォーム手数料を計算するために使用
-- 手数料率の変更は、`payouts`テーブルに適用時にログ記録される
-- Adminは手数料・売上管理ページから手数料率を更新可能
+- 手数料は`注文合計 × 手数料率`で計算
+- 手数料率は注文作成時にロック
+- 管理者は手数料・売上管理ページから手数料率を設定/更新可能
 
 ---
 
@@ -900,7 +941,7 @@ CREATE TABLE revenue_targets (
 ---
 
 ### 3.18 Payouts Table（`payouts` - 出金テーブル）
-手数料と広告料差引を伴う出品者の出金取引を管理します。
+手数料差引を伴う出品者の出金取引を管理します。
 
 #### Data Dictionary（データ辞書）
 | No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
@@ -909,7 +950,7 @@ CREATE TABLE revenue_targets (
 | 2 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | フォーリンキー（`fk_payouts_merchant`）。`merchants(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
 | 3 | 合計金額 | `total_amount` | DECIMAL(12,2) | - | - | N | - | 差引前の出金合計金額。 |
 | 4 | 手数料額 | `commission_amount` | DECIMAL(12,2) | - | - | N | 0 | 差引されるプラットフォーム手数料額。 |
-| 5 | 広告料額 | `ad_fee_amount` | DECIMAL(12,2) | - | - | N | 0 | 差引される広告料額。 |
+| 5 | 出金金額 | `net_payout` | DECIMAL(12,2) | - | - | N | - | 最終出金金額（total_amount - commission_amount）。 |
 | 6 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | 出金状態: pending/processing/completed/failed。 |
 | 7 | 処理者ID | `processed_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_payouts_processed_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
 | 8 | 処理日時 | `processed_at` | TIMESTAMPTZ | - | - | Y | NULL | 出金処理タイムスタンプ。 |
@@ -925,7 +966,7 @@ CREATE TABLE payouts (
     merchant_id UUID NOT NULL,
     total_amount DECIMAL(12,2) NOT NULL,
     commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-    ad_fee_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    net_payout DECIMAL(12,2) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     processed_by UUID,
     processed_at TIMESTAMP WITH TIME ZONE,
@@ -934,7 +975,7 @@ CREATE TABLE payouts (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_payouts_status CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
-    CONSTRAINT chk_payouts_amounts CHECK (total_amount > 0 AND commission_amount >= 0 AND ad_fee_amount >= 0),
+    CONSTRAINT chk_payouts_amounts CHECK (total_amount > 0 AND commission_amount >= 0 AND net_payout >= 0),
     CONSTRAINT uq_payouts_idempotency_key UNIQUE (idempotency_key),
     CONSTRAINT fk_payouts_merchant FOREIGN KEY (merchant_id)
         REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -944,13 +985,12 @@ CREATE TABLE payouts (
 ```
 
 #### Payout Processing Rules（出金処理ルール）
-- 出金計算: `net_payout = total_amount - commission_amount - ad_fee_amount`
+- 出金計算: `net_payout = total_amount - commission_amount`
 - 手数料額は`commission_settings`テーブルのレートを使用して計算
-- 広告料額は出品者の`ad_payments`テーブルから集計
 - 幂等性キーにより重複出金を防止
 - 出金ステータス遷移: pending → processing → completed/failed
 - 失敗した出金にはデバッグ用のfailure_reasonが含まれる
-- Adminは手数料・売上管理ページから出金を処理可能
+- 管理者は手数料・売上管理ページから出金を処理可能
 
 ---
 
@@ -1337,7 +1377,9 @@ CREATE TABLE notifications (
 | 5 | `idx_refresh_tokens_user_id` | `refresh_tokens` | `user_id` | ユーザーごとのトークンルックアップを高速化。 |
 | 6 | `idx_refresh_tokens_family` | `refresh_tokens` | `family` | 侵入検出のためのトークンファミリー追跡を最適化。 |
 | 7 | `idx_refresh_tokens_token_hash` | `refresh_tokens` | `token_hash` | トークン検証ルックアップを最適化。 |
-| 8 | `idx_merchants_user_id` | `merchants` | `user_id` | ユーザーごとの出品者ルックアップを最適化。 |
+| 8 | `idx_password_reset_tokens_user_id` | `password_reset_tokens` | `user_id` | パスワードリセットトークンのユーザールックアップを高速化。 |
+| 9 | `idx_password_reset_tokens_token_hash` | `password_reset_tokens` | `token_hash` | パスワードリセットトークンの検証ルックアップを最適化。 |
+| 10 | `idx_merchants_user_id` | `merchants` | `user_id` | ユーザーごとの出品者ルックアップを最適化。 |
 | 9 | `idx_merchants_license_status` | `merchants` | `license_status` | 出品者承認ワークフローフィルタを高速化。 |
 | 10 | `idx_categories_parent_id` | `categories` | `parent_id` | カテゴリツリーのトラバーサルを高速化。 |
 | 11 | `idx_categories_slug` | `categories` | `slug` | URLスラッグによるカテゴリルックアップを最適化。 |
@@ -1415,6 +1457,10 @@ CREATE INDEX idx_users_merchant_id ON users (merchant_id);
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens (user_id);
 CREATE INDEX idx_refresh_tokens_family ON refresh_tokens (family);
 CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens (token_hash);
+
+-- Indexes for Password Reset Tokens Table
+CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens (user_id);
+CREATE INDEX idx_password_reset_tokens_token_hash ON password_reset_tokens (token_hash);
 
 -- Indexes for Merchants Table
 CREATE INDEX idx_merchants_user_id ON merchants (user_id);
@@ -1781,7 +1827,7 @@ erDiagram
 | Category | Tables | Description |
 |----------|--------|-------------|
 | **Master/Lookup** | 3 | user_roles, order_statuses, discount_types |
-| **Core Entities** | 12 | users, merchants, refresh_tokens, categories, products, reviews, wishlist, orders, order_items, shops, promotions, advertisements |
+| **Core Entities** | 13 | users, merchants, refresh_tokens, password_reset_tokens, categories, products, reviews, wishlist, orders, order_items, shops, promotions, advertisements |
 | **Ad Fee Management** | 3 | ad_fee_settings, ad_payments, ad_fee_history |
 | **Commission & Revenue** | 3 | commission_settings, revenue_targets, payouts |
 | **AI Skin Analysis** | 3 | skin_analyses, skin_analysis_conditions, skin_analysis_recommendations |
@@ -1790,14 +1836,14 @@ erDiagram
 | **Inventory Management** | 1 | inventory_transactions |
 | **Moderation** | 1 | review_reports |
 | **Audit & Notifications** | 2 | audit_logs, notifications |
-| **Total** | 31 | Complete database schema（完全なデータベーススキーマ） |
+| **Total** | 32 | Complete database schema（完全なデータベーススキーマ） |
 
 ---
 
 **Document Management（文書管理）:**
 - Author: Lead Database Engineer
 - Created: 2026-08-03
-- Last Updated: 2026-08-17
+- Last Updated: 2026-08-20
 - Next Review: Phase 2 Planning
 
 ---
