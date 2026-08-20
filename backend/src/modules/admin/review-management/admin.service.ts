@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../shared/prisma/prisma.service';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 @Injectable()
 export class AdminService {
@@ -49,7 +49,7 @@ export class AdminService {
           isActive: true,
           emailVerified: true,
           createdAt: true,
-          merchant: {
+          merchantProfile: {
             select: {
               id: true,
               shopName: true,
@@ -148,7 +148,7 @@ export class AdminService {
               product: { select: { id: true, name: true } },
             },
           },
-          reportedBy: { select: { id: true, name: true, email: true } },
+          reporter: { select: { id: true, name: true, email: true } },
         },
         skip,
         take: limit,
@@ -225,7 +225,6 @@ export class AdminService {
         where,
         include: {
           user: { select: { id: true, name: true, email: true } },
-          shop: { select: { id: true, name: true, isApproved: true } },
         },
         skip,
         take: limit,

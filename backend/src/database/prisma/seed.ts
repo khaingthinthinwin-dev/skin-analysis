@@ -58,22 +58,25 @@ async function main() {
 
   // Ad Fee Settings
   const adFeeSettings = [
-    { placement: 'homepage_banner', tier: 'gold', dailyRate: 50.00 },
-    { placement: 'homepage_banner', tier: 'silver', dailyRate: 30.00 },
-    { placement: 'homepage_banner', tier: 'bronze', dailyRate: 15.00 },
-    { placement: 'search_results', tier: 'gold', dailyRate: 40.00 },
-    { placement: 'search_results', tier: 'silver', dailyRate: 25.00 },
-    { placement: 'search_results', tier: 'bronze', dailyRate: 10.00 },
-    { placement: 'category_page', tier: 'gold', dailyRate: 20.00 },
-    { placement: 'category_page', tier: 'silver', dailyRate: 12.00 },
-    { placement: 'category_page', tier: 'bronze', dailyRate: 6.00 },
+    { placement: 'homepage_slider', tier: 'basic', dailyRate: 3.00, durationDays: 7, maxAds: 1 },
+    { placement: 'homepage_slider', tier: 'standard', dailyRate: 5.00, durationDays: 7, maxAds: 1 },
+    { placement: 'homepage_slider', tier: 'premium', dailyRate: 8.00, durationDays: 7, maxAds: 1 },
+    { placement: 'product_sidebar', tier: 'basic', dailyRate: 2.00, durationDays: 15, maxAds: 3 },
+    { placement: 'product_sidebar', tier: 'standard', dailyRate: 3.50, durationDays: 15, maxAds: 3 },
+    { placement: 'product_sidebar', tier: 'premium', dailyRate: 6.00, durationDays: 15, maxAds: 3 },
+    { placement: 'category_banner', tier: 'basic', dailyRate: 2.50, durationDays: 30, maxAds: 5 },
+    { placement: 'category_banner', tier: 'standard', dailyRate: 4.00, durationDays: 30, maxAds: 5 },
+    { placement: 'category_banner', tier: 'premium', dailyRate: 7.00, durationDays: 30, maxAds: 5 },
+    { placement: 'search_top', tier: 'basic', dailyRate: 1.50, durationDays: 7, maxAds: 6 },
+    { placement: 'search_top', tier: 'standard', dailyRate: 2.50, durationDays: 7, maxAds: 6 },
+    { placement: 'search_top', tier: 'premium', dailyRate: 5.00, durationDays: 7, maxAds: 6 },
   ];
 
   for (const setting of adFeeSettings) {
     await prisma.adFeeSetting.upsert({
       where: { placement_tier: { placement: setting.placement, tier: setting.tier } },
       update: {},
-      create: { ...setting, dailyRate: setting.dailyRate },
+      create: setting,
     });
   }
   console.log('Seeded ad_fee_settings');
