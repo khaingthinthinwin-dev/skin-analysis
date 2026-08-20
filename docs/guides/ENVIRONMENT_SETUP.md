@@ -462,9 +462,18 @@ npm run db:generate
 # Run database migrations
 npm run db:migrate
 
-# (Optional) Seed the database with sample data
+# Seed the database with required reference data
 npm run db:seed
 ```
+
+> **Important:** `db:seed` is **required** — it creates essential reference data that the application needs:
+> - Order statuses (placed → confirmed → packed → shipped → out_for_delivery → delivered)
+> - User roles (buyer, merchant, admin)
+> - Discount types (percentage, fixed)
+> - Ad fee settings (homepage_slider, product_sidebar, category_banner, search_top)
+> - Commission settings (default 12%)
+>
+> Without seeding, the application will not function correctly.
 
 ### 8.5 Start Backend Server
 
@@ -871,6 +880,26 @@ npm run db:generate
 
 **Rule of thumb:** If the code is in git and other people will pull it, **always use `npm run db:migrate`**.
 
+### Problem: Missing order statuses or reference data
+
+**Cause:** `npm run db:seed` was skipped during initial setup.
+
+**Fix:**
+
+```powershell
+cd backend
+
+# Re-seed the database with required reference data
+npm run db:seed
+```
+
+This creates:
+- Order statuses (placed, confirmed, packed, shipped, out_for_delivery, delivered)
+- User roles (buyer, merchant, admin)
+- Discount types (percentage, fixed)
+- Ad fee settings
+- Commission settings
+
 ### Problem: Frontend build errors
 
 ```powershell
@@ -910,7 +939,7 @@ npm install
 cp .env.example .env
 npm run db:generate
 npm run db:migrate
-npm run db:seed        # (Optional) Load sample data
+npm run db:seed        # Required - creates reference data
 npm run start:dev
 
 # 3. Frontend (new terminal)
@@ -951,7 +980,10 @@ npm run db:generate
 # 2. Create migration and apply
 npm run db:migrate
 
-# 3. Verify (optional)
+# 3. Re-seed to update reference data (if seed data changed)
+npm run db:seed
+
+# 4. Verify (optional)
 npm run db:studio
 ```
 
@@ -966,7 +998,7 @@ npx prisma migrate reset --force
 # Re-apply migrations properly
 npm run db:migrate
 npm run db:generate
-npm run db:seed        # (Optional)
+npm run db:seed        # Required - restores reference data
 ```
 
 ---

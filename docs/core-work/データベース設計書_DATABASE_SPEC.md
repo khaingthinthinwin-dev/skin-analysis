@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.3 |
+| **Version** | 2.4 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-19 |
+| **Last Updated** | 2026-08-20 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released (承認済み) |
 
@@ -22,9 +22,7 @@
 | 1.0 | 2026-08-03 | Lead Database Engineer | Initial technical design specification (新規作成) |
 | 1.1 | 2026-08-10 | Lead Database Engineer | Added new fields to advertisements table for approval workflow, payment tracking, and weekly limits |
 | 2.0 | 2026-08-14 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v1.5: UUID primary keys, merchants table, restructured orders, ad fee tables, updated FK relationships |
-| 2.1 | 2026-08-17 | Lead Database Engineer | Added commission_settings, revenue_targets, and payouts tables for Commission & Revenue management feature (手数料・売上管理機能テーブル追加) |
-| 2.2 | 2026-08-17 | Lead Database Engineer | Added 10 new tables: skin_analyses, skin_analysis_conditions, skin_analysis_recommendations, carts, cart_items, order_status_history, inventory_transactions, review_reports, audit_logs, notifications (AI肌分析・カート・監査・通知テーブル追加) |
-| 2.3 | 2026-08-19 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v2.0: Added duration_days and max_ads to ad_fee_settings, updated ad_fee_history to track duration/max_ads changes, fixed commission rate at 12% (admin cannot adjust) |
+| 2.4 | 2026-08-20 | Lead Database Engineer | Commission rate admin-configurable, merchant payout simplified (no ad fees), added password_reset_tokens table |
 
 ---
 
@@ -155,6 +153,7 @@ erDiagram
     users ||--o{ wishlist : "saves"
     users ||--o{ orders : "places"
     users ||--o{ refresh_tokens : "has"
+    users ||--o{ password_reset_tokens : "resets"
     users ||--o| shops : "owns"
     merchants ||--o{ products : "lists"
     merchants ||--o{ promotions : "creates"
@@ -289,7 +288,45 @@ CREATE TABLE refresh_tokens (
 
 ---
 
-### 3.4 Categories Table (`categories` - カテゴリテーブル)
+### 3.4 Password Reset Tokens Table (`password_reset_tokens` - パスワードリセットトークンテーブル)
+Manages password reset tokens for the forgot password flow.
+
+#### Data Dictionary
+| No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | トークンID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
+| 2 | ユーザーID | `user_id` | UUID | - | Y | N | - | Foreign key (`fk_password_reset_tokens_user`). References `users(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
+| 3 | トークンハッシュ | `token_hash` | VARCHAR(255) | - | - | N | - | Hashed password reset token. |
+| 4 | 有効期限 | `expires_at` | TIMESTAMPTZ | - | - | N | - | Token expiration (24 hours from creation). |
+| 5 | 使用済み | `used` | BOOLEAN | - | - | N | FALSE | Whether token has been used. |
+| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+
+#### Reference SQL DDL
+```sql
+CREATE TABLE password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens (user_id);
+CREATE INDEX idx_password_reset_tokens_token_hash ON password_reset_tokens (token_hash);
+```
+
+#### Password Reset Token Rules
+- Token is valid for 24 hours from creation
+- Rate limiting: max 3 reset requests per email per hour
+- Token is single-use (set `used = TRUE` after successful reset)
+- Old tokens are invalidated when a new reset is requested
+
+---
+
+### 3.5 Categories Table (`categories` - カテゴリテーブル)
 Manages product categories with hierarchical tree structure.
 
 #### Data Dictionary
@@ -321,7 +358,7 @@ CREATE TABLE categories (
 
 ---
 
-### 3.5 Products Table (`products` - 商品テーブル)
+### 3.6 Products Table (`products` - 商品テーブル)
 Manages skincare product listings by merchants.
 
 #### Data Dictionary
@@ -388,7 +425,7 @@ CREATE TABLE products (
 
 ---
 
-### 3.6 Reviews Table (`reviews` - レビューテーブル)
+### 3.7 Reviews Table (`reviews` - レビューテーブル)
 Manages product reviews with ratings.
 
 #### Data Dictionary
@@ -431,7 +468,7 @@ CREATE TABLE reviews (
 
 ---
 
-### 3.7 Wishlist Table (`wishlist` - お気に入りテーブル)
+### 3.8 Wishlist Table (`wishlist` - お気に入りテーブル)
 Manages user's saved products.
 
 #### Data Dictionary
@@ -459,7 +496,7 @@ CREATE TABLE wishlist (
 
 ---
 
-### 3.8 Orders Table (`orders` - 注文テーブル)
+### 3.9 Orders Table (`orders` - 注文テーブル)
 Manages customer order information.
 
 #### Data Dictionary
@@ -507,7 +544,7 @@ CREATE TABLE orders (
 
 ---
 
-### 3.9 Order Items Table (`order_items` - 注文商品テーブル)
+### 3.10 Order Items Table (`order_items` - 注文商品テーブル)
 Manages individual items within an order.
 
 #### Data Dictionary
@@ -544,7 +581,7 @@ CREATE TABLE order_items (
 
 ---
 
-### 3.10 Shops Table (`shops` - 店舗テーブル)
+### 3.11 Shops Table (`shops` - 店舗テーブル)
 Manages merchant shop profiles.
 
 #### Data Dictionary
@@ -593,7 +630,7 @@ CREATE TABLE shops (
 
 ---
 
-### 3.11 Promotions Table (`promotions` - プロモーションテーブル)
+### 3.12 Promotions Table (`promotions` - プロモーションテーブル)
 Manages discount codes and promotions.
 
 #### Data Dictionary
@@ -640,7 +677,7 @@ CREATE TABLE promotions (
 
 ---
 
-### 3.12 Advertisements Table (`advertisements` - 広告テーブル)
+### 3.13 Advertisements Table (`advertisements` - 広告テーブル)
 Manages shop advertisements with approval workflow, payment tracking, and weekly limits.
 
 #### Data Dictionary
@@ -699,7 +736,7 @@ CREATE TABLE advertisements (
 
 ---
 
-### 3.13 Ad Fee Settings Table (`ad_fee_settings` - 広告料金設定テーブル)
+### 3.14 Ad Fee Settings Table (`ad_fee_settings` - 広告料金設定テーブル)
 Manages advertising fee rates by placement and tier, including package duration and slot limits.
 
 #### Data Dictionary
@@ -743,7 +780,7 @@ CREATE TABLE ad_fee_settings (
 
 ---
 
-### 3.14 Ad Payments Table (`ad_payments` - 広告支払いテーブル)
+### 3.15 Ad Payments Table (`ad_payments` - 広告支払いテーブル)
 Manages payment transactions for advertisements.
 
 #### Data Dictionary
@@ -789,7 +826,7 @@ CREATE TABLE ad_payments (
 
 ---
 
-### 3.15 Ad Fee History Table (`ad_fee_history` - 広告料金履歴テーブル)
+### 3.16 Ad Fee History Table (`ad_fee_history` - 広告料金履歴テーブル)
 Tracks changes to advertising fee settings over time.
 
 #### Data Dictionary
@@ -838,14 +875,14 @@ CREATE TABLE ad_fee_history (
 
 ---
 
-### 3.16 Commission Settings Table (`commission_settings` - 手数料設定テーブル)
-Manages platform commission rate settings. **Commission rate is fixed at 12% and cannot be adjusted by admin.**
+### 3.17 Commission Settings Table (`commission_settings` - 手数料設定テーブル)
+Manages platform commission rate settings. **Commission rate is admin-configurable (default 12%).**
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
-| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 12.00 | Fixed commission rate (12%). **Admin cannot adjust.** Check: `commission_rate = 12`. |
+| 2 | 手数料率 | `commission_rate` | DECIMAL(5,2) | - | - | N | 12.00 | Admin-configurable commission rate (%). Check: `commission_rate > 0 AND commission_rate <= 100`. |
 | 3 | 更新者ID | `updated_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_commission_settings_updated_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
 | 4 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
 | 5 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
@@ -858,21 +895,22 @@ CREATE TABLE commission_settings (
     updated_by UUID,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate = 12),
+    CONSTRAINT chk_commission_settings_rate CHECK (commission_rate > 0 AND commission_rate <= 100),
     CONSTRAINT fk_commission_settings_updated_by FOREIGN KEY (updated_by)
         REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 ```
 
 #### Commission Settings Rules
-- **Commission rate is fixed at 12% and cannot be changed**
+- **Commission rate is admin-configurable (default 12%)**
 - Only one commission rate configuration should exist
-- Commission is calculated as: `Order Total × 12%`
-- Admin can view commission settings but cannot modify the rate
+- Commission is calculated as: `Order Total × Commission Rate`
+- Commission rate is locked at order creation time
+- Admin can set/update commission rate via the Commission & Revenue management page
 
 ---
 
-### 3.17 Revenue Targets Table (`revenue_targets` - 売上目標テーブル)
+### 3.18 Revenue Targets Table (`revenue_targets` - 売上目標テーブル)
 Manages revenue targets for platform performance tracking.
 
 #### Data Dictionary
@@ -912,17 +950,17 @@ CREATE TABLE revenue_targets (
 
 ---
 
-### 3.18 Payouts Table (`payouts` - 出金テーブル)
-Manages merchant payout transactions with commission and advertising fee deductions.
+### 3.19 Payouts Table (`payouts` - 出金テーブル)
+Manages merchant payout transactions with commission deduction.
 
 #### Data Dictionary
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 出金ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
 | 2 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_payouts_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 3 | 合計金額 | `total_amount` | DECIMAL(12,2) | - | - | N | - | Total payout amount before deductions. |
+| 3 | 合計金額 | `total_amount` | DECIMAL(12,2) | - | - | N | - | Total sales amount before deductions. |
 | 4 | 手数料額 | `commission_amount` | DECIMAL(12,2) | - | - | N | 0 | Platform commission amount deducted. |
-| 5 | 広告料額 | `ad_fee_amount` | DECIMAL(12,2) | - | - | N | 0 | Advertising fee amount deducted. |
+| 5 | 出金金額 | `net_payout` | DECIMAL(12,2) | - | - | N | - | Final payout amount (total_amount - commission_amount). |
 | 6 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | Payout status: pending/processing/completed/failed. |
 | 7 | 処理者ID | `processed_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_payouts_processed_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
 | 8 | 処理日時 | `processed_at` | TIMESTAMPTZ | - | - | Y | NULL | Payout processing timestamp. |
@@ -938,7 +976,7 @@ CREATE TABLE payouts (
     merchant_id UUID NOT NULL,
     total_amount DECIMAL(12,2) NOT NULL,
     commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-    ad_fee_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    net_payout DECIMAL(12,2) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     processed_by UUID,
     processed_at TIMESTAMP WITH TIME ZONE,
@@ -947,7 +985,7 @@ CREATE TABLE payouts (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_payouts_status CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
-    CONSTRAINT chk_payouts_amounts CHECK (total_amount > 0 AND commission_amount >= 0 AND ad_fee_amount >= 0),
+    CONSTRAINT chk_payouts_amounts CHECK (total_amount > 0 AND commission_amount >= 0 AND net_payout >= 0),
     CONSTRAINT uq_payouts_idempotency_key UNIQUE (idempotency_key),
     CONSTRAINT fk_payouts_merchant FOREIGN KEY (merchant_id)
         REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -957,9 +995,8 @@ CREATE TABLE payouts (
 ```
 
 #### Payout Processing Rules
-- Payout calculation: `net_payout = total_amount - commission_amount - ad_fee_amount`
+- Payout calculation: `net_payout = total_amount - commission_amount`
 - Commission amount is calculated using the rate from `commission_settings` table
-- Ad fee amounts are aggregated from `ad_payments` table for the merchant
 - Idempotency key ensures duplicate payouts are not processed
 - Payout status transitions: pending → processing → completed/failed
 - Failed payouts include a failure_reason for debugging
@@ -967,7 +1004,7 @@ CREATE TABLE payouts (
 
 ---
 
-### 3.19 Skin Analyses Table (`skin_analyses` - AI肌分析テーブル)
+### 3.20 Skin Analyses Table (`skin_analyses` - AI肌分析テーブル)
 Stores AI skin analysis results for users.
 
 #### Data Dictionary
@@ -1008,7 +1045,7 @@ CREATE TABLE skin_analyses (
 
 ---
 
-### 3.20 Skin Analysis Conditions Table (`skin_analysis_conditions` - AI肌分析条件テーブル)
+### 3.21 Skin Analysis Conditions Table (`skin_analysis_conditions` - AI肌分析条件テーブル)
 Stores detected skin conditions from AI analysis.
 
 #### Data Dictionary
@@ -1039,7 +1076,7 @@ CREATE TABLE skin_analysis_conditions (
 
 ---
 
-### 3.21 Skin Analysis Recommendations Table (`skin_analysis_recommendations` - AI肌分析推薦テーブル)
+### 3.22 Skin Analysis Recommendations Table (`skin_analysis_recommendations` - AI肌分析推薦テーブル)
 Stores product recommendations from AI analysis.
 
 #### Data Dictionary
@@ -1073,7 +1110,7 @@ CREATE TABLE skin_analysis_recommendations (
 
 ---
 
-### 3.22 Carts Table (`carts` - カートテーブル)
+### 3.23 Carts Table (`carts` - カートテーブル)
 Stores user shopping carts.
 
 #### Data Dictionary
@@ -1098,7 +1135,7 @@ CREATE TABLE carts (
 
 ---
 
-### 3.23 Cart Items Table (`cart_items` - カート商品テーブル)
+### 3.24 Cart Items Table (`cart_items` - カート商品テーブル)
 Stores items within a shopping cart.
 
 #### Data Dictionary
@@ -1131,7 +1168,7 @@ CREATE TABLE cart_items (
 
 ---
 
-### 3.24 Order Status History Table (`order_status_history` - 注文ステータス履歴テーブル)
+### 3.25 Order Status History Table (`order_status_history` - 注文ステータス履歴テーブル)
 Records all order status transitions for tracking and audit.
 
 #### Data Dictionary
@@ -1164,7 +1201,7 @@ CREATE TABLE order_status_history (
 
 ---
 
-### 3.25 Inventory Transactions Table (`inventory_transactions` - 在庫変動テーブル)
+### 3.26 Inventory Transactions Table (`inventory_transactions` - 在庫変動テーブル)
 Records all inventory changes for audit and tracking.
 
 #### Data Dictionary
@@ -1210,7 +1247,7 @@ CREATE TABLE inventory_transactions (
 
 ---
 
-### 3.26 Review Reports Table (`review_reports` - レビュー報告テーブル)
+### 3.27 Review Reports Table (`review_reports` - レビュー報告テーブル)
 Stores user-reported reviews for moderation.
 
 #### Data Dictionary
@@ -1255,7 +1292,7 @@ CREATE TABLE review_reports (
 
 ---
 
-### 3.27 Audit Logs Table (`audit_logs` - 監査ログテーブル)
+### 3.28 Audit Logs Table (`audit_logs` - 監査ログテーブル)
 Append-only table for tracking significant system actions.
 
 #### Data Dictionary
@@ -1298,7 +1335,7 @@ CREATE TABLE audit_logs (
 
 ---
 
-### 3.28 Notifications Table (`notifications` - 通知テーブル)
+### 3.29 Notifications Table (`notifications` - 通知テーブル)
 Stores in-app notifications for users.
 
 #### Data Dictionary
@@ -1810,7 +1847,7 @@ erDiagram
 **Document Management (文書管理):**
 - Author: Lead Database Engineer
 - Created: 2026-08-03
-- Last Updated: 2026-08-17
+- Last Updated: 2026-08-14
 - Next Review: Phase 2 Planning
 
 ---

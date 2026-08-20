@@ -75,6 +75,7 @@ model User {
   merchantProfile       Merchant?              @relation("UserMerchantProfile")
   merchantRef           Merchant?              @relation("UserMerchantRef", fields: [merchantId], references: [id], onDelete: SetNull)
   refreshTokens         RefreshToken[]
+  passwordResetTokens   PasswordResetToken[]
   reviews               Review[]
   wishlists             Wishlist[]
   orders                Order[]
@@ -120,6 +121,22 @@ model RefreshToken {
   @@index([family])
   @@index([tokenHash])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
 }
 
 // ============================================
@@ -527,7 +544,7 @@ model Payout {
   merchantId       String    @map("merchant_id") @db.Uuid
   totalAmount      Decimal   @map("total_amount") @db.Decimal(12, 2)
   commissionAmount Decimal   @default(0) @map("commission_amount") @db.Decimal(12, 2)
-  adFeeAmount      Decimal   @default(0) @map("ad_fee_amount") @db.Decimal(12, 2)
+  netPayout        Decimal   @map("net_payout") @db.Decimal(12, 2)
   status           String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
   processedBy      String?   @map("processed_by") @db.Uuid
   processedAt      DateTime? @map("processed_at")

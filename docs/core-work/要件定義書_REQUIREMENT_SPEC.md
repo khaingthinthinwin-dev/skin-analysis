@@ -10,9 +10,9 @@
 | :--- | :--- |
 | **Document ID** | SKM-REQ-001 |
 | **System** | Cosmetics Finder |
-| **Version** | 2.00 |
+| **Version** | 2.10 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-19 |
+| **Last Updated** | 2026-08-14 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 
@@ -21,7 +21,8 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-03 | Software Architect | Initial requirements definition |
-| 2.0 | 2026-08-19 | Software Architect | Clean rewrite: focused on roles, permissions, and features. Removed duplicate content and unnecessary technical details. |
+| 2.0 | 2026-08-7 | Software Architect | Clean rewrite: focused on roles, permissions, and features. Removed duplicate content and unnecessary technical details. |
+| 2.1 | 2026-08-14 | Software Architect | Added forgot password and reset password features for all user roles |
 
 ---
 
@@ -35,6 +36,12 @@
 6. [Shared Features](#6-shared-features)
 7. [Business Rules](#7-business-rules)
 8. [Acceptance Criteria](#8-acceptance-criteria)
+
+### Sections under 6. Shared Features
+- 6.1 Profile & Settings
+- 6.2 Notification System
+- 6.3 Password Reset (Forgot Password)
+- 6.4 Order Insights (Shared)
 
 ---
 
@@ -72,7 +79,10 @@ AI-powered skincare marketplace that analyzes user skin conditions and recommend
 | Feature | Guest | Buyer | Merchant | Admin |
 |---------|:-----:|:-----:|:--------:|:-----:|
 | **Authentication** | | | | |
-| Register/Login | ✅ | ✅ | ✅ | ✅ |
+| Register | ✅ | ✅ | ✅ | ❌ |
+| Login | ✅ | ✅ | ✅ | ✅ |
+| Forgot Password | ❌ | ✅ | ✅ | ✅ |
+| Reset Password | ❌ | ✅ | ✅ | ✅ |
 | View/Edit Own Profile | ❌ | ✅ | ✅ | ✅ |
 | **Products** | | | | |
 | Browse/Search Products | ✅ | ✅ | ✅ | ✅ |
@@ -105,7 +115,13 @@ AI-powered skincare marketplace that analyzes user skin conditions and recommend
 | Revenue & Commission | ❌ | ❌ | ❌ | ✅ |
 | Audit Log | ❌ | ❌ | ❌ | ✅ |
 
-### 2.3 Merchant Approval States
+### 2.3 Admin Account
+
+Admin accounts are **system-seeded only**. Users cannot self-register as admin. Admin accounts are created:
+- During database seeding (initial setup)
+- By another admin via the admin panel
+
+### 2.4 Merchant Approval States
 
 | State | Can Do | Cannot Do |
 |-------|--------|-----------|
@@ -113,7 +129,7 @@ AI-powered skincare marketplace that analyzes user skin conditions and recommend
 | **Approved** | All merchant features | Shopping features (cart, checkout) |
 | **Rejected** | Login, view rejection reason, resubmit | Any merchant business features |
 
-### 2.4 Dashboard (After Login)
+### 2.5 Dashboard (After Login)
 
 | Role | Dashboard | What User Sees |
 |------|-----------|----------------|
@@ -241,7 +257,6 @@ Select Package → Upload Content → Pay Fee → Admin Review → Approved → 
 | Order Tracking | Track order status |
 | Sales Summary | Daily/monthly sales overview |
 | Revenue Summary | Total sales, average order value |
-| Order Statistics | Orders by status (placed, confirmed, shipped, etc.) |
 
 ---
 
@@ -326,18 +341,30 @@ Select Package → Upload Content → Pay Fee → Admin Review → Approved → 
 |---------|-------------|
 | Platform Sales | Total revenue, order counts, and ad fees |
 | Revenue Dashboard | Platform revenue trends |
-| Commission Fee | Platform commission: 12% on each sale (fixed rate) |
+| Commission Fee | Platform commission on each sale (admin-configurable rate) |
+| Manage Commission Rate | Admin can set/update commission rate |
 | Ad Fee | Advertising fees from merchant ad purchases |
-| Payouts | Process merchant payouts (net of commission and ad fees) |
+| Manage Ad Fees | Admin can set/update ad fee rates by placement and tier |
+| Payouts | Process merchant payouts (net of commission) |
 | Revenue Targets | Set and track monthly/quarterly targets |
+
+#### Platform Revenue Summary
+
+| Revenue Source | How It's Calculated | Example |
+|----------------|---------------------|---------|
+| **Commission** | Configurable % of each sale (default 12%) | $1000 × $12% = **$120** |
+| **Ad Fees** | Daily Rate × Number of Days | $5 × 7 = $35 |
+| **Total Platform Revenue** | Commission + Ad Fees | $120 + $35 = **$155** |
 
 #### Commission Calculation
 ```
-Commission = Order Total × 12%
+Commission = Order Total × Commission Rate
+
+Default Rate: 12% (admin can adjust)
 
 Example:
 - Order Total: $100.00
-- Commission Rate: 12% (fixed)
+- Commission Rate: 12% (configurable)
 - Commission: $100.00 × 0.12 = $12.00
 - Merchant Receives: $88.00
 ```
@@ -353,29 +380,25 @@ Example:
 
 #### Ad Fee Calculation Formula
 ```
-Total Fee = Daily Rate × Number of Days × Tier Multiplier
+Total Fee = Daily Rate × Number of Days
 
-Tier Multipliers:
-- Basic: 1.0x
-- Standard: 1.5x
-- Premium: 2.0x
+Daily rates are admin-configurable per placement and tier.
 
 Example:
-- Placement: Homepage Slider
+- Placement: Homepage Banner
 - Tier: Standard
 - Duration: 7 days
-- Calculation: $5.00 × 7 × 1.5 = $52.50
+- Calculation: $5.00 × 7 = $35.00
 ```
 
-#### Payout Calculation
+#### Merchant Payout Calculation
 ```
-Net Payout = Total Sales - Commission (12%) - Ad Fees
+Net Payout = Total Sales - Commission
 
 Example:
 - Total Sales: $1,000.00
-- Commission (12%): $120.00
-- Ad Fees: $52.50
-- Net Payout: $827.50
+- Commission (12%): -$120.00
+- Net Payout: $880.00
 ```
 
 ### 5.8 Audit Log
@@ -387,7 +410,7 @@ Example:
 | Filter by Action | Search by user, action type, entity |
 
 #### Audited Actions
-- User login/logout, password reset
+- User login/logout, password reset request, password reset completion
 - Merchant approval/rejection
 - Product create/update/delete
 - Advertisement create/approve/reject
@@ -423,11 +446,30 @@ Example:
 | New Order | Buyer places order | Merchant |
 | Ad Approved | Admin approves ad | Merchant |
 | Ad Rejected | Admin rejects ad | Merchant |
+| Low Stock | Stock below threshold | Merchant |
+| Review Reported | Buyer reports review | Admin, Merchant |
 | New Merchant Registration | Merchant registers | Admin |
 | New Advertisement | Merchant submits ad | Admin |
-| Review Reported | Buyer reports review | Admin |
+| Password Reset Requested | User requests password reset | User (via email) |
+| Password Reset Completed | User successfully resets password | User (via email) |
 
-### 6.3 Order Insights (Shared)
+### 6.3 Password Reset (Forgot Password)
+
+| Feature | Description |
+|---------|-------------|
+| Request Password Reset | User enters registered email to receive reset link |
+| Send Reset Email | System sends password reset link via email |
+| Reset Link Expiry | Reset link valid for 24 hours |
+| Reset Password | User clicks link and enters new password |
+| Password Validation | Minimum 8 characters required |
+| Rate Limiting | Max 3 reset requests per email per hour |
+
+#### Password Reset Flow
+```
+Enter Email → Receive Reset Link → Click Link → Enter New Password → Confirm → Login
+```
+
+### 6.4 Order Insights (Shared)
 
 All roles see only their own data:
 - **Buyer**: Own order history and tracking
@@ -442,6 +484,7 @@ All roles see only their own data:
 - JWT access token: 15-minute expiry
 - Refresh token: 7-day expiry with rotation
 - Password: Minimum 8 characters, hashed with Argon2
+- Password reset link: 24-hour expiry
 - Rate limiting: 3 reset requests per email per hour
 
 ### 7.2 Products
@@ -473,11 +516,13 @@ All roles see only their own data:
 - Admin approval required before display
 - Rejected ads can be resubmitted
 - Refund on rejection
+- Ad fees are admin-configurable per placement and tier
 
 ### 7.7 Monetization
-- Platform commission on each sale (configurable rate)
-- Advertisement fees (placement-based pricing)
-- Merchant payouts (net of commission and ad fees)
+- Platform commission on each sale (admin-configurable rate, default 12%)
+- Commission rate is locked at order creation time
+- Advertisement fees (admin-configurable per placement and tier) - platform revenue
+- Merchant payouts = Total Sales - Commission
 
 ### 7.8 Security
 - Role-based access control (RBAC) enforced on backend
@@ -491,11 +536,18 @@ All roles see only their own data:
 
 ### 8.1 Functional
 - [ ] All roles can login and access their dashboards
+- [ ] Forgot password flow works (email → reset link → new password)
+- [ ] Password reset link expires after 24 hours
+- [ ] Rate limiting prevents abuse (max 3 requests/hour)
 - [ ] AI skin analysis processes images and returns results
 - [ ] Product browsing, search, and filtering work correctly
 - [ ] Shopping cart and checkout flow complete successfully
 - [ ] Merchant can manage products and promotions
 - [ ] Admin can approve merchants and moderate content
+- [ ] Admin can adjust commission rate
+- [ ] Admin can adjust ad fee rates
+- [ ] Commission calculated with current rate at time of order
+- [ ] Ad fees calculated with current rates at time of purchase
 - [ ] Advertisement lifecycle works end-to-end
 - [ ] Order tracking shows correct status timeline
 - [ ] Notifications delivered for all event types
@@ -520,7 +572,7 @@ All roles see only their own data:
 **Document Management:**
 - Author: Software Architect
 - Created: 2026-08-03
-- Last Updated: 2026-08-19
+- Last Updated: 2026-08-14
 - Next Review: Phase 2 Planning
 
 ---
