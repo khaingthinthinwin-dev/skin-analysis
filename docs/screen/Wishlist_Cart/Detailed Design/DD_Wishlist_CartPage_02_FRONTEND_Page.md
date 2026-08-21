@@ -1,7 +1,7 @@
 # DD_WISH-CART_02 — Frontend Page (Wishlist & Cart)
 
-> **Doc ID:** SKM-DD-WISH-CART-02 | **Version:** 1.1 | **Status:** Released
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-WISH-CART-02 | **Version:** 1.2 | **Status:** Released
+> **Last Updated:** 2026-08-21
 
 ---
 
@@ -9,8 +9,8 @@
 
 The Wishlist & Cart module consists of two main screens: `Wishlist` and `Cart`. The Wishlist page allows authenticated users to view and manage saved products with a responsive card grid. The Cart page allows authenticated users to review and manage items before checkout, including quantity adjustment, item removal, stock warnings, and order summary. Both pages require JWT authentication and provide guest user handling via login alert modals.
 
-- **File Path (Wishlist):** `frontend/src/pages/Wishlist.tsx`
-- **File Path (Cart):** `frontend/src/pages/Cart.tsx`
+- **File Path (Wishlist):** `frontend/src/pages/buyer/Wishlist.tsx`
+- **File Path (Cart):** `frontend/src/pages/buyer/Cart.tsx`
 - **Route (Wishlist):** `/wishlist`
 - **Route (Cart):** `/cart`
 - **Shared Components:** `EmptyState.tsx`, `Skeleton.tsx`, `GuestLoginAlertModal.tsx`
@@ -56,6 +56,13 @@ The Wishlist & Cart module consists of two main screens: `Wishlist` and `Cart`. 
 │  │ ░░░░░░░░░░░░ │ │ ░░░░░░░░░░░░ │ │ ░░░░░░░░░░░░ │     │
 │  │ ░░░░░░░░░░░░ │ │ ░░░░░░░░░░░░ │ │ ░░░░░░░░░░░░ │     │
 │  └──────────────┘ └──────────────┘ └──────────────┘     │
+│                                                         │
+│  [F] GUEST LOGIN ALERT MODAL (conditional)              │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │ Log In Required                                   │  │
+│  │ Please log in to add items to your wishlist.      │  │
+│  │ [Log In] [Cancel]                                 │  │
+│  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -82,7 +89,7 @@ The Wishlist & Cart module consists of two main screens: `Wishlist` and `Cart`. 
 │  │ └────────────────────────┘ │ │                   │   │
 │  │ ┌────────────────────────┐ │ │ Continue Shopping │   │
 │  │ │ [I] Cart Item 2        │ │ │                   │   │
-│  │ │ ...                    │ │ │ [K] Clear All     │   │
+│  │ │ ...                    │ │ │                   │   │
 │  │ └────────────────────────┘ │ │                   │   │
 │  │                            │ └───────────────────┘   │
 │  └────────────────────────────┘                         │
@@ -100,13 +107,6 @@ The Wishlist & Cart module consists of two main screens: `Wishlist` and `Cart`. 
 │  │ Please log in to add items to your cart.          │  │
 │  │ [Log In] [Cancel]                                 │  │
 │  └───────────────────────────────────────────────────┘  │
-│                                                         │
-│  [N] CLEAR ALL CONFIRMATION DIALOG (conditional)        │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │ Clear Cart?                                       │  │
-│  │ This will remove all items from your cart.        │  │
-│  │ [Clear All] [Cancel]                              │  │
-│  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -117,15 +117,15 @@ The Wishlist & Cart module consists of two main screens: `Wishlist` and `Cart`. 
 ### 3.1 Cart Quantity Validation Schema
 
 ```typescript
-// frontend/src/features/cart/schemas/cart.schema.ts
+// frontend/src/features/buyer/cart/schemas/cart.schema.ts
 import { z } from 'zod';
 
 export const updateQuantitySchema = z.object({
   quantity: z
-    .number({ invalid_type_error: 'Quantity must be a whole number' })
-    .int('Quantity must be a whole number')
-    .min(1, 'Quantity must be at least 1')
-    .max(99, 'Quantity cannot exceed 99'),
+    .number({ invalid_type_error: 'cart.quantity.invalid' })
+    .int('cart.quantity.invalid')
+    .min(1, 'cart.quantity.min')
+    .max(99, 'cart.quantity.max'),
 });
 
 export type UpdateQuantityFormData = z.infer<typeof updateQuantitySchema>;
@@ -134,7 +134,7 @@ export type UpdateQuantityFormData = z.infer<typeof updateQuantitySchema>;
 ### 3.2 Cart Quantity Hook
 
 ```typescript
-// frontend/src/features/cart/hooks/useCartQuantity.ts
+// frontend/src/features/buyer/cart/hooks/useCartQuantity.ts
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateQuantitySchema, type UpdateQuantityFormData } from '../schemas/cart.schema';
@@ -158,23 +158,23 @@ export function useCartQuantity(initialQuantity: number) {
 
 ### 4.1 WishlistItemCard Component
 
-- **File Path:** `frontend/src/features/wishlist/components/WishlistItemCard.tsx`
+- **File Path:** `frontend/src/features/buyer/wishlist/components/WishlistItemCard.tsx`
 - Displays product image, name, price, compare price, stock status badge, move-to-cart button, remove button
 - Optimistic UI: heart icon toggles immediately on click
 - Out of stock: disables move-to-cart button, shows unavailable text
 
 ### 4.2 CartItemRow Component
 
-- **File Path:** `frontend/src/features/cart/components/CartItemRow.tsx`
+- **File Path:** `frontend/src/features/buyer/cart/components/CartItemRow.tsx`
 - Displays product image, name, unit price, quantity stepper (minus/input/plus), item subtotal, stock warning badge, remove button
 - Optimistic UI: quantity changes and removal update immediately
 - Quantity validation: rejects values < 1 or > 99 with inline error
 
 ### 4.3 CartSummaryPanel Component
 
-- **File Path:** `frontend/src/features/cart/components/CartSummaryPanel.tsx`
-- Displays subtotal, total items, checkout button, continue shopping link, clear all button
-- Checkout button disabled when `hasOutOfStock = true` or cart is empty
+- **File Path:** `frontend/src/features/buyer/cart/components/CartSummaryPanel.tsx`
+- Displays subtotal, total items, checkout button, continue shopping link
+- Checkout button disabled when `canCheckout = false` or cart is empty
 - Sticky on desktop, below items on mobile
 
 ### 4.4 GuestLoginAlertModal Component
@@ -184,28 +184,21 @@ export function useCartQuantity(initialQuantity: number) {
 - [Log In] navigates to `/login?redirect={currentPath}`
 - Closes on ESC key or clicking outside
 
-### 4.5 ClearCartConfirmDialog Component
+### 4.5 QuantityStepper Component
 
-- **File Path:** `frontend/src/features/cart/components/ClearCartConfirmDialog.tsx`
-- Confirmation dialog: title, message, [Clear All] button (destructive), [Cancel] button
-- [Clear All] triggers `DELETE /api/v1/cart`
-- Closes on ESC key or clicking outside
-
-### 4.6 QuantityStepper Component
-
-- **File Path:** `frontend/src/features/cart/components/QuantityStepper.tsx`
+- **File Path:** `frontend/src/features/buyer/cart/components/QuantityStepper.tsx`
 - Minus button, quantity input (number), plus button
 - Minus disabled when quantity = 1
 - Plus disabled when quantity >= stock_quantity
 - Direct input validates on blur
 
-### 4.7 EmptyState Component
+### 4.6 EmptyState Component
 
 - **File Path:** `frontend/src/components/common/EmptyState.tsx`
 - Variants: `wishlist`, `cart`
 - Props: `title`, `message`, `actionLabel`, `actionHref`
 
-### 4.8 Skeleton Component
+### 4.7 Skeleton Component
 
 - **File Path:** `frontend/src/components/ui/skeleton.tsx`
 - Variants: `card` (wishlist), `row` (cart)
@@ -281,23 +274,13 @@ export function useCartQuantity(initialQuantity: number) {
   3. On success: update item count, update summary panel, update cart badge.
   4. On failure: revert removal, show error toast.
 
-### 5.8 Clear All Cart Items
-
-- **Button Type:** `button` (destructive/ghost)
-- **Action:**
-  1. Show `ClearCartConfirmDialog`.
-  2. If confirmed: Optimistic UI clears all items, shows empty state.
-  3. `DELETE /api/v1/cart`
-  4. On success: update cart badge to 0, show success toast.
-  5. On failure: revert cart state, show error toast.
-
-### 5.9 Proceed to Checkout
+### 5.8 Proceed to Checkout
 
 - **Button Type:** `button` (primary)
 - **Action:**
-  1. Verify `hasOutOfStock = false` and cart is not empty.
+  1. Verify `canCheckout = true` and cart is not empty.
   2. Navigate to `/checkout` via React Router.
-  3. If any item is out of stock: button is disabled.
+  3. If checkout is not allowed: button is disabled.
 
 ---
 
@@ -307,9 +290,9 @@ export function useCartQuantity(initialQuantity: number) {
 
 | Status | Badge Text (EN) | Badge Text (JA) | Badge Color |
 |--------|-----------------|-----------------|-------------|
-| `IN_STOCK` | "In Stock" | "在庫あり" | `bg-green-100 text-green-800` |
-| `LOW_STOCK` | "Only {n} left in stock" | "残り{n}個" | `bg-amber-100 text-amber-800` |
-| `OUT_OF_STOCK` | "Out of Stock" | "在庫切れ" | `bg-red-100 text-red-800` |
+| `IN_STOCK` | "In Stock" | "在庫あり" | `bg-status-success/10 text-status-success` |
+| `LOW_STOCK` | "Only {n} left in stock" | "残り{n}個" | `bg-status-warning/10 text-status-warning` |
+| `OUT_OF_STOCK` | "Out of Stock" | "在庫切れ" | `bg-status-danger/10 text-status-danger` |
 
 ---
 
