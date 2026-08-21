@@ -1,6 +1,6 @@
 # DD_AUTH_05 — Business Logic
 
-> **Doc ID:** SKM-DD-AUTH-05 | **Version:** 2.0 | **Status:** Released  
+> **Doc ID:** SKM-DD-AUTH-05 | **Version:** 2.1 | **Status:** Released  
 > **Last Updated:** 2026-08-21
 
 ---
@@ -17,17 +17,17 @@ This document specifies the core business logic, token lifecycle management, and
 
 ### 2.1 register(dto, licenseFile)
 
-1. **Validation:** Handled by RegisterDto with class-validator.
+1. **Validation:** Handled by RegisterDto with class-validator. Includes conditional shopName check.
 2. **Logic:**
    - Check email uniqueness in `users` table
-   - If `dto.role === 'merchant'`, validate license file (PDF, named license.pdf, max 10MB)
+   - If `dto.role === 'merchant'`, validate shop name (not empty, max 255 chars) and license file (PDF, named license.pdf, max 10MB)
    - Hash password with Argon2id (64MB memory, 3 iterations, 4 threads)
    - Generate UUID (`gen_random_uuid()`) for user ID
    - Upload license file to storage (if merchant)
    - Insert `users` record with `is_active=true`, `email_verified=false`
-   - If `dto.role === 'merchant'`, insert `merchants` record with `license_status='pending'` and set `users.merchant_id = merchants.id` (starts in PENDING state; merchant features stay locked until license is APPROVED)
+   - If `dto.role === 'merchant'`, insert `merchants` record with the provided `shop_name`, `license_status='pending'`, and set `users.merchant_id = merchants.id` (starts in PENDING state; merchant features stay locked until license is APPROVED)
    - Log `USER_REGISTERED` event
-3. **Transaction Boundaries:** User creation, merchant record creation, and license file upload must be atomic
+3. **Transaction Boundaries:** User creation, merchant record creation (including shop name), and license file upload must be atomic
 
 ### 2.2 login(dto)
 
@@ -322,6 +322,7 @@ const CLEAR_COOKIE_OPTIONS = {
 | `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" |
 | `name` | Required, 1-200 chars | "Name is required" |
 | `role` | Optional, 'buyer' or 'merchant' | "Invalid role" |
+| `shopName` | Required if role=merchant, max 255 chars | "Shop name is required for merchant registration" |
 | `license` | Required if role=merchant, PDF, named license.pdf, max 10MB | Various license errors |
 
 ### 7.2 Login Validation

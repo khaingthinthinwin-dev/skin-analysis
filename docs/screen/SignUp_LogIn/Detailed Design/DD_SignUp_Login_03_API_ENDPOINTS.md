@@ -1,6 +1,6 @@
 # DD_AUTH_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-AUTH-03 | **Version:** 2.0 | **Status:** Released  
+> **Doc ID:** SKM-DD-AUTH-03 | **Version:** 2.1 | **Status:** Released  
 > **Last Updated:** 2026-08-21
 
 ---
@@ -25,6 +25,7 @@ Register a new user account.
   - `email` (string, required, valid email format, max 255 chars)
   - `password` (string, required, min 8 chars, strong password)
   - `role` (enum: 'buyer' | 'merchant', optional, default: 'buyer')
+  - `shopName` (string, optional, required if role = 'merchant', max 255 chars)
 - **File Upload:** `license` (File, optional, PDF only, max 10MB, required if role = 'merchant')
 - **Response:** `201 Created`
   ```json

@@ -1,6 +1,6 @@
 # DD_AUTH_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-AUTH-04 | **Version:** 2.0 | **Status:** Released  
+> **Doc ID:** SKM-DD-AUTH-04 | **Version:** 2.1 | **Status:** Released  
 > **Last Updated:** 2026-08-21
 
 ---
@@ -55,6 +55,11 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'Invalid role' })
   role?: UserRole = UserRole.BUYER;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255, { message: 'Shop name must be 255 characters or less' })
+  shopName?: string;
 }
 ```
 
@@ -360,6 +365,8 @@ export enum AuthErrorCode {
   LICENSE_INVALID_TYPE = 'LICENSE_INVALID_TYPE',
   LICENSE_INVALID_NAME = 'LICENSE_INVALID_NAME',
   LICENSE_TOO_LARGE = 'LICENSE_TOO_LARGE',
+  SHOP_NAME_REQUIRED = 'SHOP_NAME_REQUIRED',
+  SHOP_NAME_TOO_LONG = 'SHOP_NAME_TOO_LONG',
   RESET_TOKEN_INVALID = 'RESET_TOKEN_INVALID',
   RESET_TOKEN_EXPIRED = 'RESET_TOKEN_EXPIRED',
   RESET_TOKEN_USED = 'RESET_TOKEN_USED',

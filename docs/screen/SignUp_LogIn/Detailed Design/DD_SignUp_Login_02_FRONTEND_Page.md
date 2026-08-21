@@ -1,6 +1,6 @@
 # DD_AUTH_02 — Frontend Page (Login / Register / Password Reset)
 
-> **Doc ID:** SKM-DD-AUTH-02 | **Version:** 2.0 | **Status:** Released  
+> **Doc ID:** SKM-DD-AUTH-02 | **Version:** 2.1 | **Status:** Released  
 > **Last Updated:** 2026-08-21
 
 ---
@@ -83,6 +83,9 @@ Both pages use a centered card layout with the Cosmetics Finder branding. The de
 │  │  │ I am a:                                  │    │  │
 │  │  │ (o) Buyer                                │    │  │
 │  │  │ ( ) Merchant                             │    │  │
+│  │  │                                          │    │  │
+│  │  │ [Shop Name - Merchant Only]              │    │  │
+│  │  │ [Shop Name Input]                        │    │  │
 │  │  │                                          │    │  │
 │  │  │ [Business License - Merchant Only]       │    │  │
 │  │  │ [Drag & Drop or Click to Upload]         │    │  │
@@ -249,6 +252,7 @@ export function useRegisterForm() {
       password: '',
       confirmPassword: '',
       role: 'buyer',
+      shopName: '',
       license: undefined,
       agreeToTerms: false,
     },
@@ -326,6 +330,7 @@ export const registerSchema = z.object({
     .regex(/[@$!%*?&]/, 'Must contain at least 1 special character'),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
   role: z.enum(['buyer', 'merchant'], { required_error: 'Please select a role' }),
+  shopName: z.string().max(255).optional(),
   license: z.instanceof(File).optional(),
   agreeToTerms: z.literal(true, {
     errorMap: () => ({ message: 'You must agree to the Terms of Service' }),
@@ -334,6 +339,9 @@ export const registerSchema = z.object({
   message: 'Passwords do not match',
   path: ['confirmPassword'],
 }).refine(
+  (data) => data.role !== 'merchant' || (data.shopName && data.shopName.trim().length >= 1),
+  { message: 'Shop name is required for merchant registration', path: ['shopName'] }
+).refine(
   (data) => data.role !== 'merchant' || data.license instanceof File,
   { message: 'Business license is required for merchant registration', path: ['license'] }
 );
@@ -377,9 +385,9 @@ export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 - **File Path:** `frontend/src/features/auth/components/RegisterForm.tsx`
 - Uses `useRegisterForm` hook
-- Renders all registration fields with conditional license upload
+- Renders all registration fields with conditional shop name and license upload
 - Shows PasswordStrengthIndicator component
-- Shows LicenseUpload component only when role = 'merchant'
+- Shows Shop Name field and LicenseUpload component only when role = 'merchant'
 
 ### 4.3 PasswordStrengthIndicator Component
 
@@ -441,9 +449,9 @@ export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 - **Button Type:** `submit`
 - **Validation:** Uses Zod registerSchema
 - **Action:**
-  1. If role = merchant, validate license file (PDF, named license.pdf, max 10MB)
-  2. Call `authService.register(formData)`
-  3. If role = merchant, upload license file via `authService.uploadLicense(userId, file)` (creates `merchants` record with `license_status='pending'`)
+  1. If role = merchant, validate shop name (1-255 characters) and license file (PDF, named license.pdf, max 10MB)
+  2. Call `authService.register(formData)` (includes name, email, password, role, and shopName/license if merchant)
+  3. If role = merchant, upload license file and map shop name via `authService.register` or `authService.uploadLicense` (creates `merchants` record with shop name and `license_status='pending'`)
   4. Show success toast: "Account created! Please sign in."
   5. Redirect to `/login` with success message
 
@@ -490,6 +498,8 @@ The Register form requires role options (hardcoded):
 |-------|------------|------------|-------------|
 | `buyer` | Buyer | 購入者 | Browse products, AI analysis, purchase |
 | `merchant` | Merchant | 出品者 | Sell skincare products on the marketplace |
+
+*Note: Admin and Super Admin roles cannot self-register; they are system-seeded or created/provisioned by an Admin/Super Admin.
 
 ---
 

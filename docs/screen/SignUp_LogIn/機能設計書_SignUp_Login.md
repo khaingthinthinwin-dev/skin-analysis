@@ -10,9 +10,9 @@
 | **Target Screen** | Sign-up / Login / Password Reset (新規登録 / ログイン / パスワード再設定) |
 | **Subsystem** | Authentication — User Registration, Session Management & Password Recovery |
 | **Function ID** | FN-AUTH-001 |
-| **Version** | 4.0 |
+| **Version** | 4.1 |
 | **Created** | 2026-08-04 |
-| **Last Updated** | 2026-08-20 |
+| **Last Updated** | 2026-08-21 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -28,6 +28,7 @@
 | 3.0 | 2026-08-05 | Software Architect | Added merchant license file upload feature. When role = merchant, user must upload business license PDF (license.pdf, max 10MB). Includes use case, business rules, validation, and API changes. |
 | 3.1 | 2026-08-17 | Software Architect | Aligned with REQUIREMENT_SPEC v1.5 / DATABASE_SPEC v2.0: UUID primary keys, `merchants` table with license approval workflow (`license_status`), `users.merchant_id`, `super_admin` role, Argon2 password hashing. |
 | 4.0 | 2026-08-20 | Software Architect | Added Forgot Password / Reset Password features: new use cases (UC-AUTH-006/007), new screens (/forgot-password, /reset-password), new API endpoints, `password_reset_tokens` table integration, rate limiting (3/hour), 24-hour token expiry, single-use tokens. Admin registration disabled (login only). |
+| 4.1 | 2026-08-21 | Software Architect | Aligned with DATABASE_SPEC v2.1: added conditional shopName (店舗名) required for merchant registration, included super_admin in registration rules, and consolidated /api/v1 API prefixing. |
 
 ---
 
@@ -120,6 +121,7 @@ This screen is responsible for the following core functional areas:
 | `password` | User Input | Password for registration or login |
 | `name` | User Input | Full name for registration |
 | `role` | User Input | Role selection (buyer/merchant) for registration |
+| `shopName` | User Input | Shop name for merchant registration (merchant only) |
 | `license` | File Upload | Business license PDF (merchant only, max 10MB) |
 | `refreshToken` | HTTP Cookie | Refresh token for session operations |
 | `resetToken` | URL Parameter | Password reset token from email link |
@@ -301,7 +303,8 @@ This screen is responsible for the following core functional areas:
 | BR-AUTH-022 | License File Name | License file must be named 'license.pdf' (case-insensitive). | Backend (file validation) + Frontend (file name check) |
 | BR-AUTH-023 | License File Size | License file must not exceed 10MB. | Backend (file validation) + Frontend (size check) |
 | BR-AUTH-024 | Merchant License Status | Merchant registration creates `merchants` record with `license_status='pending'`; merchant features stay locked until admin sets `license_status='approved'`. | Backend (merchant creation, approval workflow) |
-| BR-AUTH-025 | Admin Registration Disabled | Admin accounts cannot be created via registration. Admin accounts are system-seeded only. | Backend (role validation) + Frontend (role options) |
+| BR-AUTH-025 | Admin Registration Disabled | Admin and Super Admin accounts cannot be created via registration. Admin/Super Admin accounts are system-seeded or created by Admin/Super Admin. | Backend (role validation) + Frontend (role options) |
+| BR-AUTH-026 | Merchant Shop Name Required | When role = 'merchant', shop name input (`shopName`) is mandatory (1-255 characters). | Backend (DTO validation) + Frontend (conditional validation) |
 
 ### 4.2 Login Rules
 
@@ -491,8 +494,8 @@ This screen is responsible for the following core functional areas:
 | **Trigger** | "Create Account" button click on Register form |
 | **API Endpoint** | `POST /api/v1/auth/register` |
 | **Request Content-Type** | `multipart/form-data` (when license file attached) or `application/json` |
-| **Pre-Submission Validation** | Full field validation (Zod schema). If role = merchant, license file validation. |
-| **Processing Steps** | 1. Validate email format and uniqueness. 2. Validate password strength. 3. Validate role is 'buyer' or 'merchant' (admin not allowed). 4. If role = merchant, validate license file (PDF, named license.pdf, ≤10MB). 5. Hash password with Argon2. 6. Upload license file to storage. 7. Create `users` record. 8. If role = merchant, create `merchants` record with `license_status='pending'` and link `users.merchant_id`. 9. Return user DTO (exclude password). 10. Log USER_REGISTERED event. |
+| **Pre-Submission Validation** | Full field validation (Zod schema). If role = merchant, shop name (1-255 chars) and license file validation. |
+| **Processing Steps** | 1. Validate email format and uniqueness. 2. Validate password strength. 3. Validate role is 'buyer' or 'merchant' (admin/super_admin not allowed). 4. If role = merchant, validate shop name (not empty, max 255 chars) and license file (PDF, named license.pdf, ≤10MB). 5. Hash password with Argon2. 6. Upload license file to storage. 7. Create `users` record. 8. If role = merchant, create `merchants` record with the provided `shop_name`, `license_status='pending'`, and link `users.merchant_id`. 9. Return user DTO (exclude password). 10. Log USER_REGISTERED event. |
 | **Success Response** | 201 Created with user data (including licenseUrl for merchants) |
 | **Post-Action** | Redirect to login page |
 
@@ -581,6 +584,7 @@ This screen is responsible for the following core functional areas:
 | `password` | Password | パスワード | VARCHAR(128) | Yes | Input (password) | `@MinLength(8)`, `@MaxLength(128)`, regex |
 | `name` | Full Name | 氏名 | VARCHAR(200) | Yes | Input (text) | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(200)` |
 | `role` | Role | ロール | ENUM | No | Radio Group | `@IsIn(['buyer', 'merchant'])`, default 'buyer' |
+| `shopName` | Shop Name | 店舗名 | VARCHAR(255) | Conditional | Input (text) | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(255)` (when role = merchant) |
 | `license` | Business License | 事業許可書 | File (PDF) | Conditional | File Input | MIME: application/pdf, MaxSize: 10MB, FileName: license.pdf |
 
 ### 7.2 Input Specification — Login (入力定義)
@@ -654,6 +658,7 @@ This screen is responsible for the following core functional areas:
 | `email` | Required, valid email format, max 255 chars | "Email is required" / "Invalid email address" | "メールアドレスは必須です" / "メールアドレスが無効です" |
 | `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" / "Password must contain uppercase, lowercase, number, and special character" | "パスワードは8文字以上である必要があります" / "パスワードには大文字、小文字、数字、特殊文字を含めてください" |
 | `license` | Required when role = merchant. PDF only, named license.pdf, max 10MB | "Business license is required for merchant registration" / "File must be PDF format" / "File must be named license.pdf" / "File size must not exceed 10MB" | " Merchant登録には事業許可書が必要です" / "ファイルはPDF形式である必要があります" / "ファイル名はlicense.pdfである必要があります" / "ファイルサイズは10MB以下である必要があります" |
+| `shopName` | Required when role = merchant. 1-255 characters | "Shop name is required for merchant registration" / "Shop name must not exceed 255 characters" | "Merchant登録には店舗名が必要です" / "店舗名は255文字以下である必要があります" |
 | `name` | Required, 1-200 chars | "Name is required" | "名前は必須です" |
 | `role` | Optional, must be 'buyer' or 'merchant' | "Invalid role" | "無効なロールです" |
 
@@ -719,6 +724,7 @@ Minimum Requirements:
 | `400` | `VALIDATION_ERROR` | License file not named license.pdf | "File must be named license.pdf" |
 | `400` | `VALIDATION_ERROR` | License file exceeds 10MB | "File size must not exceed 10MB" |
 | `400` | `VALIDATION_ERROR` | License file missing for merchant | "Business license is required for merchant registration" |
+| `400` | `VALIDATION_ERROR` | Shop name missing for merchant | "Shop name is required for merchant registration" |
 | `409` | `CONFLICT` | Email already exists | "Email already registered" with link to login |
 | `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded | "Too many attempts. Please wait {seconds} seconds" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
@@ -775,13 +781,13 @@ Minimum Requirements:
 
 | Endpoint | Access Level | Description |
 |----------|-------------|-------------|
-| `POST /auth/register` | Public | No authentication required |
-| `POST /auth/login` | Public | No authentication required |
-| `POST /auth/forgot-password` | Public | No authentication required |
-| `POST /auth/reset-password` | Public | No authentication required (token in body) |
-| `POST /auth/refresh` | Cookie-based | Requires valid refresh token in cookie |
-| `POST /auth/logout` | Protected | Requires valid access token |
-| `GET /auth/verify` | Protected | Requires valid access token |
+| `POST /api/v1/auth/register` | Public | No authentication required |
+| `POST /api/v1/auth/login` | Public | No authentication required |
+| `POST /api/v1/auth/forgot-password` | Public | No authentication required |
+| `POST /api/v1/auth/reset-password` | Public | No authentication required (token in body) |
+| `POST /api/v1/auth/refresh` | Cookie-based | Requires valid refresh token in cookie |
+| `POST /api/v1/auth/logout` | Protected | Requires valid access token |
+| `GET /api/v1/auth/verify` | Protected | Requires valid access token |
 
 ### 10.3 Role-Based Access
 

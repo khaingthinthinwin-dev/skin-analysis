@@ -1,6 +1,6 @@
 # DD_AUTH_01 — Module Overview
 
-> **Doc ID:** SKM-DD-AUTH-01 | **Version:** 2.0 | **Status:** Released  
+> **Doc ID:** SKM-DD-AUTH-01 | **Version:** 2.1 | **Status:** Released  
 > **Last Updated:** 2026-08-21
 
 ---
@@ -15,8 +15,8 @@ The **Authentication Module** (認証モジュール) is the gateway for all use
 
 | ID | Use Case | Description |
 |---|----------|-------------|
-| UC-AUTH-01 | Register New Account | Create a new user account with email, password, name, and role selection (Buyer/Merchant). IDs use UUID primary keys. |
-| UC-AUTH-01A | Upload Merchant License | When registering as Merchant, upload business license PDF (license.pdf, max 10MB). Creates a `merchants` record with `license_status='pending'`; merchant features stay locked until license is APPROVED. |
+| UC-AUTH-01 | Register New Account | Create a new user account with email, password, name, and role selection (Buyer/Merchant). If role is merchant, a shop name is also collected. IDs use UUID primary keys. |
+| UC-AUTH-01A | Upload Merchant License | When registering as Merchant, input shop name and upload business license PDF (license.pdf, max 10MB). Creates a `merchants` record with `license_status='pending'`; merchant features stay locked until license is APPROVED. |
 | UC-AUTH-02 | Login with Credentials | Authenticate with email and password, receive JWT access token (15min) and refresh token (7 days). |
 | UC-AUTH-03 | Refresh Access Token | Automatically refresh expired access token using refresh token cookie with rotation. |
 | UC-AUTH-04 | Logout | Terminate session by blacklisting access token in Redis and revoking refresh token. |
@@ -130,7 +130,6 @@ stateDiagram-v2
 | `merchants` | Store merchant business info and license status | INSERT (register, merchant only) |
 | `refresh_tokens` | Store hashed refresh tokens with family tracking | INSERT (login), SELECT (refresh), UPDATE (revoke) |
 | `password_reset_tokens` | Store hashed password reset tokens with expiry | INSERT (forgot password), SELECT (reset password), UPDATE (mark used) |
-| `user_roles` | Master lookup for role validation | SELECT (registration validation) |
 
 ---
 

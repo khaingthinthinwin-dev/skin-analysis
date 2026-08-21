@@ -4,9 +4,9 @@
 **Target Screen:** Authentication (Sign-up / Login / Password Reset)  
 **Subsystem:** User Authentication  
 **Function ID:** FN-AUTH-001  
-**Version:** 4.0  
+**Version:** 4.1  
 **Created:** 2026-08-04  
-**Last Updated:** 2026-08-20  
+**Last Updated:** 2026-08-21  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -24,6 +24,7 @@
 | 3.0 | 2026-08-05 | Senior System Engineer | Added conditional license file upload for Merchant role. When "Merchant" radio is selected, a PDF file upload field appears for business license (license.pdf). Includes validation rules, file constraints, and event specifications. |
 | 3.1 | 2026-08-17 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 / DATABASE_SPEC v2.0: UUID primary keys, license stored in `merchants.business_license_url` with `license_status='pending'` approval workflow, Argon2 password hashing, role VARCHAR(20). |
 | 4.0 | 2026-08-20 | Senior System Engineer | Added Forgot Password (`/forgot-password`) and Reset Password (`/reset-password`) screens. New item definitions, event specifications, validation error mappings, API response mappings, i18n keys, and test cases. |
+| 4.1 | 2026-08-21 | Senior System Engineer | Aligned with DATABASE_SPEC v2.1: added conditional shopName (店舗名) required for merchant registration, included super_admin in role remarks, and updated Register Page layouts/operations. |
 
 ### 1.2 Related Documents
 
@@ -136,7 +137,9 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 │              │       + Show/Hide Toggle    │            │
 │              │   [F5] Role Selection       │            │
 │              │       (Buyer / Merchant)    │            │
-│              │   [F6] License Upload (cond.)│ ← NEW    │
+│              │   [F8] Shop Name Input (cond.)│ ← NEW    │
+│              │       (Shown if Merchant)   │            │
+│              │   [F6] License Upload (cond.)│           │
 │              │       (Shown if Merchant)   │            │
 │              │   [F7] Submit Button        │            │
 │              │                             │            │
@@ -364,9 +367,11 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | 23 | `txtConfirmPassword` | Confirm Password Input | Input (`password`) | String(128) | Mandatory | Empty. Placeholder: "Confirm your password" | Must match `txtRegPassword`. | — | AutoComplete: `new-password`. Toggleable show/hide. |
 | 24 | `btnShowConfirmPassword` | Show/Hide Password | Icon Button | — | — | Visible. Eye icon. | — | — | Toggles `txtConfirmPassword` type. |
 | 25 | `lblRoleSelection` | Role Selection Label | Static Label (`<label>`) | String | — | Text: "I am a:" | — | Hardcoded UI text | Associated with `rdoRole` group. |
-| 26 | `rdoRole` | Role Selection | Radio Group | Enum | Mandatory | Default: `buyer` | Options: buyer, merchant | `users.role` | `buyer`: Browse and purchase. `merchant`: Sell products. Register allows only buyer/merchant; admin/super_admin are provisioned, not self-registered. |
+| 26 | `rdoRole` | Role Selection | Radio Group | Enum | Mandatory | Default: `buyer` | Options: buyer, merchant | `users.role` | `buyer`: Browse and purchase. `merchant`: Sell products. Register allows only buyer/merchant; Admin/Super Admin accounts are system-seeded or created by Admin/Super Admin. |
 | 27 | `rdoBuyer` | Buyer Radio | Radio Button | — | — | Selected by default | Value: `buyer` | — | Label: "Buyer — Browse and purchase products" |
 | 28 | `rdoMerchant` | Merchant Radio | Radio Button | — | — | Unselected | Value: `merchant` | — | Label: "Merchant — Sell skincare products" |
+| 28A | `lblShopName` | Shop Name Label | Static Label (`<label>`) | String | — | Visible only when `rdoMerchant` selected. Text: "Shop Name" | — | Hardcoded UI text | Associated with `txtShopName` via `htmlFor`/`id`. Required indicator: red asterisk `*`. |
+| 28B | `txtShopName` | Shop Name Input | Input (`text`) | String(255) | Conditional | Hidden by default. Visible when `rdoMerchant` selected. Placeholder: "Enter your shop name" | MaxLength: 255. MinLength: 1. | `merchants.shop_name` | AutoComplete: `organization`. Required when registering as merchant. |
 | 29 | `btnRegister` | Create Account Button | Button (`submit`, `default`) | — | — | Visible. Text: "Create Account" | — | — | Full width. Loading: Spinner + "Creating account...". Disabled when loading. |
 | 30 | `lblHasAccount` | Login Prompt | Static Label | String | — | Text: "Already have an account?" | — | — | Footer text. |
 | 31 | `lnkSignIn` | Login Link | Link (`<Link>`) | String | — | Text: "Sign in" | — | — | Navigates to `/login`. |
@@ -433,13 +438,13 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 ### 5.2 Register Form Submit (`btnRegister` onClick)
 - **Trigger:** User clicks "Create Account" button.
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** Strict validation — all fields valid, passwords match, role selected.
-  2. **Backend Dispatch:** `POST /api/v1/auth/register` with `{ name, email, password, role }`.
-  3. **Backend Execution:** Create user record with hashed password. Set `emailVerified = false`.
+  1. **Client-Side Pre-Check:** Strict validation — all fields valid, passwords match, role selected. If role = merchant, validate `txtShopName` (not empty, max 255 chars) and license PDF uploaded.
+  2. **Backend Dispatch:** `POST /api/v1/auth/register` with `{ name, email, password, role }` (and includes `{ shopName }` + license file in multi-part form if role = merchant).
+  3. **Backend Execution:** Create user record with hashed password. If role = merchant, create merchant record with shop name and `license_status = 'pending'`. Set `emailVerified = false`.
   4. **Post-Execution UI:** Show success toast. Navigate to `/login`.
 - **Exception Handling:**
   - `AUTH_007` (409): Display "Email already registered" inline on email field.
-  - `VAL_001` (400): Display field-specific validation errors.
+  - `VAL_001` (400): Display field-specific validation errors (e.g., missing shop name).
   - `AUTH_006` (429): Display rate limit message.
 
 ### 5.3 Show/Hide Password Toggle (`btnShowPassword` / `btnShowRegPassword` / `btnShowConfirmPassword` onClick)
@@ -478,13 +483,13 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 - **Trigger:** User selects a different role (Buyer or Merchant).
 - **Processing Logic:**
   1. **If `buyer` selected:**
-     - Hide `lblLicenseUpload`, `uplLicense`, `lblLicenseFileName`, `btnRemoveLicense`, `lblLicenseHelper`.
-     - Clear any uploaded license file.
-     - Remove license file requirement from validation.
+     - Hide `lblShopName`, `txtShopName`, `lblLicenseUpload`, `uplLicense`, `lblLicenseFileName`, `btnRemoveLicense`, `lblLicenseHelper`.
+     - Clear `txtShopName` and any uploaded license file.
+     - Remove shop name and license file requirement from validation.
   2. **If `merchant` selected:**
-     - Show `lblLicenseUpload`, `uplLicense`, `lblLicenseHelper`.
-     - Enable license file upload zone.
-     - Add license file requirement to strict validation.
+     - Show `lblShopName`, `txtShopName`, `lblLicenseUpload`, `uplLicense`, `lblLicenseHelper`.
+     - Enable shop name input and license file upload zone.
+     - Add shop name requirement and license file requirement to strict validation.
 - **Exception Handling:** None applicable.
 
 ### 5.8 License File Upload (`uplLicense` onChange / onDrop)
@@ -589,6 +594,8 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | **VAL-AUTH-031** | `uplLicense` | File exceeds 10MB | Inline error on upload zone | "File exceeds maximum size of 10 MB" | "ファイルサイズが10MBを超えています" |
 | **VAL-AUTH-032** | `uplLicense` | Filename is not license.pdf | Inline error on upload zone | "File must be named license.pdf" | "ファイル名はlicense.pdfである必要があります" |
 | **VAL-AUTH-033** | `uplLicense` | No file uploaded when role is merchant | Inline error on upload zone | "Business license is required for merchant registration" | "出品者登録には事業許可書が必要です" |
+| **VAL-AUTH-034** | `txtShopName` | Shop name is empty when role is merchant | Red border. Text below field. | "Shop name is required for merchant registration" | "出品者登録には店舗名が必要です" |
+| **VAL-AUTH-035** | `txtShopName` | Shop name exceeds 255 characters | Red border. Text below field. | "Shop name must not exceed 255 characters" | "店舗名は255文字以内にしてください" |
 | **AUTH_007** | `txtRegEmail` | Email already exists (409 response) | Red border + inline text | "Email already registered" | "メールアドレスは既に登録されています" |
 | **AUTH_006** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
 | **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
@@ -635,6 +642,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | `txtRegEmail` | `email` | `email` | `users` | VARCHAR(255) UNIQUE |
 | `txtRegPassword` | `password` | `password_hash` | `users` | VARCHAR(255) (Argon2 hash) |
 | `rdoRole` | `role` | `role` | `users` | VARCHAR(20) (buyer, merchant, admin, super_admin) |
+| `txtShopName` | `shopName` | `shop_name` | `merchants` | VARCHAR(255) |
 | `uplLicense` | `license` | `business_license_url` | `merchants` | TEXT (nullable) — set with `license_status='pending'` on registration |
 
 ---

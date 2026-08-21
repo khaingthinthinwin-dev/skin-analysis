@@ -1,6 +1,6 @@
 # DD_AUTH_06 — Test Specification
 
-> **Doc ID:** SKM-DD-AUTH-06 | **Version:** 2.0 | **Status:** Released  
+> **Doc ID:** SKM-DD-AUTH-06 | **Version:** 2.1 | **Status:** Released  
 > **Last Updated:** 2026-08-21
 
 ---
@@ -20,7 +20,9 @@ Mock dependencies: `PrismaService`, `RedisService`, `JwtService`, `ConfigService
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
 | **register** | Valid data, no license (buyer) | Creates user, hashes password, returns user DTO with merchantId/licenseStatus null |
-| **register** | Valid data with merchant role and license | Creates user + merchants record with license_status='pending', uploads license, returns user with licenseUrl and licenseStatus='pending' |
+| **register** | Valid data with merchant role, shop name and license | Creates user + merchants record (with shop_name) with license_status='pending', uploads license, returns user with licenseUrl and licenseStatus='pending' |
+| **register** | Merchant role, empty shop name | Throws `BadRequestException` (400) |
+| **register** | Merchant role, shop name too long (>255 chars) | Throws `BadRequestException` (400) |
 | **register** | Email already exists | Throws `ConflictException` (409) |
 | **register** | Invalid license file type (not PDF) | Throws `BadRequestException` (415) |
 | **register** | License file named incorrectly | Throws `BadRequestException` (400) |
@@ -103,8 +105,10 @@ Using Vitest + React Testing Library.
 | Weak password | Shows password strength indicator as "Weak" |
 | Strong password | Shows password strength indicator as "Very Strong" with all checks green |
 | Password mismatch | Shows "Passwords do not match" error on confirm field |
-| Select Merchant role | License upload field appears |
-| Select Buyer role | License upload field hidden |
+| Select Merchant role | Shop name input and license upload field appear |
+| Select Buyer role | Shop name input and license upload field hidden |
+| Empty shop name when merchant role | Shows "Shop name is required for merchant registration" error |
+| Shop name too long (>255 chars) | Shows "Shop name must not exceed 255 characters" error |
 | Valid license upload | Shows filename and remove button |
 | Invalid license type | Shows "License must be a PDF file" error |
 | License too large | Shows "License must not exceed 10MB" error |
@@ -182,7 +186,7 @@ Using Vitest + React Testing Library.
 | Scenario ID | Flow Description |
 |-------------|------------------|
 | **E2E-AUTH-01** | **Happy Path: Register and Login**<br>1. Navigate to /register.<br>2. Fill name, email, password, confirm password.<br>3. Select Buyer role.<br>4. Check terms checkbox.<br>5. Click "Create Account".<br>6. Verify success toast and redirect to /login.<br>7. Enter email and password.<br>8. Click "Sign In".<br>9. Verify redirect to home page (/). |
-| **E2E-AUTH-02** | **Merchant Registration with License**<br>1. Navigate to /register.<br>2. Fill name, email, password, confirm password.<br>3. Select Merchant role.<br>4. Upload license.pdf file.<br>5. Check terms checkbox.<br>6. Click "Create Account".<br>7. Verify success toast and redirect to /login. |
+| **E2E-AUTH-02** | **Merchant Registration with License**<br>1. Navigate to /register.<br>2. Fill name, email, password, confirm password.<br>3. Select Merchant role.<br>4. Fill shop name input.<br>5. Upload license.pdf file.<br>6. Check terms checkbox.<br>7. Click "Create Account".<br>8. Verify success toast and redirect to /login. |
 | **E2E-AUTH-03** | **Login and Logout**<br>1. Navigate to /login.<br>2. Enter valid credentials.<br>3. Click "Sign In".<br>4. Verify redirect to home page.<br>5. Click user menu, select "Logout".<br>6. Verify redirect to /login.<br>7. Try to access / (protected route).<br>8. Verify redirect to /login. |
 | **E2E-AUTH-04** | **Token Refresh**<br>1. Login with valid credentials.<br>2. Wait 15+ minutes (or mock token expiry).<br>3. Make API request.<br>4. Verify automatic token refresh occurs.<br>5. Verify request succeeds with new token. |
 | **E2E-AUTH-05** | **Invalid Login Attempts**<br>1. Navigate to /login.<br>2. Enter wrong password 5 times.<br>3. Verify "Too many attempts" error message.<br>4. Verify login form is disabled for 5 minutes. |
