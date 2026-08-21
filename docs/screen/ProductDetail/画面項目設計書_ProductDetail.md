@@ -4,9 +4,9 @@
 **Target Screen:** Product Detail (商品詳細)  
 **Subsystem:** Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry  
 **Function ID:** FN-PROD-001  
-**Version:** 1.7  
+**Version:** 1.9  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-18  
+**Last Updated:** 2026-08-21  
 **Author:** Senior System Engineer  
 **Review Status:** Draft (審査中)  
 **Classification:** Internal — Engineering Division
@@ -27,15 +27,17 @@
 | 1.5 | 2026-08-18 | Senior System Engineer | Aligned with `SKM-REQ-001` v1.10: Updated cross-reference versions; added `review_reports` table reference for review moderation; added review reporting test cases and i18n keys; verified all field mappings against latest database specification. |
 | 1.6 | 2026-08-18 | Senior System Engineer | Final verification pass: Confirmed all item definitions, database field mappings, error codes, i18n keys, and API response structures are aligned with SKM-REQ-001 v1.10, SKM-DBS-001 v2.2, SKM-DEV-001 v2.1, and SKM-FDS-PROD-001 v5.1. All review reporting requirements (SYS-REV-001~008) verified and properly implemented. Excluded cart and wishlist sections per team ownership rules. |
 | 1.7 | 2026-08-18 | Senior System Engineer | Added clear team ownership disclaimers to all cart & wishlist sections (4.4, 5.4, 5.5, 6.3, 6.6, 7.3). Added ℹ️ note in Section 2.3 identifying items owned by Cart Team and Wishlist Team. Document remains comprehensive reference with sections marked as "Reference Only" for cart and wishlist functionality. |
+| 1.8 | 2026-08-21 | Senior System Engineer | Aligned with `SKM-FDS-PROD-001` v6.0, `SKM-DBS-001` v2.4, and `SKM-REQ-001` v2.10: Updated cross-reference versions; added `discount_types` lookup table reference for promotion discount type validation (Rule BR-PROD-018); aligned review list pagination with the functional specification (`limit` max 50, default 10); added `licenseStatus` and `isFeatured` fields to the product detail API response mapping; corrected duplicate section numbering (§10.8 → §10.9). |
+| 1.9 | 2026-08-21 | Senior System Engineer | Added Sidebar Advertisement display per `SKM-REQ-001` v2.10 §5.3/§5.7 ("Product Detail Sidebar" placement) and `SKM-FDS-PROD-001` v7.0: added Section [J] item definitions (items 36–41), load/rotation behavior (§5.11), database mapping (§7.5), API response example (§8.8), i18n keys (§9.19~9.21), shared component (§10.10), and test checklist (§12.8); updated layouts (§3.1) and core functions (§2.3). Flagged open item: `advertisements` table lacks `placement`/`tier` columns (SKM-DEV-001 §13). |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition (v1.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`, `merchants`, `shops`, `carts`, `cart_items`, `review_reports`), UUID primary keys, constraints, merchant/shop relationship. |
+| 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x). |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `order_items`, `merchants`, `shops`, `carts`, `cart_items`, `review_reports`, `discount_types`, `advertisements`, `ad_fee_settings`, `ad_payments`), UUID primary keys, constraints, merchant/shop relationship. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules (buyer-only shopping), design tokens, error responses, shop approval workflow (§12.2.1). |
-| 4 | SKM-FDS-PROD-001 | Functional Specification — Product Detail (v5.1) | `docs/screen/ProductDetail/機能設計書_ProductDetail.md` | Use cases, state transitions, validation rules, error handling. |
+| 4 | SKM-FDS-PROD-001 | Functional Specification — Product Detail (v7.0) | `docs/screen/ProductDetail/機能設計書_ProductDetail.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
 
@@ -65,9 +67,10 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 6. **Add to Cart** ⚠️ — Quantity stepper with atomic stock validation at insertion. [**Cart Team**]
 7. **Wishlist Management** ⚠️ — Add to wishlist with optimistic UI update (removal handled by the dedicated Wishlist screen/module). [**Wishlist Team**]
 8. **Active Promotion Display** — Merchant's active promotions with discount details, validity period, and remaining balance (`max_uses - used_count`).
-9. **Error Handling** — Field-level inline errors, form-level banner, and toast notifications.
-10. **Internationalization** — Full i18n support for EN, JA, MY.
-11. **Responsive Design** — Two-column desktop layout, stacked mobile layout with sticky CTA bar.
+9. **Sidebar Advertisement Display** — Sponsored ads for the `product_sidebar` placement (REQ §5.3): approved, paid, active ads only; max 5 per rotation; auto-rotate every 5s; priority Premium > Standard > Basic. Ad purchase/approval is handled by the Ads module.
+10. **Error Handling** — Field-level inline errors, form-level banner, and toast notifications.
+11. **Internationalization** — Full i18n support for EN, JA, MY.
+12. **Responsive Design** — Two-column desktop layout, stacked mobile layout with sticky CTA bar.
 
 ---
 
@@ -103,6 +106,9 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 │  │                        │   │                               │     │
 │  │                        │   │  [I] ACTIVE PROMOTION (cond.) │     │
 │  │                        │   │                               │     │
+│  │                        │   │  [J] SIDEBAR ADS (cond.)      │     │
+│  │                        │   │       Sponsored slider        │     │
+│  │                        │   │                               │     │
 │  └────────────────────────┘   └───────────────────────────────┘     │
 │                                                                     │
 │  [F] PRODUCT TABS                                                    │
@@ -137,6 +143,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 │                                     │
 │ [E] SOLD BY                         │
 │ [I] ACTIVE PROMOTION (cond.)        │
+│ [J] SIDEBAR ADS (cond.)             │
 │                                     │
 │ [F] PRODUCT TABS                    │
 │ [G] REVIEW FORM / REVIEW LIST       │
@@ -222,7 +229,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 23 | `uplReviewImages` | Review Image Upload | File Upload | File[] (JSON array) | — | Empty | Max 5 images. Accepts JPG/PNG/WebP | `reviews.images` | Optional. Thumbnail previews with remove buttons. |
 | 24 | `btnSubmitReview` | Submit Review Button | Button (`submit`, `primary`) | — | Conditional | Visible only when authenticated as buyer | — | — | Loading: Spinner + "Submitting...". Disabled when not a verified purchase (server enforces). |
 | 25 | `lblLoginPrompt` | Login Prompt | Static Label + Link | String | Conditional | Text: "Sign in to write a review" | — | Hardcoded UI text | Shown when unauthenticated. Link navigates to `/login`. |
-| 26 | `lstReviews` | Review List | Card List | Review DTO[] | — | Skeleton loaders; empty state when no reviews | Paginated: page ≥ 1, limit 1–50 (default 20) | `reviews` + `users` | Ordered by `created_at DESC`. Each card: rating, title, body, images, verified badge, user name/avatar, date. |
+| 26 | `lstReviews` | Review List | Card List | Review DTO[] | — | Skeleton loaders; empty state when no reviews | Paginated: page ≥ 1, limit 1–50 (default 10) | `reviews` + `users` | Ordered by `created_at DESC`. Each card: rating, title, body, images, verified badge, user name/avatar, date. |
 | 27 | `btnLoadMoreReviews` | Load More / Pagination | Button / Pagination | — | Conditional | Shown when `totalPages > 1` | — | `meta` | Loads next page; shows page info `meta.page / meta.totalPages`. |
 
 #### 4.7.1 Review Reporting (レビュー報告)
@@ -247,10 +254,23 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 30 | `cardActivePromotion` | Active Promotion Card | Banner / Card | Promotion DTO | Conditional | Hidden when merchant has no active promotions | — | `promotions` | Shown only for active, in-window, balance > 0 promotions (Rule BR-PROD-018). |
 | 31 | `lblPromoCode` | Coupon Code | Static Label (Badge) | String | Conditional | Text: e.g. "GLOW10" | — | `promotions.code` | Displayed as code badge; click to copy. |
-| 32 | `lblPromoDiscount` | Discount Info | Static Label | String | Conditional | e.g. "10% off" or "¥500 off" | — | `promotions.discount_type`, `promotions.discount_value` | percentage / fixed formatting. |
+| 32 | `lblPromoDiscount` | Discount Info | Static Label | String | Conditional | e.g. "10% off" or "¥500 off" | — | `promotions.discount_type`, `promotions.discount_value` | percentage / fixed formatting. `discount_type` values restricted to the `discount_types` lookup table (Rule BR-PROD-018). |
 | 33 | `lblPromoMinOrder` | Min Order Amount | Static Label | Decimal String | Conditional | Hidden when null | Format: currency | `promotions.min_order_amount` | e.g. "Min. order ¥20.00". |
 | 34 | `lblPromoValidity` | Validity Period | Static Label | String | Conditional | e.g. "2026-08-01 ~ 2026-09-30" | ISO 8601 format | `promotions.starts_at`, `promotions.expires_at` | Displayed in local time. |
 | 35 | `lblPromoBalance` | Remaining Balance | Static Label | Integer / String | Conditional | e.g. "65 left" or "Unlimited" | `max_uses - used_count`; "Unlimited" when `max_uses` is NULL | `promotions.max_uses`, `promotions.used_count` | Balance of 0 → promotion not displayed (Rule BR-PROD-019). |
+
+### 4.10 Section [J]: Sidebar Advertisements (サイドバー広告)
+
+> ℹ️ Ad purchase, payment, and approval are handled by the Ads module (merchant/admin). This section only displays eligible ads per REQ §5.3 display rules and FDS v7.0 rules BR-PROD-020~023.
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 36 | `lstSidebarAds` | Sidebar Advertisement Slider | Ad Slider / Carousel | Advertisement DTO[] | Conditional | Hidden when no eligible ads; skeleton while loading | Max 5 ads per rotation; auto-rotate every 5s; pause on hover/focus | `advertisements` (filtered) | Only `approval_status = 'approved'`, `payment_status = 'completed'`, `is_active = true`, in-window ads for the `product_sidebar` placement (Rule BR-PROD-020/021). Priority Premium > Standard > Basic, round-robin within tier (Rule BR-PROD-022). |
+| 37 | `imgAdCreative` | Advertisement Image | Image (`<img>`) | URL (String) | — | First ad's image; fallback to shop logo when null | Valid image URL | `advertisements.image_url` | Lazy-loaded. Alt text from ad title. |
+| 38 | `lblAdTitle` | Advertisement Title | Static Label | String(255) | Mandatory | — | Max 255 chars | `advertisements.title` | Displayed on each ad card. |
+| 39 | `lblAdAnnouncement` | Announcement Message | Static Label | String(500) | Mandatory | — | Max 500 chars | `advertisements.announcement_message` | Banner announcement text. |
+| 40 | `lnkAdTarget` | Advertisement Link | Link (`<a>`) | URL (String) | — | Whole card clickable when `link_url` present; non-clickable when null | External URL | `advertisements.link_url` | Opens in new tab with `rel="noopener noreferrer nofollow sponsored"` (Rule BR-PROD-023). |
+| 41 | `lblAdShop` | Advertiser Shop Name | Static Label + Badge | String(255) | Mandatory | Text: "Sponsored · {shop name}" | — | `advertisements.shop_id` → `shops.name` | "Sponsored" badge always shown (Rule BR-PROD-023). Shop name links to `/shops/:shopSlug`. |
 
 ---
 
@@ -375,6 +395,19 @@ The Product Detail page is the primary conversion point in the buyer journey. It
   - Login prompt → `/login`
 - **Exception Handling:** None applicable.
 
+### 5.11 Sidebar Advertisement Load & Rotation (`lstSidebarAds`)
+- **Trigger:** Product detail page loads the "Sidebar Advertisements" section.
+- **Processing Logic:**
+  1. `GET /api/v1/products/:slug/advertisements` returns eligible ads only (`approval_status = 'approved'`, `payment_status = 'completed'`, `is_active = true`, within validity window, `product_sidebar` placement — Rules BR-PROD-020/021).
+  2. Render up to 5 ads per rotation, ordered Premium > Standard > Basic with round-robin within tier (Rule BR-PROD-022).
+  3. Auto-rotate every 5 seconds; pause rotation on hover or keyboard focus; resume on leave/blur.
+  4. Each card shows "Sponsored" badge + shop name; clicking navigates to `link_url` in a new tab with `rel="noopener noreferrer nofollow sponsored"` (Rule BR-PROD-023). Shop name navigates to `/shops/:shopSlug`.
+  5. Section hidden entirely when the API returns an empty array.
+- **Exception Handling:**
+  - `404` / `400`: Product not found / invalid slug → section hidden.
+  - Empty result → section hidden entirely.
+  - `NET_ERR`: Section shows skeleton retry.
+
 ---
 
 ## 6. Validation & Error Message Mapping (バリデーション及びエラーメッセージマッピング)
@@ -418,7 +451,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-PROD-030** | `page` | Page < 1 | Banner | "page must not be less than 1" | "ページ番号は1以上である必要があります" |
-| **VAL-PROD-031** | `limit` | Limit not in 1–100 | Banner | "limit must not be greater than 100" | "件数は1〜100の範囲です" |
+| **VAL-PROD-031** | `limit` | Limit not in 1–50 | Banner | "limit must not be greater than 50" | "件数は1〜50の範囲です" |
 
 ### 6.5 API Error Mapping — Product Detail & Reviews
 
@@ -519,13 +552,33 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | UI Element / Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
 | `lblPromoCode` | `code` | `code` | `promotions` | VARCHAR(50) UNIQUE |
-| `lblPromoDiscount` | `discountType` | `discount_type` | `promotions` | VARCHAR(20) (CHECK: `chk_promotions_discount_type` — 'percentage'/'fixed') |
+| `lblPromoDiscount` | `discountType` | `discount_type` | `promotions` | VARCHAR(20) (CHECK: `chk_promotions_discount_type` — 'percentage'/'fixed'; FK → `discount_types.type_code` lookup table, DB_SPEC v2.4) |
 | `lblPromoDiscount` | `discountValue` | `discount_value` | `promotions` | DECIMAL(10,2) |
 | `lblPromoMinOrder` | `minOrderAmount` | `min_order_amount` | `promotions` | DECIMAL(10,2) (nullable) |
 | `lblPromoBalance` | `usedCount` | `used_count` | `promotions` | INT |
 | `lblPromoBalance` | `maxUses` | `max_uses` | `promotions` | INT (nullable = unlimited) |
 | `lblPromoValidity` | `startsAt` | `starts_at` | `promotions` | TIMESTAMPTZ |
 | `lblPromoValidity` | `expiresAt` | `expires_at` | `promotions` | TIMESTAMPTZ |
+
+### 7.5 Sidebar Advertisements → Database
+
+| UI Element / Field | API Field | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- | :--- |
+| `lstSidebarAds` | `data[]` | — (filtered rows) | `advertisements` | Rows where `approval_status = 'approved'`, `payment_status = 'completed'`, `is_active = true`, and `now()` within `starts_at` / `expires_at` (`chk_advertisements_dates`) |
+| `imgAdCreative` | `imageUrl` | `image_url` | `advertisements` | TEXT (nullable) |
+| `lblAdTitle` | `title` | `title` | `advertisements` | VARCHAR(255) |
+| `lblAdAnnouncement` | `announcementMessage` | `announcement_message` | `advertisements` | VARCHAR(500) |
+| `lnkAdTarget` | `linkUrl` | `link_url` | `advertisements` | TEXT (nullable) |
+| `lblAdShop` | `shop.name` / `shop.slug` / `shop.logoUrl` | `name` / `slug` / `logo_url` | `shops` via `advertisements.shop_id` (FK: `fk_advertisements_shop`) | VARCHAR(255) / VARCHAR(255) / TEXT |
+
+**Display Filter (Rule BR-PROD-020/021):**
+- `approval_status = 'approved'` (`chk_advertisements_approval_status`)
+- `payment_status = 'completed'` (`chk_advertisements_payment_status`)
+- `is_active = true`
+- `starts_at <= now() AND expires_at > now()`
+- Placement = `product_sidebar` (`ad_fee_settings.placement`; default $2.00/$3.50/$6.00 per day, 15 days, max 3 ads)
+
+> ⚠️ **OPEN ITEM (SKM-DEV-001 §13)** — The `advertisements` table does not store `placement` or `tier` columns; placement filtering and Premium > Standard > Basic priority ordering rely on the purchase/package linkage (`ad_payments` → `ad_fee_settings`). Confirm with the DB team whether `placement`/`tier` columns should be added to `advertisements`. Internal fields (`payment_amount`, `payment_reference`, `approved_by`, `rejection_reason`, `week_number`) are never exposed to buyers.
 
 ---
 
@@ -554,6 +607,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
     "skinTypes": ["dry", "sensitive"],
     "ingredients": ["Hyaluronic Acid", "Vitamin E", "Glycerin"],
     "isActive": true,
+    "isFeatured": true,
     "avgRating": "4.50",
     "reviewCount": 32,
     "category": {
@@ -565,6 +619,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
     "merchant": {
       "id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
       "shopName": "Glow Lab",
+      "licenseStatus": "approved",
       "shop": {
         "name": "Glow Lab Official Store",
         "slug": "glow-lab-official-store",
@@ -691,6 +746,31 @@ The Product Detail page is the primary conversion point in the buyer journey. It
   }
 }
 ```
+
+### 8.8 Sidebar Advertisements Success Response
+
+```json
+{
+  "data": [
+    {
+      "id": "c9d0e1f2-a3b4-5c6d-8e9f-0a1b2c3d4e5f",
+      "title": "Autumn Glow Sale",
+      "announcementMessage": "20% off all serums this week",
+      "imageUrl": "https://cdn.example.com/ads/autumn-glow.webp",
+      "linkUrl": "https://example.com/campaign/autumn-glow",
+      "startsAt": "2026-08-15T00:00:00.000Z",
+      "expiresAt": "2026-08-30T23:59:59.000Z",
+      "shop": {
+        "name": "Glow Lab Official Store",
+        "slug": "glow-lab-official-store",
+        "logoUrl": "https://cdn.example.com/shops/glow-logo.webp"
+      }
+    }
+  ]
+}
+```
+
+> Returns an empty array when no eligible ads exist; the section is hidden entirely.
 
 ---
 
@@ -969,6 +1049,27 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `product.error.notFound` | "ပစ္စည်းမတွေ့ပါ" |
 | `product.error.backToProducts` | "ပစ္စည်းများသို့ပြန်သွားမည်" |
 
+### 9.19 English (en) — Advertisements
+
+| Key | Value |
+| :--- | :--- |
+| `product.ads.sponsored` | "Sponsored" |
+| `product.ads.sponsoredBy` | "Sponsored · {shop}" |
+
+### 9.20 Japanese (ja) — Advertisements
+
+| Key | Value |
+| :--- | :--- |
+| `product.ads.sponsored` | "広告" |
+| `product.ads.sponsoredBy` | "広告 · {shop}" |
+
+### 9.21 Myanmar (my) — Advertisements
+
+| Key | Value |
+| :--- | :--- |
+| `product.ads.sponsored` | "ကြေးငှားကြော်ငြာ" |
+| `product.ads.sponsoredBy` | "ကြေးငှားကြော်ငြာ · {shop}" |
+
 ---
 
 ## 10. Shared Components (共有コンポーネント)
@@ -1029,13 +1130,20 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | **Location** | `frontend/src/features/products/components/ActivePromotion.tsx` |
 | **Purpose** | Active promotion card with discount and balance display |
 
-### 10.8 Alert / Toast Components
+### 10.9 Alert / Toast Components
 
 | Property | Value |
 | :--- | :--- |
 | **Location** | `frontend/src/components/ui/alert.tsx`, `frontend/src/components/ui/toast.tsx` |
 | **Variants** | `default`, `destructive`, `success` |
 | **Usage** | Error/success banners and toast notifications |
+
+### 10.10 SidebarAdvertisements Component
+
+| Property | Value |
+| :--- | :--- |
+| **Location** | `frontend/src/features/products/components/SidebarAdvertisements.tsx` |
+| **Purpose** | Sidebar ad slider/carousel for the `product_sidebar` placement: max 5 per rotation, auto-rotate every 5s, pause on hover/focus, "Sponsored" label + shop link, and safe external link attributes (Rules BR-PROD-022 / BR-PROD-023) |
 
 ---
 
@@ -1129,6 +1237,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 - [ ] Exhausted promotion (balance 0) not displayed
 - [ ] Coupon code copy button works
 - [ ] Discount percentage/fixed formatting correct
+- [ ] Discount type renders only `discount_types` lookup values (percentage / fixed)
 
 ### 12.7 Error & Accessibility Tests
 
@@ -1140,6 +1249,21 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 - [ ] Error messages announced via `role="alert"`
 - [ ] All i18n keys render correctly (EN / JA / MY)
 - [ ] Review body XSS payload escaped (no script execution)
+
+### 12.8 Sidebar Advertisement Tests
+
+- [ ] Section hidden when no approved, paid, active ads exist for the `product_sidebar` placement
+- [ ] Only `approval_status = 'approved'`, `payment_status = 'completed'`, `is_active = true`, in-window ads display (Rule BR-PROD-020)
+- [ ] Only `product_sidebar` placement ads display (Rule BR-PROD-021)
+- [ ] Max 5 ads per rotation (Rule BR-PROD-022)
+- [ ] Ads ordered Premium > Standard > Basic, round-robin within tier (Rule BR-PROD-022)
+- [ ] Slider auto-rotates every 5 seconds; pauses on hover/focus
+- [ ] "Sponsored" label shown on every ad card (Rule BR-PROD-023)
+- [ ] External ad links open in a new tab with `rel="noopener noreferrer nofollow sponsored"` (Rule BR-PROD-023)
+- [ ] Advertisement image falls back to shop logo when `image_url` is null
+- [ ] Ad card is non-clickable when `link_url` is null
+- [ ] Section hidden entirely when the API returns an empty array
+- [ ] API error (network / 404 / 400) hides the section
 
 ---
 

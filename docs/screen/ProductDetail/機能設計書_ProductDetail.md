@@ -10,9 +10,9 @@
 | **Target Screen** | Product Detail (商品詳細) |
 | **Subsystem** | Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry |
 | **Function ID** | FN-PROD-001 |
-| **Version** | 6.0 |
+| **Version** | 7.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-20 |
+| **Last Updated** | 2026-08-21 |
 | **Author** | Software Architect |
 | **Status** | Draft (審査中) |
 | **Classification** | Internal — Engineering Division |
@@ -30,6 +30,7 @@
 | 5.0 | 2026-08-14 | Software Architect | Aligned with DATABASE_SPEC v2.0: replaced all CUID references with UUID (all PKs now use `gen_random_uuid()`); updated merchant data model to reference `merchants` table (display name is `shopName`, not `name`); corrected wishlist table name from `wishlists` to `wishlist` (singular) with matching constraint/index names; clarified verified-purchase check to use `delivered` order status (terminal state per DB spec); updated all JSON examples and Prisma queries accordingly. |
 | 5.1 | 2026-08-17 | Software Architect | Aligned with DATABASE_SPEC v2.2 / REQUIREMENT_SPEC v1.7 / DEVELOPMENT_RULES v2.1: updated cart functionality to reference new `carts` and `cart_items` tables (replacing `order_items` reference for cart operations); added cart lifecycle rules (B-CART-008~014); updated database traceability section with `carts` and `cart_items` tables; added `review_reports` table reference for review moderation. Note: Cart and Wishlist sections remain unchanged as they are maintained by other teams. |
 | 6.0 | 2026-08-20 | Software Architect | Aligned with DATABASE_SPEC v2.4 / REQUIREMENT_SPEC v2.10 / DEVELOPMENT_RULES v2.1: updated all version references to current core document versions (DATABASE_SPEC v2.2→v2.4, REQUIREMENT_SPEC v1.7→v2.10); added `discount_types` lookup table reference for promotion discount type validation (BR-PROD-018); added `password_reset_tokens`, `order_status_history`, and `inventory_transactions` tables to database traceability; fixed configurable item key from `VITE_API_URL` to `VITE_API_BASE_URL`; updated document metadata. |
+| 7.0 | 2026-08-21 | Software Architect | Added Sidebar Advertisement Display feature per REQUIREMENT_SPEC v2.10 §5.3/§5.7 ("Product Detail Sidebar" placement): added UC-PROD-008, business rules BR-PROD-020~023 (approved/paid/active-only display, placement targeting, rotation rules, rejection handling), UI element EL-19, operation §6.8 (`GET /api/v1/products/:slug/advertisements`), output specification §7.8, configurable items (`ADVERTISEMENT_SLIDER_ROTATION_MS`, `AD_SIDEBAR_MAX_PER_ROTATION`), and database traceability for `advertisements`, `ad_fee_settings`, and `ad_payments`. Flagged open item: the `advertisements` table does not store `placement`/`tier` columns — linkage via purchase record must be confirmed with the DB team (SKM-DEV-001 §13). Ad purchase/approval workflow remains owned by the Ads module. |
 
 ---
 
@@ -74,6 +75,7 @@ This screen is responsible for the following core functional areas:
 6. **Add to Cart** — Adding a product with quantity to the cart, subject to atomic stock validation.
 7. **Wishlist Management** — Adding a product to the user's wishlist with optimistic UI updates (wishlist removal/deletion is handled by the dedicated Wishlist screen/module and is out of scope for this screen).
 8. **Active Promotion Display** — Displaying the active promotions of the product's merchant (coupon code, discount, validity period) including the remaining promotion balance (`max_uses - used_count`), subject to Rule BR-PROD-018.
+9. **Sidebar Advertisement Display** — Displaying approved, paid advertisements purchased for the `product_sidebar` placement (REQUIREMENT_SPEC §5.3/§5.7), subject to Rules BR-PROD-020~023. Ad purchase, payment, and approval workflow are handled by the Ads module (merchant/admin) and are out of scope for this screen; this screen only displays eligible ads.
 
 ### 1.3 Target Users
 
@@ -124,13 +126,14 @@ This screen is responsible for the following core functional areas:
 | `wishlist` | Wishlist DTO | Wishlist membership status / add result |
 | `cart` | Cart DTO | Result of adding the item to the cart |
 | `promotions` | Promotion DTO[] | Active promotions with discount details and remaining balance |
+| `advertisements` | Advertisement DTO[] | Sidebar advertisements for the `product_sidebar` placement (max 5 per rotation) |
 
 ### 1.6 Related Documents
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
 | 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x, B-CART-008~014). |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `carts`, `cart_items`, `review_reports`, `discount_types`, `password_reset_tokens`, `order_status_history`, `inventory_transactions`), UUID PKs, merchants table, constraints. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `carts`, `cart_items`, `review_reports`, `discount_types`, `advertisements`, `ad_fee_settings`, `ad_payments`, `password_reset_tokens`, `order_status_history`, `inventory_transactions`), UUID PKs, merchants table, constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
@@ -148,6 +151,7 @@ This screen is responsible for the following core functional areas:
 | UC-PROD-005 | Add to Wishlist | User is authenticated as `buyer`. Product not already in wishlist. | Wishlist item created (unique `user_id + product_id`). | Buyer |
 | UC-PROD-006 | Add Product to Cart | User is authenticated as `buyer`. Product in stock. | Cart item inserted or merged with stock re-validation. | Buyer |
 | UC-PROD-007 | View Active Promotions | Product exists and its merchant has active promotions. | Active promotions (code, discount, validity, balance) displayed. | Visitor / Buyer |
+| UC-PROD-008 | View Sidebar Advertisements | Product exists; approved, paid ads for the `product_sidebar` placement are running. | Sponsored ads displayed in the sidebar slider (max 5 per rotation, auto-rotate 5s). | Visitor / Buyer |
 
 ### 2.2 Primary Business Workflow
 
@@ -324,6 +328,15 @@ This screen is responsible for the following core functional areas:
 | BR-PROD-018 | Active Promotion Display | Only promotions with `is_active = true`, valid within `starts_at` / `expires_at` (Rule 4.5.1), and with remaining balance (`max_uses - used_count > 0`, or unlimited when `max_uses` is NULL) are displayed for the product's merchant. `discount_type` must be a value from the `discount_types` lookup table (`percentage` or `fixed`), enforced by CHECK constraint `promotions_discount_type_check` on the `promotions` table. | Backend (query filter + DB constraint) |
 | BR-PROD-019 | Promotion Balance Display | The remaining promotion balance is shown as `max_uses - used_count`; when `max_uses` is NULL the balance is shown as "Unlimited". Balance of `0` means the promotion is exhausted and is not displayed. | Backend (computed field) + Frontend (display) |
 
+### 4.7 Sidebar Advertisement Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-PROD-020 | Approved & Paid & Active Only | Only advertisements with `approval_status = 'approved'`, `payment_status = 'completed'`, `is_active = true`, and within the `starts_at` / `expires_at` window are displayed (REQ §5.3 "Approval Required", §7.6 "Payment required before submission"). Rejected ads are removed from all rotations; expired or inactive ads are excluded. | Backend (query filter) |
+| BR-PROD-021 | Placement Targeting | Only advertisements purchased for the `product_sidebar` placement (`ad_fee_settings.placement`; default rates $2.00/$3.50/$6.00 per day, 15 days, max 3 ads) are displayed on the Product Detail sidebar. ⚠️ **Open item:** the `advertisements` table does not currently store `placement`/`tier` columns — placement filtering and tier resolution rely on the purchase/package linkage and must be confirmed with the DB team per SKM-DEV-001 §13 (Database Change Governance). | Backend (query filter) |
+| BR-PROD-022 | Rotation Rules | Maximum 5 advertisements are shown per slider rotation; ordering priority is Premium > Standard > Basic; advertisements within the same tier are rotated round-robin; the slider auto-rotates every 5 seconds (REQ §5.3). | Backend (ordering) + Frontend (slider) |
+| BR-PROD-023 | Sponsored Labeling & Link Safety | Every ad card displays a "Sponsored" label; outbound ad links open in a new tab with `rel="noopener noreferrer nofollow sponsored"`. | Frontend |
+
 ---
 
 ## 5. Screen Specifications
@@ -354,12 +367,14 @@ This screen is responsible for the following core functional areas:
 | EL-16 | Review Form | Form | — | No | Rating stars, title, body; login gating |
 | EL-17 | Related Products | Card Grid | `product.related` | No | "Similar Products" section |
 | EL-18 | Active Promotion | Banner / Card | `product.promotions` | No | Active merchant promotions: coupon code, discount (percentage/fixed), min order amount, validity period, and remaining balance (`max_uses - used_count`) |
+| EL-19 | Sidebar Advertisements | Ad Slider / Carousel | `product.ads` | No | Sponsored ads for the `product_sidebar` placement: max 5 per rotation, auto-rotate every 5s, priority Premium > Standard > Basic (REQ §5.3); hidden when no eligible ads |
 
 **Default State:**
 - Main image shows `images[0]`; skeleton loaders for all async sections.
 - Add to Cart disabled until product loads; disabled if `stockQuantity <= 0`.
 - Review form hidden when unauthenticated (Login prompt shown instead).
 - Active Promotion section hidden when the product's merchant has no active promotions.
+- Sidebar Advertisement section hidden when no approved, paid, active ads exist for the `product_sidebar` placement; slider pauses on hover/focus.
 
 ---
 
@@ -527,6 +542,43 @@ slug validated (URL slug format, max 255 chars)
       → Order by starts_at DESC
       → Compute balance = max_uses - used_count (NULL = unlimited)
     → Return active promotion DTOs
+```
+
+### 6.8 Operation: View Sidebar Advertisements
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Product detail page loads the "Sidebar Advertisements" section |
+| **API Endpoint** | `GET /api/v1/products/:slug/advertisements` |
+| **Request Content-Type** | `application/json` (response) |
+| **Pre-Submission Validation** | `slug` (URL slug format, max 255 chars) |
+| **Processing Steps** | 1. Validate slug format. 2. Look up product by slug (`is_active = true`). 3. Query `advertisements` where `is_active = true`, `approval_status = 'approved'`, `payment_status = 'completed'`, and `starts_at <= now() < expires_at` (Rule BR-PROD-020). 4. Filter to the `product_sidebar` placement (Rule BR-PROD-021). 5. Order by tier priority Premium > Standard > Basic, round-robin within tier; limit 5 per rotation (Rule BR-PROD-022). 6. Include advertiser shop (name, slug, logoUrl). 7. Return advertisement DTOs. |
+| **Success Response** | 200 OK with sidebar advertisement list (see §7.8); empty array when no eligible ads |
+| **Error Response** | 400 Invalid slug; 404 Product not found / inactive |
+| **Post-Action** | Sidebar Advertisement slider rendered with auto-rotation every 5 seconds |
+
+> Note: Ad purchase, payment, submission, and approval are handled by the Ads module (`advertisements` module, merchant/admin) and are out of scope for this screen.
+
+**Backend Processing Flow:**
+
+```
+slug validated (URL slug format, max 255 chars)
+  → ProductsService.findOneBySlug()
+    → Lookup product by slug (idx_products_slug index)
+    → Filter where is_active = true
+  → AdvertisementsService.findActiveByPlacement('product_sidebar')
+    → Query advertisements where is_active = true
+        AND approval_status = 'approved'
+        AND payment_status = 'completed'
+        AND starts_at <= now() AND expires_at > now()
+        (idx_advertisements_is_active, idx_advertisements_approval_status,
+         idx_advertisements_expires_at, chk_advertisements_dates)
+    → Filter to product_sidebar placement via purchase/package linkage
+      (⚠️ open item BR-PROD-021: placement/tier columns not on advertisements table)
+    → Order by tier priority (Premium > Standard > Basic), round-robin within tier (REQ §5.3)
+    → Limit to AD_SIDEBAR_MAX_PER_ROTATION (5) results
+    → Include shop (name, slug, logoUrl) via advertisements.shop_id
+    → Return advertisement DTOs
 ```
 
 ---
@@ -754,6 +806,44 @@ slug validated (URL slug format, max 255 chars)
 }
 ```
 
+### 7.8 Output Specification — Sidebar Advertisements (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `data[].id` | `advertisements.id` | UUID string |
+| `data[].title` | `advertisements.title` | String |
+| `data[].announcementMessage` | `advertisements.announcement_message` | String (max 500 chars) |
+| `data[].imageUrl` | `advertisements.image_url` | URL string or null (fallback to shop logo) |
+| `data[].linkUrl` | `advertisements.link_url` | URL string or null (card not clickable when null) |
+| `data[].startsAt` | `advertisements.starts_at` | ISO 8601 timestamp |
+| `data[].expiresAt` | `advertisements.expires_at` | ISO 8601 timestamp |
+| `data[].shop` | `shops` via `advertisements.shop_id` | Nested object: `name`, `slug`, `logoUrl` |
+
+**Example Response (200):**
+
+```json
+{
+  "data": [
+    {
+      "id": "c9d0e1f2-a3b4-5c6d-8e9f-0a1b2c3d4e5f",
+      "title": "Autumn Glow Sale",
+      "announcementMessage": "20% off all serums this week",
+      "imageUrl": "https://cdn.example.com/ads/autumn-glow.webp",
+      "linkUrl": "https://example.com/campaign/autumn-glow",
+      "startsAt": "2026-08-15T00:00:00.000Z",
+      "expiresAt": "2026-08-30T23:59:59.000Z",
+      "shop": {
+        "name": "Glow Lab Official Store",
+        "slug": "glow-lab-official-store",
+        "logoUrl": "https://cdn.example.com/shops/glow-logo.webp"
+      }
+    }
+  ]
+}
+```
+
+> Note: Internal fields (`approval_status`, `payment_status`, `payment_amount`, `payment_reference`, `approved_by`, `rejection_reason`, `week_number`) are never exposed to buyers.
+
 ---
 
 ## 8. Input Validation Rules
@@ -855,6 +945,7 @@ slug validated (URL slug format, max 255 chars)
 | `GET /products/:slug` | Public | Product detail display |
 | `GET /products/:productId/reviews` | Public | Review list display |
 | `GET /products/:slug/promotions` | Public | Active promotion display |
+| `GET /products/:slug/advertisements` | Public | Sidebar advertisement display |
 | `GET /recommendations/similar/:productId` | Public | Related products |
 | `POST /products/:productId/reviews` | Protected | Requires `buyer` role |
 | `POST /wishlist/:productId` | Protected | Requires `buyer`+ role |
@@ -867,6 +958,7 @@ slug validated (URL slug format, max 255 chars)
 | `GET /products/:slug` | `@Public()` | None |
 | `GET /products/:productId/reviews` | `@Public()` | None |
 | `GET /products/:slug/promotions` | `@Public()` | None |
+| `GET /products/:slug/advertisements` | `@Public()` | None |
 | `POST /products/:productId/reviews` | `JwtAuthGuard + RolesGuard` | `buyer` |
 | `POST /wishlist/:productId` | `JwtAuthGuard + RolesGuard` | `buyer`+ |
 | `POST /cart/items` | `JwtAuthGuard + RolesGuard` | `buyer`+ |
@@ -1002,6 +1094,7 @@ For authenticated buyers, real-time events can surface on the product page after
 | Add out-of-stock product to cart | 422 / validation error |
 | Add to wishlist (new / duplicate) | 201 / 409 |
 | GET active promotions for product | 200 with only active, in-window promotions and balance > 0 |
+| GET sidebar advertisements for product | 200 with only approved, paid, active, in-window `product_sidebar` ads (max 5); empty array when none |
 
 **Security Tests:**
 
@@ -1029,6 +1122,8 @@ Defined via `.env` configuration and service constants:
 | `PRODUCT_CACHE_TTL` | `300` | Redis product cache TTL in seconds |
 | `SIMILAR_PRODUCT_LIMIT` | `8` | Maximum similar products returned |
 | `PROMOTION_MAX_LIMIT` | `10` | Maximum active promotions returned |
+| `ADVERTISEMENT_SLIDER_ROTATION_MS` | `5000` | Sidebar ad slider auto-rotation interval (REQ §5.3) |
+| `AD_SIDEBAR_MAX_PER_ROTATION` | `5` | Maximum advertisements shown per slider rotation (REQ §5.3) |
 | `PRODUCT_CACHE_KEY` | `cache:product:<id>` | Redis cache key prefix |
 | `PRODUCT_LIST_CACHE_KEY` | `cache:products:list:*` | Redis list cache key prefix |
 
@@ -1076,6 +1171,9 @@ Defined via `.env` configuration and service constants:
 | `order_status_history` | Order status audit trail — written by Order module when status transitions occur (DB_SPEC v2.4) | `idx_oh_order_id`, `idx_oh_status`, `uq_oh_order_status` |
 | `inventory_transactions` | Inventory audit trail — written by Product/Order modules on stock changes (DB_SPEC v2.4) | `idx_it_product_id`, `idx_it_merchant_id`, `idx_it_reference_type` |
 | `password_reset_tokens` | Password reset — no direct ProductDetail usage, but exists in DB_SPEC v2.4 for auth flows | (none — auth module only) |
+| `advertisements` | Sidebar advertisement display (SELECT) — approved, paid, active, in-window ads for the `product_sidebar` placement (DB_SPEC v2.4 §3.13) | `idx_advertisements_is_active`, `idx_advertisements_approval_status`, `idx_advertisements_payment_status`, `idx_advertisements_expires_at`, `chk_advertisements_dates`, `chk_advertisements_approval_status`, `chk_advertisements_payment_status`, `fk_advertisements_shop` |
+| `ad_fee_settings` | Placement/tier configuration lookup for `product_sidebar` placement (SELECT) — default rates $2.00/$3.50/$6.00 per day, 15 days, max 3 ads (DB_SPEC v2.4 §3.14) | `uq_ad_fee_settings_placement_tier` |
+| `ad_payments` | Payment completion check for displayed advertisements (SELECT) via `ad_payments.ad_id` (DB_SPEC v2.4 §3.15) | `fk_ad_payments_ad` |
 
 **Reference Prisma Queries:**
 
@@ -1173,6 +1271,8 @@ await prisma.$transaction(async (tx) => {
 - [ ] `reviews.service.ts` - verified purchase check + transaction rating recalculation
 - [ ] `matching.service.ts` - `getSimilar()` endpoint
 - [ ] `promotions.service.ts` - `findActiveByMerchant()` endpoint (`GET /products/:slug/promotions`)
+- [ ] `advertisements.controller.ts` - `GET /products/:slug/advertisements` endpoint with `@Public()`
+- [ ] `advertisements.service.ts` - `findActiveByPlacement('product_sidebar')` with approved/paid/active filtering + tier priority ordering
 - [ ] `dto/create-review.dto.ts` with class-validator
 - [ ] Redis cache: `cache:product:{id}` (TTL 5 min), invalidate on review/product update
 - [ ] Write unit tests (service level, ≥ 90% coverage for new code)
@@ -1187,6 +1287,7 @@ await prisma.$transaction(async (tx) => {
 - [ ] `features/products/components/RelatedProducts.tsx`
 - [ ] `features/products/components/ProductReviews.tsx`
 - [ ] `features/products/components/ActivePromotion.tsx`
+- [ ] `features/products/components/SidebarAdvertisements.tsx`
 - [ ] `features/products/hooks/useProductDetail.ts`
 - [ ] `features/products/schemas/product.schema.ts`
 - [ ] `features/products/services/product.service.ts`
