@@ -1,12 +1,12 @@
- # Screen Items Specification (画面項目設計書) — Sign-up / Login
+ # Screen Items Specification (画面項目設計書) — Sign-up / Login / Password Reset
 
 **Document ID:** SKM-SIS-SCR-001  
-**Target Screen:** Authentication (Sign-up / Login)  
+**Target Screen:** Authentication (Sign-up / Login / Password Reset)  
 **Subsystem:** User Authentication  
 **Function ID:** FN-AUTH-001  
-**Version:** 3.1  
+**Version:** 4.0  
 **Created:** 2026-08-04  
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-20  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -23,6 +23,7 @@
 | 2.0 | 2026-08-05 | Senior System Engineer | Complete rewrite aligned with PRWM-SIS-SCR-001 format. Added comprehensive item definitions with Item IDs, component types, data sources, event specifications, validation error codes, responsive breakpoints, and accessibility requirements. |
 | 3.0 | 2026-08-05 | Senior System Engineer | Added conditional license file upload for Merchant role. When "Merchant" radio is selected, a PDF file upload field appears for business license (license.pdf). Includes validation rules, file constraints, and event specifications. |
 | 3.1 | 2026-08-17 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 / DATABASE_SPEC v2.0: UUID primary keys, license stored in `merchants.business_license_url` with `license_status='pending'` approval workflow, Argon2 password hashing, role VARCHAR(20). |
+| 4.0 | 2026-08-20 | Senior System Engineer | Added Forgot Password (`/forgot-password`) and Reset Password (`/reset-password`) screens. New item definitions, event specifications, validation error mappings, API response mappings, i18n keys, and test cases. |
 
 ### 1.2 Related Documents
 
@@ -38,15 +39,15 @@
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Sign-up and Login pages are the entry points for user authentication in the Cosmetics Finder platform. They enable new users to create accounts (as Buyers or Merchants) and existing users to authenticate via email and password, receiving JWT tokens for session management.
+The Sign-up, Login, and Password Reset pages are the entry points for user authentication in the Cosmetics Finder platform. They enable new users to create accounts (as Buyers or Merchants), existing users to authenticate via email and password receiving JWT tokens for session management, and all users to recover forgotten passwords via secure email links.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
 | Attribute | Value |
 | :--- | :--- |
-| **Primary Actors** | Unauthenticated visitors (Sign-up), Authenticated users (Login) |
-| **Required Authentication** | None (these are pre-authentication screens) |
-| **Data Scope** | New user creation, existing user credential verification |
+| **Primary Actors** | Unauthenticated visitors (Sign-up, Password Reset Request), Authenticated users (Login), Any user with reset token (Password Reset) |
+| **Required Authentication** | None (Sign-up, Forgot Password), JWT Bearer Token (Login/Session), Reset Token (Password Reset) |
+| **Data Scope** | New user creation, existing user credential verification, password recovery |
 | **Access Control** | Public routes — no guards applied |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
@@ -57,6 +58,7 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 5. **Error Handling** — Display inline and form-level errors with error codes.
 6. **Internationalization** — Full i18n support for EN, JA, MY.
 7. **Responsive Design** — Mobile-first centered card layout.
+8. **Password Recovery** — Request password reset link via email, set new password with token validation.
 
 ---
 
@@ -87,7 +89,8 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 │              │   [C1] Email Input          │            │
 │              │   [C2] Password Input       │            │
 │              │       + Show/Hide Toggle    │            │
-│              │   [C3] Submit Button        │            │
+│              │   [C3] Forgot Password Link │ ← NEW     │
+│              │   [C4] Submit Button        │            │
 │              │                             │            │
 │              └─────────────────────────────┘            │
 │                                                         │
@@ -152,6 +155,152 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 └─────────────────────────────────────────────────────────┘
 ```
 
+#### Forgot Password Page Layout
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    BROWSER VIEWPORT                      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │      [A] PAGE HEADER        │            │
+│              │   Logo + System Name        │            │
+│              │   "Cosmetics Finder"        │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [B] ERROR ALERT (cond.)   │            │
+│              │   Shown on API errors       │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [K] FORGOT PASSWORD FORM  │            │
+│              │                             │            │
+│              │   [K1] Title Text           │            │
+│              │   "Forgot your password?"   │            │
+│              │                             │            │
+│              │   [K2] Description Text     │            │
+│              │   "Enter your email..."     │            │
+│              │                             │            │
+│              │   [K3] Email Input          │            │
+│              │                             │            │
+│              │   [K4] Submit Button        │            │
+│              │   "Send Reset Link"         │            │
+│              │                             │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [L] BACK TO LOGIN LINK    │            │
+│              │   "Back to Login"           │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [E] FOOTER CONTROLS       │            │
+│              │   [Language] [Theme]        │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Forgot Password — Success State:**
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    BROWSER VIEWPORT                      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │      [A] PAGE HEADER        │            │
+│              │   Logo + System Name        │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [M] SUCCESS MESSAGE       │            │
+│              │   "If an account exists..." │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [L] BACK TO LOGIN LINK    │            │
+│              │   "Back to Login"           │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Reset Password Page Layout
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    BROWSER VIEWPORT                      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │      [A] PAGE HEADER        │            │
+│              │   Logo + System Name        │            │
+│              │   "Cosmetics Finder"        │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [B] ERROR ALERT (cond.)   │            │
+│              │   Shown on API errors       │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [N] RESET PASSWORD FORM   │            │
+│              │                             │            │
+│              │   [N1] Title Text           │            │
+│              │   "Reset your password"     │            │
+│              │                             │            │
+│              │   [N2] Description Text     │            │
+│              │   "Enter your new password" │            │
+│              │                             │            │
+│              │   [N3] New Password Input   │            │
+│              │       + Requirements List   │            │
+│              │       + Show/Hide Toggle    │            │
+│              │                             │            │
+│              │   [N4] Confirm Password     │            │
+│              │       + Show/Hide Toggle    │            │
+│              │                             │            │
+│              │   [N5] Submit Button        │            │
+│              │   "Reset Password"          │            │
+│              │                             │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [O] BACK TO LOGIN LINK    │            │
+│              │   "Back to Login"           │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [E] FOOTER CONTROLS       │            │
+│              │   [Language] [Theme]        │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Reset Password — Success State:**
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    BROWSER VIEWPORT                      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │      [A] PAGE HEADER        │            │
+│              │   Logo + System Name        │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [P] SUCCESS MESSAGE       │            │
+│              │   "Your password has been   │            │
+│              │    reset successfully."     │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+│              ┌─────────────────────────────┐            │
+│              │   [O] BACK TO LOGIN LINK    │            │
+│              │   "Back to Login"           │            │
+│              └─────────────────────────────┘            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
 ### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
 | Breakpoint | Min Width | Layout Behavior |
@@ -187,16 +336,17 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 | 6 | `lblPassword` | Password Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Password" | — | Hardcoded UI text | Associated with `txtPassword` via `htmlFor`/`id`. |
 | 7 | `txtPassword` | Password Input | Input (`password`) | String(128) | Mandatory | Empty. Placeholder: "Enter your password" | MinLength: 8. MaxLength: 128. | `users.password_hash` | AutoComplete: `current-password`. Toggleable show/hide. |
 | 8 | `btnShowPassword` | Show/Hide Password | Icon Button | — | — | Visible. Eye icon. | — | — | Toggles `txtPassword` type between `password` and `text`. |
-| 9 | `btnLogin` | Log In Button | Button (`submit`, `default`) | — | — | Visible. Text: "Sign In" | — | — | Full width. Loading: Spinner + "Signing in...". Disabled when loading. |
-| 10 | `lblNoAccount` | Sign Up Prompt | Static Label | String | — | Text: "Don't have an account?" | — | — | Footer text. |
-| 11 | `lnkSignUp` | Sign Up Link | Link (`<Link>`) | String | — | Text: "Create one" | — | — | Navigates to `/register`. |
+| 9 | `lnkForgotPassword` | Forgot Password Link | Link (`<Link>`) | String | — | Text: "Forgot password?" | — | — | Navigates to `/forgot-password`. Right-aligned below password field. |
+| 10 | `btnLogin` | Log In Button | Button (`submit`, `default`) | — | — | Visible. Text: "Sign In" | — | — | Full width. Loading: Spinner + "Signing in...". Disabled when loading. |
+| 11 | `lblNoAccount` | Sign Up Prompt | Static Label | String | — | Text: "Don't have an account?" | — | — | Footer text. |
+| 12 | `lnkSignUp` | Sign Up Link | Link (`<Link>`) | String | — | Text: "Create one" | — | — | Navigates to `/register`. |
 
 ### 4.4 Section [E]: Login Footer Controls (フッターコントロール)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 12 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
-| 13 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
+| 13 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
+| 14 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
 
 ### 4.5 Section [F]: Register Form (新規登録フォーム)
 
@@ -225,6 +375,33 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 | 34 | `lblLicenseFileName` | Uploaded File Name | Static Label | String(255) | — | Populated after upload. Displays uploaded filename. | — | — | Shows "license.pdf" when uploaded. Clickable to preview/download. |
 | 35 | `btnRemoveLicense` | Remove License File | Icon Button (Danger) | — | — | Visible only when file is uploaded. Trash icon. | — | — | Removes uploaded file. Reverts to upload zone. |
 | 36 | `lblLicenseHelper` | License Helper Text | Static Label (Helper) | String | — | Text: "Upload your business license as PDF (max 10MB). File must be named license.pdf." | — | — | Displayed below upload zone. Tailwind: `text-xs text-muted-foreground`. |
+
+### 4.6 Section [I]: Forgot Password Form (パスワード忘れたフォーム)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 37 | `lblForgotTitle` | Forgot Password Title | Static Label (`<h2>`) | String | — | Visible. Text: "Forgot your password?" | — | Hardcoded UI text | Tailwind: `text-2xl font-bold text-center`. |
+| 38 | `lblForgotDesc` | Forgot Password Description | Static Label (`<p>`) | String | — | Visible. Text: "Enter your email and we'll send you a reset link." | — | Hardcoded UI text | Tailwind: `text-muted-foreground text-center`. |
+| 39 | `lblForgotEmail` | Email Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Email" | — | Hardcoded UI text | Associated with `txtForgotEmail` via `htmlFor`/`id`. |
+| 40 | `txtForgotEmail` | Email Input | Input (`email`) | String(255) | Mandatory | Empty. Placeholder: "user@example.com" | Format: Valid email. MaxLength: 255. | — | AutoFocus: true. AutoComplete: `email`. InputMode: `email`. |
+| 41 | `btnSendResetLink` | Send Reset Link Button | Button (`submit`, `default`) | — | — | Visible. Text: "Send Reset Link" | — | — | Full width. Loading: Spinner + "Sending...". Disabled when loading or form invalid. |
+| 42 | `lnkBackToLoginForgot` | Back to Login Link | Link (`<Link>`) | String | — | Text: "Back to Login" | — | — | Navigates to `/login`. |
+
+### 4.7 Section [J]: Reset Password Form (パスワードリセットフォーム)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 43 | `lblResetTitle` | Reset Password Title | Static Label (`<h2>`) | String | — | Visible. Text: "Reset your password" | — | Hardcoded UI text | Tailwind: `text-2xl font-bold text-center`. |
+| 44 | `lblResetDesc` | Reset Password Description | Static Label (`<p>`) | String | — | Visible. Text: "Enter your new password below." | — | Hardcoded UI text | Tailwind: `text-muted-foreground text-center`. |
+| 45 | `lblNewPassword` | New Password Label | Static Label (`<label>`) | String | — | Always displayed. Text: "New Password" | — | Hardcoded UI text | Associated with `txtNewPassword` via `htmlFor`/`id`. |
+| 46 | `txtNewPassword` | New Password Input | Input (`password`) | String(128) | Mandatory | Empty. Placeholder: "Create a new password" | Complex regex (see §4.5.1). | — | AutoFocus: true. AutoComplete: `new-password`. Toggleable show/hide. |
+| 47 | `btnShowNewPassword` | Show/Hide New Password | Icon Button | — | — | Visible. Eye icon. | — | — | Toggles `txtNewPassword` type between `password` and `text`. |
+| 48 | `lstResetPasswordRequirements` | Password Requirements | Helper Text List | — | — | Visible below password field | Checklist of 5 requirements | — | Real-time feedback as user types. Green check when met. Same rules as Register. |
+| 49 | `lblResetConfirmPassword` | Confirm Password Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Confirm Password" | — | Hardcoded UI text | Associated with `txtResetConfirmPassword` via `htmlFor`/`id`. |
+| 50 | `txtResetConfirmPassword` | Confirm Password Input | Input (`password`) | String(128) | Mandatory | Empty. Placeholder: "Confirm your new password" | Must match `txtNewPassword`. | — | AutoComplete: `new-password`. Toggleable show/hide. |
+| 51 | `btnShowResetConfirmPassword` | Show/Hide Confirm Password | Icon Button | — | — | Visible. Eye icon. | — | — | Toggles `txtResetConfirmPassword` type. |
+| 52 | `btnResetPassword` | Reset Password Button | Button (`submit`, `default`) | — | — | Visible. Text: "Reset Password" | — | — | Full width. Loading: Spinner + "Resetting...". Disabled when loading or form invalid. |
+| 53 | `lnkBackToLoginReset` | Back to Login Link | Link (`<Link>`) | String | — | Text: "Back to Login" | — | — | Navigates to `/login`. |
 
 ### 4.5.1 Password Validation Rules (Register)
 
@@ -290,10 +467,10 @@ The Sign-up and Login pages are the entry points for user authentication in the 
   3. Persist preference to `localStorage`.
 - **Exception Handling:** None applicable.
 
-### 5.6 Navigation Links (`lnkSignUp` / `lnkSignIn` onClick)
-- **Trigger:** User clicks Sign Up or Login link.
+### 5.6 Navigation Links (`lnkSignUp` / `lnkSignIn` / `lnkForgotPassword` / `lnkBackToLoginForgot` / `lnkBackToLoginReset` onClick)
+- **Trigger:** User clicks Sign Up, Login, Forgot Password, or Back to Login link.
 - **Processing Logic:**
-  1. Navigate to `/register` or `/login` via React Router.
+  1. Navigate to `/register`, `/login`, or `/forgot-password` via React Router.
   2. Reset form state on navigation.
 - **Exception Handling:** None applicable.
 
@@ -334,6 +511,44 @@ The Sign-up and Login pages are the entry points for user authentication in the 
   3. Hide `lblLicenseFileName` and `btnRemoveLicense`.
   4. Show upload zone again.
 - **Exception Handling:** None applicable.
+
+### 5.10 Forgot Password Form Submit (`btnSendResetLink` onClick)
+- **Trigger:** User clicks "Send Reset Link" button.
+- **Processing Logic:**
+  1. **Client-Side Pre-Check:** Form undergoes validation — email format valid.
+  2. **Backend Dispatch:** `POST /api/v1/auth/forgot-password` with `{ email }`.
+  3. **Backend Execution:** Validate email format. Check rate limit (max 3 per email per hour). Find user by email. If user exists: invalidate previous unused tokens, generate secure token, hash and store in `password_reset_tokens` table with 24-hour expiry, send reset email. Always return same response regardless of email existence.
+  4. **Post-Execution UI:** Replace form with success message. Show "Back to Login" link.
+- **Exception Handling:**
+  - `AUTH_008` (429): Display rate limit message with retry seconds.
+  - `VAL-AUTH-040` (400): Display field-level inline error for invalid email.
+  - `SYS_001` (500): Display "Something went wrong. Please try again".
+  - Network error: Display "Network error. Please check your connection".
+
+### 5.11 Reset Password Form Submit (`btnResetPassword` onClick)
+- **Trigger:** User clicks "Reset Password" button (after clicking email link).
+- **Processing Logic:**
+  1. **Client-Side Pre-Check:** Strict validation — password meets strength requirements, passwords match, token exists in URL.
+  2. **Backend Dispatch:** `POST /api/v1/auth/reset-password` with `{ token, password }`.
+  3. **Backend Execution:** Validate token format. Hash received token. Find token record by `token_hash`. Validate: token exists, not used, not expired (24 hours). Find user by `user_id` from token. Validate password strength. Hash new password with Argon2. Update user's password. Mark token as `used = TRUE`. Invalidate all other unused tokens for this user.
+  4. **Post-Execution UI:** Show success message: "Your password has been reset successfully." Show "Back to Login" link.
+- **Exception Handling:**
+  - `AUTH_009` (400): Display "Invalid or expired reset link. Please request a new one." in `alertError`.
+  - `VAL-AUTH-041` (400): Display password strength errors inline.
+  - `VAL-AUTH-042` (400): Display "Passwords do not match" inline.
+  - `SYS_001` (500): Display "Something went wrong. Please try again".
+  - Network error: Display "Network error. Please check your connection".
+
+### 5.12 Token Validation on Reset Password Page Load
+- **Trigger:** User navigates to `/reset-password?token=xxx`.
+- **Processing Logic:**
+  1. Extract `token` from URL query parameters.
+  2. If no token present, display error and redirect to `/login`.
+  3. Token is validated on submission (backend checks expiry, usage).
+  4. If token is invalid/expired on submission, show error and offer link to request new reset.
+- **Exception Handling:**
+  - No token: Redirect to `/login`.
+  - Invalid/expired token on submit: Display error, link to `/forgot-password`.
 
 ---
 
@@ -378,9 +593,32 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 | **AUTH_006** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
 | **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
 
----
+### 6.3 Forgot Password Validation Errors
 
-## 7. Database Fields Mapping (データベースフィールドマッピング)
+| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **VAL-AUTH-040** | `txtForgotEmail` | Email is empty or invalid format | Red border. Text below field. | "Email is required" / "Invalid email address" | "メールアドレスは必須です" / "メールアドレスが無効です" |
+| **VAL-AUTH-041** | `txtForgotEmail` | Email exceeds 255 characters | Red border. Text below field. | "Email must not exceed 255 characters" | "メールアドレスは255文字以内にしてください" |
+| **AUTH_008** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
+| **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
+| **NET_ERR** | `alertError` | Network error | Alert banner (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+
+### 6.4 Reset Password Validation Errors
+
+| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **VAL-AUTH-042** | `txtNewPassword` | Password is empty | Red border. Text below field. | "Password is required" | "パスワードは必須です" |
+| **VAL-AUTH-043** | `txtNewPassword` | Password < 8 chars | Red border. Text below field. | "Password must be at least 8 characters" | "パスワードは8文字以上である必要があります" |
+| **VAL-AUTH-044** | `txtNewPassword` | Password > 128 chars | Red border. Text below field. | "Password must not exceed 128 characters" | "パスワードは128文字以内にしてください" |
+| **VAL-AUTH-045** | `txtNewPassword` | Missing uppercase letter | Red border. Text below field. | "Password must contain at least one uppercase letter" | "パスワードには大文字を含めてください" |
+| **VAL-AUTH-046** | `txtNewPassword` | Missing lowercase letter | Red border. Text below field. | "Password must contain at least one lowercase letter" | "パスワードには小文字を含めてください" |
+| **VAL-AUTH-047** | `txtNewPassword` | Missing number | Red border. Text below field. | "Password must contain at least one number" | "パスワードには数字を含めてください" |
+| **VAL-AUTH-048** | `txtNewPassword` | Missing special character | Red border. Text below field. | "Password must contain at least one special character (@$!%*?&)" | "パスワードには特殊文字を含めてください" |
+| **VAL-AUTH-049** | `txtResetConfirmPassword` | Passwords do not match | Red border. Text below field. | "Passwords do not match" | "パスワードが一致しません" |
+| **AUTH_009** | `alertError` | Invalid or expired reset token (400 response) | Alert banner (destructive) | "Invalid or expired reset link. Please request a new one." | "無効または期限切れのリセットリンクです。新しいリセットをリクエストしてください。" |
+| **AUTH_008** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
+| **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
+| **NET_ERR** | `alertError` | Network error | Alert banner (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" | (データベースフィールドマッピング)
 
 ### 7.1 Login Form → Database
 
@@ -466,6 +704,54 @@ The Sign-up and Login pages are the entry points for user authentication in the 
   "message": "Email already registered",
   "timestamp": "2026-08-05T12:00:00.000Z",
   "path": "/api/v1/auth/register"
+}
+```
+
+### 8.5 Forgot Password Success Response
+
+```json
+{
+  "data": {
+    "message": "If an account exists with that email, you'll receive a password reset link shortly."
+  }
+}
+```
+
+**Note:** This response is returned regardless of whether the email exists, to prevent email enumeration.
+
+### 8.6 Forgot Password Error Response (Rate Limited)
+
+```json
+{
+  "statusCode": 429,
+  "error": "TOO_MANY_REQUESTS",
+  "errorCode": "AUTH_008",
+  "message": "Too many attempts. Please wait {seconds} seconds",
+  "timestamp": "2026-08-20T12:00:00.000Z",
+  "path": "/api/v1/auth/forgot-password"
+}
+```
+
+### 8.7 Reset Password Success Response
+
+```json
+{
+  "data": {
+    "message": "Your password has been reset successfully."
+  }
+}
+```
+
+### 8.8 Reset Password Error Response (Invalid Token)
+
+```json
+{
+  "statusCode": 400,
+  "error": "BAD_REQUEST",
+  "errorCode": "AUTH_009",
+  "message": "Invalid or expired reset link. Please request a new one.",
+  "timestamp": "2026-08-20T12:00:00.000Z",
+  "path": "/api/v1/auth/reset-password"
 }
 ```
 
@@ -583,6 +869,78 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 | `auth.register.licenseError.name` | "ファイル名はlicense.pdfである必要があります" |
 | `auth.register.licenseError.required` | "出品者登録には事業許可書が必要です" |
 
+### 9.5 English (en) — Forgot Password
+
+| Key | Value |
+| :--- | :--- |
+| `auth.forgotPassword.title` | "Forgot your password?" |
+| `auth.forgotPassword.description` | "Enter your email and we'll send you a reset link." |
+| `auth.forgotPassword.email` | "Email" |
+| `auth.forgotPassword.emailPlaceholder` | "user@example.com" |
+| `auth.forgotPassword.submit` | "Send Reset Link" |
+| `auth.forgotPassword.submitting` | "Sending..." |
+| `auth.forgotPassword.success` | "If an account exists with that email, you'll receive a password reset link shortly." |
+| `auth.forgotPassword.backToLogin` | "Back to Login" |
+
+### 9.6 English (en) — Reset Password
+
+| Key | Value |
+| :--- | :--- |
+| `auth.resetPassword.title` | "Reset your password" |
+| `auth.resetPassword.description` | "Enter your new password below." |
+| `auth.resetPassword.newPassword` | "New Password" |
+| `auth.resetPassword.newPasswordPlaceholder` | "Create a new password" |
+| `auth.resetPassword.confirmPassword` | "Confirm Password" |
+| `auth.resetPassword.confirmPasswordPlaceholder` | "Confirm your new password" |
+| `auth.resetPassword.submit` | "Reset Password" |
+| `auth.resetPassword.submitting` | "Resetting..." |
+| `auth.resetPassword.success` | "Your password has been reset successfully." |
+| `auth.resetPassword.backToLogin` | "Back to Login" |
+| `auth.resetPassword.invalidToken` | "Invalid or expired reset link. Please request a new one." |
+| `auth.resetPassword.showPassword` | "Show password" |
+| `auth.resetPassword.hidePassword` | "Hide password" |
+| `auth.resetPassword.passwordRequirement.length` | "At least 8 characters" |
+| `auth.resetPassword.passwordRequirement.uppercase` | "One uppercase letter (A-Z)" |
+| `auth.resetPassword.passwordRequirement.lowercase` | "One lowercase letter (a-z)" |
+| `auth.resetPassword.passwordRequirement.number` | "One number (0-9)" |
+| `auth.resetPassword.passwordRequirement.special` | "One special character (@$!%*?&)" |
+
+### 9.7 Japanese (ja) — Forgot Password
+
+| Key | Value |
+| :--- | :--- |
+| `auth.forgotPassword.title` | "パスワードをお忘れですか？" |
+| `auth.forgotPassword.description` | "メールアドレスを入力すると、リセットリンクを送信します。" |
+| `auth.forgotPassword.email` | "メールアドレス" |
+| `auth.forgotPassword.emailPlaceholder` | "user@example.com" |
+| `auth.forgotPassword.submit` | "リセットリンクを送信" |
+| `auth.forgotPassword.submitting` | "送信中..." |
+| `auth.forgotPassword.success` | "そのメールアドレスにアカウントが存在する場合、パスワードリセットリンクが送信されます。" |
+| `auth.forgotPassword.backToLogin` | "ログインに戻る" |
+
+### 9.8 Japanese (ja) — Reset Password
+
+| Key | Value |
+| :--- | :--- |
+| `auth.resetPassword.title` | "パスワードをリセット" |
+| `auth.resetPassword.description` | "新しいパスワードを入力してください。" |
+| `auth.resetPassword.newPassword` | "新しいパスワード" |
+| `auth.resetPassword.newPasswordPlaceholder` | "新しいパスワードを作成" |
+| `auth.resetPassword.confirmPassword` | "パスワード確認" |
+| `auth.resetPassword.confirmPasswordPlaceholder` | "新しいパスワードを再入力" |
+| `auth.resetPassword.submit` | "パスワードリセット" |
+| `auth.resetPassword.submitting` | "リセット中..." |
+| `auth.resetPassword.success` | "パスワードが正常にリセットされました。" |
+| `auth.resetPassword.backToLogin` | "ログインに戻る" |
+| `auth.resetPassword.invalidToken` | "無効または期限切れのリセットリンクです。新しいリセットをリクエストしてください。" |
+| `auth.resetPassword.showPassword` | "パスワードを表示" |
+| `auth.resetPassword.hidePassword` | "パスワードを非表示" |
+| `auth.resetPassword.passwordRequirement.length` | "8文字以上" |
+| `auth.resetPassword.passwordRequirement.uppercase` | "大文字1つ (A-Z)" |
+| `auth.resetPassword.passwordRequirement.lowercase` | "小文字1つ (a-z)" |
+| `auth.resetPassword.passwordRequirement.number` | "数字1つ (0-9)" |
+| `auth.resetPassword.passwordRequirement.special` | "特殊文字1つ (@$!%*?&)" |
+
 ---
 
 ## 10. Shared Components (共有コンポーネント)
@@ -647,6 +1005,7 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 - [ ] Email max length (255) enforced
 - [ ] Password minimum length (8) enforced
 - [ ] Show/hide password toggle works
+- [ ] Forgot password link navigates to `/forgot-password`
 - [ ] Form submits with valid data
 - [ ] Error alert displays on invalid credentials (AUTH_001)
 - [ ] Error alert displays on deactivated account (AUTH_004)
@@ -691,6 +1050,41 @@ The Sign-up and Login pages are the entry points for user authentication in the 
 - [ ] Remove button removes uploaded file
 - [ ] License required error shows when submitting without file (VAL-AUTH-033)
 - [ ] License upload works with i18n (EN/JA/MY)
+
+### 12.4 Forgot Password Form Tests
+
+- [ ] Email validation accepts valid formats
+- [ ] Email validation rejects invalid formats
+- [ ] Email max length (255) enforced
+- [ ] Form submits with valid email
+- [ ] Success message displayed after submission
+- [ ] Form replaced with success message (no email input visible)
+- [ ] "Back to Login" link navigates to `/login`
+- [ ] Rate limit error displays on too many attempts (AUTH_008)
+- [ ] Loading state shows during submission
+- [ ] Auto-focus on email input
+- [ ] Language toggle switches all labels
+- [ ] Theme toggle works
+- [ ] Keyboard navigation works (Tab, Enter)
+- [ ] Network error displays appropriate message
+
+### 12.5 Reset Password Form Tests
+
+- [ ] Password strength requirements enforced (5 rules)
+- [ ] Password requirements checklist updates in real-time
+- [ ] Confirm password match validation works
+- [ ] Form submits with valid password
+- [ ] Success message displayed after reset
+- [ ] "Back to Login" link navigates to `/login`
+- [ ] Invalid token error displays on invalid/expired token (AUTH_009)
+- [ ] Loading state shows during submission
+- [ ] Auto-focus on new password input
+- [ ] Show/hide password toggle works for both password fields
+- [ ] Language toggle switches all labels
+- [ ] Theme toggle works
+- [ ] Keyboard navigation works (Tab, Enter)
+- [ ] Network error displays appropriate message
+- [ ] No token in URL redirects to `/login`
 
 ---
 
