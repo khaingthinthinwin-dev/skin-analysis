@@ -204,7 +204,6 @@ Add a product to the authenticated user's cart.
   - `400 BAD_REQUEST` - Quantity exceeds available stock
   - `401 UNAUTHORIZED` - Missing or invalid access token
   - `404 NOT_FOUND` - Product not found or inactive
-  - `409 CONFLICT` - Product already in cart (use PATCH to update)
   - `429 TOO_MANY_REQUESTS` - Rate limit exceeded
   - `500 INTERNAL_SERVER_ERROR` - Server error
 - **Logic:** Calls `service.addToCart(userId, dto)`
@@ -337,7 +336,7 @@ if (!wishlistItem) throw new NotFoundException('Wishlist item not found');
 
 | Operation | Key Business Rules | Stock Check | Duplicate Handling |
 |-----------|-------------------|-------------|-------------------|
-| Add to Cart | BR-CART-001~005, BR-CART-008 | Yes | Returns 409 CONFLICT |
+| Add to Cart | BR-CART-001~005, BR-CART-008 | Yes | If product already exists in cart, increment existing quantity |
 | Update Quantity | BR-CART-003, BR-CART-004 | Yes | N/A |
 | Remove from Cart | BR-CART-001 | No | N/A |
 | View Cart | BR-CART-006, BR-CART-007 | Yes (for stock status) | N/A |
