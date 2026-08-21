@@ -10,9 +10,9 @@
 | :--- | :--- |
 | **Document ID** | SKM-REQ-001 |
 | **System** | Cosmetics Finder |
-| **Version** | 2.10 |
+| **Version** | 2.11 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-14 |
+| **Last Updated** | 2026-08-21 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 
@@ -23,6 +23,7 @@
 | 1.0 | 2026-08-03 | Software Architect | Initial requirements definition |
 | 2.0 | 2026-08-7 | Software Architect | Clean rewrite: focused on roles, permissions, and features. Removed duplicate content and unnecessary technical details. |
 | 2.1 | 2026-08-14 | Software Architect | Added forgot password and reset password features for all user roles |
+| 2.11 | 2026-08-21 | Software Architect | Added 1.5 Technology Stack (技術スタック) |
 
 ---
 
@@ -60,6 +61,34 @@ AI-powered skincare marketplace that analyzes user skin conditions and recommend
 - Merchant tools for product and advertisement management
 - Admin panel for platform management
 - Multi-language support (English, Myanmar, Japanese)
+
+### 1.5 Technology Stack (技術スタック)
+
+#### Backend
+- **Runtime:** Node.js v22+ (LTS)
+- **Framework:** NestJS v11
+- **Language:** TypeScript v5.7+
+- **ORM:** Prisma v6
+- **Database:** PostgreSQL v16
+- **Cache:** Redis v7 (ioredis v6)
+- **Auth:** JWT (access + refresh tokens), Argon2 password hashing
+- **API Docs:** Swagger/OpenAPI v11
+
+#### Frontend
+- **UI Library:** React v19
+- **Bundler:** Vite v6
+- **Language:** TypeScript v5.7+ (strict)
+- **Routing:** React Router v7
+- **State:** TanStack Query v5
+- **Forms:** React Hook Form + Zod
+- **UI Components:** shadcn/ui (Radix UI)
+- **Styling:** Tailwind CSS v4
+- **i18n:** i18next (English, Myanmar, Japanese)
+- **Testing:** Vitest, Testing Library, MSW v2
+
+#### Services (サービス/外部サービス)
+- **Email Delivery:** Resend (transactional emails: email verification, password reset)
+- **Workflow Automation:** n8n (scheduled jobs, event-driven workflows, third-party integrations, internal automation)
 
 ---
 
