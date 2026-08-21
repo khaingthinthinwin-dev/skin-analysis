@@ -420,7 +420,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | **VAL-CART-004** | `txtCartQuantity` | Requested quantity > stock_quantity | Revert to previous value. Toast (destructive). | "Only {n} available in stock" | "在庫が{n}個しかありません" |
 | **VAL-CART-005** | `btnCartCheckout` | Any item has stock = 0 | Checkout button disabled. Tooltip. | "Remove out-of-stock items before checkout" | "在庫切れの商品を削除してからチェックアウトしてください" |
 | **VAL-CART-006** | `cart` | Authenticated user is not a buyer | Toast (destructive) | "Shopping features are only available to buyers" | "ショッピング機能は購入者のみ利用できます" |
-| **VAL-CART-007** | `btnCartAdd` | Product already exists in cart | Toast (warning) | "Product is already in your cart. Update the quantity instead." | "商品は既にカートに入っています。数量を変更してください。" |
+| **VAL-CART-007** | `btnCartAdd` | Product already exists in cart | Send PATCH request to update quantity, then show Toast (Success)| "Product quantity updated in your cart." | "カート内の商品数量を更新しました。" |
 | **CART_001** | `dlgGuestLoginAlert` | Unauthenticated user attempts cart action | Modal dialog | "Please log in to add items to your cart." | "カートに商品を追加するにはログインしてください" |
 | **CART_002** | `rowCartItem` | Product not found | Toast (destructive) | "Product not found" | "商品が見つかりません" |
 | **CART_003** | `rowCartItem` | Cart item not found (already removed) | Toast (warning) | "Item not found in cart" | "カートにアイテムが見つかりません" |
