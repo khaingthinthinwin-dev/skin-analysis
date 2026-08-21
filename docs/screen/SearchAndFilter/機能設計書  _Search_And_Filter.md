@@ -71,7 +71,8 @@ This screen is responsible for the following core functional areas (serving all 
 6. **Product Discovery** — Presenting active, merchant-approved, in-stock-or-out-of-stock-flagged product cards that link to product detail.
 7. **URL-State Navigation** — Persisting all search/filter/sort/page state in URL query parameters as the single source of truth.
 8. **Caching** — Serving repeat searches and the category tree from Redis to meet performance targets.
-9. **Sponsored Advertisements** — Presenting approved, in-schedule advertisements in the Search Results Top placement, ordered by tier priority with round-robin rotation and limited by the weekly ad cap (REQUIREMENT_SPEC §5.3, §7.6).
+9. **Sponsored Advertisements** — Presenting approved, in-schedule advertisements in the Search Results Top placement, ordered by tier priority with round-robin rot
+ation and limited by the weekly ad cap (REQUIREMENT_SPEC §5.3, §7.6).
 
 ### 1.3 Target Users
 
@@ -103,7 +104,7 @@ This screen is responsible for the following core functional areas (serving all 
 ┌──────────────────────────┐      ┌─────────────────────────────────────┐
 │   Product Detail Page    │      │     Redis (List / Category Cache)   │
 │   (/products/:slug)      │◄─────┤  Serves repeat queries & tree       │
-└──────────────────────────┘      └─────────────────────────────────────┘
+└──────────────────────────┘      └─────────────────────────────────────┘  
 ```
 
 ### 1.5 Inputs / Outputs
@@ -243,6 +244,7 @@ This screen is responsible for the following core functional areas (serving all 
 | 6 | Backend returns { data, meta } with Decimal as string | Query executed | 200 response | System |
 | 7 | Frontend renders product grid, count, pagination | Data received | Results displayed | System |
 | 8 | User clicks product card | Results displayed | Navigates to /products/:slug | User (all roles) |
+| 9 | Frontend requests eligible ads for purchased packages and renders the Search Results Top slider | Search results displayed | Up to 5 approved merchant images/banners displayed above the product grid, rotating every 5 seconds; slider hidden when none are eligible | System |
 
 ### 2.4 Relevant Requirements Covered
 
@@ -366,8 +368,8 @@ This screen is responsible for the following core functional areas (serving all 
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-SEARCH-025 | Approved & In-Schedule Only | Only advertisements with `approved`/`active` status that are within their start/end schedule are rendered in the Search Results Top placement (REQUIREMENT_SPEC §5.3 Display Rules). | Backend (ad service WHERE) |
-| BR-SEARCH-026 | Display Priority | Ads in the placement are ordered by payment tier (Premium > Standard > Basic); within the same priority, round-robin rotation applies; the slider shows a maximum of 5 advertisements rotating automatically every 5 seconds (REQUIREMENT_SPEC §5.3). | Backend (sort logic) + Frontend (slider) |
+| BR-SEARCH-025 | Purchased Package and Eligibility | When a Merchant purchases an Advertisement Package, the Merchant's approved advertisement images/banners are eligible for display only in the page/placement included in that package. For Search Results Top, only ads with `approved`/`active` status and a schedule covering the current time are rendered. | Backend (package, ad status, placement, and schedule filtering) |
+| BR-SEARCH-026 | Search Results Top Slider | The Search Results Top package displays the eligible merchant advertisement images/banners at the top of the Search Results page. The slider displays a maximum of 5 ads, auto-slides every 5 seconds, follows package placement and tier priority rules (Premium > Standard > Basic, with round-robin within a tier), and is hidden when no eligible ads exist. | Backend (placement and priority logic) + Frontend (slider) |
 | BR-SEARCH-027 | Weekly Ad Cap | Platform-wide cap of 5 active advertisements per week (REQUIREMENT_SPEC §7.6) is enforced at approval time; multiple merchants may purchase the same placement package (REQUIREMENT_SPEC §5.3). Expired or inactive ads are excluded and rejected ads removed from rotation. | Backend (ad approval flow) |
 | BR-SEARCH-028 | Ad Cache TTL | Active ads for the placement are cached in Redis with a 5-minute TTL (REQUIREMENT_SPEC §5.3, DEV §10.5) using cache-aside. | Backend (cache service) |
 | BR-SEARCH-029 | Ad Link Navigation | Clicking a sponsored ad navigates to its target link (e.g., `/products?promo=...` or a product/shop URL). | Frontend (event handler) |
@@ -414,7 +416,7 @@ This screen is responsible for the following core functional areas (serving all 
 | EL-26 | Empty State | EmptyState | `search.empty` | Conditional | "No products found" + Reset Filters button |
 | EL-27 | Error Banner | Alert | `search.errors.serverError` | Conditional | Inline error with retry button |
 | EL-28 | Mobile Filter Trigger | Button (icon) | `search.openFilters` | Conditional | Opens filters drawer on mobile |
-| EL-29 | Sponsored Ad Slot | Ad banner container | `search.sponsored` | Conditional | Approved/active ads in Search Results Top placement (REQUIREMENT_SPEC §5.3); hidden when no ads in schedule |
+| EL-29 | Sponsored Ad Slot | Ad banner slider container | `search.sponsored` | Conditional | Displays up to 5 approved merchant advertisement images/banners from purchased Search Results Top packages at the top of the Search Results page; auto-slides every 5 seconds according to package placement and tier priority rules; hidden when no approved, active, in-schedule ads are eligible |
 
 **Default State:**
 - Search input empty; default catalog shown sorted by newest (createdAt desc)
@@ -509,9 +511,9 @@ This screen is responsible for the following core functional areas (serving all 
 | **API Endpoint** | `GET /api/v1/ads?placement=search_top` |
 | **Request Content-Type** | Query parameter `placement` |
 | **Pre-Submission Validation** | `placement` ∈ {`homepage_slider`, `product_sidebar`, `category_banner`, `search_top`} (aligned with `ad_fee_settings.placement`, DBS §3.14) |
-| **Processing Steps** | 1. Redis lookup `cache:ads:search-top`. 2. HIT → return cached list (TTL 5 min). 3. MISS → query ads with `approved`/`active` status and schedule covering now, linked to approved merchants/shops only (BR-SEARCH-013). 4. Order by tier priority → round-robin within tier; cap slider at 5 ads (BR-SEARCH-026). 5. Seed Redis (5 min TTL, REQUIREMENT_SPEC §5.3). 6. Return `{ data: ads }`. |
+| **Processing Steps** | 1. Redis lookup `cache:ads:search-top`. 2. HIT → return cached list (TTL 5 min). 3. MISS → query Advertisement Packages purchased by Merchants for the Search Results Top placement, then select only their approved advertisement images/banners with `approved`/`active` status and a schedule covering now, linked to approved merchants/shops only (BR-SEARCH-013, BR-SEARCH-025). 4. Apply package placement and tier priority rules (Premium > Standard > Basic), with round-robin within a tier, and cap the slider at 5 ads (BR-SEARCH-026). 5. Seed Redis (5 min TTL, REQUIREMENT_SPEC §5.3). 6. Return `{ data: ads }`. |
 | **Success Response** | 200 OK with `{ data: SponsoredAd[] }` (empty array when no in-schedule ads) |
-| **Post-Action** | Render EL-29 sponsored ad slot above the product grid; clicking navigates per BR-SEARCH-029 |
+| **Post-Action** | If the response contains eligible ads, render EL-29 above the product grid and auto-slide every 5 seconds; if the response is empty, hide EL-29. Clicking an ad navigates per BR-SEARCH-029 |
 
 ---
 
