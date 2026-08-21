@@ -1,7 +1,7 @@
 # DD_AUTH_05 — Business Logic
 
-> **Doc ID:** SKM-DD-AUTH-05 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-10
+> **Doc ID:** SKM-DD-AUTH-05 | **Version:** 2.0 | **Status:** Released  
+> **Last Updated:** 2026-08-21
 
 ---
 
@@ -79,6 +79,39 @@ This document specifies the core business logic, token lifecycle management, and
    - Check `is_active` flag. If false, return 403 FORBIDDEN
    - Return user profile data (excluding password hash)
 
+### 2.6 forgotPassword(dto)
+
+1. **Rate Limiting:** Check `rate:auth:forgot-password:{email}` in Redis. If count > 3, reject with 429
+2. **Logic:**
+   - Validate email format
+   - Find user by email in `users` table
+   - If user exists:
+     - Invalidate all previous unused tokens for this user (`UPDATE password_reset_tokens SET used = TRUE WHERE user_id = ? AND used = FALSE`)
+     - Generate secure random token (crypto.randomBytes(32))
+     - Hash token with SHA-256 for storage
+     - Insert `password_reset_tokens` record with 24-hour expiry
+     - Send reset email with link containing raw token
+   - Always return same response regardless of email existence (prevents email enumeration)
+   - Log `PASSWORD_RESET_REQUESTED` event
+3. **Transaction Boundaries:** Token invalidation and creation must be atomic
+
+### 2.7 resetPassword(dto)
+
+1. **Logic:**
+   - Validate token format
+   - Hash the received token with SHA-256
+   - Find `password_reset_tokens` record by `token_hash`
+   - Validate: token exists, `used = FALSE`, `expires_at > NOW()`
+   - If any validation fails, return 400 BAD_REQUEST with generic error
+   - Find user by `user_id` from token
+   - Validate password strength (min 8 chars, uppercase, lowercase, digit, special char)
+   - Hash new password with Argon2id
+   - Update user's `password_hash` in `users` table
+   - Mark token as `used = TRUE`
+   - Invalidate all other unused tokens for this user
+   - Log `PASSWORD_RESET_COMPLETED` event
+2. **Transaction Boundaries:** Password update, token marking, and invalidation of other tokens must be atomic
+
 ---
 
 ## 3. Token Lifecycle Logic
@@ -136,6 +169,64 @@ async isTokenBlacklisted(jti: string): Promise<boolean> {
 }
 ```
 
+### 3.4 Password Reset Token Generation
+
+```typescript
+import * as crypto from 'crypto';
+
+async generatePasswordResetToken(userId: string): Promise<string> {
+  // Generate raw token (sent to user via email)
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token for storage
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  
+  // Set 24-hour expiry
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 24);
+  
+  // Invalidate previous unused tokens
+  await this.prisma.passwordResetToken.updateMany({
+    where: { userId, used: false },
+    data: { used: true },
+  });
+  
+  // Store hashed token
+  await this.prisma.passwordResetToken.create({
+    data: {
+      userId,
+      tokenHash,
+      expiresAt,
+      used: false,
+    },
+  });
+  
+  return rawToken;
+}
+```
+
+### 3.5 Password Reset Token Validation
+
+```typescript
+async validatePasswordResetToken(token: string): Promise<string | null> {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  
+  const record = await this.prisma.passwordResetToken.findFirst({
+    where: {
+      tokenHash,
+      used: false,
+      expiresAt: { gt: new Date() },
+    },
+  });
+  
+  if (!record) {
+    return null; // Invalid, expired, or already used
+  }
+  
+  return record.userId;
+}
+```
+
 ---
 
 ## 4. Password Hashing Logic
@@ -172,6 +263,7 @@ const RATE_LIMIT_CONFIG = {
   login: { limit: 5, window: 300 },      // 5 attempts per 5 minutes
   register: { limit: 3, window: 3600 },  // 3 attempts per hour
   refresh: { limit: 10, window: 60 },    // 10 attempts per minute
+  forgotPassword: { limit: 3, window: 3600 }, // 3 attempts per hour per email
 };
 ```
 
@@ -238,6 +330,19 @@ const CLEAR_COOKIE_OPTIONS = {
 |-------|------|---------------|
 | `email` | Required, valid format | "Email is required" / "Invalid email" |
 | `password` | Required, min 8 chars | "Password is required" |
+
+### 7.3 Forgot Password Validation
+
+| Field | Rule | Error Message |
+|-------|------|---------------|
+| `email` | Required, valid format | "Email is required" / "Invalid email" |
+
+### 7.4 Reset Password Validation
+
+| Field | Rule | Error Message |
+|-------|------|---------------|
+| `token` | Required | "Reset token is required" |
+| `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" |
 
 ---
 

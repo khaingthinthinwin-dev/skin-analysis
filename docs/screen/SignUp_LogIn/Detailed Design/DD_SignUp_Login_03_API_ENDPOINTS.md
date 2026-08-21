@@ -1,7 +1,7 @@
 # DD_AUTH_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-AUTH-03 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-10
+> **Doc ID:** SKM-DD-AUTH-03 | **Version:** 2.0 | **Status:** Released  
+> **Last Updated:** 2026-08-21
 
 ---
 
@@ -156,6 +156,50 @@ Validate access token and return user profile.
   - `403 FORBIDDEN` - Account deactivated
 - **Logic:** Calls `service.verifyToken(userId)`
 
+### 2.6 POST /forgot-password
+
+Request a password reset link via email.
+
+- **Auth Required:** No (Public)
+- **Body:** `ForgotPasswordDto`
+  - `email` (string, required, valid email format)
+- **Response:** `200 OK`
+  ```json
+  {
+    "data": {
+      "message": "If an account exists with that email, you'll receive a password reset link shortly."
+    }
+  }
+  ```
+- **Error Responses:**
+  - `400 BAD_REQUEST` - Validation failed (invalid email format)
+  - `429 TOO_MANY_REQUESTS` - Rate limit exceeded (3 requests per email per hour)
+- **Logic:** Calls `service.forgotPassword(dto)`
+- **Rate Limit:** 3 attempts per email per hour
+- **Note:** Always returns same response regardless of whether email exists (prevents email enumeration)
+
+### 2.7 POST /reset-password
+
+Reset user password using a valid reset token.
+
+- **Auth Required:** No (Public — token in body)
+- **Body:** `ResetPasswordDto`
+  - `token` (string, required)
+  - `password` (string, required, min 8 chars, strong password)
+- **Response:** `200 OK`
+  ```json
+  {
+    "data": {
+      "message": "Your password has been reset successfully."
+    }
+  }
+  ```
+- **Error Responses:**
+  - `400 BAD_REQUEST` - Validation failed (weak password)
+  - `400 BAD_REQUEST` - Invalid or expired reset token
+  - `429 TOO_MANY_REQUESTS` - Rate limit exceeded
+- **Logic:** Calls `service.resetPassword(dto)`
+
 ---
 
 ## 3. Protected Endpoint Guards
@@ -183,6 +227,8 @@ export class AuthController { ... }
 | `POST /login` | 5 attempts | 5 minutes | IP address |
 | `POST /refresh` | 10 attempts | 1 minute | User ID |
 | `POST /logout` | 10 attempts | 1 minute | User ID |
+| `POST /forgot-password` | 3 attempts | 1 hour | Email address |
+| `POST /reset-password` | 5 attempts | 1 hour | Token hash |
 
 **Redis Key Pattern:** `rate:auth:{endpoint}:{identifier}`
 

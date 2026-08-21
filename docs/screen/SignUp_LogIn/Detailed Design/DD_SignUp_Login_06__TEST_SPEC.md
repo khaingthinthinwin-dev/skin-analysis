@@ -1,7 +1,7 @@
 # DD_AUTH_06 — Test Specification
 
-> **Doc ID:** SKM-DD-AUTH-06 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-10
+> **Doc ID:** SKM-DD-AUTH-06 | **Version:** 2.0 | **Status:** Released  
+> **Last Updated:** 2026-08-21
 
 ---
 
@@ -39,6 +39,16 @@ Mock dependencies: `PrismaService`, `RedisService`, `JwtService`, `ConfigService
 | **verifyToken** | Valid token, active user | Returns user profile data |
 | **verifyToken** | Valid token, inactive user | Throws `ForbiddenException` (403) |
 | **verifyToken** | Invalid token | Throws `UnauthorizedException` (401) |
+| **forgotPassword** | Valid email, user exists | Creates reset token, sends email, returns success message |
+| **forgotPassword** | Valid email, user does not exist | Returns same success message (no email enumeration) |
+| **forgotPassword** | Invalid email format | Throws `BadRequestException` (400) |
+| **forgotPassword** | Rate limit exceeded | Throws `TooManyRequestsException` (429) |
+| **forgotPassword** | New request invalidates previous tokens | Previous unused tokens marked as used |
+| **resetPassword** | Valid token and password | Updates password, marks token used, invalidates other tokens |
+| **resetPassword** | Invalid token | Throws `BadRequestException` (400) |
+| **resetPassword** | Expired token (24h) | Throws `BadRequestException` (400) |
+| **resetPassword** | Already used token | Throws `BadRequestException` (400) |
+| **resetPassword** | Weak password | Throws `BadRequestException` (400) |
 
 ### 2.2 `auth.controller.spec.ts`
 
@@ -55,6 +65,12 @@ Mock dependencies: `AuthService`.
 | **POST /logout** | Valid token | Calls `service.logout`, returns 204 |
 | **GET /verify** | Valid token | Calls `service.verifyToken`, returns 200 with user |
 | **GET /verify** | Invalid token | Returns 401 Unauthorized |
+| **POST /forgot-password** | Valid email | Calls `service.forgotPassword`, returns 200 with message |
+| **POST /forgot-password** | Invalid email format | Returns 400 Bad Request |
+| **POST /forgot-password** | Rate limit exceeded | Returns 429 Too Many Requests |
+| **POST /reset-password** | Valid token and password | Calls `service.resetPassword`, returns 200 with message |
+| **POST /reset-password** | Invalid token | Returns 400 Bad Request |
+| **POST /reset-password** | Weak password | Returns 400 Bad Request |
 
 ---
 
@@ -121,6 +137,44 @@ Using Vitest + React Testing Library.
 | Wrong filename | Shows error "File must be named license.pdf" |
 | Remove file | Clicking remove icon clears file, shows upload zone again |
 
+### 3.5 `ForgotPasswordForm.test.tsx`
+
+| Scenario | Expected Outcome |
+|----------|------------------|
+| Initial render | Displays email input and submit button |
+| Valid email input | Email field accepts valid format, no error shown |
+| Invalid email input | Shows "Invalid email address" error below field |
+| Empty email | Shows "Email is required" error on submit |
+| Successful submission | Shows success message, form replaced with message text |
+| Back to Login link | Clicking link navigates to /login |
+| Loading state | Shows spinner on submit button during API call |
+| Rate limit error | Shows "Too many attempts" toast error |
+| Network error | Shows "Network error" toast error |
+| Auto-focus on email input | Email input is focused on page load |
+
+### 3.6 `ResetPasswordForm.test.tsx`
+
+| Scenario | Expected Outcome |
+|----------|------------------|
+| Initial render | Displays new password and confirm password inputs |
+| Valid password input | Password field accepts valid format |
+| Weak password | Shows password strength indicator as "Weak" |
+| Strong password | Shows password strength indicator as "Very Strong" with all checks green |
+| Password mismatch | Shows "Passwords do not match" error on confirm field |
+| Empty password | Shows "Password is required" error on submit |
+| Short password | Shows "Password must be at least 8 characters" error |
+| Missing uppercase | Shows password requirement not met |
+| Missing lowercase | Shows password requirement not met |
+| Missing number | Shows password requirement not met |
+| Missing special char | Shows password requirement not met |
+| Toggle password visibility | Clicking eye icon toggles input type between text/password |
+| Successful reset | Shows success message "Your password has been reset successfully" |
+| Back to Login link | Clicking link navigates to /login |
+| Invalid token error | Shows "Invalid or expired reset link" error |
+| Loading state | Shows spinner on submit button during API call |
+| No token in URL | Redirects to /login |
+| Auto-focus on new password input | New password input is focused on page load |
+
 ---
 
 ## 4. End-to-End (E2E) Scenarios (Playwright)
@@ -137,6 +191,10 @@ Using Vitest + React Testing Library.
 | **E2E-AUTH-08** | **Language Toggle**<br>1. Navigate to /login.<br>2. Toggle language to Japanese.<br>3. Verify all labels change to Japanese.<br>4. Toggle language to Myanmar.<br>5. Verify all labels change to Myanmar.<br>6. Toggle back to English. |
 | **E2E-AUTH-09** | **Theme Toggle**<br>1. Navigate to /login.<br>2. Toggle theme to dark mode.<br>3. Verify dark background colors applied.<br>4. Toggle theme to light mode.<br>5. Verify light background colors applied. |
 | **E2E-AUTH-10** | **Responsive Layout**<br>1. Navigate to /login on desktop (1024px+).<br>2. Verify centered card layout.<br>3. Resize to tablet (768px).<br>4. Verify full-width card with padding.<br>5. Resize to mobile (< 768px).<br>6. Verify stacked layout. |
+| **E2E-AUTH-11** | **Forgot Password Flow**<br>1. Navigate to /login.<br>2. Click "Forgot password?" link.<br>3. Verify redirect to /forgot-password.<br>4. Enter email address.<br>5. Click "Send Reset Link".<br>6. Verify success message displayed.<br>7. Click "Back to Login" link.<br>8. Verify redirect to /login. |
+| **E2E-AUTH-12** | **Reset Password Flow**<br>1. Navigate to /reset-password?token=valid-token.<br>2. Enter new password meeting all requirements.<br>3. Enter matching confirm password.<br>4. Click "Reset Password".<br>5. Verify success message displayed.<br>6. Click "Back to Login" link.<br>7. Verify redirect to /login.<br>8. Login with new password.<br>9. Verify login succeeds. |
+| **E2E-AUTH-13** | **Invalid Reset Token**<br>1. Navigate to /reset-password?token=invalid-token.<br>2. Enter new password.<br>3. Click "Reset Password".<br>4. Verify "Invalid or expired reset link" error displayed.<br>5. Verify link to /forgot-password is shown. |
+| **E2E-AUTH-14** | **Forgot Password Rate Limit**<br>1. Navigate to /forgot-password.<br>2. Enter email and submit 3 times rapidly.<br>3. Verify "Too many attempts" error on 4th attempt.<br>4. Verify form is rate limited. |
 
 ---
 
