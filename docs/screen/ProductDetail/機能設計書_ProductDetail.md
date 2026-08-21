@@ -10,9 +10,9 @@
 | **Target Screen** | Product Detail (商品詳細) |
 | **Subsystem** | Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry |
 | **Function ID** | FN-PROD-001 |
-| **Version** | 5.1 |
+| **Version** | 6.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-17 |
+| **Last Updated** | 2026-08-20 |
 | **Author** | Software Architect |
 | **Status** | Draft (審査中) |
 | **Classification** | Internal — Engineering Division |
@@ -29,6 +29,7 @@
 | 4.0 | 2026-08-10 | Software Architect | Removed the Wishlist deletion (Remove from Wishlist) section and all deletion-related references from the Product Detail scope since deletion is handled by a separate module; added the Active Promotion display section including the promotion balance; corrected database table references (`cart_items` does not exist in the DB design — replaced with `promotions` / `order_items`). |
 | 5.0 | 2026-08-14 | Software Architect | Aligned with DATABASE_SPEC v2.0: replaced all CUID references with UUID (all PKs now use `gen_random_uuid()`); updated merchant data model to reference `merchants` table (display name is `shopName`, not `name`); corrected wishlist table name from `wishlists` to `wishlist` (singular) with matching constraint/index names; clarified verified-purchase check to use `delivered` order status (terminal state per DB spec); updated all JSON examples and Prisma queries accordingly. |
 | 5.1 | 2026-08-17 | Software Architect | Aligned with DATABASE_SPEC v2.2 / REQUIREMENT_SPEC v1.7 / DEVELOPMENT_RULES v2.1: updated cart functionality to reference new `carts` and `cart_items` tables (replacing `order_items` reference for cart operations); added cart lifecycle rules (B-CART-008~014); updated database traceability section with `carts` and `cart_items` tables; added `review_reports` table reference for review moderation. Note: Cart and Wishlist sections remain unchanged as they are maintained by other teams. |
+| 6.0 | 2026-08-20 | Software Architect | Aligned with DATABASE_SPEC v2.4 / REQUIREMENT_SPEC v2.10 / DEVELOPMENT_RULES v2.1: updated all version references to current core document versions (DATABASE_SPEC v2.2→v2.4, REQUIREMENT_SPEC v1.7→v2.10); added `discount_types` lookup table reference for promotion discount type validation (BR-PROD-018); added `password_reset_tokens`, `order_status_history`, and `inventory_transactions` tables to database traceability; fixed configurable item key from `VITE_API_URL` to `VITE_API_BASE_URL`; updated document metadata. |
 
 ---
 
@@ -128,8 +129,8 @@ This screen is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition (v1.7) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x, B-CART-008~014). |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `carts`, `cart_items`, `review_reports`), UUID PKs, merchants table, constraints. |
+| 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules (Rule 4.2.x, 4.4.x, B-CART-008~014). |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `reviews`, `wishlist`, `promotions`, `carts`, `cart_items`, `review_reports`, `discount_types`, `password_reset_tokens`, `order_status_history`, `inventory_transactions`), UUID PKs, merchants table, constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
@@ -320,7 +321,7 @@ This screen is responsible for the following core functional areas:
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-PROD-018 | Active Promotion Display | Only promotions with `is_active = true`, valid within `starts_at` / `expires_at` (Rule 4.5.1), and with remaining balance (`max_uses - used_count > 0`, or unlimited when `max_uses` is NULL) are displayed for the product's merchant. | Backend (query filter) |
+| BR-PROD-018 | Active Promotion Display | Only promotions with `is_active = true`, valid within `starts_at` / `expires_at` (Rule 4.5.1), and with remaining balance (`max_uses - used_count > 0`, or unlimited when `max_uses` is NULL) are displayed for the product's merchant. `discount_type` must be a value from the `discount_types` lookup table (`percentage` or `fixed`), enforced by CHECK constraint `promotions_discount_type_check` on the `promotions` table. | Backend (query filter + DB constraint) |
 | BR-PROD-019 | Promotion Balance Display | The remaining promotion balance is shown as `max_uses - used_count`; when `max_uses` is NULL the balance is shown as "Unlimited". Balance of `0` means the promotion is exhausted and is not displayed. | Backend (computed field) + Frontend (display) |
 
 ---
@@ -722,7 +723,7 @@ slug validated (URL slug format, max 255 chars)
 | `data[].id` | `promotions.id` | UUID string |
 | `data[].code` | `promotions.code` | String (coupon code) |
 | `data[].description` | `promotions.description` | String or null |
-| `data[].discountType` | `promotions.discount_type` | `percentage` / `fixed` |
+| `data[].discountType` | `promotions.discount_type` | `percentage` / `fixed` (only values from `discount_types` lookup) |
 | `data[].discountValue` | `promotions.discount_value` | Decimal string |
 | `data[].minOrderAmount` | `promotions.min_order_amount` | Decimal string or null |
 | `data[].usedCount` | `promotions.used_count` | Integer |
@@ -1020,7 +1021,7 @@ Defined via `.env` configuration and service constants:
 
 | Definition Key | Default Value | Description |
 |----------------|---------------|-------------|
-| `VITE_API_URL` | `/api/v1` | Backend API base URL |
+| `VITE_API_BASE_URL` | `http://localhost:8080/api/v1` | Backend API base URL (full URL for CORS proxy) |
 | `PAGINATION_DEFAULT_LIMIT` | `10` | Default review list page size |
 | `PAGINATION_MAX_LIMIT` | `50` | Maximum review list page size |
 | `REVIEW_MAX_IMAGES` | `5` | Maximum images per review |
@@ -1068,16 +1069,20 @@ Defined via `.env` configuration and service constants:
 | `review_reports` | Review moderation (SELECT / INSERT) — for reporting inappropriate reviews | `idx_review_reports_review_id`, `idx_review_reports_status`, `chk_review_reports_reason`, `chk_review_reports_status` |
 | `wishlist` | Add to wishlist (SELECT / INSERT) — table name is singular | `idx_wishlist_user_id`, `uq_wishlist_user_product` |
 | `promotions` | Active promotion display (SELECT), balance computed from `max_uses` / `used_count` | `idx_promotions_merchant_id`, `idx_promotions_is_active`, `idx_promotions_expires_at`, `uq_promotions_code`, `chk_promotions_discount_value`, `chk_promotions_dates` |
-| `carts` | User cart management (SELECT / INSERT) — DATABASE_SPEC v2.2: new table for cart persistence | `idx_carts_user_id`, `uq_carts_user_id` |
-| `cart_items` | Cart line items (SELECT / INSERT / UPDATE / DELETE) — DATABASE_SPEC v2.2: new table for cart items | `idx_cart_items_cart_id`, `uq_cart_items_cart_product`, `chk_cart_items_quantity` |
-| `order_items` | Verified purchase check (SELECT) for review validation. Note: Cart operations now use `carts`/`cart_items` tables (DATABASE_SPEC v2.2). | `idx_order_items_product_id`, `idx_order_items_merchant_id`, `fk_order_items_product`, `fk_order_items_merchant`, `chk_order_items_quantity`, `chk_order_items_total` |
+| `carts` | User cart management (SELECT / INSERT) — DATABASE_SPEC v2.4: table for cart persistence | `idx_carts_user_id`, `uq_carts_user_id` |
+| `cart_items` | Cart line items (SELECT / INSERT / UPDATE / DELETE) — DATABASE_SPEC v2.4: table for cart items | `idx_cart_items_cart_id`, `uq_cart_items_cart_product`, `chk_cart_items_quantity` |
+| `order_items` | Verified purchase check (SELECT) for review validation. Note: Cart operations now use `carts`/`cart_items` tables (DATABASE_SPEC v2.4). | `idx_order_items_product_id`, `idx_order_items_merchant_id`, `fk_order_items_product`, `fk_order_items_merchant`, `chk_order_items_quantity`, `chk_order_items_total` |
+| `discount_types` | Lookup table for promotion discount type validation — referenced by `promotions.discount_type` CHECK constraint (DB_SPEC v2.4) | `uq_discount_types_code` |
+| `order_status_history` | Order status audit trail — written by Order module when status transitions occur (DB_SPEC v2.4) | `idx_oh_order_id`, `idx_oh_status`, `uq_oh_order_status` |
+| `inventory_transactions` | Inventory audit trail — written by Product/Order modules on stock changes (DB_SPEC v2.4) | `idx_it_product_id`, `idx_it_merchant_id`, `idx_it_reference_type` |
+| `password_reset_tokens` | Password reset — no direct ProductDetail usage, but exists in DB_SPEC v2.4 for auth flows | (none — auth module only) |
 
 **Reference Prisma Queries:**
 
 *Product Detail with Relations:*
 
 ```typescript
-// NOTE: products.merchant_id → references merchants(id) (DATABASE_SPEC v2.0)
+// NOTE: products.merchant_id → references merchants(id) (DATABASE_SPEC v2.4)
 // merchants.shop_name is the display name; shops links via shops.user_id (not merchant_id)
 const product = await prisma.product.findUnique({
   where: { slug: dto.slug, isActive: true },
