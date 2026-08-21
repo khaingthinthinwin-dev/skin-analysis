@@ -75,8 +75,8 @@ The subsystem is **fully read-only**. All figures are derived by aggregating `or
 4. **Order History (own shop only)** — Merchant views orders placed against their own shop.
 5. **Order Detail** — Merchant views order items **and customer information** for one of their own-shop orders.
 6. **Order Tracking** — Merchant views the status timeline of one of their own-shop orders.
-7. **Sales Summary** — Merchant views own-shop order counts: today, this month, completed, cancelled.
-8. **Revenue Summary** — Merchant views own-shop **Sales, Commission, Revenue, and AOV** together (BR-OI-020~024).
+7. **Sales Summary** — Merchant views own-shop order counts: today, this month, completed.
+8. **Revenue Summary** — Merchant views own-shop **Sales, Commission, Revenue, and AOV** together (BR-OI-021~025).
 
 **Admin (Requirement Spec §5.6)**
 
@@ -154,8 +154,8 @@ The subsystem is **fully read-only**. All figures are derived by aggregating `or
 | `orders` | Order Data | Role-scoped order history rows |
 | `orderDetail` | Order Data | Order header, items, totals, payment status (+ customer info for merchant/admin) |
 | `tracking` | Timeline Data | Ordered status timeline from `order_status_history` |
-| `salesSummary` | Aggregate Data | Order counts: today, this month, completed, cancelled |
-| `revenueSummary` | Aggregate Data | **Sales, Commission, Revenue, AOV — always returned together (BR-OI-024)** |
+| `salesSummary` | Aggregate Data | Order counts: today, this month, completed |
+| `revenueSummary` | Aggregate Data | **Sales, Commission, Revenue, AOV — always returned together (BR-OI-026)** |
 | `filters` | Reference Data | Available shop/merchant and status filter options (admin) |
 | `meta` | Pagination Meta | Page, limit, total, totalPages |
 
@@ -181,7 +181,7 @@ The subsystem is **fully read-only**. All figures are derived by aggregating `or
 | UC-OI-004 | View Own-Shop Order History | Merchant | Merchant authenticated and `license_status = 'approved'`. | Paginated list of orders for the merchant's own shop displayed. |
 | UC-OI-005 | View Own-Shop Order Detail | Merchant | Merchant authenticated; order belongs to the merchant's shop. | Order items **and customer information** displayed. |
 | UC-OI-006 | Track Own-Shop Order | Merchant | Merchant authenticated; order belongs to the merchant's shop. | Status timeline displayed. |
-| UC-OI-007 | View Sales Summary | Merchant | Merchant authenticated and approved. | Order counts (today / this month / completed / cancelled) displayed. |
+| UC-OI-007 | View Sales Summary | Merchant | Merchant authenticated and approved. | Order counts (today / this month / completed) displayed. |
 | UC-OI-008 | View Revenue Summary | Merchant | Merchant authenticated and approved. | **Sales, Commission, Revenue, and AOV displayed together.** |
 | UC-OI-009 | View All Orders | Admin | Admin authenticated. | Paginated list of all platform orders displayed. |
 | UC-OI-010 | Filter Orders by Shop / Merchant | Admin | Admin authenticated. | Order list filtered to the selected shop/merchant. |
@@ -233,9 +233,9 @@ The subsystem is **fully read-only**. All figures are derived by aggregating `or
 ┌─────────┐ ┌──────────┐ ┌────────────────┐ ┌──────────────────────┐
 │ Order   │ │ Order    │ │ Sales Summary  │ │ Revenue Summary      │
 │ History │ │ Detail   │ │ today / month  │ │ Sales · Commission   │
-│(UC-004) │ │ items +  │ │ completed /    │ │ Revenue · AOV        │
-│         │ │ customer │ │ cancelled      │ │ (all four together)  │
-│         │ │(UC-005)  │ │ (UC-007)       │ │ (UC-008)             │
+│(UC-004) │ │ items +  │ │ completed      │ │ Revenue · AOV        │
+│         │ │ customer │ │ (UC-007)       │ │ (all four together)  │
+│         │ │(UC-005)  │ │                │ │ (UC-008)             │
 └─────────┘ └────┬─────┘ └────────────────┘ └──────────────────────┘
                  ▼
         ┌──────────────────┐
@@ -375,9 +375,8 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-OI-018 | Sales Summary Counters | Four counters are returned together:<br>• **Today** = `COUNT(orders)` where `created_at` falls in the current day<br>• **This Month** = `COUNT(orders)` where `created_at` falls in the current calendar month<br>• **Completed** = `COUNT(orders)` where `status = 'delivered'` (the terminal state, `order_statuses.is_terminal_state = TRUE`)<br>• **Cancelled** = `COUNT(orders)` where the order is cancelled — see **BR-OI-019** | Backend (aggregation) |
-| BR-OI-019 | Cancelled Count — Schema Gap | The current schema has **no cancelled order state**: `orders.status` is constrained to `placed/confirmed/packed/shipped/out_for_delivery/delivered` (DATABASE_SPEC §3.9) and `order_statuses` contains no `cancelled` row. Until the schema is extended (§16.6), the API MUST return `cancelledCount: 0` together with `cancelledSupported: false`, and the UI MUST render the tile as `—` with the tooltip "Order cancellation is not yet supported." **The field is never silently omitted.** When the schema adds a cancelled state, this rule becomes `COUNT(orders WHERE status = 'cancelled')` with no API shape change. | Backend (aggregation) + Frontend (display) |
-| BR-OI-020 | Counting Boundaries | Today / This Month boundaries are computed in UTC (DB stores TIMESTAMPTZ); the presentation layer labels them with the user's locale. Today and This Month count **all** orders regardless of status; Completed and Cancelled are lifetime counts unless a period filter is supplied. | Backend (query) |
+| BR-OI-018 | Sales Summary Counters | Three counters are returned together:<br>• **Today** = `COUNT(orders)` where `created_at` falls in the current day<br>• **This Month** = `COUNT(orders)` where `created_at` falls in the current calendar month<br>• **Completed** = `COUNT(orders)` where `status = 'delivered'` (the terminal state, `order_statuses.is_terminal_state = TRUE`) | Backend (aggregation) |
+| BR-OI-019 | Counting Boundaries | Today / This Month boundaries are computed in UTC (DB stores TIMESTAMPTZ); the presentation layer labels them with the user's locale. Today and This Month count **all** orders regardless of status; Completed is a lifetime count unless a period filter is supplied. | Backend (query) |
 
 ### 4.5 Revenue Summary Rules (Merchant, §4.5 — confirmed with PM)
 
@@ -413,7 +412,7 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | BR-OI-029 | Currency Formatting | All monetary values formatted with currency symbol and 2 decimals using the platform default locale (`Intl.NumberFormat`). | Frontend |
 | BR-OI-030 | Empty States | Zero/absent data renders as `0` / `—` with an illustrated empty state, never an error. | Frontend |
 | BR-OI-031 | Status Badge | Status badges use one colour per `order_statuses.status_code`, with the label taken from `order_statuses.status_name` (i18n-mapped for EN/MY/JA). | Frontend |
-| BR-OI-032 | Unsupported-Metric Marking | Any figure gated by a schema gap (BR-OI-019 cancelled count, BR-OI-023 locked rate) MUST be visually marked (`—` / footnote), never rendered as a confident value. | Frontend |
+| BR-OI-032 | Unsupported-Metric Marking | Any figure gated by a schema gap (BR-OI-023 locked rate) MUST be visually marked (`—` / footnote), never rendered as a confident value. | Frontend |
 | BR-OI-033 | PII Minimisation | Customer information in Order Detail is limited to what fulfilment requires (name, contact, shipping address). Buyer account identifiers beyond this are never projected to merchants. | Backend (DTO projection) |
 
 ---
@@ -482,7 +481,6 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | EL-OI-30 | Orders Today Tile | Stat Tile | `merchant.orders.today` | Yes | Count of own-shop orders created today (BR-OI-018) |
 | EL-OI-31 | Orders This Month Tile | Stat Tile | `merchant.orders.thisMonth` | Yes | Count of own-shop orders created this calendar month |
 | EL-OI-32 | Completed Orders Tile | Stat Tile | `merchant.orders.completed` | Yes | Count where `status = 'delivered'` |
-| EL-OI-33 | Cancelled Orders Tile | Stat Tile | `merchant.orders.cancelled` | Yes | Renders `—` + tooltip while `cancelledSupported = false` (BR-OI-019/032) |
 
 #### 5.4.2 Summary Panel — Revenue Summary (all four fields together)
 
@@ -595,9 +593,9 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | **API Endpoint** | `GET /api/v1/order-insights/merchant/sales-summary` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Role ∈ {`merchant`, `admin`}; merchant must be license-approved (BR-OI-006) |
-| **Processing Steps** | 1. Validate JWT and role. 2. Resolve `merchants.id` (BR-OI-003) and verify `license_status = 'approved'`. 3. Check cache `cache:oi:merchant:{merchantId}:summary`. 4. On miss, run **one** aggregation over `orders` scoped to the merchant producing `todayCount`, `thisMonthCount`, `completedCount` (`status = 'delivered'`) using `idx_orders_merchant_id` / `idx_orders_created_at`. 5. Set `cancelledCount = 0` and `cancelledSupported = false` per BR-OI-019. 6. Seed cache (TTL `OI_SUMMARY_CACHE_TTL_SECONDS`). 7. Return `salesSummary`. |
-| **Success Response** | 200 OK with `salesSummary` (four counters + `cancelledSupported`) |
-| **Post-Action** | Render the four stat tiles; the cancelled tile renders `—` while unsupported |
+| **Processing Steps** | 1. Validate JWT and role. 2. Resolve `merchants.id` (BR-OI-003) and verify `license_status = 'approved'`. 3. Check cache `cache:oi:merchant:{merchantId}:summary`. 4. On miss, run **one** aggregation over `orders` scoped to the merchant producing `todayCount`, `thisMonthCount`, `completedCount` (`status = 'delivered'`) using `idx_orders_merchant_id` / `idx_orders_created_at`. 5. Seed cache (TTL `OI_SUMMARY_CACHE_TTL_SECONDS`). 6. Return `salesSummary`. |
+| **Success Response** | 200 OK with `salesSummary` (three counters) |
+| **Post-Action** | Render the three stat tiles |
 
 ### 6.5 Operation: View Merchant Revenue Summary
 
@@ -707,8 +705,6 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | `todayCount` | `COUNT(orders)` where `created_at` in current day | Integer |
 | `thisMonthCount` | `COUNT(orders)` where `created_at` in current month | Integer |
 | `completedCount` | `COUNT(orders)` where `status = 'delivered'` | Integer |
-| `cancelledCount` | `0` until the schema supports cancellation (BR-OI-019) | Integer (rendered `—` while unsupported) |
-| `cancelledSupported` | Constant `false` in this version | Boolean (drives the `—` rendering, BR-OI-032) |
 
 ### 7.8 Output Specification — Merchant Revenue Summary (出力定義)
 
@@ -723,7 +719,7 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | `orderCount` | `COUNT(orders)` over the same order set (BR-OI-027) | Integer |
 | `commissionRate` | Applied rate as a percentage | Number (e.g. `12.00`) |
 | `commissionRateSource` | `"current_settings"` \| `"order_snapshot"` (BR-OI-023) | String |
-| `commissionRateLocked` | `false` until `orders.commission_rate` exists (BR-OI-023, §16.7) | Boolean |
+| `commissionRateLocked` | `false` until `orders.commission_rate` exists (BR-OI-023, §16.6) | Boolean |
 | `period` | Echo of the resolved window | `{ code, from, to }` |
 
 ---
@@ -789,7 +785,7 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 - **Loading:** skeleton shimmer for tables, tiles, and the timeline; error state with a retry button.
 - **Empty data:** `0` / `—` placeholders and illustrated empty states (BR-OI-030), never an error.
 - **Cross-scope access:** a `404` from BR-OI-008 renders the standard not-found panel — it never reveals that the order exists under another owner.
-- **Unsupported metrics:** cancelled count and unlocked commission rate render as `—` / footnote (BR-OI-032), not as errors.
+- **Unsupported metrics:** unlocked commission rate renders as `—` / footnote (BR-OI-032), not as errors.
 - **Toast notifications:** used for transient API errors and retry outcomes.
 
 ---
@@ -846,7 +842,7 @@ export class OrderInsightsController {
 @Roles('merchant', 'admin')
 @Controller('order-insights/merchant')
 export class MerchantOrderInsightsController {
-  // GET /sales-summary   -> order counts: today / this month / completed / cancelled (BR-OI-018/019)
+  // GET /sales-summary   -> order counts: today / this month / completed (BR-OI-018/019)
   // GET /revenue-summary -> Sales, Commission, Revenue, AOV — ALWAYS all four (BR-OI-026)
   //   merchant -> scoped to the resolved merchants.id; license gate applies (BR-OI-006)
   //   admin    -> bypasses the license gate; must pass merchantId to select a shop
@@ -971,8 +967,8 @@ Order-status notifications (buyer "your order has shipped", merchant "new order 
 
 | Breakpoint | Layout |
 |------------|--------|
-| Desktop (≥ 1024px) | 4-across Sales Summary tiles; Revenue Summary as a 4-column group; full-width order table |
-| Tablet (768px – 1023px) | 2×2 Sales Summary tiles; Revenue Summary as a 2×2 group; condensed table |
+| Desktop (≥ 1024px) | 3-across Sales Summary tiles; Revenue Summary as a 4-column group; full-width order table |
+| Tablet (768px – 1023px) | Sales Summary tiles in a single 1×3 row; Revenue Summary as a 2×2 group; condensed table |
 | Mobile (< 768px) | 1-column tiles; **Revenue Summary stacks all four figures vertically — it is never truncated to a single value (BR-OI-026)**; order list renders as cards |
 
 ### 13.5 Accessibility Requirements
@@ -1018,7 +1014,7 @@ Defined via `.env` configuration:
 | §4.5 Order History (Merchant) | View orders for own shop | UC-OI-004, BR-OI-003/006, §5.4.3, §6.1 |
 | §4.5 Order Detail (Merchant) | View order items, customer info | UC-OI-005, BR-OI-015/033, §5.5, §6.2, §7.5 |
 | §4.5 Order Tracking (Merchant) | Track order status | UC-OI-006, BR-OI-013/014, §5.3, §6.3 |
-| §4.5 Sales Summary (Merchant) | Order counts: today / this month / completed / cancelled | UC-OI-007, BR-OI-018~020, §5.4.1, §6.4, §7.7 |
+| §4.5 Sales Summary (Merchant) | Order counts: today / this month / completed | UC-OI-007, BR-OI-018~019, §5.4.1, §6.4, §7.7 |
 | §4.5 Revenue Summary (Merchant) | Sales, Commission, Revenue, AOV | UC-OI-008, **BR-OI-021~028**, §5.4.2, §6.5, §7.8 |
 | §5.6 All Orders (Admin) | View all platform orders | UC-OI-009, BR-OI-004, §5.6, §6.1 |
 | §5.6 Orders by Merchant (Admin) | Filter orders by shop | UC-OI-010, BR-OI-016, §5.6 (EL-OI-61), §6.1 |
@@ -1083,27 +1079,7 @@ This section documents schema and behaviour shared with other subsystems, and th
 
 The customer-information block on merchant Order Detail (BR-OI-015) is the only place this subsystem projects buyer PII to another party. Any change to the projected fields must be reviewed against the Profile & Settings subsystem and the platform privacy policy.
 
-### 16.6 Missing Cancelled Order State (blocks the Sales Summary "Cancelled" count)
-
-**Status:** Open schema gap. Specified behaviour: BR-OI-019 / BR-OI-032.
-
-Requirement Spec §4.5 requires the merchant Sales Summary to show a **cancelled** order count, but the schema has no cancelled state:
-
-- `order_statuses` seeds only `placed`, `confirmed`, `packed`, `shipped`, `out_for_delivery`, `delivered` (DATABASE_SPEC §3.1).
-- `chk_orders_status` constrains `orders.status` to exactly those six values (DATABASE_SPEC §3.9).
-- There is no `cancelled_at` / `cancellation_reason` column and no cancellation flow in Requirement Spec §7.3.
-
-Consequence today: the Cancelled tile can only render `—` with `cancelledSupported = false`. The count is **not** silently reported as `0`, because a real zero and an unsupported metric would otherwise be indistinguishable.
-
-Recommendation for a future schema version:
-- Add a `cancelled` row to `order_statuses` (`is_terminal_state = TRUE`) and extend `chk_orders_status`.
-- Add `orders.cancelled_at` (TIMESTAMPTZ, nullable) and `orders.cancellation_reason` (TEXT, nullable).
-- Define who may cancel and until which status (Order Fulfillment module), and whether cancelled orders are excluded from Sales/Revenue (BR-OI-021).
-- Then BR-OI-019 becomes `COUNT(orders WHERE status = 'cancelled')` and `cancelledSupported` flips to `true` — no API shape change required.
-
-Impacted documents: SKM-REQ-001 (§4.5, §7.3), SKM-DBS-001 (§3.1, §3.9), this document (§4.4, §5.4.1, §6.4, §7.7).
-
-### 16.7 Commission Rate Not Snapshotted on Orders (weakens BR-OI-022)
+### 16.6 Commission Rate Not Snapshotted on Orders (weakens BR-OI-022)
 
 **Status:** Open schema gap. Specified behaviour: BR-OI-023 / BR-OI-032.
 
@@ -1121,7 +1097,7 @@ Recommendation for a future schema version:
 
 Impacted documents: SKM-REQ-001 (§7.7), SKM-DBS-001 (§3.9, §3.17, §3.18), this document (§4.5, §6.5, §7.8).
 
-### 16.8 Change Coordination
+### 16.7 Change Coordination
 
 Any change to `order_statuses`, `orders.status`, `orders.payment_status`, `commission_settings.commission_rate`, or the `payouts` calculation MUST be reviewed against: the Checkout functional spec, the Order Fulfillment functional spec, the Notification System spec, the Revenue & Commission spec (Requirement Spec §5.7), and this document.
 
