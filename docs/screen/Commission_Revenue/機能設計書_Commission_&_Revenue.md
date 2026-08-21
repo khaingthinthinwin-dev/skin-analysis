@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 5.0 |
+| **Version** | 6.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-17 |
+| **Last Updated** | 2026-08-21 |
 | **Author** | Senior System Engineer |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -28,6 +28,7 @@
 | 3.0 | 2026-08-11 | Senior System Engineer | Added Revenue Target Progress (configurable gauge bar) and AI Revenue Forecast (dotted line chart) features to the Revenue Dashboard. |
 | 4.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID definitions to UUID format, released final specification. |
 | 5.0 | 2026-08-17 | Senior System Engineer | Expanded spec to include Advertisement Fee Revenue: added ad fee KPIs, ad fee trend chart series, ad fee payment status tracking, ad fee in payout calculations, and ad fee in revenue target progress. |
+| 6.0 | 2026-08-21 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v2.10 and DATABASE_SPEC v2.4: merchant payouts simplified to commission-only deduction (ad fees excluded from payouts and revenue target progress), commission rate bounds corrected to 0 < rate ≤ 100 (default 12%), ad payment status enum aligned to pending/completed/refunded/failed, payout status filter includes processing, audit retention and performance targets aligned with Development Rules. |
 
 ---
 
@@ -66,10 +67,10 @@ This screen suite is responsible for the following core functional areas:
 1. **Commission Rate Configuration** — Enabling admins to set and persist the platform commission rate applied to new transactions.
 2. **Commission Report Generation** — Generating merchant-level commission reports with filtering, sorting, and pagination.
 3. **Revenue Dashboard KPI** — Displaying revenue KPIs and trend visualization over configurable ranges.
-4. **Ad Fee Revenue Tracking** — Tracking and displaying advertisement fee revenue alongside commission revenue in the dashboard.
+4. **Ad Fee Revenue Tracking** — Tracking and displaying advertisement fee revenue alongside commission revenue in the dashboard. (Ad fee rate configuration per placement/tier is administered via the Advertisement Management function, REQ §5.3.)
 5. **Payment Status Breakdown** — Summarizing payment statuses across completed, pending, failed, and refunded records (order payments + ad payments).
-6. **Merchant Payout Management** — Processing merchant payouts with idempotency and status tracking (commission + ad fee deductions).
-7. **Revenue Target Progress** — Configuring monthly/quarterly revenue targets and displaying current progress via a gauge bar (commission + ad fee combined).
+6. **Merchant Payout Management** — Processing merchant payouts with idempotency and status tracking (commission deduction only; ad fees are platform revenue and are never deducted from payouts).
+7. **Revenue Target Progress** — Configuring monthly/quarterly revenue targets and displaying current progress via a gauge bar (based on completed/settled order sales; ad fees excluded per DBS §3.18).
 8. **AI Revenue Forecast** — Predicting revenue and platform fees from historical data and rendering the forecast as a dotted line alongside the current trend.
 9. **Audit and Error Handling** — Logging financial actions and surfacing consistent error states.
 10. **Internationalization and Responsive UI** — Supporting EN / JA / MY and responsive layouts.
@@ -107,7 +108,7 @@ This screen suite is responsible for the following core functional areas:
 | `from` | User Input | Start date for commission report filter |
 | `to` | User Input | End date for commission report filter |
 | `range` | User Input | Trend chart range selection (7d/30d/90d/1y) |
-| `status` | User Input | Payout status filter (pending/completed/failed) |
+| `status` | User Input | Payout status filter (pending/processing/completed/failed) |
 | `targetPeriod` | User Input | Revenue target period (monthly/quarterly) |
 | `targetAmount` | User Input | Revenue target amount in the edit target dialog |
 | `adFeeRange` | User Input | Ad fee trend range selection (7d/30d/90d/1y) |
@@ -120,7 +121,7 @@ This screen suite is responsible for the following core functional areas:
 | `trendPoints` | Chart Data | Trend series data for the revenue chart (commission + ad fees + total) |
 | `forecastPoints` | Chart Data | AI forecast series data (revenue + platform fees + ad fees) drawn as a dotted line |
 | `target` | Display Data | Revenue target object (amount, period, progress percentage) |
-| `payouts` | Display Data | Payout list rows for the payout table (commission + ad fee deductions) |
+| `payouts` | Display Data | Payout list rows for the payout table (totalAmount, commissionAmount, netPayout, status) |
 | `adFeeSummary` | Display Data | Ad fee revenue summary (total ad fees, active ads, pending payments) |
 | `message` | Notification | Success or error text delivered via toast / alert |
 
@@ -128,8 +129,8 @@ This screen suite is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition (v1.7) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.2) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints. |
+| 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
@@ -257,7 +258,7 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-COMM-001 | Rate Range | Platform commission rate must be a decimal between 0 and 100, with a maximum of two decimal places. | Backend (DTO validation) + Frontend (form validation) |
+| BR-COMM-001 | Rate Range | Platform commission rate must be a decimal greater than 0 and at most 100, with a maximum of two decimal places (DB check: `commission_rate > 0 AND commission_rate <= 100`). Seeded default is 12%. | Backend (DTO validation + DB check constraint) + Frontend (form validation) |
 | BR-COMM-002 | Rate Persistence | Commission rate applies to all new transactions from the moment it is saved; historical invoices remain unaffected. | Backend (service logic) |
 | BR-COMM-003 | Rate Format | Commission rate value is transmitted and rendered as a string to preserve precision. | Backend (DTO) + Frontend (string-safe formatting) |
 
@@ -282,6 +283,7 @@ Admin navigates to /admin/commission or /admin/revenue
 |---------|-----------|-------------|-------------------|
 | BR-REV-004 | Payout Idempotency | Payout processing is idempotent; retrying a processed payout returns conflict status. | Backend (service logic) |
 | BR-REV-005 | Payout Status Flow | Payout transitions pending → processing → completed, or pending → failed. | Backend (state machine) |
+| BR-REV-016 | Payout Formula | Net payout = total sales − commission (`net_payout = total_amount − commission_amount`, DBS §3.19). Ad fees are platform revenue and are never deducted from merchant payouts. Failed payouts record a `failure_reason`. | Backend (payout calculation service) |
 
 ### 4.5 Revenue Target Rules
 
@@ -289,9 +291,9 @@ Admin navigates to /admin/commission or /admin/revenue
 |---------|-----------|-------------|-------------------|
 | BR-REV-006 | Target Period | Revenue targets support `monthly` and `quarterly` periods only. | Backend (DTO validation) + Frontend (toggle group) |
 | BR-REV-007 | Target Amount | Target amount must be a positive decimal greater than 0 with a maximum of two decimal places. | Backend (DTO validation) + Frontend (form validation) |
-| BR-REV-008 | Progress Calculation | Progress = (actual revenue in period / target amount) × 100. Gauge clamps display to 0–100%, and values above 100% are shown separately as "over target". | Backend (query aggregation) + Frontend (gauge rendering) |
+| BR-REV-008 | Progress Calculation | Progress = (actual revenue in period / target amount) × 100, where actual revenue is aggregated from completed/settled order sales (`order_items.total_price`, DBS §3.18). Gauge clamps display to 0–100%, and values above 100% are shown separately as "over target". | Backend (query aggregation) + Frontend (gauge rendering) |
 | BR-REV-009 | Single Active Target | Only one active target per period type is stored; saving a new target for the same period overwrites the previous one. | Backend (service logic) |
-| BR-REV-010 | Target Scope | Progress is calculated from completed/settled orders only, consistent with KPI scope (BR-REV-001). | Backend (query aggregation) |
+| BR-REV-010 | Target Scope | Progress is calculated from completed/settled order sales only (aggregated via `order_items.total_price`), consistent with KPI scope (BR-REV-001). Ad fee revenue is excluded from target progress (DBS §3.18). | Backend (query aggregation) |
 
 ### 4.6 AI Revenue Forecast Rules
 
@@ -310,10 +312,10 @@ Admin navigates to /admin/commission or /admin/revenue
 | BR-ADFE-001 | Ad Fee Scope | Ad fee revenue includes only completed ad payments with `paymentStatus = 'completed'`. | Backend (query aggregation) |
 | BR-ADFE-002 | Ad Fee KPI | Ad fee revenue is displayed as a separate KPI card and included in total platform income. | Backend (query aggregation) + Frontend (KPI cards) |
 | BR-ADFE-003 | Ad Fee Trend | Ad fee trend series is overlaid on the revenue chart as a separate line alongside commission revenue. | Backend (query aggregation) + Frontend (chart series) |
-| BR-ADFE-004 | Ad Fee in Payout | Merchant payout deductions include both commission and outstanding ad fees. | Backend (payout calculation service) |
-| BR-ADFE-005 | Ad Fee Payment Status | Ad fee payment statuses (completed, pending, refunded) are summarized alongside order payment statuses. | Backend (query aggregation) + Frontend (payment panel) |
+| BR-ADFE-004 | Ad Fee Not in Payout | Ad fees are platform revenue only and are never deducted from merchant payouts. Net payout = total sales − commission (see BR-REV-016; REQ §7.7, DBS §3.19). | Backend (payout calculation service) |
+| BR-ADFE-005 | Ad Fee Payment Status | Ad fee payment statuses (completed, pending, refunded, failed) are summarized alongside order payment statuses. | Backend (query aggregation) + Frontend (payment panel) |
 | BR-ADFE-006 | Ad Fee Forecast | Ad fee revenue is included in the AI forecast calculation as a separate series. | Backend (forecast service) |
-| BR-ADFE-007 | Ad Fee Target | Ad fee revenue is included in revenue target progress calculation (total income = commission + ad fees). | Backend (target progress calculation) |
+| BR-ADFE-007 | Ad Fee Target Exclusion | Ad fee revenue is excluded from revenue target progress; targets track order sales revenue only (DBS §3.18). Ad fees remain part of the Total Income KPI (commission + ad fees). | Backend (target progress calculation) |
 
 ### 4.8 Security Rules
 
@@ -392,7 +394,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | EL-26 | Trend Chart | Chart | — | Yes | Area/line chart with commission, ad fee, and total income series |
 | EL-27 | Range Toggle | Toggle Group | `revenue.range` | No | 7d / 30d / 90d / 1y range selection |
 | EL-28 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending/failed/refunded) + ad payments |
-| EL-29 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded) |
+| EL-29 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded/failed) |
 | EL-30 | Payout Table | Table | — | Yes | Merchant payouts with action button |
 | EL-31 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
 | EL-32 | Confirmation Dialog | Modal | — | No | Confirm payout processing |
@@ -450,7 +452,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | **Trigger** | "Edit Rate" button click on Commission Rate Card |
 | **API Endpoint** | `PATCH /api/v1/admin/commission` |
 | **Request Content-Type** | `application/json` |
-| **Pre-Submission Validation** | Rate is required, decimal between 0 and 100, max 2 decimal places |
+| **Pre-Submission Validation** | Rate is required, decimal greater than 0 and at most 100, max 2 decimal places |
 | **Processing Steps** | 1. Open edit dialog. 2. Validate input. 3. Submit patch. 4. Close modal and refresh rate display on success. 5. Log COMMISSION_RATE_UPDATED event. |
 | **Success Response** | 200 OK with updated commission rate |
 | **Post-Action** | Close modal, refresh rate display, success toast |
@@ -503,7 +505,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | **API Endpoint** | `POST /api/v1/admin/revenue/payouts/:id/process` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Payout exists and status = pending |
-| **Processing Steps** | 1. Confirm action. 2. Call payout process endpoint. 3. Refresh payout list and KPI metrics on success. 4. Log PAYOUT_PROCESSED event. |
+| **Processing Steps** | 1. Confirm action. 2. Call payout process endpoint. 3. Refresh payout list and KPI metrics on success. 4. On failure, payout record stores `failure_reason` with status = failed and an error toast is shown. 5. Log PAYOUT_PROCESSED / PAYOUT_FAILED event. |
 | **Success Response** | 200 OK with updated payout status |
 | **Post-Action** | Refresh payout list and KPI metrics, success toast |
 | **Error Response** | 404 Not Found, 409 Conflict, 500 Internal Server Error |
@@ -516,7 +518,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | **API Endpoint** | `GET /api/v1/admin/revenue/targets` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
-| **Processing Steps** | 1. Fetch active revenue target and current period actual revenue. 2. Calculate progress percentage. 3. Render target card, gauge bar, and period toggle. 4. On failure, show error alert and render gauge at 0%. |
+| **Processing Steps** | 1. Fetch active revenue target and current period actual revenue (completed/settled order sales aggregated from `order_items.total_price`). 2. Calculate progress percentage. 3. Render target card, gauge bar, and period toggle. 4. On failure, show error alert and render gauge at 0%. |
 | **Success Response** | 200 OK with target config, actual revenue, and progress percentage |
 | **Post-Action** | Render target amount, gauge bar progress, and period toggle |
 | **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
@@ -595,7 +597,7 @@ Admin navigates to /admin/commission or /admin/revenue
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `range` | Range | 期間 | ENUM | Yes | Toggle Group | One of `7d`, `30d`, `90d`, `1y` |
-| `status` | Status | ステータス | ENUM | No | Select | One of `pending`, `completed`, `failed` |
+| `status` | Status | ステータス | ENUM | No | Select | One of `pending`, `processing`, `completed`, `failed` |
 
 ### 7.4 Output Specification — Commission (出力定義)
 
@@ -611,7 +613,7 @@ Admin navigates to /admin/commission or /admin/revenue
 |-------|-------------|----------------|
 | `kpis` | Revenue aggregation | Object of numeric KPI values (totalRevenue, totalCommission, adFeeRevenue, totalIncome, avgOrderValue, netRevenue) |
 | `trendPoints` | Revenue trends query | Array of `{ date, revenue, commission, adFee, totalIncome }` points |
-| `payouts` | Payout records | Array of payout list rows |
+| `payouts` | Payout records (`payouts` table) | Array of payout rows: `{ merchantId, totalAmount, commissionAmount, netPayout, status }` where netPayout = totalAmount − commissionAmount |
 | `message` | API response | Toast / alert text |
 
 ### 7.6 Input Specification — Revenue Target (入力定義)
@@ -625,7 +627,7 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `target` | Revenue target record + aggregation | Object of `{ targetAmount, period, actualRevenue, progressPercent }` |
+| `target` | Revenue target record + aggregation | Object of `{ targetAmount, period, actualRevenue, progressPercent }` (actualRevenue = completed/settled order sales in period, excluding ad fees) |
 | `progressPercent` | Backend calculation | Percentage string clamped to 0–100% for gauge display |
 | `forecastPoints` | Forecast service | Array of `{ date, forecastRevenue, forecastCommission, forecastAdFee }` points |
 
@@ -641,7 +643,7 @@ Admin navigates to /admin/commission or /admin/revenue
 |-------|-------------|----------------|
 | `adFeeKpis` | Ad payment aggregation | Object of `{ totalAdFees, activeAds, pendingPayments, completedPayments }` |
 | `adFeeTrendPoints` | Ad payment trends query | Array of `{ date, adFee }` points |
-| `adFeePaymentStatus` | Ad payment status aggregation | Object of `{ completed, pending, refunded }` counts/amounts |
+| `adFeePaymentStatus` | Ad payment status aggregation | Object of `{ completed, pending, refunded, failed }` counts/amounts |
 
 ---
 
@@ -651,7 +653,7 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
-| `commissionRate` | Required, must match `/^\d+(\.\d{1,2})?$/`, greater than 0 and less than 100 | "Commission rate is required" / "Commission rate must be between 0 and 100 with up to 2 decimal places" | "手数料率は必須です" / "手数料率は0から100の範囲で小数第2位までで入力してください" |
+| `commissionRate` | Required, must match `/^\d+(\.\d{1,2})?$/`, greater than 0 and at most 100 | "Commission rate is required" / "Commission rate must be greater than 0 and at most 100, with up to 2 decimal places" | "手数料率は必須です" / "手数料率は0より大きく100以下の範囲で小数第2位までで入力してください" |
 
 ### 8.2 Report Filter Validation (Strict Mode)
 
@@ -695,7 +697,7 @@ Admin navigates to /admin/commission or /admin/revenue
 ```json
 {
   "statusCode": 400,
-  "message": ["commissionRate must be a number between 0 and 100"],
+  "message": ["commissionRate must be a number greater than 0 and at most 100"],
   "error": "Bad Request",
   "timestamp": "2026-08-06T12:00:00.000Z",
   "path": "/api/v1/admin/commission"
@@ -766,10 +768,12 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Event | Data Logged | Retention |
 |-------|-------------|-----------|
-| `COMMISSION_RATE_UPDATED` | adminId, oldRate, newRate, ip, timestamp | 90 days |
-| `TARGET_UPDATED` | adminId, oldAmount, newAmount, period, ip, timestamp | 90 days |
-| `PAYOUT_PROCESSED` | adminId, payoutId, amount, merchantId, ip, timestamp | 90 days |
-| `PAYOUT_FAILED` | adminId, payoutId, reason, ip, timestamp | 30 days |
+| `COMMISSION_RATE_UPDATED` | adminId, oldRate, newRate, ip, timestamp | 2 years |
+| `TARGET_UPDATED` | adminId, oldAmount, newAmount, period, ip, timestamp | 2 years |
+| `PAYOUT_PROCESSED` | adminId, payoutId, amount, merchantId, ip, timestamp | 2 years |
+| `PAYOUT_FAILED` | adminId, payoutId, reason, ip, timestamp | 1 year |
+
+Retention is aligned with Development Rules §6.4 (admin actions: 2 years; financial records: 1 year).
 
 ---
 
@@ -831,12 +835,12 @@ No WebSocket or server-sent event integration is required for this release. UI n
 
 | Metric | Target |
 |--------|--------|
-| Page Load (Initial Render) | ≤ 2 seconds |
-| Dashboard Query Response | ≤ 1 second |
-| Target Progress Query Response | ≤ 1 second |
-| Forecast Query Response | ≤ 2 seconds |
+| Page Load (LCP) | ≤ 2 seconds |
+| API Response Time (p95) | ≤ 500 ms |
+| Payout Processing (incl. external settlement) | ≤ 2 seconds |
 | Client-side Cache Stale Time | 5 minutes |
-| Payout Process Response | ≤ 2 seconds |
+
+Targets are aligned with Development Rules §10.1–10.2 and Requirements Definition §8.3.
 
 ### 13.2 Security Considerations
 
@@ -869,7 +873,10 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Forecast algorithm | Trend extrapolation (e.g., linear regression) over selected range |
 | Minimum forecast data points | Backend config (default: 7 historical points) |
 | Ad fee trend series color | Frontend chart config (default: orange/amber) |
-| Ad fee payment status mapping | Backend enum: `completed`, `pending`, `refunded` |
+| Ad fee payment status mapping | Backend enum: `pending`, `completed`, `refunded`, `failed` (DBS §3.15) |
+| Default commission rate | 12% (seeded in `commission_settings`, DBS §3.17) |
+| Payout status enum | `pending`, `processing`, `completed`, `failed` (DBS §3.19) |
+| Ad fee rate configuration | Administered via the Advertisement Management function (REQ §5.3); this screen tracks ad fee revenue only |
 
 ---
 
@@ -882,7 +889,7 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | A-COMM-001 | Admin can set platform commission rate | UC-COMM-002, Sec 6.2 |
 | A-COMM-002 | System calculates commission per transaction | BR-COMM-002, Sec 4.1 |
 | A-COMM-003 | Admin can view commission reports by merchant | UC-COMM-003, Sec 6.3 |
-| A-COMM-004 | Commission rate is decimal 0–100, max 2dp | BR-COMM-001, Sec 4.1, 8.1 |
+| A-COMM-004 | Commission rate is decimal, 0 < rate ≤ 100, max 2dp (default 12%) | BR-COMM-001, Sec 4.1, 8.1 |
 | A-COMM-005 | Rate applies to new transactions only | BR-COMM-002, Sec 4.1 |
 | A-COMM-006 | Commission reports support date range filtering | BR-COMM-004, Sec 4.2, 6.3 |
 | A-COMM-007 | Commission reports support pagination and sorting | BR-COMM-005, Sec 4.2 |
@@ -901,12 +908,13 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | A-REV-012 | Revenue targets support monthly and quarterly only | BR-REV-006, Sec 4.5, 7.6 |
 | A-REV-013 | Only one active target per period type | BR-REV-009, Sec 4.5, 6.8 |
 | A-REV-014 | Forecast is indicative, never written to financial records | BR-REV-015, Sec 4.6 |
+| A-REV-015 | Net payout = total sales − commission (idempotent processing) | BR-REV-004, BR-REV-016, Sec 4.4, 6.6 |
 | A-ADFE-001 | Admin can view advertisement fee revenue in dashboard | UC-COMM-010, Sec 6.10 |
 | A-ADFE-002 | Ad fee revenue included in total platform income KPI | BR-ADFE-002, Sec 6.4 |
 | A-ADFE-003 | Ad fee payment status tracked alongside order payment status | BR-ADFE-005, Sec 6.10 |
 | A-ADFE-004 | Ad fee trend series overlaid on revenue chart | BR-ADFE-003, Sec 4.7, 6.11 |
-| A-ADFE-005 | Ad fee included in payout deduction | BR-ADFE-004, Sec 4.7, 6.6 |
-| A-ADFE-006 | Ad fee included in revenue target progress | BR-ADFE-007, Sec 4.7, 6.7 |
+| A-ADFE-005 | Ad fees excluded from payout deduction (payout = sales − commission) | BR-ADFE-004, BR-REV-016, Sec 4.4, 4.7 |
+| A-ADFE-006 | Ad fees excluded from revenue target progress (order sales only) | BR-ADFE-007, BR-REV-010, Sec 4.5, 4.7, 6.7 |
 | A-ADFE-007 | Ad fee included in AI forecast as separate series | BR-ADFE-006, Sec 4.7, 6.9 |
 
 ### 15.2 API Endpoint Traceability
@@ -943,7 +951,9 @@ No WebSocket or server-sent event integration is required for this release. UI n
 - [ ] Ad fee revenue included in total platform income KPI
 - [ ] Ad fee payment status tracked alongside order payment status
 - [ ] Ad fee trend series rendered as separate line on revenue chart
-- [ ] Ad fee included in payout deduction calculation
+- [ ] Payout net amount computed as total − commission only (no ad fee deduction)
+- [ ] Revenue target progress aggregated from order sales (`order_items.total_price`), excluding ad fees
+- [ ] Commission rate accepts 0 < rate ≤ 100 with max 2 decimal places (default 12%)
 
 ---
 
