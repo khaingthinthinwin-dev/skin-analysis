@@ -56,6 +56,20 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return result === 1;
   }
 
+  async checkRateLimit(
+    key: string,
+    limit: number,
+    window: number,
+  ): Promise<boolean> {
+    const current = await this.incr(key);
+
+    if (current === 1) {
+      await this.expire(key, window);
+    }
+
+    return current <= limit;
+  }
+
   getClient(): Redis {
     return this.client;
   }

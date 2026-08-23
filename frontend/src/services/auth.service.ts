@@ -1,5 +1,14 @@
 import apiClient from '@/lib/api-client'
-import type { LoginCredentials, RegisterData, AuthResponse, User } from '@/types/auth.types'
+import type {
+  LoginCredentials,
+  RegisterData,
+  AuthResponse,
+  User,
+  ForgotPasswordData,
+  ResetPasswordData,
+  CreateAdminData,
+  MessageResponse,
+} from '@/types/auth.types'
 
 export const authService = {
   login: async (data: LoginCredentials): Promise<AuthResponse> => {
@@ -30,5 +39,20 @@ export const authService = {
 
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout')
+  },
+
+  forgotPassword: async (data: ForgotPasswordData): Promise<MessageResponse> => {
+    const response = await apiClient.post<{ data: MessageResponse }>('/auth/forgot-password', data)
+    return response.data.data
+  },
+
+  resetPassword: async (data: ResetPasswordData): Promise<MessageResponse> => {
+    const response = await apiClient.post<{ data: MessageResponse }>('/auth/reset-password', data)
+    return response.data.data
+  },
+
+  createAdmin: async (data: CreateAdminData): Promise<User> => {
+    const response = await apiClient.post<{ data: User }>('/auth/create-admin', data)
+    return response.data.data
   },
 }

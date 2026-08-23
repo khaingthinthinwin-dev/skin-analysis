@@ -13,13 +13,16 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
   UNAUTHORIZED: '/unauthorized',
   ABOUT: '/about',
   DASHBOARD: '/dashboard',
   PROFILE: '/dashboard/profile',
   SETTINGS: '/dashboard/settings',
-  MERCHANT_DASHBOARD: '/merchant/dashboard',
-  ADMIN_DASHBOARD: '/admin/dashboard',
+  MERCHANT_DASHBOARD: '/merchant',
+  ADMIN_DASHBOARD: '/admin',
+  ADMIN_CREATE_ADMIN: '/admin/create-admin',
 } as const
 
 export function getDashboardRoute(role: UserRole): string {

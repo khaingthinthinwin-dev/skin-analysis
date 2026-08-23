@@ -13,6 +13,8 @@ const Home = lazy(() => import('@/pages/buyer/Dashboard'))
 const About = lazy(() => import('@/pages/About'))
 const Login = lazy(() => import('@/pages/auth/Login'))
 const Register = lazy(() => import('@/pages/auth/Register'))
+const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const Profile = lazy(() => import('@/pages/shared/Profile'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
@@ -25,6 +27,7 @@ const AdminAdvertisementManagement = lazy(() => import('@/pages/admin/Advertisem
 const AdminReviewManagement = lazy(() => import('@/pages/admin/ReviewManagement'))
 const AdminContentModeration = lazy(() => import('@/pages/admin/ContentModeration'))
 const AdminCommissionRevenue = lazy(() => import('@/pages/admin/CommissionRevenue'))
+const CreateAdminAccount = lazy(() => import('@/pages/admin/CreateAdminAccount'))
 
 const AdminAuditLog = lazy(() => import('@/pages/admin/AuditLog'))
 
@@ -172,6 +175,14 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <AdminAuditLog />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'create-admin',
+                element: (
+                  <SuspenseWrapper>
+                    <CreateAdminAccount />
                   </SuspenseWrapper>
                 ),
               },
@@ -323,6 +334,26 @@ export const router = createBrowserRouter([
       <AuthLayout>
         <SuspenseWrapper>
           <Register />
+        </SuspenseWrapper>
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/forgot-password',
+    element: (
+      <AuthLayout>
+        <SuspenseWrapper>
+          <ForgotPassword />
+        </SuspenseWrapper>
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/reset-password',
+    element: (
+      <AuthLayout>
+        <SuspenseWrapper>
+          <ResetPassword />
         </SuspenseWrapper>
       </AuthLayout>
     ),
