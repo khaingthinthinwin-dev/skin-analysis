@@ -54,7 +54,6 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **softDelete** | Product with active orders (placed/confirmed/packed/shipped/out_for_delivery) | Throws `ConflictException` with "Cannot delete product with active orders" |
 | **softDelete** | Product with active orders (shipped) | Throws `ConflictException` with "Cannot delete product with active orders" |
 | **softDelete** | Product with resolved orders only (delivered) | Soft-deletes successfully |
-| **softDelete** | Product with cancelled orders only | Soft-deletes successfully (cancelled is terminal state) |
 | **softDelete** | Product with no orders | Soft-deletes successfully |
 | **updateStock** | Valid quantity, own product | Updates stock, returns stock DTO |
 | **updateStock** | Quantity < 0 | Throws `BadRequestException` |
@@ -71,7 +70,6 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **bulkSoftDelete** | Product with active orders (placed/confirmed/packed/shipped/out_for_delivery) | Skips product, adds to errors array |
 | **bulkSoftDelete** | Product with active orders (shipped) | Skips product, adds to errors array |
 | **bulkSoftDelete** | Product with resolved orders only (delivered) | Soft-deletes successfully |
-| **bulkSoftDelete** | Product with cancelled orders only | Soft-deletes successfully (cancelled is terminal state) |
 | **bulkSoftDelete** | Product with no orders | Soft-deletes successfully |
 | **bulkSoftDelete** | Mixed: some with active orders, some without | Deletes eligible, skips products with active orders |
 | **deleteAllByMerchant** | All products have active orders | Returns deleted=0, skipped with all product IDs |

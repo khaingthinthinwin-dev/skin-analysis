@@ -87,7 +87,7 @@ This document specifies the core business logic, state transitions, and validati
           productId: id,
           order: {
             status: {
-              statusCode: { notIn: ['delivered', 'cancelled'] },
+              statusCode: { notIn: ['delivered'] },
             },
           },
         },
@@ -147,7 +147,7 @@ This document specifies the core business logic, state transitions, and validati
           productId: { in: validProductIds },
           order: {
             status: {
-              statusCode: { notIn: ['delivered', 'cancelled'] },
+              statusCode: { notIn: ['delivered'] },
             },
           },
         },
@@ -192,7 +192,7 @@ Delete all products belonging to the authenticated merchant. Respects current se
            productId: { in: productIds },
            order: {
               status: {
-                statusCode: { notIn: ['delivered', 'cancelled'] },
+                statusCode: { notIn: ['delivered'] },
               },
            },
          },

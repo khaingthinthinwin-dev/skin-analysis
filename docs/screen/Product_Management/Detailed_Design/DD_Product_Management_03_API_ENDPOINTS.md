@@ -207,7 +207,7 @@ Update product details (merchant/admin).
 
 ### 2.5 DELETE /products/:id
 
-Soft delete product (set `is_active = false`). Applies BR-PROD-024: products with any related order not in `{delivered, cancelled}` cannot be deleted.
+Soft delete product (set `is_active = false`). Applies BR-PROD-024: products with any related order not in `{delivered}` cannot be deleted.
 
 - **Auth Required:** Yes (`JwtAuthGuard`)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -220,7 +220,7 @@ Soft delete product (set `is_active = false`). Applies BR-PROD-024: products wit
   - `403 MERCHANT_NOT_APPROVED` — Merchant license status is `pending`
   - `403 MERCHANT_REJECTED` — Merchant license status is `rejected` (includes rejection reason)
   - `404 NOT_FOUND` — Product not found
-  - `409 CONFLICT` — Product has orders with status not in `{delivered, cancelled}`. Error message: "Cannot delete product with active orders. All orders must be completed first."
+  - `409 CONFLICT` — Product has orders with status not in `{delivered}`. Error message: "Cannot delete product with active orders. All orders must be completed first."
 - **Logic:** Calls `service.softDelete(id, userId)`
 - **Side Effects:** Invalidates product cache and list cache
 

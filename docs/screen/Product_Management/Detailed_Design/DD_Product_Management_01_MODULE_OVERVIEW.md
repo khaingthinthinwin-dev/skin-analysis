@@ -75,7 +75,7 @@ stateDiagram-v2
 8. **Soft Delete**: Products are never physically removed; `is_active = false` hides from public view.
 9. **Cache Invalidation**: Product mutations trigger Redis cache eviction for data consistency.
 10. **License Status Guard (`requireApprovedMerchant`)**: All merchant product CRUD operations (Create, Update, Delete, Stock Update) are protected by the `requireApprovedMerchant` guard. Merchants with `pending` status receive `403 MERCHANT_NOT_APPROVED`. Merchants with `rejected` status receive `403 MERCHANT_REJECTED` with rejection reason from database.
-11. **Active Order Deletion Guard (BR-PROD-024)**: Products with orders whose status is not `delivered` or `cancelled` cannot be soft-deleted. The order-status seed is the canonical source for valid status codes.
+11. **Active Order Deletion Guard (BR-PROD-024)**: Products with orders whose status is not `delivered` cannot be soft-deleted. The order-status seed is the canonical source for valid status codes.
 
 ---
 
@@ -202,7 +202,7 @@ stateDiagram-v2
 | BR-PROD-021 | Atomic Decrement | Stock decremented atomically on order creation. | Backend DB transaction |
 | BR-PROD-022 | Merchant Ownership | Merchants can only edit/delete their own products | Backend service check |
 | BR-PROD-023 | Admin Override | Admins can manage all products | Backend RBAC |
-| BR-PROD-024 | Active Order Deletion Guard | Product cannot be soft-deleted if it has any associated orders with status NOT IN ('delivered', 'cancelled'). Only products with no orders or all orders in terminal states (`delivered` or `cancelled`) can be deleted. | Backend service logic (softDelete method) |
+| BR-PROD-024 | Active Order Deletion Guard | Product cannot be soft-deleted if it has any associated orders with a status other than `delivered`. Only products with no orders or all orders in the `delivered` state can be deleted. | Backend service logic (softDelete method) |
 | BR-PROD-025 | Deletion Restriction Message | When deletion is blocked due to active orders, return 409 Conflict with error message: "Cannot delete product with active orders. All orders must be completed first." | Backend error response (409 CONFLICT) |
 | BR-PROD-026 | Pending License Restriction | Merchants with license status `pending` are restricted from all Product CRUD operations (Create, Update, Delete, Stock Update). Merchants with `rejected` status are also restricted. | Backend `requireApprovedMerchant` guard |
 | BR-PROD-027 | Pending License Dashboard | When a merchant with `pending` status accesses `/merchant/products`, the product list page loads with restricted UI: all CRUD buttons (Add Product, Edit, Delete, Toggle Active, Toggle Featured, Bulk Actions) are hidden, a pending approval banner is displayed with message "商品登録は承認後に利用できます" ("Product registration available after approval"), and the product table is read-only. Backend API still returns `403 MERCHANT_NOT_APPROVED` for direct CRUD attempts (POST, PATCH, DELETE). For rejected merchants, the product list page loads with rejection reason banner and CRUD buttons hidden. Backend API returns `403 MERCHANT_REJECTED` with rejection reason from `merchants.rejection_reason` column. | Backend `requireApprovedMerchant` guard (CRUD endpoints) + Frontend `merchantProducts.guard.ts` (restricted dashboard UI) |
