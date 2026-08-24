@@ -298,7 +298,6 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `pending` | Payment initiated, not yet confirmed | No | No |
 | `completed` | Payment successful | Yes (if approved) | On rejection |
 | `refunded` | Refund processed after rejection | No | — |
-| `failed` | Payment failed | No | No |
 
 ### 3.3 Ad Lifecycle Transitions (Admin-Triggered)
 
@@ -855,7 +854,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `tier` | `ad_fee_settings.tier` | String |
 | `isActive` | `advertisements.is_active` | Boolean |
 | `approvalStatus` | `advertisements.approval_status` | 'pending' / 'approved' / 'rejected' |
-| `paymentStatus` | `advertisements.payment_status` | 'pending' / 'completed' / 'refunded' / 'failed' |
+| `paymentStatus` | `advertisements.payment_status` | 'pending' / 'completed' / 'refunded' |
 | `paymentAmount` | `advertisements.payment_amount` | Decimal string ($) |
 | `approvedBy` | `advertisements.approved_by` | UUID string or null |
 | `approvedAt` | `advertisements.approved_at` | ISO 8601 timestamp or null |

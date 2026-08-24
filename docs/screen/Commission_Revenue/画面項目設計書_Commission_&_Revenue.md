@@ -8,7 +8,7 @@
 **Created:** 2026-08-10  
 **Last Updated:** 2026-08-24  
 **Author:** Senior System Engineer  
-**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.4, Functional Spec v7.2)  
+**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.5, Functional Spec v7.2)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -37,7 +37,7 @@
 | No. | Document ID | Document Name | File Path | Version | Remarks |
 | :-- | :--- | :--- | :--- | :--- | :--- |
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 2.11 | Business workflow logic, user roles, merchant states, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.4 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.5 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
 | 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 7.2 | Use cases, state transitions, validation rules, business rules, and error handling. |
 

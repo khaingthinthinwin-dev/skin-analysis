@@ -133,7 +133,7 @@ This screen suite is responsible for the following core functional areas:
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
 | 1 | SKM-REQ-001 | Requirements Definition (v2.11) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.5) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
 ---
@@ -678,7 +678,7 @@ Admin navigates to /admin/commission-revenue
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `range` | Must be one of `7d`, `30d`, `90d`, `1y` | "Invalid range" | "無効な期間です" |
-| `status` | Must be one of `pending`, `completed`, `failed` | "Invalid status" | "無効なステータスです" |
+| `status` | Must be one of `pending`, `completed` | "Invalid status" | "無効なステータスです" |
 
 ### 8.4 Revenue Target Validation (Strict Mode)
 
