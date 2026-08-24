@@ -4,9 +4,9 @@
 **Target Screen:** Search & Filter Page (検索・フィルタページ)  
 **Subsystem:** All Roles — Product Search, Filtering, Sorting & Pagination  
 **Function ID:** FN-SEARCH-001  
-**Version:** 2.2  
+**Version:** 2.3  
 **Created:** 2026-08-07  
-**Last Updated:** 2026-08-18  
+**Last Updated:** 2026-08-21  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -24,15 +24,16 @@
 | 2.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, corrected DB mapping types to UUID. |
 | 2.1 | 2026-08-17 | Senior System Engineer | Further alignment with SignUp_Login (画面項目設計書 SKM-SIS-SCR-001) format and naming conventions. Enhanced section organization, improved consistency across all table formats, and ensured all Item Definitions follow standardized component type and data type conventions per DEVELOPMENT_RULES v2.0. |
 | 2.2 | 2026-08-18 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.10, DATABASE_SPEC v2.2, and DEVELOPMENT_RULES v2.1. Updated subsystem from "Buyer Module" to "All Roles". Added sponsored advertisement display (Sec 4.4 item39, Sec 5.15, Sec 8.5). Added 401/403 error codes for guest/merchant/admin shopping restrictions (Sec 6.2). Added guest alert modal behavior (Sec 11). Added Myanmar (MY) i18n translations (Sec 9.3). Fixed CUID→UUID in validation messages. |
+| 2.3 | 2026-08-21 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v2.10 / DATABASE_SPEC v2.4 / DEVELOPMENT_RULES v2.1: stale cross-references updated (Rule 4.6.4 → REQUIREMENT_SPEC §5.3 Advertisement Display Rules), related document versions refreshed, and merchant approval gating (`merchants.license_status`, DBS §3.2) reflected in visibility notes. |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | Requirements Definition (要件定義書) v1.10 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields (B-SEARCH-*, B-MATCH-*), and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification (データベース設計書) v2.2 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `shops`), constraints, data types. |
+| 1 | SKM-REQ-001 | Requirements Definition (要件定義書) v2.10 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Permission matrix (§2.2), merchant approval states (§2.4), business rules (§7.2, §7.6), acceptance criteria (§8). |
+| 2 | SKM-DBS-001 | Database Design Specification (データベース設計書) v2.4 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `merchants`, `shops`, `advertisements`, `ad_fee_settings`), constraints, data types. |
 | 3 | SKM-DEV-001 | Development Rules (開発ルール) v2.1 | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses, naming conventions. |
-| 4 | SKM-FDS-SEARCH-001 | Functional Specification (機能設計書) v2.2 — Search & Filter | `docs/screen/SearchAndFilter/機能設計書  _Search_And_Filter.md` | Use cases, state transitions, business rules, error handling. |
+| 4 | SKM-FDS-SEARCH-001 | Functional Specification (機能設計書) v2.3 — Search & Filter | `docs/screen/SearchAndFilter/機能設計書  _Search_And_Filter.md` | Use cases, state transitions, business rules, error handling. |
 
 ---
 
@@ -60,7 +61,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 7. **Performance Caching** — Repeat queries and category tree served from Redis cache (product list TTL 2 min, category tree TTL 30 min).
 8. **Responsive Design** — Desktop: fixed filters sidebar + multi-column product grid. Mobile: bottom-sheet filter drawer + single-column product display.
 9. **View Mode Toggle** — Switch result layout between responsive Grid (1–4 columns, adaptive) and mobile-optimized List (single-column stacked rows). Selection persists to `localStorage`, defaults to Grid, and does not affect URL state or trigger refetch.
-10. **Sponsored Advertisements** — Render search result sponsored ad slot (top placement) from `GET /api/v1/ads?placement=search_top` with 5-min Redis TTL. Cached ad slot data rendered without blocking product results.
+10. **Sponsored Advertisements** — Render approved advertisement images/banners from Merchant-purchased Advertisement Packages in the Search Results Top placement via `GET /api/v1/ads?placement=search_top` with 5-min Redis TTL. Display up to 5 eligible ads in a 5-second auto-sliding container without blocking product results.
 
 ---
 
@@ -199,7 +200,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | 34 | `alertError` | Error Banner | Alert (`destructive`) | String | Conditional | Hidden by default. Shown on API/network error. | — | API error response | Tailwind: `border-destructive/50 text-destructive`. Dismissible. Includes Retry button. |
 | 35 | `pgnPagination` | Pagination | Pagination | — | No | Visible when `totalPages > 1`. | `page` ≥ 1, `limit` 1–100 | `meta.page`, `meta.totalPages` | Previous/next + page numbers. First/last page boundaries disable buttons (Sec 3.3). |
 | 36 | `selPageSize` | Page Size Select | Select | Enum | No | Default: 20 | Options: 10 / 20 / 50 / 100 | Query param `limit` | Changing page size resets `page` to 1. |
-| 39 | `slotAdTop` | Sponsored Ad Slot — Search Results Top | Container (`div`) | — | Conditional | Hidden until ad response arrives. Rendered above the first product row. | — | `GET /api/v1/ads?placement=search_top` (5-min Redis TTL, `cache:ads:search-top`) | Displays sponsored advertisement content (image, link, CTA) for the search top placement. Ad loaded independently of product results (parallel fetch). On ad fetch error or no active ads: hidden (graceful degradation). CTA click tracked via `ad.click` analytics event. Rule 4.6.4: ad slot must be visually distinct from organic results (e.g., "Sponsored" label badge). |
+| 39 | `slotAdTop` | Sponsored Ad Slot — Search Results Top | Slider container (`div`) | — | Conditional | Hidden until ad response arrives. Rendered above the first product row. | Maximum 5 ads; auto-slide every 5 seconds. | `GET /api/v1/ads?placement=search_top` (5-min Redis TTL, `cache:ads:search-top`) | Displays the Merchant's approved advertisement images/banners from purchased Advertisement Packages whose placement includes Search Results Top. Applies package placement and tier priority rules (Premium > Standard > Basic, round-robin within a tier). Only approved, active, in-schedule ads are eligible. On ad fetch error or no eligible ads: hidden (graceful degradation). CTA click tracked via `ad.click` analytics event. REQUIREMENT_SPEC §5.3: ad slot must be visually distinct from organic results (e.g., "Sponsored" label badge). |
 
 ### 4.5 Section [E]: Footer Controls (フッターコントロール)
 
@@ -339,10 +340,12 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - **Trigger:** Component mounts (Search & Filter page loaded).
 - **Processing Logic:**
   1. **Fetch ad slot:** `GET /api/v1/ads?placement=search_top` — parallel to product results fetch, does not block or defer product loading.
-  2. **Cache:** Ad slot response cached in Redis with key `cache:ads:search-top`, TTL 5 minutes (BR-SEARCH-025).
-  3. **Render:** If response returns active ad(s), render the top ad in `slotAdTop` container. Display "Sponsored" label badge (Rule 4.6.4) to distinguish from organic results.
-  4. **Error handling:** On ad fetch error or empty response, hide `slotAdTop` (graceful degradation — ad failure never blocks product results).
-  5. **Click tracking:** CTA click triggers `ad.click` analytics event with `ad_id` and `placement`.
+  2. **Filter:** Select approved advertisement images/banners from Merchant-purchased Advertisement Packages for the Search Results Top placement. Keep only approved, active ads whose schedule covers the current time.
+  3. **Prioritize:** Apply package placement and tier priority rules (Premium > Standard > Basic), with round-robin rotation within each tier, then limit the slider to a maximum of 5 ads.
+  4. **Cache:** Cache the resulting ad list in Redis with key `cache:ads:search-top`, TTL 5 minutes (BR-SEARCH-025).
+  5. **Render:** If eligible ads exist, render them in `slotAdTop` above the first product row and auto-slide every 5 seconds. Display a "Sponsored" label badge (REQUIREMENT_SPEC §5.3) to distinguish them from organic results.
+  6. **Error handling:** On ad fetch error or empty response, hide `slotAdTop` (graceful degradation — ad failure never blocks product results).
+  7. **Click tracking:** CTA click triggers `ad.click` analytics event with `ad_id` and `placement`.
 - **Exception Handling:** None (ad slot failure is non-critical; page functions normally without ads).
 
 ---
@@ -667,61 +670,6 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | `search.errors.loginRequired` | "ログインしてください" |
 | `search.errors.shoppingNotAllowed` | "買い物機能はバイヤーのみ利用できます" |
 
-### 9.3 Myanmar (my) — Search & Filter
-
-| Key | Value |
-| :--- | :--- |
-| `search.title` | "အသုံးပြု၍ ရှာဖွေပါ" |
-| `search.searchPlaceholder` | "အမည်၊ ဖော်ပြချက် သို့မဟုတ် ပါဝင်ပစ္စည်းဖြင့် ရှာဖွေပါ..." |
-| `search.searchButton` | "ရှာဖွေရန်" |
-| `search.clear` | "ရှင်းရန်" |
-| `search.resultsCount` | "'{q}' အတွက် ထုတ်ကုန် {total}ခု" |
-| `search.resultsCountDefault` | "ထုတ်ကုန် {total}ခု" |
-| `search.sort` | "စဉ်တန်းရန်" |
-| `search.sort.newest` | "အသစ်ဆုံး" |
-| `search.sort.priceAsc` | "စျေးနည်း → မြင့်" |
-| `search.sort.priceDesc` | "စျေးမြင့် → နည်း" |
-| `search.sort.rating` | "အမြင့်ဆုံးအဆင့်သတ်မှတ်ချက်" |
-| `search.view` | "ကြည့်ရန်" |
-| `search.view.grid` | "ဇယား" |
-| `search.view.list` | "စာရင်း" |
-| `search.view.gridLabel` | "ဇယားပုံစံသို့ ပြောင်းရန်" |
-| `search.view.listLabel` | "စာရင်းပုံစံသို့ ပြောင်းရန်" |
-| `search.filtersTitle` | "စစ်ထုတ်မှုများ" |
-| `search.openFilters` | "စစ်ထုတ်မှုများကို ဖွင့်ရန်" |
-| `search.categories` | "အမျိုးအစားများ" |
-| `search.skinType` | "အရေပြားအမျိုးအစား" |
-| `search.skinType.dry` | "အခြောက်ခံအရေပြား" |
-| `search.skinType.oily` | "ဆီပြန်အရေပြား" |
-| `search.skinType.combination` | "ပေါင်းစပ်အရေပြား" |
-| `search.skinType.sensitive` | "ထိလွယ်ချောအရေပြား" |
-| `search.skinType.normal** | "ပုံမှန်အရေပြား" |
-| `search.ingredients` | "ပါဝင်ပစ္စည်းများ" |
-| `search.priceRange` | "စျေးနှုန်းအပိုင်းအခြား" |
-| `search.minPrice` | "အနည်းဆုံးစျေး" |
-| `search.maxPrice` | "အမြင့်ဆုံးစျေး" |
-| `search.rating` | "အနည်းဆုံးအဆင့်သတ်မှတ်ချက်" |
-| `search.applyFilters` | "စစ်ထုတ်မှုများကို အသုံးပြုရန်" |
-| `search.resetFilters` | "စစ်ထုတ်မှုများကို ပြန်ဖွင့်ရန်" |
-| `search.clearAllFilters` | "အားလုံးကို ရှင်းရန်" |
-| `search.pagination` | "စာမျက်နှာခွဲခြမ်းခြင်း" |
-| `search.pagination.previous` | "ရှေ့သို့" |
-| `search.pagination.next** | "နောက်သို့" |
-| `search.pageSize** | "တစ်စာမျက်နှာပါ ပစ္စည်းများ" |
-| `search.empty.title** | "ထုတ်ကုန်မတွေ့ပါ" |
-| `search.empty.description** | "စစ်ထုတ်မှုများကို ရှင်းပါ သို့မဟုတ် သင့်စကားလုံးကို ကျယ်ပြန့်အောင်လုပ်ပါ" |
-| `search.chip.skinType** | "အရေပြားအမျိုးအစား: {value}" |
-| `search.chip.ingredient** | "ပါဝင်ပစ္စည်း: {value}" |
-| `search.chip.category** | "အမျိုးအစား: {value}" |
-| `search.chip.priceRange** | "${min}–${max}" |
-| `search.chip.rating** | "အဆင့်သတ်မှတ်ချက်: {value}+" |
-| `search.errors.serverError** | "တစ်ခုခုမှားသွားပါတယ်။ ထပ်ကြိုးစားကြည့်ပါ" |
-| `search.errors.tooManyRequests** | "တောင်းဆိုမှုများလွန်းပါတယ်။ {seconds}စက္ကန့်စောင့်ပါ" |
-| `search.errors.retry** | "ပြန်ကြိုးစားရန်" |
-| `search.sponsored** | "ကြော်ငြာ" |
-| `search.sponsored.label** | "ကြော်ငြာ" |
-| `search.errors.loginRequired** | "ဆက်လက်ဆောင်ရွက်ရန် ဝင်ရောက်ပါ" |
-| `search.errors.shoppingNotAllowed** | "စျေးဝယ်လုပ်ဆောင်ချက်များကို ဘိုင်ယာများသာ အသုံးပြုနိုင်ပါသည်" |
 
 ---
 
@@ -795,7 +743,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - **Design Tokens:** Status badges use standard color mapping — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`. Rating stars use Beauty Pink.
 - **Guest Alert Modal (401):** When a guest (unauthenticated user) attempts a shopping action (add to cart/wishlist), display an alert modal with "Please log in to continue" message and an "OK" button. The modal must NOT auto-close. Clicking "OK" redirects to `/login?redirect=<encoded_current_path>`. The redirect preserves the user's search context after login.
 - **Merchant/Admin Shopping Restriction (403):** When a Merchant or Admin user attempts a shopping action (add to cart/wishlist), display an alert banner with "Shopping features are only available to buyers" message. The banner does NOT auto-close. Merchant/Admin users are strictly prohibited from shopping features per DEVELOPMENT_RULES Section 5.4.
-- **Sponsored Ad Slot:** Ad slot rendered in `slotAdTop` above the first product row. Must display "Sponsored" label badge to distinguish from organic results (Rule 4.6.4). Ad fetch is independent of product results — never blocks or defers product loading.
+- **Sponsored Ad Slot:** Ad slot rendered in `slotAdTop` above the first product row. Must display "Sponsored" label badge to distinguish from organic results (REQUIREMENT_SPEC §5.3). Ad fetch is independent of product results — never blocks or defers product loading.
 - **Guest Data Leakage:** Guest user search state (filters, keywords) must not persist across sessions. No shopping-related data (cart count, wishlist) exposed to guests.
 
 ---
@@ -894,7 +842,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 
 - [ ] Ad slot fetched from `GET /api/v1/ads?placement=search_top`
 - [ ] Ad slot rendered above first product row in `slotAdTop`
-- [ ] "Sponsored" label badge displayed (Rule 4.6.4)
+- [ ] "Sponsored" label badge displayed (REQUIREMENT_SPEC §5.3)
 - [ ] Ad slot failure (error/empty) gracefully hidden — product results unaffected
 - [ ] Ad slot cached in Redis (`cache:ads:search-top`, TTL 5 min)
 - [ ] Ad CTA click triggers `ad.click` analytics event
