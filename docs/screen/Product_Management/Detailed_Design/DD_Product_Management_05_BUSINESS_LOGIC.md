@@ -1,7 +1,7 @@
 # DD_PROD_05 — Business Logic
 
-> **Doc ID:** SKM-DD-PROD-05 | **Version:** 1.5 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-PROD-05 | **Version:** 1.6 | **Status:** Released  
+> **Last Updated:** 2026-08-24
 
 ---
 
@@ -9,7 +9,7 @@
 
 This document specifies the core business logic, state transitions, and validation rules implemented in the `ProductsService`.
 
-- **Location:** `src/modules/products/products.service.ts`
+- **Location:** `src/modules/catalog/products/products.service.ts`
 
 ---
 
@@ -53,8 +53,8 @@ This document specifies the core business logic, state transitions, and validati
    - Check SKU uniqueness if provided
    - Upload images to storage (UUID-based filenames)
    - Insert `products` record with generated data
-   - Insert `inventory_transactions` record (transaction_type='manual', quantity=stockQuantity, beforeQuantity=0, afterQuantity=stockQuantity)
-   - Insert `audit_logs` record with action='PRODUCT_CREATED', merchantId, productId, timestamp
+    - Insert `inventory_transactions` record (transaction_type='manual_adjustment', quantity=stockQuantity, beforeQuantity=0, afterQuantity=stockQuantity)
+    - Insert `audit_logs` record with action='PRODUCT_CREATED', userId, productId, timestamp
 3. **Transaction:** Product creation, image upload, inventory_transactions insert, and audit_logs insert must be atomic.
 4. **Cache:** Invalidate `cache:products:list:*` pattern.
 5. **Return:** `ProductResponseDto`
@@ -71,7 +71,7 @@ This document specifies the core business logic, state transitions, and validati
    - Handle image additions (upload new files)
    - Handle image removals (delete from storage)
    - Update product record
-   - Insert `audit_logs` record with action='PRODUCT_UPDATED', merchantId, productId, changes object, timestamp
+    - Insert `audit_logs` record with action='PRODUCT_UPDATED', userId, productId, oldValue/newValue, timestamp
 3. **Cache:** Invalidate `cache:product:{id}` and `cache:products:list:*`.
 4. **Return:** `ProductResponseDto`
 
@@ -80,24 +80,24 @@ This document specifies the core business logic, state transitions, and validati
 1. **Logic:**
    - Verify product exists
    - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`.
-   - **Active Order Guard (BR-PROD-024):** Check if product has any orders with status NOT IN resolved states. Query `order_status_history` to verify terminal states:
-     ```typescript
-     const activeOrders = await this.prisma.orderItem.findMany({
-       where: {
-         productId: id,
-         order: {
-           status: { notIn: ['delivered', 'cancelled'] },
-         },
-       },
-       select: { orderId: true },
-     });
-     
-     if (activeOrders.length > 0) {
-       throw new ConflictException('Cannot delete product with active orders. All orders must be completed first.');
-     }
-     ```
+     - **Active Order Guard (BR-PROD-024):** Check product's order items for active orders via `order_items` table:
+      ```typescript
+      const activeOrders = await this.prisma.orderItem.findMany({
+        where: {
+          productId: id,
+          order: {
+            status: { notIn: ['delivered', 'cancelled'] },
+          },
+        },
+        select: { orderId: true },
+      });
+      
+      if (activeOrders.length > 0) {
+        throw new ConflictException('Cannot delete product with active orders. All orders must be completed first.');
+      }
+      ```
    - Set `isActive = false` (soft delete)
-   - Insert `audit_logs` record with action='PRODUCT_DELETED', merchantId, productId, timestamp
+    - Insert `audit_logs` record with action='PRODUCT_SOFT_DELETED', userId, productId, timestamp
 2. **Cache:** Invalidate `cache:product:{id}` and `cache:products:list:*`.
 3. **Return:** `204 No Content`
 
@@ -109,8 +109,8 @@ This document specifies the core business logic, state transitions, and validati
    - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`.
    - Fetch current `stockQuantity` for before/after comparison
    - Update `stockQuantity` atomically
-   - Insert `inventory_transactions` record (transaction_type='manual', quantity=delta, beforeQuantity=oldQty, afterQuantity=newQty, reason='Manual stock update')
-   - Insert `audit_logs` record with action='STOCK_UPDATED', merchantId, productId, oldQty, newQty, timestamp
+    - Insert `inventory_transactions` record (transaction_type='manual_adjustment', quantity=delta, beforeQuantity=oldQty, afterQuantity=newQty, reason='Manual stock update')
+    - Insert `audit_logs` record with action='STOCK_UPDATED', userId, productId, oldValue={stockQuantity: oldQty}, newValue={stockQuantity: newQty}, timestamp
    - Check `stockQuantity <= lowStockThreshold` → set `isLowStock` flag. If breached, insert `notifications` record for low stock alert.
    - Check `stockQuantity === 0` → set `isOutOfStock` flag
 3. **Cache:** Invalidate `cache:product:{id}`.
@@ -137,19 +137,19 @@ This document specifies the core business logic, state transitions, and validati
      - Verify product exists
      - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`
      - If ownership fails, add to `errors` array and continue
-   - **Active Order Guard (BR-PROD-024):** Check each product for active orders:
-     ```typescript
-     // Check for active orders on each product
-     const productsWithActiveOrders = await this.prisma.orderItem.findMany({
-       where: {
-         productId: { in: validProductIds },
-         order: {
-           status: { notIn: ['delivered', 'cancelled'] },
-         },
-       },
-       select: { productId: true },
-       distinct: ['productId'],
-     });
+    - **Active Order Guard (BR-PROD-024):** Check each product for active orders:
+      ```typescript
+      // Check for active orders on each product
+      const productsWithActiveOrders = await this.prisma.orderItem.findMany({
+        where: {
+          productId: { in: validProductIds },
+          order: {
+            status: { notIn: ['delivered', 'cancelled'] },
+          },
+        },
+        select: { productId: true },
+        distinct: ['productId'],
+      });
      
      const activeOrderProductIds = new Set(
        productsWithActiveOrders.map(item => item.productId)
@@ -165,13 +165,13 @@ This document specifies the core business logic, state transitions, and validati
 3. **Cache:** Invalidate `cache:products:list:*`.
 4. **Return:** `BulkOperationResponseDto` with updated count, errors, and skipped products
 
-### 2.9 deleteAllByMerchant(userId)
+### 2.9 deleteAllByMerchant(userId, dto?: DeleteAllProductsDto)
 
-Delete all products belonging to the authenticated merchant. Products with active orders are skipped.
+Delete all products belonging to the authenticated merchant. Respects current search and status filter. Products with active orders are skipped.
 
 1. **Validation:** User must be authenticated with approved merchant license.
 2. **Logic:**
-   - Query all products where `merchantId = userId` and `isActive = true`
+   - Query all products where `merchantId = userId` and `isActive = true`, with optional filters from `dto` (`search` by name, `isActive` status filter)
    - **Active Order Guard (BR-PROD-024):** Check each product for active orders:
      ```typescript
      // Get all merchant's active products
@@ -182,17 +182,17 @@ Delete all products belonging to the authenticated merchant. Products with activ
      
      const productIds = merchantProducts.map(p => p.id);
      
-     // Check for active orders on each product
-     const productsWithActiveOrders = await this.prisma.orderItem.findMany({
-       where: {
-         productId: { in: productIds },
-         order: {
-           status: { notIn: ['delivered', 'cancelled'] },
+       // Check for active orders on each product
+       const productsWithActiveOrders = await this.prisma.orderItem.findMany({
+         where: {
+           productId: { in: productIds },
+           order: {
+             status: { notIn: ['delivered', 'cancelled'] },
+           },
          },
-       },
-       select: { productId: true },
-       distinct: ['productId'],
-     });
+         select: { productId: true },
+         distinct: ['productId'],
+       });
      
      const activeOrderProductIds = new Set(
        productsWithActiveOrders.map(item => item.productId)
@@ -410,7 +410,7 @@ private async checkShopApproval(userId: string): Promise<void> {
 | `description` | Required, non-empty | "Description is required" |
 | `categoryId` | Required, valid UUID, exists in DB | "Category is required" |
 | `price` | Required, > 0 | "Price must be greater than 0" |
-| `compareAtPrice` | Optional, > price | "Compare price must be greater than selling price" |
+| `compareAtPrice` | Optional, >= 0 | "Compare price must be 0 or greater" |
 | `sku` | Optional, unique, max 100 chars | "SKU already exists" |
 | `stockQuantity` | Required, >= 0 | "Stock quantity must be 0 or greater" |
 | `images` | Required, max 10 files, 5MB each, JPG/PNG/WebP | Various image errors |
@@ -465,10 +465,9 @@ private async invalidateProductCache(productId: string, slug?: string): Promise<
 
 | Type | Description | Created By |
 |------|-------------|------------|
-| `sale` | Stock decremented on order creation | Order service |
-| `adjustment` | Manual stock correction | Merchant |
+| `order_created` | Stock decremented on order creation | Order service |
+| `manual_adjustment` | Manual stock correction or direct stock update via API | Merchant |
 | `return` | Stock incremented on order return | Order service |
-| `manual` | Direct stock update via API | Merchant |
 | `restock` | Stock replenishment from supplier | Merchant |
 
 ### 9.2 Inventory Transaction Creation
@@ -547,31 +546,33 @@ async getInventoryTransactions(
 
 | Event | Data Logged | Target | Retention |
 |-------|-------------|--------|-----------|
-| `PRODUCT_CREATED` | merchantId, productId, timestamp | `audit_logs` table | 90 days |
-| `PRODUCT_UPDATED` | merchantId, productId, changes, timestamp | `audit_logs` table | 90 days |
-| `PRODUCT_DELETED` | merchantId, productId, timestamp | `audit_logs` table | 90 days |
-| `PRODUCT_IMAGE_UPLOADED` | merchantId, productId, fileSize, timestamp | `audit_logs` table | 30 days |
-| `STOCK_UPDATED` | merchantId, productId, oldQty, newQty, timestamp | `audit_logs` table + `inventory_transactions` table | 90 days |
-| `BULK_OPERATION` | merchantId, productIds, action, timestamp | `audit_logs` table | 90 days |
-| `BULK_DELETE` | merchantId, productIds, timestamp | `audit_logs` table | 90 days |
-| `DELETE_ALL_PRODUCTS` | merchantId, deletedCount, skippedCount, timestamp | `audit_logs` table | 90 days |
+| `PRODUCT_CREATED` | userId, productId, timestamp | `audit_logs` table | 90 days |
+| `PRODUCT_UPDATED` | userId, productId, oldValue, newValue, timestamp | `audit_logs` table | 90 days |
+| `PRODUCT_SOFT_DELETED` | userId, productId, timestamp | `audit_logs` table | 90 days |
+| `PRODUCT_IMAGE_UPLOADED` | userId, productId, fileSize, timestamp | `audit_logs` table | 30 days |
+| `STOCK_UPDATED` | userId, productId, oldValue, newValue, timestamp | `audit_logs` table + `inventory_transactions` table | 90 days |
+| `BULK_OPERATION` | userId, productIds, action, timestamp | `audit_logs` table | 90 days |
+| `BULK_DELETE` | userId, productIds, timestamp | `audit_logs` table | 90 days |
+| `DELETE_ALL_PRODUCTS` | userId, deletedCount, skippedCount, timestamp | `audit_logs` table | 90 days |
 
 ### 10.2 Audit Log Persistence
 
 ```typescript
 private async logAuditEvent(
   action: string,
-  merchantId: string,
+  userId: string,
   data: Record<string, unknown>
 ): Promise<void> {
   await this.prisma.auditLog.create({
     data: {
-      merchantId,
+      userId,
       action,
       entityType: 'product',
       entityId: data.productId as string,
-      changes: data,
-      createdAt: new Date(),
+      oldValue: data.oldValue as Record<string, unknown> || null,
+      newValue: data.newValue as Record<string, unknown> || null,
+      ipAddress: data.ipAddress as string || null,
+      userAgent: data.userAgent as string || null,
     },
   });
   

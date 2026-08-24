@@ -1,7 +1,7 @@
 # DD_PROD_02 — Frontend Page (Product Management)
 
-> **Doc ID:** SKM-DD-PROD-02 | **Version:** 1.3 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-PROD-02 | **Version:** 1.4 | **Status:** Released  
+> **Last Updated:** 2026-08-24
 
 ---
 
@@ -9,8 +9,8 @@
 
 The Product Management module consists of two main screens: **Product List** and **Product Form** (Create/Edit). The Product List enables merchants to view, search, filter, and manage their product catalog with bulk actions. The Product Form provides a comprehensive form for creating and editing product details, images, pricing, and inventory.
 
-- **File Path (List):** `frontend/src/pages/merchant/Products.tsx`
-- **File Path (Form):** `frontend/src/pages/merchant/ProductForm.tsx`
+- **File Path (List):** `frontend/src/pages/merchant/ProductManagement.tsx`
+- **File Path (Form):** `frontend/src/pages/merchant/ProductManagement.tsx` (embedded or separate component)
 - **Route (List):** `/merchant/products`
 - **Route (Create):** `/merchant/products/new`
 - **Route (Edit):** `/merchant/products/:id/edit`
@@ -35,21 +35,40 @@ Both pages use the merchant dashboard layout with sidebar navigation. The Produc
 │  └───────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐  │
+│  │                  [G] PENDING BANNER (conditional)          │  │
+│  │   Shown to merchants with licenseStatus === 'pending'     │  │
+│  │   Message (EN): "Your merchant account is pending         │  │
+│  │   approval. Product management features are restricted    │  │
+│  │   until your license is approved."                        │  │
+│  │   Message (JA): "商品登録は承認後に利用できます"              │  │
+│  │   Type: Info banner (amber background)                    │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                  [G2] REJECTION BANNER (conditional)       │  │
+│  │   Shown to merchants with licenseStatus === 'rejected'    │  │
+│  │   Message: "アカウントが拒否されました。理由: [rejectionReason]"│  │
+│  │   ("Your account has been rejected. Reason: [...]")       │  │
+│  │   Type: Error banner (red background)                     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │                  [B] ACTION BAR                           │  │
 │  │   [B1] Search Input    [B2] Status Filter                 │  │
-│  │   [B3] Add Product Button                                  │  │
+│  │   [B3] Add Product Button (hidden for pending/rejected)   │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                  [C] PRODUCT TABLE                        │  │
 │  │   [C0] Select All  [C1] Thumbnail  [C2] Name             │  │
 │  │   [C3] SKU         [C4] Price      [C5] Stock            │  │
-│  │   [C6] Status      [C7] Featured   [C8] Edit             │  │
-│  │   [C9] Delete      [C10] Toggle Active                   │  │
+│  │   [C6] Status      [C7] Featured   [C8] Edit (hidden*)   │  │
+│  │   [C9] Delete (hidden*)  [C10] Toggle Active (hidden*)   │  │
+│  │   * Action columns hidden for pending/rejected merchants  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │                  [D] BULK ACTIONS BAR                     │  │
+│  │                  [D] BULK ACTIONS BAR (hidden for pending) │  │
 │  │   [D1] Selected Count  [D2] Activate  [D3] Deactivate    │  │
 │  │   [D4] Delete                                              │  │
 │  └───────────────────────────────────────────────────────────┘  │
@@ -66,6 +85,12 @@ Both pages use the merchant dashboard layout with sidebar navigation. The Produc
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+**Pending/Rejected Merchant Behavior (BR-PROD-027):**
+- Merchants with `licenseStatus === 'pending'`: Product list loads with read-only table. All CRUD action buttons (Add Product, Edit, Delete, Toggle Active, Toggle Featured) and Bulk Actions bar are hidden. Pending banner `[G]` is displayed.
+- Merchants with `licenseStatus === 'rejected'`: Same as pending, but rejection banner `[G2]` is displayed instead, showing the rejection reason.
+- The product table data is still fetched (for read-only viewing), but the backend returns empty results for pending/rejected merchants (their products are not yet approved).
+- If a pending/rejected merchant attempts a direct API call (POST/PATCH/DELETE), the backend returns `403 MERCHANT_NOT_APPROVED` or `403 MERCHANT_REJECTED`.
 
 ### 2.2 Product Form Layout (Create/Edit)
 
@@ -156,7 +181,7 @@ Both forms use `react-hook-form` with `zodResolver` for schema validation.
 ### 3.1 Product List Hook
 
 ```typescript
-// frontend/src/features/product/hooks/useProductList.ts
+// frontend/src/features/merchant/products/hooks/useProducts.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productService } from '../services/product.service';
 import type { ProductListParams } from '../schemas/product.schema';
@@ -226,7 +251,7 @@ export function useProductList(params: ProductListParams) {
 ### 3.1.1 Inventory Transaction History Hook
 
 ```typescript
-// frontend/src/features/product/hooks/useInventoryTransactions.ts
+// frontend/src/features/merchant/products/hooks/useInventoryTransactions.ts
 import { useQuery } from '@tanstack/react-query';
 import { inventoryService } from '../services/inventory.service';
 
@@ -248,7 +273,7 @@ export function useInventoryTransactions(productId: string) {
 ### 3.2 Product Form Hook
 
 ```typescript
-// frontend/src/features/product/hooks/useProductForm.ts
+// frontend/src/features/merchant/products/hooks/useProductForm.ts
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -378,7 +403,7 @@ export function useProductForm({ productId }: UseProductFormOptions = {}) {
 ### 3.3 Zod Validation Schema
 
 ```typescript
-// frontend/src/features/product/schemas/product.schema.ts
+// frontend/src/features/merchant/products/schemas/product.schema.ts
 import { z } from 'zod';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -490,22 +515,22 @@ export type StockUpdateFormData = z.infer<typeof stockUpdateSchema>;
 
 ### 4.1 ProductTable Component
 
-- **File Path:** `frontend/src/features/product/components/ProductTable.tsx`
-- Uses `useProductList` hook
+- **File Path:** `frontend/src/features/merchant/products/components/ProductTable.tsx`
+- Uses `useProducts` hook
 - Renders data table with columns: Select, Thumbnail, Name, SKU, Price, Stock, Status, Featured, Actions
 - Supports row selection for bulk actions
 - Inline stock editing on double-click
 
 ### 4.2 ProductForm Component
 
-- **File Path:** `frontend/src/features/product/components/ProductForm.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/ProductForm.tsx`
 - Uses `useProductForm` hook
 - Renders multi-section form with Basic Information, Pricing & Inventory, Images, Attributes
 - Handles form submission and validation
 
 ### 4.3 ImageUploadZone Component
 
-- **File Path:** `frontend/src/features/product/components/ImageUploadZone.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/ImageUploadZone.tsx`
 - Drag & drop zone for image upload
 - File type validation (JPG, PNG, WebP)
 - File size validation (max 5MB)
@@ -513,7 +538,7 @@ export type StockUpdateFormData = z.infer<typeof stockUpdateSchema>;
 
 ### 4.4 ImagePreviewGrid Component
 
-- **File Path:** `frontend/src/features/product/components/ImagePreviewGrid.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/ImagePreviewGrid.tsx`
 - Grid layout for uploaded image previews
 - Drag handles for reordering
 - Delete button on each image
@@ -521,49 +546,50 @@ export type StockUpdateFormData = z.infer<typeof stockUpdateSchema>;
 
 ### 4.5 BulkActionsBar Component
 
-- **File Path:** `frontend/src/features/product/components/BulkActionsBar.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/BulkActionsBar.tsx`
 - Shows selected count badge
 - Dropdown menu with Activate, Deactivate, Delete options
 - Confirmation dialogs for destructive actions
+- **Hidden** for merchants with `pending` or `rejected` license status
 
 ### 4.6 InlineStockEditor Component
 
-- **File Path:** `frontend/src/features/product/components/InlineStockEditor.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/InlineStockEditor.tsx`
 - Converts stock cell to editable input on double-click
 - Enter/Blur saves, Escape cancels
 - Shows loading state during update
 
 ### 4.7 InventoryTransactionList Component
 
-- **File Path:** `frontend/src/features/product/components/InventoryTransactionList.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/InventoryTransactionList.tsx`
 - Displays stock change history for a product
-- Shows transaction type (sale, adjustment, return, manual), quantity delta, before/after quantities, timestamp
+- Shows transaction type (order_created, restock, manual_adjustment, return), quantity delta, before/after quantities, timestamp
 - Paginated list with date range filter
 - Triggered from product detail or inline stock editor
 
 ### 4.8 InventoryService
 
-- **File Path:** `frontend/src/features/product/services/inventory.service.ts`
+- **File Path:** `frontend/src/features/merchant/products/services/inventory.service.ts`
 - `getByProduct(productId)`: Fetch inventory transaction history from `GET /api/v1/products/:id/inventory-transactions`
 - Types: `InventoryTransaction`, `InventoryTransactionListParams`
 
 ### 4.9 DeleteConfirmDialog Component
 
-- **File Path:** `frontend/src/features/product/components/DeleteConfirmDialog.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/DeleteConfirmDialog.tsx`
 - AlertDialog for confirming product deletion
 - Shows product name and warning message
 - Loading state during deletion
 
 ### 4.10 CategorySelect Component
 
-- **File Path:** `frontend/src/features/product/components/CategorySelect.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/CategorySelect.tsx`
 - Tree-structured category selection
 - Fetches categories from API
 - Nested options with expand/collapse
 
 ### 4.11 TagInput Component
 
-- **File Path:** `frontend/src/features/product/components/TagInput.tsx`
+- **File Path:** `frontend/src/features/merchant/products/components/TagInput.tsx`
 - Tag input with add/remove functionality
 - Keyboard support (Enter to add, Backspace to remove)
 - Max length validation per tag
@@ -762,52 +788,109 @@ The Product Form requires the following lookup data:
 
 **Frontend Route Guard (for `/merchant/products/*` routes):**
 
+The guard allows pending/rejected merchants to view the product list dashboard in restricted mode (read-only) instead of redirecting to home. CRUD operations are hidden in the UI, and direct API calls are blocked by the backend guard.
+
 ```typescript
-// frontend/src/features/product/guards/merchantProducts.guard.ts
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+// frontend/src/features/merchant/products/guards/merchantProducts.guard.ts
+import { useMemo } from 'react';
 import { useMerchantProfile } from '@/features/auth/hooks/useMerchantProfile';
 
-export function MerchantProductsGuard({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
+interface MerchantProductsGuardResult {
+  isApproved: boolean;
+  isPending: boolean;
+  isRejected: boolean;
+  rejectionReason: string | null;
+  isLoading: boolean;
+  /** Whether to show CRUD buttons (Add, Edit, Delete, Bulk Actions) */
+  showCrudActions: boolean;
+  /** Whether to show pending approval banner */
+  showPendingBanner: boolean;
+  /** Whether to show rejection banner */
+  showRejectionBanner: boolean;
+}
+
+export function useMerchantProductsGuard(): MerchantProductsGuardResult {
   const { data: merchantProfile, isLoading } = useMerchantProfile();
 
-  useEffect(() => {
-    if (isLoading) return;
-    
-    if (!merchantProfile) {
-      toast.error('Merchant profile not found');
-      navigate('/');
-      return;
+  return useMemo(() => {
+    if (isLoading) {
+      return {
+        isApproved: false,
+        isPending: false,
+        isRejected: false,
+        rejectionReason: null,
+        isLoading: true,
+        showCrudActions: false,
+        showPendingBanner: false,
+        showRejectionBanner: false,
+      };
     }
 
-    if (merchantProfile.licenseStatus === 'pending') {
-      toast.error('Your account is pending approval. Product management is not available at this time.');
-      navigate('/');
-      return;
-    }
+    const status = merchantProfile?.licenseStatus;
+    const isApproved = status === 'approved';
+    const isPending = status === 'pending';
+    const isRejected = status === 'rejected';
 
-    if (merchantProfile.licenseStatus === 'rejected') {
-      toast.error(`Your account has been rejected. Reason: ${merchantProfile.rejectionReason}`);
-      navigate('/');
-      return;
-    }
-  }, [merchantProfile, isLoading, navigate]);
+    return {
+      isApproved,
+      isPending,
+      isRejected,
+      rejectionReason: merchantProfile?.rejectionReason ?? null,
+      isLoading: false,
+      showCrudActions: isApproved, // Only approved merchants can see CRUD buttons
+      showPendingBanner: isPending,
+      showRejectionBanner: isRejected,
+    };
+  }, [merchantProfile, isLoading]);
+}
+```
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+**Usage in ProductManagement page:**
 
-  if (merchantProfile?.licenseStatus !== 'approved') {
-    return null;
-  }
+```tsx
+// In ProductManagement.tsx
+import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard';
 
-  return <>{children}</>;
+export default function ProductManagement() {
+  const guard = useMerchantProductsGuard();
+
+  return (
+    <div>
+      {guard.showPendingBanner && (
+        <Alert variant="info">
+          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertDescription>
+            Your merchant account is pending approval. Product management features are restricted until your license is approved.
+            {/* JA: 商品登録は承認後に利用できます */}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {guard.showRejectionBanner && (
+        <Alert variant="error">
+          <AlertTitle>アカウント拒否</AlertTitle>
+          <AlertDescription>
+            アカウントが拒否されました。理由: {guard.rejectionReason}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Action Bar: Add Product button hidden when !guard.showCrudActions */}
+      <ActionBar showAddButton={guard.showCrudActions} />
+
+      {/* Product Table: action columns hidden when !guard.showCrudActions */}
+      <ProductTable showActions={guard.showCrudActions} />
+
+      {/* Bulk Actions Bar: hidden when !guard.showCrudActions */}
+      {guard.showCrudActions && <BulkActionsBar />}
+    </div>
+  );
 }
 ```
 
 **API Error Handling (403 MERCHANT_NOT_APPROVED / MERCHANT_REJECTED):**
+
+Direct API calls (POST, PATCH, DELETE) are still blocked by the backend guard. The frontend interceptor handles these errors gracefully:
 
 ```typescript
 // In product service or API client
@@ -819,10 +902,10 @@ api.interceptors.response.use(
       
       if (errorCode === 'MERCHANT_NOT_APPROVED') {
         toast.error('Your account is pending approval. Product management is not available at this time.');
-        window.location.href = '/';
+        // Do NOT redirect - user stays on restricted dashboard
       } else if (errorCode === 'MERCHANT_REJECTED') {
         toast.error(message); // Includes rejection reason
-        window.location.href = '/';
+        // Do NOT redirect - user stays on restricted dashboard
       }
     }
     return Promise.reject(error);

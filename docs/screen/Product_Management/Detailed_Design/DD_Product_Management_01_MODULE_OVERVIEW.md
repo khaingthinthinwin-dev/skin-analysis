@@ -1,7 +1,7 @@
 # DD_PROD_01 — Module Overview
 
-> **Doc ID:** SKM-DD-PROD-01 | **Version:** 1.2 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-PROD-01 | **Version:** 1.4 | **Status:** Released  
+> **Last Updated:** 2026-08-24
 
 ---
 
@@ -53,6 +53,8 @@ stateDiagram-v2
 | `INACTIVE` | Product hidden by merchant (soft delete) | ✗ | ✗ | ✓ |
 | `OUT_OF_STOCK` | Product has zero stock quantity | ✓ (read-only) | ✗ | ✓ |
 
+> **Note:** The functional specification (Section 3.1) also defines a `DRAFT` state for products not yet active. However, in the current implementation, products default to `is_active = true` (BR-PROD-007), so `DRAFT` state is effectively bypassed. The "Save as Draft" feature sets `isActive = false` directly, creating an `INACTIVE` product rather than a `DRAFT`.
+
 ---
 
 ## 4. Security & Permissions
@@ -72,7 +74,7 @@ stateDiagram-v2
 7. **SKU Uniqueness**: Optional but globally unique if provided.
 8. **Soft Delete**: Products are never physically removed; `is_active = false` hides from public view.
 9. **Cache Invalidation**: Product mutations trigger Redis cache eviction for data consistency.
-10. **Audit Logging**: All product mutations written to `audit_logs` table with merchant_id, product_id, action type, timestamp, and change details. Previously logged to console only; now persisted for compliance and debugging.
+10. **Audit Logging**: All product mutations written to `audit_logs` table with user_id, product_id, action type, timestamp, and change details. Previously logged to console only; now persisted for compliance and debugging.
 11. **License Status Guard (`requireApprovedMerchant`)**: All merchant product CRUD operations (Create, Update, Delete, Stock Update) are protected by the `requireApprovedMerchant` guard. Merchants with `pending` status receive `403 MERCHANT_NOT_APPROVED`. Merchants with `rejected` status receive `403 MERCHANT_REJECTED` with rejection reason from database.
 12. **Active Order Deletion Guard (BR-PROD-024)**: Products with active orders (status NOT IN 'delivered', 'cancelled') cannot be soft-deleted. This prevents data integrity issues with ongoing transactions.
 
@@ -82,15 +84,16 @@ stateDiagram-v2
 
 | Layer | Files |
 |-------|-------|
-| **Frontend Pages** | `merchant/Products.tsx`, `merchant/ProductForm.tsx` |
-| **Frontend Components** | `ProductCard.tsx`, `ProductGrid.tsx`, `ProductDetail.tsx`, `ProductReviews.tsx` |
-| **Frontend Hooks** | `useProducts.ts`, `useProductDetail.ts`, `useInventoryTransactions.ts` |
-| **Frontend Services** | `product.service.ts`, `inventory.service.ts` |
-| **Frontend Schemas** | `product.schema.ts` |
-| **Backend API** | `products.controller.ts`, `inventory.controller.ts` |
-| **Backend Service** | `products.service.ts`, `inventory.service.ts`, `audit.service.ts` |
-| **Backend DTOs** | `create-product.dto.ts`, `update-product.dto.ts`, `product-query.dto.ts`, `inventory-transaction.dto.ts` |
-| **Backend Guards** | `jwt-auth.guard.ts`, `roles.guard.ts`, `require-approved-merchant.guard.ts` |
+| **Frontend Pages** | `pages/merchant/ProductManagement.tsx` |
+| **Frontend Components** | `features/merchant/products/components/ProductTable.tsx`, `features/merchant/products/components/ProductForm.tsx`, `features/merchant/products/components/ImageUploadZone.tsx`, `features/merchant/products/components/ImagePreviewGrid.tsx`, `features/merchant/products/components/BulkActionsBar.tsx`, `features/merchant/products/components/InlineStockEditor.tsx`, `features/merchant/products/components/InventoryTransactionList.tsx`, `features/merchant/products/components/DeleteConfirmDialog.tsx`, `features/merchant/products/components/CategorySelect.tsx`, `features/merchant/products/components/TagInput.tsx` |
+| **Frontend Hooks** | `features/merchant/products/hooks/useProducts.ts`, `features/merchant/products/hooks/useInventoryTransactions.ts` |
+| **Frontend Services** | `features/merchant/products/services/product.service.ts`, `features/merchant/products/services/inventory.service.ts` |
+| **Frontend Schemas** | `features/merchant/products/schemas/product.schema.ts` |
+| **Frontend Guards** | `features/merchant/products/guards/merchantProducts.guard.ts` (pending state handling) |
+| **Backend API** | `src/modules/catalog/products/products.controller.ts` |
+| **Backend Service** | `src/modules/catalog/products/products.service.ts` |
+| **Backend DTOs** | `src/modules/catalog/products/dto/create-product.dto.ts`, `src/modules/catalog/products/dto/update-product.dto.ts`, `src/modules/catalog/products/dto/product-query.dto.ts`, `src/modules/catalog/products/dto/inventory-transaction.dto.ts` |
+| **Backend Guards** | `src/common/guards/jwt-auth.guard.ts`, `src/common/guards/roles.guard.ts`, `src/modules/auth/guards/require-approved-merchant.guard.ts` (pending implementation) |
 | **Backend Interceptors** | `logging.interceptor.ts`, `transform.interceptor.ts` |
 | **Shared Services** | `prisma.service.ts` (products, categories, inventory_transactions, audit_logs, notifications), `redis.service.ts` (cache invalidation) |
 | **Shared Utils** | `slug.util.ts` (slug generation) |
@@ -106,6 +109,7 @@ stateDiagram-v2
 | `POST` | `/api/v1/products` | Create new product | Yes | merchant, admin |
 | `PATCH` | `/api/v1/products/:id` | Update product details | Yes | merchant, admin |
 | `DELETE` | `/api/v1/products/:id` | Soft delete product (set `is_active = false`) | Yes | merchant, admin |
+| `DELETE` | `/api/v1/products/all` | Bulk soft delete all filtered products (with optional category/status filters) | Yes | merchant, admin |
 | `PATCH` | `/api/v1/products/:id/stock` | Update stock quantity (creates `inventory_transactions` record) | Yes | merchant, admin |
 | `GET` | `/api/v1/products/:id/inventory-transactions` | Get stock change history for a product | Yes | merchant, admin |
 | `GET` | `/api/v1/categories` | Get category tree structure | No | Public |
@@ -141,7 +145,6 @@ stateDiagram-v2
 | `order_items` | Order line items linking products to orders | SELECT (sales history), UPDATE (stock decrement) |
 | `orders` | Customer orders linking buyers to merchants | SELECT (active order check for deletion guard) |
 | `inventory_transactions` | Track all stock changes (adjustments, sales, returns) for products | INSERT (on stock update), SELECT (stock history) |
-| `order_status_history` | Track order status changes for active order guard validation | SELECT (verify order terminal states) |
 | `audit_logs` | Store audit events for all product mutations (create, update, delete, stock change) | INSERT (on product mutation), SELECT (audit trail) |
 | `notifications` | User notifications including low stock alerts | INSERT (on low stock threshold breach) |
 | `carts` | Shopping carts linking buyers to merchants | SELECT (check product availability in carts) |
@@ -159,7 +162,7 @@ stateDiagram-v2
 - `orders.merchant_id` → `merchants.id` (ON DELETE RESTRICT, ON UPDATE CASCADE)
 - `inventory_transactions.product_id` → `products.id` (ON DELETE RESTRICT, ON UPDATE CASCADE)
 - `inventory_transactions.merchant_id` → `merchants.id` (ON DELETE RESTRICT, ON UPDATE CASCADE)
-- `audit_logs.merchant_id` → `merchants.id` (ON DELETE SET NULL, ON UPDATE CASCADE)
+- `audit_logs.user_id` → `users.id` (ON DELETE SET NULL, ON UPDATE CASCADE)
 - `notifications.user_id` → `users.id` (ON DELETE CASCADE, ON UPDATE CASCADE)
 - `carts.merchant_id` → `merchants.id` (ON DELETE RESTRICT, ON UPDATE CASCADE)
 - `carts.buyer_id` → `users.id` (ON DELETE CASCADE, ON UPDATE CASCADE)
@@ -212,14 +215,14 @@ stateDiagram-v2
 | BR-PROD-018 | Stock Non-Negative | Stock quantity cannot go below 0 | DB constraint `chk_products_stock` |
 | BR-PROD-019 | Low Stock Threshold | Default threshold is 10 units. Warning when stock ≤ threshold. Notification created in `notifications` table when threshold breached. | Backend service logic + notifications INSERT |
 | BR-PROD-020 | Out of Stock | Products with 0 stock marked as out of stock | Backend status logic |
-| BR-PROD-021 | Atomic Decrement | Stock decremented atomically on order creation. Record inserted into `inventory_transactions` with transaction_type='sale' and before/after quantities. | Backend DB transaction + inventory_transactions INSERT |
+| BR-PROD-021 | Atomic Decrement | Stock decremented atomically on order creation. Record inserted into `inventory_transactions` with transaction_type='order_created' and before/after quantities. | Backend DB transaction + inventory_transactions INSERT |
 | BR-PROD-021a | Inventory Transaction Logging | Every stock change (manual update, sale, return, adjustment) creates an `inventory_transactions` record capturing: product_id, merchant_id, transaction_type, quantity delta, before_quantity, after_quantity, reference_type, reference_id, reason, created_by. | Backend service logic |
 | BR-PROD-022 | Merchant Ownership | Merchants can only edit/delete their own products | Backend service check |
 | BR-PROD-023 | Admin Override | Admins can manage all products | Backend RBAC |
-| BR-PROD-024 | Active Order Deletion Guard | Product cannot be soft-deleted if it has any associated orders with status NOT IN ('delivered', 'cancelled'). Validates against `order_status_history` to confirm terminal states. Only products with no orders or all orders in terminal states can be deleted. | Backend service logic (softDelete method) + order_status_history SELECT |
+| BR-PROD-024 | Active Order Deletion Guard | Product cannot be soft-deleted if it has any associated orders with status NOT IN ('delivered', 'cancelled'). Only products with no orders or all orders in terminal states (`delivered` or `cancelled`) can be deleted. | Backend service logic (softDelete method) |
 | BR-PROD-025 | Deletion Restriction Message | When deletion is blocked due to active orders, return 409 Conflict with error message: "Cannot delete product with active orders. All orders must be completed first." Audit event written to `audit_logs`. | Backend error response (409 CONFLICT) + audit_logs INSERT |
 | BR-PROD-026 | Pending License Restriction | Merchants with license status `pending` are restricted from all Product CRUD operations (Create, Update, Delete, Stock Update). Merchants with `rejected` status are also restricted. | Backend `requireApprovedMerchant` guard |
-| BR-PROD-027 | Pending License Redirect | When a merchant with `pending` status attempts to access `/merchant/products/*`, the backend returns `403 MERCHANT_NOT_APPROVED`. Frontend displays error toast and redirects to home page (`/`). For rejected merchants, backend returns `403 MERCHANT_REJECTED` with rejection reason from `merchants.rejection_reason` column included in error message: "Your account has been rejected. Reason: [rejection_reason]". | Backend `requireApprovedMerchant` guard + Frontend route guard |
+| BR-PROD-027 | Pending License Dashboard | When a merchant with `pending` status accesses `/merchant/products`, the product list page loads with restricted UI: all CRUD buttons (Add Product, Edit, Delete, Toggle Active, Toggle Featured, Bulk Actions) are hidden, a pending approval banner is displayed with message "商品登録は承認後に利用できます" ("Product registration available after approval"), and the product table is read-only. Backend API still returns `403 MERCHANT_NOT_APPROVED` for direct CRUD attempts (POST, PATCH, DELETE). For rejected merchants, the product list page loads with rejection reason banner and CRUD buttons hidden. Backend API returns `403 MERCHANT_REJECTED` with rejection reason from `merchants.rejection_reason` column. | Backend `requireApprovedMerchant` guard (CRUD endpoints) + Frontend `merchantProducts.guard.ts` (restricted dashboard UI) |
 
 ---
 
@@ -252,7 +255,8 @@ Merchant Dashboard
 |--------|--------|-----------|
 | Any merchant product page | `/login` | 401 Unauthorized |
 | Any merchant product page | `/unauthorized` | 403 Forbidden |
-| Any merchant product page | `/` (Home) | 403 `MERCHANT_NOT_APPROVED` — error toast displayed before redirect |
+| Any merchant product page | `/merchant/products` (restricted view) | 403 `MERCHANT_NOT_APPROVED` — pending banner displayed, CRUD operations hidden |
+| Any merchant product page | `/merchant/products` (restricted view) | 403 `MERCHANT_REJECTED` — rejection reason banner displayed, CRUD operations hidden |
 | `/merchant/products/:id/edit` | `/merchant/products` | 404 Product not found |
 
 ---
@@ -285,13 +289,13 @@ Merchant Dashboard
 
 | Related Document | Purpose |
 |-----------------|---------|
-| [DD_PROD_02](./DD_PROD_02_FRONTEND_PRODUCT_LIST.md) | Product list page frontend design |
-| [DD_PROD_03](./DD_PROD_03_FRONTEND_PRODUCT_FORM.md) | Product form (create/edit) frontend design |
-| [DD_PROD_04](./DD_PROD_04_API_ENDPOINTS.md) | Backend REST API contract |
-| [DD_PROD_05](./DD_PROD_05_BUSINESS_LOGIC.md) | Backend business rules and state transitions |
-| [DD_PROD_06](./DD_PROD_06_IMAGE_MANAGEMENT.md) | Image upload and management implementation |
+| [DD_PROD_02](./DD_Product_Management_02_FRONTEND_Page.md) | Product list page frontend design |
+| [DD_PROD_03](./DD_Product_Management_03_API_ENDPOINTS.md) | Backend REST API contract |
+| [DD_PROD_04](./DD_Product_Management_04_DTOS_AND_TYPES.md) | DTO definitions and types |
+| [DD_PROD_05](./DD_Product_Management_05_BUSINESS_LOGIC.md) | Backend business rules and state transitions |
+| [DD_PROD_06](./DD_Product_Management_06__TEST_SPEC.md) | Test specification |
 | [機能設計書_Product_Management](../商品管理画面_機能設計書.md) | Full functional specification |
-| [画面項目設計書_Product_Management](../画面項目設計書_Product_Management.md) | Screen items specification |
+| [画面項目設計書_Product_Management](../商品管理画面_画面項目設計書.md) | Screen items specification |
 | [要件定義書](../../../../core-work/要件定義書_REQUIREMENT_SPEC.md) | Requirements definition (M-PROD-001~010) |
 | [データベース設計書](../../../../core-work/データベース設計書_DATABASE_SPEC.md) | Database schema (`products`, `categories`) |
 | [開発ルール](../../../../core-work/開発ルール_DEVELOPMENT_RULES.md) | Development rules and naming conventions |

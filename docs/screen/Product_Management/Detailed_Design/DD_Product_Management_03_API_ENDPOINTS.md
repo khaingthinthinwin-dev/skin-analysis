@@ -1,13 +1,13 @@
 # DD_PROD_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-PROD-03 | **Version:** 1.5 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-PROD-03 | **Version:** 1.6 | **Status:** Released  
+> **Last Updated:** 2026-08-24
 
 ---
 
 ## 1. Controller Setup
 
-- **File:** `src/modules/products/products.controller.ts`
+- **File:** `src/modules/catalog/products/products.controller.ts`
 - **Base Route:** `/api/v1/products`
 - **Guards:** `JwtAuthGuard` + `RolesGuard` for merchant endpoints; Public for list/detail
 - **License Status Guard:** All merchant CRUD operations (POST, PATCH, DELETE) require `licenseStatus === 'approved'`. Merchants with `pending` or `rejected` status receive `403 Forbidden` with error code `MERCHANT_NOT_APPROVED` or `MERCHANT_REJECTED`.
@@ -207,7 +207,7 @@ Update product details (merchant/admin).
 
 ### 2.5 DELETE /products/:id
 
-Soft delete product (set `is_active = false`). Applies BR-PROD-024 active order guard — products with active orders (status NOT IN 'delivered', 'cancelled') cannot be deleted.
+Soft delete product (set `is_active = false`). Applies BR-PROD-024 active order guard — products with active orders (status NOT IN 'delivered') cannot be deleted.
 
 - **Auth Required:** Yes (`JwtAuthGuard`)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -220,7 +220,7 @@ Soft delete product (set `is_active = false`). Applies BR-PROD-024 active order 
   - `403 MERCHANT_NOT_APPROVED` — Merchant license status is `pending`
   - `403 MERCHANT_REJECTED` — Merchant license status is `rejected` (includes rejection reason)
   - `404 NOT_FOUND` — Product not found
-  - `409 CONFLICT` — Product has orders with status NOT IN ('delivered', 'cancelled'). Error message: "Cannot delete product with active orders. All orders must be completed first."
+  - `409 CONFLICT` — Product has orders with status NOT IN ('delivered'). Error message: "Cannot delete product with active orders. All orders must be completed first."
 - **Logic:** Calls `service.softDelete(id, userId)`
 - **Side Effects:** Invalidates product cache and list cache
 
@@ -296,7 +296,7 @@ Bulk activate/deactivate products (merchant/admin).
 
 ### 2.8 DELETE /products/bulk
 
-Bulk soft delete products (merchant/admin). Applies BR-PROD-024 active order guard per product — products with active orders (status NOT IN 'delivered', 'cancelled') are skipped.
+Bulk soft delete products (merchant/admin). Applies BR-PROD-024 active order guard per product — products with active orders (status NOT IN 'delivered') are skipped.
 
 - **Auth Required:** Yes (`JwtAuthGuard`)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -363,12 +363,20 @@ Get category tree structure (public).
 
 ### 2.10 DELETE /products/all
 
-Delete all products of the authenticated merchant. Applies BR-PROD-024 active order guard per product — products with active orders (status NOT IN 'delivered', 'cancelled') are skipped. Only merchant's own products are affected.
+Delete all products of the authenticated merchant. Applies BR-PROD-024 active order guard per product — products with active orders (status NOT IN 'delivered') are skipped. Only merchant's own products are affected.
 
 - **Auth Required:** Yes (`JwtAuthGuard`)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Roles:** `merchant`, `admin`
 - **Guard:** `@requireApprovedMerchant` — Requires `licenseStatus === 'approved'`
+- **Request Body (optional filter):**
+  ```json
+  {
+    "search": "serum",
+    "isActive": true
+  }
+  ```
+  When provided, only products matching the filter criteria are eligible for deletion. Products with active orders are still skipped regardless of filter.
 - **Response:** `200 OK`
   ```json
   {
@@ -386,7 +394,7 @@ Delete all products of the authenticated merchant. Applies BR-PROD-024 active or
   - `403 MERCHANT_NOT_APPROVED` — Merchant license status is `pending`
   - `403 MERCHANT_REJECTED` — Merchant license status is `rejected` (includes rejection reason)
   - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
-- **Logic:** Calls `service.deleteAllByMerchant(userId)`. Iterates all merchant products, attempts soft delete for each. Products with active orders (status NOT IN 'delivered', 'cancelled') are added to `skippedProductIds` array.
+- **Logic:** Calls `service.deleteAllByMerchant(userId, filters?)`. Iterates all merchant products (or filtered subset), attempts soft delete for each. Products with active orders (status NOT IN 'delivered') are added to `skippedProductIds` array.
 - **Side Effects:** Invalidates all product caches for the merchant
 
 ### 2.11 GET /products/:id/inventory-transactions
@@ -401,7 +409,7 @@ Get inventory transaction history for a product (merchant/admin).
 
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
-| `type` | string | No | Filter by transaction_type (sale, adjustment, return, manual, restock) |
+| `type` | string | No | Filter by transaction_type (order_created, restock, manual_adjustment, return) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page (default: 20, max: 100) |
 
@@ -447,7 +455,7 @@ Get inventory transaction history for a product (merchant/admin).
 
 ### 3.1 requireApprovedMerchant Guard
 
-- **File:** `src/modules/auth/guards/require-approved-merchant.guard.ts`
+- **File:** `src/modules/auth/guards/require-approved-merchant.guard.ts` (planned, not yet implemented)
 - **Type:** CanActivate (NestJS Guard)
 - **Applied to:** All merchant product CRUD endpoints (POST, PATCH, DELETE)
 

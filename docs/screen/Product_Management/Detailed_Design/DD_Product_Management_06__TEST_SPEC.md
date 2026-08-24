@@ -1,7 +1,7 @@
 # DD_PROD_06 — Test Specification
 
-> **Doc ID:** SKM-DD-PROD-06 | **Version:** 1.3 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-PROD-06 | **Version:** 1.4 | **Status:** Released  
+> **Last Updated:** 2026-08-24
 
 ---
 
@@ -11,7 +11,7 @@ This document defines the testing strategy for the Product Management module, co
 
 ---
 
-## 2. Backend Unit Tests (`src/modules/products/tests/`)
+## 2. Backend Unit Tests (`src/modules/catalog/products/tests/`)
 
 ### 2.1 `products.service.spec.ts`
 
@@ -54,7 +54,7 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **softDelete** | Product with active orders (processing) | Throws `ConflictException` with "Cannot delete product with active orders" |
 | **softDelete** | Product with active orders (shipped) | Throws `ConflictException` with "Cannot delete product with active orders" |
 | **softDelete** | Product with resolved orders only (delivered) | Soft-deletes successfully |
-| **softDelete** | Product with resolved orders only (cancelled) | Soft-deletes successfully |
+| **softDelete** | Product with cancelled orders only | Soft-deletes successfully (cancelled is terminal state) |
 | **softDelete** | Product with no orders | Soft-deletes successfully |
 | **updateStock** | Valid quantity, own product | Updates stock, returns stock DTO |
 | **updateStock** | Quantity < 0 | Throws `BadRequestException` |
@@ -71,7 +71,7 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **bulkSoftDelete** | Product with active orders (processing) | Skips product, adds to errors array |
 | **bulkSoftDelete** | Product with active orders (shipped) | Skips product, adds to errors array |
 | **bulkSoftDelete** | Product with resolved orders only (delivered) | Soft-deletes successfully |
-| **bulkSoftDelete** | Product with resolved orders only (cancelled) | Soft-deletes successfully |
+| **bulkSoftDelete** | Product with cancelled orders only | Soft-deletes successfully (cancelled is terminal state) |
 | **bulkSoftDelete** | Product with no orders | Soft-deletes successfully |
 | **bulkSoftDelete** | Mixed: some with active orders, some without | Deletes eligible, skips products with active orders |
 | **deleteAllByMerchant** | All products have active orders | Returns deleted=0, skipped with all product IDs |
@@ -80,12 +80,12 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **deleteAllByMerchant** | Merchant with no products | Returns deleted=0, skipped=0 |
 | **deleteAllByMerchant** | Cache invalidation | Invalidates all product caches |
 | **getInventoryTransactions** | Valid product ID, no filters | Returns all transactions for product |
-| **getInventoryTransactions** | Filter by type='sale' | Returns only sale transactions |
+| **getInventoryTransactions** | Filter by type='order_created' | Returns only order_created transactions |
 | **getInventoryTransactions** | Pagination | Returns correct page with limit |
 | **getInventoryTransactions** | Product not found | Returns empty list |
 | **create** (audit_logs) | Valid data | Creates audit_logs record with action, merchantId, productId |
 | **update** (audit_logs) | Valid data | Creates audit_logs record with changes object |
-| **softDelete** (audit_logs) | Valid data | Creates audit_logs record with action='PRODUCT_DELETED' |
+| **softDelete** (audit_logs) | Valid data | Creates audit_logs record with action='PRODUCT_SOFT_DELETED' |
 | **updateStock** (audit_logs) | Valid data | Creates audit_logs record with oldQty, newQty |
 | **updateStock** (inventory_transactions) | Valid data | Creates inventory_transactions record with beforeQuantity, afterQuantity |
 | **updateStock** (inventory_transactions) | Stock below threshold | Creates notifications record for low stock alert |
@@ -134,7 +134,8 @@ Mock dependencies: `PrismaService`.
 | **requireApprovedMerchant** | Merchant with pending license | Throws `ForbiddenException` with MERCHANT_NOT_APPROVED |
 | **requireApprovedMerchant** | Merchant with rejected license | Throws `ForbiddenException` with MERCHANT_REJECTED and reason |
 | **requireApprovedMerchant** | Merchant not found | Throws `ForbiddenException` |
-| **requireApprovedMerchant** | Admin user | Allows request to proceed (guard skipped for admins) |
+| **requireApprovedMerchant** | Admin user | Allows request to proceed (guard skipped for admins, admin manages all products) |
+| **requireApprovedMerchant** | Non-merchant role (buyer) | Throws `ForbiddenException` (buyer cannot access merchant endpoints) |
 
 ---
 
@@ -185,7 +186,7 @@ Using Vitest + React Testing Library.
 | SKU input | Accepts text, max 100 chars |
 | Price input | Accepts number, min 0.01 |
 | Price required | Shows error on empty/zero |
-| Compare price | Accepts number > price |
+| Compare price | Accepts number >= 0 |
 | Stock quantity | Accepts integer >= 0 |
 | Low stock threshold | Default 10 |
 | Image upload (valid) | Shows preview grid |
@@ -275,8 +276,8 @@ Using Vitest + React Testing Library.
 | **E2E-PROD-14** | **Language Toggle**<br>1. Navigate to /merchant/products.<br>2. Toggle language to Japanese.<br>3. Verify all labels in Japanese.<br>4. Toggle back to English. |
 | **E2E-PROD-15** | **Theme Toggle**<br>1. Navigate to /merchant/products.<br>2. Toggle to dark mode.<br>3. Verify dark theme applied.<br>4. Toggle to light mode. |
 | **E2E-PROD-16** | **Responsive Layout**<br>1. Navigate to /merchant/products on desktop.<br>2. Verify full table layout.<br>3. Resize to mobile.<br>4. Verify horizontal scroll on table. |
-| **E2E-PROD-17** | **License Status Restriction (Pending)**<br>1. Login as merchant with pending license.<br>2. Navigate to /merchant/products.<br>3. Verify error toast: "Your account is pending approval. Product management is not available at this time."<br>4. Verify redirect to home page (/). |
-| **E2E-PROD-18** | **License Status Restriction (Rejected)**<br>1. Login as merchant with rejected license.<br>2. Verify login alert banner: "Your account has been rejected. Reason: [rejectionReason]"<br>3. Navigate to /merchant/products.<br>4. Verify error toast with rejection reason.<br>5. Verify redirect to home page (/). |
+| **E2E-PROD-17** | **License Status Restriction (Pending)**<br>1. Login as merchant with pending license.<br>2. Navigate to /merchant/products.<br>3. Verify page loads successfully (no redirect to home).<br>4. Verify pending approval banner displayed: "商品登録は承認後に利用できます" ("Product registration available after approval").<br>5. Verify "Add Product" button is hidden.<br>6. Verify product table action columns (Edit, Delete, Toggle Active, Toggle Featured) are hidden.<br>7. Verify Bulk Actions bar is hidden.<br>8. Verify search input and status filter are still visible (read-only browsing allowed).<br>9. Verify pagination is functional.<br>10. Try to call POST /api/v1/products directly via API.<br>11. Verify 403 MERCHANT_NOT_APPROVED response. |
+| **E2E-PROD-18** | **License Status Restriction (Rejected)**<br>1. Login as merchant with rejected license.<br>2. Navigate to /merchant/products.<br>3. Verify page loads successfully (no redirect to home).<br>4. Verify rejection banner displayed: "アカウントが拒否されました。理由: [rejectionReason]" ("Your account has been rejected. Reason: [...]").<br>5. Verify "Add Product" button is hidden.<br>6. Verify product table action columns (Edit, Delete, Toggle Active, Toggle Featured) are hidden.<br>7. Verify Bulk Actions bar is hidden.<br>8. Verify search input and status filter are still visible (read-only browsing allowed).<br>9. Verify pagination is functional.<br>10. Try to call PATCH /api/v1/products/:id directly via API.<br>11. Verify 403 MERCHANT_REJECTED response with rejection reason. |
 | **E2E-PROD-19** | **Delete Product with Active Orders**<br>1. Login as merchant.<br>2. Navigate to /merchant/products.<br>3. Click "Delete" on a product with active orders.<br>4. Verify confirmation dialog appears.<br>5. Click "Delete" to confirm.<br>6. Verify error toast: "Cannot delete product with active orders. All orders must be completed first."<br>7. Verify product still appears in list. |
 | **E2E-PROD-20** | **Delete All Products**<br>1. Login as merchant with multiple products.<br>2. Navigate to /merchant/products.<br>3. Click "Delete All Products" button.<br>4. Verify confirmation dialog shows count of products to be deleted.<br>5. Confirm deletion.<br>6. Verify products deleted, products with active orders skipped.<br>7. Verify success toast with deleted/skipped counts. |
 
@@ -322,6 +323,7 @@ Using Vitest + React Testing Library.
 | Related Document | Purpose |
 |-----------------|---------|
 | [DD_PROD_05](./DD_Product_Management_05_BUSINESS_LOGIC.md) | Business logic tested by unit tests |
+| [DD_PROD_04](./DD_Product_Management_04_DTOS_AND_TYPES.md) | DTOs and validation rules tested |
 | [DD_PROD_02](./DD_Product_Management_02_FRONTEND_Page.md) | Frontend components tested |
 | [DD_PROD_03](./DD_Product_Management_03_API_ENDPOINTS.md) | API endpoints tested |
 | [機能設計書_Product_Management](../商品管理画面_機能設計書.md) | Functional requirements |

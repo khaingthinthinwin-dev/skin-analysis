@@ -1,7 +1,7 @@
 # DD_PROD_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-PROD-04 | **Version:** 1.4 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-PROD-04 | **Version:** 1.5 | **Status:** Released  
+> **Last Updated:** 2026-08-24
 
 ---
 
@@ -9,7 +9,7 @@
 
 This document specifies the Data Transfer Objects (DTOs) used by the Product Management module's API endpoints. These DTOs utilize `class-validator` for request validation and `class-transformer` for data transformation.
 
-- **Location:** `src/modules/products/dto/`
+- **Location:** `src/modules/catalog/products/dto/`
 
 ---
 
@@ -308,7 +308,7 @@ import { Type } from 'class-transformer';
 export class InventoryTransactionQueryDto {
   @IsOptional()
   @IsString()
-  @IsIn(['sale', 'adjustment', 'return', 'manual', 'restock'])
+  @IsIn(['order_created', 'restock', 'manual_adjustment', 'return'])
   type?: string;
 
   @IsOptional()
@@ -321,6 +321,27 @@ export class InventoryTransactionQueryDto {
   @Min(1)
   @Max(100)
   limit?: number = 20;
+}
+```
+
+### 2.8 DeleteAllProductsDto
+
+Used for `DELETE /products/all` to filter products before deletion (optional body).
+
+```typescript
+import { IsOptional, IsString, IsBoolean, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class DeleteAllProductsDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  isActive?: boolean;
 }
 ```
 
@@ -433,7 +454,7 @@ export class InventoryTransactionResponseDto {
   id: string;
   productId: string;
   merchantId: string;
-  transactionType: 'sale' | 'adjustment' | 'return' | 'manual' | 'restock';
+  transactionType: 'order_created' | 'restock' | 'manual_adjustment' | 'return';
   quantity: number;
   beforeQuantity: number;
   afterQuantity: number;
@@ -461,7 +482,7 @@ export class InventoryTransactionListResponseDto {
 }
 ```
 
-### 3.9 DeleteAllProductsResponseDto
+### 3.8 DeleteAllProductsResponseDto
 
 Returned by the `DELETE /products/all` endpoint.
 
@@ -595,7 +616,7 @@ export enum ProductErrorCode {
 ### 6.1 ProductWithRelations
 
 ```typescript
-import type { Prisma } from '../generated/prisma/client';
+import type { Prisma } from '../../../../generated/prisma/client';
 
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
