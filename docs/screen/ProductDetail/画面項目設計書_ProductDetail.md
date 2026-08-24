@@ -4,9 +4,9 @@
 **Target Screen:** Product Detail (商品詳細)  
 **Subsystem:** Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry  
 **Function ID:** FN-PROD-001  
-**Version:** 1.9  
+**Version:** 1.10  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-21  
+**Last Updated:** 2026-08-24  
 **Author:** Senior System Engineer  
 **Review Status:** Draft (審査中)  
 **Classification:** Internal — Engineering Division
@@ -29,6 +29,7 @@
 | 1.7 | 2026-08-18 | Senior System Engineer | Added clear team ownership disclaimers to all cart & wishlist sections (4.4, 5.4, 5.5, 6.3, 6.6, 7.3). Added ℹ️ note in Section 2.3 identifying items owned by Cart Team and Wishlist Team. Document remains comprehensive reference with sections marked as "Reference Only" for cart and wishlist functionality. |
 | 1.8 | 2026-08-21 | Senior System Engineer | Aligned with `SKM-FDS-PROD-001` v6.0, `SKM-DBS-001` v2.4, and `SKM-REQ-001` v2.10: Updated cross-reference versions; added `discount_types` lookup table reference for promotion discount type validation (Rule BR-PROD-018); aligned review list pagination with the functional specification (`limit` max 50, default 10); added `licenseStatus` and `isFeatured` fields to the product detail API response mapping; corrected duplicate section numbering (§10.8 → §10.9). |
 | 1.9 | 2026-08-21 | Senior System Engineer | Added Sidebar Advertisement display per `SKM-REQ-001` v2.10 §5.3/§5.7 ("Product Detail Sidebar" placement) and `SKM-FDS-PROD-001` v7.0: added Section [J] item definitions (items 36–41), load/rotation behavior (§5.11), database mapping (§7.5), API response example (§8.8), i18n keys (§9.19~9.21), shared component (§10.10), and test checklist (§12.8); updated layouts (§3.1) and core functions (§2.3). Flagged open item: `advertisements` table lacks `placement`/`tier` columns (SKM-DEV-001 §13). |
+| 1.10 | 2026-08-24 | Senior System Engineer | Removed the Breadcrumb (パンくずリスト) section to align with the Sign-up/Login screen items specification (`SKM-SIS-SCR-001`): deleted the Section [A] item definitions, breadcrumb blocks from the desktop/mobile layouts (§3.1), `bcBreadcrumb` navigation behavior (§5.10) and database mapping (§7.1), `product.breadcrumb.*` i18n keys (§9.1/9.7/9.13), and the breadcrumb navigation test case (§12.1). Renumbered §4 subsection headings sequentially; remaining section letters ([B]–[J]) and item numbers retained for cross-reference stability. |
 
 ### 1.2 Related Documents
 
@@ -83,8 +84,6 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         BROWSER VIEWPORT                             │
 ├─────────────────────────────────────────────────────────────────────┤
-│ [A] BREADCRUMB      Home / Category / Product                        │
-│                                                                     │
 │  ┌────────────────────────┐   ┌───────────────────────────────┐     │
 │  │  [B] PRODUCT GALLERY   │   │  [C] PRODUCT INFO             │     │
 │  │                        │   │                               │     │
@@ -129,8 +128,6 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 ┌─────────────────────────────────────┐
 │         BROWSER VIEWPORT            │
 ├─────────────────────────────────────┤
-│ [A] BREADCRUMB                      │
-│                                     │
 │ [B1] Main Image (full-width)        │
 │ [B2] Thumbnails (horizontal)        │
 │                                     │
@@ -168,20 +165,14 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 ## 4. Item Definitions (画面項目定義)
 
-### 4.1 Section [A]: Breadcrumb (パンくずリスト)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 1 | `bcBreadcrumb` | Breadcrumb Navigation | Breadcrumb (nav) | String | — | Trails: Home / Category / Product | Category slug validated | `categories.name`, `products.name` | Home → `/`, Category → `/category/:categorySlug`, Product → current (non-clickable). Tailwind: `text-sm text-muted-foreground`. |
-
-### 4.2 Section [B]: Product Gallery (商品画像ギャラリー)
+### 4.1 Section [B]: Product Gallery (商品画像ギャラリー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 2 | `imgMainImage` | Main Image | Image (`<img>`) | URL (String) | Mandatory | Skeleton loader; shows `images[0]` when loaded | Valid image URL | `products.images[0]` | Primary/cover image (Rule 4.2.3). Lazy-loaded. Tailwind: `aspect-square object-cover rounded-xl`. |
 | 3 | `lstThumbnails` | Thumbnail List | Image List | URL[] (String[]) | — | Hidden if only 1 image | — | `products.images` | Clicking a thumbnail swaps `imgMainImage`. Active thumbnail highlighted with border. |
 
-### 4.3 Section [C]: Product Info (商品情報)
+### 4.2 Section [C]: Product Info (商品情報)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -193,7 +184,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 9 | `lblSKU` | SKU | Static Label | String(100) | — | Hidden when null | — | `products.sku` | Display format: "SKU: SKU-0001". |
 | 10 | `grpSkinType` | Skin Type Compatibility | Badge Group | String[] | Mandatory | Skeleton loader | Options: dry, oily, combination, sensitive, normal | `products.skin_types` | Rendered as badges e.g. [Dry] [Sensitive] [Normal]. Tailwind: `bg-lavender text-primary rounded-full`. |
 
-### 4.4 Section [D]: Purchase Actions (購入アクション)
+### 4.3 Section [D]: Purchase Actions (購入アクション)
 
 > ⚠️ **OWNED BY OTHER TEAMS** — Items 11-13 (Quantity Stepper, Add to Cart, Wishlist) are maintained by the Cart and Wishlist teams respectively. This section is provided as reference only for Product Detail context.
 
@@ -203,14 +194,14 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 12 | `btnAddToCart` | Add to Cart Button | Button (`submit`, `primary`) | — | Mandatory | Disabled until product loads | — | — | Disabled when `stock_quantity <= 0` or selected quantity > stock. Loading: Spinner + "Adding...". Rule BR-PROD-004, BR-PROD-010. |
 | 13 | `btnWishlist` | Add to Wishlist Button | Icon Button | — | — | Unselected (♡). Skeleton while loading status | — | — | ♡ / ♥ toggle with optimistic UI update. Add only; removal handled by Wishlist screen/module. Disabled for unauthenticated users (login gating). |
 
-### 4.5 Section [E]: Sold By (出品者情報)
+### 4.4 Section [E]: Sold By (出品者情報)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 14 | `lblSoldBy` | Sold By Label | Static Label | String | — | Text: "Sold by" | — | Hardcoded UI text | Tailwind: `text-sm text-muted-foreground`. |
 | 15 | `lnkShop` | Shop Name Link | Link (`<Link>`) | String(255) | — | Merchant shop name | — | `products.merchant_id` → `merchants.id` → `merchants.user_id` → `shops.user_id`; then load `shops.name`, `shops.slug`, `shops.logo_url`, `shops.is_approved` | "Visit Shop →" navigates to `/shops/:shopSlug`. Shows shop logo when `shops.logo_url` is available. Shop must be `is_approved = true` to appear on product detail (Rule MRCH-005, SKM-DEV-001 §12.2.1). |
 
-### 4.6 Section [F]: Product Tabs (商品タブ)
+### 4.5 Section [F]: Product Tabs (商品タブ)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -218,7 +209,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 17 | `lblDescription` | Description Content | Static Label | TEXT | — | Rendered within Description tab | — | `products.description` | Long text; preserves formatting. Auto-escaped (Rule BR-PROD-017). |
 | 18 | `lstIngredients` | Ingredients List | Bullet List | String[] | — | Rendered within Ingredients tab | — | `products.ingredients` | Bullet list of ingredient names. |
 
-### 4.7 Section [G]: Review Form & Review List (レビューフォーム・レビュー一覧)
+### 4.6 Section [G]: Review Form & Review List (レビューフォーム・レビュー一覧)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -232,7 +223,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 26 | `lstReviews` | Review List | Card List | Review DTO[] | — | Skeleton loaders; empty state when no reviews | Paginated: page ≥ 1, limit 1–50 (default 10) | `reviews` + `users` | Ordered by `created_at DESC`. Each card: rating, title, body, images, verified badge, user name/avatar, date. |
 | 27 | `btnLoadMoreReviews` | Load More / Pagination | Button / Pagination | — | Conditional | Shown when `totalPages > 1` | — | `meta` | Loads next page; shows page info `meta.page / meta.totalPages`. |
 
-#### 4.7.1 Review Reporting (レビュー報告)
+#### 4.6.1 Review Reporting (レビュー報告)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -241,14 +232,14 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 27c | `rdoReportReason` | Report Reason | Radio Group | String | Mandatory | No selection | Options: spam, inappropriate, fake, other | `review_reports.reason` | Required field. |
 | 27d | `txaReportDescription` | Report Description | Textarea | TEXT (1000) | — | Empty. Placeholder: "Provide additional details..." | MaxLength: 1000 | `review_reports.description` | Optional field. |
 
-### 4.8 Section [H]: Related Products (関連商品)
+### 4.7 Section [H]: Related Products (関連商品)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 28 | `lblRelatedTitle` | Related Products Title | Static Label (`<h2>`) | String | — | Text: "Similar Products" | — | Hardcoded UI text | — |
 | 29 | `gridRelated` | Related Products Grid | Card Grid / Carousel | ProductCard DTO[] | — | Skeleton loaders | Max 8 results | `products` (similar query) | Cards navigate to `/products/:slug`. Lazy-loaded. Based on category, skinTypes, tags. |
 
-### 4.9 Section [I]: Active Promotion (アクティブプロモーション)
+### 4.8 Section [I]: Active Promotion (アクティブプロモーション)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -259,7 +250,7 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | 34 | `lblPromoValidity` | Validity Period | Static Label | String | Conditional | e.g. "2026-08-01 ~ 2026-09-30" | ISO 8601 format | `promotions.starts_at`, `promotions.expires_at` | Displayed in local time. |
 | 35 | `lblPromoBalance` | Remaining Balance | Static Label | Integer / String | Conditional | e.g. "65 left" or "Unlimited" | `max_uses - used_count`; "Unlimited" when `max_uses` is NULL | `promotions.max_uses`, `promotions.used_count` | Balance of 0 → promotion not displayed (Rule BR-PROD-019). |
 
-### 4.10 Section [J]: Sidebar Advertisements (サイドバー広告)
+### 4.9 Section [J]: Sidebar Advertisements (サイドバー広告)
 
 > ℹ️ Ad purchase, payment, and approval are handled by the Ads module (merchant/admin). This section only displays eligible ads per REQ §5.3 display rules and FDS v7.0 rules BR-PROD-020~023.
 
@@ -386,11 +377,10 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 - **Processing Logic:** Show corresponding content panel. Reviews tab lazy-loads the review list with `review_count` badge. Keyboard navigable (arrow keys).
 - **Exception Handling:** None applicable.
 
-### 5.10 Navigation Links (`lnkShop`, `bcBreadcrumb`, related product cards, login prompt)
+### 5.10 Navigation Links (`lnkShop`, related product cards, login prompt)
 - **Trigger:** User clicks a link.
 - **Processing Logic:** Navigate via React Router:
   - Shop link → `/shops/:shopSlug`
-  - Breadcrumb category → `/category/:categorySlug`
   - Related product card → `/products/:slug`
   - Login prompt → `/login`
 - **Exception Handling:** None applicable.
@@ -499,7 +489,6 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 | `lstIngredients` | `ingredients` | `ingredients` | `products` | TEXT[] (String[]) |
 | `wgtRatingSummary` | `avgRating` | `avg_rating` | `products` | DECIMAL(3,2) |
 | `wgtRatingSummary` | `reviewCount` | `review_count` | `products` | INT |
-| `bcBreadcrumb` | `category` | `category_id` | `products` (FK) | FK → `categories` |
 | `lnkShop` | `merchant` / `shop` | `merchant_id` / `user_id` / `name`, `slug`, `logo_url`, `is_approved` | `products` → `merchants` → `shops` | UUID FK chain: `products.merchant_id` → `merchants.id`; `merchants.user_id` → `shops.user_id`. Shop must be `is_approved = true` (Rule MRCH-005, SKM-DEV-001 §2.1). |
 
 ### 7.2 Review Form → Database
@@ -780,8 +769,6 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 | Key | Value |
 | :--- | :--- |
-| `product.breadcrumb.home` | "Home" |
-| `product.breadcrumb.category` | "Category" |
 | `product.rating` | "★ {rating} ({count} reviews)" |
 | `product.stock.inStock` | "In stock ({quantity})" |
 | `product.stock.lowStock` | "Only {quantity} left" |
@@ -871,8 +858,6 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 | Key | Value |
 | :--- | :--- |
-| `product.breadcrumb.home` | "ホーム" |
-| `product.breadcrumb.category` | "カテゴリー" |
 | `product.rating` | "★ {rating}（{count}件のレビュー）" |
 | `product.stock.inStock` | "在庫あり（{quantity}）" |
 | `product.stock.lowStock` | "残りわずか（{quantity}）" |
@@ -962,8 +947,6 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 
 | Key | Value |
 | :--- | :--- |
-| `product.breadcrumb.home` | "မူလစာမျက်နှာ" |
-| `product.breadcrumb.category` | "အမျိုးအစား" |
 | `product.rating` | "★ {rating} (သုံးသပ်ချက် {count} ခု)" |
 | `product.stock.inStock` | "ပစ္စည်းရှိ ({quantity})" |
 | `product.stock.lowStock` | "{quantity} ခုသာ ကျန်ပါသည်" |
@@ -1170,7 +1153,6 @@ The Product Detail page is the primary conversion point in the buyer journey. It
 - [ ] Compare-at price hidden when null
 - [ ] Stock status renders correct badge (in stock / low stock / out of stock)
 - [ ] Skin type badges render correctly
-- [ ] Breadcrumb navigation works (Home / Category / Product)
 - [ ] Sold by section shows merchant shop with "Visit Shop →" link
 - [ ] Tabs switch between Description / Ingredients / Reviews
 - [ ] Skeleton loaders show during initial load

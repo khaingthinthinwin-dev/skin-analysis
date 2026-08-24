@@ -10,9 +10,9 @@
 | **Target Screen** | Product Detail (商品詳細) |
 | **Subsystem** | Product Catalog — Product Detail, Reviews, Wishlist & Cart Entry |
 | **Function ID** | FN-PROD-001 |
-| **Version** | 7.0 |
+| **Version** | 7.1 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-21 |
+| **Last Updated** | 2026-08-24 |
 | **Author** | Software Architect |
 | **Status** | Draft (審査中) |
 | **Classification** | Internal — Engineering Division |
@@ -31,6 +31,7 @@
 | 5.1 | 2026-08-17 | Software Architect | Aligned with DATABASE_SPEC v2.2 / REQUIREMENT_SPEC v1.7 / DEVELOPMENT_RULES v2.1: updated cart functionality to reference new `carts` and `cart_items` tables (replacing `order_items` reference for cart operations); added cart lifecycle rules (B-CART-008~014); updated database traceability section with `carts` and `cart_items` tables; added `review_reports` table reference for review moderation. Note: Cart and Wishlist sections remain unchanged as they are maintained by other teams. |
 | 6.0 | 2026-08-20 | Software Architect | Aligned with DATABASE_SPEC v2.4 / REQUIREMENT_SPEC v2.10 / DEVELOPMENT_RULES v2.1: updated all version references to current core document versions (DATABASE_SPEC v2.2→v2.4, REQUIREMENT_SPEC v1.7→v2.10); added `discount_types` lookup table reference for promotion discount type validation (BR-PROD-018); added `password_reset_tokens`, `order_status_history`, and `inventory_transactions` tables to database traceability; fixed configurable item key from `VITE_API_URL` to `VITE_API_BASE_URL`; updated document metadata. |
 | 7.0 | 2026-08-21 | Software Architect | Added Sidebar Advertisement Display feature per REQUIREMENT_SPEC v2.10 §5.3/§5.7 ("Product Detail Sidebar" placement): added UC-PROD-008, business rules BR-PROD-020~023 (approved/paid/active-only display, placement targeting, rotation rules, rejection handling), UI element EL-19, operation §6.8 (`GET /api/v1/products/:slug/advertisements`), output specification §7.8, configurable items (`ADVERTISEMENT_SLIDER_ROTATION_MS`, `AD_SIDEBAR_MAX_PER_ROTATION`), and database traceability for `advertisements`, `ad_fee_settings`, and `ad_payments`. Flagged open item: the `advertisements` table does not store `placement`/`tier` columns — linkage via purchase record must be confirmed with the DB team (SKM-DEV-001 §13). Ad purchase/approval workflow remains owned by the Ads module. |
+| 7.1 | 2026-08-24 | Software Architect | Removed the Breadcrumb UI element to align with the Sign-up/Login specification format (`SKM-SIS-SCR-001`) and the screen items specification v1.10: deleted the EL-01 row from §5.1.1, the breadcrumb navigation entry from §12.2, breadcrumb wording from the database traceability (§15.2), and the breadcrumb implementation checklist item; remaining element IDs retained for cross-reference stability. |
 
 ---
 
@@ -349,7 +350,6 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-01 | Breadcrumb | Navigation | — | No | Home / Category / Product trail |
 | EL-02 | Main Image | Image | — | Yes | Primary image (`images[0]`, Rule 4.2.3) |
 | EL-03 | Thumbnails | Image List | — | No | Clicking swaps the main image |
 | EL-04 | Product Name | Text | — | Yes | Product name |
@@ -1018,7 +1018,6 @@ For authenticated buyers, real-time events can surface on the product page after
 | Source | Target | Trigger |
 |--------|--------|---------|
 | Product Detail | `/shops/:shopSlug` | "Visit Shop →" link |
-| Product Detail | `/category/:categorySlug` | Breadcrumb category click |
 | Product Detail | `/wishlist` | Wishlist icon (header) |
 | Product Detail | `/cart` | Cart icon (header) |
 
@@ -1156,7 +1155,7 @@ Defined via `.env` configuration and service constants:
 | Database Table | Relevant Functional Operations | Index / Constraint Used |
 |----------------|-------------------------------|-------------------------|
 | `products` | Load product detail by slug (SELECT), recalculate rating (UPDATE) | `idx_products_slug`, `idx_products_is_active`, `idx_products_category_id`, `uq_products_slug`, `chk_products_stock` |
-| `categories` | Breadcrumb and category display | `idx_categories_parent_id` |
+| `categories` | Category information returned in the product detail response | `idx_categories_parent_id` |
 | `merchants` | Merchant display name (`shop_name`), license status for "Sold by" section | `idx_merchants_user_id`, `idx_merchants_license_status` |
 | `users` | Reviewer info (name, avatarUrl) | `pk_users` |
 | `shops` | Shop profile for "Sold by" — linked via `shops.user_id` | `idx_shops_user_id`, `uq_shops_slug`, `idx_shops_is_approved` |
@@ -1291,7 +1290,6 @@ await prisma.$transaction(async (tx) => {
 - [ ] `features/products/hooks/useProductDetail.ts`
 - [ ] `features/products/schemas/product.schema.ts`
 - [ ] `features/products/services/product.service.ts`
-- [ ] Breadcrumb navigation (Home / Category / Product)
 - [ ] Add to Cart with stock validation + quantity stepper
 - [ ] Add to Wishlist with optimistic update (removal handled by Wishlist module)
 - [ ] Active Promotion section with discount + balance display

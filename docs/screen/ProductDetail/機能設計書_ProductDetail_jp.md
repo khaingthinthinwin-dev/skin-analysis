@@ -10,9 +10,9 @@
 | **対象画面** | 商品詳細ページ |
 | **サブシステム** | 商品カタログ — 商品詳細、レビュー、お気に入り＆カート追加 |
 | **機能ID** | FN-PROD-001 |
-| **バージョン** | 5.1 |
+| **バージョン** | 7.1 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-17 |
+| **最終更新日** | 2026-08-24 |
 | **作成者** | ソフトウェアアーキテクト |
 | **ステータス** | ドラフト（審査中） |
 | **分類** | 社内 — 技術部門 |
@@ -29,6 +29,9 @@
 | 4.0 | 2026-08-10 | ソフトウェアアーキテクト | 削除は別モジュールで処理されるため、商品詳細のスコープからお気に入り削除セクションおよび削除関連の参照をすべて削除。有効プロモーション表示セクション（残数を含む）を追加。データベーステーブル参照を修正（DB設計に`cart_items`テーブルは存在しない — `promotions` / `order_items`に置換）。 |
 | 5.0 | 2026-08-14 | ソフトウェアアーキテクト | DB設計書v2.0に整合。CUID参照をすべてUUIDに置換（全PKが`gen_random_uuid()`を使用）。マーチャントデータモデルを`merchants`テーブル参照に更新（表示名は`name`ではなく`shopName`）。お気に入りテーブル名を`wishlists`から`wishlist`（単数形）に修正、制約/インデックス名も修正。検証済み購入チェックを`delivered`注文ステータス（DB設計の終端状態）を使用するよう明確化。すべてのJSON例とPrismaクエリを更新。 |
 | 5.1 | 2026-08-17 | ソフトウェアアーキテクト | DB設計書v2.2 / 要件定義書v1.7 / 開発ルールv2.1に整合。カート機能を新しい`carts`および`cart_items`テーブル参照に更新（`order_items`参照をカート操作に置換）。カートライフサイクルルール（B-CART-008~014）を追加。データベーストレーサビリティセクションに`carts`および`cart_items`テーブルを追加。レビュー管理用に`review_reports`テーブル参照を追加。注：カートおよびお気に入りセクションは他のチームが管理するため変更なし。 |
+| 6.0 | 2026-08-20 | ソフトウェアアーキテクト | DB設計書v2.4 / 要件定義書v2.10 / 開発ルールv2.1に整合。すべてのバージョン参照を最新版に更新（DB設計書v2.2→v2.4、要件定義書v1.7→v2.10）。プロモーション割引型バリデーション用に`discount_types`ルックアップテーブル参照を追加（BR-PROD-018）。DB設計書v2.4の`password_reset_tokens`、`order_status_history`、`inventory_transactions`テーブルをデータベーストレーサビリティに追加。設定項目キーを`VITE_API_URL`から`VITE_API_BASE_URL`に修正。文書メタデータを更新。 |
+| 7.0 | 2026-08-21 | ソフトウェアアーキテクト | サイドバー広告表示機能を要件定義書v2.10 §5.3/§5.7（「商品詳細サイドバー」配置）に基づき追加：UC-PROD-008、ビジネスルールBR-PROD-020~023（承認済み/支払済み/アクティブのみ表示、配置ターゲティング、ローテーションルール、拒否処理）、UI要素EL-19、動作§6.8（`GET /api/v1/products/:slug/advertisements`）、出力仕様§7.8、設定項目（`ADVERTISEMENT_SLIDER_ROTATION_MS`、`AD_SIDEBAR_MAX_PER_ROTATION`）、および`advertisements`、`ad_fee_settings`、`ad_payments`テーブルのデータベーストレーサビリティ。オープン項目をフラグ：`advertisements`テーブルに`placement`/`tier`列が存在しない — 購入レコード経由のリンクをDBチームに確認する必要あり（SKM-DEV-001 §13）。広告の購入/承認ワークフローはAdsモジュールの管轄のまま。 |
+| 7.1 | 2026-08-24 | ソフトウェアアーキテクト | サインアップ/ログイン仕様書（`SKM-SIS-SCR-001`）の形式および画面項目設計書v1.10に合わせるため、パンくずリストUI要素（EL-01）を削除：§5.1.1のEL-01行、§12.2のパンくずナビゲーション行、データベーストレーサビリティ（§15.2）のパンくず表記、実装チェックリストのパンくず項目を削除。相互参照の安定性のため、残りの要素IDは維持。 |
 
 ---
 
@@ -73,6 +76,7 @@
 6. **カートに追加** — 数量指定で商品をカートに追加（在庫のアトミック検証対象）。
 7. **お気に入り管理** — 楽観的UI更新によるお気に入りへの商品追加（お気に入りからの削除/削除処理は専用のお気に入り画面/モジュールで行われ、本画面のスコープ外）。
 8. **有効プロモーション表示** — 商品の販売者の有効プロモーション（クーポンコード、割引、有効期間）、残数（`max_uses - used_count`）を含む表示（ルールBR-PROD-018対象）。
+9. **サイドバー広告表示** — `product_sidebar`配置（REQUIREMENT_SPEC §5.3/§5.7）向けに購入された、承認済みかつ支払済みの広告を表示（ルールBR-PROD-020~023対象）。広告の購入、支払い、承認ワークフローはAdsモジュール（販売者/管理者）で処理され、本画面のスコープ外。本画面は適格な広告のみを表示。
 
 ### 1.3 対象ユーザー
 
@@ -123,13 +127,14 @@
 | `wishlist` | お気に入りDTO | お気に入りメンバーシップステータス/追加結果 |
 | `cart` | カートDTO | カートへの商品追加結果 |
 | `promotions` | プロモーションDTO配列 | 割引詳細と残数付きの有効プロモーション |
+| `advertisements` | 広告DTO配列 | `product_sidebar`配置のサイドバー広告（ローテーションあたり最大5件） |
 
 ### 1.6 関連文書
 
 | No. | 文書ID | 文書名 | ファイルパス/参照 | 備考 |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | 要件定義書（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフロー論理、必須フィールド、ルール（ルール4.2.x、4.4.x、B-CART-008~014）。 |
-| 2 | SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`products`、`reviews`、`wishlist`、`promotions`、`carts`、`cart_items`、`review_reports`）、UUID PK、`merchants`テーブル、制約。 |
+| 1 | SKM-REQ-001 | 要件定義書（v2.10） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフロー論理、必須フィールド、ルール（ルール4.2.x、4.4.x、B-CART-008~014）。 |
+| 2 | SKM-DBS-001 | データベース設計書（v2.4） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`products`、`reviews`、`wishlist`、`promotions`、`carts`、`cart_items`、`review_reports`、`discount_types`、`password_reset_tokens`、`order_status_history`、`inventory_transactions`）、UUID PK、`merchants`テーブル、制約。 |
 | 3 | SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
 
 ---
@@ -147,6 +152,7 @@
 | UC-PROD-005 | お気に入りに追加 | ユーザーが`buyer`として認証済み。商品がお気に入りに未登録。 | お気に入りアイテムが作成される（ユニーク`user_id + product_id`）。 | 購入者 |
 | UC-PROD-006 | 商品をカートに追加 | ユーザーが`buyer`として認証済み。商品が在庫あり。 | カートアイテムが在庫の再検証付きで挿入またはマージされる。 | 購入者 |
 | UC-PROD-007 | 有効プロモーションを表示 | 商品が存在し、その販売者に有効プロモーションがある。 | 有効プロモーション（コード、割引、有効期間、残数）が表示される。 | 訪問者 / 購入者 |
+| UC-PROD-008 | サイドバー広告を表示 | 商品が存在。`product_sidebar`配置向けに承認済みかつ支払済みの広告が配信中。 | スポンサー広告がサイドバースライダーに表示される（ローテーションあたり最大5件、5秒で自動ローテーション）。 | 訪問者 / 購入者 |
 
 ### 2.2 主要ビジネスワークフロー
 
@@ -319,8 +325,17 @@
 
 | ルールID | ルール名 | 説明 | 強制レイヤー |
 |---------|-----------|-------------|-------------------|
-| BR-PROD-018 | 有効プロモーション表示 | `is_active = true`、`starts_at` / `expires_at`の有効期間内（ルール4.5.1）、かつ残数あり（`max_uses - used_count > 0`、または`max_uses`がNULLの場合は無制限）のプロモーションのみ、商品の販売者について表示。 | バックエンド（クエリフィルター） |
+| BR-PROD-018 | 有効プロモーション表示 | `is_active = true`、`starts_at` / `expires_at`の有効期間内（ルール4.5.1）、かつ残数あり（`max_uses - used_count > 0`、または`max_uses`がNULLの場合は無制限）のプロモーションのみ、商品の販売者について表示。`discount_type`は`discount_types`ルックアップテーブルの値（`percentage`または`fixed`）のみで、`promotions`テーブルのCHECK制約`promotions_discount_type_check`で保証。 | バックエンド（クエリフィルター＋DB制約） |
 | BR-PROD-019 | プロモーション残数表示 | 残りのプロモーション残数を`max_uses - used_count`として表示。`max_uses`がNULLの場合、残数は「無制限」と表示。残数`0`はプロモーションが使い果たされたことを意味し、表示されない。 | バックエンド（計算フィールド）+ フロントエンド（表示） |
+
+### 4.7 サイドバー広告ルール
+
+| ルールID | ルール名 | 説明 | 強制レイヤー |
+|---------|-----------|-------------|-------------------|
+| BR-PROD-020 | 承認済み＆支払済み＆アクティブのみ | `approval_status = 'approved'`、`payment_status = 'completed'`、`is_active = true`、かつ`starts_at` / `expires_at`の有効期間内の広告のみ表示（REQ §5.3「承認必須」、§7.6「投稿前に支払い必須」）。拒否された広告はすべてのローテーションから除外。期限切れまたは非アクティブな広告も除外。 | バックエンド（クエリフィルター） |
+| BR-PROD-021 | 配置ターゲティング | `product_sidebar`配置（`ad_fee_settings.placement`。デフォルトレート$2.00/$3.50/$6.00/日、15日、最大3件）向けに購入された広告のみ商品詳細サイドバーに表示。⚠️ **オープン項目：** `advertisements`テーブルには現在`placement`/`tier`列がない — 配置フィルタリングとtier解決は購入/パッケージ連携に依存し、SKM-DEV-001 §13（データベース変更ガバナンス）に従いDBチームと確認が必要。 | バックエンド（クエリフィルター） |
+| BR-PROD-022 | ローテーションルール | スライダーローテーションで表示される広告は最大5件。優先順位はPremium＞Standard＞Basic。同じtier内の広告はラウンドロビンでローテーション。スライダーは5秒ごとに自動ローテーション（REQ §5.3）。 | バックエンド（並び順）+ フロントエンド（スライダー） |
+| BR-PROD-023 | スポンサー表示とリンク安全性 | すべての広告カードに「スポンサー」ラベルを表示。外部広告リンクは新しいタブで開き、`rel="noopener noreferrer nofollow sponsored"`を付与。 | フロントエンド |
 
 ---
 
@@ -334,7 +349,6 @@
 
 | 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-01 | パンくずリスト | ナビゲーション | — | いいえ | ホーム / カテゴリー / 商品のトレイル |
 | EL-02 | メイン画像 | 画像 | — | はい | メイン画像（`images[0]`、ルール4.2.3） |
 | EL-03 | サムネイル | 画像リスト | — | いいえ | クリックでメイン画像を切り替え |
 | EL-04 | 商品名 | テキスト | — | はい | 商品名 |
@@ -352,12 +366,14 @@
 | EL-16 | レビューフォーム | フォーム | — | いいえ | レーティングスター、タイトル、本文。ログインゲーティング |
 | EL-17 | 関連商品 | カードグリッド | `product.related` | いいえ | 「類似商品」セクション |
 | EL-18 | 有効プロモーション | バナー / カード | `product.promotions` | いいえ | 有効な販売者プロモーション：クーポンコード、割引（パーセンテージ/固定）、最低注文金額、有効期間、残数（`max_uses - used_count`） |
+| EL-19 | サイドバー広告 | 広告スライダー / カルーセル | `product.ads` | いいえ | `product_sidebar`配置のスポンサー広告：ローテーションあたり最大5件、5秒ごとに自動ローテーション、優先順位Premium＞Standard＞Basic（REQ §5.3）。適格な広告がない場合は非表示 |
 
 **デフォルト状態：**
 - メイン画像は`images[0]`を表示。すべての非同期セクションにスケルトンローダー。
 - 商品ロード完了まで「カートに追加」は無効。`stockQuantity <= 0`の場合も無効。
 - 未認証時はレビューフォーム非表示（代わりにログインプロンプト表示）。
 - 商品の販売者に有効プロモーションがない場合、有効プロモーションセクションは非表示。
+- `product_sidebar`配置向けに承認済み、支払済み、アクティブな広告がない場合、サイドバー広告セクションは非表示。スライダーはホバー/フォーカス時に一時停止。
 
 ---
 
@@ -525,6 +541,43 @@ slug validated (URL slug format, max 255 chars)
       → Order by starts_at DESC
       → Compute balance = max_uses - used_count (NULL = unlimited)
     → Return active promotion DTOs
+```
+
+### 6.8 動作：サイドバー広告を表示
+
+| 属性 | 仕様 |
+|-----------|---------------|
+| **トリガー** | 商品詳細ページが「サイドバー広告」セクションをロード |
+| **APIエンドポイント** | `GET /api/v1/products/:slug/advertisements` |
+| **リクエストContent-Type** | `application/json`（レスポンス） |
+| **送信前バリデーション** | `slug`（URLスラッグ形式、最大255文字） |
+| **処理ステップ** | 1. slug形式を検証。2. slugで商品を検索（`is_active = true`）。3. `is_active = true`、`approval_status = 'approved'`、`payment_status = 'completed'`、かつ`starts_at <= now() < expires_at`の`advertisements`をクエリ（ルールBR-PROD-020）。4. `product_sidebar`配置にフィルター（ルールBR-PROD-021）。5. tier優先順位Premium＞Standard＞Basicで並び替え、tier内はラウンドロビン。ローテーションあたり5件に制限（ルールBR-PROD-022）。6. 広告主ショップ（名前、slug、logoUrl）を含める。7. 広告DTOを返却。 |
+| **成功レスポンス** | サイドバー広告リスト付き200 OK（§7.8参照）。適格な広告がない場合は空配列 |
+| **エラーレスポンス** | 400 slug無効。404 商品が見つからない/非アクティブ |
+| **後続アクション** | サイドバー広告スライダーを5秒ごとの自動ローテーション付きで描画 |
+
+> 注記：広告の購入、支払い、投稿、承認はAdsモジュール（`advertisements`モジュール、販売者/管理者）で処理され、本画面のスコープ外です。
+
+**バックエンド処理フロー：**
+
+```
+slug validated (URL slug format, max 255 chars)
+  → ProductsService.findOneBySlug()
+    → Lookup product by slug (idx_products_slug index)
+    → Filter where is_active = true
+  → AdvertisementsService.findActiveByPlacement('product_sidebar')
+    → Query advertisements where is_active = true
+        AND approval_status = 'approved'
+        AND payment_status = 'completed'
+        AND starts_at <= now() AND expires_at > now()
+        (idx_advertisements_is_active, idx_advertisements_approval_status,
+         idx_advertisements_expires_at, chk_advertisements_dates)
+    → Filter to product_sidebar placement via purchase/package linkage
+      (⚠️ open item BR-PROD-021: placement/tier columns not on advertisements table)
+    → Order by tier priority (Premium > Standard > Basic), round-robin within tier (REQ §5.3)
+    → Limit to AD_SIDEBAR_MAX_PER_ROTATION (5) results
+    → Include shop (name, slug, logoUrl) via advertisements.shop_id
+    → Return advertisement DTOs
 ```
 
 ---
@@ -721,7 +774,7 @@ slug validated (URL slug format, max 255 chars)
 | `data[].id` | `promotions.id` | UUID文字列 |
 | `data[].code` | `promotions.code` | 文字列（クーポンコード） |
 | `data[].description` | `promotions.description` | 文字列またはnull |
-| `data[].discountType` | `promotions.discount_type` | `percentage` / `fixed` |
+| `data[].discountType` | `promotions.discount_type` | `percentage` / `fixed`（`discount_types`ルックアップに存在する値のみ） |
 | `data[].discountValue` | `promotions.discount_value` | 10進文字列 |
 | `data[].minOrderAmount` | `promotions.min_order_amount` | 10進文字列またはnull |
 | `data[].usedCount` | `promotions.used_count` | 整数 |
@@ -751,6 +804,44 @@ slug validated (URL slug format, max 255 chars)
   ]
 }
 ```
+
+### 7.8 出力定義 — サイドバー広告
+
+| フィールド | データソース | 表示形式 |
+|-------|-------------|----------------|
+| `data[].id` | `advertisements.id` | UUID文字列 |
+| `data[].title` | `advertisements.title` | 文字列 |
+| `data[].announcementMessage` | `advertisements.announcement_message` | 文字列（最大500文字） |
+| `data[].imageUrl` | `advertisements.image_url` | URL文字列またはnull（ショップロゴにフォールバック） |
+| `data[].linkUrl` | `advertisements.link_url` | URL文字列またはnull（nullの場合はカードをクリック不可） |
+| `data[].startsAt` | `advertisements.starts_at` | ISO 8601タイムスタンプ |
+| `data[].expiresAt` | `advertisements.expires_at` | ISO 8601タイムスタンプ |
+| `data[].shop` | `shops` via `advertisements.shop_id` | ネストオブジェクト：`name`、`slug`、`logoUrl` |
+
+**レスポンス例（200）：**
+
+```json
+{
+  "data": [
+    {
+      "id": "c9d0e1f2-a3b4-5c6d-8e9f-0a1b2c3d4e5f",
+      "title": "Autumn Glow Sale",
+      "announcementMessage": "20% off all serums this week",
+      "imageUrl": "https://cdn.example.com/ads/autumn-glow.webp",
+      "linkUrl": "https://example.com/campaign/autumn-glow",
+      "startsAt": "2026-08-15T00:00:00.000Z",
+      "expiresAt": "2026-08-30T23:59:59.000Z",
+      "shop": {
+        "name": "Glow Lab Official Store",
+        "slug": "glow-lab-official-store",
+        "logoUrl": "https://cdn.example.com/shops/glow-logo.webp"
+      }
+    }
+  ]
+}
+```
+
+> 注記：内部フィールド（`approval_status`、`payment_status`、`payment_amount`、`payment_reference`、`approved_by`、`rejection_reason`、`week_number`）は購入者に公開されません。
 
 ---
 
@@ -853,6 +944,7 @@ slug validated (URL slug format, max 255 chars)
 | `GET /products/:slug` | 公開 | 商品詳細表示 |
 | `GET /products/:productId/reviews` | 公開 | レビュー一覧表示 |
 | `GET /products/:slug/promotions` | 公開 | 有効プロモーション表示 |
+| `GET /products/:slug/advertisements` | 公開 | サイドバー広告表示 |
 | `GET /recommendations/similar/:productId` | 公開 | 関連商品 |
 | `POST /products/:productId/reviews` | 保護 | `buyer`ロール必須 |
 | `POST /wishlist/:productId` | 保護 | `buyer`+ロール必須 |
@@ -865,6 +957,7 @@ slug validated (URL slug format, max 255 chars)
 | `GET /products/:slug` | `@Public()` | なし |
 | `GET /products/:productId/reviews` | `@Public()` | なし |
 | `GET /products/:slug/promotions` | `@Public()` | なし |
+| `GET /products/:slug/advertisements` | `@Public()` | なし |
 | `POST /products/:productId/reviews` | `JwtAuthGuard + RolesGuard` | `buyer` |
 | `POST /wishlist/:productId` | `JwtAuthGuard + RolesGuard` | `buyer`+ |
 | `POST /cart/items` | `JwtAuthGuard + RolesGuard` | `buyer`+ |
@@ -924,7 +1017,6 @@ slug validated (URL slug format, max 255 chars)
 | 遷移元 | 遷移先 | トリガー |
 |--------|--------|---------|
 | 商品詳細 | `/shops/:shopSlug` | 「ショップを見る →」リンク |
-| 商品詳細 | `/category/:categorySlug` | パンくずのカテゴリークリック |
 | 商品詳細 | `/wishlist` | お気に入りアイコン（ヘッダー） |
 | 商品詳細 | `/cart` | カートアイコン（ヘッダー） |
 
@@ -1000,6 +1092,7 @@ slug validated (URL slug format, max 255 chars)
 | 在庫切れ商品のカート追加 | 422 / バリデーションエラー |
 | お気に入り追加（新規/重複） | 201 / 409 |
 | 商品の有効プロモーションGET | アクティブ、有効期間内、残数>0のみの200 |
+| 商品のサイドバー広告GET | 承認済み、支払済み、アクティブ、有効期間内の`product_sidebar`広告のみの200（最大5件）。該当なしの場合は空配列 |
 
 **セキュリティテスト：**
 
@@ -1019,7 +1112,7 @@ slug validated (URL slug format, max 255 chars)
 
 | 定義キー | デフォルト値 | 説明 |
 |----------------|---------------|-------------|
-| `VITE_API_URL` | `/api/v1` | バックエンドAPIベースURL |
+| `VITE_API_BASE_URL` | `http://localhost:8080/api/v1` | バックエンドAPIベースURL（CORSプロキシ用の完全URL） |
 | `PAGINATION_DEFAULT_LIMIT` | `10` | レビュー一覧のデフォルトページサイズ |
 | `PAGINATION_MAX_LIMIT` | `50` | レビュー一覧の最大ページサイズ |
 | `REVIEW_MAX_IMAGES` | `5` | レビューあたりの最大画像数 |
@@ -1027,6 +1120,8 @@ slug validated (URL slug format, max 255 chars)
 | `PRODUCT_CACHE_TTL` | `300` | Redis商品キャッシュTTL（秒） |
 | `SIMILAR_PRODUCT_LIMIT` | `8` | 返却される最大類似商品数 |
 | `PROMOTION_MAX_LIMIT` | `10` | 返却される最大有効プロモーション数 |
+| `ADVERTISEMENT_SLIDER_ROTATION_MS` | `5000` | サイドバー広告スライダーの自動ローテーション間隔（REQ §5.3） |
+| `AD_SIDEBAR_MAX_PER_ROTATION` | `5` | スライダーローテーションあたりに表示される最大広告数（REQ §5.3） |
 | `PRODUCT_CACHE_KEY` | `cache:product:<id>` | Redisキャッシュキープレフィックス |
 | `PRODUCT_LIST_CACHE_KEY` | `cache:products:list:*` | Redisリストキャッシュキープレフィックス |
 
@@ -1059,7 +1154,7 @@ slug validated (URL slug format, max 255 chars)
 | データベーステーブル | 関連する機能動作 | 使用するインデックス/制約 |
 |----------------|-------------------------------|-------------------------|
 | `products` | slugでの商品詳細ロード（SELECT）、レーティング再計算（UPDATE） | `idx_products_slug`、`idx_products_is_active`、`idx_products_category_id`、`uq_products_slug`、`chk_products_stock` |
-| `categories` | パンくずとカテゴリー表示 | `idx_categories_parent_id` |
+| `categories` | 商品詳細レスポンスに含まれるカテゴリー情報 | `idx_categories_parent_id` |
 | `merchants` | マーチャント表示名（`shop_name`）、「販売者」セクションのライセンスステータス | `idx_merchants_user_id`、`idx_merchants_license_status` |
 | `users` | レビュー投稿者情報（名前、avatarUrl） | `pk_users` |
 | `shops` | 「販売者」のショッププロフィール — `shops.user_id`でリンク | `idx_shops_user_id`、`uq_shops_slug`、`idx_shops_is_approved` |
@@ -1067,16 +1162,23 @@ slug validated (URL slug format, max 255 chars)
 | `review_reports` | レビュー管理（SELECT / INSERT） — 不適切レビューの報告用 | `idx_review_reports_review_id`、`idx_review_reports_status`、`chk_review_reports_reason`、`chk_review_reports_status` |
 | `wishlist` | お気に入り追加（SELECT / INSERT） — テーブル名は単数形 | `idx_wishlist_user_id`、`uq_wishlist_user_product` |
 | `promotions` | 有効プロモーション表示（SELECT）、`max_uses` / `used_count`から残数計算 | `idx_promotions_merchant_id`、`idx_promotions_is_active`、`idx_promotions_expires_at`、`uq_promotions_code`、`chk_promotions_discount_value`、`chk_promotions_dates` |
-| `carts` | ユーザーカート管理（SELECT / INSERT） — DB設計書v2.2：カート永続化用の新テーブル | `idx_carts_user_id`、`uq_carts_user_id` |
-| `cart_items` | カート商品行（SELECT / INSERT / UPDATE / DELETE） — DB設計書v2.2：カート商品用の新テーブル | `idx_cart_items_cart_id`、`uq_cart_items_cart_product`、`chk_cart_items_quantity` |
-| `order_items` | レビュー検ビュー検証用の検証済み購入チェック（SELECT）。注：カート操作は`carts`/`cart_items`テーブルを使用（DB設計書v2.2）。 | `idx_order_items_product_id`、`idx_order_items_merchant_id`、`fk_order_items_product`、`fk_order_items_merchant`、`chk_order_items_quantity`、`chk_order_items_total` |
+| `carts` | ユーザーカート管理（SELECT / INSERT） — DB設計書v2.4：カート永続化用テーブル | `idx_carts_user_id`、`uq_carts_user_id` |
+| `cart_items` | カート商品行（SELECT / INSERT / UPDATE / DELETE） — DB設計書v2.4：カート商品用テーブル | `idx_cart_items_cart_id`、`uq_cart_items_cart_product`、`chk_cart_items_quantity` |
+| `order_items` | レビュー検証用の検証済み購入チェック（SELECT）。注：カート操作は`carts`/`cart_items`テーブルを使用（DB設計書v2.4）。 | `idx_order_items_product_id`、`idx_order_items_merchant_id`、`fk_order_items_product`、`fk_order_items_merchant`、`chk_order_items_quantity`、`chk_order_items_total` |
+| `discount_types` | プロモーション割引型バリデーション用ルックアップテーブル — `promotions.discount_type` CHECK制約で参照（DB設計書v2.4） | `uq_discount_types_code` |
+| `order_status_history` | 注文ステータス監査証跡 — Orderモジュールがステータス遷移時に書き込み（DB設計書v2.4） | `idx_oh_order_id`、`idx_oh_status`、`uq_oh_order_status` |
+| `inventory_transactions` | 在庫監査証跡 — Product/Orderモジュールが在庫変更時に書き込み（DB設計書v2.4） | `idx_it_product_id`、`idx_it_merchant_id`、`idx_it_reference_type` |
+| `password_reset_tokens` | パスワードリセット — ProductDetail直接使用なし、認証フロー用にDB設計書v2.4に存在 | （なし — 認証モジュール専用） |
+| `advertisements` | サイドバー広告表示（SELECT） — `product_sidebar`配置向けの承認済み、支払済み、アクティブ、有効期間内の広告（DB設計書v2.4 §3.13） | `idx_advertisements_is_active`、`idx_advertisements_approval_status`、`idx_advertisements_payment_status`、`idx_advertisements_expires_at`、`chk_advertisements_dates`、`chk_advertisements_approval_status`、`chk_advertisements_payment_status`、`fk_advertisements_shop` |
+| `ad_fee_settings` | `product_sidebar`配置の配置/tier設定ルックアップ（SELECT） — デフォルトレート$2.00/$3.50/$6.00/日、15日、最大3件（DB設計書v2.4 §3.14） | `uq_ad_fee_settings_placement_tier` |
+| `ad_payments` | 表示される広告の支払い完了チェック（SELECT） — `ad_payments.ad_id`経由（DB設計書v2.4 §3.15） | `fk_ad_payments_ad` |
 
 **参照Prismaクエリ：**
 
 *リレーション付き商品詳細：*
 
 ```typescript
-// NOTE: products.merchant_id → references merchants(id) (DATABASE_SPEC v2.0)
+// NOTE: products.merchant_id → references merchants(id) (DATABASE_SPEC v2.4)
 // merchants.shop_name is the display name; shops links via shops.user_id (not merchant_id)
 const product = await prisma.product.findUnique({
   where: { slug: dto.slug, isActive: true },
@@ -1151,8 +1253,8 @@ await prisma.$transaction(async (tx) => {
 
 | 文書ID | 文書名 | ファイルパス |
 |-------------|---------------|-----------|
-| SKM-REQ-001 | 要件定義書（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` |
-| SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
+| SKM-REQ-001 | 要件定義書（v2.10） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` |
+| SKM-DBS-001 | データベース設計書（v2.4） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
 | SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
 
 ---
@@ -1167,6 +1269,8 @@ await prisma.$transaction(async (tx) => {
 - [ ] `reviews.service.ts` - 購入済みチェック+トランザクションレーティング再計算
 - [ ] `matching.service.ts` - `getSimilar()`エンドポイント
 - [ ] `promotions.service.ts` - `findActiveByMerchant()`エンドポイント（`GET /products/:slug/promotions`）
+- [ ] `advertisements.controller.ts` - `@Public()`付き`GET /products/:slug/advertisements`エンドポイント
+- [ ] `advertisements.service.ts` - 承認済み/支払済み/アクティブフィルタリング+tier優先順位の並び順付き`findActiveByPlacement('product_sidebar')`
 - [ ] `dto/create-review.dto.ts`（class-validator付き）
 - [ ] Redisキャッシュ：`cache:product:{id}`（TTL 5分）、レビュー/商品更新時に無効化
 - [ ] ユニットテストの作成（サービスレベル、新規コードはカバレッジ≥90%）
@@ -1181,13 +1285,14 @@ await prisma.$transaction(async (tx) => {
 - [ ] `features/products/components/RelatedProducts.tsx`
 - [ ] `features/products/components/ProductReviews.tsx`
 - [ ] `features/products/components/ActivePromotion.tsx`
+- [ ] `features/products/components/SidebarAdvertisements.tsx`
 - [ ] `features/products/hooks/useProductDetail.ts`
 - [ ] `features/products/schemas/product.schema.ts`
 - [ ] `features/products/services/product.service.ts`
-- [ ] パンくずナビゲーション（ホーム / カテゴリー / 商品）
 - [ ] 在庫バリデーション+数量ステッパー付きカートに追加
 - [ ] 楽観的更新付きお気に入り追加（削除はお気に入りモジュールで処理）
 - [ ] 割引+残数表示付き有効プロモーションセクション
+- [ ] サイドバー広告セクション（`product_sidebar`配置、ローテーションあたり最大5件、5秒ごとの自動ローテーション、スポンサーラベル、外部リンク安全属性）
 - [ ] レビューフォーム（レーティングスター、バリデーション、ログインゲーティング）
 - [ ] 関連商品セクション（遅延ロード）
 - [ ] 全非同期セクションのスケルトンローダー
