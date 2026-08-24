@@ -1,7 +1,7 @@
 # DD_AUTH_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-AUTH-04 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-08-10
+> **Doc ID:** SKM-DD-AUTH-04 | **Version:** 2.1 | **Status:** Released  
+> **Last Updated:** 2026-08-21
 
 ---
 
@@ -55,6 +55,11 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'Invalid role' })
   role?: UserRole = UserRole.BUYER;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255, { message: 'Shop name must be 255 characters or less' })
+  shopName?: string;
 }
 ```
 
@@ -106,6 +111,43 @@ export class LogoutDto {
   @IsOptional()
   @IsString()
   tokenFamily?: string; // For family-based revocation
+}
+```
+
+### 2.5 ForgotPasswordDto
+
+Used for `POST /forgot-password` to request a password reset link.
+
+```typescript
+import { IsEmail, IsNotEmpty } from 'class-validator';
+
+export class ForgotPasswordDto {
+  @IsEmail({}, { message: 'Invalid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
+  email: string;
+}
+```
+
+### 2.6 ResetPasswordDto
+
+Used for `POST /reset-password` to reset user password with a valid token.
+
+```typescript
+import { IsString, IsNotEmpty, MinLength, Matches } from 'class-validator';
+
+export class ResetPasswordDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Reset token is required' })
+  token: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Password is required' })
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @Matches(/^(?=.*[a-z])/, { message: 'Password must contain at least 1 lowercase letter' })
+  @Matches(/^(?=.*[A-Z])/, { message: 'Password must contain at least 1 uppercase letter' })
+  @Matches(/^(?=.*\d)/, { message: 'Password must contain at least 1 number' })
+  @Matches(/^(?=.*[@$!%*?&])/, { message: 'Password must contain at least 1 special character' })
+  password: string;
 }
 ```
 
@@ -182,6 +224,26 @@ export class VerifyResponseDto {
 }
 ```
 
+### 3.5 ForgotPasswordResponseDto
+
+Returned by forgot-password endpoint.
+
+```typescript
+export class ForgotPasswordResponseDto {
+  message: string; // Always same message to prevent email enumeration
+}
+```
+
+### 3.6 ResetPasswordResponseDto
+
+Returned by reset-password endpoint.
+
+```typescript
+export class ResetPasswordResponseDto {
+  message: string; // "Your password has been reset successfully."
+}
+```
+
 ---
 
 ## 4. JWT Payload Types
@@ -220,6 +282,19 @@ export interface TokenFamily {
   isRevoked: boolean;   // Revoked flag for breach detection
   createdAt: Date;      // Family creation timestamp
   absoluteLimitAt: Date; // 90-day hard cap
+}
+```
+
+### 4.4 PasswordResetToken
+
+```typescript
+export interface PasswordResetToken {
+  id: string;           // UUID primary key
+  userId: string;       // Associated user
+  tokenHash: string;    // Hashed reset token (SHA-256)
+  expiresAt: Date;      // 24-hour expiry
+  used: boolean;        // Single-use flag
+  createdAt: Date;      // Token creation timestamp
 }
 ```
 
@@ -290,6 +365,12 @@ export enum AuthErrorCode {
   LICENSE_INVALID_TYPE = 'LICENSE_INVALID_TYPE',
   LICENSE_INVALID_NAME = 'LICENSE_INVALID_NAME',
   LICENSE_TOO_LARGE = 'LICENSE_TOO_LARGE',
+  SHOP_NAME_REQUIRED = 'SHOP_NAME_REQUIRED',
+  SHOP_NAME_TOO_LONG = 'SHOP_NAME_TOO_LONG',
+  RESET_TOKEN_INVALID = 'RESET_TOKEN_INVALID',
+  RESET_TOKEN_EXPIRED = 'RESET_TOKEN_EXPIRED',
+  RESET_TOKEN_USED = 'RESET_TOKEN_USED',
+  PASSWORD_RESET_RATE_LIMIT = 'PASSWORD_RESET_RATE_LIMIT',
 }
 ```
 

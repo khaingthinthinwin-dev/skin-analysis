@@ -1,7 +1,7 @@
 # DD_MOD_06 — Test Specification (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-06 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-MOD-06 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-08-22
 
 ---
 
@@ -11,6 +11,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-17 | Software Architect | Initial test specification for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Software Architect | Added Review Reports test specifications: backend unit tests for report-admin.service, frontend component tests for ReportsTable and ReportDetailModal, and E2E scenarios for report management flows. |
+| 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: updated report status from COMPLETED to RESOLVED, added REVIEWED state tests, updated reason enums, added pending review tests, added report review tests. |
 
 ---
 
@@ -96,16 +97,19 @@ Mock dependencies: `PrismaService`, `RedisService`.
 
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
-| **updateReportStatus** | Complete pending report | Updates `status = 'completed'`, sets `resolved_by` and `resolved_at`, rejects target review (`is_approved = false`), recalculates product stats, invalidates cache, logs audit |
+| **updateReportStatus** | Mark pending report as reviewed | Updates `status = 'reviewed'`, logs audit |
+| **updateReportStatus** | Resolve reviewed report | Updates `status = 'resolved'`, auto-rejects target review (`is_approved = false`), recalculates product stats, invalidates cache, logs audit |
+| **updateReportStatus** | Resolve pending report | Updates `status = 'resolved'`, sets `resolved_by` and `resolved_at`, rejects target review (`is_approved = false`), recalculates product stats, invalidates cache, logs audit |
 | **updateReportStatus** | Reject pending report | Updates `status = 'rejected'`, sets `resolved_by` and `resolved_at`, logs audit |
-| **updateReportStatus** | Attempt to change completed report | Returns 409 with `REPORT_ALREADY_COMPLETED` |
+| **updateReportStatus** | Reject reviewed report | Updates `status = 'rejected'`, logs audit |
+| **updateReportStatus** | Attempt to change resolved report | Returns 409 with `REPORT_ALREADY_RESOLVED` |
 | **updateReportStatus** | Report not found | Returns 404 with `REPORT_NOT_FOUND` |
-| **updateReportStatus** | Complete auto-rejects target review | Updates `reviews.is_approved = false` for the report's review |
-| **updateReportStatus** | Complete recalculates product stats | Updates `products.avg_rating` and `review_count` from remaining approved reviews |
-| **updateReportStatus** | Complete invalidates product cache | Deletes `cache:product:{id}` and `cache:products:list:*` |
+| **updateReportStatus** | Resolve auto-rejects target review | Updates `reviews.is_approved = false` for the report's review |
+| **updateReportStatus** | Resolve recalculates product stats | Updates `products.avg_rating` and `review_count` from remaining approved reviews |
+| **updateReportStatus** | Resolve invalidates product cache | Deletes `cache:product:{id}` and `cache:products:list:*` |
 | **deleteReport** | Delete pending report | Hard deletes report, logs audit |
 | **deleteReport** | Delete rejected report | Hard deletes report, logs audit |
-| **deleteReport** | Attempt to delete completed report | Returns 409 with `REPORT_COMPLETED_CANNOT_DELETE` |
+| **deleteReport** | Attempt to delete resolved report | Returns 409 with `REPORT_RESOLVED_CANNOT_DELETE` |
 | **deleteReport** | Report not found | Returns 404 with `REPORT_NOT_FOUND` |
 
 ### 2.6 `admin.controller.spec.ts`
@@ -119,6 +123,8 @@ Mock dependencies: `AdminService`, `MerchantAdminService`, `ContentModerationSer
 | **GET /admin/reviews** | No token | Returns 401 Unauthorized |
 | **POST /admin/reviews/:id/moderate** | Valid payload | Calls service, returns 200 |
 | **POST /admin/reviews/:id/moderate** | Missing reason for reject | Returns 400 Bad Request |
+| **POST /admin/reviews/:id/report** | Valid payload | Returns 201 |
+| **POST /admin/reviews/:id/report** | Duplicate report | Returns 409 |
 | **DELETE /admin/reviews/:id** | Valid ID | Calls service, returns 204 No Content |
 | **DELETE /admin/reviews/:id** | Invalid ID | Returns 404 Not Found |
 | **GET /admin/merchants** | Valid admin token | Calls service, returns 200 with paginated data |
@@ -137,12 +143,13 @@ Mock dependencies: `AdminService`, `MerchantAdminService`, `ContentModerationSer
 | **GET /admin/reports** | Filter by status | Calls service with status param, returns filtered data |
 | **GET /admin/reports** | Search by reporter name | Calls service with search param, returns filtered data |
 | **GET /admin/reports** | Non-admin token | Returns 403 Forbidden |
-| **PATCH /admin/reports/:id/status** | Complete pending report | Calls service, returns 200 |
+| **PATCH /admin/reports/:id/status** | Mark as reviewed | Calls service, returns 200 |
+| **PATCH /admin/reports/:id/status** | Resolve pending report | Calls service, returns 200 |
 | **PATCH /admin/reports/:id/status** | Reject pending report | Calls service, returns 200 |
-| **PATCH /admin/reports/:id/status** | Attempt to change completed report | Returns 409 Conflict |
+| **PATCH /admin/reports/:id/status** | Attempt to change resolved report | Returns 409 Conflict |
 | **PATCH /admin/reports/:id/status** | Report not found | Returns 404 Not Found |
 | **DELETE /admin/reports/:id** | Delete pending report | Calls service, returns 204 No Content |
-| **DELETE /admin/reports/:id** | Delete completed report | Returns 409 Conflict |
+| **DELETE /admin/reports/:id** | Delete resolved report | Returns 409 Conflict |
 | **DELETE /admin/reports/:id** | Report not found | Returns 404 Not Found |
 
 ### 2.7 `audit.interceptor.spec.ts`
@@ -170,9 +177,10 @@ Using Vitest + React Testing Library.
 | Select all checkbox | Toggles all row checkboxes |
 | Select single row | Enables bulk action buttons |
 | Deselect all | Disables bulk action buttons |
-| Actions dropdown | Shows options: View Detail, Approve, Reject, Delete |
-| Status badge colors | Green for approved, Red for rejected |
+| Actions dropdown | Shows options: View Detail, Approve, Reject, Report, Delete |
+| Status badge colors | Green for approved, Red for rejected, Amber for pending |
 | Rating display | Shows 1-5 stars with pink color |
+| Filter tabs | All, Pending, Approved, Rejected, Reported |
 | Pagination | Shows page numbers and page size selector |
 
 ### 3.2 `ReviewDetailModal.test.tsx`
@@ -190,6 +198,8 @@ Using Vitest + React Testing Library.
 | Reject with reason | Calls `adminService.moderateReview` with `action: 'reject', reason` |
 | Delete button | Shows confirmation dialog |
 | Delete confirm | Calls `adminService.deleteReview` |
+| Report button | Shows report reason modal when clicked |
+| Report submit | Calls report endpoint with reason |
 | Close on Escape | Modal closes |
 | Close on X button | Modal closes |
 
@@ -272,10 +282,10 @@ Using Vitest + React Testing Library.
 | Select all checkbox | Toggles all row checkboxes |
 | Select single row | Enables bulk action buttons |
 | Deselect all | Disables bulk action buttons |
-| Actions dropdown | Shows options: View Detail, Reject Report, Complete Report, Delete Report |
-| Status badge colors | Amber for pending, Green for completed, Red for rejected |
-| Reason badge colors | Spam (orange), Harassment (red), False Info (yellow), Policy Violation (purple) |
-| Filter tabs | All, Pending, Rejected, Completed |
+| Actions dropdown | Shows options: View Detail, Reject Report, Resolve Report, Delete Report |
+| Status badge colors | Amber for pending, Blue for reviewed, Green for resolved, Red for rejected |
+| Reason badge colors | Spam (orange), Inappropriate (red), Fake (yellow), Other (purple) |
+| Filter tabs | All, Pending, Reviewed, Resolved, Rejected |
 | Search input | Filters reports by reporter name or email |
 | Pagination | Shows page numbers and page size selector |
 
@@ -288,14 +298,15 @@ Using Vitest + React Testing Library.
 | Review info card | Shows rating stars, body, product link |
 | Report info | Shows reason badge, detail text, status badge, resolved by, resolved at |
 | Target review actions | Shows Approve, Reject, Delete buttons for target review |
-| Report actions | Shows Reject, Complete, Delete buttons for report |
+| Report actions | Shows Reject, Resolve, Delete buttons for report |
 | Reject report button | Shows confirmation dialog |
 | Reject report confirm | Calls `adminService.updateReportStatus` with `status: 'rejected'` |
-| Complete report button | Shows confirmation dialog "The target review will be rejected" |
-| Complete report confirm | Calls `adminService.updateReportStatus` with `status: 'completed'` |
+| Resolve report button | Shows confirmation dialog "The target review will be rejected" |
+| Resolve report confirm | Calls `adminService.updateReportStatus` with `status: 'resolved'` |
 | Delete report button | Shows confirmation dialog |
 | Delete report confirm | Calls `adminService.deleteReport` |
-| Completed report actions hidden | Reject/Complete/Delete buttons not shown when status is 'completed' |
+| Resolved report actions hidden | Reject/Resolve/Delete buttons not shown when status is 'resolved' |
+| Reviewed status | Shows reviewed badge, allows resolve/reject |
 | Target review reject | Shows reason textarea, calls `adminService.moderateReview` |
 | Target review delete | Shows confirmation dialog, calls `adminService.deleteReview` |
 | Close on Escape | Modal closes |
@@ -307,8 +318,6 @@ Using Vitest + React Testing Library.
 |----------|------------------|
 | Initial render | Shows textarea with placeholder |
 | Empty on reject | Shows "Rejection reason is required" error |
-| Exceeds 500 chars | Shows "Reason must not exceed 500 characters" error |
-| Character count | Displays current/max character count |
 | Valid input | No error shown |
 
 ### 3.12 `ConfirmationDialog.test.tsx`

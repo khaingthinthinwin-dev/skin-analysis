@@ -10,9 +10,9 @@
 | **Target Screen** | Search & Filter Page (検索・フィルタページ) |
 | **Subsystem** | All Roles — Product Search, Filtering, Sorting & Pagination |
 | **Function ID** | FN-SEARCH-001 |
-| **Version** | 2.2 |
+| **Version** | 2.3 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-18 |
+| **Last Updated** | 2026-08-21 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -27,6 +27,7 @@
 | 2.0 | 2026-08-07 | Software Architect | Restructured to fully conform to the standard functional specification template, integrating detailed specifications from Requirement, Database, and Development Rules documents and aligning with the Sign-up/Login and Wishlist/Cart functional specification format. |
 | 2.1 | 2026-08-14 | Software Architect | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID. |
 | 2.2 | 2026-08-18 | Software Architect | Aligned with REQUIREMENT_SPEC v1.10: updated Guest/unauthorized user rules per Section 2.0, added sponsored advertisement placement (Search Results Top) per Rule 4.6.4 and the ad fee placement table, aligned multi-language scope (EN/MY/JA, NFR-031), and refreshed related document references. |
+| 2.3 | 2026-08-21 | Software Architect | Aligned with REQUIREMENT_SPEC v2.10 / DATABASE_SPEC v2.4 / DEVELOPMENT_RULES v2.1: guest rules re-referenced to the Permission Matrix (§2.2), merchant approval gating via `merchants.license_status` (§2.4, DBS §3.2), advertisement display rules (tier priority, round-robin, slider limit 5, 5-second rotation, weekly cap) per §5.3/§7.6, and ad placement enum aligned with `ad_fee_settings` (DBS §3.14). |
 
 ---
 
@@ -56,7 +57,7 @@
 
 This screen serves as the discovery and exploration entry point within the Cosmetics Finder platform. The Search and Filter subsystem provides the complete set of capabilities necessary for all users (Visitor, Buyer, Merchant, Admin) to locate skincare products by keyword, browse the hierarchical category tree, apply multi-dimensional filters (skin type, ingredients, price range, minimum rating), sort results, and paginate through the catalog.
 
-This subsystem bridges product browsing and product detail. It is responsible for ensuring that only properly validated, active products from approved merchant shops are surfaced to all users, while maintaining performance through Redis list caching and URL-state-driven frontend navigation that is shareable and back-button friendly. In addition, the search results page hosts the "Search Results Top" advertisement placement, surfacing only admin-approved advertisements that are within their active schedule (Rule 4.6.4).
+This subsystem bridges product browsing and product detail. It is responsible for ensuring that only properly validated, active products from approved merchant shops are surfaced to all users, while maintaining performance through Redis list caching and URL-state-driven frontend navigation that is shareable and back-button friendly. In addition, the search results page hosts the "Search Results Top" advertisement placement, surfacing only admin-approved advertisements that are within their active schedule (REQUIREMENT_SPEC §5.3 Advertisement Display Rules).
 
 ### 1.2 Functional Responsibilities
 
@@ -70,7 +71,8 @@ This screen is responsible for the following core functional areas (serving all 
 6. **Product Discovery** — Presenting active, merchant-approved, in-stock-or-out-of-stock-flagged product cards that link to product detail.
 7. **URL-State Navigation** — Persisting all search/filter/sort/page state in URL query parameters as the single source of truth.
 8. **Caching** — Serving repeat searches and the category tree from Redis to meet performance targets.
-9. **Sponsored Advertisements** — Presenting approved, in-schedule advertisements in the Search Results Top placement (Rule 4.6.4), limited by the weekly and per-merchant ad caps (Rule 4.6.3, M-AD-008, M-AD-012).
+9. **Sponsored Advertisements** — Presenting approved, in-schedule advertisements in the Search Results Top placement, ordered by tier priority with round-robin rot
+ation and limited by the weekly ad cap (REQUIREMENT_SPEC §5.3, §7.6).
 
 ### 1.3 Target Users
 
@@ -79,7 +81,7 @@ This screen is responsible for the following core functional areas (serving all 
 | **Primary Actor** | All roles: Visitor (unauthenticated), Buyer, Merchant, and Admin (REQUIREMENT_SPEC Section 2.2) |
 | **Required Authentication** | None (public endpoints); authenticated users access additional features (e.g., shopping) based on role |
 | **Data Scope** | Global product catalog (active products from approved merchant shops) |
-| **Guest Behavior** | Full search, browse, filter (category, price, rating), sort, and pagination are available without authentication. Product detail, product reviews (read-only), public shop profiles, and storefront advertisements are also public (REQUIREMENT_SPEC Section 2.0). Restricted actions (add to cart/wishlist, AI skin analysis, checkout) show a login alert modal (no auto-close, must require user action) and redirect to `/login` with `?redirect=<original_path>`. |
+| **Guest Behavior** | Full search, browse, filter (category, price, rating), sort, and pagination are available without authentication. Product detail, product reviews (read-only), public shop profiles, and storefront advertisements are also public (REQUIREMENT_SPEC §2.2 Permission Matrix). Restricted actions (add to cart/wishlist, AI skin analysis, checkout) show a login alert modal (no auto-close, must require user action) and redirect to `/login` with `?redirect=<original_path>`. |
 | **Buyer Behavior** | Full search, browse, filter, sort, pagination. Shopping actions (add to cart/wishlist) enabled. |
 | **Merchant Behavior** | Full search, browse, filter, sort, pagination (view only). Shopping actions restricted (`403 SHOPPING_NOT_ALLOWED`). |
 | **Admin Behavior** | Full search, browse, filter, sort, pagination (view only). Shopping actions restricted (`403 SHOPPING_NOT_ALLOWED`). |
@@ -102,7 +104,7 @@ This screen is responsible for the following core functional areas (serving all 
 ┌──────────────────────────┐      ┌─────────────────────────────────────┐
 │   Product Detail Page    │      │     Redis (List / Category Cache)   │
 │   (/products/:slug)      │◄─────┤  Serves repeat queries & tree       │
-└──────────────────────────┘      └─────────────────────────────────────┘
+└──────────────────────────┘      └─────────────────────────────────────┘  
 ```
 
 ### 1.5 Inputs / Outputs
@@ -134,9 +136,9 @@ This screen is responsible for the following core functional areas (serving all 
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition (v1.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields (B-SEARCH-*, B-MATCH-*), guest rules (Section 2.0), and rules (Rule 4.2.1, 4.2.2, 4.6.3, 4.6.4). |
-| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `shops`), indexes. |
-| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules (Section 12.2), design tokens (Sections 9.1–9.6), API standards (8.3), performance standards (10.3). |
+| 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Permission matrix (§2.2), merchant approval states (§2.4), buyer shopping features (§3.2), advertisement packages & display rules (§5.3), business rules (§7.2, §7.6), acceptance criteria (§8). |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`products`, `categories`, `merchants`, `shops`, `advertisements`, `ad_fee_settings`), index mapping (§4.1), Redis cache layout (§5.1). |
+| 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security & marketplace rules (§12.1–12.2, §12.7), design tokens (§9.1–9.6), API standards (§8.3–8.4), performance & caching standards (§10.3, §10.5). |
 
 ---
 
@@ -155,7 +157,7 @@ This screen is responsible for the following core functional areas (serving all 
 | UC-SEARCH-007 | Sort Results | Search results displayed. | Results re-ordered by price, rating, or newest. | All roles |
 | UC-SEARCH-008 | Paginate Results | Search results displayed. | Next/previous page of results loaded with accurate meta. | All roles |
 | UC-SEARCH-009 | View Product Detail from Results | Search results displayed. | User navigates to `/products/:slug`. | All roles |
-| UC-SEARCH-010 | View Sponsored Advertisements | Approved, in-schedule ads exist for the Search Results Top placement. | Approved active ads rendered at the top of the results area (Rule 4.6.4). | All roles |
+| UC-SEARCH-010 | View Sponsored Advertisements | Approved, in-schedule ads exist for the Search Results Top placement. | Approved active ads rendered at the top of the results area (REQUIREMENT_SPEC §5.3). | All roles |
 | UC-CATEGORY-001 | Load Category Tree | — | Nested category tree fetched and rendered in filter panel. | All roles |
 
 ### 2.2 Primary Business Workflow
@@ -196,10 +198,10 @@ This screen is responsible for the following core functional areas (serving all 
               ┌─────────┴─────────┐
               ▼                   ▼
         ┌──────────────┐    ┌──────────────────────┐
-        │ Redis HIT    │    │ Redis MISS →         │
-        │ (≤200ms)     │    │ PostgreSQL WHERE     │
-        └──────┬───────┘    │ is_active + approved │
-               │            │ shop + filters       │
+         │ Redis HIT    │    │ Redis MISS →         │
+         │ (≤200ms)     │    │ PostgreSQL WHERE     │
+         └──────┬───────┘    │ is_active + approved │
+                │            │ merchant + filters   │
                │            └──────────┬───────────┘
                │                       │
                │                       ▼
@@ -238,10 +240,11 @@ This screen is responsible for the following core functional areas (serving all 
 | 2 | User types keyword / selects filter / changes sort | Default list | URL params updated | User (all roles) |
 | 3 | Frontend builds query and calls GET /api/v1/products | URL params valid | Query in-flight (skeleton) | System |
 | 4 | Backend checks Redis cache | — | HIT (return cached) or MISS (query DB) | System |
-| 5 | Backend builds Prisma WHERE (active + approved shop + filters) | — | Filtered result set | System |
+| 5 | Backend builds Prisma WHERE (active + approved merchant + filters) | — | Filtered result set | System |
 | 6 | Backend returns { data, meta } with Decimal as string | Query executed | 200 response | System |
 | 7 | Frontend renders product grid, count, pagination | Data received | Results displayed | System |
 | 8 | User clicks product card | Results displayed | Navigates to /products/:slug | User (all roles) |
+| 9 | Frontend requests eligible ads for purchased packages and renders the Search Results Top slider | Search results displayed | Up to 5 approved merchant images/banners displayed above the product grid, rotating every 5 seconds; slider hidden when none are eligible | System |
 
 ### 2.4 Relevant Requirements Covered
 
@@ -257,10 +260,10 @@ This screen is responsible for the following core functional areas (serving all 
 | B-MATCH-003 | User can filter products by ingredients |
 | B-MATCH-004 | User can filter products by price range |
 | B-MATCH-005 | User can filter products by review rating |
-| M-AD-005 | Active ads display on platform |
-| M-AD-008 | Maximum 5 active advertisements per week (Rule 4.6.3) |
-| M-AD-012 | Per merchant: maximum 2 active ads simultaneously |
-| Rule 4.6.4 | Only approved ads within schedule are shown to buyers; active ads cached in Redis with 5-minute TTL |
+| REQ §5.3 | Approved & active advertisements displayed per placement (Search Results Top) |
+| REQ §5.3 | Advertisement Display Rules: approval required, priority Premium > Standard > Basic, round-robin within tier, slider limit 5, auto-rotation every 5 seconds |
+| REQ §7.6 | Maximum 5 active advertisements per week; admin approval required before display; rejected ads removed from rotation |
+| REQ §8.1 | Product browsing, search, and filtering work correctly (acceptance criteria) |
 
 ---
 
@@ -337,9 +340,9 @@ This screen is responsible for the following core functional areas (serving all 
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-SEARCH-012 | Active Products Only | Only `is_active = true` products appear in search results (Rule 4.2.1). | Backend (Prisma WHERE) |
-| BR-SEARCH-013 | Approved Shop Only | Products from unapproved merchant shops (`shops.is_approved = false`) are NOT visible to buyers (Section 12.2 of Development Rules). | Backend (Prisma join) |
-| BR-SEARCH-014 | Out-of-Stock Still Listed | Out-of-stock products remain listed but are flagged `isInStock: false` (Rule 4.2.2). | Backend (serialization) |
+| BR-SEARCH-012 | Active Products Only | Only `is_active = true` products appear in search results (REQUIREMENT_SPEC §7.2). | Backend (Prisma WHERE) |
+| BR-SEARCH-013 | Approved Merchant/Shop Only | Products from unapproved merchants (`merchants.license_status != 'approved'`, DBS §3.2) or unapproved shops (`shops.is_approved = false`) are NOT visible to buyers (REQUIREMENT_SPEC §2.4, DEV §12.2). | Backend (Prisma join) |
+| BR-SEARCH-014 | Out-of-Stock Still Listed | Out-of-stock products remain listed but are flagged `isInStock: false` (REQUIREMENT_SPEC §7.2 stock rules). | Backend (serialization) |
 
 ### 4.4 Pagination & Sorting Rules
 
@@ -365,10 +368,10 @@ This screen is responsible for the following core functional areas (serving all 
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-SEARCH-025 | Approved & In-Schedule Only | Only advertisements with `approved`/`active` status that are within their start/end schedule are rendered in the Search Results Top placement (Rule 4.6.4). | Backend (ad service WHERE) |
-| BR-SEARCH-026 | Display Priority | Ads in the placement are ordered by payment tier (premium > standard > basic), then by soonest end date (urgency); within the same priority, random rotation (REQUIREMENT_SPEC 3.2.14 Display Priority). | Backend (sort logic) |
-| BR-SEARCH-027 | Merchant Ad Caps | Platform-wide cap of 5 active ads per week (Rule 4.6.3, Monday 00:00–Sunday 23:59 UTC) and per-merchant cap of 2 active ads simultaneously (M-AD-012) are enforced at approval time. | Backend (ad approval flow) |
-| BR-SEARCH-028 | Ad Cache TTL | Active ads for the placement are cached in Redis with a 5-minute TTL (Rule 4.6.4) using cache-aside. | Backend (cache service) |
+| BR-SEARCH-025 | Purchased Package and Eligibility | When a Merchant purchases an Advertisement Package, the Merchant's approved advertisement images/banners are eligible for display only in the page/placement included in that package. For Search Results Top, only ads with `approved`/`active` status and a schedule covering the current time are rendered. | Backend (package, ad status, placement, and schedule filtering) |
+| BR-SEARCH-026 | Search Results Top Slider | The Search Results Top package displays the eligible merchant advertisement images/banners at the top of the Search Results page. The slider displays a maximum of 5 ads, auto-slides every 5 seconds, follows package placement and tier priority rules (Premium > Standard > Basic, with round-robin within a tier), and is hidden when no eligible ads exist. | Backend (placement and priority logic) + Frontend (slider) |
+| BR-SEARCH-027 | Weekly Ad Cap | Platform-wide cap of 5 active advertisements per week (REQUIREMENT_SPEC §7.6) is enforced at approval time; multiple merchants may purchase the same placement package (REQUIREMENT_SPEC §5.3). Expired or inactive ads are excluded and rejected ads removed from rotation. | Backend (ad approval flow) |
+| BR-SEARCH-028 | Ad Cache TTL | Active ads for the placement are cached in Redis with a 5-minute TTL (REQUIREMENT_SPEC §5.3, DEV §10.5) using cache-aside. | Backend (cache service) |
 | BR-SEARCH-029 | Ad Link Navigation | Clicking a sponsored ad navigates to its target link (e.g., `/products?promo=...` or a product/shop URL). | Frontend (event handler) |
 
 ---
@@ -413,7 +416,7 @@ This screen is responsible for the following core functional areas (serving all 
 | EL-26 | Empty State | EmptyState | `search.empty` | Conditional | "No products found" + Reset Filters button |
 | EL-27 | Error Banner | Alert | `search.errors.serverError` | Conditional | Inline error with retry button |
 | EL-28 | Mobile Filter Trigger | Button (icon) | `search.openFilters` | Conditional | Opens filters drawer on mobile |
-| EL-29 | Sponsored Ad Slot | Ad banner container | `search.sponsored` | Conditional | Approved/active ads in Search Results Top placement (Rule 4.6.4); hidden when no ads in schedule |
+| EL-29 | Sponsored Ad Slot | Ad banner slider container | `search.sponsored` | Conditional | Displays up to 5 approved merchant advertisement images/banners from purchased Search Results Top packages at the top of the Search Results page; auto-slides every 5 seconds according to package placement and tier priority rules; hidden when no approved, active, in-schedule ads are eligible |
 
 **Default State:**
 - Search input empty; default catalog shown sorted by newest (createdAt desc)
@@ -434,7 +437,7 @@ This screen is responsible for the following core functional areas (serving all 
 | **API Endpoint** | `GET /api/v1/products` |
 | **Request Content-Type** | Query parameters only |
 | **Pre-Submission Validation** | URL params parsed and validated with Zod (`searchParamsSchema`); backend DTO validated via ValidationPipe |
-| **Processing Steps** | 1. Validate `ProductQueryDto` (whitelist + forbidNonWhitelisted). 2. Redis lookup `cache:products:list:{hashOfQuery}`. 3. HIT → return cached JSON (TTL 2 min). 4. MISS → build Prisma WHERE clause (is_active, approved shop, q, category subtree, skinTypes `hasEvery`, ingredients `hasSome`, price range, rating). 5. Apply sort/order (idx_products_price, idx_products_created_at). 6. Apply skip/take pagination. 7. Run `findMany` + `count` in a transaction. 8. Serialize Decimal price as string. 9. Seed Redis (2 min TTL). 10. Return `{ data, meta }`. |
+| **Processing Steps** | 1. Validate `ProductQueryDto` (whitelist + forbidNonWhitelisted). 2. Redis lookup `cache:products:list:{hashOfQuery}`. 3. HIT → return cached JSON (TTL 2 min). 4. MISS → build Prisma WHERE clause (is_active, approved merchant `license_status = 'approved'` + approved shop, q, category subtree, skinTypes `hasEvery`, ingredients `hasSome`, price range, rating). 5. Apply sort/order (idx_products_price, idx_products_created_at). 6. Apply skip/take pagination. 7. Run `findMany` + `count` in a transaction. 8. Serialize Decimal price as string. 9. Seed Redis (2 min TTL). 10. Return `{ data, meta }`. |
 | **Success Response** | 200 OK with `{ data: ProductSummary[], meta }` |
 | **Post-Action** | Render product grid, result count, and pagination |
 
@@ -496,7 +499,7 @@ This screen is responsible for the following core functional areas (serving all 
 | **API Endpoint** | `GET /api/v1/products/:slug` |
 | **Request Content-Type** | Path parameter |
 | **Pre-Submission Validation** | Valid slug |
-| **Processing Steps** | 1. Navigate to `/products/:slug`. 2. Product detail page fetches by slug (is_active + approved shop enforced). 3. URL of previous search preserved via query params for back-button restore. |
+| **Processing Steps** | 1. Navigate to `/products/:slug`. 2. Product detail page fetches by slug (is_active + approved merchant/shop enforced). 3. URL of previous search preserved via query params for back-button restore. |
 | **Success Response** | 200 OK with product detail DTO |
 | **Post-Action** | Render Product Detail page |
 
@@ -507,10 +510,10 @@ This screen is responsible for the following core functional areas (serving all 
 | **Trigger** | Search results page load (alongside product query, Sec 6.1) |
 | **API Endpoint** | `GET /api/v1/ads?placement=search_top` |
 | **Request Content-Type** | Query parameter `placement` |
-| **Pre-Submission Validation** | `placement` ∈ {`home_slider`, `product_sidebar`, `category_banner`, `search_results_top`} |
-| **Processing Steps** | 1. Redis lookup `cache:ads:search-top`. 2. HIT → return cached list (TTL 5 min). 3. MISS → query ads with `approved`/`active` status and schedule covering now, linked to approved shops only. 4. Order by tier → end date (BR-SEARCH-026). 5. Seed Redis (5 min TTL, Rule 4.6.4). 6. Return `{ data: ads }`. |
+| **Pre-Submission Validation** | `placement` ∈ {`homepage_slider`, `product_sidebar`, `category_banner`, `search_top`} (aligned with `ad_fee_settings.placement`, DBS §3.14) |
+| **Processing Steps** | 1. Redis lookup `cache:ads:search-top`. 2. HIT → return cached list (TTL 5 min). 3. MISS → query Advertisement Packages purchased by Merchants for the Search Results Top placement, then select only their approved advertisement images/banners with `approved`/`active` status and a schedule covering now, linked to approved merchants/shops only (BR-SEARCH-013, BR-SEARCH-025). 4. Apply package placement and tier priority rules (Premium > Standard > Basic), with round-robin within a tier, and cap the slider at 5 ads (BR-SEARCH-026). 5. Seed Redis (5 min TTL, REQUIREMENT_SPEC §5.3). 6. Return `{ data: ads }`. |
 | **Success Response** | 200 OK with `{ data: SponsoredAd[] }` (empty array when no in-schedule ads) |
-| **Post-Action** | Render EL-29 sponsored ad slot above the product grid; clicking navigates per BR-SEARCH-029 |
+| **Post-Action** | If the response contains eligible ads, render EL-29 above the product grid and auto-slide every 5 seconds; if the response is empty, hide EL-29. Clicking an ad navigates per BR-SEARCH-029 |
 
 ---
 
@@ -654,8 +657,8 @@ GET /api/v1/products?q=cleanser&skinTypes=oily&minPrice=10&maxPrice=50&rating=4&
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
 | `400` | `BAD_REQUEST` | Validation failures (invalid params) | Inline validation hint + top banner |
-| `401` | `UNAUTHORIZED` | Missing/invalid token on a restricted action (e.g., add to cart/wishlist from results) | Show login alert modal → redirect to `/login?redirect=<path>` (REQUIREMENT_SPEC Section 2.0) |
-| `403` | `FORBIDDEN` | Merchant/Admin tries to add to cart/wishlist from search results (SHOPPING_NOT_ALLOWED) | Show error: "Shopping features are only available to buyers" (REQUIREMENT_SPEC Section 2.3/2.4/2.5); no redirect |
+| `401` | `UNAUTHORIZED` | Missing/invalid token on a restricted action (e.g., add to cart/wishlist from results) | Show login alert modal → redirect to `/login?redirect=<path>` (REQUIREMENT_SPEC §2.2 Permission Matrix) |
+| `403` | `FORBIDDEN` | Merchant/Admin tries to add to cart/wishlist from search results (SHOPPING_NOT_ALLOWED) | Show error: "Shopping features are only available to buyers" (REQUIREMENT_SPEC §2.4 Merchant Approval States); no redirect |
 | `404` | `NOT_FOUND` | Product detail not found (invalid slug) | Empty state / "Product not found" |
 | `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded on public search | "Too many requests. Please wait" + retry countdown |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong" + retry button |
@@ -751,15 +754,15 @@ The Search and Filter page operates with standard REST API calls. Real-time WebS
 |--------|--------|-----------|
 | `/products/:slug` | `/products` | Browser back button (query params preserved for restore) |
 | `/products` | `/checkout` (via detail) | Continue purchasing flow |
-| `/products` | `/login?redirect=<encoded_path>` | Session required action (e.g., add to wishlist) — alert modal with login button, no auto-close (REQUIREMENT_SPEC Section 2.0) |
+| `/products` | `/login?redirect=<encoded_path>` | Session required action (e.g., add to wishlist) — alert modal with login button, no auto-close (REQUIREMENT_SPEC §2.2 Permission Matrix) |
 
 ### 12.4 Error Navigation
 
 | Source | Target | Condition |
 |--------|--------|-----------|
 | `/products` | (stay, retry) | 429/500 — error banner with retry button |
-| `/products` | `/login?redirect=<encoded_path>` | Guest tries restricted action (add to cart/wishlist) — alert modal with login button (REQUIREMENT_SPEC Section 2.0) |
-| `/products` | (stay, show error) | Merchant/Admin tries shopping action — `403 SHOPPING_NOT_ALLOWED`: "Shopping features are only available to buyers" (REQUIREMENT_SPEC Section 2.3/2.4/2.5) |
+| `/products` | `/login?redirect=<encoded_path>` | Guest tries restricted action (add to cart/wishlist) — alert modal with login button (REQUIREMENT_SPEC §2.2 Permission Matrix) |
+| `/products` | (stay, show error) | Merchant/Admin tries shopping action — `403 SHOPPING_NOT_ALLOWED`: "Shopping features are only available to buyers" (REQUIREMENT_SPEC §2.4 Merchant Approval States) |
 
 ---
 
@@ -769,11 +772,11 @@ The Search and Filter page operates with standard REST API calls. Real-time WebS
 
 | Metric | Target |
 |--------|--------|
-| Search response time (10K records) | ≤ 3 seconds (NFR-002) |
+| Search response time (10K records) | ≤ 3 seconds (REQUIREMENT_SPEC §8.3) |
 | Autocomplete response time | ≤ 200ms |
 | Filter application time | ≤ 500ms |
 | Debounce delay (search input) | 300ms |
-| API response time (p95) | ≤ 500ms (NFR-003) |
+| API response time (p95) | ≤ 500ms (REQUIREMENT_SPEC §8.3) |
 | Database query time | ≤ 50ms |
 | Cache hit response time | ≤ 200ms |
 
@@ -783,7 +786,7 @@ The Search and Filter page operates with standard REST API calls. Real-time WebS
 |--------------|----------|-----|--------------|
 | Product list results | `cache:products:list:{hashOfQuery}` (String JSON) | 2 minutes | Any product mutation → `DEL` |
 | Category tree | `cache:categories` (String JSON) | 30 minutes | Category mutation → `DEL` |
-| Sponsored ads (search top) | `cache:ads:search-top` (String JSON) | 5 minutes (Rule 4.6.4) | Ad status/schedule change → `DEL` |
+| Sponsored ads (search top) | `cache:ads:search-top` (String JSON) | 5 minutes (REQUIREMENT_SPEC §5.3, DEV §10.5) | Ad status/schedule change → `DEL` |
 
 Rules:
 - Cache-aside pattern: Check Redis → miss → query DB → seed Redis.
@@ -799,8 +802,8 @@ Rules:
 | Extremely long `q` (> 255) | 400 validation error |
 | Invalid UUID in `categoryId` | 400 validation error |
 | Rate limit abuse on public search | 429 after threshold |
-| Data leakage | Unapproved shop products excluded at query level (Section 12.2) |
-| Guest data leakage | Public routes must not expose private user data or session tokens (REQUIREMENT_SPEC Section 2.0) |
+| Data leakage | Unapproved merchant/shop products excluded at query level (DEV §12.2) |
+| Guest data leakage | Public routes must not expose private user data or session tokens (REQUIREMENT_SPEC §2.2 Permission Matrix) |
 
 ### 13.4 Responsive Design Requirements
 
@@ -810,9 +813,9 @@ Rules:
 | Tablet (768px – 1023px) | Filters sidebar (narrower) + grid (2–3 columns) |
 | Mobile (< 768px) | Filters drawer (trigger EL-28) + stacked grid (1–2 columns) |
 
-### 13.5 Internationalization (NFR-031)
+### 13.5 Internationalization (Multi-Language)
 
-The screen supports English (EN), Myanmar (MY), and Japanese (JA) via i18next (NFR-031). All UI copy uses i18n keys (e.g., `search.*`), and locale-aware formatting (NFR-035) is applied to prices, numbers, and dates.
+The screen supports English (EN), Myanmar (MY), and Japanese (JA) via i18next (REQUIREMENT_SPEC §1.3 Key Features, §6.1 Language Settings). All UI copy uses i18n keys (e.g., `search.*`), and locale-aware formatting is applied to prices, numbers, and dates.
 
 ---
 
@@ -830,7 +833,7 @@ Defined via `.env` configuration:
 | `SEARCH_SLOW_QUERY_MS` | `500` | Slow-query warn threshold for `SEARCH_EXECUTED` logging |
 | `SEARCH_RATE_LIMIT_PER_MINUTE` | `60` | Max public search requests per minute per IP |
 | `SEARCH_ADS_ENABLED` | `true` | Toggle the Search Results Top sponsored placement |
-| `SEARCH_ADS_CACHE_TTL_SECONDS` | `300` | Sponsored ads Redis cache TTL (5 minutes, Rule 4.6.4) |
+| `SEARCH_ADS_CACHE_TTL_SECONDS` | `300` | Sponsored ads Redis cache TTL (5 minutes, REQUIREMENT_SPEC §5.3) |
 
 ---
 
@@ -850,12 +853,12 @@ Defined via `.env` configuration:
 | B-MATCH-003 | User can filter products by ingredients | UC-SEARCH-004, BR-SEARCH-007 |
 | B-MATCH-004 | User can filter products by price range | UC-SEARCH-005, BR-SEARCH-008 |
 | B-MATCH-005 | User can filter products by review rating | UC-SEARCH-006, BR-SEARCH-009 |
-| M-AD-005 | Active ads display on platform | UC-SEARCH-010, Sec 6.7, BR-SEARCH-025 |
-| M-AD-008 | Max 5 active advertisements per week | BR-SEARCH-027 |
-| M-AD-012 | Per merchant: max 2 active ads simultaneously | BR-SEARCH-027 |
-| Rule 4.6.3 | Weekly ad limit (5 active/week, Monday–Sunday UTC) | BR-SEARCH-027 |
-| Rule 4.6.4 | Approved + in-schedule ads only; Redis TTL 5 min | UC-SEARCH-010, Sec 6.7, BR-SEARCH-025, BR-SEARCH-028 |
-| NFR-031 | Multi-language support (EN/MY/JA) | Sec 5.1 (i18n keys), Sec 13.5 |
+| REQ §2.2 | Browse/Search Products permitted for all roles | Sec 1.3, Sec 10.3 |
+| REQ §5.3 | Approved & active advertisements displayed per placement (Search Results Top) | UC-SEARCH-010, Sec 6.7, BR-SEARCH-025 |
+| REQ §5.3 | Display priority Premium > Standard > Basic, round-robin within tier, slider limit 5, auto-rotation every 5 seconds | BR-SEARCH-026, BR-SEARCH-027 |
+| REQ §7.6 | Maximum 5 active advertisements per week; approval required before display; rejected ads removed from rotation | BR-SEARCH-027 |
+| REQ §8.1 | Product browsing, search, and filtering work correctly (acceptance criteria) | UC-SEARCH-001~008, Sec 6.1–6.5 |
+| REQ §1.3 / §6.1 | Multi-language support (EN/MY/JA) | Sec 5.1 (i18n keys), Sec 13.5 |
 
 ### 15.2 Database Design Traceability
 
@@ -863,8 +866,11 @@ Defined via `.env` configuration:
 |----------------|-------------------------------|
 | `products` | Search (SELECT with filters), Pagination count (COUNT), Product summary (SELECT) |
 | `categories` | Category tree build (SELECT, recursive `parent_id`) |
-| `shops` | Merchant approval filter (SELECT join, `is_approved = true`) |
+| `merchants` | Merchant approval filter (SELECT join, `license_status = 'approved'`, DBS §3.2) |
+| `shops` | Shop approval filter (SELECT join, `is_approved = true`) |
 | `reviews` | Rating aggregation (`avg_rating`, `review_count` maintenance) |
+| `advertisements` | Sponsored ads lookup (SELECT by `approval_status`, schedule, `week_number`, DBS §3.13) |
+| `ad_fee_settings` | Placement/tier fee & duration configuration reference (DBS §3.14) |
 
 ### 15.3 Related Document References
 

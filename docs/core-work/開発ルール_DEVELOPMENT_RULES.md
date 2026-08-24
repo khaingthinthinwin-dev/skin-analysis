@@ -1427,172 +1427,7 @@ GET /api/v1/products?cursor=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d&limit=20
 - Mobile: 4-column grid.
 - Spacing scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64px.
 
-## 9.2 Product Cards
-
-**Layout:**
-
-```
-┌─────────────────────────────┐
-│  [Product Image]            │
-│  Aspect ratio: 1:1          │
-│  Object-fit: cover           │
-├─────────────────────────────┤
-│  Category Badge (optional)  │
-│  Product Name (2 lines max) │
-│  ★★★★☆ (4.2) · 128 reviews │
-│  $29.99  $39.99 (strikethr)│
-│  [Skin Type Tags]           │
-│  [♡ Add to Wishlist]        │
-└─────────────────────────────┘
-```
-
-**Product Card Rules:**
-- Image: 1:1 aspect ratio, lazy-loaded, fallback placeholder.
-- Name: max 2 lines with `line-clamp-2`, bold weight.
-- Rating: Lucide `Star` icons with Beauty Pink (#EC4899) color, half-star support, review count linked.
-- Price: Current price bold, compare-at price with strikethrough, currency formatted.
-- Tags: Small pill badges for skin types (e.g., "Oily", "Sensitive") with Soft Lavender (#F3E8FF) background.
-- Wishlist: Heart icon toggle with Beauty Pink (#EC4899) color, animated on click.
-- Hover: Subtle shadow elevation, optional quick-view button.
-- Card background: Soft Lavender (#F3E8FF) for luxury beauty aesthetic.
-- Border: Light gray border with rounded corners for premium feel.
-
-## 9.3 AI Analysis Screens
-
-**Upload Screen:**
-
-```
-┌─────────────────────────────────────────┐
-│  📸 AI Skin Analysis                    │
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │                                 │    │
-│  │   [Drop Zone / Upload Area]     │    │
-│  │   Drag & drop or click to upload│    │
-│  │   JPG, PNG, WebP · Max 10MB    │    │
-│  │                                 │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  [Preview Image] (after upload)         │
-│  [Analyze Now] button (primary)         │
-│                                         │
-│  Previous Analyses:                     │
-│  ┌──────┐ ┌──────┐ ┌──────┐           │
-│  │Date 1│ │Date 2│ │Date 3│           │
-│  └──────┘ └──────┘ └──────┘           │
-└─────────────────────────────────────────┘
-```
-
-**Results Screen:**
-
-```
-┌─────────────────────────────────────────┐
-│  Analysis Results                       │
-│                                         │
-│  Skin Type: Combination                 │
-│  Estimated Age: 28                      │
-│                                         │
-│  Conditions:                            │
-│  ┌─────────────────────────────────┐    │
-│  │ 🟢 Mild Acne        Low    87% │    │
-│  │ 🟡 Oiliness         Med    92% │    │
-│  │ 🟢 Hydration        Good   78% │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  Recommended Products:                  │
-│  ┌──────────┐ ┌──────────┐             │
-│  │Product 1 │ │Product 2 │             │
-│  │94% match │ │91% match │             │
-│  └──────────┘ └──────────┘             │
-│                                         │
-│  [Re-Analyze] [View History]            │
-└─────────────────────────────────────────┘
-```
-
-**AI Screen Rules:**
-- Loading state: Skeleton shimmer or spinner during analysis with lavender background.
-- Error state: Clear error message with retry button.
-- Progress indicator for long-running analysis.
-- Condition severity: Color-coded badges (green=low, yellow=moderate, red=high).
-- Confidence displayed as percentage bar.
-- Products sorted by match score descending.
-- "Re-Analyze" button always available with Luxury Purple (#7C3AED) background.
-- Upload area: Soft Lavender (#F3E8FF) background with purple border.
-- Results page: Clean white background with lavender card sections.
-- CTA buttons: Luxury Purple (#7C3AED) with white text.
-
-## 9.4 Merchant Dashboard Design
-
-```
-┌─────────────────────────────────────────┐
-│  Merchant Dashboard                     │
-│                                         │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │
-│  │Total │ │Orders│ │Avg   │ │Rating│  │
-│  │Sales │ │  127 │ │$45.2 │ │4.7★  │  │
-│  │$5,740│ │      │ │      │ │      │  │
-│  └──────┘ └──────┘ └──────┘ └──────┘  │
-│                                         │
-│  Sales Trend (Chart)                    │
-│  ┌─────────────────────────────────┐    │
-│  │  📈 Line chart / Bar chart      │    │
-│  │  Last 30 days                   │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  Recent Orders                          │
-│  ┌─────────────────────────────────┐    │
-│  │ Order #  │ Customer │ Amount │St│    │
-│  │ #1001    │ John D.  │ $89.99 │ ✓│    │
-│  │ #1000    │ Jane S.  │ $34.50 │ ⏳│   │
-│  └─────────────────────────────────┘    │
-└─────────────────────────────────────────┘
-```
-
-**Dashboard Rules:**
-- KPI cards: Large number, label, trend indicator (up/down arrow with percentage) on Soft Lavender (#F3E8FF) background.
-- Charts: Use Recharts or similar. Responsive, interactive with Luxury Purple (#7C3AED) as primary chart color.
-- Tables: Sortable columns, pagination, status badges with luxury aesthetic.
-- Time range selector: 7d, 30d, 90d, 1y.
-- All monetary values formatted with currency symbol.
-- Header: Luxury Purple (#7C3AED) background with white text.
-- Sidebar: Clean white background with purple accent for active items.
-
-## 9.5 Admin Dashboard Design
-
-```
-┌─────────────────────────────────────────┐
-│  Admin Dashboard                        │
-│                                         │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │
-│  │Users │ │Merch.│ │Orders│ │Revenue│  │
-│  │1,247 │ │  42  │ │3,891 │ │$127K │  │
-│  │+12%  │ │ +3   │ │ +8%  │ │ +15% │  │
-│  └──────┘ └──────┘ └──────┘ └──────┘  │
-│                                         │
-│  Pending Actions                        │
-│  ┌─────────────────────────────────┐    │
-│  │ 🔔 5 merchant approvals pending │    │
-│  │ 🔔 12 reviews to moderate       │    │
-│  │ 🔔 2 content reports            │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  Revenue & User Growth Charts           │
-│  ┌─────────────────────────────────┐    │
-│  │  📈 Dual-axis chart             │    │
-│  └─────────────────────────────────┘    │
-└─────────────────────────────────────────┘
-```
-
-**Admin Dashboard Rules:**
-- Alert badges for pending actions (merchant approvals, review moderation) with Beauty Pink (#EC4899) accent.
-- Platform-wide metrics with trend indicators on Soft Lavender (#F3E8FF) backgrounds.
-- Quick action buttons for common admin tasks with Luxury Purple (#7C3AED) styling.
-- All charts must be interactive (hover tooltips, click to drill down) with purple-based color scheme.
-- Header: Luxury Purple (#7C3AED) background with white text.
-- Sidebar: Clean white background with purple accent for active items.
-- Revenue charts: Use purple gradient fills for premium aesthetic.
-
-## 9.6 Color Palette
+## 9.2 Color Palette
 
 **Luxury Cosmetics Design System - Official Color Palette**
 
@@ -1651,68 +1486,41 @@ ring              → Focus rings (Luxury Purple)
 - `dark:` overrides on shadcn components are PROHIBITED.
 - Color decisions are made via CSS variables, not Tailwind classes.
 - Use purple and pink gradients for hero sections and promotional banners.
-- Product cards should have luxury beauty aesthetics with lavender backgrounds.
-- AI Skin Analysis pages should use lavender backgrounds and purple CTA buttons.
-- Merchant and Admin dashboards should follow the same purple-based theme.
 - Wishlist icons, rating elements, and promotional badges should use pink accents.
 
-## 9.7 Typography
+## 9.3 Typography
 
-| Element | Tailwind Classes | Usage |
-|---------|-----------------|-------|
-| Page title | `text-3xl font-bold tracking-tight` | Page headings |
-| Section title | `text-xl font-semibold` | Section headings |
-| Card title | `text-lg font-medium` | Card headings |
-| Body text | `text-base` | Paragraphs |
-| Small text | `text-sm` | Captions, helper text |
-| Extra small | `text-xs` | Badges, timestamps |
-| Price | `text-lg font-bold` | Product prices |
-| Price (compare) | `text-sm text-muted-foreground line-through` | Original prices |
+**Font Family Stack:**
 
-**Typography Rules:**
-- Use Tailwind typography utilities, never raw CSS `font-size`.
-- Line height: `leading-normal` for body, `leading-tight` for headings.
-- Max line length: 60-80 characters for readability.
-- Use `line-clamp-*` utilities for text truncation.
+| Font Role | Font Family | Usage |
+|-----------|-------------|-------|
+| Primary Body & UI | `Inter`, `Plus Jakarta Sans`, system-ui, sans-serif | Body text, buttons, forms, labels, inputs |
+| Display Headings | `Playfair Display`, `Cormorant Garamond`, serif | Hero headings, luxury section titles |
+| Monospace | `JetBrains Mono`, `ui-monospace`, monospace | Code snippets, technical IDs, API tokens |
 
-## 9.8 Forms
+**Font Size & Style Standard Scale:**
 
-**Form Layout:**
+| Element | Tailwind Classes | Rem / Px Equivalent | Font Weight | Usage |
+|---------|-----------------|---------------------|-------------|-------|
+| Hero Title | `text-4xl font-extrabold tracking-tight` | 2.25rem (36px) | 800 (Extrabold) | Hero section main banners |
+| Page Title (`h1`) | `text-3xl font-bold tracking-tight` | 1.875rem (30px) | 700 (Bold) | Primary page headings |
+| Section Title (`h2`) | `text-2xl font-semibold tracking-tight` | 1.5rem (24px) | 600 (Semibold) | Major section headings |
+| Sub-section Title (`h3`) | `text-xl font-semibold` | 1.25rem (20px) | 600 (Semibold) | Sub-section / dialog titles |
+| Card Title (`h4`) | `text-lg font-medium` | 1.125rem (18px) | 500 (Medium) | Product / feature card titles |
+| Primary Price | `text-lg font-bold text-primary` | 1.125rem (18px) | 700 (Bold) | Current product prices |
+| Compare Price | `text-sm text-muted-foreground line-through` | 0.875rem (14px) | 400 (Regular) | Original / strikethrough price |
+| Body Text | `text-base font-normal leading-normal` | 1rem (16px) | 400 (Regular) | Main body paragraphs, descriptions |
+| Small Text | `text-sm font-normal` | 0.875rem (14px) | 400 (Regular) | Form labels, helper text, captions |
+| Extra Small Badges | `text-xs font-medium` | 0.75rem (12px) | 500 (Medium) | Status badges, tags, timestamps |
 
-```
-┌─────────────────────────────────────────┐
-│  Form Title                             │
-│                                         │
-│  Label                                   │
-│  ┌─────────────────────────────────┐    │
-│  │ Input                           │    │
-│  └─────────────────────────────────┘    │
-│  Helper text / Error message            │
-│                                         │
-│  Label                                   │
-│  ┌─────────────────────────────────┐    │
-│  │ Select ▼                        │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  ┌──────────────┐ ┌──────────────┐     │
-│  │ Cancel       │ │ Submit       │     │
-│  └──────────────┘ └──────────────┘     │
-└─────────────────────────────────────────┘
-```
+**Developer Coding Standards for Typography:**
+- NEVER use arbitrary/raw CSS font sizes (e.g. `font-size: 17px` or `text-[17px]`). ALWAYS use standard Tailwind typography tokens.
+- Maintain heading hierarchy: Use one `<h1>` per page, followed sequentially by `<h2>`, `<h3>`, `<h4>`.
+- Line height: Use `leading-tight` for headings (`h1`-`h4`) and `leading-normal` for body text.
+- Max line length: Keep paragraph text width between 60–80 characters (`max-w-prose` or `max-w-2xl`) for optimal readability.
+- Text truncation: ALWAYS use `line-clamp-1` or `line-clamp-2` for dynamic content like product names or titles to prevent layout overflow.
 
-**Form Rules:**
-- Labels MUST be associated with inputs via `htmlFor`/`id`.
-- Error messages MUST be displayed below the input, linked via `aria-describedby`.
-- Required fields MUST have visual indicator (asterisk) and `aria-required`.
-- Submit button MUST show loading state during submission with Luxury Purple (#7C3AED) background.
-- Form submission MUST be disabled during loading.
-- Use `FormMessage` component from shadcn/ui for error display.
-- Validation errors MUST appear inline, not in alerts.
-- Cancel button uses `variant="outline"`. Submit uses default variant with purple styling.
-- Input backgrounds: Soft Lavender (#F3E8FF) for luxury beauty aesthetic.
-- Focus states: Purple ring (#7C3AED) for consistent brand identity.
-
-## 9.9 Tables
+## 9.4 Tables
 
 **Table Structure:**
 
@@ -1740,7 +1548,7 @@ ring              → Focus rings (Luxury Purple)
 - Row hover: Light lavender background for premium feel.
 - Status badges: Use the updated status badge colors with purple and pink accents.
 
-## 9.10 Modals (Dialogs)
+## 9.5 Modals (Dialogs)
 
 **Modal Structure:**
 
@@ -1768,30 +1576,287 @@ ring              → Focus rings (Luxury Purple)
 - Modal background: White with subtle lavender border for luxury aesthetic.
 - Header: Luxury Purple (#7C3AED) accent or border for brand consistency.
 
-## 9.11 Status Badges
+## 9.6 Status Badges
 
-| Status | Badge Color | Text |
-|--------|------------|------|
-| Active | Green (`bg-green-100 text-green-800`) | Active |
-| Inactive | Gray (`bg-gray-100 text-gray-800`) | Inactive |
-| Pending | Amber (`bg-amber-100 text-amber-800`) | Pending |
-| Processing | Purple (`bg-purple-100 text-purple-800`) | Processing |
-| Delivered | Green (`bg-green-100 text-green-800`) | Delivered |
-| Done | Green (`bg-green-100 text-green-800`) | Done |
-| Approved | Green (`bg-green-100 text-green-800`) | Approved |
-| Rejected | Red (`bg-red-100 text-red-800`) | Rejected |
-| Low Stock | Amber (`bg-amber-100 text-amber-800`) | Low Stock |
-| Out of Stock | Red (`bg-red-100 text-red-800`) | Out of Stock |
-| Sale/Promotion | Pink (`bg-pink-100 text-pink-800`) | Sale |
-| New Arrival | Purple (`bg-purple-100 text-purple-800`) | New |
+| Category | Status Code / Value | Badge Color | Display Label |
+|----------|---------------------|-------------|---------------|
+| **Order Status** | `placed` | Sky (`bg-sky-100 text-sky-800`) | Placed |
+| | `confirmed` | Purple (`bg-purple-100 text-purple-800`) | Confirmed |
+| | `packed` | Indigo (`bg-indigo-100 text-indigo-800`) | Packed |
+| | `shipped` | Blue (`bg-blue-100 text-blue-800`) | Shipped |
+| | `out_for_delivery` | Amber (`bg-amber-100 text-amber-800`) | Out for Delivery |
+| | `delivered` | Green (`bg-green-100 text-green-800`) | Delivered |
+| **Merchant Approval** | `Pending` | Amber (`bg-amber-100 text-amber-800`) | Pending |
+| | `Approved` | Green (`bg-green-100 text-green-800`) | Approved |
+| | `Rejected` | Red (`bg-red-100 text-red-800`) | Rejected |
+| **Account & Product** | `Active` | Green (`bg-green-100 text-green-800`) | Active |
+| | `Inactive` | Gray (`bg-gray-100 text-gray-800`) | Inactive |
+| **Stock Level** | In Stock | Green (`bg-green-100 text-green-800`) | In Stock |
+| | Low Stock (≤10) | Amber (`bg-amber-100 text-amber-800`) | Low Stock |
+| | Out of Stock (=0) | Red (`bg-red-100 text-red-800`) | Out of Stock |
+| **Ad / Payment** | `paid` | Green (`bg-green-100 text-green-800`) | Paid |
+| | `pending` | Amber (`bg-amber-100 text-amber-800`) | Pending |
+| | `failed` / `rejected` | Red (`bg-red-100 text-red-800`) | Failed / Rejected |
+| | `refunded` | Gray (`bg-gray-100 text-gray-800`) | Refunded |
+| **Marketing** | Sale / Promotion | Pink (`bg-pink-100 text-pink-800`) | Sale |
+| | New Arrival | Purple (`bg-purple-100 text-purple-800`) | New |
 
 **Badge Rules:**
 - Use `Badge` component from shadcn/ui with appropriate `variant`.
 - Consistent sizing: `text-xs px-2 py-0.5 rounded-full`.
-- Color MUST convey semantic meaning (green=good, red=bad, yellow=warning, purple=processing/brand, pink=promotions).
+- Color MUST convey semantic meaning (green=good/delivered/approved, red=bad/rejected/out of stock, amber=pending/low stock/out for delivery, purple/sky/indigo/blue=processing steps, pink=promotions).
 - Never use color alone to convey information. Include text label.
 - Use Beauty Pink (#EC4899) for promotional badges and sale indicators.
 - Use Luxury Purple (#7C3AED) for processing states and brand-related badges.
+
+## 9.7 Global Navigation & Layout Architecture (Header & Left Sidebar)
+
+**Role Navigation Specification (Based on REQUIREMENT_SPEC.md):**
+
+### 1. Navigation Items Matrix by Role
+
+#### 🛍️ Buyer Portal (`role = 'BUYER'`)
+| Label | Href | Icon | Purpose / Feature |
+|-------|------|------|-------------------|
+| Dashboard | `/dashboard` | `LayoutDashboard` | Product discovery, search & filtering, promotional banners |
+| Skin Analysis | `/skin-analysis` | `Sparkles` | AI Photo Upload, Analysis Results, Recommendations & History |
+| Matching & Recommendations | `/recommendations` | `Wand2` | Personalized AI skin product matching & recommendations |
+| Order Details | `/orders` | `Package` | Buyer order history, details & tracking timeline (placed → delivered) |
+
+#### 🏬 Merchant Portal (`role = 'MERCHANT'`)
+| Label | Href | Icon | Purpose / Feature |
+|-------|------|------|-------------------|
+| Dashboard | `/merchant/dashboard` | `LayoutDashboard` | Product management Home (create, edit, delete products, stock status summary) |
+| Orders | `/merchant/orders` | `ShoppingBag` | Order lifecycle processing (confirm, pack, ship, deliver) |
+| Promotions | `/merchant/promotions` | `Tag` | Create & manage shop coupons and discount rules |
+| Advertisements | `/merchant/ads` | `Megaphone` | Browse ad packages, purchase ads, track performance |
+| Sales Overview | `/merchant/analytics` | `BarChart3` | Revenue summary, order totals, sales trends |
+
+#### 🛡️ Admin Portal (`role = 'ADMIN'`)
+| Label | Href | Icon | Purpose / Feature |
+|-------|------|------|-------------------|
+| Dashboard | `/admin/dashboard` | `LayoutDashboard` | System security logs & admin action audit trail |
+| User Management | `/admin/users` | `Users` | View users, toggle active/inactive status |
+| Merchant Management | `/admin/merchants` | `UserCheck` | Review merchant applications (approve/reject) |
+| Ad Management | `/admin/ads` | `Megaphone` | Create ad package templates, review merchant ad submissions |
+| Review Moderation | `/admin/reviews` | `MessageSquare` | View all reviews, moderate/flag reported content |
+| Revenue & Payouts | `/admin/revenue` | `DollarSign` | Track platform commission (12%), ad fees, merchant payouts |
+| Content Moderation | `/admin/content` | `FileText` | Moderate user-generated content, flag & remove policy violations |
+| Orders | `/admin/orders` | `ClipboardList` | View & monitor all platform orders across buyers and merchants |
+
+---
+
+### 2. Standard TypeScript Navigation Config (`navConfig.ts`)
+
+```typescript
+import { 
+  LayoutDashboard, 
+  Sparkles, 
+  Wand2, 
+  ShoppingBag, 
+  Package, 
+  Tag, 
+  Megaphone, 
+  BarChart3, 
+  Users, 
+  UserCheck, 
+  MessageSquare, 
+  DollarSign,
+  FileText,
+  ClipboardList,
+  LucideIcon
+} from 'lucide-react';
+
+export type UserRole = 'BUYER' | 'MERCHANT' | 'ADMIN';
+
+export interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export interface RoleNavConfig {
+  portalTitle: string;
+  mainNav: NavItem[];
+  footerNav: NavItem[];
+}
+
+export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
+  BUYER: {
+    portalTitle: 'Buyer Portal',
+    mainNav: [
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Skin Analysis', href: '/skin-analysis', icon: Sparkles },
+      { label: 'Matching & Recommendations', href: '/recommendations', icon: Wand2 },
+      { label: 'Order Details', href: '/orders', icon: Package },
+    ],
+    footerNav: []
+  },
+  MERCHANT: {
+    portalTitle: 'Merchant Portal',
+    mainNav: [
+      { label: 'Dashboard', href: '/merchant/dashboard', icon: LayoutDashboard },
+      { label: 'Orders', href: '/merchant/orders', icon: ShoppingBag },
+      { label: 'Promotions', href: '/merchant/promotions', icon: Tag },
+      { label: 'Advertisements', href: '/merchant/ads', icon: Megaphone },
+      { label: 'Sales Overview', href: '/merchant/analytics', icon: BarChart3 },
+    ],
+    footerNav: []
+  },
+  ADMIN: {
+    portalTitle: 'Admin Portal',
+    mainNav: [
+      { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+      { label: 'User Management', href: '/admin/users', icon: Users },
+      { label: 'Merchant Management', href: '/admin/merchants', icon: UserCheck },
+      { label: 'Ad Management', href: '/admin/ads', icon: Megaphone },
+      { label: 'Review Moderation', href: '/admin/reviews', icon: MessageSquare },
+      { label: 'Revenue & Payouts', href: '/admin/revenue', icon: DollarSign },
+      { label: 'Content Moderation', href: '/admin/content', icon: FileText },
+      { label: 'Orders', href: '/admin/orders', icon: ClipboardList },
+    ],
+    footerNav: []
+  }
+};
+```
+
+---
+
+### 3. Role-Aware Sidebar Component (`Sidebar.tsx`)
+
+```tsx
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Sparkles } from 'lucide-react';
+import { roleNavConfigs, UserRole } from '@/config/navConfig';
+
+interface SidebarProps {
+  role?: UserRole;
+}
+
+export function Sidebar({ role = 'BUYER' }: SidebarProps) {
+  const pathname = usePathname();
+  const config = roleNavConfigs[role] || roleNavConfigs.BUYER;
+
+  return (
+    <aside className="fixed left-0 top-0 z-40 w-64 h-screen bg-background border-r border-border flex flex-col justify-between select-none">
+      {/* Brand Header */}
+      <div>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-border/60">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold tracking-tight text-foreground leading-tight">
+              Cosmetics Finder
+            </h1>
+            <p className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase">
+              {config.portalTitle}
+            </p>
+          </div>
+        </div>
+
+        {/* Main Role Navigation Items */}
+        <nav className="px-3 py-4 space-y-1">
+          {config.mainNav.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}/`));
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                  ${isActive 
+                    ? 'bg-purple-100/60 text-primary font-semibold shadow-xs' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}
+                `}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Footer Navigation Items */}
+      <div className="px-3 py-4 border-t border-border/60 space-y-1">
+        {config.footerNav.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                ${isActive 
+                  ? 'bg-purple-100/60 text-primary font-semibold' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}
+              `}
+            >
+              <Icon className="w-4 h-4 text-muted-foreground" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+```
+
+---
+
+### 4. Top Header Component (`Header.tsx`)
+
+```tsx
+import React from 'react';
+import { Globe, Heart, ShoppingBag, Bell } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
+export function Header() {
+  return (
+    <header className="sticky top-0 z-30 w-full h-16 bg-background/95 backdrop-blur-md border-b border-border px-6 flex items-center justify-end">
+
+      {/* Action Icons & User Profile */}
+      <div className="flex items-center gap-4">
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+          <Globe className="w-5 h-5" />
+        </button>
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors relative">
+          <Heart className="w-5 h-5" />
+        </button>
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors relative">
+          <ShoppingBag className="w-5 h-5" />
+        </button>
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors relative">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent animate-pulse" />
+        </button>
+        
+        {/* User Profile Avatar */}
+        <div className="pl-2 border-l border-border">
+          <Avatar className="w-9 h-9 border border-primary/20">
+            <AvatarImage src="/avatars/user.jpg" alt="User Profile" />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">CF</AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+**Navigation Layout Rules by Role:**
+- Sidebar MUST render the exact items allocated for the logged-in user's role (`BUYER`, `MERCHANT`, `ADMIN`).
+- Merchants in `Pending` or `Rejected` approval state MUST have restricted navigation access (dashboard & profile only).
+- Active Sidebar Menu Item MUST use soft lavender highlight (`bg-purple-100/60` or `bg-secondary`), bold primary text (`text-primary`), and `Sparkles` or active icon.
+- Content area MUST be offset by `ml-64` (margin-left: 256px) on desktop viewports.
 
 ---
 
@@ -2059,7 +2124,7 @@ async update(id: string, dto: UpdateProductDto, userId: string) {
 | Eligibility | Only verified purchasers can review |
 | One review per user per product | Enforced via unique constraint `[userId, productId]` |
 | Rating range | 1-5 inclusive, enforced via check constraint |
-| Auto-approval | Reviews approved by default (`is_approved = true`) |
+| Auto-approval | Reviews hidden by default (`is_approved = false`). Admin must approve before visible to buyers. |
 | Admin moderation | Admin can approve/reject/delete any review |
 | Average rating | Auto-calculated from approved reviews only |
 | Review count | Auto-calculated from approved reviews only |
@@ -2067,9 +2132,10 @@ async update(id: string, dto: UpdateProductDto, userId: string) {
 **Review Flow:**
 
 ```
-User submits review → is_approved = true → Visible on product
+User submits review → is_approved = false → Hidden from buyers
                                         ↓
-                            Admin flags review → is_approved = false → Hidden from product
+                            Admin approves → is_approved = true → Visible on product
+                            Admin rejects  → is_approved = false → Hidden from product
 ```
 
 ## 12.4 Order Lifecycle Rules
@@ -2087,15 +2153,15 @@ placed → confirmed → packed → shipped → out_for_delivery → delivered
 | placed | confirmed | Merchant |
 | confirmed | packed | Merchant |
 | packed | shipped | Merchant |
-| shipped | out_for_delivery | Courier/System |
-| out_for_delivery | delivered | Buyer/System |
+| shipped | out_for_delivery | Merchant |
+| out_for_delivery | delivered | Merchant |
 
 **Order Rules:**
 - Stock is decremented atomically on order creation (`$transaction`).
 - Prices are locked at order creation time.
-- Total = Subtotal + Shipping Cost + Tax.
-- Subtotal = Σ(unit_price × quantity).
-- Delivered status is confirmed by system or buyer.
+- Commission rate is locked at order creation time.
+- Total = Σ(unit_price × quantity).
+- Delivered status is confirmed by merchant.
 
 ## 12.5 Wishlist Rules
 
@@ -2131,22 +2197,47 @@ final = max(0, subtotal - discount)
 
 ## 12.7 Advertisement Rules
 
+**Advertisement Flow:**
+
+```
+Select Package → Upload Content → Pay Fee → Admin Review → Approved → Displayed
+```
+
+**Core Advertisement Rules:**
+
 | Rule | Detail |
 |------|--------|
-| Merchant ownership | Ads belong to a shop, shop belongs to merchant |
+| Merchant ownership | Ads belong to a shop, shop belongs to an approved merchant |
+| Package Creation | Admin creates and manages ad packages (placements, tiers, pricing); merchants browse and purchase available packages |
+| Shop approval required | Only approved shops can purchase and display active ads |
 | Date range | `starts_at` < `expires_at` (check constraint) |
-| Active filtering | Only `is_active = true` AND within date range shown |
-| Shop approval required | Only approved shops can have active ads |
-| Image optional | Ads can be text-only or with image |
-| Link URL optional | Click-through URL is optional |
-| Admin approval required | All ads must be approved by admin before display |
-| Payment required | Merchants must pay advertising fee before submission |
-| Weekly ad limit | Maximum 5 active advertisements per week |
-| Announcement message | Ads must include announcement message for display |
-| Approval status | Ads have approval_status: pending/approved/rejected |
-| Payment status | Ads have payment_status: pending/paid/failed/refunded |
-| Rejection refund | Automatic refund if ad is rejected |
+| Active filtering | Only `is_active = true` AND within active date range shown |
+| Payment required | Merchants must pay advertising fee before submission for admin review |
+| Admin approval required | All ads must be approved by admin before display (`approval_status: pending/approved/rejected`) |
+| Payment status | Tracked via `payment_status: pending/paid/failed/refunded` |
+| Rejection & refund | Automatic refund if ad is rejected by admin |
 | Resubmission | Rejected ads can be edited and resubmitted |
+| Weekly ad limit | Maximum 5 active advertisements per week per merchant |
+| Image & URL | Content can include image (max 5MB) and click-through link URL |
+
+**Placement, Display Location & Default Fee Settings:**
+
+| Placement | Where It Appears / Navigation Page | Basic | Standard | Premium | Duration |
+|-----------|----------------------------------|-------|----------|---------|----------|
+| Homepage Banner | Top of home page (`/dashboard`) | $3.00/day | $5.00/day | $8.00/day | 7 Days |
+| Product Detail Sidebar | Side of product detail page (`/products/[id]`) | $2.00/day | $3.50/day | $6.00/day | 15 Days |
+| Category Banner | Top of category pages (`/products/category/[slug]`) | $2.50/day | $4.00/day | $7.00/day | 30 Days |
+| Search Results Top | Above search results (`/dashboard` or `/products?search=...`) | $1.50/day | $2.50/day | $5.00/day | 7 Days |
+
+**Conditional Ad Display & Navigation Rules:**
+- **Dynamic Display**: When active & approved ads exist (`is_active = true`, `approval_status = 'approved'`), they MUST automatically render in their respective page placement view.
+- **Empty State**: If no active ad exists for a placement, the container collapses cleanly without leaving blank placeholder margins.
+- **Multi-Merchant Placement**: Multiple merchants may purchase ads for the same placement.
+- **Priority Order**: Rotation order follows package tier: **Premium > Standard > Basic**.
+- **Round-Robin Rotation**: Ads within the same tier level are rotated using round-robin.
+- **Rotation Speed**: Sliders automatically rotate every 5 seconds.
+- **Rotation Limit**: Maximum 5 advertisements shown per slider rotation.
+- **Exclusion Handling**: Expired, inactive, or rejected ads are immediately excluded from rotation.
 
 ## 12.8 AI Skin Analysis Rules
 

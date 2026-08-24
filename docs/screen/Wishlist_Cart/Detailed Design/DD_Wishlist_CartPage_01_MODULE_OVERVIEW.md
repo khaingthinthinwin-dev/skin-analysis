@@ -1,7 +1,7 @@
 # DD_WISH-CART_01 — Module Overview
 
-> **Doc ID:** SKM-DD-WISH-CART-01 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-WISH-CART-01 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-08-21
 
 ---
 
@@ -41,6 +41,8 @@ stateDiagram-v2
     [*] --> SAVED : Add to Wishlist
     SAVED --> OUT_OF_STOCK : Stock becomes 0
     OUT_OF_STOCK --> SAVED : Stock replenished
+    SAVED --> INACTIVE : Product deactivated
+    INACTIVE --> SAVED : Product reactivated
     SAVED --> MOVED_TO_CART : Move to Cart
     SAVED --> [*] : Remove from Wishlist
 ```
@@ -49,6 +51,7 @@ stateDiagram-v2
 |-------|-------------|:-------------------:|:----------------:|
 | `SAVED` | Product saved in wishlist, in stock | ✓ | ✓ |
 | `OUT_OF_STOCK` | Product saved but currently out of stock | ✓ | ✗ |
+| `INACTIVE` | Product is deactivated and unavailable for purchase | ✓ (with notice) | ✗ |
 | `MOVED_TO_CART` | Item transferred to cart (optional auto-remove) | ✗ (if removed) | — |
 
 ### 3.2 Cart Item States
@@ -59,6 +62,8 @@ stateDiagram-v2
     ACTIVE --> ACTIVE : Update Quantity
     ACTIVE --> QUANTITY_EXCEEDED : Stock drops below qty
     ACTIVE --> OUT_OF_STOCK : Stock becomes 0
+    ACTIVE --> INACTIVE : Product deactivated
+    INACTIVE --> ACTIVE : Product reactivated
     QUANTITY_EXCEEDED --> ACTIVE : Quantity corrected
     ACTIVE --> [*] : Remove from Cart
 ```
@@ -69,6 +74,7 @@ stateDiagram-v2
 | `LOW_STOCK` | Item in cart, stock below threshold (≤10) | ✓ (warning) | ✓ |
 | `OUT_OF_STOCK` | Item in cart, stock = 0 | ✓ (error) | ✗ |
 | `QUANTITY_EXCEEDED` | Requested quantity exceeds available stock | ✓ (error) | ✗ |
+| `INACTIVE` | Cart item's product is deactivated | ✓ (with notice) | ✗ |
 
 ---
 
@@ -99,7 +105,7 @@ stateDiagram-v2
 | **Backend DTOs** | `wishlist-item.dto.ts`, `cart-item.dto.ts`, `cart-summary.dto.ts` |
 | **Backend Guards** | `jwt-auth.guard.ts`, `roles.guard.ts` |
 | **Backend Strategies** | `jwt-access.strategy.ts` |
-| **Shared Services** | `prisma.service.ts` (wishlists, carts, products), `redis.service.ts` (optional caching) |
+| **Shared Services** | `prisma.service.ts` (wishlist, carts, cart_items, products), `redis.service.ts` (optional caching) |
 
 ---
 
@@ -122,8 +128,9 @@ stateDiagram-v2
 
 | Table | Purpose | Operations |
 |-------|---------|------------|
-| `wishlists` | Store user's saved products | INSERT (add), DELETE (remove), SELECT (view), DELETE (move to cart) |
-| `carts` | Store user's cart items with quantities | INSERT (add), UPDATE (quantity), DELETE (remove), SELECT (view) |
+| `wishlist` | Store user's saved products (unique constraint: `user_id` + `product_id`) | INSERT (add), DELETE (remove), SELECT (view) |
+| `carts` | Store user's shopping cart (one cart per user, unique constraint: `user_id`) | SELECT (resolve), INSERT (create) |
+| `cart_items` | Store individual items within a cart (unique constraint: `cart_id` + `product_id`) | INSERT (add), UPDATE (quantity), DELETE (remove), SELECT (view) |
 | `products` | Product details, stock, pricing | SELECT (validation, display), UPDATE (stock decrement on order) |
 | `users` | User authentication and role validation | SELECT (JWT validation) |
 

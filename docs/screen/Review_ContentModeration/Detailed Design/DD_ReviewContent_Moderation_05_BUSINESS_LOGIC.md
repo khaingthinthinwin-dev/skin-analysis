@@ -1,7 +1,7 @@
-# DD_MOD_05 — Business Logic (Review & Content Moderation)
+# DD_MOD_05  EBusiness Logic (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-05 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-MOD-05 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-08-22
 
 ---
 
@@ -11,6 +11,8 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-17 | Software Architect | Initial business logic for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Software Architect | Added Review Reports business logic (UC-MOD-007): report status update, report deletion, report state machine, validation rules, audit logging, and cache invalidation. |
+| 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: updated report status from COMPLETED to RESOLVED, added REVIEWED state, added report review method. |
+| 1.3 | 2026-08-24 | Software Architect | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers. Updated review creation logic. |
 
 ---
 
@@ -29,6 +31,9 @@ This document specifies the core business logic, state transition rules, cache i
 1. **Validation:** Handled by `ModerateReviewDto` with class-validator.
 2. **Logic:**
    - Find review by `id` in `reviews` table. If not found, return 404.
+   - **Review approval approach:**
+      - When a review is created, set `is_approved = false` (hidden from buyers until admin approval).
+      - The `moderate` endpoint handles approval/rejection: admins approve or reject reviews.
    - If `dto.action === 'reject'`:
      - Validate `dto.reason` is provided and non-empty. If missing, return 400 with `REJECTION_REASON_REQUIRED`.
      - Check current `is_approved` state. If already `false`, return 409 with `REVIEW_ALREADY_REJECTED`.
@@ -154,11 +159,12 @@ This document specifies the core business logic, state transition rules, cache i
 1. **Validation:** Handled by `UpdateReportStatusDto` with class-validator.
 2. **Logic:**
    - Find report by `id` in `review_reports` table. If not found, return 404 with `REPORT_NOT_FOUND`.
-   - Check current `status`. If already `'completed'`, return 409 with `REPORT_ALREADY_COMPLETED`.
+   - Check current `status`. If already `'resolved'`, return 409 with `REPORT_ALREADY_RESOLVED`.
    - Update `review_reports.status` to `dto.status`.
    - Set `review_reports.resolved_by` to `adminId`.
    - Set `review_reports.resolved_at` to current timestamp.
-   - **If status = `'completed'`:**
+   - Set `review_reports.admin_note` from `dto.adminNote`.
+   - **If status = `'resolved'`:**
      - Reject the target review: Update `reviews.is_approved = false` WHERE `id = report.reviewId`.
      - **Recalculate product statistics:**
        - Query `SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = :productId AND is_approved = true`
@@ -166,18 +172,37 @@ This document specifies the core business logic, state transition rules, cache i
      - **Invalidate caches:**
        - Delete `cache:product:{productId}` from Redis
        - Delete all keys matching `cache:products:list:*` from Redis
-   - **Audit log:** Insert `REPORT_REJECTED` or `REPORT_COMPLETED` with `adminId`, `reportId`, `reviewId`, `timestamp`.
-3. **Transaction Boundaries:** Report update, review rejection (if completed), product stat recalculation, cache invalidation, and audit log must be atomic.
+   - **If status = `'reviewed'`:**
+     - Just update the status. Do not reject the target review.
+   - **Audit log:** Insert `REPORT_REJECTED` or `REPORT_RESOLVED` with `adminId`, `reportId`, `reviewId`, `timestamp`.
+3. **Transaction Boundaries:** Report update, review rejection (if resolved), product stat recalculation, cache invalidation, and audit log must be atomic.
 
 ### 2.10 deleteReport(reportId)
 
 1. **Validation:** Report ID is valid UUID.
 2. **Logic:**
    - Find report by `id` in `review_reports` table. If not found, return 404 with `REPORT_NOT_FOUND`.
-   - Check current `status`. If `'completed'`, return 409 with `REPORT_COMPLETED_CANNOT_DELETE`.
+   - Check current `status`. If `'resolved'`, return 409 with `REPORT_RESOLVED_CANNOT_DELETE`.
    - Hard delete report from `review_reports` table.
    - **Audit log:** Insert `REPORT_DELETED` with `adminId`, `reportId`, `timestamp`.
 3. **Transaction Boundaries:** Report deletion and audit log must be atomic.
+
+### 2.11 reportReview(reviewId, adminId, dto)
+
+1. **Validation:** Review ID is valid UUID. Handled by `ReportReviewDto` with class-validator.
+2. **Logic:**
+   - Validate review exists in `reviews` table. If not found, return 404 with `REVIEW_NOT_FOUND`.
+   - Check for duplicate report: Query `review_reports` WHERE `review_id = reviewId` AND `reported_by = adminId`. If found, return 409 with `REPORT_ALREADY_EXISTS`.
+   - Create report record:
+     - `review_id` = `reviewId`
+     - `reported_by` = `adminId`
+     - `reason` = `dto.reason`
+     - `detail` = `dto.detail` (optional)
+     - `status` = `'pending'`
+     - `created_at` = current timestamp
+   - **Audit log:** Insert `REPORT_CREATED` with `adminId`, `reviewId`, `reason`, `timestamp`.
+   - Return the created report.
+3. **Transaction Boundaries:** Report creation and audit log must be atomic.
 
 ---
 
@@ -268,23 +293,29 @@ function transitionUserState(user: User, adminId: string, isActive: boolean): bo
 
 | Transition | Origin | Target | Guard Conditions |
 |------------|--------|--------|------------------|
-| TR-MOD-09 | `status = 'pending'` | `status = 'rejected'` | Admin role, report exists |
-| TR-MOD-10 | `status = 'pending'` | `status = 'completed'` | Admin role, report exists |
-| TR-MOD-11 | `status = 'pending'` or `'rejected'` | Deleted | Admin role, report exists, not completed |
+| TR-MOD-09 | `status = 'pending'` | `status = 'reviewed'` | Admin role, report exists |
+| TR-MOD-10 | `status = 'pending'` or `'reviewed'` | `status = 'resolved'` | Admin role, report exists |
+| TR-MOD-11 | `status = 'pending'` or `'reviewed'` | `status = 'rejected'` | Admin role, report exists |
+| TR-MOD-12 | `status = 'pending'` or `'rejected'` | Deleted | Admin role, report exists, not resolved |
 
 ```typescript
 function transitionReportState(report: Report, status: ReportAction): boolean {
-  if (report.status === 'completed') return false; // Already completed (409)
-  if (status === 'rejected') {
+  if (report.status === 'resolved') return false; // Already resolved (409)
+  if (status === 'reviewed') {
+    if (report.status !== 'pending') return false; // Only pending ↁEreviewed (409)
+    report.status = 'reviewed';
+  } else if (status === 'resolved') {
+    if (report.status !== 'pending' && report.status !== 'reviewed') return false; // Only pending/reviewed ↁEresolved (409)
+    report.status = 'resolved';
+  } else if (status === 'rejected') {
+    if (report.status !== 'pending' && report.status !== 'reviewed') return false; // Only pending/reviewed ↁErejected (409)
     report.status = 'rejected';
-  } else if (status === 'completed') {
-    report.status = 'completed';
   }
   return true;
 }
 
 function canDeleteReport(report: Report): boolean {
-  return report.status !== 'completed'; // Completed reports cannot be deleted
+  return report.status !== 'resolved'; // Resolved reports cannot be deleted
 }
 ```
 
@@ -319,14 +350,14 @@ async recalculateProductStats(productId: string): Promise<void> {
 
 | Action | Recalculation Required |
 |--------|----------------------|
-| Review approved | Yes — product `avg_rating` and `review_count` |
-| Review rejected | Yes — product `avg_rating` and `review_count` |
-| Review deleted | Yes — product `avg_rating` and `review_count` |
-| Report completed (auto-rejects review) | Yes — product `avg_rating` and `review_count` |
-| Merchant rejected | No — products deactivated, but stats unchanged |
-| Product deactivated | No — product hidden, stats preserved |
-| Product reactivated | No — product restored, stats preserved |
-| User deactivated | No — user hidden, reviews preserved |
+| Review approved | Yes  Eproduct `avg_rating` and `review_count` |
+| Review rejected | Yes  Eproduct `avg_rating` and `review_count` |
+| Review deleted | Yes  Eproduct `avg_rating` and `review_count` |
+| Report resolved (auto-rejects review) | Yes  Eproduct `avg_rating` and `review_count` |
+| Merchant rejected | No  Eproducts deactivated, but stats unchanged |
+| Product deactivated | No  Eproduct hidden, stats preserved |
+| Product reactivated | No  Eproduct restored, stats preserved |
+| User deactivated | No  Euser hidden, reviews preserved |
 
 ---
 
@@ -398,7 +429,8 @@ interface AuditLogEntry {
 | `USER_DEACTIVATED` | adminId, userId, timestamp | 2 years |
 | `USER_ACTIVATED` | adminId, userId, timestamp | 2 years |
 | `REPORT_REJECTED` | adminId, reportId, reviewId, timestamp | 2 years |
-| `REPORT_COMPLETED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_RESOLVED` | adminId, reportId, reviewId, timestamp | 2 years |
+| `REPORT_CREATED` | adminId, reviewId, reason, timestamp | 2 years |
 | `REPORT_DELETED` | adminId, reportId, timestamp | 2 years |
 | `RBAC_VIOLATION` | userId, endpoint, requiredRole, timestamp | 30 days |
 
@@ -488,9 +520,9 @@ async revokeAllUserTokens(userId: string): Promise<void> {
 
 | Action | Token Revocation |
 |--------|------------------|
-| User deactivated | Yes — all refresh tokens revoked |
-| User reactivated | No — tokens remain revoked, user must re-login |
-| Admin logout | Yes — current session tokens revoked |
+| User deactivated | Yes  Eall refresh tokens revoked |
+| User reactivated | No  Etokens remain revoked, user must re-login |
+| Admin logout | Yes  Ecurrent session tokens revoked |
 
 ---
 
@@ -500,43 +532,44 @@ async revokeAllUserTokens(userId: string): Promise<void> {
 
 | Field | Rule | Error Message (EN) | Error Message (JA) |
 |-------|------|--------------------|--------------------|
-| `action` | Required, 'approve' or 'reject' | "Action must be 'approve' or 'reject'" | "アクションは'approve'または'reject'である必要があります" |
-| `reason` | Required when action = 'reject', max 500 chars | "Rejection reason is required" | "却下理由は必須です" |
+| `action` | Required, 'approve' or 'reject' | "Action must be 'approve' or 'reject'" | "アクションは'approve'また�E'reject'である忁E��がありまぁE |
+| `reason` | Required when action = 'reject', required (TEXT, no max length) | "Rejection reason is required" | "却下理由は忁E��でぁE |
 
 ### 9.2 Merchant Moderation Validation
 
 | Field | Rule | Error Message (EN) | Error Message (JA) |
 |-------|------|--------------------|--------------------|
-| `status` | Required, 'approved' or 'rejected' | "Status must be 'approved' or 'rejected'" | "ステータスは'approved'または'rejected'である必要があります" |
-| `reason` | Required when status = 'rejected', max 500 chars | "Rejection reason is required" | "却下理由は必須です" |
+| `status` | Required, 'approved' or 'rejected' | "Status must be 'approved' or 'rejected'" | "スチE�Eタスは'approved'また�E'rejected'である忁E��がありまぁE |
+| `reason` | Required when status = 'rejected', required (TEXT, no max length) | "Rejection reason is required" | "却下理由は忁E��でぁE |
 
 ### 9.3 Product Moderation Validation
 
 | Field | Rule | Error Message (EN) | Error Message (JA) |
 |-------|------|--------------------|--------------------|
-| `isActive` | Required, boolean | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
-| `reason` | Required when isActive = false, max 500 chars | "Deactivation reason is required" | "無効化理由は必須です" |
+| `isActive` | Required, boolean | "Active status must be a boolean" | "有効スチE�Eタスはブ�Eル値である忁E��がありまぁE |
+| `reason` | Required when isActive = false, required (TEXT, no max length) | "Deactivation reason is required" | "無効化理由は忁E��でぁE |
 
 ### 9.4 User Moderation Validation
 
 | Field | Rule | Error Message (EN) | Error Message (JA) |
 |-------|------|--------------------|--------------------|
-| `isActive` | Required, boolean | "Active status must be a boolean" | "有効ステータスはブール値である必要があります" |
+| `isActive` | Required, boolean | "Active status must be a boolean" | "有効スチE�Eタスはブ�Eル値である忁E��がありまぁE |
 
 ### 9.5 Report Status Validation
 
 | Field | Rule | Error Message (EN) | Error Message (JA) |
 |-------|------|--------------------|--------------------|
-| `status` | Required, 'rejected' or 'completed' | "Status must be 'rejected' or 'completed'" | "ステータスは'rejected'または'completed'である必要があります" |
-| — | Report must not be already completed | "This report has already been completed" | "このレポートは既に完了しています" |
-| — | Report must exist | "Report not found" | "レポートが見つかりません" |
+| `status` | Required, 'rejected', 'reviewed', or 'resolved' | "Status must be 'rejected', 'reviewed', or 'resolved'" | "スチE�Eタスは'rejected'、Ereviewed'、また�E'resolver'である忁E��がありまぁE |
+| `adminNote` | Optional, required (TEXT, no max length) |  E|  E|
+|  E| Report must not be already resolved | "This report has already been resolved" | "こ�Eレポ�Eト�E既に解決済みでぁE |
+|  E| Report must exist | "Report not found" | "レポ�Eトが見つかりません" |
 
 ### 9.6 Report Deletion Validation
 
 | Field | Rule | Error Message (EN) | Error Message (JA) |
 |-------|------|--------------------|--------------------|
-| — | Report must exist | "Report not found" | "レポートが見つかりません" |
-| — | Completed reports cannot be deleted | "Completed reports cannot be deleted" | "完了済みレポートは削除できません" |
+|  E| Report must exist | "Report not found" | "レポ�Eトが見つかりません" |
+|  E| Completed reports cannot be deleted | "Resolved reports cannot be deleted" | "解決済みレポ�Eト�E削除できません" |
 
 ---
 
@@ -547,5 +580,5 @@ async revokeAllUserTokens(userId: string): Promise<void> {
 | [DD_MOD_03](./DD_ReviewContent_Moderation_03_API_ENDPOINTS.md) | Endpoint routing to these methods |
 | [DD_MOD_04](./DD_ReviewContent_Moderation_04_DTOS_AND_TYPES.md) | DTO definitions used in validation |
 | [DD_MOD_06](./DD_ReviewContent_Moderation_06_TEST_SPEC.md) | Test specification |
-| [機能設計書_Review_Content_Moderation](../機能設計書_Review_Content_Moderation.md) | Full functional specification |
-| [画面項目設計書_Review_Content_Moderation](../画面項目設計書_Review_Content_Moderation.md) | Screen items specification |
+| [機�E設計書_Review_Content_Moderation](../機�E設計書_Review_Content_Moderation.md) | Full functional specification |
+| [画面頁E��設計書_Review_Content_Moderation](../画面頁E��設計書_Review_Content_Moderation.md) | Screen items specification |

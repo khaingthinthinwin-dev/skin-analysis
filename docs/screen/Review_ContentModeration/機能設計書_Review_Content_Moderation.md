@@ -10,9 +10,9 @@
 | **Target Screen** | Review & Content Moderation (レビュー・コンテンツ管理) |
 | **Subsystem** | Administration — Review Moderation & Content Management |
 | **Function ID** | FN-MOD-001 |
-| **Version** | 2.0 |
+| **Version** | 2.2 |
 | **Created** | 2026-08-07 |
-| **Last Updated** | 2026-08-21 |
+| **Last Updated** | 2026-08-24 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -24,12 +24,14 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-07 | Software Architect | Initial functional specification for Review and Content Moderation covering use cases, business rules, validation, error handling, and permission control. |
-| 1.1 | 2026-08-14 | Software Architect | Aligned with core requirements and database design: UUID identifiers, approved-by-default review flow, merchant `license_status` workflow, website notifications, and removal of unsupported product pending state. |
+| 1.1 | 2026-08-14 | Software Architect | Aligned with core requirements and database design: UUID identifiers, hybrid review approach (verified purchase = auto-approved, non-verified = pending admin), merchant `license_status` workflow, website notifications, and removal of unsupported product pending state. |
 | 1.2 | 2026-08-17 | Software Architect | Added Review Reports feature (SYS-REV-001~008): buyer report submission, admin report review/resolution, report status flow, review_reports database table, new API endpoints, business rules BR-MOD-050~055. |
 | 1.3 | 2026-08-17 | Software Architect | Added Product Content Moderation (UC-MOD-008, BR-MOD-010~013), expanded merchant approval workflow (UC-MOD-005), and user management operations. |
 | 1.4 | 2026-08-17 | Software Architect | Aligned with core DB spec v2.2: added `review_reports`, `audit_logs`, `notifications` table references. |
 | 1.5 | 2026-08-17 | Software Architect | Updated traceability matrix with full coverage of audit logs, notifications, and report-related operations. |
 | 2.0 | 2026-08-21 | Software Architect | Major alignment update: synced with REQ v2.10, DB v2.4, DEV v2.1. Fixed `review_reports` reason/status enums to match DB spec. Updated API response format to `{data, meta}` envelope. Clarified merchant `license_status` vs `shops.is_approved` dual-state. Added notification creation details in operations. Updated audit log data format per DB schema. Added product moderation state transitions. |
+| 2.1 | 2026-08-24 | Software Architect | Clarified Section 3.1 PENDING review state: correctly describes the hybrid approach where non-verified purchase reviews have `is_approved = false` in the database and appear in the admin moderation queue. Updated rejection reason fields from VARCHAR(500) to TEXT to align with DB spec (no max length constraint on `merchants.rejection_reason`). |
+| 2.2 | 2026-08-24 | Software Architect | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers (`is_approved = false` by default). Removed verified purchase auto-approval. Updated BR-MOD-002, Section 3.1 PENDING state, Section 3.6 state transitions, Section 5.1 filter tabs, and Section 6.1/6.2 operations. |
 
 ---
 
@@ -65,7 +67,7 @@ This subsystem is critical for ensuring trust and safety across the marketplace.
 
 This screen is responsible for the following core functional areas:
 
-1. **Review Moderation** — Viewing all reviews, approving/rejecting visible or hidden reviews, and deleting inappropriate reviews with audit logging. Reviews are approved by default; this screen is for post-publication moderation unless a future pre-moderation mode is explicitly added.
+1. **Review Moderation** — Viewing all reviews, approving/rejecting hidden reviews, and deleting inappropriate reviews with audit logging. All reviews are hidden by default until admin approval. Admin can moderate all reviews.
 2. **Content Moderation** — Removing violating content that breaches platform policy.
 3. **Merchant Registration Management** — Approving or rejecting merchant shop registrations based on license verification and compliance checks.
 4. **User Account Moderation** — Activating or deactivating user accounts for policy violations.
@@ -122,8 +124,8 @@ This screen is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `review_reports`, `audit_logs`, `notifications`), constraints. |
+| 1 | SKM-REQ-001 | Requirements Definition (v2.11) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.5) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `review_reports`, `audit_logs`, `notifications`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, API standards, error responses, naming conventions. |
 
 ---
@@ -157,48 +159,49 @@ This screen is responsible for the following core functional areas:
                     │  (Pending Actions Overview)  │
                     └──────────┬──────────────────┘
                                │
-               ┌───────────────┼───────────────────┐
-               ▼               ▼                   ▼
-     ┌─────────────┐  ┌──────────────┐   ┌──────────────────┐
-     │ Review      │  │ Content      │   │ Merchant         │
-     │ Moderation  │  │ Moderation   │   │ Approval         │
-     │ (UC-MOD-01~04) │ (UC-MOD-05,08) │ (UC-MOD-06) │
-     └──────┬──────┘  └──────┬───────┘   └────────┬─────────┘
-            │                │                    │
-            ▼                ▼                    ▼
-     ┌──────────────────────────────────────────────────┐
-     │         Moderation Action Form                   │
-     │  (Approve / Reject / Delete with Reason)        │
-     └──────────────────┬───────────────────────────────┘
-                        │
-           ┌────────────┼────────────────┐
-           ▼            ▼                ▼
-    ┌────────────┐ ┌──────────────┐ ┌──────────────┐
-    │ Approve    │ │ Reject       │ │ Delete       │
-    │ (200 OK)   │ │ (200 OK)     │ │ (204 No      │
-    └─────┬──────┘ └──────────────┘ │  Content)    │
-          │                         └──────────────┘
-          ▼
-   ┌──────────────────────┐
-   │ Backend Processing   │
-   │ (Update Status /     │
-   │  Recalculate Stats / │
-   │  Audit Log)          │
-   └──────────┬───────────┘
-              │
-     ┌────────┴──────────────────────┐
-     ▼                               ▼
-  ┌──────────────┐        ┌─────────────────────┐
-  │  SUCCESS     │        │  FAILURE            │
-  │  (Cache      │        │  (400/403/404)      │
-  │  Invalidated)│        └─────────┬───────────┘
-  └──────┬───────┘                  │
-         │                          ▼
-         ▼                 ┌─────────────────────┐
-  ┌──────────────┐         │ Display Error       │
-  │ Toast        │         │ Message             │
-  │ Notification │         └─────────────────────┘
-  └──────────────┘
+           ┌───────────┬───────┴───────┬───────────┐
+           ▼           ▼               ▼           ▼
+    ┌────────────┐┌────────────┐┌────────────┐┌────────────┐
+    │  Review    ││  Content   ││  Merchant  ││    User    │
+    │ Moderation ││ Moderation ││  Approval  ││ Management │
+    │ 01~03, 07  ││  04, 08    ││    05      ││    06      │
+    └─────┬──────┘└─────┬──────┘└─────┬──────┘└─────┬──────┘
+          │             │             │             │
+          └─────────────┴──────┬──────┴─────────────┘
+                               │
+                               ▼
+                    ┌─────────────────────────────┐
+                    │    Moderation Action Form    │
+                    │ (Approve / Reject / Delete)  │
+                    └──────────┬──────────────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              ▼                ▼                ▼
+       ┌────────────┐  ┌──────────────┐  ┌──────────────┐
+       │  Approve   │  │   Reject     │  │    Delete    │
+       │  (200 OK)  │  │  (200 OK)    │  │ (204 No      │
+       └─────┬──────┘  └──────────────┘  │  Content)    │
+             │                           └──────────────┘
+             ▼
+      ┌──────────────────────┐
+      │  Backend Processing  │
+      │  (Update / Recalc /  │
+      │       Audit Log)     │
+      └──────────┬───────────┘
+                 │
+        ┌────────┴──────────────────────┐
+        ▼                               ▼
+ ┌──────────────┐              ┌─────────────────────┐
+ │   SUCCESS    │              │     FAILURE         │
+ │   (Cache     │              │   (400/403/404)     │
+ │  Invalidated)│              └─────────┬───────────┘
+ └──────┬───────┘                        │
+        │                                ▼
+        ▼                       ┌─────────────────────┐
+ ┌──────────────┐               │  Display Error      │
+ │    Toast     │               │     Message         │
+ │ Notification │               └─────────────────────┘
+ └──────────────┘
 ```
 
 ### 2.3 Workflow Critical Path Summary
@@ -207,12 +210,11 @@ This screen is responsible for the following core functional areas:
 |:----:|--------|---------------|--------------|-------------|
 | 1 | Admin navigates to /admin/reviews | — | Reviews list loaded | System |
 | 2 | Admin selects a review | — | Review detail displayed | Admin |
-| 3 | Admin approves or rejects review | is_approved = true (default) | is_approved = true/false | Admin |
+| 3 | Admin approves or rejects review | is_approved = false (pending) | is_approved = true/false | Admin |
 | 4 | System recalculates product avg_rating | Old avg_rating | Updated avg_rating | System |
 | 5 | System invalidates product cache | Cached product | Cache evicted | System |
 | 6 | Admin navigates to /admin/merchants | — | Merchant list loaded | System |
 | 7 | Admin approves merchant registration | license_status = pending / shops.is_approved = false | license_status = approved / shops.is_approved = true | Admin |
-| 8 | Admin manages categories | — | Category tree updated | Admin |
 
 ### 2.4 Relevant Requirements Covered
 
@@ -234,7 +236,7 @@ This screen is responsible for the following core functional areas:
 |-------|-------------|:-----------------:|:-------------:|
 | `APPROVED` | Review is approved and displayed on product page | ✓ | ✗ |
 | `REJECTED` | Review is rejected and hidden from product page | ✗ | ✗ |
-| `PENDING` | Not supported in the current database schema; reserved only for a future pre-moderation mode. | N/A | ✗ |
+| `PENDING` | Review awaiting admin approval (hidden from buyers). Mapped to `is_approved = false` in the database. Visible only in admin moderation queue. | N/A | ✗ |
 
 ### 3.2 Merchant Approval States
 
@@ -271,8 +273,8 @@ This screen is responsible for the following core functional areas:
 
 | Transition ID | Origin State | Target State | Trigger Action | Guard Conditions |
 |---------------|--------------|--------------|----------------|------------------|
-| TR-MOD-01 | `APPROVED` (default) | `REJECTED` | Admin rejects review | Admin role, review exists |
-| TR-MOD-02 | `REJECTED` | `APPROVED` | Admin re-approves review | Admin role, review exists |
+| TR-MOD-01 | `PENDING` (default) | `APPROVED` | Admin approves review | Admin role, review exists |
+| TR-MOD-02 | `PENDING` (default) | `REJECTED` | Admin rejects review | Admin role, review exists |
 | TR-MOD-03 | `PENDING` (merchant) | `APPROVED` | Admin approves merchant | Admin role, merchant and shop exist |
 | TR-MOD-04 | `PENDING` (merchant) | `REJECTED` | Admin rejects merchant | Admin role, merchant and shop exist |
 | TR-MOD-05 | `ACTIVE` (product) | `INACTIVE` | Admin deactivates product | Admin role, product exists |
@@ -293,7 +295,7 @@ This screen is responsible for the following core functional areas:
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-MOD-001 | Admin-Only Moderation | Only users with `admin` role can moderate reviews. | Backend (JwtAuthGuard + RolesGuard) |
-| BR-MOD-002 | Review Approval Default | New reviews are approved by default (`is_approved = true`). | Backend (review creation service) |
+| BR-MOD-002 | Review Approval Default | All reviews are hidden by default (`is_approved = false`). Admin must approve each review before it becomes visible to buyers. | Backend (review creation service) |
 | BR-MOD-003 | Rating Recalculation | When review approval status changes, product `avg_rating` and `review_count` must be recalculated from approved reviews only. | Backend (moderation service) |
 | BR-MOD-004 | Cache Invalidation | When review status changes, product cache (`cache:product:{id}`) and product list cache (`cache:products:list:*`) must be invalidated. | Backend (moderation service) |
 | BR-MOD-005 | Deletion Cascade | Deleting a review removes it permanently and recalculates product statistics. | Backend (Prisma onDelete: Cascade) |
@@ -340,42 +342,81 @@ This screen is responsible for the following core functional areas:
 
 ## 5. Screen Specifications
 
-### 5.1 Screen: Admin Reviews Dashboard (`/admin/reviews`)
+### 5.1 Screen: Admin Review & Report Management (`/admin/reviews`)
 
-**Purpose:** Allow administrators to view, moderate, and manage all product reviews.
+**Purpose:** Allow administrators to view, moderate, and manage all product reviews AND review reports in a single screen with tab navigation.
 
-#### 5.1.1 UI Elements
+#### 5.1.1 Screen Tabs
+
+| Tab ID | Tab Name | Description |
+|--------|----------|-------------|
+| `tabReviews` | Reviews | View and moderate all product reviews |
+| `tabReports` | Reports | View and manage all review reports |
+
+#### 5.1.2 Reviews Tab UI Elements
 
 **Reviews Table View:**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-01 | Page Title | Text | `admin.reviews.title` | Yes | "Review Moderation" |
-| EL-02 | Filter Tabs | Tab Group | `admin.reviews.tabs` | Yes | Tabs: All, Approved, Rejected |
-| EL-03 | Search Input | Input (text) | `admin.reviews.search` | No | Search reviews by user name, product name, or content |
-| EL-04 | Sort Dropdown | Select | `admin.reviews.sort` | No | Sort by: Newest, Oldest, Rating (High-Low), Rating (Low-High) |
-| EL-05 | Reviews Table | Table | — | Yes | Displays: checkbox, user avatar, user name, product name, rating stars, review title, status badge, created date, actions |
-| EL-06 | Review Status Badge | Badge | — | Yes | Green (Approved), Red (Rejected) |
-| EL-07 | Rating Display | Star Rating | — | Yes | 1-5 star display with Beauty Pink (#EC4899) color |
-| EL-08 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Approve, Reject, Delete |
-| EL-09 | Bulk Actions | Button Group | — | No | Approve Selected, Reject Selected, Delete Selected |
-| EL-10 | Pagination | Pagination | — | Yes | Page navigation with page size selector (20/50/100) |
-| EL-11 | Stats Bar | Stats Display | — | No | Shows: Total Reviews, Pending Count, Approved Count, Rejected Count |
+| EL-01 | Page Title | Text | `admin.reviews.title` | Yes | "Review & Report Management" |
+| EL-02 | Screen Tabs | Tab Group | `admin.reviews.screenTabs` | Yes | Tabs: Reviews, Reports |
+| EL-03 | Filter Tabs | Tab Group | `admin.reviews.tabs` | Yes | Tabs: All, Pending, Approved, Rejected |
+| EL-04 | Search Input | Input (text) | `admin.reviews.search` | No | Search reviews by user name, product name, or content |
+| EL-05 | Sort Dropdown | Select | `admin.reviews.sort` | No | Sort by: Newest, Oldest, Rating (High-Low), Rating (Low-High) |
+| EL-06 | Reviews Table | Table | — | Yes | Displays: checkbox, user avatar, user name, product name, rating stars, review title, status badge, created date, actions |
+| EL-07 | Review Status Badge | Badge | — | Yes | Green (Approved), Red (Rejected), Amber (Pending) |
+| EL-08 | Rating Display | Star Rating | — | Yes | 1-5 star display with Beauty Pink (#EC4899) color |
+| EL-09 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Approve, Reject, Delete |
+| EL-10 | Bulk Actions | Button Group | — | No | Approve Selected, Reject Selected, Delete Selected |
+| EL-11 | Pagination | Pagination | — | Yes | Page navigation with page size selector (20/50/100) |
+| EL-12 | Stats Bar | Stats Display | — | No | Shows: Total Reviews, Pending Count, Approved Count, Rejected Count |
 
 **Review Detail Modal:**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-12 | Review Content | Text | — | Yes | Full review body text |
-| EL-13 | Review Images | Image Gallery | — | No | Review images in grid layout |
-| EL-14 | Product Info Card | Card | — | Yes | Product name, image, price, link to product detail |
-| EL-15 | User Info Card | Card | — | Yes | User name, email, avatar, review count |
-| EL-16 | Verified Purchase Badge | Badge | — | No | "Verified Purchase" indicator |
-| EL-17 | Moderation Reason Input | Textarea | `admin.moderation.reason` | Conditional | Required when rejecting. Optional for approve. |
-| EL-18 | Approve Button | Button (primary) | `admin.moderation.approve` | Yes | Approve review |
-| EL-19 | Reject Button | Button (destructive) | `admin.moderation.reject` | Yes | Reject review |
-| EL-20 | Delete Button | Button (destructive) | `admin.moderation.delete` | Yes | Permanently delete review |
-| EL-21 | Close Button | Button (outline) | — | Yes | Close modal |
+| EL-13 | Review Content | Text | — | Yes | Full review body text |
+| EL-14 | Review Images | Image Gallery | — | No | Review images in grid layout |
+| EL-15 | Product Info Card | Card | — | Yes | Product name, image, price, link to product detail |
+| EL-16 | User Info Card | Card | — | Yes | User name, email, avatar, review count |
+| EL-17 | Verified Purchase Badge | Badge | — | No | "Verified Purchase" indicator |
+| EL-18 | Moderation Reason Input | Textarea | `admin.moderation.reason` | Conditional | Required when rejecting. Optional for approve. |
+| EL-19 | Approve Button | Button (primary) | `admin.moderation.approve` | Yes | Approve review |
+| EL-20 | Reject Button | Button (destructive) | `admin.moderation.reject` | Yes | Reject review |
+| EL-21 | Delete Button | Button (destructive) | `admin.moderation.delete` | Yes | Permanently delete review |
+| EL-22 | Close Button | Button (outline) | — | Yes | Close modal |
+
+#### 5.1.3 Reports Tab UI Elements
+
+**Report List Table View:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-23 | Filter Tabs | Tab Group | `admin.reports.tabs` | Yes | Tabs: All, Pending, Reviewed, Resolved, Rejected |
+| EL-24 | Search Input | Input (text) | `admin.reports.search` | No | Search by reporter name, review content |
+| EL-25 | Reports Table | Table | — | Yes | Displays: checkbox, reporter name, review body excerpt, reason badge, status badge, reported date, actions |
+| EL-26 | Report Status Badge | Badge | — | Yes | Amber (Pending), Blue (Reviewed), Green (Resolved), Red (Rejected) |
+| EL-27 | Report Reason Badge | Badge | — | Yes | Reason category display (spam/inappropriate/fake/other) |
+| EL-28 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Reject, Resolve |
+| EL-29 | Bulk Actions | Button Group | — | No | Reject Selected, Resolve Selected |
+| EL-30 | Pagination | Pagination | — | Yes | Page navigation with page size selector (20/50/100) |
+| EL-31 | Stats Bar | Stats Display | — | No | Shows: Total Reports, Pending Count, Reviewed Count, Resolved Count, Rejected Count |
+
+**Report Detail Modal:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-32 | Reporter Info Card | Card | — | Yes | User name, email, avatar |
+| EL-33 | Review Info Card | Card | — | Yes | Review body, rating, target product name |
+| EL-34 | Report Reason Display | Text | — | Yes | Selected reason category |
+| EL-35 | Report Detail Text | Text | — | No | Reporter's additional explanation |
+| EL-36 | Target Review Actions | Button Group | — | Yes | Approve/Reject/Delete buttons for the target review |
+| EL-37 | Admin Note Input | Textarea | `admin.reports.adminNote` | No | Optional admin note |
+| EL-38 | Reject Button | Button (destructive) | `admin.reports.reject` | Yes | Reject report |
+| EL-39 | Resolve Button | Button (primary) | `admin.reports.resolve` | Yes | Resolve report (auto-reject target review) |
+| EL-40 | Delete Button | Button (destructive) | `admin.reports.delete` | Yes | Delete report |
+| EL-41 | Close Button | Button (outline) | — | Yes | Close modal |
 
 ### 5.2 Screen: Admin Merchants Management (`/admin/merchants`)
 
@@ -387,60 +428,25 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-22 | Page Title | Text | `admin.merchants.title` | Yes | "Merchant Management" |
-| EL-23 | Filter Tabs | Tab Group | `admin.merchants.tabs` | Yes | Tabs: All, Pending Approval, Approved, Rejected |
-| EL-24 | Search Input | Input (text) | `admin.merchants.search` | No | Search by merchant name, user email |
-| EL-25 | Merchants Table | Table | — | Yes | Displays: checkbox, shop logo, shop name, user name, registration date, status badge, actions |
-| EL-26 | Merchant Status Badge | Badge | — | Yes | Green (Approved), Amber (Pending), Red (Rejected) |
-| EL-27 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Approve, Reject |
-| EL-28 | Pagination | Pagination | — | Yes | Page navigation |
+| EL-42 | Page Title | Text | `admin.merchants.title` | Yes | "Merchant Management" |
+| EL-43 | Filter Tabs | Tab Group | `admin.merchants.tabs` | Yes | Tabs: All, Pending Approval, Approved, Rejected |
+| EL-44 | Search Input | Input (text) | `admin.merchants.search` | No | Search by merchant name, user email |
+| EL-45 | Merchants Table | Table | — | Yes | Displays: checkbox, shop logo, shop name, user name, registration date, status badge, actions |
+| EL-46 | Merchant Status Badge | Badge | — | Yes | Green (Approved), Amber (Pending), Red (Rejected) |
+| EL-47 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Approve, Reject |
+| EL-48 | Pagination | Pagination | — | Yes | Page navigation |
 
 **Merchant Detail Modal:**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-29 | Shop Info Card | Card | — | Yes | Shop name, logo, banner, description |
-| EL-30 | License File Viewer | PDF Viewer | — | Yes | Business license PDF display/download |
-| EL-31 | User Info Card | Card | — | Yes | User name, email, phone, registration date |
-| EL-32 | Rejection Reason Input | Textarea | `admin.merchant.rejectReason` | Conditional | Required when rejecting |
-| EL-33 | Approve Button | Button (primary) | `admin.merchant.approve` | Yes | Approve merchant |
-| EL-34 | Reject Button | Button (destructive) | `admin.merchant.reject` | Yes | Reject merchant |
-| EL-35 | Close Button | Button (outline) | — | Yes | Close modal |
-
-### 5.3 Screen: Admin Report Management (`/admin/reports`)
-
-**Purpose:** Allow administrators to confirm, reject, or complete reported reviews.
-
-#### 5.3.1 UI Elements
-
-**Report List Table View:**
-
-| Element ID | Element Name | Element Type | i18n Key | Required | Description |
-|------------|--------------|--------------|----------|:--------:|-------------|
-| EL-36 | Page Title | Text | `admin.reports.title` | Yes | "Review Report Management" |
-| EL-37 | Filter Tabs | Tab Group | `admin.reports.tabs` | Yes | Tabs: All, Pending, Reviewed, Resolved, Rejected |
-| EL-38 | Search Input | Input (text) | `admin.reports.search` | No | Search by reporter name, review content |
-| EL-39 | Reports Table | Table | — | Yes | Displays: checkbox, reporter name, review body excerpt, reason badge, status badge, reported date, actions |
-| EL-40 | Report Status Badge | Badge | — | Yes | Amber (Pending), Blue (Reviewed), Green (Resolved), Red (Rejected) |
-| EL-41 | Report Reason Badge | Badge | — | Yes | Reason category display (spam/inappropriate/fake/other) |
-| EL-42 | Actions Dropdown | Dropdown Menu | — | Yes | Options: View Detail, Reject, Complete |
-| EL-43 | Bulk Actions | Button Group | — | No | Reject Selected, Complete Selected |
-| EL-44 | Pagination | Pagination | — | Yes | Page navigation with page size selector (20/50/100) |
-| EL-45 | Stats Bar | Stats Display | — | No | Shows: Total Reports, Pending Count, Rejected Count, Completed Count |
-
-**Report Detail Modal:**
-
-| Element ID | Element Name | Element Type | i18n Key | Required | Description |
-|------------|--------------|--------------|----------|:--------:|-------------|
-| EL-46 | Reporter Info Card | Card | — | Yes | User name, email, avatar |
-| EL-47 | Review Info Card | Card | — | Yes | Review body, rating, target product name |
-| EL-48 | Report Reason Display | Text | — | Yes | Selected reason category |
-| EL-49 | Report Detail Text | Text | — | No | Reporter's additional explanation |
-| EL-50 | Target Review Actions | Button Group | — | Yes | Approve/Reject/Delete buttons for the target review |
-| EL-51 | Reject Button | Button (destructive) | `admin.reports.reject` | Yes | Reject report |
-| EL-52 | Resolve Button | Button (primary) | `admin.reports.resolve` | Yes | Resolve report (auto-reject target review) |
-| EL-53 | Delete Button | Button (destructive) | `admin.reports.delete` | Yes | Delete report |
-| EL-54 | Close Button | Button (outline) | — | Yes | Close modal |
+| EL-49 | Shop Info Card | Card | — | Yes | Shop name, logo, banner, description |
+| EL-50 | License File Viewer | PDF Viewer | — | Yes | Business license PDF display/download |
+| EL-51 | User Info Card | Card | — | Yes | User name, email, phone, registration date |
+| EL-52 | Rejection Reason Input | Textarea | `admin.merchant.rejectReason` | Conditional | Required when rejecting |
+| EL-53 | Approve Button | Button (primary) | `admin.merchant.approve` | Yes | Approve merchant |
+| EL-54 | Reject Button | Button (destructive) | `admin.merchant.reject` | Yes | Reject merchant |
+| EL-55 | Close Button | Button (outline) | — | Yes | Close modal |
 
 ---
 
@@ -452,7 +458,7 @@ This screen is responsible for the following core functional areas:
 |-----------|---------------|
 | **Trigger** | Admin navigates to /admin/reviews or changes the review status filter |
 | **API Endpoint** | `GET /api/v1/admin/reviews` |
-| **Request Query Parameters** | `page` (default: 1), `limit` (default: 20), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`approved`/`rejected`/omitted for all) |
+| **Request Query Parameters** | `page` (default: 1), `limit` (default: 20), `sort` (default: `createdAt`), `order` (default: `desc`), `status` (`pending`/`approved`/`rejected`/omitted for all) |
 | **Pre-Submission Validation** | JWT access token validated. Admin role verified. |
 | **Processing Steps** | 1. Validate JWT access token. 2. Verify admin role via RolesGuard. 3. Query `reviews` table with filters. 4. Join with `users` and `products` for display data. 5. Apply pagination. 6. Return paginated review list in `{ data, meta }` envelope. |
 | **Success Response** | 200 OK with paginated review data |
@@ -467,7 +473,7 @@ This screen is responsible for the following core functional areas:
 | **Request Content-Type** | `application/json` |
 | **Request Body** | `{ action: 'approve' | 'reject', reason?: string }` |
 | **Pre-Submission Validation** | JWT access token validated. Admin role verified. Review exists. Reason required for rejection. |
-| **Processing Steps** | 1. Validate JWT and admin role. 2. Find review by ID. 3. If action = 'reject', validate reason is provided. 4. Update `reviews.is_approved` based on action. 5. Recalculate product `avg_rating` and `review_count` from approved reviews only. 6. Invalidate product cache in Redis (`DEL cache:product:{id}`). 7. Invalidate product list cache in Redis (`DEL cache:products:list:*`). 8. Log moderation action to `audit_logs` table (user_id, action, entity_type: 'Review', entity_id, old_value, new_value, ip_address, user_agent). 9. Create notifications for review author and product merchant (type: `review.status_changed`). 10. Return updated review data in `{ data }` envelope. |
+| **Processing Steps** | 1. Validate JWT and admin role. 2. Find review by ID. 3. If action = 'reject', validate reason is provided. 4. Update `reviews.is_approved` based on action (true for approve, false for reject). 5. Recalculate product `avg_rating` and `review_count` from approved reviews only. 6. Invalidate product cache in Redis (`DEL cache:product:{id}`). 7. Invalidate product list cache in Redis (`DEL cache:products:list:*`). 8. Log moderation action to `audit_logs` table (user_id, action, entity_type: 'Review', entity_id, old_value, new_value, ip_address, user_agent). 9. Create notifications for review author and product merchant (type: `review.status_changed`). 10. Return updated review data in `{ data }` envelope. |
 | **Success Response** | 200 OK with updated review DTO |
 | **Post-Action** | Display toast notification. Refresh reviews list. |
 
@@ -568,14 +574,14 @@ This screen is responsible for the following core functional areas:
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `action` | Moderation Action | 審査アクション | ENUM ('approve', 'reject') | Yes | Radio / Button | `@IsIn(['approve', 'reject'])` |
-| `reason` | Rejection Reason | 却下理由 | VARCHAR(500) | Conditional | Textarea | `@IsNotEmpty()` when action = 'reject', `@MaxLength(500)` |
+| `reason` | Rejection Reason | 却下理由 | TEXT | Conditional | Textarea | `@IsNotEmpty()` when action = 'reject' |
 
 ### 7.2 Input Specification — Merchant Approval (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `status` | Approval Status | 承認ステータス | ENUM ('approved', 'rejected') | Yes | Radio / Button | `@IsIn(['approved', 'rejected'])` |
-| `reason` | Rejection Reason | 却下理由 | VARCHAR(500) | Conditional | Textarea | `@IsNotEmpty()` when status = 'rejected', `@MaxLength(500)` |
+| `reason` | Rejection Reason | 却下理由 | TEXT | Conditional | Textarea | `@IsNotEmpty()` when status = 'rejected' |
 
 ### 7.3 Input Specification — User Moderation (入力定義)
 
@@ -653,14 +659,14 @@ This screen is responsible for the following core functional areas:
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `action` | Required, must be 'approve' or 'reject' | "Action must be 'approve' or 'reject'" | "アクションは'approve'または'reject'である必要があります" |
-| `reason` | Required when action = 'reject', max 500 chars | "Rejection reason is required" / "Reason must not exceed 500 characters" | "却下理由は必須です" / "理由は500文字以下である必要があります" |
+| `reason` | Required when action = 'reject' | "Rejection reason is required" | "却下理由は必須です" |
 
 ### 8.2 Merchant Approval Validation (Strict Mode)
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `status` | Required, must be 'approved' or 'rejected' | "Status must be 'approved' or 'rejected'" | "ステータスは'approved'または'rejected'である必要があります" |
-| `reason` | Required when status = 'rejected', max 500 chars | "Rejection reason is required" / "Reason must not exceed 500 characters" | "却下理由は必須です" / "理由は500文字以下である必要があります" |
+| `reason` | Required when status = 'rejected' | "Rejection reason is required" | "却下理由は必須です" |
 
 ### 8.3 User Moderation Validation (Strict Mode)
 
@@ -842,7 +848,7 @@ The admin dashboard receives real-time updates for pending moderation items:
 | Event | Trigger | Action |
 |-------|---------|--------|
 | `NEW_MERCHANT_REGISTRATION` | New merchant registers | Increment pending merchant approvals badge |
-| `REVIEW_CREATED` | New review submitted | Increment total reviews badge; reviews are approved by default |
+| `REVIEW_CREATED` | New review submitted | Increment total reviews badge; review hidden until admin approval |
 | `NEW_REPORT` | Buyer submits review report | Increment pending reports badge |
 
 ### 11.2 Post-Moderation Notifications

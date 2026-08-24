@@ -1,17 +1,17 @@
 # DD_WISH_CART_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-WISH-CART-03 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-17
+> **Doc ID:** SKM-DD-WISH-CART-03 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-08-21
 
 ---
 
 ## 1. Controller Setup
 
-- **Wishlist Controller File:** `src/modules/wishlist/wishlist.controller.ts`
+- **Wishlist Controller File:** `backend/src/modules/buyer/wishlist/wishlist.controller.ts`
 - **Wishlist Base Route:** `/api/v1/wishlist`
-- **Cart Controller File:** `src/modules/cart/cart.controller.ts`
+- **Cart Controller File:** `backend/src/modules/buyer/cart/cart.controller.ts`
 - **Cart Base Route:** `/api/v1/cart`
-- **Guards:** JwtAuthGuard (all endpoints protected)
+- **Guards:** JwtAuthGuard, RolesGuard (all endpoints protected, `@Roles('buyer')`)
 
 ---
 
@@ -21,7 +21,7 @@
 
 Get authenticated user's wishlist items with product details.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Params:** None
 - **Response:** `200 OK`
@@ -29,13 +29,13 @@ Get authenticated user's wishlist items with product details.
   {
     "data": [
       {
-        "id": "clx001wishlist01",
-        "productId": "clx001product01",
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "productId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
         "productName": "Vitamin C Serum",
         "productSlug": "vitamin-c-serum",
         "productImage": "/uploads/products/vitamin-c-serum.webp",
-        "productPrice": 39.99,
-        "compareAtPrice": 49.99,
+        "productPrice": "39.99",
+        "compareAtPrice": "49.99",
         "stockStatus": "IN_STOCK",
         "isInStock": true,
         "createdAt": "2026-08-05T12:00:00.000Z"
@@ -56,16 +56,16 @@ Get authenticated user's wishlist items with product details.
 
 Add a product to the authenticated user's wishlist.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Params:**
-  - `productId` (string, required, CUID format) - Product to add
+  - `productId` (string, required, UUID format) - Product to add
 - **Response:** `201 Created`
   ```json
   {
     "data": {
-      "id": "clx001wishlist01",
-      "productId": "clx001product01",
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "productId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
       "createdAt": "2026-08-05T12:00:00.000Z"
     }
   }
@@ -84,47 +84,39 @@ Add a product to the authenticated user's wishlist.
 
 Remove a product from the authenticated user's wishlist.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Params:**
-  - `productId` (string, required, CUID format) - Product to remove
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "success": true,
-      "message": "Product removed from wishlist"
-    }
-  }
-  ```
+  - `productId` (string, required, UUID format) - Product to remove
+- **Response:** `204 No Content`
 - **Error Responses:**
   - `401 UNAUTHORIZED` - Missing or invalid access token
   - `404 NOT_FOUND` - Wishlist item not found
   - `500 INTERNAL_SERVER_ERROR` - Server error
 - **Logic:** Calls `service.removeFromWishlist(userId, productId)`
-- **Business Rules:** BR-WISH-004 (Owner-Only Access)
+- **Business Rules:** BR-WISH-005 (Owner-Only Access)
 
 ### 2.4 POST /wishlist/:productId/move-to-cart
 
 Move a wishlist item to the cart. Optionally removes from wishlist after transfer.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Params:**
-  - `productId` (string, required, CUID format) - Product to move
+  - `productId` (string, required, UUID format) - Product to move
 - **Response:** `200 OK`
   ```json
   {
     "data": {
       "cartItem": {
-        "id": "clx001cart01",
-        "productId": "clx001product01",
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "productId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
         "productName": "Vitamin C Serum",
         "productSlug": "vitamin-c-serum",
         "productImage": "/uploads/products/vitamin-c-serum.webp",
-        "unitPrice": 39.99,
+        "unitPrice": "39.99",
         "quantity": 1,
-        "subtotal": 39.99,
+        "subtotal": "39.99",
         "stockQuantity": 15,
         "stockStatus": "IN_STOCK",
         "isAvailable": true
@@ -145,7 +137,7 @@ Move a wishlist item to the cart. Optionally removes from wishlist after transfe
 
 Get authenticated user's cart with all items and summary.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Params:** None
 - **Response:** `200 OK`
@@ -154,14 +146,14 @@ Get authenticated user's cart with all items and summary.
     "data": {
       "items": [
         {
-          "id": "clx001cart01",
-          "productId": "clx001product01",
+          "id": "550e8400-e29b-41d4-a716-446655440001",
+          "productId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
           "productName": "Vitamin C Serum",
           "productSlug": "vitamin-c-serum",
           "productImage": "/uploads/products/vitamin-c-serum.webp",
-          "unitPrice": 39.99,
+          "unitPrice": "39.99",
           "quantity": 2,
-          "subtotal": 79.98,
+          "subtotal": "79.98",
           "stockQuantity": 15,
           "stockStatus": "IN_STOCK",
           "isAvailable": true
@@ -169,7 +161,7 @@ Get authenticated user's cart with all items and summary.
       ],
       "summary": {
         "totalItems": 2,
-        "subtotal": 79.98,
+        "subtotal": "79.98",
         "hasOutOfStock": false,
         "canCheckout": true
       }
@@ -186,20 +178,20 @@ Get authenticated user's cart with all items and summary.
 
 Add a product to the authenticated user's cart.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Body:** `AddToCartDto`
-  - `productId` (string, required, CUID format) - Product to add
+  - `productId` (string, required, UUID format) - Product to add
   - `quantity` (integer, optional, default: 1, min: 1, max: 99) - Quantity to add
 - **Response:** `201 Created`
   ```json
   {
     "data": {
-      "id": "clx001cart01",
-      "productId": "clx001product01",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "productId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
       "quantity": 1,
-      "unitPrice": 39.99,
-      "subtotal": 39.99,
+      "unitPrice": "39.99",
+      "subtotal": "39.99",
       "stockQuantity": 15,
       "stockStatus": "IN_STOCK",
       "isAvailable": true
@@ -212,7 +204,6 @@ Add a product to the authenticated user's cart.
   - `400 BAD_REQUEST` - Quantity exceeds available stock
   - `401 UNAUTHORIZED` - Missing or invalid access token
   - `404 NOT_FOUND` - Product not found or inactive
-  - `409 CONFLICT` - Product already in cart (use PATCH to update)
   - `429 TOO_MANY_REQUESTS` - Rate limit exceeded
   - `500 INTERNAL_SERVER_ERROR` - Server error
 - **Logic:** Calls `service.addToCart(userId, dto)`
@@ -222,21 +213,21 @@ Add a product to the authenticated user's cart.
 
 Update the quantity of a cart item.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Params:**
-  - `id` (string, required, CUID format) - Cart item ID
+  - `id` (string, required, UUID format) - Cart item ID
 - **Body:** `UpdateCartQuantityDto`
   - `quantity` (integer, required, min: 1, max: 99) - New quantity
 - **Response:** `200 OK`
   ```json
   {
     "data": {
-      "id": "clx001cart01",
-      "productId": "clx001product01",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "productId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
       "quantity": 3,
-      "unitPrice": 39.99,
-      "subtotal": 119.97,
+      "unitPrice": "39.99",
+      "subtotal": "119.97",
       "stockQuantity": 15,
       "stockStatus": "IN_STOCK",
       "isAvailable": true
@@ -256,19 +247,11 @@ Update the quantity of a cart item.
 
 Remove an item from the cart.
 
-- **Auth Required:** Yes (JwtAuthGuard)
+- **Auth Required:** Yes (JwtAuthGuard, RolesGuard)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Params:**
-  - `id` (string, required, CUID format) - Cart item ID
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "success": true,
-      "message": "Item removed from cart"
-    }
-  }
-  ```
+  - `id` (string, required, UUID format) - Cart item ID
+- **Response:** `204 No Content`
 - **Error Responses:**
   - `401 UNAUTHORIZED` - Missing or invalid access token
   - `404 NOT_FOUND` - Cart item not found
@@ -276,39 +259,20 @@ Remove an item from the cart.
 - **Logic:** Calls `service.removeFromCart(userId, cartItemId)`
 - **Business Rules:** BR-CART-001 (Owner-Only Access)
 
-### 2.9 DELETE /cart
-
-Clear all items from the authenticated user's cart.
-
-- **Auth Required:** Yes (JwtAuthGuard)
-- **Headers:** `Authorization: Bearer <accessToken>`
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "deletedCount": 3,
-      "message": "Cart cleared successfully"
-    }
-  }
-  ```
-- **Error Responses:**
-  - `401 UNAUTHORIZED` - Missing or invalid access token
-  - `500 INTERNAL_SERVER_ERROR` - Server error
-- **Logic:** Calls `service.clearCart(userId)`
-- **Business Rules:** BR-CART-001 (Owner-Only Access)
-
 ---
 
 ## 3. Protected Endpoint Guards
 
-All wishlist and cart endpoints require JWT authentication:
+All wishlist and cart endpoints require JWT authentication and buyer role:
 
 ```typescript
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('buyer')
 @Controller('wishlist')
 export class WishlistController { ... }
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('buyer')
 @Controller('cart')
 export class CartController { ... }
 ```
@@ -316,6 +280,7 @@ export class CartController { ... }
 | Guard | Purpose | Behavior |
 |-------|---------|----------|
 | `JwtAuthGuard` | Validates JWT signature | Checks `Authorization: Bearer <token>` header. Verifies signature, expiry, and Redis blacklist. Extracts `userId` from token payload. |
+| `RolesGuard` | Enforces role-based access | Checks `role` claim from JWT payload. Rejects non-buyer users with 403 Forbidden. |
 
 ---
 
@@ -329,7 +294,6 @@ export class CartController { ... }
 | `POST /cart/items` | 30 attempts | 1 minute | User ID |
 | `PATCH /cart/items/:id` | 60 attempts | 1 minute | User ID |
 | `DELETE /cart/items/:id` | 30 attempts | 1 minute | User ID |
-| `DELETE /cart` | 10 attempts | 1 minute | User ID |
 
 **Redis Key Pattern:** `rate:wish-cart:{endpoint}:{userId}`
 
@@ -346,10 +310,10 @@ All endpoints enforce ownership rules to ensure users can only access their own 
 
 ```typescript
 // Example ownership validation
-const wishlistItem = await this.prisma.wishlists.findFirst({
+const wishlistItem = await this.prisma.wishlist.findFirst({
   where: {
     id: wishlistId,
-    user_id: userId, // From JWT token
+    userId: userId, // From JWT token
   },
 });
 if (!wishlistItem) throw new NotFoundException('Wishlist item not found');
@@ -372,10 +336,9 @@ if (!wishlistItem) throw new NotFoundException('Wishlist item not found');
 
 | Operation | Key Business Rules | Stock Check | Duplicate Handling |
 |-----------|-------------------|-------------|-------------------|
-| Add to Cart | BR-CART-001~005, BR-CART-008 | Yes | Returns 409 CONFLICT |
+| Add to Cart | BR-CART-001~005, BR-CART-008 | Yes | If product already exists in cart, increment existing quantity |
 | Update Quantity | BR-CART-003, BR-CART-004 | Yes | N/A |
 | Remove from Cart | BR-CART-001 | No | N/A |
-| Clear Cart | BR-CART-001 | No | N/A |
 | View Cart | BR-CART-006, BR-CART-007 | Yes (for stock status) | N/A |
 
 ---

@@ -2,16 +2,23 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { StringValue } from 'ms';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { CreateAdminDto, AdminRole } from './dto/create-admin.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { RedisService } from '../../shared/redis/redis.service';
 
@@ -230,6 +237,174 @@ export class AuthService {
     }
 
     return result;
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const { email } = forgotPasswordDto;
+
+    // Check rate limit
+    const rateLimitKey = `rate:auth:forgot-password:${email}`;
+    const isAllowed = await this.redis.checkRateLimit(rateLimitKey, 3, 3600);
+    if (!isAllowed) {
+      throw new UnauthorizedException('Too many requests. Please try again later.');
+    }
+
+    // Find user by email
+    const user = await this.usersService.findByEmail(email);
+
+    // Always return same response regardless of email existence (prevent email enumeration)
+    const successMessage = {
+      message: "If an account exists with that email, you'll receive a password reset link shortly.",
+    };
+
+    if (!user) {
+      // Return same response even if user doesn't exist
+      return successMessage;
+    }
+
+    // Invalidate all previous unused tokens for this user
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, used: false },
+      data: { used: true },
+    });
+
+    // Generate secure random token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    // Set 24-hour expiry
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    // Store hashed token
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        used: false,
+      },
+    });
+
+    // In production, send email with reset link containing rawToken
+    // For now, just log it (TODO: integrate with email service)
+    console.log(`Password reset token for ${email}: ${rawToken}`);
+    console.log(`Reset link: ${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token=${rawToken}`);
+
+    return successMessage;
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const { token, password } = resetPasswordDto;
+
+    // Validate token format
+    if (!token || token.length < 32) {
+      throw new BadRequestException('Invalid reset token');
+    }
+
+    // Hash the received token
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find token record by token hash
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        tokenHash,
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    // Find user by user_id from token
+    const user = await this.usersService.findById(resetToken.userId);
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    // Hash new password with Argon2
+    const passwordHash = await argon2.hash(password);
+
+    // Update user's password
+    await this.usersService.updatePassword(user.id, passwordHash);
+
+    // Mark token as used
+    await this.prisma.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { used: true },
+    });
+
+    // Invalidate all other unused tokens for this user
+    await this.prisma.passwordResetToken.updateMany({
+      where: {
+        userId: user.id,
+        used: false,
+        id: { not: resetToken.id },
+      },
+      data: { used: true },
+    });
+
+    return { message: 'Your password has been reset successfully.' };
+  }
+
+  async createAdmin(createAdminDto: CreateAdminDto) {
+    const { email, password, name, role } = createAdminDto;
+
+    // Check if user exists
+    const existingUser = await this.usersService.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException('Email already registered');
+    }
+
+    // Hash password
+    const passwordHash = await argon2.hash(password);
+
+    // Create admin user
+    const user = await this.usersService.create({
+      email,
+      name,
+      passwordHash,
+      roleCode: role,
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.roleCode,
+      createdAt: user.createdAt,
+    };
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    const { currentPassword, newPassword } = changePasswordDto;
+
+    // Find user
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify current password
+    const isPasswordValid = await argon2.verify(user.passwordHash, currentPassword);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Check if new password is different from current
+    if (currentPassword === newPassword) {
+      throw new BadRequestException('New password must be different from current password');
+    }
+
+    // Hash new password
+    const passwordHash = await argon2.hash(newPassword);
+
+    // Update password
+    await this.usersService.updatePassword(userId, passwordHash);
+
+    return { message: 'Password changed successfully' };
   }
 
   private saveLicenseFile(

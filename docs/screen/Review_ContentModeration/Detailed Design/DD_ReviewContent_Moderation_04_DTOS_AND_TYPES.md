@@ -1,7 +1,7 @@
 # DD_MOD_04 — DTOs and Types (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-MOD-04 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-08-22
 
 ---
 
@@ -11,6 +11,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-17 | Senior System Engineer | Initial DTOs and types for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Senior System Engineer | Added Review Reports DTOs: UpdateReportStatusDto, ReportsQueryDto, ReportResponseDto, ReportDetailResponseDto. Added report-related enums (ReportStatus, ReportReason, ReportStatusFilter), entity type, frontend types, and error codes. |
+| 1.2 | 2026-08-22 | Senior System Engineer | Aligned with FDS v2.0 and screen items v6.0: updated ReportStatus enum (COMPLETED→RESOLVED, added REVIEWED), updated ReportReason enum (spam/inappropriate/fake/other), added ReportReviewDto, added UpdateReportStatusDto with adminNote field. |
 
 ---
 
@@ -110,24 +111,56 @@ export class ModerateUserDto {
 
 ### 2.5 UpdateReportStatusDto
 
-Used for `PATCH /admin/reports/:id/status` to reject or complete a report.
+Used for `PATCH /admin/reports/:id/status` to update a report status (review, resolve, or reject).
 
 ```typescript
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsNotEmpty, MaxLength } from 'class-validator';
 
 export enum ReportAction {
+  REVIEWED = 'reviewed',
+  RESOLVED = 'resolved',
   REJECTED = 'rejected',
-  COMPLETED = 'completed',
 }
 
 export class UpdateReportStatusDto {
-  @IsEnum(ReportAction, { message: "status must be one of the following values: rejected, completed" })
+  @IsEnum(ReportAction, { message: "status must be one of the following values: reviewed, resolved, rejected" })
   @IsNotEmpty({ message: 'Status is required' })
   status: ReportAction;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000, { message: 'Admin note must not exceed 1000 characters' })
+  adminNote?: string;
 }
 ```
 
-### 2.6 BulkModerateReviewsDto
+### 2.6 ReportReviewDto
+
+Used for `POST /admin/reviews/:id/report` to report a review.
+
+```typescript
+import { IsEnum, IsOptional, IsString, IsNotEmpty, MaxLength } from 'class-validator';
+
+export enum ReportReviewReason {
+  SPAM = 'spam',
+  INAPPROPRIATE = 'inappropriate',
+  FAKE = 'fake',
+  OTHER = 'other',
+}
+
+export class ReportReviewDto {
+  @IsEnum(ReportReviewReason, { message: "reason must be one of the following values: spam, inappropriate, fake, other" })
+  @IsNotEmpty({ message: 'Reason is required' })
+  reason: ReportReviewReason;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: 'Detail must not exceed 500 characters' })
+  detail?: string;
+}
+```
+
+### 2.7 BulkModerateReviewsDto
 
 Used for `POST /admin/reviews/bulk/moderate` to bulk approve/reject reviews.
 
@@ -153,7 +186,7 @@ export class BulkModerateReviewsDto {
 }
 ```
 
-### 2.7 BulkDeleteReviewsDto
+### 2.8 BulkDeleteReviewsDto
 
 Used for `DELETE /admin/reviews/bulk` to bulk delete reviews.
 
@@ -168,7 +201,7 @@ export class BulkDeleteReviewsDto {
 }
 ```
 
-### 2.8 BulkModerateProductsDto
+### 2.9 BulkModerateProductsDto
 
 Used for `PATCH /admin/content/bulk/status` to bulk deactivate/reactivate products.
 
@@ -413,8 +446,9 @@ import { SortOrder } from './reviews-query.dto';
 
 export enum ReportStatusFilter {
   PENDING = 'pending',
+  REVIEWED = 'reviewed',
+  RESOLVED = 'resolved',
   REJECTED = 'rejected',
-  COMPLETED = 'completed',
 }
 
 export class ReportsQueryDto {
@@ -711,7 +745,6 @@ export class UserDetailResponseDto {
   phone: string | null;
   role: string;
   isActive: boolean;
-  lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   reviewCount: number;
@@ -748,7 +781,7 @@ export class ReportReviewProductDto {
   slug: string;
 }
 
-export class ReportReviewDto {
+export class ReportReviewDetailDto {
   id: string;
   body: string;
   rating: number;
@@ -759,7 +792,7 @@ export class ReportResponseDto {
   id: string;
   reviewId: string;
   reporter: ReportReporterDto;
-  review: ReportReviewDto;
+  review: ReportReviewDetailDto;
   reason: string;
   detail: string | null;
   status: string;
@@ -778,10 +811,11 @@ export class ReportDetailResponseDto {
   id: string;
   reviewId: string;
   reporter: ReportReporterDto;
-  review: ReportReviewDto;
+  review: ReportReviewDetailDto;
   reason: string;
   detail: string | null;
   status: string;
+  adminNote: string | null;
   resolvedBy: string | null;
   resolvedAt: Date | null;
   createdAt: Date;
@@ -797,13 +831,29 @@ Returned after report status update action.
 export class UpdateReportStatusResponseDto {
   id: string;
   status: string;
+  adminNote: string | null;
   resolvedBy: string | null;
   resolvedAt: Date | null;
   updatedAt: Date;
 }
 ```
 
-### 4.16 BulkOperationResponseDto
+### 4.16 ReportReviewResponseDto
+
+Returned after reporting a review.
+
+```typescript
+export class ReportReviewResponseDto {
+  id: string;
+  reviewId: string;
+  reason: string;
+  detail: string | null;
+  status: string;
+  createdAt: Date;
+}
+```
+
+### 4.17 BulkOperationResponseDto
 
 Returned after bulk moderation actions.
 
@@ -821,7 +871,7 @@ export class BulkOperationResponseDto {
 }
 ```
 
-### 4.17 PaginatedResponseDto
+### 4.18 PaginatedResponseDto
 
 Generic wrapper for paginated list responses.
 
@@ -913,8 +963,9 @@ export enum SortOrder {
 ```typescript
 export enum ReportStatus {
   PENDING = 'pending',
+  REVIEWED = 'reviewed',
+  RESOLVED = 'resolved',
   REJECTED = 'rejected',
-  COMPLETED = 'completed',
 }
 ```
 
@@ -923,23 +974,35 @@ export enum ReportStatus {
 ```typescript
 export enum ReportReason {
   SPAM = 'spam',
-  HARASSMENT = 'harassment',
-  FALSE_INFO = 'false_info',
-  POLICY_VIOLATION = 'policy_violation',
+  INAPPROPRIATE = 'inappropriate',
+  FAKE = 'fake',
+  OTHER = 'other',
 }
 ```
 
-### 5.10 ReportStatusFilter
+### 5.10 ReportReviewReason
+
+```typescript
+export enum ReportReviewReason {
+  SPAM = 'spam',
+  INAPPROPRIATE = 'inappropriate',
+  FAKE = 'fake',
+  OTHER = 'other',
+}
+```
+
+### 5.11 ReportStatusFilter
 
 ```typescript
 export enum ReportStatusFilter {
   PENDING = 'pending',
+  REVIEWED = 'reviewed',
+  RESOLVED = 'resolved',
   REJECTED = 'rejected',
-  COMPLETED = 'completed',
 }
 ```
 
-### 5.11 ReviewSortField
+### 5.12 ReviewSortField
 
 ```typescript
 export enum ReviewSortField {
@@ -948,7 +1011,7 @@ export enum ReviewSortField {
 }
 ```
 
-### 5.12 ProductSortField
+### 5.13 ProductSortField
 
 ```typescript
 export enum ProductSortField {
@@ -993,8 +1056,9 @@ export enum ModerationErrorCode {
   USER_ALREADY_INACTIVE = 'USER_ALREADY_INACTIVE',
   SELF_DEACTIVATION_PREVENTED = 'SELF_DEACTIVATION_PREVENTED',
   REPORT_NOT_FOUND = 'REPORT_NOT_FOUND',
-  REPORT_ALREADY_COMPLETED = 'REPORT_ALREADY_COMPLETED',
-  REPORT_COMPLETED_CANNOT_DELETE = 'REPORT_COMPLETED_CANNOT_DELETE',
+  REPORT_ALREADY_RESOLVED = 'REPORT_ALREADY_RESOLVED',
+  REPORT_RESOLVED_CANNOT_DELETE = 'REPORT_RESOLVED_CANNOT_DELETE',
+  REPORT_ALREADY_REVIEWED = 'REPORT_ALREADY_REVIEWED',
   FORBIDDEN = 'FORBIDDEN',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   REJECTION_REASON_REQUIRED = 'REJECTION_REASON_REQUIRED',
@@ -1088,8 +1152,8 @@ export interface ShopEntity {
   name: string;                  // VARCHAR(200)
   slug: string;                  // VARCHAR(255) UNIQUE
   description: string | null;    // TEXT NULL
-  logoUrl: string | null;        // VARCHAR(500) NULL
-  bannerUrl: string | null;      // VARCHAR(500) NULL
+  logoUrl: string | null;        // TEXT NULL
+  bannerUrl: string | null;      // TEXT NULL
   isApproved: boolean;           // BOOLEAN (default: false)
   createdAt: Date;               // TIMESTAMPTZ
   updatedAt: Date;               // TIMESTAMPTZ
@@ -1125,10 +1189,9 @@ export interface UserEntity {
   email: string;                 // VARCHAR(255) UNIQUE
   password: string;              // VARCHAR(255) (hashed)
   phone: string | null;          // VARCHAR(20) NULL
-  avatarUrl: string | null;      // VARCHAR(500) NULL
+  avatarUrl: string | null;      // TEXT NULL
   role: string;                  // VARCHAR(50) ('buyer' | 'merchant' | 'admin')
   isActive: boolean;             // BOOLEAN (default: true)
-  lastLoginAt: Date | null;      // TIMESTAMPTZ NULL
   createdAt: Date;               // TIMESTAMPTZ
   updatedAt: Date;               // TIMESTAMPTZ
 }
@@ -1141,9 +1204,10 @@ export interface ReportEntity {
   id: string;                    // UUID PK
   reviewId: string;              // FK -> reviews.id
   reportedBy: string;            // FK -> users.id (reporter)
-  reason: string;                // VARCHAR(50) ('spam' | 'harassment' | 'false_info' | 'policy_violation')
+  reason: string;                // VARCHAR(50) ('spam' | 'inappropriate' | 'fake' | 'other')
   description: string | null;    // TEXT NULL (optional detail)
-  status: string;                // VARCHAR(20) ('pending' | 'rejected' | 'completed')
+  status: string;                // VARCHAR(20) ('pending' | 'reviewed' | 'resolved' | 'rejected')
+  adminNote: string | null;      // TEXT NULL (admin note for status update)
   resolvedBy: string | null;     // UUID FK -> users.id NULL (admin who resolved)
   resolvedAt: Date | null;       // TIMESTAMPTZ NULL
   createdAt: Date;               // TIMESTAMPTZ
@@ -1252,6 +1316,8 @@ export interface AdminUser {
 ### 9.5 AdminReport
 
 ```typescript
+export type AdminReportStatus = 'pending' | 'reviewed' | 'resolved' | 'rejected';
+
 export interface AdminReport {
   id: string;
   reviewId: string;
@@ -1273,7 +1339,7 @@ export interface AdminReport {
   };
   reason: string;
   detail: string | null;
-  status: string;
+  status: AdminReportStatus;
   resolvedBy: string | null;
   resolvedAt: string | null;
   createdAt: string;
@@ -1284,6 +1350,7 @@ export interface AdminReport {
 
 ```typescript
 export interface AdminReportDetail extends AdminReport {
+  adminNote: string | null;
   updatedAt: string;
 }
 ```

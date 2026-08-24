@@ -1,7 +1,7 @@
 # DD_MOD_02 — Frontend Pages (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-02 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-MOD-02 | **Version:** 1.3 | **Status:** Released  
+> **Last Updated:** 2026-08-24
 
 ---
 
@@ -11,20 +11,21 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-17 | Senior System Engineer | Initial frontend pages for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Senior System Engineer | Added Review Reports Management page (`/admin/reports`): reports list layout, report detail modal, report status schema, report-related sub-components, action handlers, lookup data, and i18n keys. |
+| 1.2 | 2026-08-22 | Senior System Engineer | Removed admin sidebar from individual page layouts (shared component). Renumbered all layout section labels to start from [A] per page/modal. Added Pending and Reported status to Reviews page (stats bar + filter tabs). Added Report button to Review Detail Modal action buttons. Added Report Review Modal layout (section 2.3). |
+| 1.3 | 2026-08-24 | Senior System Engineer | Combined Reviews and Reports into single screen with tab navigation (`/admin/reviews`). Removed separate Reports page (`/admin/reports`). Added Screen Tabs element. Removed "Report" action from Reviews tab. |
 
 ---
 
 ## 1. Overview
 
-The Review & Content Moderation module consists of four admin pages, each with a corresponding detail modal. All pages share a common `DashboardLayout` with sidebar navigation, and use server-side pagination, tab-based filtering, and real-time search.
+The Review & Content Moderation module consists of three admin pages, each with a corresponding detail modal. All pages share a common `DashboardLayout` with sidebar navigation, and use server-side pagination, tab-based filtering, and real-time search.
 
 | Page | File Path | Route | Purpose |
 |------|-----------|-------|---------|
-| Admin Reviews Dashboard | `frontend/src/pages/admin/AdminReviews.tsx` | `/admin/reviews` | View, moderate, and manage all product reviews |
+| Admin Review & Report Management | `frontend/src/pages/admin/AdminReviews.tsx` | `/admin/reviews` | View, moderate, and manage all product reviews AND review reports (tab navigation) |
 | Admin Merchants Management | `frontend/src/pages/admin/AdminMerchants.tsx` | `/admin/merchants` | View, approve, or reject merchant registrations |
 | Product Content Moderation | `frontend/src/pages/admin/AdminContent.tsx` | `/admin/content` | View all products, deactivate/reactivate violating content |
 | Users Management | `frontend/src/pages/admin/AdminUsers.tsx` | `/admin/users` | View all users, activate/deactivate user accounts |
-| Review Reports Management | `frontend/src/pages/admin/AdminReports.tsx` | `/admin/reports` | View, confirm, reject, or complete review reports |
 
 **Shared Layout:** `DashboardLayout.tsx` (admin sidebar + page header + content area)
 
@@ -32,7 +33,7 @@ The Review & Content Moderation module consists of four admin pages, each with a
 
 ## 2. Layout Structure
 
-### 2.1 Reviews Dashboard Layout (`/admin/reviews`)
+### 2.1 Reviews & Reports Management Layout (`/admin/reviews`)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -40,23 +41,23 @@ The Review & Content Moderation module consists of four admin pages, each with a
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [A] ADMIN SIDEBAR                   │   │
-│  │   Dashboard / Users / Merchants / Reviews / ...  │   │
+│  │              [A] PAGE HEADER                     │   │
+│  │   Page Title: "Review & Report Management"       │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [B] PAGE HEADER                     │   │
-│  │   Page Title: "Review Moderation"                │   │
+│  │              [B] SCREEN TABS                     │   │
+│  │   [Reviews] [Reports]                            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [C] STATS BAR (cond.)               │   │
-│  │   Total | Approved | Rejected                    │   │
+│  │   Total | Pending | Approved | Rejected          │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [D] FILTER TABS                     │   │
-│  │   All | Approved | Rejected                      │   │
+│  │   All | Pending | Approved | Rejected            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -84,33 +85,61 @@ The Review & Content Moderation module consists of four admin pages, each with a
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [H] MODAL HEADER          │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "Review Detail"  [X Close] │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [I] USER INFO CARD        │            │
+│              │   [B] USER INFO CARD        │            │
 │              │   Avatar | Name | Email     │            │
 │              │   Review Count              │            │
 │              │                             │            │
-│              │   [J] PRODUCT INFO CARD     │            │
+│              │   [C] PRODUCT INFO CARD     │            │
 │              │   Image | Name | Price      │            │
 │              │   Link to product detail    │            │
 │              │                             │            │
-│              │   [K] REVIEW CONTENT        │            │
+│              │   [D] REVIEW CONTENT        │            │
 │              │   Rating Stars | Title      │            │
 │              │   Body Text | Images        │            │
 │              │   Verified Purchase Badge   │            │
 │              │                             │            │
-│              │   [L] MODERATION REASON     │            │
+│              │   [E] MODERATION REASON     │            │
 │              │   Textarea (conditional)    │            │
 │              │                             │            │
-│              │   [M] ACTION BUTTONS        │            │
-│              │   [Approve] [Reject] [Delete]│            │
+│              │   [F] ACTION BUTTONS        │            │
+│              │   [Approve] [Reject]        │            │
+│              │   [Report] [Delete]         │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.3 Merchants Management Layout (`/admin/merchants`)
+### 2.3 Report Review Modal Layout
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    MODAL OVERLAY                         │
+│              ┌─────────────────────────────┐            │
+│              │   [A] MODAL HEADER          │            │
+│              │   "Report Review" [X Close] │            │
+│              ├─────────────────────────────┤            │
+│              │                             │            │
+│              │   [B] REVIEW PREVIEW        │            │
+│              │   User | Product | Rating   │            │
+│              │   Review Body (truncated)   │            │
+│              │                             │            │
+│              │   [C] REPORT REASON         │            │
+│              │   Radio: Spam | Inappropriate│           │
+│              │   Radio: Fake | Other        │           │
+│              │                             │            │
+│              │   [D] REPORT DETAIL         │            │
+│              │   Textarea (optional)       │            │
+│              │                             │            │
+│              │   [E] ACTION BUTTONS        │            │
+│              │   [Cancel] [Submit Report]  │            │
+│              └─────────────────────────────┘            │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 2.4 Merchants Management Layout (`/admin/merchants`)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -118,64 +147,69 @@ The Review & Content Moderation module consists of four admin pages, each with a
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [N] PAGE HEADER                     │   │
+│  │              [A] PAGE HEADER                     │   │
 │  │   Page Title: "Merchant Management"              │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [O] FILTER TABS                     │   │
+│  │              [B] STATS BAR (cond.)               │   │
+│  │   Total | Pending | Approved | Rejected          │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              [C] FILTER TABS                     │   │
 │  │   All | Pending Approval | Approved | Rejected   │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [P] SEARCH BAR                                │   │
+│  │   [D] SEARCH BAR                                │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [Q] MERCHANTS TABLE                 │   │
+│  │              [E] MERCHANTS TABLE                 │   │
 │  │   Checkbox | Logo | Shop Name | User Name        │   │
 │  │   Registration Date | Status Badge | Actions     │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [R] PAGINATION                      │   │
+│  │              [F] PAGINATION                      │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.4 Merchant Detail Modal Layout
+### 2.5 Merchant Detail Modal Layout
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [S] MODAL HEADER          │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "Merchant Detail" [X Close]│            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [T] SHOP INFO CARD        │            │
+│              │   [B] SHOP INFO CARD        │            │
 │              │   Logo | Banner | Name      │            │
 │              │   Description               │            │
 │              │                             │            │
-│              │   [U] LICENSE VIEWER        │            │
+│              │   [C] LICENSE VIEWER        │            │
 │              │   PDF Display / Download    │            │
 │              │                             │            │
-│              │   [V] USER INFO CARD        │            │
+│              │   [D] USER INFO CARD        │            │
 │              │   Name | Email | Phone      │            │
 │              │   Registration Date         │            │
 │              │                             │            │
-│              │   [W] REJECTION REASON      │            │
+│              │   [E] REJECTION REASON      │            │
 │              │   Textarea (conditional)    │            │
 │              │                             │            │
-│              │   [X] ACTION BUTTONS        │            │
+│              │   [F] ACTION BUTTONS        │            │
 │              │   [Approve] [Reject]        │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.5 Product Content Moderation Layout (`/admin/content`)
+### 2.6 Product Content Moderation Layout (`/admin/content`)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -183,77 +217,77 @@ The Review & Content Moderation module consists of four admin pages, each with a
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [Y] PAGE HEADER                     │   │
+│  │              [A] PAGE HEADER                     │   │
 │  │   Page Title: "Product Content Moderation"       │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [AA] STATS BAR (cond.)              │   │
+│  │              [B] STATS BAR (cond.)               │   │
 │  │   Total | Active | Inactive                      │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [BB] FILTER TABS                    │   │
+│  │              [C] FILTER TABS                     │   │
 │  │   All | Active | Inactive                        │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [CC] SEARCH + SORT BAR                        │   │
+│  │   [D] SEARCH + SORT BAR                         │   │
 │  │   [Search Input] [Sort Dropdown] [Bulk Actions]  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [DD] PRODUCTS TABLE                 │   │
+│  │              [E] PRODUCTS TABLE                  │   │
 │  │   Checkbox | Image | Name | Shop | Price         │   │
 │  │   Status Badge | Owner | Date | Actions Dropdown │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [EE] PAGINATION                     │   │
+│  │              [F] PAGINATION                      │   │
 │  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.6 Product Moderation Modal Layout
+### 2.7 Product Moderation Modal Layout
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [FF] MODAL HEADER         │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "Product Moderation"       │            │
 │              │              [X Close]       │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [GG] PRODUCT INFO CARD    │            │
+│              │   [B] PRODUCT INFO CARD     │            │
 │              │   Image | Name | Price      │            │
 │              │   Description               │            │
 │              │   Category | Shop Name      │            │
 │              │                             │            │
-│              │   [HH] PRODUCT IMAGES       │            │
+│              │   [C] PRODUCT IMAGES        │            │
 │              │   Gallery (grid layout)     │            │
 │              │                             │            │
-│              │   [II] SHOP OWNER CARD      │            │
+│              │   [D] SHOP OWNER CARD       │            │
 │              │   Shop Logo | Name          │            │
 │              │   Owner Name | Email        │            │
 │              │                             │            │
-│              │   [JJ] STATUS INFO          │            │
+│              │   [E] STATUS INFO           │            │
 │              │   Current Status Badge      │            │
 │              │   Created Date              │            │
 │              │   Last Updated              │            │
 │              │                             │            │
-│              │   [KK] MODERATION REASON    │            │
+│              │   [F] MODERATION REASON     │            │
 │              │   Textarea (conditional)    │            │
 │              │                             │            │
-│              │   [LL] ACTION BUTTONS       │            │
+│              │   [G] ACTION BUTTONS        │            │
 │              │   [Deactivate] [Reactivate] │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.7 Users Management Layout (`/admin/users`)
+### 2.8 Users Management Layout (`/admin/users`)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -261,65 +295,65 @@ The Review & Content Moderation module consists of four admin pages, each with a
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [MM] PAGE HEADER                    │   │
+│  │              [A] PAGE HEADER                     │   │
 │  │   Page Title: "User Management"                  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [NN] STATS BAR (cond.)              │   │
+│  │              [B] STATS BAR (cond.)               │   │
 │  │   Total | Active | Inactive | Admin              │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [OO] FILTER TABS                    │   │
+│  │              [C] FILTER TABS                     │   │
 │  │   All | Active | Inactive | Admin                │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [PP] SEARCH BAR                                │   │
+│  │   [D] SEARCH BAR                                │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [QQ] USERS TABLE                    │   │
+│  │              [E] USERS TABLE                     │   │
 │  │   Avatar | Name | Email | Role                   │   │
 │  │   Status Badge | Joined Date | Actions Dropdown  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [RR] PAGINATION                     │   │
+│  │              [F] PAGINATION                      │   │
 │  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.8 User Detail Modal Layout
+### 2.9 User Detail Modal Layout
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [SS] MODAL HEADER         │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "User Detail" [X Close]    │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [TT] USER INFO CARD       │            │
+│              │   [B] USER INFO CARD        │            │
 │              │   Avatar | Name | Email     │            │
 │              │   Phone | Role | Joined     │            │
 │              │                             │            │
-│              │   [UU] ACCOUNT STATUS       │            │
+│              │   [C] ACCOUNT STATUS        │            │
 │              │   Current Status Badge      │            │
 │              │   Last Login                │            │
 │              │   Review Count              │            │
 │              │                             │            │
-              │              │   [VV] ACTION BUTTONS       │            │
-              │              │   [Deactivate] [Reactivate] │            │
-              └─────────────────────────────┘            │
+│              │   [D] ACTION BUTTONS        │            │
+│              │   [Deactivate] [Reactivate] │            │
+│              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.9 Review Reports List Layout (`/admin/reports`)
+### 2.10 Reports Tab Layout (within `/admin/reviews`)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -327,69 +361,69 @@ The Review & Content Moderation module consists of four admin pages, each with a
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [WW] PAGE HEADER                    │   │
-│  │   Page Title: "Review Reports"                   │   │
+│  │              [A] SCREEN TABS                     │   │
+│  │   [Reviews] [Reports]  ← Reports tab is active   │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [XX] STATS BAR (cond.)              │   │
-│  │   Total | Pending | Rejected | Completed         │   │
+│  │              [B] STATS BAR (cond.)               │   │
+│  │   Total | Pending | Reviewed | Resolved | Rejected│  │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [YY] FILTER TABS                    │   │
-│  │   All | Pending | Rejected | Completed           │   │
+│  │              [C] FILTER TABS                     │   │
+│  │   All | Pending | Reviewed | Resolved | Rejected │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [ZZ] SEARCH BAR                                │   │
+│  │   [D] SEARCH BAR                                │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [AAA] REPORTS TABLE                 │   │
+│  │              [E] REPORTS TABLE                   │   │
 │  │   Checkbox | Reporter | Review Excerpt           │   │
 │  │   Reason Badge | Status Badge | Date | Actions   │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [BBB] PAGINATION                    │   │
+│  │              [F] PAGINATION                      │   │
 │  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.10 Report Detail Modal Layout
+### 2.11 Report Detail Modal Layout
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [CCC] MODAL HEADER        │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "Report Detail" [X Close]  │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [DDD] REPORTER CARD       │            │
+│              │   [B] REPORTER CARD         │            │
 │              │   Avatar | Name | Email     │            │
 │              │                             │            │
-│              │   [EEE] REVIEW CARD         │            │
+│              │   [C] REVIEW CARD           │            │
 │              │   Rating Stars | Body       │            │
 │              │   Product Link              │            │
 │              │                             │            │
-│              │   [FFF] REPORT INFO         │            │
+│              │   [D] REPORT INFO           │            │
 │              │   Reason Badge | Detail     │            │
 │              │   Status Badge              │            │
 │              │   Resolved By | Resolved At │            │
 │              │                             │            │
-│              │   [GGG] TARGET REVIEW       │            │
+│              │   [E] TARGET REVIEW         │            │
 │              │   ACTIONS                   │            │
 │              │   [Approve] [Reject] [Delete]│           │
 │              │                             │            │
-│              │   [HHH] REPORT ACTIONS      │            │
+│              │   [F] REPORT ACTIONS        │            │
 │              │   [Reject] [Complete] [Delete]│          │
 │              │                             │            │
-│              │   [III] CLOSE BUTTON        │            │
+│              │   [G] CLOSE BUTTON          │            │
 │              │   [Close]                   │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
@@ -531,7 +565,7 @@ export function useModerateProduct() {
 - **File Path:** `frontend/src/features/admin/components/ReviewsTable.tsx`
 - Renders DataTable with columns: checkbox, avatar, user name, product name, rating stars, title, status badge, created date, actions dropdown
 - Select-all checkbox toggles all row checkboxes
-- Actions dropdown: View Detail, Approve, Reject, Delete
+- Actions dropdown: View Detail, Approve, Reject, Report, Delete
 - Bulk action buttons enable when selections are made
 
 ### 4.2 ReviewDetailModal Component
@@ -542,16 +576,28 @@ export function useModerateProduct() {
 - Displays Product Info Card (image, name, price, link to `/products/:slug`)
 - Displays Review Content (rating, title, body, images gallery, verified purchase badge)
 - Shows Moderation Reason textarea (conditional on reject action)
-- Action buttons: Approve, Reject, Delete
+- Action buttons: Approve, Reject, Report, Delete
 - Delete requires confirmation dialog
 
-### 4.3 MerchantsTable Component
+### 4.3 ReportReviewModal Component
+
+- **File Path:** `frontend/src/features/admin/components/ReportReviewModal.tsx`
+- Modal for reporting a review
+- Displays Review Preview (user, product, rating, truncated review body)
+- Radio group for Report Reason: Spam, Inappropriate, Fake, Other
+- Textarea for optional Report Detail (required when "Other" is selected)
+- Action buttons: Cancel, Submit Report
+- Submit calls `adminService.reportReview(reviewId, { reason, detail })`
+- Success toast: "Review reported successfully"
+- Close button and Escape key close modal
+
+### 4.4 MerchantsTable Component
 
 - **File Path:** `frontend/src/features/admin/components/MerchantsTable.tsx`
 - Renders DataTable with columns: checkbox, shop logo, shop name, user name, registration date, status badge, actions dropdown
 - Actions dropdown: View Detail, Approve, Reject
 
-### 4.4 MerchantDetailModal Component
+### 4.5 MerchantDetailModal Component
 
 - **File Path:** `frontend/src/features/admin/components/MerchantDetailModal.tsx`
 - Fetches full merchant data on open
@@ -561,14 +607,14 @@ export function useModerateProduct() {
 - Shows Rejection Reason textarea (conditional on reject action)
 - Action buttons: Approve, Reject
 
-### 4.5 ProductsTable Component
+### 4.6 ProductsTable Component
 
 - **File Path:** `frontend/src/features/admin/components/ProductsTable.tsx`
 - Renders DataTable with columns: checkbox, thumbnail, product name (link), shop name, price, status badge, owner, created date, actions dropdown
 - Actions dropdown: View Detail, Deactivate, Reactivate
 - Bulk action buttons: Deactivate Selected, Reactivate Selected
 
-### 4.6 ProductModerationModal Component
+### 4.7 ProductModerationModal Component
 
 - **File Path:** `frontend/src/features/admin/components/ProductModerationModal.tsx`
 - Fetches full product data on open
@@ -580,14 +626,14 @@ export function useModerateProduct() {
 - Action buttons: Deactivate, Reactivate
 - Deactivate requires confirmation dialog
 
-### 4.7 UsersTable Component
+### 4.8 UsersTable Component
 
 - **File Path:** `frontend/src/features/admin/components/UsersTable.tsx`
 - Renders DataTable with columns: avatar, user name, email, role, status badge, joined date, actions dropdown
 - Actions dropdown: View Detail, Deactivate, Reactivate
 - Deactivate hidden for current admin (self-deactivation prevention)
 
-### 4.8 UserDetailModal Component
+### 4.9 UserDetailModal Component
 
 - **File Path:** `frontend/src/features/admin/components/UserDetailModal.tsx`
 - Fetches full user data on open
@@ -596,26 +642,26 @@ export function useModerateProduct() {
 - Action buttons: Deactivate, Reactivate
 - Deactivate button hidden for current admin
 
-### 4.9 ModerationReasonForm Component
+### 4.10 ModerationReasonForm Component
 
 - **File Path:** `frontend/src/features/admin/components/ModerationReasonForm.tsx`
 - Shared textarea component for rejection/deactivation reasons
-- Character count display (max 500)
+- Character count display (no max length)
 - Required validation when rejecting/deactivating
 
-### 4.10 StatsBar Component
+### 4.11 StatsBar Component
 
 - **File Path:** `frontend/src/features/admin/components/StatsBar.tsx`
 - Shared stats display with colored badges
 - Props: `stats: Array<{ label: string; value: number; color?: string }>`
 
-### 4.11 ConfirmationDialog Component
+### 4.12 ConfirmationDialog Component
 
 - **File Path:** `frontend/src/features/admin/components/ConfirmationDialog.tsx`
 - AlertDialog for destructive actions (delete, reject, deactivate)
 - Props: `title`, `description`, `onConfirm`, ` onCancel`
 
-### 4.12 ReportsTable Component
+### 4.13 ReportsTable Component
 
 - **File Path:** `frontend/src/features/admin/components/ReportsTable.tsx`
 - Renders DataTable with columns: checkbox, reporter name + email, review body excerpt (100 chars), reason badge, status badge, created date, actions dropdown
@@ -624,7 +670,7 @@ export function useModerateProduct() {
 - Reason badge colors: Spam (orange), Harassment (red), False Info (yellow), Policy Violation (purple)
 - Status badge colors: Pending (amber), Rejected (red), Completed (green)
 
-### 4.13 ReportDetailModal Component
+### 4.14 ReportDetailModal Component
 
 - **File Path:** `frontend/src/features/admin/components/ReportDetailModal.tsx`
 - Fetches full report data on open
@@ -667,7 +713,21 @@ export function useModerateProduct() {
   6. Refresh reviews list
 - **Error Handling:** 400 → "Rejection reason is required"; 409 → "Review is already rejected"
 
-### 5.3 Delete Review
+### 5.3 Report Review
+
+- **Button Type:** `button`
+- **Action:**
+  1. Open Report Review Modal (section 2.3)
+  2. Admin selects report reason (Spam, Inappropriate, Fake, Other)
+  3. Optionally enter report detail text
+  4. Validate: report reason is required; detail required when "Other" selected
+  5. Call `adminService.reportReview(reviewId, { reason, detail })`
+  6. Close modal
+  7. Show success toast "Review reported successfully"
+  8. Refresh reviews list
+- **Error Handling:** 409 → "Review has already been reported"; 404 → "Review not found"
+
+### 5.4 Delete Review
 
 - **Button Type:** `button`
 - **Action:**
@@ -678,7 +738,7 @@ export function useModerateProduct() {
   5. Refresh reviews list
 - **Error Handling:** 404 → "Review not found"
 
-### 5.4 Bulk Approve Reviews
+### 5.5 Bulk Approve Reviews
 
 - **Button Type:** `button`
 - **Action:**
@@ -687,7 +747,7 @@ export function useModerateProduct() {
   3. Show success toast "{count} reviews approved"
   4. Refresh list, clear selection
 
-### 5.5 Bulk Reject Reviews
+### 5.6 Bulk Reject Reviews
 
 - **Button Type:** `button`
 - **Action:**
@@ -696,7 +756,7 @@ export function useModerateProduct() {
   3. Show success toast "{count} reviews rejected"
   4. Refresh list, clear selection
 
-### 5.6 Bulk Delete Reviews
+### 5.7 Bulk Delete Reviews
 
 - **Button Type:** `button`
 - **Action:**
@@ -705,7 +765,7 @@ export function useModerateProduct() {
   3. Show success toast "{count} reviews deleted"
   4. Refresh list, clear selection
 
-### 5.7 Approve Merchant
+### 5.8 Approve Merchant
 
 - **Button Type:** `submit`
 - **Validation:** Uses Zod `moderateMerchantSchema`
@@ -716,7 +776,7 @@ export function useModerateProduct() {
   4. Refresh merchants list
 - **Error Handling:** 409 → "Merchant is already approved"; 403 → "You do not have permission"
 
-### 5.8 Reject Merchant
+### 5.9 Reject Merchant
 
 - **Button Type:** `submit`
 - **Validation:** Uses Zod `moderateMerchantSchema` (reason required)
@@ -729,7 +789,7 @@ export function useModerateProduct() {
   6. Refresh merchants list
 - **Error Handling:** 400 → "Rejection reason is required"; 409 → "Merchant is already rejected"
 
-### 5.9 Deactivate Product
+### 5.10 Deactivate Product
 
 - **Button Type:** `submit`
 - **Validation:** Uses Zod `moderateProductSchema` (reason required)
@@ -743,7 +803,7 @@ export function useModerateProduct() {
   7. Refresh products list
 - **Error Handling:** 400 → "Deactivation reason is required"; 409 → "Product is already inactive"
 
-### 5.10 Reactivate Product
+### 5.11 Reactivate Product
 
 - **Button Type:** `submit`
 - **Validation:** Uses Zod `moderateProductSchema`
@@ -755,7 +815,7 @@ export function useModerateProduct() {
   5. Refresh products list
 - **Error Handling:** 409 → "Product is already active"
 
-### 5.11 Bulk Deactivate Products
+### 5.12 Bulk Deactivate Products
 
 - **Button Type:** `button`
 - **Action:**
@@ -765,7 +825,7 @@ export function useModerateProduct() {
   4. Show success toast "{count} products deactivated"
   5. Refresh list, clear selection
 
-### 5.12 Bulk Reactivate Products
+### 5.13 Bulk Reactivate Products
 
 - **Button Type:** `button`
 - **Action:**
@@ -774,7 +834,7 @@ export function useModerateProduct() {
   3. Show success toast "{count} products reactivated"
   4. Refresh list, clear selection
 
-### 5.13 Deactivate User
+### 5.14 Deactivate User
 
 - **Button Type:** `submit`
 - **Validation:** Uses Zod `moderateUserSchema`
@@ -786,7 +846,7 @@ export function useModerateProduct() {
   5. Refresh users list
 - **Error Handling:** 400 → "You cannot deactivate your own account"; 409 → "User is already inactive"
 
-### 5.14 Reactivate User
+### 5.15 Reactivate User
 
 - **Button Type:** `submit`
 - **Validation:** Uses Zod `moderateUserSchema`
@@ -798,7 +858,7 @@ export function useModerateProduct() {
   5. Refresh users list
 - **Error Handling:** 409 → "User is already active"
 
-### 5.15 Reject Report
+### 5.16 Reject Report
 
 - **Button Type:** `button`
 - **Action:**
@@ -808,7 +868,7 @@ export function useModerateProduct() {
   4. Refresh reports list
 - **Error Handling:** 409 → "This report has already been completed"; 404 → "Report not found"
 
-### 5.16 Complete Report
+### 5.17 Complete Report
 
 - **Button Type:** `button`
 - **Action:**
@@ -818,7 +878,7 @@ export function useModerateProduct() {
   4. Refresh reports list
 - **Error Handling:** 409 → "This report has already been completed"; 404 → "Report not found"
 
-### 5.17 Delete Report
+### 5.18 Delete Report
 
 - **Button Type:** `button`
 - **Action:**
@@ -828,7 +888,7 @@ export function useModerateProduct() {
   4. Refresh reports list
 - **Error Handling:** 404 → "Report not found"
 
-### 5.18 Approve Target Review (from Report Detail)
+### 5.19 Approve Target Review (from Report Detail)
 
 - **Button Type:** `button`
 - **Action:**
@@ -836,7 +896,7 @@ export function useModerateProduct() {
   2. Show success toast "Review approved"
   3. Refresh report detail data
 
-### 5.19 Reject Target Review (from Report Detail)
+### 5.20 Reject Target Review (from Report Detail)
 
 - **Button Type:** `button`
 - **Action:**
@@ -846,7 +906,7 @@ export function useModerateProduct() {
   4. Show success toast "Review rejected"
   5. Refresh report detail data
 
-### 5.20 Delete Target Review (from Report Detail)
+### 5.21 Delete Target Review (from Report Detail)
 
 - **Button Type:** `button`
 - **Action:**
@@ -863,8 +923,10 @@ export function useModerateProduct() {
 
 | Value | Label (EN) | Label (JA) | Badge Color |
 |-------|------------|------------|-------------|
+| `pending` | Pending | 保留中 | `bg-amber-100 text-amber-800` |
 | `approved` | Approved | 承認済み | `bg-green-100 text-green-800` |
 | `rejected` | Rejected | 却下済み | `bg-red-100 text-red-800` |
+| `reported` | Reported | 通報済み | `bg-orange-100 text-orange-800` |
 
 ### 6.2 Merchant Status Options
 

@@ -1,7 +1,7 @@
 # DD_WISH_CART_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-WISH-CART-04 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-WISH-CART-4 | **Version:** 2.0 | **Status:** Released
+> **Last Updated:** 2026-08-24
 
 ---
 
@@ -9,8 +9,13 @@
 
 This document specifies the Data Transfer Objects (DTOs) used by the Wishlist & Cart module's API endpoints. These DTOs utilize `class-validator` for request validation and `class-transformer` for data transformation.
 
-- **Wishlist DTOs Location:** `src/modules/wishlist/dto/`
-- **Cart DTOs Location:** `src/modules/cart/dto/`
+- **Wishlist DTOs Location:** `src/modules/buyer/wishlist/dto/`
+- **Cart DTOs Location:** `src/modules/buyer/cart/dto/`
+
+**Key Design Decisions:**
+- All monetary fields (`productPrice`, `compareAtPrice`, `unitPrice`, `subtotal`) are typed as `string` to align with Prisma's `Decimal` serialization behavior and the functional specification requirement (§7.4–7.6).
+- All ID fields use `@IsUUID()` decorator per DEVELOPMENT_RULES §1.2 (UUID primary keys).
+- Response DTOs match the functional specification output definitions (§7.4–7.6 of 機能設計書).
 
 ---
 
@@ -55,12 +60,30 @@ export enum WishCartErrorCode {
 Used for `POST /wishlist/:productId` to add a product to the wishlist.
 
 ```typescript
-import { IsString, IsNotEmpty, Matches } from 'class-validator';
+import { IsUUID, IsNotEmpty } from 'class-validator';
 
 export class AddToWishlistDto {
-  @IsString()
+  @IsUUID('4', { message: 'Invalid product ID format' })
   @IsNotEmpty({ message: 'Product ID is required' })
-  @Matches(/^c[a-z0-9]{24,}$/, { message: 'Invalid product ID format' })
+  productId: string;
+}
+```
+
+**Validation Rules (from 機能設計書 §8.1):**
+- `productId`: Required, valid UUID v4 format
+- Product must exist and be active (service-level validation)
+- Product must not already be in wishlist (service-level validation)
+
+### 3.2 WishlistPathDto
+
+Used for `DELETE /wishlist/:productId` and `POST /wishlist/:productId/move-to-cart` path parameters.
+
+```typescript
+import { IsUUID, IsNotEmpty } from 'class-validator';
+
+export class WishlistPathDto {
+  @IsUUID('4', { message: 'Invalid product ID format' })
+  @IsNotEmpty({ message: 'Product ID is required' })
   productId: string;
 }
 ```
@@ -74,12 +97,11 @@ export class AddToWishlistDto {
 Used for `POST /cart/items` to add a product to the cart.
 
 ```typescript
-import { IsString, IsNotEmpty, IsOptional, IsInt, Min, Max, Matches } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsOptional, IsInt, Min, Max } from 'class-validator';
 
 export class AddToCartDto {
-  @IsString()
+  @IsUUID('4', { message: 'Invalid product ID format' })
   @IsNotEmpty({ message: 'Product ID is required' })
-  @Matches(/^c[a-z0-9]{24,}$/, { message: 'Invalid product ID format' })
   productId: string;
 
   @IsOptional()
@@ -89,6 +111,11 @@ export class AddToCartDto {
   quantity?: number = 1;
 }
 ```
+
+**Validation Rules (from 機能設計書 §8.2):**
+- `productId`: Required, valid UUID v4 format
+- `quantity`: Optional (default: 1), integer ≥ 1, ≤ 99
+- Product must exist, be active, and have stock > 0 (service-level validation)
 
 ### 4.2 UpdateCartQuantityDto
 
@@ -105,6 +132,24 @@ export class UpdateCartQuantityDto {
 }
 ```
 
+**Validation Rules (from 機能設計書 §8.3):**
+- `quantity`: Required, integer ≥ 1, ≤ 99
+- Requested quantity ≤ product stock_quantity (service-level validation)
+
+### 4.3 CartItemPathDto
+
+Used for `PATCH /cart/items/:id` and `DELETE /cart/items/:id` path parameters.
+
+```typescript
+import { IsUUID, IsNotEmpty } from 'class-validator';
+
+export class CartItemPathDto {
+  @IsUUID('4', { message: 'Invalid cart item ID format' })
+  @IsNotEmpty({ message: 'Cart item ID is required' })
+  id: string;
+}
+```
+
 ---
 
 ## 5. Response DTOs — Wishlist
@@ -113,18 +158,41 @@ export class UpdateCartQuantityDto {
 
 Returned in wishlist list and single-item responses.
 
+**Source:** 機能設計書 §7.4 (Output Specification — Wishlist Item)
+
 ```typescript
+import { StockStatus } from '../enums/stock-status.enum';
+
 export class WishlistItemResponseDto {
+  /** Unique wishlist record identifier */
   id: string;
+
+  /** UUID of the saved product */
   productId: string;
+
+  /** Product display name */
   productName: string;
+
+  /** URL-friendly product slug */
   productSlug: string;
+
+  /** First product image URL (from images array) */
   productImage: string;
-  productPrice: number;
-  compareAtPrice: number | null;
+
+  /** Current product price (Decimal serialized as string) */
+  productPrice: string;
+
+  /** Original price if discounted (Decimal serialized as string), or null */
+  compareAtPrice: string | null;
+
+  /** Derived stock status */
   stockStatus: StockStatus;
+
+  /** Whether product is in stock (stock_quantity > 0) */
   isInStock: boolean;
-  createdAt: Date;
+
+  /** Wishlist item creation timestamp (ISO 8601) */
+  createdAt: string;
 }
 ```
 
@@ -134,7 +202,10 @@ Returned by `GET /wishlist` with all wishlist items.
 
 ```typescript
 export class WishlistResponseDto {
+  /** Array of wishlist items */
   items: WishlistItemResponseDto[];
+
+  /** Total number of saved items */
   totalCount: number;
 }
 ```
@@ -145,7 +216,10 @@ Returned by `POST /wishlist/:productId/move-to-cart`.
 
 ```typescript
 export class MoveToCartResponseDto {
+  /** The created or updated cart item */
   cartItem: CartItemResponseDto;
+
+  /** Whether the wishlist item was successfully removed */
   wishlistRemoved: boolean;
 }
 ```
@@ -158,18 +232,43 @@ export class MoveToCartResponseDto {
 
 Returned in cart list and single-item responses.
 
+**Source:** 機能設計書 §7.5 (Output Specification — Cart Item)
+
 ```typescript
+import { StockStatus } from '../enums/stock-status.enum';
+
 export class CartItemResponseDto {
+  /** Unique cart item record identifier */
   id: string;
+
+  /** UUID of the product */
   productId: string;
+
+  /** Product display name */
   productName: string;
+
+  /** URL-friendly product slug */
   productSlug: string;
+
+  /** First product image URL (from images array) */
   productImage: string;
-  unitPrice: number;
+
+  /** Price per unit (Decimal serialized as string) */
+  unitPrice: string;
+
+  /** Quantity of this product in cart */
   quantity: number;
-  subtotal: number;
+
+  /** Subtotal: unitPrice × quantity (Decimal serialized as string, discounts excluded) */
+  subtotal: string;
+
+  /** Current available stock quantity */
   stockQuantity: number;
+
+  /** Derived stock status */
   stockStatus: StockStatus;
+
+  /** Whether stock_quantity >= quantity */
   isAvailable: boolean;
 }
 ```
@@ -178,11 +277,20 @@ export class CartItemResponseDto {
 
 Nested within cart response, provides aggregate information.
 
+**Source:** 機能設計書 §7.6 (Output Specification — Cart Summary)
+
 ```typescript
 export class CartSummaryResponseDto {
+  /** Total number of items (sum of quantities) */
   totalItems: number;
-  subtotal: number;
+
+  /** Sum of all subtotals before discounts (Decimal serialized as string) */
+  subtotal: string;
+
+  /** Whether any item has stock = 0 */
   hasOutOfStock: boolean;
+
+  /** true only when every item is active and stock_quantity >= quantity; otherwise false */
   canCheckout: boolean;
 }
 ```
@@ -193,7 +301,10 @@ Returned by `GET /cart` with all cart items and summary.
 
 ```typescript
 export class CartResponseDto {
+  /** Array of cart items with product details */
   items: CartItemResponseDto[];
+
+  /** Cart aggregate summary */
   summary: CartSummaryResponseDto;
 }
 ```
@@ -204,7 +315,10 @@ Returned by `DELETE /cart` after clearing all items.
 
 ```typescript
 export class ClearCartResponseDto {
+  /** Number of items deleted */
   deletedCount: number;
+
+  /** Human-readable success message */
   message: string;
 }
 ```
@@ -219,7 +333,10 @@ Returned by delete and move-to-cart operations.
 
 ```typescript
 export class OperationResultResponseDto {
+  /** Whether the operation was successful */
   success: boolean;
+
+  /** Human-readable message */
   message: string;
 }
 ```
@@ -264,8 +381,10 @@ export function calculateStockStatus(
 ### 8.3 Subtotal Calculation
 
 ```typescript
-export function calculateSubtotal(unitPrice: number, quantity: number): number {
-  return unitPrice * quantity;
+export function calculateSubtotal(unitPrice: string, quantity: number): string {
+  const price = parseFloat(unitPrice);
+  const subtotal = price * quantity;
+  return subtotal.toFixed(2);
 }
 ```
 
@@ -349,3 +468,6 @@ export interface ErrorResponse {
 | [DD_WISH_CART_03](./DD_Wishlist_CartPage_03_API_ENDPOINTS.md) | Endpoints that consume these DTOs |
 | [DD_WISH_CART_05](./DD_Wishlist_CartPage_05_BUSINESS_LOGIC.md) | Business rules for validation |
 | [機能設計書_Wishlist_CartPage](../機能設計書_Wishlist_CartPage.md) | Full functional specification |
+| [要件定義書_REQUIREMENT_SPEC](../../core-work/要件定義書_REQUIREMENT_SPEC.md) | Business requirements |
+| [データベース設計書_DATABASE_SPEC](../../core-work/データベース設計書_DATABASE_SPEC.md) | Schema and data types |
+| [開発ルール_DEVELOPMENT_RULES](../../core-work/開発ルール_DEVELOPMENT_RULES.md) | Naming conventions and standards |

@@ -10,9 +10,9 @@
 | **対象画面** | レビュー・コンテンツ管理 |
 | **サブシステム** | 管理 — レビューモデレーション・コンテンツ管理 |
 | **機能ID** | FN-MOD-001 |
-| **バージョン** | 1.5 |
+| **バージョン** | 2.2 |
 | **作成日** | 2026-08-07 |
-| **最終更新日** | 2026-08-17 |
+| **最終更新日** | 2026-08-24 |
 | **作成者** | ソフトウェアアーキテクト |
 | **ステータス** | 承認済み |
 | **分類** | 社内 — エンジニアリング部門 |
@@ -29,6 +29,9 @@
 | 1.3 | 2026-08-16 | ソフトウェアアーキテクト | 製品モデレーション機能の拡張（UC-MOD-008、BR-MOD-010〜013）、出品者承認ワークフロー（UC-MOD-005）、ユーザー管理操作を追加。 |
 | 1.4 | 2026-08-17 | ソフトウェアアーキテクト | コアDB仕様v2.2に合わせ、`review_reports`、`audit_logs`、`notifications`テーブルへの参照を追加。 |
 | 1.5 | 2026-08-17 | ソフトウェアアーキテクト | トレーサビリティマトリクスを更新。監査ログ、通知テーブル、報告関連操作の全カバレッジを追加。 |
+| 2.0 | 2026-08-21 | ソフトウェアアーキテクト | メジャーアップデート: REQ v2.10、DB v2.4、DEV v2.1に合わせて更新。`review_reports`のreason/status enumをDB仕様に修正。APIレスポンス形式を`{data, meta}`エンベロープに更新。出品者`license_status` vs `shops.is_approved`のデュアルステータスを明確化。通知作成詳細を操作に追加。監査ログのデータ形式をDBスキーマに更新。製品モデレーション状態遷移を追加。 |
+| 2.1 | 2026-08-24 | ソフトウェアアーキテクト | セクション3.1のPENDINGレビュー状態を明確化: 非購入確認レビューは`is_approved = false`でデータベースに保存され、管理者モデレーションキューに表示されるハイブリッドアプローチを正確に記述。却下理由フィールドをVARCHAR(500)からTEXTに更新し、DB仕様に合わせた（`merchants.rejection_reason`に最大長制限なし）。 |
+| 2.2 | 2026-08-24 | ソフトウェアアーキテクト | レビュー表示アプローチをハイブリッドから管理者承認に変更: すべてのレビューは管理者承認前に購入者に非表示（デフォルトで`is_approved = false`）。購入確認自動承認を削除。BR-MOD-002、セクション3.1 PENDING状態、セクション3.6状態遷移、セクション5.1フィルタタブ、セクション6.1/6.2操作を更新。 |
 
 ---
 
@@ -64,7 +67,7 @@
 
 本画面は以下のコア機能領域を担当します：
 
-1. **レビューモデレーション** — 全レビューの閲覧、表示中または非表示レビューの承認/却下、不適切レビューの削除と監査ログ記録。レビューはデフォルトで承認済みであり、将来のプレモデレーションモードを明示的に追加しない限り、本画面は公開後モデレーションを対象とします。
+1. **レビューモデレーション** — すべてのレビューは管理者承認まで非表示。管理者はレビューを承認/却下/削除し、監査ログを記録。購入者はレビューを報告可能。
 2. **コンテンツモデレーション** — プラットフォームポリシーに違反するコンテンツの削除。
 3. **出品者登録管理** — ライセンス確認とコンプライアンスチェックに基づく出品者ショップの承認/却下。
 4. **ユーザーアカウントモデレーション** — ポリシー違反によるユーザーアカウントの有効化/無効化。
@@ -121,8 +124,8 @@
 
 | No. | ドキュメントID | ドキュメント名 | ファイルパス/参照 | 備考 |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | 要件定義（v1.7） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフローロジック、必須フィールド、ルール。 |
-| 2 | SKM-DBS-001 | データベース設計書（v2.2） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`reviews`、`products`、`shops`、`categories`）、制約。 |
+| 1 | SKM-REQ-001 | 要件定義（v2.11） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスワークフローロジック、必須フィールド、ルール。 |
+| 2 | SKM-DBS-001 | データベース設計書（v2.4） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | テーブル構造（`reviews`、`products`、`shops`、`categories`）、制約。 |
 | 3 | SKM-DEV-001 | 開発ルール（v2.1） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | セキュリティルール、デザイントークン、エラーレスポンス。 |
 
 ---
@@ -233,7 +236,7 @@
 |-------|-------------|:-----------------:|:-------------:|
 | `APPROVED` | レビューが承認され、製品ページに表示 | ✓ | ✗ |
 | `REJECTED` | レビューが却下され、製品ページから非表示 | ✗ | ✗ |
-| `PENDING` | 現行DBスキーマでは未対応。将来のプレモデレーションモード用にのみ予約。 | N/A | ✗ |
+| `PENDING` | 管理者承認待ちレビュー（購入者に非表示）。データベースでは`is_approved = false`にマッピング。管理者モデレーションキューでのみ表示。 | N/A | ✗ |
 
 ### 3.2 出品者承認ステータス
 
@@ -257,18 +260,31 @@
 | `ACTIVE` | アカウントがアクティブ | ✓ | ✓ |
 | `INACTIVE` | 管理者によりアカウント無効化 | ✗ | ✗ |
 
-### 3.5 状態遷移表
+### 3.5 レビュー報告ステータス
+
+| ステータス | 説明 | 管理者アクション | 編集可能 |
+|-------|-------------|:-----------------:|:-------------:|
+| `PENDING` | 報告が投稿され、管理者の確認待ち | — | ✗ |
+| `REVIEWED` | 管理者が報告を確認済み、まだ対応未完了 | 対象レビューを確認 | ✗ |
+| `RESOLVED` | 管理者が報告を対応完了（対象レビューを却下/削除） | 対象レビューを却下/削除 | ✗ |
+| `REJECTED` | 管理者が報告を却下（不適切な報告） | — | ✗ |
+
+### 3.6 状態遷移表
 
 | 遷移ID | 遷移元ステータス | 遷移先ステータス | トリガーアクション | ガード条件 |
 |---------------|--------------|--------------|----------------|------------------|
-| TR-MOD-01 | `APPROVED`（デフォルト） | `REJECTED` | 管理者がレビューを却下 | 管理者ロール、レビュー存在 |
-| TR-MOD-02 | `REJECTED` | `APPROVED` | 管理者がレビューを再承認 | 管理者ロール、レビュー存在 |
+| TR-MOD-01 | `PENDING`（デフォルト） | `APPROVED` | 管理者がレビューを承認 | 管理者ロール、レビュー存在 |
+| TR-MOD-02 | `PENDING`（デフォルト） | `REJECTED` | 管理者がレビューを却下 | 管理者ロール、レビュー存在 |
 | TR-MOD-03 | `PENDING`（出品者） | `APPROVED` | 管理者が出品者を承認 | 管理者ロール、出品者とショップが存在 |
 | TR-MOD-04 | `PENDING`（出品者） | `REJECTED` | 管理者が出品者を却下 | 管理者ロール、出品者とショップが存在 |
 | TR-MOD-05 | `ACTIVE`（製品） | `INACTIVE` | 管理者が製品を無効化 | 管理者ロール、製品存在 |
 | TR-MOD-06 | `INACTIVE`（製品） | `ACTIVE` | 管理者が製品を再有効化 | 管理者ロール、製品存在 |
 | TR-MOD-07 | `ACTIVE`（ユーザー） | `INACTIVE` | 管理者がユーザーを無効化 | 管理者ロール、ユーザー存在、保留注文なし |
 | TR-MOD-08 | `INACTIVE`（ユーザー） | `ACTIVE` | 管理者がユーザーを再有効化 | 管理者ロール、ユーザー存在 |
+| TR-MOD-09 | `PENDING`（報告） | `REVIEWED` | 管理者が報告を確認 | 管理者ロール、報告存在 |
+| TR-MOD-10 | `PENDING`（報告） | `RESOLVED` | 管理者が報告を対応完了 | 管理者ロール、報告存在 |
+| TR-MOD-11 | `PENDING`（報告） | `REJECTED` | 管理者が報告を却下 | 管理者ロール、報告存在 |
+| TR-MOD-12 | `REVIEWED`（報告） | `RESOLVED` | 管理者が報告を対応完了 | 管理者ロール、報告存在、レビュー存在 |
 
 ---
 
@@ -279,7 +295,7 @@
 | ルールID | ルール名 | 説明 | 適用層 |
 |---------|-----------|-------------|-------------------|
 | BR-MOD-001 | 管理者のみモデレート | `admin` ロールを持つユーザーのみがレビューをモデレート可能。 | バックエンド（JwtAuthGuard + RolesGuard） |
-| BR-MOD-002 | レビュー承認デフォルト | 新規レビューはデフォルトで承認される（`is_approved = true`）。 | バックエンド（レビュー作成サービス） |
+| BR-MOD-002 | レビュー承認デフォルト | すべてのレビューはデフォルトで非表示（`is_approved = false`）。管理者が各レビューを承認するまで購入者に表示されない。 | バックエンド（レビュー作成サービス） |
 | BR-MOD-003 | 評価再計算 | レビューの承認ステータスが変更された場合、承認済みレビューのみから製品の `avg_rating` と `review_count` を再計算する必要がある。 | バックエンド（モデレーションサービス） |
 | BR-MOD-004 | キャッシュ無効化 | レビューステータスが変更された場合、製品キャッシュ（`cache:product:{id}`）と製品リストキャッシュ（`cache:products:list:*`）を無効化する必要がある。 | バックエンド（モデレーションサービス） |
 | BR-MOD-005 | 削除カスケード | レビューの削除はそれを完全に削除し、製品統計を再計算する。 | バックエンド（Prisma onDelete: Cascade） |
@@ -317,51 +333,90 @@
 |---------|-----------|-------------|-------------------|
 | BR-MOD-050 | 報告は購入者のみ | 注文履歴に購入記録がある購入者のみがレビューを報告可能。 | バックエンド（オーナーシップチェック） |
 | BR-MOD-051 | 重複報告防止 | 購入者は同一レビューを2回報告できない。`review_reports`テーブルにユニーク制約（review_id + reported_by）で制御。 | バックエンド（Prismaユニーク制約） |
-| BR-MOD-052 | 報告理由必須 | 報告には理由を選択（スパム/ハラスメント/虚偽/ポリシー違反）し、オプションの詳細テキストを入力。 | バックエンド（DTOバリデーション） |
-| BR-MOD-053 | 報告ステータス管理 | 報告は初期ステータス `pending`。管理者が却下（`rejected`）または完了（`completed`）に変更。 | バックエンド（モデレーションサービス） |
-| BR-MOD-054 | 報告対象レビュー処理 | 報告が完了になった場合、管理者は対象レビューを却下/削除可能。報告は通知されない。 | バックエンド（モデレーションサービス） |
-| BR-MOD-055 | 報告削除 | 管理者は保留中/却下済みの報告を削除可能。完了報告は削除不可。 | バックエンド（モデレーションサービス） |
+| BR-MOD-052 | 報告理由必須 | 報告には理由を選択（スパム/不適切/虚偽/その他）し、オプションの詳細テキストを入力。 | バックエンド（DTOバリデーション） |
+| BR-MOD-053 | 報告ステータス管理 | 報告は初期ステータス `pending`。管理者が `reviewed`、`resolved` または `rejected` に変更。 | バックエンド（モデレーションサービス） |
+| BR-MOD-054 | 報告対象レビュー処理 | 報告が `resolved` になった場合、管理者は対象レビューを却下/削除可能。報告は通知されない。 | バックエンド（モデレーションサービス） |
+| BR-MOD-055 | 報告削除 | 管理者は保留中/却下済みの報告を削除可能。`resolved` の報告は削除不可。 | バックエンド（モデレーションサービス） |
 
 ---
 
 ## 5. 画面仕様
 
-### 5.1 画面：管理者レビューダッシュボード（`/admin/reviews`）
+### 5.1 画面：管理者レビュー・報告管理（`/admin/reviews`）
 
-**目的：** 管理者に全製品レビューの閲覧、モデレート、管理を可能にする。
+**目的：** 管理者に全製品レビューおよびレビュー報告の閲覧、モデレート、管理をタブナビゲーションで可能にする。
 
-#### 5.1.1 UI要素
+#### 5.1.1 画面タブ
+
+| タブID | タブ名 | 説明 |
+|--------|----------|-------------|
+| `tabReviews` | レビュー | 全製品レビューを閲覧・モデレート |
+| `tabReports` | 報告 | 全レビュー報告を閲覧・管理 |
+
+#### 5.1.2 レビュータブUI要素
 
 **レビュー一覧テーブルビュー：**
 
 | 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-01 | ページタイトル | テキスト | `admin.reviews.title` | はい | 「レビューモデレーション」 |
-| EL-02 | フィルタタブ | タブグループ | `admin.reviews.tabs` | はい | タブ：すべて、承認済み、却下済み |
-| EL-03 | 検索入力 | インプット（テキスト） | `admin.reviews.search` | いいえ | ユーザー名、製品名、コンテンツでレビューを検索 |
-| EL-04 | ソートドロップダウン | セレクト | `admin.reviews.sort` | いいえ | ソート：新規順、古い順、評価（高→低）、評価（低→高） |
-| EL-05 | レビューテーブル | テーブル | — | はい | 表示：チェックボックス、ユーザーアバター、ユーザー名、製品名、評価スター、レビューステータスバッジ、作成日、アクション |
-| EL-06 | レビューステータスバッジ | バッジ | — | はい | グリーン（承認済み）、レッド（却下済み） |
-| EL-07 | 評価表示 | スター評価 | — | はい | 1〜5スター表示（Beauty Pink #EC4899） |
-| EL-08 | アクションドロップダウン | ドロップダウンメニュー | — | はい | オプション：詳細表示、承認、却下、削除 |
-| EL-09 | 一括アクション | ボタングループ | — | いいえ | 選択を承認、選択を却下、選択を削除 |
-| EL-10 | ページネーション | ページネーション | — | はい | ページナビゲーション（ページサイズ選択：20/50/100） |
-| EL-11 | 統計バー | 統計表示 | — | いいえ | 表示：合計レビュー数、保留中件数、承認済み件数、却下済み件数 |
+| EL-01 | ページタイトル | テキスト | `admin.reviews.title` | はい | 「レビュー・報告管理」 |
+| EL-02 | 画面タブ | タブグループ | `admin.reviews.screenTabs` | はい | タブ：レビュー、報告 |
+| EL-03 | フィルタタブ | タブグループ | `admin.reviews.tabs` | はい | タブ：すべて、保留中、承認済み、却下済み |
+| EL-04 | 検索入力 | インプット（テキスト） | `admin.reviews.search` | いいえ | ユーザー名、製品名、コンテンツでレビューを検索 |
+| EL-05 | ソートドロップダウン | セレクト | `admin.reviews.sort` | いいえ | ソート：新規順、古い順、評価（高→低）、評価（低→高） |
+| EL-06 | レビューテーブル | テーブル | — | はい | 表示：チェックボックス、ユーザーアバター、ユーザー名、製品名、評価スター、レビュータイトル、ステータスバッジ、作成日、アクション |
+| EL-07 | レビューステータスバッジ | バッジ | — | はい | グリーン（承認済み）、レッド（却下済み）、アンバー（保留中） |
+| EL-08 | 評価表示 | スター評価 | — | はい | 1〜5スター表示（Beauty Pink #EC4899） |
+| EL-09 | アクションドロップダウン | ドロップダウンメニュー | — | はい | オプション：詳細表示、承認、却下、削除 |
+| EL-10 | 一括アクション | ボタングループ | — | いいえ | 選択を承認、選択を却下、選択を削除 |
+| EL-11 | ページネーション | ページネーション | — | はい | ページナビゲーション（ページサイズ選択：20/50/100） |
+| EL-12 | 統計バー | 統計表示 | — | いいえ | 表示：合計レビュー数、保留中件数、承認済み件数、却下済み件数 |
 
 **レビュー詳細モーダル：**
 
 | 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-12 | レビュー本文 | テキスト | — | はい | レビューの完全な本文テキスト |
-| EL-13 | レビュー画像 | 画像ギャラリー | — | いいえ | グリッドレイアウトのレビュー画像 |
-| EL-14 | 製品情報カード | カード | — | はい | 製品名、画像、価格、製品詳細へのリンク |
-| EL-15 | ユーザー情報カード | カード | — | はい | ユーザー名、メール、アバター、レビュー数 |
-| EL-16 | 認証済み購入バッジ | バッジ | — | いいえ | 「認証済み購入」インジケーター |
-| EL-17 | モデレーション理由入力 | テキストエリア | `admin.moderation.reason` | 条件付き | 却下時に必須。承認時は任意。 |
-| EL-18 | 承認ボタン | ボタン（プライマリ） | `admin.moderation.approve` | はい | レビューを承認 |
-| EL-19 | 却下ボタン | ボタン（デストラクティブ） | `admin.moderation.reject` | はい | レビューを却下 |
-| EL-20 | 削除ボタン | ボタン（デストラクティブ） | `admin.moderation.delete` | はい | レビューを完全に削除 |
-| EL-21 | 閉じるボタン | ボタン（アウトライン） | — | はい | モーダルを閉じる |
+| EL-13 | レビュー本文 | テキスト | — | はい | レビューの完全な本文テキスト |
+| EL-14 | レビュー画像 | 画像ギャラリー | — | いいえ | グリッドレイアウトのレビュー画像 |
+| EL-15 | 製品情報カード | カード | — | はい | 製品名、画像、価格、製品詳細へのリンク |
+| EL-16 | ユーザー情報カード | カード | — | はい | ユーザー名、メール、アバター、レビュー数 |
+| EL-17 | 認証済み購入バッジ | バッジ | — | いいえ | 「認証済み購入」インジケーター |
+| EL-18 | モデレーション理由入力 | テキストエリア | `admin.moderation.reason` | 条件付き | 却下時に必須。承認時は任意。 |
+| EL-19 | 承認ボタン | ボタン（プライマリ） | `admin.moderation.approve` | はい | レビューを承認 |
+| EL-20 | 却下ボタン | ボタン（デストラクティブ） | `admin.moderation.reject` | はい | レビューを却下 |
+| EL-21 | 削除ボタン | ボタン（デストラクティブ） | `admin.moderation.delete` | はい | レビューを完全に削除 |
+| EL-22 | 閉じるボタン | ボタン（アウトライン） | — | はい | モーダルを閉じる |
+
+#### 5.1.3 報告タブUI要素
+
+**報告一覧テーブルビュー：**
+
+| 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-23 | フィルタタブ | タブグループ | `admin.reports.tabs` | はい | タブ：すべて、保留中、確認済み、解決済み、却下済み |
+| EL-24 | 検索入力 | インプット（テキスト） | `admin.reports.search` | いいえ | 報告者名、レビュー内容で検索 |
+| EL-25 | 報告テーブル | テーブル | — | はい | 表示：チェックボックス、報告者名、レビュー抜粋、理由バッジ、ステータスバッジ、報告日、アクション |
+| EL-26 | 報告ステータスバッジ | バッジ | — | はい | アンバー（保留中）、ブルー（確認済み）、グリーン（解決済み）、レッド（却下済み） |
+| EL-27 | 報告理由バッジ | バッジ | — | はい | 理由カテゴリ表示（spam/inappropriate/fake/other） |
+| EL-28 | アクションドロップダウン | ドロップダウンメニュー | — | はい | オプション：詳細表示、却下、解決 |
+| EL-29 | 一括アクション | ボタングループ | — | いいえ | 選択を却下、選択を解決 |
+| EL-30 | ページネーション | ページネーション | — | はい | ページナビゲーション（ページサイズ選択：20/50/100） |
+| EL-31 | 統計バー | 統計表示 | — | いいえ | 表示：合計報告数、保留中件数、確認済み件数、解決済み件数、却下済み件数 |
+
+**報告詳細モーダル：**
+
+| 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-32 | 報告者情報カード | カード | — | はい | ユーザー名、メール、アバター |
+| EL-33 | レビュー情報カード | カード | — | はい | レビュー本文、評価、対象製品名 |
+| EL-34 | 報告理由表示 | テキスト | — | はい | 選択された理由カテゴリ |
+| EL-35 | 報告詳細テキスト | テキスト | — | いいえ | 報告者の追加説明 |
+| EL-36 | 対象レビューアクション | ボタングループ | — | はい | 対象レビューの承認/却下/削除ボタン |
+| EL-37 | 管理者メモ入力 | テキストエリア | `admin.reports.adminNote` | いいえ | 任意の管理者メモ |
+| EL-38 | 却下ボタン | ボタン（デストラクティブ） | `admin.reports.reject` | はい | 報告を却下 |
+| EL-39 | 解決ボタン | ボタン（プライマリ） | `admin.reports.resolve` | はい | 報告を解決（対象レビューを自動却下） |
+| EL-40 | 削除ボタン | ボタン（デストラクティブ） | `admin.reports.delete` | はい | 報告を削除 |
+| EL-41 | 閉じるボタン | ボタン（アウトライン） | — | はい | モーダルを閉じる |
 
 ### 5.2 画面：管理者出品者管理（`/admin/merchants`）
 
@@ -404,11 +459,11 @@
 | 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-36 | ページタイトル | テキスト | `admin.reports.title` | はい | 「レビュー報告管理」 |
-| EL-37 | フィルタタブ | タブグループ | `admin.reports.tabs` | はい | タブ：すべて、保留中、却下済み、完了 |
+| EL-37 | フィルタタブ | タブグループ | `admin.reports.tabs` | はい | タブ：すべて、保留中、確認済み、対応済み、却下済み |
 | EL-38 | 検索入力 | インプット（テキスト） | `admin.reports.search` | いいえ | 報告者名、レビュー内容で検索 |
 | EL-39 | 報告テーブル | テーブル | — | はい | 表示：チェックボックス、報告者名、レビュー本文抜粋、理由バッジ、ステータスバッジ、報告日、アクション |
-| EL-40 | 報告ステータスバッジ | バッジ | — | はい | アンバー（保留中）、グリーン（完了）、レッド（却下済み） |
-| EL-41 | 報告理由バッジ | バッジ | — | はい | 理由カテゴリ表示（スパム/ハラスメント/虚偽/ポリシー違反） |
+| EL-40 | 報告ステータスバッジ | バッジ | — | はい | グレー（保留中）、ブルー（確認済み）、グリーン（対応済み）、レッド（却下済み） |
+| EL-41 | 報告理由バッジ | バッジ | — | はい | 理由カテゴリ表示（スパム/不適切/虚偽/その他） |
 | EL-42 | アクションドロップダウン | ドロップダウンメニュー | — | はい | オプション：詳細表示、却下、完了 |
 | EL-43 | 一括アクション | ボタングループ | — | いいえ | 選択を却下、選択を完了 |
 | EL-44 | ページネーション | ページネーション | — | はい | ページナビゲーション（ページサイズ選択：20/50/100） |
@@ -526,7 +581,7 @@
 |-----------|---------------|
 | **トリガー** | 管理者が /admin/reports に遷移、または報告ステータスフィルタを変更 |
 | **APIエンドポイント** | `GET /api/v1/admin/reports` |
-| **リクエストクエリパラメータ** | `page`（デフォルト：1）、`limit`（デフォルト：20）、`sort`（デフォルト：`createdAt`）、`order`（デフォルト：`desc`）、`status`（`pending`/`rejected`/`completed`/未指定で全件） |
+| **リクエストクエリパラメータ** | `page`（デフォルト：1）、`limit`（デフォルト：20）、`sort`（デフォルト：`createdAt`）、`order`（デフォルト：`desc`）、`status`（`pending`/`reviewed`/`resolved`/`rejected`/未指定で全件） |
 | **送信前バリデーション** | JWTアクセストークン検証。管理者ロール確認。 |
 | **処理ステップ** | 1. JWTアクセストークンを検証。2. RolesGuardで管理者ロールを確認。3. フィルタ付きで `review_reports` テーブルをクエリ。4. 表示データのために `users` と関連 `reviews` を結合。5. ページネーション適用。6. メタデータ付きページネーション済み報告一覧を返却。 |
 | **成功レスポンス** | 200 OK（ページネーション済み報告データ） |
@@ -539,9 +594,9 @@
 | **トリガー** | 管理者が報告の「却下」または「完了」をクリック |
 | **APIエンドポイント** | `PATCH /api/v1/admin/reports/:id/status` |
 | **リクエストContent-Type** | `application/json` |
-| **リクエストボディ** | `{ status: 'rejected' | 'completed' }` |
-| **送信前バリデーション** | JWTアクセストークン検証。管理者ロール確認。報告存在確認。完了報告は変更不可。 |
-| **処理ステップ** | 1. JWTと管理者ロールを検証。2. IDで報告を検索。3. status = 'completed' の場合、対象レビューを却下（`is_approved = false`）。4. `review_reports.status` を更新。5. `review_reports.resolved_by` と `resolved_at` を設定。6. 監査証跡にアクションをログ記録。7. 更新された報告データを返却。 |
+| **リクエストボディ** | `{ status: 'reviewed' | 'resolved' | 'rejected', adminNote?: string }` |
+| **送信前バリデーション** | JWTアクセストークン検証。管理者ロール確認。報告存在確認。`resolved`/`rejected` の報告は変更不可。 |
+| **処理ステップ** | 1. JWTと管理者ロールを検証。2. IDで報告を検索。3. status = 'resolved' の場合、対象レビューを却下（`is_approved = false`）。4. `review_reports.status` を更新。5. `review_reports.resolved_by` と `resolved_at` を設定。6. adminNoteが提供された場合 `review_reports.admin_note` を設定。7. 監査証跡にアクションをログ記録。8. 更新された報告データを返却。 |
 | **成功レスポンス** | 200 OK（更新されたReport DTO） |
 | **後処理** | トースト通知を表示。報告一覧をリフレッシュ。 |
 
@@ -554,14 +609,14 @@
 | フィールド | 表示名（EN） | 表示名（JA） | データ型と長さ | 必須 | 入力コントロール | バリデーション |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `action` | Moderation Action | 審査アクション | ENUM ('approve', 'reject') | はい | ラジオ/ボタン | `@IsIn(['approve', 'reject'])` |
-| `reason` | Rejection Reason | 却下理由 | VARCHAR(500) | 条件付き | テキストエリア | action = 'reject' の場合 `@IsNotEmpty()`、`@MaxLength(500)` |
+| `reason` | Rejection Reason | 却下理由 | TEXT | 条件付き | テキストエリア | action = 'reject' の場合 `@IsNotEmpty()` |
 
 ### 7.2 入力仕様 — 出品者承認（入力定義）
 
 | フィールド | 表示名（EN） | 表示名（JA） | データ型と長さ | 必須 | 入力コントロール | バリデーション |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `status` | Approval Status | 承認ステータス | ENUM ('approved', 'rejected') | はい | ラジオ/ボタン | `@IsIn(['approved', 'rejected'])` |
-| `reason` | Rejection Reason | 却下理由 | VARCHAR(500) | 条件付き | テキストエリア | status = 'rejected' の場合 `@IsNotEmpty()`、`@MaxLength(500)` |
+| `reason` | Rejection Reason | 却下理由 | TEXT | 条件付き | テキストエリア | status = 'rejected' の場合 `@IsNotEmpty()` |
 
 ### 7.3 入力仕様 — ユーザーモデレーション（入力定義）
 
@@ -573,9 +628,16 @@
 
 | フィールド | 表示名（EN） | 表示名（JA） | データ型と長さ | 必須 | 入力コントロール | バリデーション |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
-| `reason` | Report Reason | 報告理由 | ENUM ('spam', 'harassment', 'false_info', 'policy_violation') | はい | セレクト | `@IsIn(['spam', 'harassment', 'false_info', 'policy_violation'])` |
+| `reason` | Report Reason | 報告理由 | ENUM ('spam', 'inappropriate', 'fake', 'other') | はい | セレクト | `@IsIn(['spam', 'inappropriate', 'fake', 'other'])` |
 | `detail` | Report Detail | 報告詳細 | TEXT | いいえ | テキストエリア | `@MaxLength(1000)` |
 | `reviewId` | Review ID | レビューID | UUID | はい | 隠しフィールド | `@IsUUID()` |
+
+### 7.4.1 入力仕様 — 報告ステータス更新（入力定義）
+
+| フィールド | 表示名（EN） | 表示名（JA） | データ型と長さ | 必須 | 入力コントロール | バリデーション |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `status` | Report Status | 報告ステータス | ENUM ('reviewed', 'resolved', 'rejected') | はい | ラジオ/ボタン | `@IsIn(['reviewed', 'resolved', 'rejected'])` |
+| `adminNote` | Admin Note | 管理者メモ | TEXT | いいえ | テキストエリア | `@MaxLength(1000)` |
 
 ### 7.5 出力仕様 — レビュー一覧（出力定義）
 
@@ -615,9 +677,9 @@
 | `reviewer.email` | `users.email`（報告者） | 文字列 |
 | `review.content` | `reviews.body` | テキスト抜粋（100文字） |
 | `review.rating` | `reviews.rating` | スターアイコン（1〜5） |
-| `reason` | `review_reports.reason` | バッジ（スパム/ハラスメント/虚偽/ポリシー違反） |
+| `reason` | `review_reports.reason` | バッジ（スパム/不適切/虚偽/その他） |
 | `detail` | `review_reports.description` | テキストまたは「—」 |
-| `status` | `review_reports.status` | ステータスバッジ（保留中/却下済み/完了） |
+| `status` | `review_reports.status` | ステータスバッジ（保留中/確認済み/対応済み/却下済み） |
 | `resolvedBy.name` | `users.name`（解決者） | 文字列または「—」 |
 | `resolvedAt` | `review_reports.resolved_at` | ISO 8601 タイムスタンプまたは「—」 |
 | `createdAt` | `review_reports.created_at` | ISO 8601 タイムスタンプ |
@@ -631,14 +693,14 @@
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-------|-----------------|--------------------|--------------------|
 | `action` | 必須、'approve' または 'reject' であること | "Action must be 'approve' or 'reject'" | "アクションは'approve'または'reject'である必要があります" |
-| `reason` | action = 'reject' の場合必須、最大500文字 | "Rejection reason is required" / "Reason must not exceed 500 characters" | "却下理由は必須です" / "理由は500文字以下である必要があります" |
+| `reason` | action = 'reject' の場合必須 | "Rejection reason is required" | "却下理由は必須です" |
 
 ### 8.2 出品者承認バリデーション（ストリクトモード）
 
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-------|-----------------|--------------------|--------------------|
 | `status` | 必須、'approved' または 'rejected' であること | "Status must be 'approved' or 'rejected'" | "ステータスは'approved'または'rejected'である必要があります" |
-| `reason` | status = 'rejected' の場合必須、最大500文字 | "Rejection reason is required" / "Reason must not exceed 500 characters" | "却下理由は必須です" / "理由は500文字以下である必要があります" |
+| `reason` | status = 'rejected' の場合必須 | "Rejection reason is required" | "却下理由は必須です" |
 
 ### 8.3 ユーザーモデレーションバリデーション（ストリクトモード）
 
@@ -650,9 +712,16 @@
 
 | フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
 |-------|-----------------|--------------------|--------------------|
-| `reason` | 必須、有効なENUM値 | "Reason must be one of: spam, harassment, false_info, policy_violation" | "理由は次のいずれかである必要があります: spam, harassment, false_info, policy_violation" |
+| `reason` | 必須、有効なENUM値 | "Reason must be one of: spam, inappropriate, fake, other" | "理由は次のいずれかである必要があります: spam, inappropriate, fake, other" |
 | `detail` | オプション、最大1000文字 | "Detail must not exceed 1000 characters" | "詳細は1000文字以下である必要があります" |
 | `reviewId` | 必須、有効なUUID | "Review ID must be a valid UUID" | "レビューIDは有効なUUIDである必要があります" |
+
+### 8.4.1 報告ステータス更新バリデーション（ストリクトモード）
+
+| フィールド | バリデーションルール | エラーメッセージ（EN） | エラーメッセージ（JA） |
+|-------|-----------------|--------------------|--------------------|
+| `status` | 必須、'reviewed'、'resolved' または 'rejected' であること | "Status must be one of: reviewed, resolved, rejected" | "ステータスは'reviewed'、'resolved'、'rejected'のいずれかである必要があります" |
+| `adminNote` | オプション、最大1000文字 | "Admin note must not exceed 1000 characters" | "管理者メモは1000文字以下である必要があります" |
 
 ### 8.5 バリデーション適用層
 
@@ -702,7 +771,7 @@
 | `400` | `BAD_REQUEST` | バリデーション失敗（reason、reviewIdの欠落） | フィールドレベルインラインエラー |
 | `403` | `FORBIDDEN` | 非管理者ユーザー | "権限がありません" |
 | `404` | `NOT_FOUND` | 報告が見つからない | "報告が見つかりません" |
-| `409` | `CONFLICT` | 既に完了した報告を変更試行 | "この報告は既に完了しています" |
+| `409` | `CONFLICT` | 既に `resolved`/`rejected` の報告を変更試行 | "この報告は既に対応済みです" |
 | `500` | `INTERNAL_SERVER_ERROR` | サーバーエラー | "問題が発生しました。再試行してください" |
 
 ### 9.5 フロントエンドエラー表示動作
@@ -741,27 +810,31 @@
 
 ### 10.3 ロールベースアクセス
 
-| ロール | レビュー閲覧 | レビューモデレート | 出品者管理 | ユーザー管理 | 報告管理 |
-|------|:----------------:|:--------------------:|:--------------------:|:----------------:|:----------------:|
-| `buyer` | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `merchant` | 自分の製品のみ | ✗ | ✗ | ✗ | ✗ |
-| `admin` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ロール | レビュー閲覧 | レビューモデレート | 出品者管理 | ユーザー管理 | 報告管理 | 製品モデレーション |
+|------|:----------------:|:--------------------:|:--------------------:|:----------------:|:----------------:|:----------------:|
+| `buyer` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `merchant` | 自分の製品のみ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `admin` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### 10.4 セキュリティ監査ログ
 
+DB設計書セクション3.28に基づき、構造化JSONBフィールドを使用：
+
 | イベント | ログデータ | 保持期間 |
 |-------|-------------|-----------|
-| `REVIEW_APPROVED` | adminId, reviewId, productId, タイムスタンプ | 2年 |
-| `REVIEW_REJECTED` | adminId, reviewId, productId, reason, タイムスタンプ | 2年 |
-| `REVIEW_DELETED` | adminId, reviewId, productId, タイムスタンプ | 2年 |
-| `MERCHANT_APPROVED` | adminId, shopId, merchantId, タイムスタンプ | 2年 |
-| `MERCHANT_REJECTED` | adminId, shopId, merchantId, reason, タイムスタンプ | 2年 |
-| `USER_DEACTIVATED` | adminId, userId, タイムスタンプ | 2年 |
-| `USER_ACTIVATED` | adminId, userId, タイムスタンプ | 2年 |
-| `REPORT_REJECTED` | adminId, reportId, reviewId, タイムスタンプ | 2年 |
-| `REPORT_COMPLETED` | adminId, reportId, reviewId, タイムスタンプ | 2年 |
-| `REPORT_DELETED` | adminId, reportId, タイムスタンプ | 2年 |
-| `RBAC_VIOLATION` | userId, endpoint, requiredRole, タイムスタンプ | 30日 |
+| `REVIEW_APPROVED` | userId (管理者), entityType: 'Review', entityId: reviewId, oldValue: `{ isApproved: false }`, newValue: `{ isApproved: true }`, ipAddress, userAgent | 2年 |
+| `REVIEW_REJECTED` | userId (管理者), entityType: 'Review', entityId: reviewId, oldValue: `{ isApproved: true }`, newValue: `{ isApproved: false, reason }`, ipAddress, userAgent | 2年 |
+| `REVIEW_DELETED` | userId (管理者), entityType: 'Review', entityId: reviewId, oldValue: `{ ...reviewData }`, newValue: null, ipAddress, userAgent | 2年 |
+| `MERCHANT_APPROVED` | userId (管理者), entityType: 'Merchant', entityId: merchantId, oldValue: `{ licenseStatus: 'pending' }`, newValue: `{ licenseStatus: 'approved' }`, ipAddress, userAgent | 2年 |
+| `MERCHANT_REJECTED` | userId (管理者), entityType: 'Merchant', entityId: merchantId, oldValue: `{ licenseStatus: 'pending' }`, newValue: `{ licenseStatus: 'rejected', rejectionReason }`, ipAddress, userAgent | 2年 |
+| `USER_DEACTIVATED` | userId (管理者), entityType: 'User', entityId: targetUserId, oldValue: `{ isActive: true }`, newValue: `{ isActive: false }`, ipAddress, userAgent | 2年 |
+| `USER_ACTIVATED` | userId (管理者), entityType: 'User', entityId: targetUserId, oldValue: `{ isActive: false }`, newValue: `{ isActive: true }`, ipAddress, userAgent | 2年 |
+| `PRODUCT_DEACTIVATED` | userId (管理者), entityType: 'Product', entityId: productId, oldValue: `{ isActive: true }`, newValue: `{ isActive: false }`, ipAddress, userAgent | 2年 |
+| `PRODUCT_REACTIVATED` | userId (管理者), entityType: 'Product', entityId: productId, oldValue: `{ isActive: false }`, newValue: `{ isActive: true }`, ipAddress, userAgent | 2年 |
+| `REPORT_RESOLVED` | userId (管理者), entityType: 'ReviewReport', entityId: reportId, oldValue: `{ status: 'pending' }`, newValue: `{ status: 'resolved' }`, ipAddress, userAgent | 2年 |
+| `REPORT_REJECTED` | userId (管理者), entityType: 'ReviewReport', entityId: reportId, oldValue: `{ status: 'pending' }`, newValue: `{ status: 'rejected' }`, ipAddress, userAgent | 2年 |
+| `REPORT_DELETED` | userId (管理者), entityType: 'ReviewReport', entityId: reportId, oldValue: `{ ...reportData }`, newValue: null, ipAddress, userAgent | 2年 |
+| `RBAC_VIOLATION` | userId, entityType: 'Auth', entityId: null, action: 'rbac.violation', ipAddress, userAgent | 30日 |
 
 ---
 
@@ -774,18 +847,19 @@
 | イベント | トリガー | アクション |
 |-------|---------|--------|
 | `NEW_MERCHANT_REGISTRATION` | 新規出品者登録 | 保留中出品者承認バッジのインクリメント |
-| `REVIEW_CREATED` | 新規レビュー送信 | 合計レビューバッジをインクリメント。レビューはデフォルトで承認済み |
+| `REVIEW_CREATED` | 新規レビュー送信 | 合計レビューバッジをインクリメント。管理者承認まで非表示。 |
 
-### 11.2 モデレーション後WebSocket更新
+### 11.2 モデレーション後通知
 
-モデレーションアクション後、関係者に通知：
+モデレーションアクション後、関係者に `notifications` テーブル（DB設計書セクション3.29）を介して通知：
 
-| イベント | トリガー | 受信者 | アクション |
-|-------|---------|------------|--------|
-| `REVIEW_STATUS_CHANGED` | 管理者がレビューを承認/却下 | レビュー投稿者、製品出品者 | トースト通知 |
-| `MERCHANT_STATUS_CHANGED` | 管理者が出品者を承認/却下 | 出品者ユーザー | ウェブサイト通知 |
-| `CONTENT_REMOVED` | 管理者が製品を無効化 | 製品出品者 | トースト通知 |
-| `USER_STATUS_CHANGED` | 管理者がユーザーを有効化/無効化 | 対象ユーザー | 無効化時にセッション終了 |
+| イベント | トリガー | 受信者 | 通知タイプ | 通知フィールド |
+|-------|---------|------------|-------------------|---------------------|
+| `REVIEW_STATUS_CHANGED` | 管理者がレビューを承認/却下 | レビュー投稿者、製品出品者 | `review.status_changed` | title, message, entityType: 'Review', entityId: reviewId |
+| `MERCHANT_STATUS_CHANGED` | 管理者が出品者を承認/却下 | 出品者ユーザー | `merchant.approved` または `merchant.rejected` | title, message, entityType: 'Merchant', entityId: merchantId |
+| `CONTENT_REMOVED` | 管理者が製品を無効化 | 製品出品者 | `product.deactivated` | title, message, entityType: 'Product', entityId: productId |
+| `REPORT_RESOLVED` | 管理者が報告を対応完了 | 報告投稿者 | `report.resolved` | title, message, entityType: 'ReviewReport', entityId: reportId |
+| `USER_STATUS_CHANGED` | 管理者がユーザーを有効化/無効化 | 対象ユーザー | — | 無効化時にセッション終了 |
 
 ---
 
@@ -844,14 +918,18 @@
 | 検索/フィルタレスポンス | ≤ 3秒（10,000レビュー） |
 | キャッシュ無効化 | ≤ 50ミリ秒（Redis DEL） |
 
-### 13.2 セキュリティ考慮事項 | Concern | Mitigation |
+### 13.2 セキュリティ考慮事項
+
+| コンcern | 対策 |
 |---------|------------|
-| 不正アクセス | 全管理者エンドポイントでJwtAuthGuard + RolesGuard |
-| RBACバイパス | バックエンドのみで強制。フロントエンドは決して信頼しない |
-| 監査証跡改ざん | 管理者ID追跡付き追記専用監査ログ |
-| 一括操作 | 管理者エンドポイントのレート制限（100リクエスト/分） |
+| 不正アクセス | 全管理者エンドポイントでJwtAuthGuard + RolesGuard（開発ルール5.4） |
+| RBACバイパス | バックエンドのみで強制。フロントエンドは決して信頼しない（開発ルール5.4） |
+| 監査証跡改ざん | 構造化JSONB old_value/new_valueを持つ追記専用 `audit_logs` テーブル（DB設計書3.28） |
+| 一括操作 | Redisスライディングウィンドウによる管理者エンドポイントのレート制限（開発ルール10.5） |
 | デストラクティブアクション | 削除/却下アクションに確認ダイアログ必須 |
-| セッション取消 | ユーザー無効化時に全リフレッシュトークンを取消 |
+| セッション取消 | ユーザー無効化時に全リフレッシュトークンを取消（UPDATE is_revoked = true） |
+| 入力バリデーション | 全入力はwhitelist: trueのclass-validator DTOsで検証（開発ルール5.6） |
+| パスワードセキュリティ | Argon2idハッシュのみ使用（開発ルール5.5） |
 
 ### 13.3 レスポンシブデザイン要件
 
@@ -875,6 +953,7 @@
 | `PRODUCT_CACHE_TTL` | `300` | 製品キャッシュTTL（秒）（5分） |
 | `AUDIT_LOG_RETENTION_DAYS` | `730` | 管理者監査ログ保持期間（2年） |
 | `MODERATION_REASON_MAX_LENGTH` | `500` | モデレーション理由の最大文字数 |
+| `REPORT_DETAIL_MAX_LENGTH` | `1000` | 報告詳細テキストの最大文字数 |
 | `DELETE_CONFIRMATION_REQUIRED` | `true` | デストラクティブアクションに確認ダイアログを要求 |
 
 ---
@@ -888,7 +967,7 @@
 | A-REV-001 | 管理者は全レビューを閲覧可能 | UC-MOD-001、第6.1項 |
 | A-REV-002 | 管理者はレビューを承認/却下可能 | UC-MOD-002、BR-MOD-001〜006、第6.2項 |
 | A-REV-003 | 管理者は不適切なレビューを削除可能 | UC-MOD-003、BR-MOD-005、第6.3項 |
-| A-CONT-002 | 管理者は出品者登録を承認/却下可能 | UC-MOD-005、BR-MOD-020〜023、第6.5項 |
+| A-CONT-002 | 管理者は出品者登録を承認/却下可能 | UC-MOD-005、BR-MOD-020〜023、第6.6項 |
 | A-CONT-004 | 管理者は違反コンテンツを削除可能 | UC-MOD-004、UC-MOD-008、第6.5項 |
 | A-REPORT-001 | 購入者はレビューを報告可能 | UC-MOD-007、BR-MOD-050〜055 |
 | A-REPORT-002 | 管理者は報告を確認/却下/完了可能 | UC-MOD-007、BR-MOD-053〜055、第6.8〜6.9項 |
@@ -899,11 +978,12 @@
 |----------------|-------------------------------|
 | `reviews` | レビュー閲覧（SELECT）、レビューモデレート（UPDATE is_approved）、レビュー削除（DELETE） |
 | `products` | 製品閲覧（SELECT）、avg_rating再計算、製品モデレーション（UPDATE is_active） |
-| `shops` | 出品者閲覧（SELECT）、出品者承認/却下（UPDATE is_approved） |
+| `merchants` | 出品者閲覧（SELECT）、出品者承認/却下（UPDATE license_status、rejection_reason、reviewed_at、reviewed_by） |
+| `shops` | 出品者閲覧（SELECT）、ショップ承認の同期（UPDATE is_approved） |
 | `users` | ユーザー閲覧（SELECT）、ユーザー有効化/無効化（UPDATE is_active） |
-| `review_reports` | 報告閲覧（SELECT）、報告ステータス更新（UPDATE status）、報告削除（DELETE） |
-| `audit_logs` | 監査ログ記録（INSERT） |
-| `notifications` | ウェブサイト通知作成（INSERT）（出品者ステータス変更時） |
+| `review_reports` | 報告閲覧（SELECT）、報告ステータス更新（UPDATE status、resolved_by、resolved_at、admin_note）、報告削除（DELETE） |
+| `audit_logs` | 監査ログ記録（INSERT）— フィールド：user_id、action、entity_type、entity_id、old_value（JSONB）、new_value（JSONB）、ip_address、user_agent |
+| `notifications` | ウェブサイト通知作成（INSERT）— フィールド：user_id、type、title、message、entity_type、entity_id |
 
 ### 15.3 APIエンドポイントトレーサビリティ
 

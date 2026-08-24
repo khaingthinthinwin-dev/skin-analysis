@@ -378,7 +378,7 @@ This screen is responsible for the following core functional areas:
 | BR-CART-006 | Price at Order Time | Price is locked at order creation time, not cart time. | Backend (order service) |
 | BR-CART-007 | Cart Persistence | Cart items are stored in database for logged-in users. | Backend (DB storage) |
 | BR-CART-008 | Subtotal Calculation | Subtotal = unit_price × quantity for each item. Discounts and coupons are **not** applied at this stage; coupon entry and discount calculation occur on the checkout page. | Backend (computed field) |
-| BR-CART-009 | Duplicate Handling | Adding an existing cart item returns `409 Conflict`; the client updates quantity through the PATCH endpoint. | Backend (service logic) |
+| BR-CART-009 | Duplicate Handling | Adding an existing cart item; the client updates quantity through the PATCH endpoint. | Backend (service logic) |
 | BR-CART-010 | Guest User Restriction | Unauthenticated users cannot use cart actions. Show the Cart guest-login alert before navigation; [Log in] navigates to `/login`. | Frontend (UI guard) |
 | BR-CART-011 | Checkout Eligibility | Checkout is enabled only when every cart item is active and the requested quantity is available in stock. It is disabled for `OUT_OF_STOCK`, `QUANTITY_EXCEEDED`, or `INACTIVE` items. | Frontend and backend validation |
 

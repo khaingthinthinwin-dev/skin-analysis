@@ -4,9 +4,9 @@
 **Target Screen:** Review & Content Moderation (レビュー・コンテンツ管理)  
 **Subsystem:** Administration — Review Moderation & Content Management  
 **Function ID:** FN-MOD-001  
-**Version:** 2.0  
+**Version:** 6.3  
 **Created:** 2026-08-08  
-**Last Updated:** 2026-08-21  
+**Last Updated:** 2026-08-24  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -23,25 +23,32 @@
 | 1.1 | 2026-08-12 | Senior System Engineer | Added Product Content Moderation screen (UC-MOD-004, BR-MOD-010~013): product table, product moderation modal, deactivation/reactivation flows, database mappings, API responses, i18n keys, and test checklist. |
 | 1.2 | 2026-08-12 | Senior System Engineer | Added User Management screen (`/admin/users`): user table, user detail modal, activate/deactivate flows (UC-MOD-006, BR-MOD-040~042), database mappings, API responses, i18n keys, and test checklist. Fixed `is_approved IS NULL` to correct `is_approved = FALSE` per BR-MOD-002. |
 | 1.3 | 2026-08-13 | Senior System Engineer | Removed `PENDING_REVIEW` status from Product Moderation States per database design (no `status` column in `products` table). Removed `statPendingReviewCount`, "Pending Review" filter tab, and `status` field from Products List database mapping. Updated layout diagrams, i18n keys, behavior specs, and test checklist accordingly. |
-| 1.4 | 2026-08-14 | Senior System Engineer | Aligned with core requirements v1.5 and database spec v2.0: UUID IDs, approved-by-default reviews with no active pending review filter, merchant `license_status` as the approval source of truth, synchronized shop visibility, corrected document path, and website notifications. |
+| 1.4 | 2026-08-14 | Senior System Engineer | Aligned with core requirements v1.5 and database spec v2.0: UUID IDs, hybrid review approach (verified purchase = auto-approved, non-verified = pending admin), merchant `license_status` as the approval source of truth, synchronized shop visibility, corrected document path, and website notifications. |
 | 1.5 | 2026-08-17 | Senior System Engineer | Added Review Reports management screen (`/admin/reports`): report table, report detail modal, reject/resolve flows, database mappings (`review_reports` table), API responses, i18n keys, and test checklist. |
 | 2.0 | 2026-08-21 | Senior System Engineer | Aligned with core specs v2.10/v2.4 and FDS v2.0: updated report reason enums (`spam/inappropriate/fake/other`), report status enums (`pending/reviewed/resolved/rejected`), renamed "Complete" to "Resolve", added `admin_note` field to report status update, updated i18n keys, and test checklist. |
+| 3.0 | 2026-08-22 | Senior System Engineer | Major update: Removed Admin Sidebar from layout diagrams (shared component). Updated Review Management to include "Reported" filter tab and "Report" action (admin-initiated). Added reject review endpoint. Added report review endpoint. Updated serialized section labels. Added report-related item definitions, behaviors, and i18n keys. |
+| 4.0 | 2026-08-22 | Senior System Engineer | Updated modal layouts: Each modal now starts from section [A] instead of continuing page section labels. Review Detail Modal: [A]-[F], Report Review Modal: [A]-[E], Merchant Detail Modal: [A]-[E], Product Moderation Modal: [A]-[G], User Detail Modal: [A]-[D]. |
+| 5.0 | 2026-08-22 | Senior System Engineer | Updated all page layouts to start from [A]: Reviews [A]-[F], Merchants [A]-[F], Content [A]-[F], Users [A]-[F]. Updated all item definition sections to match. |
+| 6.0 | 2026-08-22 | Senior System Engineer | Implemented Hybrid Review Approach: Verified purchase reviews show immediately; non-verified reviews pending approval. Added "Pending" tab and stats. Added buyer reporting flow diagram. Updated i18n keys for pending status. |
+| 6.1 | 2026-08-24 | Senior System Engineer | Aligned with DB spec v2.4: Removed `last_login_at` field reference from User Detail (not in DB schema). Fixed txtReportDetail MaxLength to 1000. Fixed adminNote MaxLength to 1000. Added `licenseStatus` to merchant list API response. Renumbered Report sections 4.46→4.51, 4.47→4.52. Renumbered duplicate section 8.7→8.11. |
+| 6.2 | 2026-08-24 | Senior System Engineer | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers (`is_approved = false` by default). Updated Section 2.3 Core Functions, Section 2.4 Review Display Flow diagram, Section 4.2 pending count SQL, Section 4.5 status badge description. |
+| 6.3 | 2026-08-24 | Senior System Engineer | Combined Reviews and Reports into single screen with tab navigation (`/admin/reviews`). Removed separate Reports page. Added Screen Tabs element (EL-02). Renumbered Reports tab elements EL-23~EL-41. Renumbered Merchants elements EL-42~EL-55. Removed "Report" action from Reviews tab (admin reporting removed). |
 
 ### 1.2 Related Documents
 
 | No. | Document ID | Document Name | File Path | Remarks |
 | :-- | :--- | :--- | :--- | :--- |
 | 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
-| 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `users`), constraints. |
+| 2 | SKM-DBS-001 | Database Design Specification (v2.5) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`reviews`, `products`, `shops`, `users`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
-| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation (v2.0) | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
+| 4 | SKM-FDS-MOD-001 | Functional Specification — Review & Content Moderation (v2.2) | `docs/screen/Review_ContentModeration/機能設計書_Review_Content_Moderation.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
 
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Review & Content Moderation screens serve as the central administration hub for maintaining platform integrity. They enable administrators to moderate product reviews (approve/reject/delete), manage merchant registrations (approve/reject), moderate product content (activate/deactivate), and perform user account moderation (activate/deactivate). All actions are protected by admin-only RBAC enforcement.
+The Review & Content Moderation screens serve as the central administration hub for maintaining platform integrity. They enable administrators to moderate product reviews (approve/reject/delete/report), manage merchant registrations (approve/reject), moderate product content (activate/deactivate), and perform user account moderation (activate/deactivate). All actions are protected by admin-only RBAC enforcement.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -53,7 +60,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | **Access Control** | Protected routes — `JwtAuthGuard` + `RolesGuard` (`admin`) |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
-1. **Review Moderation** — View, approve, reject, and delete product reviews with audit logging.
+1. **Review Moderation** — Reviews follow an admin-moderated model: all reviews are hidden by default until admin approval. Admin can approve, reject, delete, or report reviews with audit logging. Buyers can also report reviews they find suspicious.
 2. **Content Moderation** — View all products, deactivate violating content (`is_active = false`), reactivate products, and enforce platform policy (UC-MOD-004, BR-MOD-010~013).
 3. **Merchant Registration Management** — Approve or reject merchant shop registrations.
 4. **User Account Moderation** — View all users, activate or deactivate user accounts for policy violations (UC-MOD-006, BR-MOD-040~042). Admin cannot deactivate self.
@@ -62,40 +69,83 @@ The Review & Content Moderation screens serve as the central administration hub 
 7. **Pagination & Filtering** — Tab-based status filters with server-side pagination.
 8. **Internationalization** — Full i18n support for EN, JA, MY.
 
+### 2.4 Review Display Flow (Admin Moderated)
+
+```text
+Buyer submits review
+         ↓
+┌────────────────────────┐
+│ Review Created         │
+│ (is_approved = false)  │
+│ Hidden from buyers     │
+└────────────────────────┘
+         ↓
+┌────────────────────────┐
+│ Admin sees in Pending  │
+│ queue                  │
+└────────────────────────┘
+         ↓
+    ┌────┴────┐
+    │         │
+    ↓         ↓
+┌───────┐ ┌───────┐
+│APPROVE│ │REJECT │
+└───────┘ └───────┘
+    │         │
+    ↓         ↓
+┌────────┐ ┌────────┐
+│VISIBLE │ │ HIDDEN │
+│TO ALL  │ │        │
+└────────┘ └────────┘
+```
+
+**Buyer Reporting Flow:**
+```text
+Buyer sees suspicious review
+       ↓
+   Clicks "Report"
+       ↓
+   Selects reason (spam/inappropriate/fake/other)
+       ↓
+   Report submitted to admin queue
+       ↓
+   Admin reviews report → Rejects review → Report resolved
+```
+
 ---
 
 ## 3. Screen Layout (画面レイアウト構成)
 
 ### 3.1 Overall Page Structure (全体画面構成)
 
-#### Reviews Dashboard Layout (`/admin/reviews`)
+#### Reviews & Reports Management Layout (`/admin/reviews`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                    BROWSER VIEWPORT                      │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [A] ADMIN SIDEBAR                   │   │
-│  │   Dashboard / Users / Merchants / Reviews / ...  │   │
+│  │              [A] PAGE HEADER                     │   │
+│  │   Page Title: "Review & Report Management"       │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [B] PAGE HEADER                     │   │
-│  │   Page Title: "Review Moderation"                │   │
+│  │              [B] SCREEN TABS                     │   │
+│  │   [Reviews] [Reports]                            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [C] STATS BAR (cond.)               │   │
-│  │   Total | Approved | Rejected                    │   │
+│  │              [C] STATS BAR                       │   │
+│  │   Total | Pending | Approved | Rejected          │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [D] FILTER TABS                     │   │
-│  │   All | Approved | Rejected                      │   │
+│  │   All | Pending | Approved | Rejected            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [E] SEARCH + SORT BAR                         │   │
+│  │              [E] SEARCH + SORT BAR               │   │
 │  │   [Search Input] [Sort Dropdown] [Bulk Actions]  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -118,28 +168,29 @@ The Review & Content Moderation screens serve as the central administration hub 
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [H] MODAL HEADER          │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "Review Detail"  [X Close] │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [I] USER INFO CARD        │            │
+│              │   [B] USER INFO CARD        │            │
 │              │   Avatar | Name | Email     │            │
 │              │   Review Count              │            │
 │              │                             │            │
-│              │   [J] PRODUCT INFO CARD     │            │
+│              │   [C] PRODUCT INFO CARD     │            │
 │              │   Image | Name | Price      │            │
 │              │   Link to product detail    │            │
 │              │                             │            │
-│              │   [K] REVIEW CONTENT        │            │
+│              │   [D] REVIEW CONTENT        │            │
 │              │   Rating Stars | Title      │            │
 │              │   Body Text | Images        │            │
 │              │   Verified Purchase Badge   │            │
 │              │                             │            │
-│              │   [L] MODERATION REASON     │            │
+│              │   [E] MODERATION REASON     │            │
 │              │   Textarea (conditional)    │            │
 │              │                             │            │
-│              │   [M] ACTION BUTTONS        │            │
-│              │   [Approve] [Reject] [Delete]│            │
+│              │   [F] ACTION BUTTONS        │            │
+│              │   [Approve] [Reject]        │            │
+│              │   [Delete]                  │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -151,28 +202,34 @@ The Review & Content Moderation screens serve as the central administration hub 
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [N] PAGE HEADER                     │   │
+│  │              [A] PAGE HEADER                     │   │
 │  │   Page Title: "Merchant Management"              │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [O] FILTER TABS                     │   │
-│  │   All | Pending Approval | Approved | Rejected   │   │
+│  │              [B] STATS BAR                       │   │
+│  │   Total | Pending | Approved | Rejected          │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [P] SEARCH BAR                                │   │
+│  │              [C] FILTER TABS                     │   │
+│  │   All | Pending | Approved | Rejected            │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              [D] SEARCH BAR                      │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [Q] MERCHANTS TABLE                 │   │
+│  │              [E] MERCHANTS TABLE                 │   │
 │  │   Checkbox | Logo | Shop Name | User Name        │   │
 │  │   Registration Date | Status Badge | Actions     │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [R] PAGINATION                      │   │
+│  │              [F] PAGINATION                      │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -183,25 +240,25 @@ The Review & Content Moderation screens serve as the central administration hub 
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [S] MODAL HEADER          │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "Merchant Detail" [X Close]│            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [T] SHOP INFO CARD        │            │
+│              │   [B] SHOP INFO CARD        │            │
 │              │   Logo | Banner | Name      │            │
 │              │   Description               │            │
 │              │                             │            │
-│              │   [U] LICENSE VIEWER        │            │
+│              │   [C] LICENSE VIEWER        │            │
 │              │   PDF Display / Download    │            │
 │              │                             │            │
-│              │   [V] USER INFO CARD        │            │
+│              │   [D] USER INFO CARD        │            │
 │              │   Name | Email | Phone      │            │
 │              │   Registration Date         │            │
 │              │                             │            │
-│              │   [W] REJECTION REASON      │            │
+│              │   [E] REJECTION REASON      │            │
 │              │   Textarea (conditional)    │            │
 │              │                             │            │
-│              │   [X] ACTION BUTTONS        │            │
+│              │   [F] ACTION BUTTONS        │            │
 │              │   [Approve] [Reject]        │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
@@ -214,33 +271,33 @@ The Review & Content Moderation screens serve as the central administration hub 
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [Y] PAGE HEADER                     │   │
+│  │              [A] PAGE HEADER                    │   │
 │  │   Page Title: "Product Content Moderation"       │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [AA] STATS BAR (cond.)              │   │
+│  │              [B] STATS BAR                      │   │
 │  │   Total | Active | Inactive                      │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [BB] FILTER TABS                    │   │
+│  │              [C] FILTER TABS                    │   │
 │  │   All | Active | Inactive                        │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [CC] SEARCH + SORT BAR                        │   │
+│  │              [D] SEARCH + SORT BAR              │   │
 │  │   [Search Input] [Sort Dropdown] [Bulk Actions]  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [DD] PRODUCTS TABLE                 │   │
+│  │              [E] PRODUCTS TABLE                 │   │
 │  │   Checkbox | Image | Name | Shop | Price         │   │
 │  │   Status Badge | Owner | Date | Actions Dropdown │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [EE] PAGINATION                     │   │
+│  │              [F] PAGINATION                     │   │
 │  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -252,32 +309,32 @@ The Review & Content Moderation screens serve as the central administration hub 
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [FF] MODAL HEADER         │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "Product Moderation"       │            │
 │              │              [X Close]       │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [GG] PRODUCT INFO CARD    │            │
+│              │   [B] PRODUCT INFO CARD     │            │
 │              │   Image | Name | Price      │            │
 │              │   Description               │            │
 │              │   Category | Shop Name      │            │
 │              │                             │            │
-│              │   [HH] PRODUCT IMAGES       │            │
+│              │   [C] PRODUCT IMAGES        │            │
 │              │   Gallery (grid layout)     │            │
 │              │                             │            │
-│              │   [II] SHOP OWNER CARD      │            │
+│              │   [D] SHOP OWNER CARD       │            │
 │              │   Shop Logo | Name          │            │
 │              │   Owner Name | Email        │            │
 │              │                             │            │
-│              │   [JJ] STATUS INFO          │            │
+│              │   [E] STATUS INFO           │            │
 │              │   Current Status Badge      │            │
 │              │   Created Date              │            │
 │              │   Last Updated              │            │
 │              │                             │            │
-│              │   [KK] MODERATION REASON    │            │
+│              │   [F] MODERATION REASON     │            │
 │              │   Textarea (conditional)    │            │
 │              │                             │            │
-│              │   [LL] ACTION BUTTONS       │            │
+│              │   [G] ACTION BUTTONS        │            │
 │              │   [Deactivate] [Reactivate] │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
@@ -290,33 +347,33 @@ The Review & Content Moderation screens serve as the central administration hub 
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [MM] PAGE HEADER                    │   │
+│  │              [A] PAGE HEADER                    │   │
 │  │   Page Title: "User Management"                  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [NN] STATS BAR (cond.)              │   │
+│  │              [B] STATS BAR                      │   │
 │  │   Total | Active | Inactive | Admin              │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [OO] FILTER TABS                    │   │
+│  │              [C] FILTER TABS                    │   │
 │  │   All | Active | Inactive | Admin                │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [PP] SEARCH BAR                                │   │
+│  │              [D] SEARCH BAR                     │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [QQ] USERS TABLE                    │   │
+│  │              [E] USERS TABLE                    │   │
 │  │   Avatar | Name | Email | Role                   │   │
 │  │   Status Badge | Joined Date | Actions Dropdown  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [RR] PAGINATION                     │   │
+│  │              [F] PAGINATION                     │   │
 │  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -328,20 +385,19 @@ The Review & Content Moderation screens serve as the central administration hub 
 ┌─────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
 │              ┌─────────────────────────────┐            │
-│              │   [SS] MODAL HEADER         │            │
+│              │   [A] MODAL HEADER          │            │
 │              │   "User Detail" [X Close]    │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
-│              │   [TT] USER INFO CARD       │            │
+│              │   [B] USER INFO CARD        │            │
 │              │   Avatar | Name | Email     │            │
 │              │   Phone | Role | Joined     │            │
 │              │                             │            │
-│              │   [UU] ACCOUNT STATUS       │            │
+│              │   [C] ACCOUNT STATUS        │            │
 │              │   Current Status Badge      │            │
-│              │   Last Login                │            │
 │              │   Review Count              │            │
 │              │                             │            │
-│              │   [VV] ACTION BUTTONS       │            │
+│              │   [D] ACTION BUTTONS        │            │
 │              │   [Deactivate] [Reactivate] │            │
 │              └─────────────────────────────┘            │
 └─────────────────────────────────────────────────────────┘
@@ -360,27 +416,29 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 ## 4. Item Definitions (画面項目定義)
 
-### 4.1 Section [B]: Page Header — Reviews (ページヘッダー — レビュー)
+### 4.1 Section [A]: Page Header — Reviews (ページヘッダー — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 1 | `lblReviewsTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Review Moderation" | — | i18n key: `admin.reviews.title` | Tailwind: `text-2xl font-bold`. |
 
-### 4.2 Section [C]: Stats Bar (統計バー)
+### 4.2 Section [B]: Stats Bar — Reviews (統計バー — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 2 | `statTotalReviews` | Total Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews)` | Tailwind: `bg-white rounded-lg p-4 shadow-sm`. |
-| 3 | `statApprovedCount` | Approved Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = TRUE)` | Green badge. |
-| 4 | `statRejectedCount` | Rejected Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE)` | Red badge. |
+| 3 | `statPendingCount` | Pending Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE)` | Amber badge. Awaiting admin approval. |
+| 4 | `statApprovedCount` | Approved Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = TRUE)` | Green badge. |
+| 5 | `statRejectedCount` | Rejected Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE is_approved = FALSE AND is_verified_purchase = TRUE)` | Red badge. |
+| 6 | `statReportedCount` | Reported Reviews Count | Stats Card | Integer | — | Populated on load | — | `COUNT(reviews WHERE id IN (SELECT review_id FROM review_reports))` | Amber badge. |
 
-### 4.3 Section [D]: Filter Tabs — Reviews (フィルタタブ — レビュー)
+### 4.3 Section [C]: Filter Tabs — Reviews (フィルタタブ — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 6 | `tabFilterReviews` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Approved, Rejected | — | i18n key: `admin.reviews.tabs`. Updates query params on change. |
+| 6 | `tabFilterReviews` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Pending, Approved, Rejected, Reported | — | i18n key: `admin.reviews.tabs`. Updates query params on change. |
 
-### 4.4 Section [E]: Search + Sort Bar (検索・ソートバー)
+### 4.4 Section [D]: Search + Sort Bar — Reviews (検索・ソートバー — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -390,7 +448,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 10 | `btnBulkReject` | Reject Selected Button | Button (`outline`) | — | No | Disabled (no selection) | — | — | Opens reason modal when clicked. |
 | 11 | `btnBulkDelete` | Delete Selected Button | Button (`destructive`) | — | No | Disabled (no selection) | — | — | Requires confirmation dialog. |
 
-### 4.5 Section [F]: Reviews Table (レビューテーブル)
+### 4.5 Section [E]: Reviews Table (レビューテーブル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -401,24 +459,24 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 16 | `lblProductName` | Product Name | Static Label | String | — | Populated from DB | — | `products.name` | `text-sm text-muted-foreground`. |
 | 17 | `ratingStars` | Rating Display | Star Rating | Integer (1-5) | — | Populated from DB | — | `reviews.rating` | 1-5 star display with Beauty Pink (#EC4899). |
 | 18 | `lblReviewTitle` | Review Title | Static Label | String | — | Populated from DB or "—" | — | `reviews.title` | Truncated at 50 chars. |
-| 19 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected) | — | `reviews.is_approved` | Standard status badge colors. Reviews are approved by default. |
+| 19 | `badgeReviewStatus` | Review Status Badge | Badge | Enum | — | Green (Approved), Red (Rejected), Amber (Pending) | — | `reviews.is_approved` | Standard status badge colors. All reviews start as pending until admin approval. |
 | 20 | `lblCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `reviews.created_at` | Localized date format via i18n. |
-| 21 | `ddlReviewActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject, Delete | — | Destructive actions show confirmation. |
+| 21 | `ddlReviewActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject, Report, Delete | — | Destructive actions show confirmation. |
 
-### 4.6 Section [G]: Pagination — Reviews (ページネーション — レビュー)
+### 4.6 Section [F]: Pagination — Reviews (ページネーション — レビュー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 22 | `pagReviews` | Reviews Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
 
-### 4.7 Section [H]: Review Detail Modal Header (レビューモーダルヘッダー)
+### 4.7 Section [A]: Review Detail Modal Header (レビューモーダルヘッダー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 23 | `lblReviewDetailTitle` | Modal Title | Static Label (`<h2>`) | String | — | Text: "Review Detail" | — | i18n key: `admin.reviews.detail.title` | `text-lg font-semibold`. |
 | 24 | `btnCloseReviewModal` | Close Modal Button | Icon Button | — | — | Visible. X icon. | — | — | Closes modal. Escape key also closes. |
 
-### 4.8 Section [I]: User Info Card in Review Modal (レビューモーダル内ユーザーカード)
+### 4.8 Section [B]: User Info Card in Review Modal (レビューモーダル内ユーザーカード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -427,7 +485,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 27 | `lblReviewUserEmail` | User Email | Static Label | String | — | Populated from DB | — | `users.email` | `text-sm text-muted-foreground`. |
 | 28 | `lblReviewUserCount` | User Review Count | Static Label | Integer | — | Populated from DB | — | `COUNT(reviews WHERE user_id = :id)` | Text: "X reviews". |
 
-### 4.9 Section [J]: Product Info Card in Review Modal (レビューモーダル内製品カード)
+### 4.9 Section [C]: Product Info Card in Review Modal (レビューモーダル内製品カード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -435,7 +493,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 30 | `lblReviewProductName` | Product Name | Static Label (Link) | String | — | Populated from DB | — | `products.name` | Links to `/products/:slug`. |
 | 31 | `lblReviewProductPrice` | Product Price | Static Label | Decimal | — | Formatted with currency | — | `products.price` | Localized currency format. |
 
-### 4.10 Section [K]: Review Content in Modal (モーダル内レビュー内容)
+### 4.10 Section [D]: Review Content in Modal (モーダル内レビュー内容)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -445,40 +503,82 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 35 | `galleryReviewImages` | Review Images | Image Gallery | Array[URL] | No | Grid layout of images | — | `reviews.images` | `grid grid-cols-3 gap-2`. Max 10 images. |
 | 36 | `badgeVerifiedPurchase` | Verified Purchase Badge | Badge | — | No | Shown if `is_verified_purchase = true` | — | `reviews.is_verified_purchase` | Text: "Verified Purchase". Green badge. |
 
-### 4.11 Section [L]: Moderation Reason Input (モデレーション理由入力)
+### 4.11 Section [E]: Moderation Reason Input (モデレーション理由入力)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 37 | `lblModerationReason` | Moderation Reason Label | Static Label (`<label>`) | String | — | Visible only when Reject is clicked. Text: "Reason for Rejection" | — | i18n key: `admin.moderation.reason` | Required for rejection. |
 | 38 | `txtModerationReason` | Moderation Reason Textarea | Textarea | String(500) | Conditional | Empty. Placeholder: "Enter reason..." | MaxLength: 500. Required when rejecting. | — | `min-h-[80px]`. Character count shown. |
 
-### 4.12 Section [M]: Review Modal Action Buttons (レビューモーダルアクションボタン)
+### 4.12 Section [F]: Review Modal Action Buttons (レビューモーダルアクションボタン)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 39 | `btnApproveReview` | Approve Button | Button (`submit`, `default`) | — | — | Visible. Text: "Approve" | — | — | i18n key: `admin.moderation.approve`. Full width. |
 | 40 | `btnRejectReview` | Reject Button | Button (`destructive`) | — | — | Visible. Text: "Reject" | — | — | i18n key: `admin.moderation.reject`. Shows reason textarea. |
-| 41 | `btnDeleteReview` | Delete Button | Button (`destructive`) | — | — | Visible. Text: "Delete" | — | — | i18n key: `admin.moderation.delete`. Requires confirmation. |
+| 41 | `btnReportReview` | Report Button | Button (`outline`) | — | — | Visible. Text: "Report" | — | — | i18n key: `admin.moderation.report`. Opens Report Review Modal. |
+| 42 | `btnDeleteReview` | Delete Button | Button (`destructive`) | — | — | Visible. Text: "Delete" | — | — | i18n key: `admin.moderation.delete`. Requires confirmation. |
 
-### 4.13 Section [N]: Page Header — Merchants (ページヘッダー — 出品者)
+### 4.13 Section [A]: Report Review Modal Header (レビューレポートモーダルヘッダー)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 43 | `lblReportReviewTitle` | Modal Title | Static Label (`<h2>`) | String | — | Text: "Report Review" | — | i18n key: `admin.moderation.report.title` | `text-lg font-semibold`. |
+| 44 | `btnCloseReportModal` | Close Modal Button | Icon Button | — | — | Visible. X icon. | — | — | Closes modal. Escape key also closes. |
+
+### 4.14 Section [B]: Review Preview in Report Modal (レビュープレビュー)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 45 | `imgReportReviewUserAvatar` | User Avatar | Avatar | URL | — | User avatar or default placeholder | — | `users.avatar_url` | `h-8 w-8 rounded-full`. |
+| 46 | `lblReportReviewUserName` | User Name | Static Label | String | — | Populated from DB | — | `users.name` | `font-medium text-sm`. |
+| 47 | `lblReportReviewProductName` | Product Name | Static Label | String | — | Populated from DB | — | `products.name` | `text-sm text-muted-foreground`. |
+| 48 | `ratingReportReview` | Review Rating | Star Rating | Integer (1-5) | — | Populated from DB | — | `reviews.rating` | Read-only display. |
+| 49 | `lblReportReviewBody` | Review Body | Static Label (`<p>`) | Text | — | Populated from DB (truncated to 200 chars) | — | `reviews.body` | `text-sm`. Truncated with "...". |
+
+### 4.15 Section [C]: Report Reason Selection (レポート理由選択)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 50 | `lblReportReason` | Report Reason Label | Static Label (`<label>`) | String | — | Visible. Text: "Reason for Report" | — | i18n key: `admin.moderation.report.reason` | Required. |
+| 51 | `radReportSpam` | Spam Radio Button | Radio Button | Enum | Yes | Unselected | Options: Spam, Inappropriate, Fake, Other | — | i18n key: `admin.reports.reason.spam`. |
+| 52 | `radReportInappropriate` | Inappropriate Radio Button | Radio Button | Enum | Yes | Unselected | — | — | i18n key: `admin.reports.reason.inappropriate`. |
+| 53 | `radReportFake` | Fake Radio Button | Radio Button | Enum | Yes | Unselected | — | — | i18n key: `admin.reports.reason.fake`. |
+| 54 | `radReportOther` | Other Radio Button | Radio Button | Enum | Yes | Unselected | — | — | i18n key: `admin.reports.reason.other`. |
+
+### 4.16 Section [D]: Report Detail Input (レポート詳細入力)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 55 | `lblReportDetail` | Report Detail Label | Static Label (`<label>`) | String | — | Visible. Text: "Additional Detail (Optional)" | — | i18n key: `admin.moderation.report.detail` | Optional. |
+| 56 | `txtReportDetail` | Report Detail Textarea | Textarea | String(1000) | No | Empty. Placeholder: "Provide additional context..." | MaxLength: 1000 | — | `min-h-[80px]`. Character count shown. |
+
+### 4.17 Section [E]: Report Review Modal Action Buttons (レビューレポートモーダルアクションボタン)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 57 | `btnCancelReport` | Cancel Button | Button (`outline`) | — | — | Visible. Text: "Cancel" | — | — | i18n key: `admin.moderation.report.cancel`. Closes modal. |
+| 58 | `btnSubmitReport` | Submit Report Button | Button (`submit`, `destructive`) | — | — | Visible. Text: "Submit Report" | — | — | i18n key: `admin.moderation.report.submit`. Requires reason selected. |
+
+### 4.18 Section [A]: Page Header — Merchants (ページヘッダー — 出品者)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 42 | `lblMerchantsTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Merchant Management" | — | i18n key: `admin.merchants.title` | `text-2xl font-bold`. |
 
-### 4.14 Section [O]: Filter Tabs — Merchants (フィルタタブ — 出品者)
+### 4.19 Section [B]: Filter Tabs — Merchants (フィルタタブ — 出品者)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 43 | `tabFilterMerchants` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Pending Approval, Approved, Rejected | — | i18n key: `admin.merchants.tabs`. |
 
-### 4.15 Section [P]: Search Bar — Merchants (検索バー — 出品者)
+### 4.20 Section [C]: Search Bar — Merchants (検索バー — 出品者)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 44 | `txtMerchantSearch` | Search Merchants Input | Input (`text`) | String(255) | No | Empty. Placeholder: "Search merchants..." | MaxLength: 255 | — | i18n key: `admin.merchants.search`. Debounced (300ms). |
 
-### 4.16 Section [Q]: Merchants Table (出品者テーブル)
+### 4.21 Section [D]: Merchants Table (出品者テーブル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -491,13 +591,13 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 51 | `badgeMerchantStatus` | Merchant Status Badge | Badge | Enum | — | Green (Approved), Amber (Pending), Red (Rejected) | — | `merchants.license_status` | Standard status badge colors. `shops.is_approved` is synchronized for public shop visibility. |
 | 52 | `ddlMerchantActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Approve, Reject | — | Destructive actions show confirmation. |
 
-### 4.17 Section [R]: Pagination — Merchants (ページネーション — 出品者)
+### 4.22 Section [E]: Pagination — Merchants (ページネーション — 出品者)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 53 | `pagMerchants` | Merchants Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
 
-### 4.18 Section [T]: Shop Info Card in Merchant Modal (出品者モーダル内ショップカード)
+### 4.23 Section [A]: Shop Info Card in Merchant Modal (出品者モーダル内ショップカード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -506,14 +606,14 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 56 | `lblShopNameDetail` | Shop Name | Static Label | String | — | Populated from DB | — | `shops.name` | `font-semibold text-lg`. |
 | 57 | `lblShopDescription` | Shop Description | Static Label (`<p>`) | Text | — | Populated from DB or "—" | — | `shops.description` | `text-sm text-muted-foreground`. |
 
-### 4.19 Section [U]: License Viewer in Merchant Modal (出品者モーダル内ライセンスビューア)
+### 4.24 Section [B]: License Viewer in Merchant Modal (出品者モーダル内ライセンスビューア)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 58 | `viewerLicense` | License PDF Viewer | PDF Viewer | URL | — | Embedded PDF or download link | — | S3/local file path | PDF display with zoom controls. |
 | 59 | `btnDownloadLicense` | Download License Button | Button (`outline`) | — | — | Visible. Text: "Download" | — | — | Triggers file download. |
 
-### 4.20 Section [V]: User Info Card in Merchant Modal (出品者モーダル内ユーザーカード)
+### 4.25 Section [C]: User Info Card in Merchant Modal (出品者モーダル内ユーザーカード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -522,27 +622,27 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 62 | `lblMerchantDetailPhone` | Merchant Phone | Static Label | String | — | Populated from DB or "—" | — | `users.phone` | `text-sm`. |
 | 63 | `lblMerchantDetailRegDate` | Registration Date | Static Label | DateTime | — | ISO 8601 formatted | — | `shops.created_at` | Localized date format. |
 
-### 4.21 Section [W]: Rejection Reason Input in Merchant Modal (出品者モーダル内却下理由)
+### 4.26 Section [D]: Rejection Reason Input in Merchant Modal (出品者モーダル内却下理由)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 64 | `lblMerchantRejectReason` | Rejection Reason Label | Static Label (`<label>`) | String | — | Visible only when Reject is clicked. Text: "Reason for Rejection" | — | i18n key: `admin.merchant.rejectReason` | Required for rejection. |
 | 65 | `txtMerchantRejectReason` | Rejection Reason Textarea | Textarea | String(500) | Conditional | Empty. Placeholder: "Enter reason..." | MaxLength: 500. Required when rejecting. | — | `min-h-[80px]`. |
 
-### 4.22 Section [X]: Merchant Modal Action Buttons (出品者モーダルアクションボタン)
+### 4.27 Section [E]: Merchant Modal Action Buttons (出品者モーダルアクションボタン)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 66 | `btnApproveMerchant` | Approve Button | Button (`submit`, `default`) | — | — | Visible. Text: "Approve" | — | — | i18n key: `admin.merchant.approve`. |
 | 67 | `btnRejectMerchant` | Reject Button | Button (`destructive`) | — | — | Visible. Text: "Reject" | — | — | i18n key: `admin.merchant.reject`. Shows reason textarea. |
 
-### 4.23 Section [Y]: Page Header — Content Moderation (ページヘッダー — コンテンツ管理)
+### 4.28 Section [A]: Page Header — Content Moderation (ページヘッダー — コンテンツ管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 68 | `lblContentTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Product Content Moderation" | — | i18n key: `admin.content.title` | `text-2xl font-bold`. |
 
-### 4.24 Section [AA]: Stats Bar — Content Moderation (統計バー — コンテンツ管理)
+### 4.29 Section [B]: Stats Bar — Content Moderation (統計バー — コンテンツ管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -551,13 +651,13 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 71 | `statInactiveCount` | Inactive Products Count | Stats Card | Integer | — | Populated on load | — | `COUNT(products WHERE is_active = FALSE)` | Red badge. |
 
 
-### 4.25 Section [BB]: Filter Tabs — Content Moderation (フィルタタブ — コンテンツ管理)
+### 4.30 Section [C]: Filter Tabs — Content Moderation (フィルタタブ — コンテンツ管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 73 | `tabFilterContent` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Active, Inactive | — | i18n key: `admin.content.tabs`. Updates query params on change. |
 
-### 4.26 Section [CC]: Search + Sort Bar — Content Moderation (検索・ソートバー — コンテンツ管理)
+### 4.31 Section [D]: Search + Sort Bar — Content Moderation (検索・ソートバー — コンテンツ管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -566,7 +666,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 76 | `btnBulkDeactivate` | Deactivate Selected Button | Button (`destructive`) | — | No | Disabled (no selection) | — | — | Enabled when active products selected. Requires confirmation. |
 | 77 | `btnBulkReactivate` | Reactivate Selected Button | Button (`outline`) | — | No | Disabled (no selection) | — | — | Enabled when inactive products selected. |
 
-### 4.27 Section [DD]: Products Table (製品テーブル)
+### 4.32 Section [E]: Products Table (製品テーブル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -581,20 +681,20 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 86 | `lblProductCreatedDate` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `products.created_at` | Localized date format via i18n. |
 | 87 | `ddlProductActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Deactivate, Reactivate | — | Destructive actions show confirmation. |
 
-### 4.28 Section [EE]: Pagination — Content Moderation (ページネーション — コンテンツ管理)
+### 4.33 Section [F]: Pagination — Content Moderation (ページネーション — コンテンツ管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 88 | `pagProducts` | Products Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
 
-### 4.29 Section [FF]: Product Moderation Modal Header (製品モデレーションモーダルヘッダー)
+### 4.34 Section [A]: Product Moderation Modal Header (製品モデレーションモーダルヘッダー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 89 | `lblProductModerationTitle` | Modal Title | Static Label (`<h2>`) | String | — | Text: "Product Moderation" | — | i18n key: `admin.content.detail.title` | `text-lg font-semibold`. |
 | 90 | `btnCloseProductModal` | Close Modal Button | Icon Button | — | — | Visible. X icon. | — | — | Closes modal. Escape key also closes. |
 
-### 4.30 Section [GG]: Product Info Card in Moderation Modal (製品モデレーションモーダル内製品カード)
+### 4.35 Section [B]: Product Info Card in Moderation Modal (製品モデレーションモーダル内製品カード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -605,13 +705,13 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 95 | `lblProductCategory` | Product Category | Static Label | String | — | Populated from DB | — | `categories.name` | Category name from relation. |
 | 96 | `lblProductShopName` | Shop Name | Static Label (Link) | String | — | Populated from DB | — | `shops.name` | Links to `/admin/merchants/:id`. |
 
-### 4.31 Section [HH]: Product Images Gallery in Moderation Modal (製品モデレーションモーダル内画像ギャラリー)
+### 4.36 Section [C]: Product Images Gallery in Moderation Modal (製品モデレーションモーダル内画像ギャラリー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 97 | `galleryProductImages` | Product Images | Image Gallery | Array[URL] | No | Grid layout of images | — | `products.images` | `grid grid-cols-4 gap-2`. Max 10 images. |
 
-### 4.32 Section [II]: Shop Owner Card in Moderation Modal (製品モデレーションモーダル内出品者カード)
+### 4.37 Section [D]: Shop Owner Card in Moderation Modal (製品モデレーションモーダル内出品者カード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -620,7 +720,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 100 | `lblProductOwnerName` | Owner Name | Static Label | String | — | Populated from DB | — | `users.name` | `text-sm text-muted-foreground`. |
 | 101 | `lblProductOwnerEmail` | Owner Email | Static Label | String | — | Populated from DB | — | `users.email` | `text-sm text-muted-foreground`. |
 
-### 4.33 Section [JJ]: Status Info in Moderation Modal (製品モデレーションモーダル内ステータス情報)
+### 4.38 Section [E]: Status Info in Moderation Modal (製品モデレーションモーダル内ステータス情報)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -628,27 +728,27 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 103 | `lblProductDetailCreated` | Created Date | Static Label | DateTime | — | ISO 8601 formatted | — | `products.created_at` | Localized date format. |
 | 104 | `lblProductDetailUpdated` | Last Updated | Static Label | DateTime | — | ISO 8601 formatted | — | `products.updated_at` | Localized date format. |
 
-### 4.34 Section [KK]: Moderation Reason Input — Product (製品モデレーション理由入力)
+### 4.39 Section [F]: Moderation Reason Input — Product (製品モデレーション理由入力)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 105 | `lblProductModerationReason` | Moderation Reason Label | Static Label (`<label>`) | String | — | Visible only when Deactivate is clicked. Text: "Reason for Deactivation" | — | i18n key: `admin.content.reason` | Required for deactivation. |
 | 106 | `txtProductModerationReason` | Moderation Reason Textarea | Textarea | String(500) | Conditional | Empty. Placeholder: "Enter reason..." | MaxLength: 500. Required when deactivating. | — | `min-h-[80px]`. Character count shown. |
 
-### 4.35 Section [LL]: Product Moderation Modal Action Buttons (製品モデレーションモーダルアクションボタン)
+### 4.40 Section [G]: Product Moderation Modal Action Buttons (製品モデレーションモーダルアクションボタン)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 107 | `btnDeactivateProduct` | Deactivate Button | Button (`destructive`) | — | — | Visible when product is active. Text: "Deactivate" | — | — | i18n key: `admin.content.deactivate`. Shows reason textarea. Requires confirmation. |
 | 108 | `btnReactivateProduct` | Reactivate Button | Button (`default`) | — | — | Visible when product is inactive. Text: "Reactivate" | — | — | i18n key: `admin.content.reactivate`. |
 
-### 4.36 Section [MM]: Page Header — Users Management (ページヘッダー — ユーザー管理)
+### 4.41 Section [A]: Page Header — Users Management (ページヘッダー — ユーザー管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 109 | `lblUsersTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "User Management" | — | i18n key: `admin.users.title` | `text-2xl font-bold`. |
 
-### 4.37 Section [NN]: Stats Bar — Users Management (統計バー — ユーザー管理)
+### 4.42 Section [B]: Stats Bar — Users Management (統計バー — ユーザー管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -657,19 +757,19 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 112 | `statInactiveUsers` | Inactive Users Count | Stats Card | Integer | — | Populated on load | — | `COUNT(users WHERE is_active = FALSE)` | Red badge. |
 | 113 | `statAdminUsers` | Admin Users Count | Stats Card | Integer | — | Populated on load | — | `COUNT(users WHERE role = 'admin')` | Purple badge. |
 
-### 4.38 Section [OO]: Filter Tabs — Users Management (フィルタタブ — ユーザー管理)
+### 4.43 Section [C]: Filter Tabs — Users Management (フィルタタブ — ユーザー管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 114 | `tabFilterUsers` | Filter Tabs | Tab Group | Enum | — | Default: "All" | Options: All, Active, Inactive, Admin | — | i18n key: `admin.users.tabs`. Updates query params on change. |
 
-### 4.39 Section [PP]: Search Bar — Users Management (検索バー — ユーザー管理)
+### 4.44 Section [D]: Search Bar — Users Management (検索バー — ユーザー管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 115 | `txtUserSearch` | Search Users Input | Input (`text`) | String(255) | No | Empty. Placeholder: "Search users..." | MaxLength: 255 | — | i18n key: `admin.users.search`. Debounced (300ms). |
 
-### 4.40 Section [QQ]: Users Table (ユーザーテーブル)
+### 4.45 Section [E]: Users Table (ユーザーテーブル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -681,20 +781,20 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 121 | `lblUserJoinedDate` | Joined Date | Static Label | DateTime | — | ISO 8601 formatted | — | `users.created_at` | Localized date format via i18n. |
 | 122 | `ddlUserActions` | Actions Dropdown | Dropdown Menu | — | — | Collapsed | Options: View Detail, Deactivate, Reactivate | — | Destructive actions show confirmation. Cannot deactivate self (BR-MOD-042). |
 
-### 4.41 Section [RR]: Pagination — Users Management (ページネーション — ユーザー管理)
+### 4.46 Section [F]: Pagination — Users Management (ページネーション — ユーザー管理)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 123 | `pagUsers` | Users Pagination | Pagination | — | — | Page 1, Total pages from API | — | API response `meta.totalPages` | Page size selector: 20, 50, 100. |
 
-### 4.42 Section [SS]: User Detail Modal Header (ユーザーモーダルヘッダー)
+### 4.47 Section [A]: User Detail Modal Header (ユーザーモーダルヘッダー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 124 | `lblUserDetailTitle` | Modal Title | Static Label (`<h2>`) | String | — | Text: "User Detail" | — | i18n key: `admin.users.detail.title` | `text-lg font-semibold`. |
 | 125 | `btnCloseUserModal` | Close Modal Button | Icon Button | — | — | Visible. X icon. | — | — | Closes modal. Escape key also closes. |
 
-### 4.43 Section [TT]: User Info Card in User Modal (ユーザーモーダル内ユーザーカード)
+### 4.48 Section [B]: User Info Card in User Modal (ユーザーモーダル内ユーザーカード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -705,45 +805,48 @@ The Review & Content Moderation screens serve as the central administration hub 
 | 130 | `lblUserDetailRole` | User Role | Static Label | Enum | — | Populated from DB | — | `users.role` | Displays role with icon. |
 | 131 | `lblUserDetailJoined` | Joined Date | Static Label | DateTime | — | ISO 8601 formatted | — | `users.created_at` | Localized date format. |
 
-### 4.44 Section [UU]: Account Status in User Modal (ユーザーモーダル内アカウントステータス)
+### 4.49 Section [C]: Account Status in User Modal (ユーザーモーダル内アカウントステータス)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 132 | `badgeUserDetailStatus` | User Status Badge | Badge | Enum | — | Green (Active), Red (Inactive) | — | `users.is_active` | Current user status. |
-| 133 | `lblUserDetailLastLogin` | Last Login | Static Label | DateTime | — | ISO 8601 formatted or "—" | — | `users.last_login_at` | Localized date format. |
-| 134 | `lblUserDetailReviewCount` | Review Count | Static Label | Integer | — | Populated from DB | — | `COUNT(reviews WHERE user_id = :id)` | Text: "X reviews". |
+| 133 | `lblUserDetailReviewCount` | Review Count | Static Label | Integer | — | Populated from DB | — | `COUNT(reviews WHERE user_id = :id)` | Text: "X reviews". |
 
-### 4.45 Section [VV]: User Modal Action Buttons (ユーザーモーダルアクションボタン)
+### 4.50 Section [D]: User Modal Action Buttons (ユーザーモーダルアクションボタン)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 135 | `btnDeactivateUser` | Deactivate Button | Button (`destructive`) | — | — | Visible when user is active. Text: "Deactivate" | — | — | i18n key: `admin.users.deactivate`. Requires confirmation. Hidden for current admin (BR-MOD-042). |
 | 136 | `btnReactivateUser` | Reactivate Button | Button (`default`) | — | — | Visible when user is inactive. Text: "Reactivate" | — | — | i18n key: `admin.users.reactivate`. |
 
-### 4.46 Review Reports List Layout (`/admin/reports`)
+### 4.51 Reports Tab Layout (within `/admin/reviews`)
 
 **Purpose:** Allow platform administrators to view, moderate, and manage user-submitted review reports.
 
-**Route:** `/admin/reports`
+**Route:** `/admin/reviews` (Reports tab)
 
 **Layout Structure:**
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  DashboardLayout (admin sidebar)                         │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  PageHeader: "Review Reports" (admin.reports.title)│  │
-│  │  StatsBar: Total | Pending | Reviewed | Resolved  │  │
-│  │  | Rejected                                       │  │
-│  │  SearchBar + FilterTabs: All | Pending | Reviewed  │  │
-│  │                           | Resolved | Rejected    │  │
-│  │  ┌──────────────────────────────────────────────┐  │  │
-│  │  │  DataTable (report_rows)                     │  │  │
-│  │  │  Columns: [✓] [Reporter] [Review Excerpt]    │  │  │
-│  │  │  [Reason] [Status] [Created] [Actions]       │  │  │
-│  │  └──────────────────────────────────────────────┘  │  │
-│  │  Pagination: 20 | 50 | 100 per page                │  │
-│  └────────────────────────────────────────────────────┘  │
+│  [A] SCREEN TABS                                         │
+│  [Reviews] [Reports]  ← Reports tab is active            │
+├──────────────────────────────────────────────────────────┤
+│  [B] STATS BAR                                           │
+│  Total | Pending | Reviewed | Resolved | Rejected        │
+├──────────────────────────────────────────────────────────┤
+│  [C] FILTER TABS                                         │
+│  All | Pending | Reviewed | Resolved | Rejected          │
+├──────────────────────────────────────────────────────────┤
+│  [D] SEARCH BAR                                          │
+│  🔍 Search by reporter name, review content...           │
+├──────────────────────────────────────────────────────────┤
+│  [E] REPORTS TABLE                                       │
+│  Checkbox | Reporter | Review Excerpt | Reason | Status  │
+│  Created | Actions                                       │
+├──────────────────────────────────────────────────────────┤
+│  [F] PAGINATION                                          │
+│  < 1 2 3 ... 5 >    Page Size: [20]                     │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -770,7 +873,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 - Fake: `bg-yellow-100 text-yellow-800`
 - Other: `bg-purple-100 text-purple-800`
 
-### 4.47 Report Detail Modal Layout
+### 4.52 Report Detail Modal Layout
 
 **Purpose:** Display full report details and allow moderator to take action.
 
@@ -819,7 +922,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 | Report Status | Badge | — | Status badge |
 | Resolved By | Text | — | Admin name or "—" |
 | Resolved At | Timestamp | — | ISO date or "—" |
-| Admin Note | Textarea | `admin.reports.detail.adminNote` | Optional admin note (String 500). |
+| Admin Note | Textarea | `admin.reports.detail.adminNote` | Optional admin note (String 1000). |
 | Approve Review | Button (secondary) | `admin.moderation.approve` | Approve target review |
 | Reject Review | Button (destructive) | `admin.moderation.reject` | Reject target review |
 | Delete Review | Button (destructive) | `admin.moderation.delete` | Delete target review |
@@ -882,7 +985,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 - **Trigger:** User clicks "Reject" button, enters reason, then clicks confirm.
 - **Processing Logic:**
   1. **UI Update:** Show `lblModerationReason` and `txtModerationReason` textarea.
-  2. **Client-Side Pre-Check:** Validate reason is not empty (required). Validate max 500 chars.
+  2. **Client-Side Pre-Check:** Validate reason is not empty (required).
   3. **Backend Dispatch:** `POST /api/v1/admin/reviews/:id/moderate` with `{ action: 'reject', reason: '...' }`.
   4. **Backend Execution:** Update `reviews.is_approved = false`. Recalculate product stats. Invalidate cache. Log audit trail.
   5. **Post-Execution UI:** Close modal. Show success toast "Review rejected". Refresh reviews list.
@@ -1042,7 +1145,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 - **Trigger:** User clicks "Deactivate" button in product moderation modal.
 - **Processing Logic:**
   1. **UI Update:** Show `lblProductModerationReason` and `txtProductModerationReason` textarea.
-  2. **Client-Side Pre-Check:** Validate reason is not empty (required). Validate max 500 chars.
+  2. **Client-Side Pre-Check:** Validate reason is not empty (required).
   3. **Confirmation Dialog:** Show "Are you sure you want to deactivate this product? It will no longer be visible to buyers."
   4. **Backend Dispatch:** `PATCH /api/v1/admin/content/:id/status` with `{ isActive: false, reason: '...' }`.
   5. **Backend Execution:** Update `products.is_active = false`. Invalidate product cache in Redis. Invalidate product list cache. Log audit trail (BR-MOD-011, BR-MOD-013).
@@ -1187,7 +1290,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-MOD-001** | `txtModerationReason` | Reason is empty when action = 'reject' | Red border. Text below field. | "Rejection reason is required" | "却下理由は必須です" |
-| **VAL-MOD-002** | `txtModerationReason` | Reason exceeds 500 characters | Red border. Text below field. | "Reason must not exceed 500 characters" | "理由は500文字以下である必要があります" |
 | **MOD_001** | `alertError` | Non-admin user attempts moderation (403) | Alert banner (destructive) | "You do not have permission to perform this action" | "このアクションを実行する権限がありません" |
 | **MOD_002** | `alertError` | Review not found (404) | Alert banner (destructive) | "Review not found" | "レビューが見つかりません" |
 | **MOD_003** | `alertError` | Review already in target state (409) | Toast notification (warning) | "Review is already approved/rejected" | "レビューは既に承認済み/却下済みです" |
@@ -1199,7 +1301,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-MOD-010** | `txtMerchantRejectReason` | Reason is empty when status = 'rejected' | Red border. Text below field. | "Rejection reason is required" | "却下理由は必須です" |
-| **VAL-MOD-011** | `txtMerchantRejectReason` | Reason exceeds 500 characters | Red border. Text below field. | "Reason must not exceed 500 characters" | "理由は500文字以下である必要があります" |
 | **MOD_010** | `alertError` | Non-admin user attempts moderation (403) | Alert banner (destructive) | "You do not have permission" | "権限がありません" |
 | **MOD_011** | `alertError` | Merchant not found (404) | Alert banner (destructive) | "Merchant not found" | "出品者が見つかりません" |
 | **MOD_012** | `alertError` | Merchant already in target status (409) | Toast notification (warning) | "Merchant is already approved/rejected" | "出品者は既に承認済み/却下済みです" |
@@ -1218,7 +1319,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-MOD-020** | `txtProductModerationReason` | Reason is empty when action = 'deactivate' | Red border. Text below field. | "Deactivation reason is required" | "無効化理由は必須です" |
-| **VAL-MOD-021** | `txtProductModerationReason` | Reason exceeds 500 characters | Red border. Text below field. | "Reason must not exceed 500 characters" | "理由は500文字以下である必要があります" |
 | **MOD_030** | `alertError` | Non-admin user attempts moderation (403) | Alert banner (destructive) | "You do not have permission to perform this action" | "このアクションを実行する権限がありません" |
 | **MOD_031** | `alertError` | Product not found (404) | Alert banner (destructive) | "Product not found" | "製品が見つかりません" |
 | **MOD_032** | `alertError` | Product already in target state (409) | Toast notification (warning) | "Product is already active/inactive" | "製品は既に有効/無効です" |
@@ -1323,7 +1423,6 @@ The Review & Content Moderation screens serve as the central administration hub 
 | Table Field | API Response Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
 | `phone` | `user.phone` | `phone` | `users` | VARCHAR(20) NULL |
-| `lastLoginAt` | `user.lastLoginAt` | `last_login_at` | `users` | TIMESTAMPTZ NULL |
 | `updatedAt` | `user.updatedAt` | `updated_at` | `users` | TIMESTAMPTZ |
 | `reviewCount` | `user.reviewCount` | (computed) | `reviews` | INTEGER |
 
@@ -1408,9 +1507,10 @@ The Review & Content Moderation screens serve as the central administration hub 
   "data": [
     {
       "id": "clxShop001",
-      "name": "Beauty Garden",
+      "shopName": "Beauty Garden",
       "slug": "beauty-garden",
       "logoUrl": "https://cdn.example.com/shops/beauty-garden-logo.png",
+      "licenseStatus": "pending",
       "user": {
         "id": "clxUser001",
         "name": "Jane Smith",
@@ -1577,7 +1677,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 }
 ```
 
-### 8.7 Error Response (Standard)
+### 8.11 Error Response (Standard)
 
 ```json
 {
@@ -1599,8 +1699,15 @@ The Review & Content Moderation screens serve as the central administration hub 
 | :--- | :--- |
 | `admin.reviews.title` | "Review Moderation" |
 | `admin.reviews.tabs.all` | "All" |
+| `admin.reviews.tabs.pending` | "Pending" |
 | `admin.reviews.tabs.approved` | "Approved" |
 | `admin.reviews.tabs.rejected` | "Rejected" |
+| `admin.reviews.tabs.reported` | "Reported" |
+| `admin.reviews.stats.total` | "Total Reviews" |
+| `admin.reviews.stats.pending` | "Pending" |
+| `admin.reviews.stats.approved` | "Approved" |
+| `admin.reviews.stats.rejected` | "Rejected" |
+| `admin.reviews.stats.reported` | "Reported" |
 | `admin.reviews.search` | "Search reviews..." |
 | `admin.reviews.sort.newest` | "Newest" |
 | `admin.reviews.sort.oldest` | "Oldest" |
@@ -1614,10 +1721,12 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.moderation.reasonPlaceholder` | "Enter reason for rejection..." |
 | `admin.moderation.approve` | "Approve" |
 | `admin.moderation.reject` | "Reject" |
+| `admin.moderation.report` | "Report" |
 | `admin.moderation.delete` | "Delete" |
 | `admin.moderation.confirmDelete` | "Are you sure you want to permanently delete this review? This action cannot be undone." |
 | `admin.moderation.success.approved` | "Review approved" |
 | `admin.moderation.success.rejected` | "Review rejected" |
+| `admin.moderation.success.reported` | "Review reported" |
 | `admin.moderation.success.deleted` | "Review deleted" |
 | `admin.moderation.bulk.approve` | "Approve Selected" |
 | `admin.moderation.bulk.reject` | "Reject Selected" |
@@ -1627,6 +1736,11 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.moderation.bulk.confirmDelete` | "Permanently delete {count} selected reviews? This cannot be undone." |
 | `admin.moderation.verifiedPurchase` | "Verified Purchase" |
 | `admin.moderation.viewProduct` | "View Product" |
+| `admin.moderation.report.title` | "Report Review" |
+| `admin.moderation.report.reason` | "Reason for Report" |
+| `admin.moderation.report.detail` | "Additional Detail (Optional)" |
+| `admin.moderation.report.cancel` | "Cancel" |
+| `admin.moderation.report.submit` | "Submit Report" |
 
 ### 9.2 English (en) — Merchants
 
@@ -1752,8 +1866,15 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 ### 9.4 Japanese (ja) — Reviews
 | `admin.reviews.tabs.all` | "すべて" |
+| `admin.reviews.tabs.pending` | "承認待ち" |
 | `admin.reviews.tabs.approved` | "承認済み" |
 | `admin.reviews.tabs.rejected` | "却下済み" |
+| `admin.reviews.tabs.reported` | "報告済み" |
+| `admin.reviews.stats.total` | "合計レビュー数" |
+| `admin.reviews.stats.pending` | "承認待ち" |
+| `admin.reviews.stats.approved` | "承認済み" |
+| `admin.reviews.stats.rejected` | "却下済み" |
+| `admin.reviews.stats.reported` | "報告済み" |
 | `admin.reviews.search` | "レビューを検索..." |
 | `admin.reviews.sort.newest` | "新規順" |
 | `admin.reviews.sort.oldest` | "古い順" |
@@ -1767,10 +1888,12 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.moderation.reasonPlaceholder` | "却下理由を入力してください..." |
 | `admin.moderation.approve` | "承認" |
 | `admin.moderation.reject` | "却下" |
+| `admin.moderation.report` | "報告" |
 | `admin.moderation.delete` | "削除" |
 | `admin.moderation.confirmDelete` | "このレビューを完全に削除してもよろしいですか？この操作は取り消せません。" |
 | `admin.moderation.success.approved` | "レビューが承認されました" |
 | `admin.moderation.success.rejected` | "レビューが却下されました" |
+| `admin.moderation.success.reported` | "レビューが報告されました" |
 | `admin.moderation.success.deleted` | "レビューが削除されました" |
 | `admin.moderation.bulk.approve` | "選択を承認" |
 | `admin.moderation.bulk.reject` | "選択を却下" |
@@ -1780,6 +1903,11 @@ The Review & Content Moderation screens serve as the central administration hub 
 | `admin.moderation.bulk.confirmDelete` | "選択した{count}件のレビューを完全に削除しますか？この操作は取り消せません。" |
 | `admin.moderation.verifiedPurchase` | "認証済み購入" |
 | `admin.moderation.viewProduct` | "製品を表示" |
+| `admin.moderation.report.title` | "レビューを報告" |
+| `admin.moderation.report.reason` | "報告理由" |
+| `admin.moderation.report.detail` | "追加詳細（任意）" |
+| `admin.moderation.report.cancel` | "キャンセル" |
+| `admin.moderation.report.submit` | "報告を送信" |
 
 ### 9.5 Japanese (ja) — Merchants
 | `admin.merchants.tabs.all` | "すべて" |
@@ -2078,7 +2206,7 @@ The Review & Content Moderation screens serve as the central administration hub 
 
 - [ ] Modal opens with correct user data
 - [ ] User info card displays avatar, name, email, phone, role, joined date
-- [ ] Account status displays status badge, last login, review count
+- [ ] Account status displays status badge, review count
 - [ ] Deactivate button shows confirmation dialog
 - [ ] Deactivate confirmation submits successfully
 - [ ] Reactivate button shows confirmation dialog

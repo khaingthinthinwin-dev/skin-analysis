@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.4 |
+| **Version** | 2.5 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-20 |
+| **Last Updated** | 2026-08-24 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released（承認済み） |
 
@@ -25,6 +25,7 @@
 | 2.1 | 2026-08-17 | Lead Database Engineer | 手数料・売上管理機能テーブル追加: commission_settings, revenue_targets, payoutsテーブル追加 |
 | 2.2 | 2026-08-17 | Lead Database Engineer | AI肌分析・カート・監査・通知テーブル追加: skin_analyses, skin_analysis_conditions, skin_analysis_recommendations, carts, cart_items, order_status_history, inventory_transactions, review_reports, audit_logs, notificationsの10テーブル追加 |
 | 2.4 | 2026-08-20 | Lead Database Engineer | 手数料率を管理者設定可能に変更、出品者支払いを簡素化（広告料なし）、password_reset_tokensテーブル追加 |
+| 2.5 | 2026-08-24 | Lead Database Engineer | 管理者承認レビューアプローチに合わせて`reviews.is_approved`のDEFAULTをTRUEからFALSEに変更（すべてのレビューは購入者に表示される前に管理者承認が必要）。 |
 
 ---
 

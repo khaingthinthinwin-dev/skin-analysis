@@ -1,0 +1,58 @@
+{
+  "title": "My Profile",
+  "description": "Manage your account settings and preferences",
+  "tabs": {
+    "info": "Profile Info",
+    "edit": "Edit Profile",
+    "password": "Change Password"
+  },
+  "info": {
+    "title": "Profile Information",
+    "description": "Your account details and information",
+    "contactInfo": "Contact Information",
+    "email": "Email",
+    "phone": "Phone",
+    "notProvided": "Not provided",
+    "accountDetails": "Account Details",
+    "memberSince": "Member Since",
+    "emailVerification": "Email Verification",
+    "verified": "Verified",
+    "notVerified": "Not Verified"
+  },
+  "form": {
+    "title": "Edit Profile",
+    "description": "Update your personal information",
+    "name": "Full Name",
+    "namePlaceholder": "Enter your name",
+    "nameDescription": "Your name as it appears on your account",
+    "phone": "Phone Number",
+    "phonePlaceholder": "+1 234 567 890",
+    "phoneDescription": "Optional - for account recovery",
+    "avatarUrl": "Avatar URL",
+    "avatarUrlPlaceholder": "https://example.com/avatar.jpg",
+    "avatarUrlDescription": "URL to your profile picture",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "success": "Profile updated successfully",
+    "error": "Failed to update profile"
+  },
+  "password": {
+    "title": "Change Password",
+    "description": "Update your password to keep your account secure",
+    "current": "Current Password",
+    "currentPlaceholder": "Enter your current password",
+    "new": "New Password",
+    "newPlaceholder": "Create a new password",
+    "newDescription": "Must be at least 8 characters with uppercase, lowercase, number, and special character",
+    "confirm": "Confirm New Password",
+    "confirmPlaceholder": "Confirm your new password",
+    "save": "Change Password",
+    "saving": "Changing...",
+    "success": "Password changed successfully",
+    "error": "Failed to change password"
+  },
+  "error": {
+    "title": "Error",
+    "loadFailed": "Failed to load profile information. Please try again."
+  }
+}

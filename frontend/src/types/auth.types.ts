@@ -32,3 +32,23 @@ export interface AuthResponse {
   accessToken: string
   refreshToken: string
 }
+
+export interface ForgotPasswordData {
+  email: string
+}
+
+export interface ResetPasswordData {
+  token: string
+  password: string
+}
+
+export interface CreateAdminData {
+  name: string
+  email: string
+  password: string
+  role: 'admin' | 'super_admin'
+}
+
+export interface MessageResponse {
+  message: string
+}
