@@ -10,7 +10,7 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 7.2 |
+| **Version** | 8.0 |
 | **Created** | 2026-08-05 |
 | **Last Updated** | 2026-08-24 |
 | **Author** | Senior System Engineer |
@@ -32,6 +32,7 @@
 | 7.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all route references, screen transitions, and operation triggers. |
 | 7.1 | 2026-08-24 | Senior System Engineer | Aligned payment status enums with DATABASE_SPEC v2.4: removed 'failed' from order payment statuses (pending/completed only), removed 'failed' from ad payment statuses (pending/completed/refunded only). Updated BR-REV-003, BR-ADFE-005, EL-35, EL-36, and cross-reference traceability matrix. |
 | 7.2 | 2026-08-24 | Senior System Engineer | UI cleanup of the Revenue tab payment panels: removed the "Failed" and "Refunded" status cards from the Payment Status Panel (EL-35) and the "Ad Failed" status card from the Ad Payment Status Panel (EL-36). Adjusted panel grid layout and spacing for a balanced display — order payment badges in a single-row 2-column grid, ad payment badges in a single-row 3-column grid. Updated default state and verification checklist accordingly. |
+| 8.0 | 2026-08-24 | Senior System Engineer | Added Export functionality: 3 new use cases (UC-COMM-012~014), Export Modal screen (Layout 5), 4 new operations (§6.12~6.15), export business rules (BR-EXP-001~006), export input/output specs, export validation rules, export error handling, export endpoints in permissions and audit logging. Supports CSV and Excel formats only (no PDF). Updated both EN and JP specs. |
 
 ---
 
@@ -155,6 +156,9 @@ This screen suite is responsible for the following core functional areas:
 | UC-COMM-009 | View Revenue Forecast | Admin authenticated | Dotted forecast line displayed on trend chart | Admin |
 | UC-COMM-010 | View Ad Fee Revenue | Admin authenticated | Ad fee KPI and trend displayed in revenue dashboard | Admin |
 | UC-COMM-011 | View Ad Fee Payment Status | Admin authenticated | Ad fee payment breakdown displayed | Admin |
+| UC-COMM-012 | Export Commission Report | Admin authenticated | CSV/Excel file generated with merchant-level commission data | Admin |
+| UC-COMM-013 | Export Revenue Report | Admin authenticated | CSV/Excel file generated with revenue KPI and trend data | Admin |
+| UC-COMM-014 | Export Payout History | Admin authenticated | CSV/Excel file generated with payout records | Admin |
 
 ### 2.2 Primary Business Workflow
 
@@ -328,13 +332,24 @@ Admin navigates to /admin/commission-revenue
 | BR-COMM-007 | Audit Logging | Audit log entries are created for commission rate updates, revenue target updates, and payout processing. | Backend (audit service) |
 | BR-COMM-008 | Loading State | System uses skeleton loading states until API responses arrive. | Frontend (UI) |
 
+### 4.9 Export Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-EXP-001 | Export Format | Export format must be one of: `csv`, `xlsx`. | Backend (DTO validation) |
+| BR-EXP-002 | Date Range for Export | Exports require a date range (dateFrom and dateTo). Maximum 365 days. | Backend (DTO validation) |
+| BR-EXP-003 | Async Generation | Large exports (>1000 rows) are generated asynchronously. Admin receives a download link via notification when ready. | Backend (job queue) |
+| BR-EXP-004 | Export Retention | Generated export files are retained for 24 hours, then deleted. | Backend (cleanup job) |
+| BR-EXP-005 | Export Audit | All export actions are logged to audit_logs with report type, format, and date range. | Backend (audit service) |
+| BR-EXP-006 | Data Sanitization | Exported data must not include sensitive fields (password hashes, tokens). | Backend (export service) |
+
 ---
 
 ## 5. Screen Specifications
 
 ### 5.1 Screen: Commission & Revenue Dashboard (`/admin/commission-revenue`)
 
-**Purpose:** Allow admins to manage platform commission settings, view merchant commission reports, monitor revenue KPIs and trends with AI forecast, track revenue target progress, review payment status, and process merchant payouts — all within a single page using tabs.
+**Purpose:** Allow admins to manage platform commission settings, view merchant commission reports, monitor revenue KPIs and trends with AI forecast, track revenue target progress, review payment status, process merchant payouts, and export financial reports — all within a single page using tabs.
 
 #### 5.1.1 Page Tab Structure
 
@@ -369,6 +384,7 @@ Admin navigates to /admin/commission-revenue
 | EL-11 | Reset Button | Button (secondary) | `commission.reset` | No | Clear report filters |
 | EL-12 | Commission Report Table | Table | — | Yes | Merchant-level revenue and commission rows |
 | EL-13 | Pagination | Pagination | — | No | Page controls for the report table |
+| EL-13a | Export Commission Button | Button (secondary) | `commission.export` | No | Export commission report to CSV/Excel |
 
 **Edit Rate Dialog:**
 
@@ -408,6 +424,8 @@ Admin navigates to /admin/commission-revenue
 | EL-38 | Payout Table | Table | — | Yes | Merchant payouts with action button |
 | EL-39 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
 | EL-40 | Confirmation Dialog | Modal | — | No | Confirm payout processing |
+| EL-40a | Export Revenue Button | Button (secondary) | `revenue.export` | No | Export revenue report to CSV/Excel |
+| EL-40b | Export Payout Button | Button (secondary) | `revenue.exportPayout` | No | Export payout history to CSV/Excel |
 
 **Edit Target Dialog:**
 
@@ -437,6 +455,33 @@ Admin navigates to /admin/commission-revenue
 - Process buttons disabled for non-pending payouts
 - Confirmation dialog and edit target dialog closed
 - Order payment panel shows Completed and Pending badges in a single-row 2-column grid; ad payment panel shows Ad Completed, Ad Pending, and Ad Refunded badges in a single-row 3-column grid ("Failed" / "Refunded" / "Ad Failed" cards are not rendered)
+
+### 5.2 Screen: Export Modal
+
+**Purpose:** Allow admins to configure and generate CSV/Excel exports for commission reports, revenue data, or payout history.
+
+#### 5.2.1 UI Elements
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-50 | Modal Title | Heading (h3) | `export.title` | No | "Export Report" |
+| EL-51 | Report Type | Text | `export.reportType` | Yes | Display current report type (Commission / Revenue / Payout) |
+| EL-52 | Date Range Picker | Date Range Picker | `export.dateRange` | Yes | Start and end date for export (required, max 365 days) |
+| EL-53 | Format Selection | Radio Group | `export.format` | Yes | CSV / Excel (XLSX) |
+| EL-54 | Estimated Rows | Text | `export.estimatedRows` | No | "Estimated {n} rows" (shown after date range is set) |
+| EL-55 | Generate Button | Button (primary) | `export.generate` | Yes | "Generate Report" |
+| EL-56 | Cancel Button | Button (secondary) | `export.cancel` | No | Close modal |
+| EL-57 | Recent Exports Heading | Heading (h3) | `export.recentExports` | No | "Recent Exports" |
+| EL-58 | Recent Exports Table | Table | — | No | Columns: Report Type, Format, Date Range, Status, Generated At, Download |
+| EL-59 | Status Column | Table Column | — | Yes | Processing / Ready / Expired |
+| EL-60 | Download Column | Table Column | — | Yes | Download button (shown when status = Ready) |
+
+**Default State:**
+- Modal closed by default
+- Date range empty (admin must select)
+- Format default: CSV
+- Estimated rows hidden until date range is applied
+- Recent exports table shown below the modal when on the Commission/Revenue page
 
 ---
 
@@ -585,6 +630,57 @@ Admin navigates to /admin/commission-revenue
 | **Post-Action** | Update ad fee trend line on the chart |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
 
+### 6.12 Operation: Export Commission Report
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | "Export" button click on Commission tab |
+| **API Endpoint** | `POST /api/v1/admin/commission/export` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
+| **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
+| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Count estimated rows. 4. If rows <= 1000: generate file synchronously, return download URL. 5. If rows > 1000: create async export job, return job ID, notify admin when ready. 6. Log EXPORT_GENERATED event to audit_logs. |
+| **Success Response** | 200 OK with `{ downloadUrl: string }` (sync) or `{ jobId: string, status: 'processing' }` (async) |
+| **Post-Action** | Show download link or processing status toast |
+| **Error Response** | 400 Validation Error, 500 Internal Server Error |
+
+### 6.13 Operation: Export Revenue Report
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | "Export" button click on Revenue tab |
+| **API Endpoint** | `POST /api/v1/admin/revenue/export` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
+| **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
+| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Count estimated rows. 4. If rows <= 1000: generate file synchronously, return download URL. 5. If rows > 1000: create async export job, return job ID, notify admin when ready. 6. Log EXPORT_GENERATED event to audit_logs. |
+| **Success Response** | 200 OK with `{ downloadUrl: string }` (sync) or `{ jobId: string, status: 'processing' }` (async) |
+| **Post-Action** | Show download link or processing status toast |
+| **Error Response** | 400 Validation Error, 500 Internal Server Error |
+
+### 6.14 Operation: Export Payout History
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | "Export" button click on Payout table |
+| **API Endpoint** | `POST /api/v1/admin/revenue/payouts/export` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
+| **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
+| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Count estimated rows. 4. If rows <= 1000: generate file synchronously, return download URL. 5. If rows > 1000: create async export job, return job ID, notify admin when ready. 6. Log EXPORT_GENERATED event to audit_logs. |
+| **Success Response** | 200 OK with `{ downloadUrl: string }` (sync) or `{ jobId: string, status: 'processing' }` (async) |
+| **Post-Action** | Show download link or processing status toast |
+| **Error Response** | 400 Validation Error, 500 Internal Server Error |
+
+### 6.15 Operation: Check Export Status / Download
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Click "Download" on recent exports table, or async job completion notification |
+| **API Endpoints** | `GET /api/v1/admin/exports/:jobId/status` (status check), `GET /api/v1/admin/exports/:jobId/download` (download) |
+| **Processing Steps (Status)** | 1. Validate admin role. 2. Find export job by ID. 3. Return status: processing, ready, expired. |
+| **Processing Steps (Download)** | 1. Validate admin role. 2. Find export job by ID. 3. Verify status = ready. 4. Stream file to client. 5. Log EXPORT_DOWNLOADED event. |
+| **Success Response (Status)** | 200 OK with `{ status: 'processing' \| 'ready' \| 'expired' }` |
+| **Success Response (Download)** | 200 OK with file stream |
+| **Error Response** | 404 Not Found (job not found), 410 Gone (export expired), 500 Internal Server Error |
+
 ---
 
 ## 7. Input / Output Specification
@@ -655,6 +751,23 @@ Admin navigates to /admin/commission-revenue
 | `adFeeTrendPoints` | Ad payment trends query | Array of `{ date, adFee }` points |
 | `adFeePaymentStatus` | Ad payment status aggregation | Object of `{ completed, pending, refunded }` counts/amounts |
 
+### 7.10 Input Specification — Export (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `dateFrom` | Start Date | 開始日 | DATE | Yes | Date Range Picker | Valid ISO date, required |
+| `dateTo` | End Date | 終了日 | DATE | Yes | Date Range Picker | Valid ISO date, required, dateTo >= dateFrom, date range <= 365 days |
+| `format` | Export Format | エクスポート形式 | ENUM | Yes | Radio Group | One of `csv`, `xlsx` |
+
+### 7.11 Output Specification — Export (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `downloadUrl` | Export service | URL string (sync generation) |
+| `jobId` | Export job queue | UUID string (async generation) |
+| `estimatedRows` | Query count | Integer displayed as "Estimated {n} rows" |
+| `recentExports` | Export jobs query | Array of `{ jobId, reportType, format, dateRange, status, generatedAt }` |
+
 ---
 
 ## 8. Input Validation Rules
@@ -693,7 +806,16 @@ Admin navigates to /admin/commission-revenue
 |-------|-----------------|--------------------|--------------------|
 | `range` | Must be one of `7d`, `30d`, `90d`, `1y` | "Invalid range" | "無効な期間です" |
 
-### 8.6 Validation Enforcement Layers
+### 8.7 Export Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `dateFrom` | Required, valid ISO date | "Start date is required" | "開始日は必須です" |
+| `dateTo` | Required, valid ISO date, >= dateFrom | "End date is required" / "End date must be after start date" | "終了日は必須です" / "終了日は開始日以降である必要があります" |
+| `dateFrom`/`dateTo` | Date range must not exceed 365 days | "Date range cannot exceed 365 days" | "日付範囲は365日を超えることはできません" |
+| `format` | Must be one of `csv`, `xlsx` | "Invalid export format. Use CSV or Excel." | "無効なエクスポート形式です。CSVまたはExcelを使用してください" |
+
+### 8.8 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
@@ -733,7 +855,19 @@ Admin navigates to /admin/commission-revenue
 | `500` | `SYS_001` | Server error | Alert banner with retry option |
 | network | `NET_ERR` | Network failure | Alert banner for connectivity issue |
 
-### 9.4 Frontend Error Display Behavior
+### 9.4 Error Classification Table — Export
+
+| HTTP Status | Error Code | Scenario | User-Facing Behavior |
+|-------------|------------|----------|---------------------|
+| `400` | `EXP_001` | Missing dateFrom or dateTo | "Start date and end date are required" |
+| `400` | `EXP_002` | dateTo before dateFrom | "End date must be after start date" |
+| `400` | `EXP_003` | Date range exceeds 365 days | "Date range cannot exceed 365 days" |
+| `400` | `EXP_004` | Invalid format | "Invalid export format. Use CSV or Excel." |
+| `404` | `EXP_005` | Export job not found | "Export job not found" |
+| `410` | `EXP_006` | Export file expired | "This export has expired. Please generate a new one." |
+| `500` | `EXP_007` | Export generation failed | "Report generation failed. Please try again." |
+
+### 9.5 Frontend Error Display Behavior
 
 - **Field-Level Validation**: Red border and inline text below invalid input.
 - **Form-Level Summary**: Alert banner at top of form listing all errors.
@@ -765,14 +899,19 @@ Admin navigates to /admin/commission-revenue
 | `GET /api/v1/admin/revenue/payments` | Protected (Admin) | Fetch payment status breakdown |
 | `GET /api/v1/admin/revenue/payouts` | Protected (Admin) | Fetch payout list |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Protected (Admin) | Process a payout |
+| `POST /api/v1/admin/commission/export` | Protected (Admin) | Export commission report |
+| `POST /api/v1/admin/revenue/export` | Protected (Admin) | Export revenue report |
+| `POST /api/v1/admin/revenue/payouts/export` | Protected (Admin) | Export payout history |
+| `GET /api/v1/admin/exports/:jobId/status` | Protected (Admin) | Check export job status |
+| `GET /api/v1/admin/exports/:jobId/download` | Protected (Admin) | Download export file |
 
 ### 10.3 Role-Based Access
 
-| Role | Can View Commission | Can Edit Rate | Can Process Payout |
-|------|:-------------------:|:-------------:|:------------------:|
-| `admin` | ✓ | ✓ | ✓ |
-| `buyer` | ✗ | ✗ | ✗ |
-| `merchant` | ✗ | ✗ | ✗ |
+| Role | Can View Commission | Can Edit Rate | Can Process Payout | Can Export |
+|------|:-------------------:|:-------------:|:------------------:|:----------:|
+| `admin` | ✓ | ✓ | ✓ | ✓ |
+| `buyer` | ✗ | ✗ | ✗ | ✗ |
+| `merchant` | ✗ | ✗ | ✗ | ✗ |
 
 ### 10.4 Security Audit Logging
 
@@ -782,6 +921,8 @@ Admin navigates to /admin/commission-revenue
 | `TARGET_UPDATED` | adminId, oldAmount, newAmount, period, ip, timestamp | 2 years |
 | `PAYOUT_PROCESSED` | adminId, payoutId, amount, merchantId, ip, timestamp | 2 years |
 | `PAYOUT_FAILED` | adminId, payoutId, reason, ip, timestamp | 1 year |
+| `EXPORT_GENERATED` | adminId, reportType, format, dateRange, rowCount, ip, timestamp | 1 year |
+| `EXPORT_DOWNLOADED` | adminId, exportJobId, ip, timestamp | 1 year |
 
 Retention is aligned with Development Rules §6.4 (admin actions: 2 years; financial records: 1 year).
 
@@ -800,6 +941,7 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | `rateUpdated` | Commission rate saved | Success toast |
 | `targetUpdated` | Revenue target saved | Success toast |
 | `payoutProcessed` | Payout processed | Success toast |
+| `exportReady` | Async export job completed | Toast notification with download link |
 | `forecastUnavailable` | Insufficient historical data | Informational note next to chart |
 | `error` | API error | Dismissible alert banner with retry option |
 | `networkError` | Connectivity issue | Alert banner for connectivity issue |
@@ -849,6 +991,8 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Page Load (LCP) | ≤ 2 seconds |
 | API Response Time (p95) | ≤ 500 ms |
 | Payout Processing (incl. external settlement) | ≤ 2 seconds |
+| Export Generation (≤1000 rows) | ≤ 3 seconds (synchronous) |
+| Export Generation (>1000 rows) | Async, notify when ready |
 | Client-side Cache Stale Time | 5 minutes |
 
 Targets are aligned with Development Rules §10.1–10.2 and Requirements Definition §8.3.
@@ -888,6 +1032,9 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | Default commission rate | 12% (seeded in `commission_settings`, DBS §3.17) |
 | Payout status enum | `pending`, `processing`, `completed`, `failed` (DBS §3.19) |
 | Ad fee rate configuration | Administered via the Advertisement Management function (REQ §5.3); this screen tracks ad fee revenue only |
+| Export max rows sync | Backend config (default: 1000 rows threshold for sync vs async) |
+| Export retention hours | Backend config (default: 24 hours before generated files are deleted) |
+| Export max date range | Backend config (default: 365 days) |
 
 ---
 
@@ -927,6 +1074,12 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | A-ADFE-005 | Ad fees excluded from payout deduction (payout = sales − commission) | BR-ADFE-004, BR-REV-016, Sec 4.4, 4.7 |
 | A-ADFE-006 | Ad fees excluded from revenue target progress (order sales only) | BR-ADFE-007, BR-REV-010, Sec 4.5, 4.7, 6.7 |
 | A-ADFE-007 | Ad fee included in AI forecast as separate series | BR-ADFE-006, Sec 4.7, 6.9 |
+| A-EXP-001 | Admin can export commission reports as CSV/Excel | UC-COMM-012, Sec 6.12 |
+| A-EXP-002 | Admin can export revenue reports as CSV/Excel | UC-COMM-013, Sec 6.13 |
+| A-EXP-003 | Admin can export payout history as CSV/Excel | UC-COMM-014, Sec 6.14 |
+| A-EXP-004 | Export requires date range, max 365 days | BR-EXP-002, Sec 4.9, 8.7 |
+| A-EXP-005 | Large exports generated asynchronously | BR-EXP-003, Sec 4.9 |
+| A-EXP-006 | Export files retained for 24 hours | BR-EXP-004, Sec 4.9 |
 
 ### 15.2 API Endpoint Traceability
 
@@ -944,6 +1097,11 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | `GET /api/v1/admin/revenue/payments` | Revenue Dashboard Load — payment status (Sec 6.4) |
 | `GET /api/v1/admin/revenue/payouts` | Revenue Dashboard Load — payout list (Sec 6.4) |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Payout Processing (Sec 6.6) |
+| `POST /api/v1/admin/commission/export` | Export Commission Report (Sec 6.12) |
+| `POST /api/v1/admin/revenue/export` | Export Revenue Report (Sec 6.13) |
+| `POST /api/v1/admin/revenue/payouts/export` | Export Payout History (Sec 6.14) |
+| `GET /api/v1/admin/exports/:jobId/status` | Check Export Status (Sec 6.15) |
+| `GET /api/v1/admin/exports/:jobId/download` | Download Export (Sec 6.15) |
 
 ### 15.3 Related Document References
 
@@ -966,6 +1124,12 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 - [ ] Payout net amount computed as total − commission only (no ad fee deduction)
 - [ ] Revenue target progress aggregated from order sales (`order_items.total_price`), excluding ad fees
 - [ ] Commission rate accepts 0 < rate ≤ 100 with max 2 decimal places (default 12%)
+- [ ] Export functionality available on both Commission and Revenue tabs
+- [ ] Export supports CSV and Excel formats only (no PDF)
+- [ ] Export requires date range with 365-day maximum
+- [ ] Large exports (>1000 rows) processed asynchronously
+- [ ] Export files retained for 24 hours then deleted
+- [ ] Export actions logged to audit_logs
 
 ---
 
