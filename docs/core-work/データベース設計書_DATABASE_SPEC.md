@@ -693,7 +693,7 @@ Manages shop advertisements with approval workflow, payment tracking, and weekly
 | 7 | リンクURL | `link_url` | TEXT | - | - | Y | NULL | Click-through link URL. |
 | 8 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Advertisement active status. |
 | 9 | 承認状態 | `approval_status` | VARCHAR(20) | - | - | N | 'pending' | Approval status: pending/approved/rejected. |
-| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded/failed. |
+| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded. |
 | 11 | 支払い金額 | `payment_amount` | DECIMAL(10,2) | - | - | Y | NULL | Advertising fee amount. |
 | 12 | 支払い参照番号 | `payment_reference` | VARCHAR(255) | - | - | Y | NULL | Payment transaction reference. |
 | 13 | 承認者ID | `approved_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_advertisements_approved_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
@@ -728,7 +728,7 @@ CREATE TABLE advertisements (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_advertisements_dates CHECK (expires_at > starts_at),
     CONSTRAINT chk_advertisements_approval_status CHECK (approval_status IN ('pending', 'approved', 'rejected')),
-    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded', 'failed')),
+    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded')),
     CONSTRAINT fk_advertisements_shop FOREIGN KEY (shop_id)
         REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_advertisements_approved_by FOREIGN KEY (approved_by)

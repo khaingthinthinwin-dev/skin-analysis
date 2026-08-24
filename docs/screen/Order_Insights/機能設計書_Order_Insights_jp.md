@@ -448,7 +448,7 @@ Sales Summary は金額ではなく**注文数**を提示する。すべての�
 | EL-OI-10 | 注文ヘッダ | カード | `orders.detail.header` | Yes | 注文番号、注文日、現在ステータスバッジ |
 | EL-OI-11 | 注文明細テーブル | テーブル | `orders.detail.items` | Yes | 商品、数量、単価、行合計（注文作成時に固定された価格、BR-OI-017） |
 | EL-OI-12 | 合計パネル | カード | `orders.detail.totals` | Yes | 小計、割引（`discount_amount`、`coupon_code` があれば併記）、合計額 |
-| EL-OI-13 | 支払ステータス | バッジ＋テキスト | `orders.detail.payment` | Yes | `payment_method` ＋ `payment_status`（pending / completed / failed / refunded） |
+| EL-OI-13 | 支払ステータス | バッジ＋テキスト | `orders.detail.payment` | Yes | `payment_method` ＋ `payment_status`（pending / completed） |
 | EL-OI-14 | 配送先住所 | カード | `orders.detail.shipping` | Yes | `orders.shipping_address`（JSONB）から描画 |
 | EL-OI-15 | 注文メモ | テキスト | `orders.detail.notes` | No | `orders.notes`（存在時） |
 | EL-OI-16 | 注文追跡ボタン | ボタン（primary） | `orders.track` | Yes | 追跡へ遷移 |
@@ -654,7 +654,7 @@ Sales Summary は金額ではなく**注文数**を提示する。すべての�
 | `status` | `orders.status` → `order_statuses.status_name` | ステータスバッジ | 全ロール |
 | `itemCount` | `COUNT(order_items)` | 整数 | 全ロール |
 | `totalAmount` | `orders.total_amount` | 通貨（例 `$120.00`） | 全ロール |
-| `paymentStatus` | `orders.payment_status` | バッジ（pending/completed/failed/refunded） | 全ロール |
+| `paymentStatus` | `orders.payment_status` | バッジ（pending/completed） | 全ロール |
 | `customerName` | `users.name`（経由 `orders.buyer_id`） | 文字列 | Merchant、Admin（BR-OI-015） |
 | `shopName` | `merchants.shop_name`（経由 `orders.merchant_id`） | 文字列 | Admin |
 

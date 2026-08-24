@@ -2215,7 +2215,7 @@ final = max(0, subtotal - discount)
 | 週間広告制限 | 週あたり最大5件の有効な広告 |
 | 告知メッセージ | 表示用にバナー/画像と告知メッセージを含む必要がある |
 | 承認状態 | 広告は承認状態: pending/approved/rejected |
-| 支払い状態 | 広告は支払い状態: pending/paid/failed/refunded |
+| 支払い状態 | 広告は支払い状態: pending/completed/refunded |
 | 却下時返金 | 却下された場合は自動返金 |
 | 再送信 | 却下された広告は編集して再送信可能 |
 

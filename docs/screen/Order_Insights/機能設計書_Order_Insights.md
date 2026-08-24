@@ -448,7 +448,7 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | EL-OI-10 | Order Header | Card | `orders.detail.header` | Yes | Order #, order date, current status badge |
 | EL-OI-11 | Order Items Table | Table | `orders.detail.items` | Yes | Product, qty, unit price, line total (prices as locked at order creation, BR-OI-017) |
 | EL-OI-12 | Totals Panel | Card | `orders.detail.totals` | Yes | Subtotal, discount (`discount_amount`, with `coupon_code` when present), total amount |
-| EL-OI-13 | Payment Status | Badge + Text | `orders.detail.payment` | Yes | `payment_method` + `payment_status` (pending / completed / failed / refunded) |
+| EL-OI-13 | Payment Status | Badge + Text | `orders.detail.payment` | Yes | `payment_method` + `payment_status` (pending / completed) |
 | EL-OI-14 | Shipping Address | Card | `orders.detail.shipping` | Yes | Rendered from `orders.shipping_address` (JSONB) |
 | EL-OI-15 | Order Notes | Text | `orders.detail.notes` | No | `orders.notes` when present |
 | EL-OI-16 | Track Order Button | Button (primary) | `orders.track` | Yes | Navigate to tracking |
@@ -654,7 +654,7 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | `status` | `orders.status` → `order_statuses.status_name` | Status badge | All |
 | `itemCount` | `COUNT(order_items)` | Integer | All |
 | `totalAmount` | `orders.total_amount` | Currency (e.g. `$120.00`) | All |
-| `paymentStatus` | `orders.payment_status` | Badge (pending/completed/failed/refunded) | All |
+| `paymentStatus` | `orders.payment_status` | Badge (pending/completed) | All |
 | `customerName` | `users.name` via `orders.buyer_id` | String | Merchant, Admin (BR-OI-015) |
 | `shopName` | `merchants.shop_name` via `orders.merchant_id` | String | Admin |
 

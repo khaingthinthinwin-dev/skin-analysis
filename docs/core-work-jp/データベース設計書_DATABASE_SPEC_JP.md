@@ -696,7 +696,7 @@ CREATE TABLE promotions (
 | 7 | リンクURL | `link_url` | TEXT | - | - | Y | NULL | クリックスルーリンクURL。 |
 | 8 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | 広告有効ステータス。 |
 | 9 | 承認状態 | `approval_status` | VARCHAR(20) | - | - | N | 'pending' | 承認状態: pending/approved/rejected。 |
-| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | 支払い状態: pending/completed/refunded/failed。 |
+| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | 支払い状態: pending/completed/refunded。 |
 | 11 | 支払い金額 | `payment_amount` | DECIMAL(10,2) | - | - | Y | NULL | 広告料金額。 |
 | 12 | 支払い参照番号 | `payment_reference` | VARCHAR(255) | - | - | Y | NULL | 支払い取引参照。 |
 | 13 | 承認者ID | `approved_by` | UUID | - | Y | Y | NULL | フォーリンキー（`fk_advertisements_approved_by`）。`users(id)`を参照。ON DELETE SET NULL ON UPDATE CASCADE。 |
@@ -731,7 +731,7 @@ CREATE TABLE advertisements (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_advertisements_dates CHECK (expires_at > starts_at),
     CONSTRAINT chk_advertisements_approval_status CHECK (approval_status IN ('pending', 'approved', 'rejected')),
-    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded', 'failed')),
+    CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded')),
     CONSTRAINT fk_advertisements_shop FOREIGN KEY (shop_id)
         REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_advertisements_approved_by FOREIGN KEY (approved_by)
@@ -790,7 +790,7 @@ CREATE TABLE ad_fee_settings (
 | 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | フォーリンキー（`fk_ad_payments_merchant`）。`merchants(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
 | 4 | 金額 | `amount` | DECIMAL(10,2) | - | - | N | - | 支払い金額。 |
 | 5 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | 使用した決済方法。 |
-| 6 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | 支払い状態: pending/completed/refunded/failed。 |
+| 6 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | 支払い状態: pending/completed/refunded。 |
 | 7 | トランザクションID | `transaction_id` | VARCHAR(255) | - | - | Y | NULL | 外部決済トランザクションID。 |
 | 8 | 支払日時 | `paid_at` | TIMESTAMPTZ | - | - | Y | NULL | 支払い完了タイムスタンプ。 |
 | 9 | 返金額 | `refund_amount` | DECIMAL(10,2) | - | - | Y | NULL | 該当する場合の返金額。 |
@@ -815,7 +815,7 @@ CREATE TABLE ad_payments (
     refunded_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_ad_payments_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded', 'failed')),
+    CONSTRAINT chk_ad_payments_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded')),
     CONSTRAINT fk_ad_payments_ad FOREIGN KEY (ad_id)
         REFERENCES advertisements(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_ad_payments_merchant FOREIGN KEY (merchant_id)

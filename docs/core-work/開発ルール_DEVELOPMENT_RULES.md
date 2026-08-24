@@ -1594,10 +1594,10 @@ ring              → Focus rings (Luxury Purple)
 | **Stock Level** | In Stock | Green (`bg-green-100 text-green-800`) | In Stock |
 | | Low Stock (≤10) | Amber (`bg-amber-100 text-amber-800`) | Low Stock |
 | | Out of Stock (=0) | Red (`bg-red-100 text-red-800`) | Out of Stock |
-| **Ad / Payment** | `paid` | Green (`bg-green-100 text-green-800`) | Paid |
+| **Ad / Payment** | `completed` | Green (`bg-green-100 text-green-800`) | Completed |
 | | `pending` | Amber (`bg-amber-100 text-amber-800`) | Pending |
-| | `failed` / `rejected` | Red (`bg-red-100 text-red-800`) | Failed / Rejected |
 | | `refunded` | Gray (`bg-gray-100 text-gray-800`) | Refunded |
+| | `rejected` | Red (`bg-red-100 text-red-800`) | Rejected |
 | **Marketing** | Sale / Promotion | Pink (`bg-pink-100 text-pink-800`) | Sale |
 | | New Arrival | Purple (`bg-purple-100 text-purple-800`) | New |
 
@@ -2214,7 +2214,7 @@ Select Package → Upload Content → Pay Fee → Admin Review → Approved → 
 | Active filtering | Only `is_active = true` AND within active date range shown |
 | Payment required | Merchants must pay advertising fee before submission for admin review |
 | Admin approval required | All ads must be approved by admin before display (`approval_status: pending/approved/rejected`) |
-| Payment status | Tracked via `payment_status: pending/paid/failed/refunded` |
+| Payment status | Tracked via `payment_status: pending/completed/refunded` |
 | Rejection & refund | Automatic refund if ad is rejected by admin |
 | Resubmission | Rejected ads can be edited and resubmitted |
 | Weekly ad limit | Maximum 5 active advertisements per week per merchant |
