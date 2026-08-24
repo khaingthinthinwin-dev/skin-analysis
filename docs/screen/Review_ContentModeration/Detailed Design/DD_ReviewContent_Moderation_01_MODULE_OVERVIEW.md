@@ -1,7 +1,7 @@
 # DD_MOD_01 — Module Overview
 
-> **Doc ID:** SKM-DD-MOD-01 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-MOD-01 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-08-22
 
 ---
 
@@ -11,12 +11,14 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-17 | Software Architect | Initial module overview for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Software Architect | Added Review Reports feature (UC-MOD-007): report management endpoints, `review_reports` table, `notifications` table, report-related architectural components, and audit log events. |
+| 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: updated report state machine from COMPLETED to RESOLVED, added REVIEWED state, added UC-MOD-008 (Product Content Moderation), added buyer report flow, updated audit log events, added reject/report review endpoints. |
+| 1.3 | 2026-08-24 | Software Architect | Changed review display approach from hybrid to admin-moderated: ALL reviews now require admin approval before being shown to buyers. Updated UC-MOD-001 description, state machine, and BR-MOD-002 reference. |
 
 ---
 
 ## 1. Module Overview
 
-The **Review & Content Moderation Module** (レビュー・コンテンツ管理モジュール) is the central administration hub for maintaining platform integrity within the Cosmetics Finder platform. It provides administrators with complete tools to moderate product reviews (approve/reject/delete), manage merchant registrations (approve/reject), moderate product content (activate/deactivate), manage review reports (confirm/reject/complete), and perform user account moderation (activate/deactivate). All actions are protected by admin-only RBAC enforcement with comprehensive audit logging.
+The **Review & Content Moderation Module** (レビュー・コンテンツ管理モジュール) is the central administration hub for maintaining platform integrity within the Cosmetics Finder platform. It provides administrators with complete tools to moderate product reviews (approve/reject/delete/report), manage merchant registrations (approve/reject), moderate product content (activate/deactivate), manage review reports (review/reject/resolve), and perform user account moderation (activate/deactivate). All actions are protected by admin-only RBAC enforcement with comprehensive audit logging.
 
 ---
 
@@ -24,13 +26,14 @@ The **Review & Content Moderation Module** (レビュー・コンテンツ管理
 
 | ID | Use Case | Description |
 |---|----------|-------------|
-| UC-MOD-001 | View All Reviews | Admin views all reviews with filters (All/Approved/Rejected), search, sort, and pagination. |
+| UC-MOD-001 | View All Reviews | Admin views all reviews with filters (All/Pending/Approved/Rejected/Reported), search, sort, and pagination. All reviews are hidden by default until admin approval. |
 | UC-MOD-002 | Moderate Review (Approve/Reject) | Admin approves or rejects a review. Product `avg_rating` and `review_count` are recalculated from approved reviews only. Product cache is invalidated. |
 | UC-MOD-003 | Delete Inappropriate Review | Admin permanently deletes a review. Product statistics are recalculated from remaining approved reviews. |
 | UC-MOD-004 | Remove Violating Content | Admin deactivates products that violate platform policy by setting `is_active = false`. Products are soft-deleted to preserve order history integrity. |
 | UC-MOD-005 | Approve/Reject Merchant Registration | Admin approves or rejects a merchant. `merchants.license_status` is updated and `shops.is_approved` is synchronized. On rejection, merchant's products are deactivated. Website notification is created. |
 | UC-MOD-006 | Activate/Deactivate User Account | Admin activates or deactivates user accounts. Deactivation revokes all active sessions (refresh tokens). Admin cannot deactivate their own account. |
-| UC-MOD-007 | Manage Review Reports | Admin processes reported reviews: confirms, rejects, or completes reports. When a report is completed, the target review is automatically rejected. Reports start with `pending` status. Completed reports cannot be changed. |
+| UC-MOD-007 | Manage Review Reports | Admin processes reported reviews: reviews, rejects, or resolves reports. When a report is resolved, the target review is automatically rejected. Reports start with `pending` status. Resolved reports cannot be changed. |
+| UC-MOD-008 | Product Content Moderation | Admin deactivates (`is_active = false`) or reactivates products. Audit log recorded. |
 
 ---
 
@@ -40,17 +43,21 @@ The **Review & Content Moderation Module** (レビュー・コンテンツ管理
 
 ```mermaid
 stateDiagram-v2
-    [*] --> APPROVED : Default (BR-MOD-002)
-    APPROVED --> REJECTED : Admin rejects (TR-MOD-01)
-    REJECTED --> APPROVED : Admin re-approves (TR-MOD-02)
+    [*] --> PENDING : Review created (BR-MOD-002)
+    PENDING --> APPROVED : Admin approves (TR-MOD-01)
+    PENDING --> REJECTED : Admin rejects (TR-MOD-02)
+    REJECTED --> APPROVED : Admin re-approves (TR-MOD-03)
+```
     APPROVED --> [*] : Hard deleted (UC-MOD-003)
     REJECTED --> [*] : Hard deleted (UC-MOD-003)
+    PENDING --> [*] : Hard deleted (UC-MOD-003)
 ```
 
 | State | Description | Visible to Buyers | Can Be Edited |
 |-------|-------------|:-----------------:|:-------------:|
 | `APPROVED` | Review is approved and displayed on product page | Yes | No |
 | `REJECTED` | Review is rejected and hidden from product page | No | No |
+| `PENDING` | Review awaiting admin approval (hidden from buyers) | No | No |
 
 ### 3.2 Merchant Approval States
 
@@ -102,17 +109,22 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING : Buyer reports review (BR-MOD-050)
-    PENDING --> REJECTED : Admin rejects report
-    PENDING --> COMPLETED : Admin completes report (rejects target review)
-    REJECTED --> [*] : Admin deletes report
-    COMPLETED --> [*] : No further changes
+    PENDING --> REVIEWED : Admin marks as reviewed (TR-MOD-09)
+    PENDING --> RESOLVED : Admin resolves report (TR-MOD-10)
+    PENDING --> REJECTED : Admin rejects report (TR-MOD-11)
+    REVIEWED --> RESOLVED : Admin resolves report (TR-MOD-10)
+    REVIEWED --> REJECTED : Admin rejects report (TR-MOD-11)
+    PENDING --> Deleted : Admin deletes report (TR-MOD-12)
+    REJECTED --> Deleted : Admin deletes report (TR-MOD-12)
+    RESOLVED --> [*] : No further changes
 ```
 
 | State | Description | Can Be Changed | Can Be Deleted |
 |-------|-------------|:--------------:|:--------------:|
 | `PENDING` | New report awaiting admin review | Yes | Yes |
+| `REVIEWED` | Admin has reviewed but not yet resolved | Yes | Yes |
+| `RESOLVED` | Report resolved; target review auto-rejected | No | No |
 | `REJECTED` | Report rejected by admin | No | Yes |
-| `COMPLETED` | Report resolved; target review auto-rejected | No | No |
 
 ---
 
@@ -123,7 +135,7 @@ stateDiagram-v2
 3. **Self-Deactivation Prevention**: Admin cannot deactivate their own account (BR-MOD-042).
 4. **Session Termination**: Deactivating a user revokes all active refresh tokens (BR-MOD-041).
 5. **Confirmation Dialogs**: Required for all destructive actions (delete review, reject merchant, deactivate product/user).
-6. **Audit Logging**: All moderation actions logged with admin ID, target ID, action, and timestamp. Retention: 2 years. Events include: `REVIEW_APPROVED`, `REVIEW_REJECTED`, `REVIEW_DELETED`, `MERCHANT_APPROVED`, `MERCHANT_REJECTED`, `USER_DEACTIVATED`, `USER_ACTIVATED`, `REPORT_REJECTED`, `REPORT_COMPLETED`, `REPORT_DELETED`, `RBAC_VIOLATION`.
+6. **Audit Logging**: All moderation actions logged with admin ID, target ID, action, and timestamp. Retention: 2 years. Events include: `REVIEW_APPROVED`, `REVIEW_REJECTED`, `REVIEW_DELETED`, `MERCHANT_APPROVED`, `MERCHANT_REJECTED`, `USER_DEACTIVATED`, `USER_ACTIVATED`, `PRODUCT_DEACTIVATED`, `PRODUCT_REACTIVATED`, `REPORT_RESOLVED`, `REPORT_REJECTED`, `REPORT_DELETED`, `RBAC_VIOLATION`.
 7. **Rate Limiting**: Admin API endpoints limited to 100 requests per minute.
 8. **Data Isolation**: Admin can moderate any record. Merchants can only view their own products.
 9. **Input Sanitization**: All user input sanitized to prevent XSS. Backend ValidationPipe + class-validator DTOs on all endpoints.
@@ -155,6 +167,7 @@ stateDiagram-v2
 |--------|----------|-------------|:-------------:|
 | `GET` | `/api/v1/admin/reviews` | View all reviews with filters, search, sort, pagination | Admin |
 | `POST` | `/api/v1/admin/reviews/:id/moderate` | Approve or reject a review | Admin |
+| `POST` | `/api/v1/admin/reviews/:id/report` | Report a review (admin-initiated) | Admin |
 | `DELETE` | `/api/v1/admin/reviews/:id` | Permanently delete a review | Admin |
 | `POST` | `/api/v1/admin/reviews/bulk/moderate` | Bulk approve/reject reviews | Admin |
 | `DELETE` | `/api/v1/admin/reviews/bulk` | Bulk delete reviews | Admin |
@@ -169,7 +182,7 @@ stateDiagram-v2
 | `GET` | `/api/v1/admin/users/:id` | View user detail | Admin |
 | `PATCH` | `/api/v1/admin/users/:id/status` | Activate or deactivate a user account | Admin |
 | `GET` | `/api/v1/admin/reports` | View all review reports with filters and pagination | Admin |
-| `PATCH` | `/api/v1/admin/reports/:id/status` | Update report status (reject/complete) | Admin |
+| `PATCH` | `/api/v1/admin/reports/:id/status` | Update report status (reviewed/resolved/rejected) | Admin |
 | `DELETE` | `/api/v1/admin/reports/:id` | Delete a review report | Admin |
 
 ---

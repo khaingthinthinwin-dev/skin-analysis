@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 6.0 |
+| **Version** | 7.0 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-21 |
+| **Last Updated** | 2026-08-22 |
 | **Author** | Senior System Engineer |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -29,6 +29,7 @@
 | 4.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 and DATABASE_SPEC v2.0: updated ID definitions to UUID format, released final specification. |
 | 5.0 | 2026-08-17 | Senior System Engineer | Expanded spec to include Advertisement Fee Revenue: added ad fee KPIs, ad fee trend chart series, ad fee payment status tracking, ad fee in payout calculations, and ad fee in revenue target progress. |
 | 6.0 | 2026-08-21 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v2.10 and DATABASE_SPEC v2.4: merchant payouts simplified to commission-only deduction (ad fees excluded from payouts and revenue target progress), commission rate bounds corrected to 0 < rate ≤ 100 (default 12%), ad payment status enum aligned to pending/completed/refunded/failed, payout status filter includes processing, audit retention and performance targets aligned with Development Rules. |
+| 7.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all route references, screen transitions, and operation triggers. |
 
 ---
 
@@ -156,7 +157,7 @@ This screen suite is responsible for the following core functional areas:
 ### 2.2 Primary Business Workflow
 
 ```text
-Admin navigates to /admin/commission or /admin/revenue
+Admin navigates to /admin/commission-revenue
             │
             ▼
    ProtectedRoute validates admin role
@@ -190,7 +191,7 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Step | Action | Status Before | Status After | Assigned To |
 |:----:|--------|---------------|--------------|-------------|
-| 1 | Admin navigates to /admin/commission or /admin/revenue | Unauthenticated | — | System |
+| 1 | Admin navigates to /admin/commission-revenue | Unauthenticated | — | System |
 | 2 | ProtectedRoute validates admin role | — | Authorized | System |
 | 3 | Screen loads data in parallel | — | Data Loaded | System |
 | 4 | Admin edits rate / filters reports / processes payout / changes range / sets target | — | — | Admin |
@@ -329,98 +330,105 @@ Admin navigates to /admin/commission or /admin/revenue
 
 ## 5. Screen Specifications
 
-### 5.1 Screen: Commission Page (`/admin/commission`)
+### 5.1 Screen: Commission & Revenue Dashboard (`/admin/commission-revenue`)
 
-**Purpose:** Allow admins to view and edit the platform commission rate and browse merchant commission reports.
+**Purpose:** Allow admins to manage platform commission settings, view merchant commission reports, monitor revenue KPIs and trends with AI forecast, track revenue target progress, review payment status, and process merchant payouts — all within a single page using tabs.
 
-#### 5.1.1 UI Elements
+#### 5.1.1 Page Tab Structure
 
-**Page Layout:**
+| Tab | Tab Label (EN) | Tab Label (JA) | Content |
+|:----|:---------------|:---------------|:--------|
+| Tab 1 | Commission | 手数料 | Commission rate card, report filter panel, commission report table |
+| Tab 2 | Revenue | 収益 | KPI cards, trend chart with forecast, target progress, payment status, ad fee status, payout table |
+
+**Default active tab:** Tab 1 (Commission)
+
+#### 5.1.2 UI Elements — Tab 1: Commission
+
+**Page Header (shared across tabs):**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-01 | Page Title | Text | `commission.title` | No | "Commission" page heading |
+| EL-01 | Page Title | Text | `commissionRevenue.title` | No | "Commission & Revenue" page heading |
 | EL-02 | Admin User Menu | Menu | — | No | Admin user menu |
-| EL-03 | Commission Rate Card | Card | — | No | Shows current commission rate |
-| EL-04 | Current Rate | Text | `commission.rate` | Yes | Displays current rate value |
-| EL-05 | Edit Rate Button | Button (primary) | `commission.editRate` | Yes | Opens the edit rate dialog |
-| EL-06 | Report Filter Panel | Panel | — | No | Date pickers with apply/reset actions |
-| EL-07 | From Date Picker | Input (date) | `commission.from` | No | Start date filter |
-| EL-08 | To Date Picker | Input (date) | `commission.to` | No | End date filter |
-| EL-09 | Apply Button | Button (primary) | `commission.apply` | No | Apply report filters |
-| EL-10 | Reset Button | Button (secondary) | `commission.reset` | No | Clear report filters |
-| EL-11 | Commission Report Table | Table | — | Yes | Merchant-level revenue and commission rows |
-| EL-12 | Pagination | Pagination | — | No | Page controls for the report table |
+| EL-03 | Tab Group | Tabs | — | Yes | Tab 1: Commission, Tab 2: Revenue |
+
+**Commission Tab Content:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-04 | Commission Rate Card | Card | — | No | Shows current commission rate |
+| EL-05 | Current Rate | Text | `commission.rate` | Yes | Displays current rate value |
+| EL-06 | Edit Rate Button | Button (primary) | `commission.editRate` | Yes | Opens the edit rate dialog |
+| EL-07 | Report Filter Panel | Panel | — | No | Date pickers with apply/reset actions |
+| EL-08 | From Date Picker | Input (date) | `commission.from` | No | Start date filter |
+| EL-09 | To Date Picker | Input (date) | `commission.to` | No | End date filter |
+| EL-10 | Apply Button | Button (primary) | `commission.apply` | No | Apply report filters |
+| EL-11 | Reset Button | Button (secondary) | `commission.reset` | No | Clear report filters |
+| EL-12 | Commission Report Table | Table | — | Yes | Merchant-level revenue and commission rows |
+| EL-13 | Pagination | Pagination | — | No | Page controls for the report table |
 
 **Edit Rate Dialog:**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-13 | Rate Input | Input (number) | `commission.ratePlaceholder` | Yes | Commission rate input |
-| EL-14 | Save Button | Button (primary) | `commission.save` | Yes | Submit commission rate update |
-| EL-15 | Cancel Button | Button (secondary) | `commission.cancel` | No | Cancel rate edit |
+| EL-14 | Rate Input | Input (number) | `commission.ratePlaceholder` | Yes | Commission rate input |
+| EL-15 | Save Button | Button (primary) | `commission.save` | Yes | Submit commission rate update |
+| EL-16 | Cancel Button | Button (secondary) | `commission.cancel` | No | Cancel rate edit |
+
+#### 5.1.3 UI Elements — Tab 2: Revenue
+
+**Revenue Tab Content:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-17 | KPI Cards | Card Group | — | Yes | Total revenue, total commission, ad fee revenue, total income, avg order value, net revenue |
+| EL-18 | Total Revenue Card | Card | `revenue.totalRevenue` | Yes | Total order revenue KPI |
+| EL-19 | Total Commission Card | Card | `revenue.totalCommission` | Yes | Total commission KPI |
+| EL-20 | Ad Fee Revenue Card | Card | `revenue.adFeeRevenue` | Yes | Total advertisement fee revenue KPI |
+| EL-21 | Total Income Card | Card | `revenue.totalIncome` | Yes | Combined platform income (commission + ad fees) KPI |
+| EL-22 | Avg Order Value Card | Card | `revenue.avgOrderValue` | Yes | Average order value KPI |
+| EL-23 | Net Revenue Card | Card | `revenue.netRevenue` | Yes | Net revenue KPI (total income - refunds) |
+| EL-24 | Trend Chart | Chart | — | Yes | Area/line chart with commission, ad fee, and total income series |
+| EL-25 | Range Toggle | Toggle Group | `revenue.range` | No | 7d / 30d / 90d / 1y range selection |
+| EL-26 | Forecast Legend | Text | `revenue.forecast` | No | "AI Forecast" dotted line legend |
+| EL-27 | Forecast Series | Chart Series | — | No | Dotted forecast line (revenue + platform fees + ad fees) overlaid on the trend chart |
+| EL-28 | Forecast Note | Text | `revenue.forecastUnavailable` | No | Shown when historical data is insufficient |
+| EL-29 | Target Progress Card | Card | `revenue.targetProgress` | No | Card containing the revenue target gauge bar |
+| EL-30 | Target Period Toggle | Toggle Group | `revenue.targetPeriod` | No | Monthly / Quarterly period selection |
+| EL-31 | Target Amount Display | Text | `revenue.targetAmount` | No | Displays the configured target amount |
+| EL-32 | Gauge Bar | Progress Indicator | `revenue.progress` | No | Progress bar displaying current % toward target |
+| EL-33 | Progress Percentage | Text | `revenue.progressLabel` | No | Percentage label rendered beside the gauge bar |
+| EL-34 | Edit Target Button | Button (secondary) | `revenue.editTarget` | No | Opens the edit target dialog |
+| EL-35 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending/failed/refunded) |
+| EL-36 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded/failed) |
+| EL-37 | Ad Fee Summary Card | Card | `revenue.adFeeSummary` | No | Summary of ad fee statistics (active ads, total collected, pending) |
+| EL-38 | Payout Table | Table | — | Yes | Merchant payouts with action button |
+| EL-39 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
+| EL-40 | Confirmation Dialog | Modal | — | No | Confirm payout processing |
+
+**Edit Target Dialog:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-41 | Target Amount Input | Input (number) | `revenue.targetPlaceholder` | No | Revenue target amount input in the edit dialog |
+| EL-42 | Target Period Select | Select | `revenue.targetPeriodLabel` | No | Monthly / quarterly selection in the edit dialog |
+| EL-43 | Save Target Button | Button (primary) | `revenue.saveTarget` | Yes | Saves the revenue target configuration |
+| EL-44 | Cancel Target Button | Button (secondary) | `revenue.cancelTarget` | No | Cancels target editing |
 
 **Global:**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-16 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
-| EL-17 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
+| EL-45 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
+| EL-46 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
 
 **Default State:**
 - Skeleton loading displayed until API responses arrive
+- Active tab: Tab 1 (Commission)
 - Edit Rate dialog closed
 - Report filters empty (all dates)
 - Pagination on first page
-
-### 5.2 Screen: Revenue Page (`/admin/revenue`)
-
-**Purpose:** Allow admins to view revenue KPIs, trend visualization with AI forecast, revenue target progress, payment status breakdown, and merchant payout list.
-
-#### 5.2.1 UI Elements
-
-**Page Layout:**
-
-| Element ID | Element Name | Element Type | i18n Key | Required | Description |
-|------------|--------------|--------------|----------|:--------:|-------------|
-| EL-18 | Page Title | Text | `revenue.title` | No | "Revenue" page heading |
-| EL-19 | KPI Cards | Card Group | — | Yes | Total revenue, total commission, ad fee revenue, total income, avg order value, net revenue |
-| EL-20 | Total Revenue Card | Card | `revenue.totalRevenue` | Yes | Total order revenue KPI |
-| EL-21 | Total Commission Card | Card | `revenue.totalCommission` | Yes | Total commission KPI |
-| EL-22 | Ad Fee Revenue Card | Card | `revenue.adFeeRevenue` | Yes | Total advertisement fee revenue KPI |
-| EL-23 | Total Income Card | Card | `revenue.totalIncome` | Yes | Combined platform income (commission + ad fees) KPI |
-| EL-24 | Avg Order Value Card | Card | `revenue.avgOrderValue` | Yes | Average order value KPI |
-| EL-25 | Net Revenue Card | Card | `revenue.netRevenue` | Yes | Net revenue KPI (total income - refunds) |
-| EL-26 | Trend Chart | Chart | — | Yes | Area/line chart with commission, ad fee, and total income series |
-| EL-27 | Range Toggle | Toggle Group | `revenue.range` | No | 7d / 30d / 90d / 1y range selection |
-| EL-28 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending/failed/refunded) + ad payments |
-| EL-29 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded/failed) |
-| EL-30 | Payout Table | Table | — | Yes | Merchant payouts with action button |
-| EL-31 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
-| EL-32 | Confirmation Dialog | Modal | — | No | Confirm payout processing |
-| EL-33 | Target Progress Card | Card | `revenue.targetProgress` | No | Card containing the revenue target gauge bar |
-| EL-34 | Target Period Toggle | Toggle Group | `revenue.targetPeriod` | No | Monthly / Quarterly period selection |
-| EL-35 | Target Amount Display | Text | `revenue.targetAmount` | No | Displays the configured target amount |
-| EL-36 | Gauge Bar | Progress Indicator | `revenue.progress` | No | Progress bar displaying current % toward target |
-| EL-37 | Progress Percentage | Text | `revenue.progressLabel` | No | Percentage label rendered beside the gauge bar |
-| EL-38 | Edit Target Button | Button (secondary) | `revenue.editTarget` | No | Opens the edit target dialog |
-| EL-39 | Target Amount Input | Input (number) | `revenue.targetPlaceholder` | No | Revenue target amount input in the edit dialog |
-| EL-40 | Target Period Select | Select | `revenue.targetPeriodLabel` | No | Monthly / quarterly selection in the edit dialog |
-| EL-41 | Save Target Button | Button (primary) | `revenue.saveTarget` | Yes | Saves the revenue target configuration |
-| EL-42 | Cancel Target Button | Button (secondary) | `revenue.cancelTarget` | No | Cancels target editing |
-| EL-43 | Forecast Legend | Text | `revenue.forecast` | No | "AI Forecast" dotted line legend |
-| EL-44 | Forecast Series | Chart Series | — | No | Dotted forecast line (revenue + platform fees + ad fees) overlaid on the trend chart |
-| EL-45 | Ad Fee Summary Card | Card | `revenue.adFeeSummary` | No | Summary of ad fee statistics (active ads, total collected, pending) |
-
-**Global:**
-
-| Element ID | Element Name | Element Type | i18n Key | Required | Description |
-|------------|--------------|--------------|----------|:--------:|-------------|
-| EL-46 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
-| EL-47 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
-
-**Default State:**
-- Skeleton loading displayed until API responses arrive
 - Trend range default `30d`
 - Target period default `monthly`; gauge bar shows `0%` until a target is configured
 - Forecast dotted line hidden when historical data is insufficient
@@ -432,11 +440,11 @@ Admin navigates to /admin/commission or /admin/revenue
 
 ## 6. Functional Operation Specification
 
-### 6.1 Operation: Commission Dashboard Load
+### 6.1 Operation: Commission Tab Load
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | `/admin/commission` route mounted |
+| **Trigger** | `/admin/commission-revenue` route mounted or Tab 1 (Commission) selected |
 | **API Endpoint** | `GET /api/v1/admin/commission`, `GET /api/v1/admin/commission/reports` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
@@ -471,11 +479,11 @@ Admin navigates to /admin/commission or /admin/revenue
 | **Post-Action** | Display filtered report rows |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
 
-### 6.4 Operation: Revenue Dashboard Load
+### 6.4 Operation: Revenue Tab Load
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | `/admin/revenue` route mounted |
+| **Trigger** | `/admin/commission-revenue` route mounted or Tab 2 (Revenue) selected |
 | **API Endpoint** | `GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts`, `GET /api/v1/admin/revenue/ad-fees` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
@@ -514,7 +522,7 @@ Admin navigates to /admin/commission or /admin/revenue
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | `/admin/revenue` route mounted |
+| **Trigger** | `/admin/commission-revenue` route mounted or Tab 2 (Revenue) selected |
 | **API Endpoint** | `GET /api/v1/admin/revenue/targets` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
@@ -737,7 +745,7 @@ Admin navigates to /admin/commission or /admin/revenue
 ### 10.1 Authentication Requirements
 
 - JSON Web Token (JWT) Bearer Token passed via `Authorization` header for protected endpoints.
-- Only users with the `admin` role can access `/admin/commission` and `/admin/revenue`.
+- Only users with the `admin` role can access `/admin/commission-revenue`.
 
 ### 10.2 Protected Endpoints
 
@@ -802,24 +810,25 @@ No WebSocket or server-sent event integration is required for this release. UI n
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| `/admin/dashboard` | `/admin/commission` | Click "Commission", requires admin role |
-| `/admin/dashboard` | `/admin/revenue` | Click "Revenue", requires admin role |
+| `/admin/dashboard` | `/admin/commission-revenue` | Click "Commission & Revenue", requires admin role |
 
 ### 12.2 Internal Navigation
 
 | Source | Target | Trigger |
 |--------|--------|---------|
-| `/admin/commission` | Edit Rate dialog | Click "Edit Rate" |
-| `/admin/revenue` | Edit Target dialog | Click "Edit Target" |
-| `/admin/revenue` | Confirmation dialog | Click "Process" on a pending payout |
+| Tab 1 (Commission) | Edit Rate dialog | Click "Edit Rate" |
+| Tab 2 (Revenue) | Edit Target dialog | Click "Edit Target" |
+| Tab 2 (Revenue) | Confirmation dialog | Click "Process" on a pending payout |
+| Tab 1 (Commission) | Tab 2 (Revenue) | Click "Revenue" tab |
+| Tab 2 (Revenue) | Tab 1 (Commission) | Click "Commission" tab |
 
 ### 12.3 Outbound Navigation (Post-Action)
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| Edit Rate dialog | `/admin/commission` | Save or cancel |
-| Edit Target dialog | `/admin/revenue` | Save or cancel |
-| Confirmation dialog | `/admin/revenue` | Confirm or cancel |
+| Edit Rate dialog | Tab 1 (Commission) | Save or cancel |
+| Edit Target dialog | Tab 2 (Revenue) | Save or cancel |
+| Confirmation dialog | Tab 2 (Revenue) | Confirm or cancel |
 
 ### 12.4 Error Navigation
 

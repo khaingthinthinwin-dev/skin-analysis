@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.4 |
+| **Version** | 2.5 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-20 |
+| **Last Updated** | 2026-08-24 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released (承認済み) |
 
@@ -23,6 +23,7 @@
 | 1.1 | 2026-08-10 | Lead Database Engineer | Added new fields to advertisements table for approval workflow, payment tracking, and weekly limits |
 | 2.0 | 2026-08-14 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v1.5: UUID primary keys, merchants table, restructured orders, ad fee tables, updated FK relationships |
 | 2.4 | 2026-08-20 | Lead Database Engineer | Commission rate admin-configurable, merchant payout simplified (no ad fees), added password_reset_tokens table |
+| 2.5 | 2026-08-24 | Lead Database Engineer | Changed `reviews.is_approved` DEFAULT from TRUE to FALSE to align with admin-moderated review approach (all reviews require admin approval before being shown to buyers). |
 
 ---
 
@@ -439,7 +440,7 @@ Manages product reviews with ratings.
 | 6 | 本文 | `body` | TEXT | - | - | Y | NULL | Review content. |
 | 7 | 画像URLs | `images` | TEXT[] | - | - | N | '{}' | Review image URLs. |
 | 8 | 認証済み購入 | `is_verified_purchase` | BOOLEAN | - | - | N | FALSE | Verified purchase flag. |
-| 9 | 承認済み | `is_approved` | BOOLEAN | - | - | N | TRUE | Admin moderation status. |
+| 9 | 承認済み | `is_approved` | BOOLEAN | - | - | N | FALSE | Admin moderation status. Hidden from buyers until admin approval. |
 | 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 | 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
 
@@ -454,7 +455,7 @@ CREATE TABLE reviews (
     body TEXT,
     images TEXT[] DEFAULT '{}',
     is_verified_purchase BOOLEAN NOT NULL DEFAULT FALSE,
-    is_approved BOOLEAN NOT NULL DEFAULT TRUE,
+    is_approved BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_reviews_user_product UNIQUE (user_id, product_id),

@@ -2124,7 +2124,7 @@ async update(id: string, dto: UpdateProductDto, userId: string) {
 | Eligibility | Only verified purchasers can review |
 | One review per user per product | Enforced via unique constraint `[userId, productId]` |
 | Rating range | 1-5 inclusive, enforced via check constraint |
-| Auto-approval | Reviews approved by default (`is_approved = true`) |
+| Auto-approval | Reviews hidden by default (`is_approved = false`). Admin must approve before visible to buyers. |
 | Admin moderation | Admin can approve/reject/delete any review |
 | Average rating | Auto-calculated from approved reviews only |
 | Review count | Auto-calculated from approved reviews only |
@@ -2132,9 +2132,10 @@ async update(id: string, dto: UpdateProductDto, userId: string) {
 **Review Flow:**
 
 ```
-User submits review → is_approved = true → Visible on product
+User submits review → is_approved = false → Hidden from buyers
                                         ↓
-                            Admin flags review → is_approved = false → Hidden from product
+                            Admin approves → is_approved = true → Visible on product
+                            Admin rejects  → is_approved = false → Hidden from product
 ```
 
 ## 12.4 Order Lifecycle Rules

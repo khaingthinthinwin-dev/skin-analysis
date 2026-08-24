@@ -1,7 +1,7 @@
-# DD_MOD_03 — API Endpoints (Review & Content Moderation)
+# DD_MOD_03  EAPI Endpoints (Review & Content Moderation)
 
-> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-18
+> **Doc ID:** SKM-DD-MOD-03 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-08-22
 
 ---
 
@@ -11,6 +11,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-17 | Software Architect | Initial API endpoints for Review & Content Moderation. |
 | 1.1 | 2026-08-18 | Software Architect | Added Review Reports endpoints: GET /admin/reports, PATCH /admin/reports/:id/status, DELETE /admin/reports/:id. Added report-related audit logging events. |
+| 1.2 | 2026-08-22 | Software Architect | Aligned with FDS v2.0 and screen items v6.0: added reject review endpoint, report review endpoint, updated review status filter to include pending/reported, added reviewed status to report status update, updated report reason enums. |
 
 ---
 
@@ -38,12 +39,12 @@ View all reviews with filters, search, sort, and pagination.
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Parameters:**
-  - `page` (integer, optional, default: `1`) — Page number
-  - `limit` (integer, optional, default: `20`, max: `100`) — Items per page
-  - `sort` (string, optional, default: `createdAt`) — Sort field: `createdAt`, `rating`
-  - `order` (string, optional, default: `desc`) — Sort order: `asc`, `desc`
-  - `status` (enum, optional) — Filter: `approved`, `rejected` (omit for all)
-  - `search` (string, optional) — Search by user name, product name, or review content
+  - `page` (integer, optional, default: `1`)  EPage number
+  - `limit` (integer, optional, default: `20`, max: `100`)  EItems per page
+  - `sort` (string, optional, default: `createdAt`)  ESort field: `createdAt`, `rating`
+  - `order` (string, optional, default: `desc`)  ESort order: `asc`, `desc`
+  - `status` (enum, optional)  EFilter: `approved`, `rejected`, `pending`, `reported` (omit for all)
+  - `search` (string, optional)  ESearch by user name, product name, or review content
 - **Response:** `200 OK`
   ```json
   {
@@ -77,10 +78,14 @@ View all reviews with filters, search, sort, and pagination.
     }
   }
   ```
+- **Field Notes:**
+  - `isApproved`: `true` for approved, `false` for rejected/pending
+  - `isVerifiedPurchase`: Indicates whether the review was submitted by a verified purchaser
+  - Reported reviews can be filtered using `status=reported`
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Queries `reviews` table with filters. Joins `users` and `products` for display data. Applies pagination.
 - **Rate Limit:** 100 requests per minute per admin
 
@@ -88,15 +93,15 @@ View all reviews with filters, search, sort, and pagination.
 
 ### 2.2 POST /admin/reviews/:id/moderate
 
-Approve or reject a review.
+Approve or reject a review. Also handles rejection of pending reviews.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Review ID
+  - `id` (UUID, required)  EReview ID
 - **Body:** `ModerateReviewDto`
   - `action` (enum: `'approve'` | `'reject'`, required)
-  - `reason` (string, optional, max 500 chars) — Required when action = `'reject'`
+  - `reason` (string, optional, no max length (TEXT))  ERequired when action = `'reject'`
 - **Response:** `200 OK`
   ```json
   {
@@ -114,25 +119,65 @@ Approve or reject a review.
   - Invalidates product list cache (`cache:products:list:*`) in Redis
   - Logs moderation action to audit trail
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed (missing action, missing reason for reject)
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Review not found
-  - `409 CONFLICT` — Review already in target state
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `400 BAD_REQUEST`  EValidation failed (missing action, missing reason for reject)
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EReview not found
+  - `409 CONFLICT`  EReview already in target state
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Finds review by ID. If reject, validates reason. Updates `is_approved`. Recalculates product stats. Invalidates caches. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.3 DELETE /admin/reviews/:id
+### 2.3 POST /admin/reviews/:id/report
+
+Report a review (admin-initiated).
+
+- **Auth Required:** Yes (Admin)
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Path Parameters:**
+  - `id` (UUID, required)  EReview ID
+- **Body:** `ReportReviewDto`
+  - `reason` (enum: `'spam'` | `'inappropriate'` | `'fake'` | `'other'`, required)
+  - `detail` (string, optional, no max length (TEXT))
+- **Response:** `201 Created`
+  ```json
+  {
+    "data": {
+      "id": "clxReport001",
+      "reviewId": "clxReview001",
+      "reporterId": "clxAdmin001",
+      "reason": "spam",
+      "detail": "This review appears to be fake promotional content",
+      "status": "pending",
+      "createdAt": "2026-08-22T10:30:00.000Z"
+    }
+  }
+  ```
+- **Side Effects:**
+  - Creates report record in `review_reports` table
+  - Logs report creation to audit trail
+- **Error Responses:**
+  - `400 BAD_REQUEST`  EValidation failed (missing reason)
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EReview not found
+  - `409 CONFLICT`  EDuplicate report (admin has already reported this review)
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
+- **Logic:** Validates JWT + admin role. Checks review exists. Checks for duplicate report (same admin + same review). Creates report record in `review_reports` table with admin as reporter. Returns created report.
+- **Rate Limit:** 100 requests per minute per admin
+
+---
+
+### 2.4 DELETE /admin/reviews/:id
 
 Permanently delete a review.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Review ID
+  - `id` (UUID, required)  EReview ID
 - **Response:** `204 No Content`
 - **Side Effects:**
   - Hard deletes review from database
@@ -141,25 +186,25 @@ Permanently delete a review.
   - Invalidates product list cache in Redis
   - Logs deletion action to audit trail
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Review not found
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EReview not found
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Finds review by ID. Hard deletes review. Recalculates product stats. Invalidates caches. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.4 POST /admin/reviews/bulk/moderate
+### 2.5 POST /admin/reviews/bulk/moderate
 
 Bulk approve or reject multiple reviews.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Body:**
-  - `ids` (UUID[], required) — Array of review IDs
+  - `ids` (UUID[], required)  EArray of review IDs
   - `action` (enum: `'approve'` | `'reject'`, required)
-  - `reason` (string, optional, max 500 chars) — Required when action = `'reject'`
+  - `reason` (string, optional, no max length (TEXT))  ERequired when action = `'reject'`
 - **Response:** `200 OK`
   ```json
   {
@@ -175,22 +220,22 @@ Bulk approve or reject multiple reviews.
   ```
 - **Side Effects:** Same as single moderation, applied to all selected reviews.
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error (partial failure returns counts)
+  - `400 BAD_REQUEST`  EValidation failed
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error (partial failure returns counts)
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.5 DELETE /admin/reviews/bulk
+### 2.6 DELETE /admin/reviews/bulk
 
 Bulk delete multiple reviews.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Body:**
-  - `ids` (UUID[], required) — Array of review IDs
+  - `ids` (UUID[], required)  EArray of review IDs
 - **Response:** `200 OK`
   ```json
   {
@@ -202,15 +247,15 @@ Bulk delete multiple reviews.
   ```
 - **Side Effects:** Same as single deletion, applied to all selected reviews.
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `400 BAD_REQUEST`  EValidation failed
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.6 GET /admin/merchants
+### 2.7 GET /admin/merchants
 
 View all merchants with filters and pagination.
 
@@ -221,8 +266,8 @@ View all merchants with filters and pagination.
   - `limit` (integer, optional, default: `20`, max: `100`)
   - `sort` (string, optional, default: `createdAt`)
   - `order` (string, optional, default: `desc`)
-  - `status` (enum, optional) — Filter: `pending`, `approved`, `rejected`
-  - `search` (string, optional) — Search by merchant name or user email
+  - `status` (enum, optional)  EFilter: `pending`, `approved`, `rejected`
+  - `search` (string, optional)  ESearch by merchant name or user email
 - **Response:** `200 OK`
   ```json
   {
@@ -250,22 +295,22 @@ View all merchants with filters and pagination.
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Queries `merchants` table with `license_status` filter. Joins `users` and `shops`. Applies pagination.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.7 GET /admin/merchants/:id
+### 2.8 GET /admin/merchants/:id
 
 View merchant detail.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Merchant/Shop ID
+  - `id` (UUID, required)  EMerchant/Shop ID
 - **Response:** `200 OK`
   ```json
   {
@@ -289,25 +334,25 @@ View merchant detail.
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Merchant not found
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EMerchant not found
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.8 PATCH /admin/merchants/:id/status
+### 2.9 PATCH /admin/merchants/:id/status
 
 Approve or reject a merchant registration.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Merchant ID
+  - `id` (UUID, required)  EMerchant ID
 - **Body:** `ModerateMerchantDto`
   - `status` (enum: `'approved'` | `'rejected'`, required)
-  - `reason` (string, optional, max 500 chars) — Required when status = `'rejected'`
+  - `reason` (string, optional, no max length (TEXT))  ERequired when status = `'rejected'`
 - **Response:** `200 OK`
   ```json
   {
@@ -325,18 +370,18 @@ Approve or reject a merchant registration.
   - Creates website notification for the merchant user
   - Logs moderation action to audit trail
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed (missing status, missing reason for reject)
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Merchant/shop not found
-  - `409 CONFLICT` — Merchant already in target status
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `400 BAD_REQUEST`  EValidation failed (missing status, missing reason for reject)
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EMerchant/shop not found
+  - `409 CONFLICT`  EMerchant already in target status
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Finds merchant by ID. If reject, validates reason. Updates `license_status`. Synchronizes `shops.is_approved`. If rejected, deactivates products. Creates notification. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.9 GET /admin/content
+### 2.10 GET /admin/content
 
 View all products with filters, search, sort, and pagination.
 
@@ -347,8 +392,8 @@ View all products with filters, search, sort, and pagination.
   - `limit` (integer, optional, default: `20`, max: `100`)
   - `sort` (string, optional, default: `createdAt`)
   - `order` (string, optional, default: `desc`)
-  - `status` (enum, optional) — Filter: `active`, `inactive`
-  - `search` (string, optional) — Search by product name or shop name
+  - `status` (enum, optional)  EFilter: `active`, `inactive`
+  - `search` (string, optional)  ESearch by product name or shop name
 - **Response:** `200 OK`
   ```json
   {
@@ -380,22 +425,22 @@ View all products with filters, search, sort, and pagination.
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Queries `products` table with `is_active` filter. Joins `shops` and `users`. Applies pagination.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.10 GET /admin/content/:id
+### 2.11 GET /admin/content/:id
 
 View product detail for moderation.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Product ID
+  - `id` (UUID, required)  EProduct ID
 - **Response:** `200 OK`
   ```json
   {
@@ -427,25 +472,25 @@ View product detail for moderation.
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Product not found
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EProduct not found
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.11 PATCH /admin/content/:id/status
+### 2.12 PATCH /admin/content/:id/status
 
 Deactivate or reactivate a product.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Product ID
+  - `id` (UUID, required)  EProduct ID
 - **Body:** `ModerateProductDto`
-  - `isActive` (boolean, required) — `false` to deactivate, `true` to reactivate
-  - `reason` (string, optional, max 500 chars) — Required when `isActive = false`
+  - `isActive` (boolean, required)  E`false` to deactivate, `true` to reactivate
+  - `reason` (string, optional, no max length (TEXT))  ERequired when `isActive = false`
 - **Response:** `200 OK`
   ```json
   {
@@ -462,27 +507,27 @@ Deactivate or reactivate a product.
   - Invalidates product list cache in Redis
   - Logs moderation action to audit trail
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed (missing reason for deactivation)
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Product not found
-  - `409 CONFLICT` — Product already in target state
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `400 BAD_REQUEST`  EValidation failed (missing reason for deactivation)
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EProduct not found
+  - `409 CONFLICT`  EProduct already in target state
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Finds product by ID. If deactivating, validates reason. Updates `is_active`. Invalidates caches. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.12 PATCH /admin/content/bulk/status
+### 2.13 PATCH /admin/content/bulk/status
 
 Bulk deactivate or reactivate multiple products.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Body:**
-  - `ids` (UUID[], required) — Array of product IDs
-  - `isActive` (boolean, required) — `false` to deactivate, `true` to reactivate
-  - `reason` (string, optional, max 500 chars) — Required when `isActive = false`
+  - `ids` (UUID[], required)  EArray of product IDs
+  - `isActive` (boolean, required)  E`false` to deactivate, `true` to reactivate
+  - `reason` (string, optional, no max length (TEXT))  ERequired when `isActive = false`
 - **Response:** `200 OK`
   ```json
   {
@@ -498,15 +543,15 @@ Bulk deactivate or reactivate multiple products.
   ```
 - **Side Effects:** Same as single product moderation, applied to all selected products.
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `400 BAD_REQUEST`  EValidation failed
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.13 GET /admin/users
+### 2.14 GET /admin/users
 
 View all users with filters and pagination.
 
@@ -517,8 +562,8 @@ View all users with filters and pagination.
   - `limit` (integer, optional, default: `20`, max: `100`)
   - `sort` (string, optional, default: `createdAt`)
   - `order` (string, optional, default: `desc`)
-  - `status` (enum, optional) — Filter: `active`, `inactive`, `admin`
-  - `search` (string, optional) — Search by user name or email
+  - `status` (enum, optional)  EFilter: `active`, `inactive`, `admin`
+  - `search` (string, optional)  ESearch by user name or email
 - **Response:** `200 OK`
   ```json
   {
@@ -542,22 +587,22 @@ View all users with filters and pagination.
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Queries `users` table with filters. Applies pagination.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.14 GET /admin/users/:id
+### 2.15 GET /admin/users/:id
 
 View user detail.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — User ID
+  - `id` (UUID, required)  EUser ID
 - **Response:** `200 OK`
   ```json
   {
@@ -569,31 +614,30 @@ View user detail.
       "phone": "+60123456789",
       "role": "buyer",
       "isActive": true,
-      "lastLoginAt": "2026-08-10T09:15:00.000Z",
       "createdAt": "2026-07-01T10:00:00.000Z",
       "reviewCount": 12
     }
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — User not found
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EUser not found
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.15 PATCH /admin/users/:id/status
+### 2.16 PATCH /admin/users/:id/status
 
 Activate or deactivate a user account.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — User ID
+  - `id` (UUID, required)  EUser ID
 - **Body:** `ModerateUserDto`
-  - `isActive` (boolean, required) — `false` to deactivate, `true` to reactivate
+  - `isActive` (boolean, required)  E`false` to deactivate, `true` to reactivate
 - **Response:** `200 OK`
   ```json
   {
@@ -610,30 +654,30 @@ Activate or deactivate a user account.
   - Invalidates user profile cache
   - Logs action to audit trail
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Admin cannot deactivate own account
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — User not found
-  - `409 CONFLICT` — User already in target state
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `400 BAD_REQUEST`  EAdmin cannot deactivate own account
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EUser not found
+  - `409 CONFLICT`  EUser already in target state
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Finds user by ID. Prevents self-deactivation. Updates `is_active`. If deactivating, revokes all refresh tokens. Invalidates cache. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.16 GET /admin/reports
+### 2.17 GET /admin/reports
 
 View all review reports with filters, search, and pagination.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Parameters:**
-  - `page` (integer, optional, default: `1`) — Page number
-  - `limit` (integer, optional, default: `20`, max: `100`) — Items per page
-  - `sort` (string, optional, default: `createdAt`) — Sort field: `createdAt`
-  - `order` (string, optional, default: `desc`) — Sort order: `asc`, `desc`
-  - `status` (enum, optional) — Filter: `pending`, `rejected`, `completed` (omit for all)
-  - `search` (string, optional) — Search by reporter name, email, or review content
+  - `page` (integer, optional, default: `1`)  EPage number
+  - `limit` (integer, optional, default: `20`, max: `100`)  EItems per page
+  - `sort` (string, optional, default: `createdAt`)  ESort field: `createdAt`
+  - `order` (string, optional, default: `desc`)  ESort order: `asc`, `desc`
+  - `status` (enum, optional)  EFilter: `pending`, `rejected`, `completed` (omit for all)
+  - `search` (string, optional)  ESearch by reporter name, email, or review content
 - **Response:** `200 OK`
   ```json
   {
@@ -674,76 +718,93 @@ View all review reports with filters, search, and pagination.
   }
   ```
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Queries `review_reports` table with optional status filter. Joins `users` (reporter) and `reviews` for display data. Applies pagination.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.17 PATCH /admin/reports/:id/status
+### 2.18 PATCH /admin/reports/:id/status
 
-Update report status (reject or complete).
+Update report status (reject, review, or complete).
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Report ID
+  - `id` (UUID, required)  EReport ID
 - **Body:** `UpdateReportStatusDto`
-  - `status` (enum: `'rejected'` | `'completed'`, required)
+  - `status` (enum: `'reviewed'` | `'resolved'` | `'rejected'`, required)
+  - `adminNote` (string, optional, max 1000 chars)
 - **Response:** `200 OK`
   ```json
   {
     "data": {
       "id": "clxReport001",
-      "status": "completed",
+      "status": "reviewed",
+      "adminNote": "Report verified  Ereview violates policy",
       "resolvedBy": "clxAdmin001",
-      "resolvedAt": "2026-08-17T14:00:00.000Z",
-      "updatedAt": "2026-08-17T14:00:00.000Z"
+      "resolvedAt": "2026-08-22T14:00:00.000Z",
+      "updatedAt": "2026-08-22T14:00:00.000Z"
     }
   }
   ```
 - **Side Effects:**
   - Updates `review_reports.status`
   - Sets `review_reports.resolved_by` and `resolved_at`
-  - If status = `'completed'`: rejects the target review (`reviews.is_approved = false`)
+  - If status = `'resolved'`: rejects the target review (`reviews.is_approved = false`)
   - Recalculates product `avg_rating` and `review_count` from approved reviews only
   - Invalidates product cache in Redis
   - Invalidates product list cache in Redis
   - Logs moderation action to audit trail
 - **Error Responses:**
-  - `400 BAD_REQUEST` — Validation failed (missing status)
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Report not found
-  - `409 CONFLICT` — Attempting to change an already completed report
-  - `500 INTERNAL_SERVER_ERROR` — Server error
-- **Logic:** Validates JWT + admin role. Finds report by ID. If report is already completed, returns 409. If status = `'completed'`, rejects the target review. Updates report status. Sets `resolved_by` and `resolved_at`. Logs audit.
+  - `400 BAD_REQUEST`  EValidation failed (missing status)
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EReport not found
+  - `409 CONFLICT`  EThis report has already been resolved
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
+- **Logic:** Validates JWT + admin role. Finds report by ID. If report is already resolved, returns 409. If status = `'resolved'`, rejects the target review. Updates report status. Sets `resolved_by` and `resolved_at`. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
 
 ---
 
-### 2.18 DELETE /admin/reports/:id
+### 2.19 DELETE /admin/reports/:id
 
 Delete a review report.
 
 - **Auth Required:** Yes (Admin)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Path Parameters:**
-  - `id` (UUID, required) — Report ID
+  - `id` (UUID, required)  EReport ID
 - **Response:** `204 No Content`
 - **Side Effects:**
   - Hard deletes report from `review_reports` table
   - Logs deletion action to audit trail
 - **Error Responses:**
-  - `401 UNAUTHORIZED` — Invalid or expired access token
-  - `403 FORBIDDEN` — Non-admin role
-  - `404 NOT_FOUND` — Report not found
-  - `409 CONFLICT` — Completed reports cannot be deleted
-  - `500 INTERNAL_SERVER_ERROR` — Server error
+  - `401 UNAUTHORIZED`  EInvalid or expired access token
+  - `403 FORBIDDEN`  ENon-admin role
+  - `404 NOT_FOUND`  EReport not found
+  - `409 CONFLICT`  ECompleted reports cannot be deleted
+  - `500 INTERNAL_SERVER_ERROR`  EServer error
 - **Logic:** Validates JWT + admin role. Finds report by ID. If report is completed, returns 409. Hard deletes report. Logs audit.
 - **Rate Limit:** 100 requests per minute per admin
+
+---
+
+## Appendix A: Report Reason Enums
+
+The valid report reason values are:
+
+| Value | Description |
+|-------|-------------|
+| `spam` | Spam or promotional content |
+| `inappropriate` | Inappropriate or offensive content |
+| `fake` | Fake or misleading review |
+| `other` | Other reason (provide detail) |
+
+> **Note:** These enums supersede any previously defined values such as `harassment`, `false_info`, or `policy_violation`.
 
 ---
 
@@ -789,7 +850,7 @@ After moderation actions, real-time notifications are sent via WebSocket:
 | `CONTENT_REMOVED` | Server -> Client | Product merchant | `{ productId, productName }` | Product deactivated notification |
 | `USER_STATUS_CHANGED` | Server -> Client | Affected user | `{ userId, isActive }` | User activated/deactivated notification |
 | `NEW_MERCHANT_REGISTRATION` | Server -> Client | Admin dashboard | `{ merchantId, shopName }` | New merchant pending approval |
-| `REVIEW_CREATED` | Server -> Client | Admin dashboard | `{ reviewId, productName }` | New review submitted (approved by default) |
+| `REVIEW_CREATED` | Server -> Client | Admin dashboard | `{ reviewId, productName }` | New review submitted (verified = immediate, non-verified = pending) |
 | `REPORT_STATUS_CHANGED` | Server -> Client | Admin dashboard | `{ reportId, status, reviewId }` | Report status updated (rejected/completed) |
 
 ---
@@ -803,6 +864,7 @@ All moderation actions are logged to the `audit_logs` table:
 | `REVIEW_APPROVED` | adminId, reviewId, productId, timestamp | 2 years |
 | `REVIEW_REJECTED` | adminId, reviewId, productId, reason, timestamp | 2 years |
 | `REVIEW_DELETED` | adminId, reviewId, productId, timestamp | 2 years |
+| `REVIEW_REPORTED` | adminId, reviewId, reportId, reason, timestamp | 2 years |
 | `MERCHANT_APPROVED` | adminId, shopId, merchantId, timestamp | 2 years |
 | `MERCHANT_REJECTED` | adminId, shopId, merchantId, reason, timestamp | 2 years |
 | `PRODUCT_DEACTIVATED` | adminId, productId, reason, timestamp | 2 years |
@@ -824,5 +886,5 @@ All moderation actions are logged to the `audit_logs` table:
 | [DD_MOD_02](./DD_ReviewContent_Moderation_02_FRONTEND_PAGES.md) | Frontend page design |
 | [DD_MOD_04](./DD_ReviewContent_Moderation_04_DTOS_AND_TYPES.md) | Full DTO definitions |
 | [DD_MOD_05](./DD_ReviewContent_Moderation_05_BUSINESS_LOGIC.md) | Backend business rules |
-| [機能設計書_Review_Content_Moderation](../機能設計書_Review_Content_Moderation.md) | Full functional specification |
-| [画面項目設計書_Review_Content_Moderation](../画面項目設計書_Review_Content_Moderation.md) | Screen items specification |
+| [機�E設計書_Review_Content_Moderation](../機�E設計書_Review_Content_Moderation.md) | Full functional specification |
+| [画面頁E��設計書_Review_Content_Moderation](../画面頁E��設計書_Review_Content_Moderation.md) | Screen items specification |
