@@ -25,7 +25,7 @@
 |------------|------|--------|----------|
 | 1.0 | 2026-08-14 | Software Architect | Sales & Analytics サブシステムの初期機能設計書。Merchant Sales Dashboard、Merchant Analytics、Admin Analytics & Reports 画面を対象とする。 |
 | 1.1 | 2026-08-14 | Software Architect | 販売者のライセンス状態ゲートおよび販売者ID解決パターンを追加（確定済みの `merchants` テーブル定義に合わせるため）。 |
-| 2.0 | 2026-08-21 | Software Architect | **サブシステム名を Sales & Analytics → Order Insights に変更**し、要件定義書 §3.3 / §4.5 / §5.6 / §6.4 に再スコープ。対象外の分析機能を削除（売上推移グラフ、商品実績、顧客属性、管理者向けプラットフォームダッシュボード、ユーザー増減、カテゴリ実績、販売者ランキング、CSV レポート出力）。Buyer Order History / Order Detail / Order Tracking（§3.3）および Admin All Orders（ショップ/販売者・ステータス絞り込み付き、§5.6）を追加。Merchant のスコープを自ショップの Order History、Order Detail（明細＋顧客情報）、Order Tracking、Sales Summary、Revenue Summary（§4.5）に限定。Revenue Summary の計算式を PM と確認（BR-OI-020~024）。**AOV は総売上（Gross）ではなく純収益（Net Revenue）を基準に算出**する。注文ステータス列挙型を DATABASE_SPEC §3.1 に合わせて再調整（`placed → confirmed → packed → shipped → out_for_delivery → delivered`）。スキーマ上の2件のギャップを提起（§16.6、§16.7）。 |
+| 2.0 | 2026-08-21 | Software Architect | **サブシステム名を Sales & Analytics → Order Insights に変更**し、要件定義書 §3.3 / §4.5 / §5.6 / §6.4 に再スコープ。対象外の分析機能を削除（売上推移グラフ、商品実績、顧客属性、管理者向けプラットフォームダッシュボード、ユーザー増減、カテゴリ実績、販売者ランキング、CSV レポート出力）。Buyer Order History / Order Detail / Order Tracking（§3.3）および Admin All Orders（ショップ/販売者・ステータス絞り込み付き、§5.6）を追加。Merchant のスコープを自ショップの Order History、Order Detail（明細＋顧客情報）、Order Tracking、Sales Summary、Revenue Summary（§4.5）に限定。Revenue Summary の計算式を PM と確認（BR-OI-020~024）。**AOV は総売上（Gross）ではなく純収益（Net Revenue）を基準に算出**する。注文ステータス列挙型を DATABASE_SPEC §3.1 に合わせて再調整（`placed → confirmed → packed → shipped → out_for_delivery → delivered`）。注文作成時のコミッション率スナップショットのスキーマギャップは未解決である。 |
 
 ---
 
@@ -46,7 +46,6 @@
 13. [非機能要件](#13-非機能要件)
 14. [設定可能項目（外部定義）](#14-設定可能項目外部定義)
 15. [クロスリファレンス・トレーサビリティマトリクス](#15-クロスリファレンストレーサビリティマトリクス)
-16. [共有スキーマと画面間の考慮事項](#16-共有スキーマと画面間の考慮事項)
 
 ---
 
@@ -245,6 +244,8 @@
 ```
 > 販売者には `orders.merchant_id = 自身の merchants.id` の注文**のみ**が表示される（BR-OI-003）。売上/収益サマリーはまさにその同じスコープを集計する — 販売者が他の販売者の数値やプラットフォーム集計を見ることはない。
 
+> **ステータスの読み取り専用動作：** 販売者の Order Detail は現在のステータスとステータス履歴を表示する。**Change Status** アクションは Order Fulfillment へ遷移するだけであり、ステータス更新 API の呼び出し、`orders.status` の変更、`order_status_history` への書き込み、状態遷移はここでは行わない。フローは **Order Details -> Change Status -> Order Fulfillment -> Update Status** である。
+
 ### 2.4 主要ビジネスワークフロー — Admin（§5.6）
 
 ```
@@ -386,7 +387,7 @@ Sales Summary は金額ではなく**注文数**を提示する。すべての�
 |----------|----------|--------------|--------------|
 | BR-OI-021 | **Sales（売上）** | 顧客が支払った**総額（Gross）**。<br>`Sales = SUM(orders.total_amount)`（選択期間の販売者スコープ注文について）。 | バックエンド（集計） |
 | BR-OI-022 | **Commission（コミッション）** | プラットフォームの取り分。<br>`Commission = Sales × コミッション率`。率は注文作成時に**固定（locked）**されたもの（要件定義書 §7.7）。**注文ごとに**計算してから合算 — `Commission = SUM(order.total_amount × order.commission_rate)` — これにより、後の率変更が過去の数値を遡及的に変更することはない。率の取得元と現在のスキーマギャップ：**BR-OI-023**。 | バックエンド（集計） |
-| BR-OI-023 | Commission Rate Sourcing — Schema Gap（コミッション率取得 — スキーマギャップ） | §7.7 はコミッション率を注文作成時に固定することを要求するが、`orders` には `commission_rate` 列が存在しない。グローバルで可変の `commission_settings.commission_rate`（既定 12.00）のみが存在する（DATABASE_SPEC §3.17）。`orders.commission_rate` が追加される（§16.7）まで、率はクエリ時に `commission_settings` から読み取り、レスポンスに `commissionRateSource: "current_settings"` および `commissionRateLocked: false` を含め、UI は「Commission is calculated with the current platform rate; historical rate locking is pending.」という脚注を表示しなければならない。列が存在するようになれば、クエリは `orders.commission_rate` を読み取り、フラグは `"order_snapshot"` / `true` となる。 | バックエンド（集計）＋フロントエンド（表示） |
+| BR-OI-023 | Commission Rate Sourcing — Schema Gap（コミッション率取得 — スキーマギャップ） | §7.7 はコミッション率を注文作成時に固定することを要求するが、`orders` には `commission_rate` 列が存在しない。グローバルで可変の `commission_settings.commission_rate`（既定 12.00）のみが存在する（DATABASE_SPEC §3.17）。`orders.commission_rate` が追加されるまで、率はクエリ時に `commission_settings` から読み取り、レスポンスに `commissionRateSource: "current_settings"` および `commissionRateLocked: false` を含め、UI は「Commission is calculated with the current platform rate; historical rate locking is pending.」という脚注を表示しなければならない。列が存在するようになれば、クエリは `orders.commission_rate` を読み取り、フラグは `"order_snapshot"` / `true` となる。 | バックエンド（集計）＋フロントエンド（表示） |
 | BR-OI-024 | **Revenue（収益）** | 販売者が受け取る**純額（Net）**。<br>`Revenue = Sales − Commission`。<br>要件定義書 §7.7「Merchant payouts = Total Sales − Commission」と整合。 | バックエンド（集計） |
 | BR-OI-025 | **AOV（平均注文額）** | `AOV = Revenue ÷ Number of Orders` — **総売上（Gross）ではなく純収益（Net Revenue）を基準に算出**（PMと確認済み）。`Number of Orders` = Sales に使用した同じスコープ注文の `COUNT(orders)`。`Number of Orders = 0` の場合、AOV は `0.00` を表示。 | バックエンド（集計）＋フロントエンド（書式） |
 | BR-OI-026 | **Four-Field Disclosure Rule（4項目開示ルール）** | Sales、Commission、Revenue、AOV は API により**まとめて、1つのグループとして**返却され、画面にも描画されなければならない。単独の「revenue」という数値を孤立して表示することは**許されない** — 裸の数値は総額か純額かで曖昧になり、これまでにも誤読を招いていた。4項目のうち1つ（コンパクト/モバイルレイアウトや今後の出力を含む）を表示する画面は、すべての4項目をそれぞれのラベルとともに表示しなければならない。 | バックエンド（DTO 契約）＋フロントエンド（コンポーネント契約） |
@@ -522,7 +523,8 @@ Sales Summary は金額ではなく**注文数**を提示する。すべての�
 | EL-OI-53 | 顧客情報 | カード | `merchant.orders.customer` | Yes | 購入者名、連絡先、配送先住所（BR-OI-015/033） |
 | EL-OI-54 | 注文メモ | テキスト | `orders.detail.notes` | No | 顧客からの `orders.notes` |
 | EL-OI-55 | 注文追跡ボタン | ボタン | `orders.track` | Yes | 追跡へ遷移 |
-| EL-OI-56 | ステータスバッジ | バッジ | — | Yes | **読み取り専用** — ステータス変更は Order Fulfillment 画面で行う（対象外） |
+| EL-OI-56 | ステータスバッジ | バッジ | — | Yes | **読み取り専用** — 現在のステータスを表示。ステータス変更は Order Fulfillment 画面でのみ行う |
+| EL-OI-57 | Change Status アクション | リンク/ボタン | `orders.changeStatus` | No | Order Fulfillment への遷移のみ。ここではステータス更新 API や状態遷移を実行しない |
 
 ### 5.6 画面：Admin All Orders（`/admin/orders`）
 
@@ -608,16 +610,6 @@ Sales Summary は金額ではなく**注文数**を提示する。すべての�
 | **処理手順** | 1. JWT とロールを検証。2. `merchants.id` を解決（BR-OI-003）し `license_status = 'approved'` を確認。3. 期間ウィンドウ（UTC）を解決。4. 販売者のスコープ注文に対する**1つの**集計（BR-OI-027）で計算：`orderCount = COUNT(orders)`；`sales = SUM(orders.total_amount)`（BR-OI-021）；`commission = SUM(order.total_amount × rate)`（率は BR-OI-022/023 に従い解決、注文ごと丸め、BR-OI-028）；`revenue = sales − commission`（BR-OI-024）；`aov = orderCount > 0 ? revenue / orderCount : 0` — **分子は純収益（Net Revenue）**（BR-OI-025）。5. `commissionRate`、`commissionRateSource`、`commissionRateLocked` を添付（BR-OI-023）。6. **4数値をすべてまとめて**返す — DTO に部分形はない（BR-OI-026）。 |
 | **成功応答** | 200 OK（`revenueSummary` = `{ sales, commission, revenue, aov, orderCount, commissionRate, commissionRateSource, commissionRateLocked, period }`） |
 | **事後アクション** | 収益サマリーグループ（EL-OI-34）を4統計すべてと率脚注付きで描画 |
-
-### 6.6 操作：Update Order Status（対象外 — Order Fulfillment モジュール）
-
-> **所有権：** **Order Fulfillment モジュール**が所有・実装する。ここに記載するのはデータ依存（§2.5）とキャッシュ無効化契約（§11.2）のみ。Order Insights はこれを実装**しない**。
-
-| 属性 | 仕様 |
-|------|------|
-| **トリガー** | 販売者/管理者が Order Fulfillment 画面で注文ステータスを進行 |
-| **API エンドポイント** | `PATCH /api/v1/orders/:id/status` *(他モジュール)* |
-| **Order Insights が依存する契約** | 成功時、当該モジュールは (a) `order_status_history` に行を追加し、(b) `cache:oi:merchant:{merchantId}:summary` を無効化しなければならない。(a) がないと追跡タイムラインは BR-OI-014 に劣化；(b) がないとサマリーが最大キャッシュTTLの間古くなる可能性がある。 |
 
 ---
 
@@ -719,7 +711,7 @@ Sales Summary は金額ではなく**注文数**を提示する。すべての�
 | `orderCount` | 同じ注文集の `COUNT(orders)`（BR-OI-027） | 整数 |
 | `commissionRate` | 適用率（パーセント） | 数値（例 `12.00`） |
 | `commissionRateSource` | `"current_settings"` \| `"order_snapshot"`（BR-OI-023） | 文字列 |
-| `commissionRateLocked` | `orders.commission_rate` が存在するまで `false`（BR-OI-023、§16.6） | Boolean |
+| `commissionRateLocked` | `orders.commission_rate` が存在するまで `false`（BR-OI-023） | Boolean |
 | `period` | 解決済みウィンドウのエコー | `{ code, from, to }` |
 
 ---
@@ -806,7 +798,6 @@ Sales Summary は金額ではなく**注文数**を提示する。すべての�
 | `GET /orders/:id/tracking` | 保護（Buyer、Merchant、Admin） | 所有権は BR-OI-008 に従い検証 |
 | `GET /order-insights/merchant/sales-summary` | 保護（Merchant、Admin） | 自ショップのみ |
 | `GET /order-insights/merchant/revenue-summary` | 保護（Merchant、Admin） | 自ショップのみ |
-| `PATCH /orders/:id/status` | *(Order Fulfillment モジュール — 対象外)* | ここでは実装しない（§6.6） |
 
 ### 10.3 ロールベースアクセス
 
@@ -834,8 +825,8 @@ export class OrderInsightsController {
   // GET /:id          -> detail;   読み込み後に所有権検証、不一致 -> 404（BR-OI-008）
   // GET /:id/tracking -> timeline; 読み込み後に所有権検証、不一致 -> 404（BR-OI-008）
   //
-  // 注意: PATCH /:id/status はここでは宣言しない — Order Fulfillment
-  //        モジュールに属する（§6.6）。本コントローラは読み取り専用（BR-OI-007）。
+  // 注意: ステータス更新はここでは宣言しない — Order Fulfillment
+  //        モジュールに属する。本コントローラは読み取り専用（BR-OI-007）。
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -916,7 +907,7 @@ Order Insights 画面は WebSocket 接続を開かない。データはナビゲ
 |--------|------------|------|
 | 購入者注文詳細 | `/products/:id` | 商品明細のクリック |
 | 購入者注文詳細 | レビューフォーム | 注文 `status = 'delivered'` かつ未レビューの商品（Review サブシステム） |
-| 販売者注文詳細 | Order Fulfillment ステータス画面 | 販売者がステータスを進行させる必要がある場合（**他モジュール**、§6.6） |
+| 販売者注文詳細 | Order Fulfillment ステータス画面 | **Change Status** は Order Fulfillment への遷移のみ。実際の更新は同画面で行う |
 | 管理者注文リスト | `/admin/merchants/:id` | ショップ/販売者名のクリック |
 
 ### 12.4 エラーナビゲーション
@@ -1021,7 +1012,7 @@ Order Insights 画面は WebSocket 接続を開かない。データはナビゲ
 | §5.6 Orders by Status（Admin） | 注文ステータスで絞り込み | UC-OI-011、BR-OI-011/016、§5.6（EL-OI-62）、§6.1 |
 | §6.4 Order Insights（Shared） | 各ロールは自身のスコープのみ閲覧 | **BR-OI-001~004、BR-OI-008**、§10.3、§10.4 |
 | §7.3 Orders | ステータスフロー；価格は注文作成時固定 | §3.1、§3.2、BR-OI-017 |
-| §7.7 Monetization | コミッション率は注文作成時固定；payout = Sales − Commission | BR-OI-022、BR-OI-023、BR-OI-024、§16.7 |
+| §7.7 Monetization | コミッション率は注文作成時固定；payout = Sales − Commission | BR-OI-022、BR-OI-023、BR-OI-024 |
 | §2.2 Permission Matrix | View Order Insights：Merchant ✅ / Admin ✅ | BR-OI-005、§10.1、§10.3 |
 
 ### 15.2 データベース設計トレーサビリティ
@@ -1046,61 +1037,6 @@ Order Insights 画面は WebSocket 接続を開かない。データはナビゲ
 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
 
 ---
-
-## 16. 共有スキーマと画面間の考慮事項（Shared Schema & Cross-Screen Considerations）
-
-本節は、他サブシステムと共有されるスキーマと挙動、および本仕様が依存する未解決のギャップを記載する。
-
-### 16.1 共有テーブル
-
-| テーブル | 書き込み元 | Order Insights での使用 |
-|----------|------------|-------------------------|
-| `orders` | Checkout（作成）、Order Fulfillment（ステータス） | 読み取り専用：履歴、詳細、計数、収益 |
-| `order_items` | Checkout | 読み取り専用：詳細明細、販売者スコープ |
-| `order_statuses` | マスタデータ（seed） | 読み取り専用：ラベル、表示順、終端状態 |
-| `order_status_history` | Order Fulfillment | 読み取り専用：追跡タイムスタンプ |
-| `merchants` | 販売者登録、Admin 承認 | 読み取り専用：ID 解決、ライセンスゲート、ショップ名 |
-| `commission_settings` | Revenue & Commission（admin） | 読み取り専用：コミッション率 |
-| `users` | Auth / Profile | 読み取り専用：販売者/管理者詳細用の購入者名・連絡先 |
-
-### 16.2 共有される注文ステータス列挙型
-
-`order_statuses`（`placed`、`confirmed`、`packed`、`shipped`、`out_for_delivery`、`delivered`）は、Checkout（作成で `placed`）、Order Fulfillment（ステータス進行）、Notification System（ステータス変更イベント）、Order Insights（表示と計数の読み取り）の4者で共有される。列挙型への変更は4者すべてで調整されなければならない — とりわけ**Completed**計数（BR-OI-018）は終端状態として定義されるため、新たな終端状態の追加はその数値を変える。
-
-### 16.3 共有される支払ステータス
-
-`orders.payment_status`（`pending`、`completed`、`failed`、`refunded`）は Checkout / 決済処理により書き込まれ、Order History および Order Detail に表示される。なお Revenue Summary（BR-OI-021~025）は本バージョンでは支払ステータスを問わず**すべてのスコープ注文**を集計することに注意。後で「支払済みのみの収益」が必要となった場合、BR-OI-021 を改訂し本節を更新しなければならない。
-
-### 16.4 共有されるコミッション率
-
-`commission_settings.commission_rate` は **Revenue & Commission** サブシステム（要件定義書 §5.7、管理者設定可能、既定 12%）が所有する。Order Insights はこれを読み取り、販売者 Commission 数値（BR-OI-022）を計算する。販売者向けの `Revenue = Sales − Commission` 数値は、`payouts.net_payout = total_amount − commission_amount`（DATABASE_SPEC §3.18）と算術的に整合し続けなければならない — 支払丸めが変わった場合、BR-OI-028 もそれに伴い変更される。
-
-### 16.5 顧客情報の公開
-
-販売者 Order Detail の顧客情報ブロック（BR-OI-015）は、本サブシステムが第三者へ購入者 PII を投影する唯一の箇所である。投影フィールドへのいかなる変更も、Profile & Settings サブシステムおよびプラットフォームのプライバシーポリシーに対してレビューされなければならない。
-
-### 16.6 注文へのコミッション率未スナップショット（BR-OI-022 を弱める）
-
-**ステータス：** 未解決のスキーマギャップ。規定挙動：BR-OI-023 / BR-OI-032。
-
-要件定義書 §7.7 は「コミッション率は注文作成時に固定される」と述べ、DATABASE_SPEC §3.17 もその規則を繰り返す — しかし固定率を格納する列が存在しない。`commission_settings` は**単一・可変・グローバル**な率の行のみを保持する。したがって：
-
-1. 過去の Commission および Revenue 数値は今日の率で再計算されるため、管理者による率変更が過去の販売者収益数値を**遡及的に変更**する。
-2. 販売者 Revenue（BR-OI-024）は、旧率で計算された既処理の `payouts.commission_amount` から乖離し得る。
-
-現在の帰結：Revenue Summary は `commissionRateSource: "current_settings"` および `commissionRateLocked: false` を報告し、UI は BR-OI-023 の脚注を表示する。
-
-将来のスキーマバージョンへの推奨：
-
-- `orders.commission_rate DECIMAL(5,2) NOT NULL` を追加し、注文作成時に `commission_settings.commission_rate` から投入する。
-- 既存行は、確定可能な場合はその `created_at` 時点の率で、さもなくば現在の既定値（12.00）でバックフィルし、バックフィルの前提を記録する。
-- BR-OI-022 を `orders.commission_rate` を読むよう切り替える。`commissionRateSource` は `"order_snapshot"` に、`commissionRateLocked` は `true` になる。
-
-影響文書：SKM-REQ-001（§7.7）、SKM-DBS-001（§3.9、§3.17、§3.18）、本書（§4.5、§6.5、§7.8）。
-
-### 16.7 変更調整（Change Coordination）
-
-`order_statuses`、`orders.status`、`orders.payment_status`、`commission_settings.commission_rate`、または `payouts` 計算へのいかなる変更も、以下に対してレビューされなければならない：Checkout 機能仕様、Order Fulfillment 機能仕様、Notification System 仕様、Revenue & Commission 仕様（要件定義書 §5.7）、および本書。
 
 ---
 

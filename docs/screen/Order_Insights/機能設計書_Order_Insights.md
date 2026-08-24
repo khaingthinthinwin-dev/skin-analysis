@@ -25,7 +25,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-14 | Software Architect | Initial functional specification for the Sales & Analytics subsystem covering the Merchant Sales Dashboard, Merchant Analytics, and Admin Analytics & Reports screens. |
 | 1.1 | 2026-08-14 | Software Architect | Added merchant license-status gate and merchant-ID resolution pattern to reflect the confirmed `merchants` table schema. |
-| 2.0 | 2026-08-21 | Software Architect | **Subsystem renamed Sales & Analytics → Order Insights** and rescoped to Requirement Spec §3.3 / §4.5 / §5.6 / §6.4. Removed out-of-scope analytics (sales trend charts, product performance, customer demographics, admin platform dashboard, user growth, category performance, merchant ranking, CSV report export). Added Buyer Order History / Order Detail / Order Tracking (§3.3) and Admin All Orders with shop/merchant and status filters (§5.6). Merchant scope restricted to own-shop Order History, Order Detail (items + customer info), Order Tracking, Sales Summary, and Revenue Summary (§4.5). Revenue Summary formulas confirmed with PM: Sales / Commission / Revenue / AOV are defined in BR-OI-020~024, with **AOV computed on net Revenue, not gross Sales**. Order status enum realigned to DATABASE_SPEC §3.1 (`placed → confirmed → packed → shipped → out_for_delivery → delivered`). Two schema gaps raised (§16.6, §16.7). |
+| 2.0 | 2026-08-21 | Software Architect | **Subsystem renamed Sales & Analytics → Order Insights** and rescoped to Requirement Spec §3.3 / §4.5 / §5.6 / §6.4. Removed out-of-scope analytics (sales trend charts, product performance, customer demographics, admin platform dashboard, user growth, category performance, merchant ranking, CSV report export). Added Buyer Order History / Order Detail / Order Tracking (§3.3) and Admin All Orders with shop/merchant and status filters (§5.6). Merchant scope restricted to own-shop Order History, Order Detail (items + customer info), Order Tracking, Sales Summary, and Revenue Summary (§4.5). Revenue Summary formulas confirmed with PM: Sales / Commission / Revenue / AOV are defined in BR-OI-020~024, with **AOV computed on net Revenue, not gross Sales**. Order status enum realigned to DATABASE_SPEC §3.1 (`placed → confirmed → packed → shipped → out_for_delivery → delivered`). Commission-rate snapshot schema gap remains open. |
 
 ---
 
@@ -46,7 +46,6 @@
 13. [Non-Functional Considerations](#13-non-functional-considerations)
 14. [Configurable Items (External Definitions)](#14-configurable-items-external-definitions)
 15. [Cross-Reference Traceability Matrix](#15-cross-reference-traceability-matrix)
-16. [Shared Schema & Cross-Screen Considerations](#16-shared-schema--cross-screen-considerations)
 
 ---
 
@@ -245,6 +244,8 @@ The subsystem is **fully read-only**. All figures are derived by aggregating `or
 ```
 > The merchant sees **only** `orders.merchant_id = own merchants.id` (BR-OI-003). Sales/Revenue summaries aggregate exactly that same scope — a merchant never sees another merchant's figures or any platform total.
 
+> **Read-only status behavior:** Merchant Order Details display the current status and status history. The **Change Status** action only navigates to Order Fulfillment; it does not call a status-update API, modify `orders.status`, write `order_status_history`, or perform a state transition. The flow is **Order Details -> Change Status -> Order Fulfillment -> Update Status**.
+
 ### 2.4 Primary Business Workflow — Admin (§5.6)
 
 ```
@@ -386,7 +387,7 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 |---------|-----------|----------------------|-------------------|
 | BR-OI-021 | **Sales** | The **gross amount customers paid**.<br>`Sales = SUM(orders.total_amount)` over the merchant's in-scope orders for the selected period. | Backend (aggregation) |
 | BR-OI-022 | **Commission** | The platform's cut.<br>`Commission = Sales × commission rate`, where the rate is the one **locked at order creation time** (Requirement Spec §7.7). Computed **per order** and then summed — `Commission = SUM(order.total_amount × order.commission_rate)` — so that a later rate change never retroactively alters historical figures. Rate sourcing and the current schema gap: **BR-OI-023**. | Backend (aggregation) |
-| BR-OI-023 | Commission Rate Sourcing — Schema Gap | §7.7 requires the commission rate to be **locked at order creation time**, but `orders` has no `commission_rate` column; only the global, mutable `commission_settings.commission_rate` (default 12.00) exists (DATABASE_SPEC §3.17). Until `orders.commission_rate` is added (§16.7), the rate is read from `commission_settings` at query time and the response MUST include `commissionRateSource: "current_settings"` plus `commissionRateLocked: false`, and the UI MUST show the footnote "Commission is calculated with the current platform rate; historical rate locking is pending." Once the column exists, the query reads `orders.commission_rate` and the flags become `"order_snapshot"` / `true`. | Backend (aggregation) + Frontend (display) |
+| BR-OI-023 | Commission Rate Sourcing — Schema Gap | §7.7 requires the commission rate to be **locked at order creation time**, but `orders` has no `commission_rate` column; only the global, mutable `commission_settings.commission_rate` (default 12.00) exists (DATABASE_SPEC §3.17). Until `orders.commission_rate` is added, the rate is read from `commission_settings` at query time and the response MUST include `commissionRateSource: "current_settings"` plus `commissionRateLocked: false`, and the UI MUST show the footnote "Commission is calculated with the current platform rate; historical rate locking is pending." Once the column exists, the query reads `orders.commission_rate` and the flags become `"order_snapshot"` / `true`. | Backend (aggregation) + Frontend (display) |
 | BR-OI-024 | **Revenue** | The **net amount the merchant receives**.<br>`Revenue = Sales − Commission`.<br>Consistent with Requirement Spec §7.7 "Merchant payouts = Total Sales − Commission". | Backend (aggregation) |
 | BR-OI-025 | **AOV (Average Order Value)** | `AOV = Revenue ÷ Number of Orders` — **computed on net Revenue, not gross Sales** (confirmed with PM). `Number of Orders` = `COUNT(orders)` over the same in-scope order set used for Sales. When `Number of Orders = 0`, AOV displays `0.00`. | Backend (aggregation) + Frontend (formatting) |
 | BR-OI-026 | **Four-Field Disclosure Rule** | Sales, Commission, Revenue, and AOV MUST be returned by the API and rendered on screen **together, as one group**. It is **never** permitted to display a single figure labelled "revenue" in isolation — a bare number is ambiguous between gross and net and has previously caused misreading. Any surface that shows one of the four (including compact/mobile layouts and any future export) MUST show all four with their own labels. | Backend (DTO contract) + Frontend (component contract) |
@@ -522,7 +523,8 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | EL-OI-53 | Customer Information | Card | `merchant.orders.customer` | Yes | Buyer name, contact, shipping address (BR-OI-015/033) |
 | EL-OI-54 | Order Notes | Text | `orders.detail.notes` | No | `orders.notes` from the customer |
 | EL-OI-55 | Track Order Button | Button | `orders.track` | Yes | Navigate to tracking |
-| EL-OI-56 | Status Badge | Badge | — | Yes | **Read-only** — status changes are made in the Order Fulfillment screens (out of scope) |
+| EL-OI-56 | Status Badge | Badge | — | Yes | **Read-only** — displays the current status; status changes are made only in the Order Fulfillment screens |
+| EL-OI-57 | Change Status Action | Link/Button | `orders.changeStatus` | No | Navigation only to Order Fulfillment; no status update API or state transition is performed here |
 
 ### 5.6 Screen: Admin All Orders (`/admin/orders`)
 
@@ -608,16 +610,6 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | **Processing Steps** | 1. Validate JWT and role. 2. Resolve `merchants.id` (BR-OI-003) and verify `license_status = 'approved'`. 3. Resolve the period window (UTC). 4. In **one** aggregation over the merchant's in-scope orders (BR-OI-027) compute: `orderCount = COUNT(orders)`; `sales = SUM(orders.total_amount)` (BR-OI-021); `commission = SUM(order.total_amount × rate)` with the rate resolved per BR-OI-022/023 and rounded per order (BR-OI-028); `revenue = sales − commission` (BR-OI-024); `aov = orderCount > 0 ? revenue / orderCount : 0` — **net Revenue as the numerator** (BR-OI-025). 5. Attach `commissionRate`, `commissionRateSource`, `commissionRateLocked` (BR-OI-023). 6. Return **all four figures together** — the DTO has no partial form (BR-OI-026). |
 | **Success Response** | 200 OK with `revenueSummary` = `{ sales, commission, revenue, aov, orderCount, commissionRate, commissionRateSource, commissionRateLocked, period }` |
 | **Post-Action** | Render the Revenue Summary group (EL-OI-34) with all four stats and the rate footnote |
-
-### 6.6 Operation: Update Order Status (OUT OF SCOPE — Order Fulfillment module)
-
-> **Ownership:** owned and implemented by the **Order Fulfillment module**. Documented here only for the data dependency (§2.5) and the cache-invalidation contract (§11.2). Order Insights implements **no** part of it.
-
-| Attribute | Specification |
-|-----------|---------------|
-| **Trigger** | Merchant/admin advances an order's status in the Order Fulfillment screens |
-| **API Endpoint** | `PATCH /api/v1/orders/:id/status` *(other module)* |
-| **Contract relied upon by Order Insights** | On success the module MUST (a) append a row to `order_status_history`, and (b) invalidate `cache:oi:merchant:{merchantId}:summary`. Without (a) the tracking timeline degrades to BR-OI-014; without (b) summaries may be stale for up to the cache TTL. |
 
 ---
 
@@ -719,7 +711,7 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | `orderCount` | `COUNT(orders)` over the same order set (BR-OI-027) | Integer |
 | `commissionRate` | Applied rate as a percentage | Number (e.g. `12.00`) |
 | `commissionRateSource` | `"current_settings"` \| `"order_snapshot"` (BR-OI-023) | String |
-| `commissionRateLocked` | `false` until `orders.commission_rate` exists (BR-OI-023, §16.6) | Boolean |
+| `commissionRateLocked` | `false` until `orders.commission_rate` exists (BR-OI-023) | Boolean |
 | `period` | Echo of the resolved window | `{ code, from, to }` |
 
 ---
@@ -806,7 +798,6 @@ The Sales Summary presents **order counts**, not money. All counts are scoped by
 | `GET /orders/:id/tracking` | Protected (Buyer, Merchant, Admin) | Ownership verified per BR-OI-008 |
 | `GET /order-insights/merchant/sales-summary` | Protected (Merchant, Admin) | Own shop only |
 | `GET /order-insights/merchant/revenue-summary` | Protected (Merchant, Admin) | Own shop only |
-| `PATCH /orders/:id/status` | *(Order Fulfillment module — out of scope)* | Not implemented here (§6.6) |
 
 ### 10.3 Role-Based Access
 
@@ -834,8 +825,8 @@ export class OrderInsightsController {
   // GET /:id          -> detail;   ownership verified after load, mismatch -> 404 (BR-OI-008)
   // GET /:id/tracking -> timeline; ownership verified after load, mismatch -> 404 (BR-OI-008)
   //
-  // NOTE: PATCH /:id/status is NOT declared here — it belongs to the
-  //       Order Fulfillment module (§6.6). This controller is read-only (BR-OI-007).
+  // NOTE: Status updates are NOT declared here — they belong to the
+  //       Order Fulfillment module. This controller is read-only (BR-OI-007).
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -916,7 +907,7 @@ Order-status notifications (buyer "your order has shipped", merchant "new order 
 |--------|--------|-----------|
 | Buyer order detail | `/products/:id` | Click a product line item |
 | Buyer order detail | Review form | Order `status = 'delivered'` and the product is not yet reviewed (Review subsystem) |
-| Merchant order detail | Order Fulfillment status screen | Merchant needs to advance the status (**other module**, §6.6) |
+| Merchant order detail | Order Fulfillment status screen | The **Change Status** action only navigates to Order Fulfillment; the actual update is performed there |
 | Admin order list | `/admin/merchants/:id` | Click a shop/merchant name |
 
 ### 12.4 Error Navigation
@@ -1021,7 +1012,7 @@ Defined via `.env` configuration:
 | §5.6 Orders by Status (Admin) | Filter by order status | UC-OI-011, BR-OI-011/016, §5.6 (EL-OI-62), §6.1 |
 | §6.4 Order Insights (Shared) | Each role sees only its own scope | **BR-OI-001~004, BR-OI-008**, §10.3, §10.4 |
 | §7.3 Orders | Status flow; prices locked at order creation | §3.1, §3.2, BR-OI-017 |
-| §7.7 Monetization | Commission rate locked at order creation; payout = Sales − Commission | BR-OI-022, BR-OI-023, BR-OI-024, §16.7 |
+| §7.7 Monetization | Commission rate locked at order creation; payout = Sales − Commission | BR-OI-022, BR-OI-023, BR-OI-024 |
 | §2.2 Permission Matrix | View Order Insights: Merchant ✅ / Admin ✅ | BR-OI-005, §10.1, §10.3 |
 
 ### 15.2 Database Design Traceability
@@ -1046,60 +1037,6 @@ Defined via `.env` configuration:
 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
 
 ---
-
-## 16. Shared Schema & Cross-Screen Considerations
-
-This section documents schema and behaviour shared with other subsystems, and the open gaps this specification depends on.
-
-### 16.1 Shared Tables
-
-| Table | Written By | Usage in Order Insights |
-|-------|-----------|-------------------------|
-| `orders` | Checkout (create), Order Fulfillment (status) | Read-only: history, detail, counts, revenue |
-| `order_items` | Checkout | Read-only: detail line items, merchant scoping |
-| `order_statuses` | Master data (seed) | Read-only: labels, display order, terminal state |
-| `order_status_history` | Order Fulfillment | Read-only: tracking timestamps |
-| `merchants` | Merchant registration, Admin approval | Read-only: ID resolution, license gate, shop name |
-| `commission_settings` | Revenue & Commission (admin) | Read-only: commission rate |
-| `users` | Auth / Profile | Read-only: buyer name and contact for merchant/admin detail |
-
-### 16.2 Order Status Enum Shared
-
-`order_statuses` (`placed`, `confirmed`, `packed`, `shipped`, `out_for_delivery`, `delivered`) is shared by Checkout (creates `placed`), Order Fulfillment (advances status), the Notification System (status-change events), and Order Insights (reads for display and counts). Any change to the enum MUST be coordinated across all four — in particular the **Completed** count (BR-OI-018) is defined as the terminal state, so adding a new terminal state changes that figure.
-
-### 16.3 Payment Status Shared
-
-`orders.payment_status` (`pending`, `completed`, `failed`, `refunded`) is written by Checkout / payment processing and displayed in Order History and Order Detail. Note that the Revenue Summary (BR-OI-021~025) aggregates **all in-scope orders regardless of payment status** in this version; if the business later requires paid-only revenue, BR-OI-021 must be amended and this section updated.
-
-### 16.4 Commission Rate Shared
-
-`commission_settings.commission_rate` is owned by the **Revenue & Commission** subsystem (Requirement Spec §5.7, admin-configurable, default 12%). Order Insights reads it to compute the merchant Commission figure (BR-OI-022). The merchant-facing `Revenue = Sales − Commission` figure MUST stay arithmetically consistent with `payouts.net_payout = total_amount − commission_amount` (DATABASE_SPEC §3.18) — if payout rounding changes, BR-OI-028 must change with it.
-
-### 16.5 Customer Information Exposure
-
-The customer-information block on merchant Order Detail (BR-OI-015) is the only place this subsystem projects buyer PII to another party. Any change to the projected fields must be reviewed against the Profile & Settings subsystem and the platform privacy policy.
-
-### 16.6 Commission Rate Not Snapshotted on Orders (weakens BR-OI-022)
-
-**Status:** Open schema gap. Specified behaviour: BR-OI-023 / BR-OI-032.
-
-Requirement Spec §7.7 states "Commission rate is locked at order creation time", and DATABASE_SPEC §3.17 repeats the rule — but no column stores the locked rate. `commission_settings` holds a **single, mutable, global** rate row. Therefore:
-
-1. Historical Commission and Revenue figures are recomputed with today's rate, so an admin rate change **retroactively alters** past merchant revenue figures.
-2. Merchant Revenue (BR-OI-024) can drift from an already-processed `payouts.commission_amount` computed under the old rate.
-
-Consequence today: the Revenue Summary reports `commissionRateSource: "current_settings"` and `commissionRateLocked: false`, and the UI carries the BR-OI-023 footnote.
-
-Recommendation for a future schema version:
-- Add `orders.commission_rate DECIMAL(5,2) NOT NULL`, populated at order creation from `commission_settings.commission_rate`.
-- Backfill existing rows with the rate in force at their `created_at` where determinable, otherwise the current default (12.00), and record the backfill assumption.
-- Switch BR-OI-022 to read `orders.commission_rate`; `commissionRateSource` becomes `"order_snapshot"` and `commissionRateLocked` becomes `true`.
-
-Impacted documents: SKM-REQ-001 (§7.7), SKM-DBS-001 (§3.9, §3.17, §3.18), this document (§4.5, §6.5, §7.8).
-
-### 16.7 Change Coordination
-
-Any change to `order_statuses`, `orders.status`, `orders.payment_status`, `commission_settings.commission_rate`, or the `payouts` calculation MUST be reviewed against: the Checkout functional spec, the Order Fulfillment functional spec, the Notification System spec, the Revenue & Commission spec (Requirement Spec §5.7), and this document.
 
 ---
 
