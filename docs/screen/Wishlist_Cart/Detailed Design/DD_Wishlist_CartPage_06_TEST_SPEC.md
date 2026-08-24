@@ -52,7 +52,7 @@ Mock dependencies: `PrismaService`, `ConfigService`.
 | **findAllByUserId** | Includes stock status calculation | IN_STOCK, LOW_STOCK, OUT_OF_STOCK correctly derived |
 | **findAllByUserId** | Price serialized as string | All monetary fields returned as string (Decimal serialization) |
 | **moveToCart** | Valid item, product in stock, not in cart | Creates cart item, removes wishlist item |
-| **moveToCart** | Valid item, product in stock, already in cart | Throws `ConflictException` (409) |
+| **moveToCart** | Valid item, product in stock, already in cart | Updates existing cart item quantity by 1, removes wishlist item |
 | **moveToCart** | Wishlist item not found | Throws `NotFoundException` (404) |
 | **moveToCart** | Product out of stock | Throws `BadRequestException` (400) |
 | **moveToCart** | Product inactive | Throws `NotFoundException` (404) |
@@ -80,7 +80,7 @@ Mock dependencies: `WishlistService`.
 | **GET /wishlist** | Admin role | Returns 403 Forbidden |
 | **POST /wishlist/:productId/move-to-cart** | Valid request with auth | Calls `service.moveToCart`, returns 200 |
 | **POST /wishlist/:productId/move-to-cart** | Product out of stock | Returns 400 Bad Request |
-| **POST /wishlist/:productId/move-to-cart** | Product already in cart | Returns 409 Conflict |
+| **POST /wishlist/:productId/move-to-cart** | Product already in cart | Returns 200 OK (quantity updated) |
 
 ### 2.3 `cart.service.spec.ts`
 
@@ -89,7 +89,9 @@ Mock dependencies: `PrismaService`, `ConfigService`.
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
 | **addItem** | Valid productId, active, in stock, not in cart | Creates cart item, returns CartItemResponseDto |
-| **addItem** | Valid productId, active, in stock, already in cart | Throws `ConflictException` (409) — user must use PATCH to change quantity |
+| **addItem** | Valid productId, active, in stock, already in cart | Updates existing cart item quantity by adding new quantity, returns CartItemResponseDto |
+| **addItem** | Valid productId, active, in stock, already in cart, new quantity exceeds stock | Throws `BadRequestException` (400) |
+| **addItem** | Valid productId, active, in stock, already in cart, new quantity exceeds max limit | Throws `BadRequestException` (400) |
 | **addItem** | Product not found | Throws `NotFoundException` (404) |
 | **addItem** | Product inactive | Throws `NotFoundException` (404) |
 | **addItem** | Product out of stock | Throws `BadRequestException` (400) |
@@ -135,7 +137,7 @@ Mock dependencies: `CartService`.
 |------------|----------|------------------|
 | **POST /cart/items** | Valid request with auth | Calls `service.addItem`, returns 201 |
 | **POST /cart/items** | Product out of stock | Returns 400 Bad Request |
-| **POST /cart/items** | Product already in cart | Returns 409 Conflict |
+| **POST /cart/items** | Product already in cart | Returns 200 OK (quantity updated) |
 | **POST /cart/items** | Missing auth token | Returns 401 Unauthorized |
 | **POST /cart/items** | Merchant role | Returns 403 Forbidden |
 | **POST /cart/items** | Admin role | Returns 403 Forbidden |
@@ -167,7 +169,7 @@ Using Vitest + React Testing Library.
 | Guest user | Shows GuestLoginAlertModal, no wishlist data fetched |
 | Click product image | Navigates to `/products/:slug` |
 | Click "Move to Cart" button | Calls API, removes item from list, shows toast |
-| Click "Move to Cart" button (product already in cart) | Shows 409 error toast |
+| Click "Move to Cart" button (product already in cart) | Shows success toast, quantity updated |
 | Click "Remove" button | Calls API, removes item from list, shows toast |
 | Stock status display | Shows "In Stock", "Low Stock", or "Out of Stock" badge |
 | Compare price display | Shows strikethrough price when `compareAtPrice` exists |
@@ -265,7 +267,7 @@ Using Vitest + React Testing Library.
 | **E2E-CART-01** | **Add to Cart** — Login, navigate to product, click Add to Cart, verify toast, navigate to /cart, verify product with quantity 1 |
 | **E2E-CART-02** | **Update Cart Quantity** — Login, add product to cart, navigate to /cart, click + button, verify quantity increments, verify subtotal updates |
 | **E2E-CART-03** | **Remove from Cart** — Login, add product to cart, navigate to /cart, click Remove, verify item removed, verify summary updates |
-| **E2E-CART-04** | **Duplicate Cart Handling** — Login, add product to cart, navigate to product, click Add to Cart again, verify 409 error toast (not quantity increment) |
+| **E2E-CART-04** | **Duplicate Cart Handling** — Login, add product to cart, navigate to product, click Add to Cart again, verify success toast, navigate to /cart, verify quantity updated (not 409 error) |
 | **E2E-CART-05** | **Stock Validation** — Login, navigate to out-of-stock product, verify Add to Cart button disabled |
 | **E2E-CART-06** | **Checkout Flow** — Login, add products to cart, navigate to /cart, click Proceed to Checkout, verify navigation to /checkout |
 | **E2E-CART-07** | **Guest User Cart Attempt** — As guest, click Add to Cart, verify "Please log in" modal appears, click Log in, verify navigation to /login |

@@ -43,7 +43,6 @@ export enum WishCartErrorCode {
   ALREADY_IN_WISHLIST = 'ALREADY_IN_WISHLIST',
   WISHLIST_ITEM_NOT_FOUND = 'WISHLIST_ITEM_NOT_FOUND',
   CART_ITEM_NOT_FOUND = 'CART_ITEM_NOT_FOUND',
-  ALREADY_IN_CART = 'ALREADY_IN_CART',
   QUANTITY_EXCEEDS_STOCK = 'QUANTITY_EXCEEDS_STOCK',
   QUANTITY_INVALID = 'QUANTITY_INVALID',
   WISHLIST_LIMIT_REACHED = 'WISHLIST_LIMIT_REACHED',
@@ -309,25 +308,7 @@ export class CartResponseDto {
 }
 ```
 
-### 6.4 ClearCartResponseDto
-
-Returned by `DELETE /cart` after clearing all items.
-
-```typescript
-export class ClearCartResponseDto {
-  /** Number of items deleted */
-  deletedCount: number;
-
-  /** Human-readable success message */
-  message: string;
-}
-```
-
----
-
-## 7. Response DTOs — Common
-
-### 7.1 OperationResultResponseDto
+### 6.4 OperationResultResponseDto
 
 Returned by delete and move-to-cart operations.
 
@@ -343,9 +324,9 @@ export class OperationResultResponseDto {
 
 ---
 
-## 8. Validation Configuration
+## 7. Validation Configuration
 
-### 8.1 Configurable Limits
+### 7.1 Configurable Limits
 
 Defined via `.env` and injected into DTOs at runtime:
 
@@ -365,7 +346,7 @@ export const DEFAULT_WISH_CART_CONFIG: WishCartConfig = {
 };
 ```
 
-### 8.2 Stock Status Calculation
+### 7.2 Stock Status Calculation
 
 ```typescript
 export function calculateStockStatus(
@@ -378,7 +359,7 @@ export function calculateStockStatus(
 }
 ```
 
-### 8.3 Subtotal Calculation
+### 7.3 Subtotal Calculation
 
 ```typescript
 export function calculateSubtotal(unitPrice: string, quantity: number): string {
@@ -390,9 +371,9 @@ export function calculateSubtotal(unitPrice: string, quantity: number): string {
 
 ---
 
-## 9. Prisma Model Types
+## 8. Prisma Model Types
 
-### 9.1 WishlistInclude
+### 8.1 WishlistInclude
 
 Prisma include configuration for wishlist queries with product details.
 
@@ -419,7 +400,7 @@ export type WishlistWithProduct = Prisma.wishlistsGetPayload<{
 }>;
 ```
 
-### 9.2 CartItemInclude
+### 8.2 CartItemInclude
 
 Prisma include configuration for cart queries with product details.
 
@@ -445,9 +426,9 @@ export type CartItemWithProduct = Prisma.cart_itemsGetPayload<{
 
 ---
 
-## 10. Error Response Types
+## 9. Error Response Types
 
-### 10.1 ErrorResponse
+### 9.1 ErrorResponse
 
 ```typescript
 export interface ErrorResponse {
@@ -461,7 +442,7 @@ export interface ErrorResponse {
 
 ---
 
-## 11. Cross-References
+## 10. Cross-References
 
 | Related Document | Purpose |
 |-----------------|---------|

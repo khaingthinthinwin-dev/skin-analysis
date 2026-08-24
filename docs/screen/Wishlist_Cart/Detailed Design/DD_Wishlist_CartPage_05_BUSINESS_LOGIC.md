@@ -76,12 +76,12 @@ This document specifies the core business logic, stock validation, price calcula
    - Verify product exists, `isActive = true`, and `stockQuantity > 0`. If not, throw appropriate exception (404 or 400).
    - Check cart limit: count existing user cart items. If ≥ `CART_MAX_ITEMS` (default 50), throw `BadRequestException` (400).
    - Check if product already in user's cart:
-     - **If exists:** Return 409 CONFLICT with `ALREADY_IN_CART` error code. Client should use `PATCH` to update quantity.
+     - **If exists:** Update quantity by adding `dto.quantity` to existing quantity. Validate new quantity ≤ `stockQuantity` and ≤ `cartMaxQuantityPerItem`. If exceeds, throw `BadRequestException` (400).
      - **If not exists:** Create new `CartItem` with `quantity = dto.quantity` (default 1).
    - Calculate subtotal: `unitPrice × quantity` (Decimal string arithmetic).
    - Calculate stock status using `calculateStockStatus()`.
    - Log `CART_ITEM_ADDED` event.
-3. **Transaction Boundaries:** None (single insert operation).
+3. **Transaction Boundaries:** None (single insert/update operation).
 
 ### 3.2 updateQuantity(userId, cartItemId, dto)
 
@@ -106,16 +106,7 @@ This document specifies the core business logic, stock validation, price calcula
    - Log `CART_ITEM_REMOVED` event.
 3. **Transaction Boundaries:** None (single delete operation).
 
-### 3.4 clearCart(userId)
-
-1. **Validation:** None (userId from JWT).
-2. **Logic:**
-   - Delete all `CartItem` records belonging to the user's cart.
-   - Return `deletedCount` (number of items removed).
-   - Log `CART_CLEARED` event.
-3. **Transaction Boundaries:** None (single bulk delete operation).
-
-### 3.5 getCartItems(userId)
+### 3.4 getCartItems(userId)
 
 1. **Validation:** None (userId from JWT).
 2. **Logic:**
@@ -285,13 +276,36 @@ const existingItem = await this.prisma.cartItem.findFirst({
 });
 
 if (existingItem) {
-  // Return 409 CONFLICT — client should use PATCH to update
-  throw new ConflictException({
-    statusCode: 409,
-    error: 'CONFLICT',
-    errorCode: WishCartErrorCode.ALREADY_IN_CART,
-    message: 'Product already in cart',
+  // Update quantity if product already in cart
+  const newQuantity = existingItem.quantity + (dto.quantity || 1);
+  
+  // Validate new quantity does not exceed stock
+  if (newQuantity > product.stockQuantity) {
+    throw new BadRequestException({
+      statusCode: 400,
+      error: 'BAD_REQUEST',
+      errorCode: WishCartErrorCode.QUANTITY_EXCEEDS_STOCK,
+      message: `Only ${product.stockQuantity} available in stock`,
+    });
+  }
+  
+  // Validate new quantity does not exceed max limit
+  if (newQuantity > this.config.cartMaxQuantityPerItem) {
+    throw new BadRequestException({
+      statusCode: 400,
+      error: 'BAD_REQUEST',
+      errorCode: WishCartErrorCode.QUANTITY_INVALID,
+      message: `Quantity cannot exceed ${this.config.cartMaxQuantityPerItem}`,
+    });
+  }
+  
+  // Update existing cart item quantity
+  await this.prisma.cartItem.update({
+    where: { id: existingItem.id },
+    data: { quantity: newQuantity },
   });
+  
+  return;
 }
 ```
 
@@ -338,7 +352,6 @@ const RATE_LIMIT_CONFIG = {
   'cart:add': { limit: 30, window: 60 },          // 30 adds per minute
   'cart:update': { limit: 60, window: 60 },       // 60 updates per minute
   'cart:remove': { limit: 30, window: 60 },       // 30 removes per minute
-  'cart:clear': { limit: 10, window: 60 },        // 10 clears per minute
 };
 ```
 
@@ -367,10 +380,9 @@ async checkRateLimit(key: string, limit: number, window: number): Promise<boolea
 | `removeFromWishlist` | No | Single DELETE |
 | `getWishlistItems` | No | Read-only SELECT |
 | `moveToCart` | **Yes** | Cart INSERT/UPDATE + Wishlist DELETE |
-| `addToCart` | No | Single INSERT |
+| `addToCart` | No | Single INSERT or UPDATE |
 | `updateQuantity` | No | Single UPDATE |
 | `removeFromCart` | No | Single DELETE |
-| `clearCart` | No | Bulk DELETE |
 | `getCartItems` | No | Read-only SELECT |
 
 ---
@@ -393,7 +405,8 @@ async checkRateLimit(key: string, limit: number, window: number): Promise<boolea
 | `productId` | Required, valid UUID v4 format | "Product ID is required" / "Invalid product ID format" |
 | `quantity` | Integer, 1-99 | "Quantity must be at least 1" / "Quantity cannot exceed 99" |
 | — | Product must exist, be active, and have stock > 0 | "Product is out of stock" |
-| — | If product already in cart, return 409 | "Product already in cart" |
+| — | If product already in cart, new quantity ≤ stock | "Only {n} available in stock" |
+| — | If product already in cart, new quantity ≤ max limit | "Quantity cannot exceed 99" |
 | — | Cart limit not exceeded | "Cart limit reached" |
 | — | Requested quantity ≤ `stockQuantity` | "Only {n} available in stock" |
 
@@ -432,7 +445,6 @@ async checkRateLimit(key: string, limit: number, window: number): Promise<boolea
 | `ALREADY_IN_WISHLIST` | 409 | Product already in user's wishlist |
 | `WISHLIST_ITEM_NOT_FOUND` | 404 | Wishlist item not found |
 | `CART_ITEM_NOT_FOUND` | 404 | Cart item not found |
-| `ALREADY_IN_CART` | 409 | Product already in user's cart |
 | `QUANTITY_EXCEEDS_STOCK` | 400 | Quantity exceeds available stock |
 | `QUANTITY_INVALID` | 400 | Quantity is invalid (< 1 or > 99) |
 | `WISHLIST_LIMIT_REACHED` | 400 | Wishlist item limit exceeded |

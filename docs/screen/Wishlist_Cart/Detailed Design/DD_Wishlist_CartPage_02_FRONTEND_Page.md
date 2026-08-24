@@ -312,7 +312,6 @@ export function useCartQuantity(initialQuantity: number) {
 | Add to cart success | Success | "Added to cart" |
 | Update quantity success | Success | "Quantity updated" |
 | Remove from cart success | Success | "Item removed from cart" |
-| Clear cart success | Success | "Cart cleared" |
 | Out of stock | Destructive | "Product is out of stock" |
 | Quantity exceeds stock | Destructive | "Only {n} available in stock" |
 | API error | Destructive | "Something went wrong. Please try again." |
