@@ -443,7 +443,7 @@ CREATE TABLE products (
 | 6 | 本文 | `body` | TEXT | - | - | Y | NULL | レビュー内容。 |
 | 7 | 画像URLs | `images` | TEXT[] | - | - | N | '{}' | レビュー画像URL。 |
 | 8 | 認証済み購入 | `is_verified_purchase` | BOOLEAN | - | - | N | FALSE | 認証済み購入フラグ。 |
-| 9 | 承認済み | `is_approved` | BOOLEAN | - | - | N | TRUE | 管理者モデレーションステータス。 |
+| 9 | 承認済み | `is_approved` | BOOLEAN | - | - | N | FALSE | 管理者モデレーションステータス。購入者に表示される前に管理者承認が必要。 |
 | 10 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
 | 11 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
 
@@ -458,7 +458,7 @@ CREATE TABLE reviews (
     body TEXT,
     images TEXT[] DEFAULT '{}',
     is_verified_purchase BOOLEAN NOT NULL DEFAULT FALSE,
-    is_approved BOOLEAN NOT NULL DEFAULT TRUE,
+    is_approved BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_reviews_user_product UNIQUE (user_id, product_id),

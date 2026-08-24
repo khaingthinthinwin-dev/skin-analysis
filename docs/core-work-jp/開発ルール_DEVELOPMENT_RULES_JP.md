@@ -2127,7 +2127,7 @@ async update(id: string, dto: UpdateProductDto, userId: string) {
 | 対象資格 | 認証済み購入者のみレビュー可能 |
 | ユーザーごとに商品ごとに1件のレビュー | ユニーク制約`[userId, productId]`で実行 |
 | 評価範囲 | 1-5の両端含む、チェック制約で実行 |
-| 自動承認 | レビューはデフォルトで承認（`is_approved = true`） |
+| 管理者承認 | レビューはデフォルトで非承認（`is_approved = false`）。管理者承認後に購入者に表示。 |
 | 管理者モデレーション | 管理者はすべてのレビューを承認/却下/削除可能 |
 | 平均評価 | 承認されたレビューのみから自動計算 |
 | レビュー数 | 承認されたレビューのみから自動計算 |
@@ -2135,7 +2135,7 @@ async update(id: string, dto: UpdateProductDto, userId: string) {
 **レビューフロー:**
 
 ```
-ユーザーがレビューを送信 → is_approved = true → 商品で表示
+ユーザーがレビューを送信 → is_approved = false → 管理者承認待ち
                                         ↓
                             管理者がレビューをフラグ付け → is_approved = false → 商品から非表示
 ```

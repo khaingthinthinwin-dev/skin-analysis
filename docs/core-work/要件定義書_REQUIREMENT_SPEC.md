@@ -530,7 +530,7 @@ All roles see only their own data:
 - Only verified purchasers can review
 - One review per user per product
 - Rating: 1-5 stars
-- Reviews approved by default, can be moderated
+- Reviews hidden by default; admin approval required before display
 
 ### 7.5 Promotions
 - One coupon per order
