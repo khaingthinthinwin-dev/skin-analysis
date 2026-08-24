@@ -248,28 +248,6 @@ export function useProductList(params: ProductListParams) {
 }
 ```
 
-### 3.1.1 Inventory Transaction History Hook
-
-```typescript
-// frontend/src/features/merchant/products/hooks/useInventoryTransactions.ts
-import { useQuery } from '@tanstack/react-query';
-import { inventoryService } from '../services/inventory.service';
-
-export function useInventoryTransactions(productId: string) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['inventoryTransactions', productId],
-    queryFn: () => inventoryService.getByProduct(productId),
-    enabled: Boolean(productId),
-  });
-
-  return {
-    transactions: data?.data ?? [],
-    isLoading,
-    error,
-  };
-}
-```
-
 ### 3.2 Product Form Hook
 
 ```typescript
@@ -277,7 +255,7 @@ export function useInventoryTransactions(productId: string) {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { productSchema, type ProductFormData } from '../schemas/product.schema';
 import { productService } from '../services/product.service';
 import { toast } from 'sonner';
@@ -337,7 +315,8 @@ export function useProductForm({ productId }: UseProductFormOptions = {}) {
         tags: existingProduct.tags ?? [],
         isActive: existingProduct.isActive,
         isFeatured: existingProduct.isFeatured,
-        images: existingProduct.images ?? [],
+        // Keep retained image URLs separate from newly selected File objects.
+        images: [],
       });
     }
   }, [existingProduct, methods]);
@@ -498,6 +477,9 @@ export const productSchema = z.object({
 
 export type ProductFormData = z.infer<typeof productSchema>;
 
+// Edit forms must validate retained URLs plus newly selected files.
+// Do not pass existing URL strings into z.instanceof(File).
+
 // Schema for inline stock update
 export const stockUpdateSchema = z.object({
   stockQuantity: z
@@ -559,35 +541,21 @@ export type StockUpdateFormData = z.infer<typeof stockUpdateSchema>;
 - Enter/Blur saves, Escape cancels
 - Shows loading state during update
 
-### 4.7 InventoryTransactionList Component
-
-- **File Path:** `frontend/src/features/merchant/products/components/InventoryTransactionList.tsx`
-- Displays stock change history for a product
-- Shows transaction type (order_created, restock, manual_adjustment, return), quantity delta, before/after quantities, timestamp
-- Paginated list with date range filter
-- Triggered from product detail or inline stock editor
-
-### 4.8 InventoryService
-
-- **File Path:** `frontend/src/features/merchant/products/services/inventory.service.ts`
-- `getByProduct(productId)`: Fetch inventory transaction history from `GET /api/v1/products/:id/inventory-transactions`
-- Types: `InventoryTransaction`, `InventoryTransactionListParams`
-
-### 4.9 DeleteConfirmDialog Component
+### 4.7 DeleteConfirmDialog Component
 
 - **File Path:** `frontend/src/features/merchant/products/components/DeleteConfirmDialog.tsx`
 - AlertDialog for confirming product deletion
 - Shows product name and warning message
 - Loading state during deletion
 
-### 4.10 CategorySelect Component
+### 4.8 CategorySelect Component
 
 - **File Path:** `frontend/src/features/merchant/products/components/CategorySelect.tsx`
 - Tree-structured category selection
 - Fetches categories from API
 - Nested options with expand/collapse
 
-### 4.11 TagInput Component
+### 4.9 TagInput Component
 
 - **File Path:** `frontend/src/features/merchant/products/components/TagInput.tsx`
 - Tag input with add/remove functionality
@@ -713,15 +681,6 @@ export type StockUpdateFormData = z.infer<typeof stockUpdateSchema>;
   3. Revert to text display
   4. Update stock value and warning states
   5. On Escape: Cancel edit, revert to original value
-
-### 5.13 View Inventory Transactions
-
-- **Button Type:** `button`
-- **Location:** Product detail page stock section or inline stock editor tooltip
-- **Action:**
-  1. Open InventoryTransactionList modal/panel
-  2. Fetch `GET /api/v1/products/:id/inventory-transactions`
-  3. Display transaction history with type, quantity delta, before/after, timestamp
 
 ---
 

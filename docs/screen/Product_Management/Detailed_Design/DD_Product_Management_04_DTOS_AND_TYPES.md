@@ -15,6 +15,8 @@ This document specifies the Data Transfer Objects (DTOs) used by the Product Man
 
 ## 2. Request DTOs
 
+> **Multipart contract:** Numeric, boolean, and array fields arrive as strings in `multipart/form-data`. The controller must transform and validate them before calling the service. `images` are uploaded files handled by the file interceptor, not DTO properties. Update requests must distinguish retained image URLs from newly uploaded files.
+
 ### 2.1 CreateProductDto
 
 Used for `POST /products` to create a new product.
@@ -668,7 +670,7 @@ export type InventoryTransactionWithRelations = Prisma.InventoryTransactionGetPa
 
 ```typescript
 export interface ProductCacheEntry {
-  key: string;        // 'cache:product:{id}'
+  key: string;        // 'cache:product:{slug}'
   value: string;      // JSON serialized ProductResponseDto
   ttl: number;        // Time to live in seconds (300)
 }

@@ -21,7 +21,7 @@ This document specifies the core business logic, state transitions, and validati
 2. **Logic:**
    - Build Prisma `where` clause from query parameters
    - For public access: filter `isActive = true`
-   - For merchant access: filter `merchantId = userId`
+  - For merchant access: resolve the merchant profile from the authenticated user and filter `merchantId = merchantProfile.id`
    - Apply search filter on `name` and `sku` (ILIKE)
    - Apply category filter on `categoryId`
    - Apply skin type filter on `skinTypes` array overlap
@@ -55,7 +55,7 @@ This document specifies the core business logic, state transitions, and validati
    - Insert `products` record with generated data
     - Insert `inventory_transactions` record (transaction_type='manual_adjustment', quantity=stockQuantity, beforeQuantity=0, afterQuantity=stockQuantity)
     - Insert `audit_logs` record with action='PRODUCT_CREATED', userId, productId, timestamp
-3. **Transaction:** Product creation, image upload, inventory_transactions insert, and audit_logs insert must be atomic.
+3. **Consistency:** Product, inventory transaction, and audit log database writes must be atomic. File storage is outside the database transaction; failed database operations must remove files uploaded during the request, and failed file operations must leave no product row.
 4. **Cache:** Invalidate `cache:products:list:*` pattern.
 5. **Return:** `ProductResponseDto`
 
@@ -64,7 +64,7 @@ This document specifies the core business logic, state transitions, and validati
 1. **Validation:** Handled by UpdateProductDto with class-validator.
 2. **Logic:**
    - Verify product exists
-   - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`. If not, throw `ForbiddenException`.
+  - **Ownership Check:** If user role is `merchant`, verify `product.merchantId === merchantProfile.id`. If not, throw `ForbiddenException`.
    - If `name` changed, regenerate slug and check uniqueness
    - If `sku` changed, check uniqueness (excluding current product)
    - If `categoryId` changed, verify category exists
@@ -72,21 +72,23 @@ This document specifies the core business logic, state transitions, and validati
    - Handle image removals (delete from storage)
    - Update product record
     - Insert `audit_logs` record with action='PRODUCT_UPDATED', userId, productId, oldValue/newValue, timestamp
-3. **Cache:** Invalidate `cache:product:{id}` and `cache:products:list:*`.
+3. **Cache:** Invalidate `cache:product:{slug}` and `cache:products:list:*`.
 4. **Return:** `ProductResponseDto`
 
 ### 2.5 softDelete(id, userId)
 
 1. **Logic:**
    - Verify product exists
-   - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`.
+  - **Ownership Check:** If user role is `merchant`, verify `product.merchantId === merchantProfile.id`.
      - **Active Order Guard (BR-PROD-024):** Check product's order items for active orders via `order_items` table:
       ```typescript
       const activeOrders = await this.prisma.orderItem.findMany({
         where: {
           productId: id,
           order: {
-            status: { notIn: ['delivered', 'cancelled'] },
+            status: {
+              statusCode: { notIn: ['delivered', 'cancelled'] },
+            },
           },
         },
         select: { orderId: true },
@@ -98,7 +100,7 @@ This document specifies the core business logic, state transitions, and validati
       ```
    - Set `isActive = false` (soft delete)
     - Insert `audit_logs` record with action='PRODUCT_SOFT_DELETED', userId, productId, timestamp
-2. **Cache:** Invalidate `cache:product:{id}` and `cache:products:list:*`.
+2. **Cache:** Invalidate `cache:product:{slug}` and `cache:products:list:*`.
 3. **Return:** `204 No Content`
 
 ### 2.6 updateStock(id, stockQuantity, userId)
@@ -106,14 +108,14 @@ This document specifies the core business logic, state transitions, and validati
 1. **Validation:** `stockQuantity >= 0` and integer.
 2. **Logic:**
    - Verify product exists
-   - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`.
+  - **Ownership Check:** If user role is `merchant`, verify `product.merchantId === merchantProfile.id`.
    - Fetch current `stockQuantity` for before/after comparison
    - Update `stockQuantity` atomically
     - Insert `inventory_transactions` record (transaction_type='manual_adjustment', quantity=delta, beforeQuantity=oldQty, afterQuantity=newQty, reason='Manual stock update')
     - Insert `audit_logs` record with action='STOCK_UPDATED', userId, productId, oldValue={stockQuantity: oldQty}, newValue={stockQuantity: newQty}, timestamp
    - Check `stockQuantity <= lowStockThreshold` → set `isLowStock` flag. If breached, insert `notifications` record for low stock alert.
    - Check `stockQuantity === 0` → set `isOutOfStock` flag
-3. **Cache:** Invalidate `cache:product:{id}`.
+3. **Cache:** Invalidate `cache:product:{slug}` and `cache:products:list:*`.
 4. **Return:** `StockUpdateResponseDto`
 
 ### 2.7 bulkAction(ids, action, userId)
@@ -122,7 +124,7 @@ This document specifies the core business logic, state transitions, and validati
 2. **Logic:**
    - For each product in `ids`:
      - Verify product exists
-     - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`
+    - **Ownership Check:** If user role is `merchant`, verify `product.merchantId === merchantProfile.id`
      - If ownership fails, add to `errors` array and continue
    - Perform bulk update on valid products
    - Log `BULK_OPERATION` audit event
@@ -135,7 +137,7 @@ This document specifies the core business logic, state transitions, and validati
 2. **Logic:**
    - For each product in `ids`:
      - Verify product exists
-     - **Ownership Check:** If user role is `merchant`, verify `merchantId === userId`
+    - **Ownership Check:** If user role is `merchant`, verify `product.merchantId === merchantProfile.id`
      - If ownership fails, add to `errors` array and continue
     - **Active Order Guard (BR-PROD-024):** Check each product for active orders:
       ```typescript
@@ -144,7 +146,9 @@ This document specifies the core business logic, state transitions, and validati
         where: {
           productId: { in: validProductIds },
           order: {
-            status: { notIn: ['delivered', 'cancelled'] },
+            status: {
+              statusCode: { notIn: ['delivered', 'cancelled'] },
+            },
           },
         },
         select: { productId: true },
@@ -171,12 +175,12 @@ Delete all products belonging to the authenticated merchant. Respects current se
 
 1. **Validation:** User must be authenticated with approved merchant license.
 2. **Logic:**
-   - Query all products where `merchantId = userId` and `isActive = true`, with optional filters from `dto` (`search` by name, `isActive` status filter)
+  - Query products where `merchantId = merchantProfile.id`. Default to `isActive = true`; apply `search` and an explicitly provided `isActive` filter.
    - **Active Order Guard (BR-PROD-024):** Check each product for active orders:
      ```typescript
      // Get all merchant's active products
      const merchantProducts = await this.prisma.product.findMany({
-       where: { merchantId: userId, isActive: true },
+      where: { merchantId: merchantProfile.id, isActive: true },
        select: { id: true },
      });
      
@@ -187,7 +191,9 @@ Delete all products belonging to the authenticated merchant. Respects current se
          where: {
            productId: { in: productIds },
            order: {
-             status: { notIn: ['delivered', 'cancelled'] },
+              status: {
+                statusCode: { notIn: ['delivered', 'cancelled'] },
+              },
            },
          },
          select: { productId: true },
@@ -343,7 +349,7 @@ async uploadImages(files: ProductImageFile[]): Promise<string[]> {
 async reorderImages(productId: string, imageOrder: string[], userId: string): Promise<void> {
   // Verify ownership
   const product = await this.findById(productId);
-  if (product.merchantId !== userId) {
+  if (product.merchantId !== merchantProfile.id) {
     throw new ForbiddenException('You can only manage your own products');
   }
   
@@ -375,7 +381,7 @@ private async checkOwnership(productId: string, userId: string, userRole: string
     throw new NotFoundException('Product not found');
   }
   
-  if (userRole === 'merchant' && product.merchantId !== userId) {
+  if (userRole === 'merchant' && product.merchantId !== merchantProfile.id) {
     throw new ForbiddenException('You can only manage your own products');
   }
   // Admin can manage all products — no additional check needed

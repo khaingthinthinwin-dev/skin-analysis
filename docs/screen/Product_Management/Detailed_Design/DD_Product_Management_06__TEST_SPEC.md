@@ -51,7 +51,7 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **softDelete** | Not product owner | Throws `ForbiddenException` |
 | **softDelete** | Product not found | Throws `NotFoundException` |
 | **softDelete** | Product with active orders (pending) | Throws `ConflictException` with "Cannot delete product with active orders" |
-| **softDelete** | Product with active orders (processing) | Throws `ConflictException` with "Cannot delete product with active orders" |
+| **softDelete** | Product with active orders (placed/confirmed/packed/shipped/out_for_delivery) | Throws `ConflictException` with "Cannot delete product with active orders" |
 | **softDelete** | Product with active orders (shipped) | Throws `ConflictException` with "Cannot delete product with active orders" |
 | **softDelete** | Product with resolved orders only (delivered) | Soft-deletes successfully |
 | **softDelete** | Product with cancelled orders only | Soft-deletes successfully (cancelled is terminal state) |
@@ -68,7 +68,7 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **bulkSoftDelete** | Delete multiple products | Sets `isActive=false` for all |
 | **bulkSoftDelete** | Mixed ownership | Returns partial success with errors |
 | **bulkSoftDelete** | Product with active orders (pending) | Skips product, adds to errors array |
-| **bulkSoftDelete** | Product with active orders (processing) | Skips product, adds to errors array |
+| **bulkSoftDelete** | Product with active orders (placed/confirmed/packed/shipped/out_for_delivery) | Skips product, adds to errors array |
 | **bulkSoftDelete** | Product with active orders (shipped) | Skips product, adds to errors array |
 | **bulkSoftDelete** | Product with resolved orders only (delivered) | Soft-deletes successfully |
 | **bulkSoftDelete** | Product with cancelled orders only | Soft-deletes successfully (cancelled is terminal state) |

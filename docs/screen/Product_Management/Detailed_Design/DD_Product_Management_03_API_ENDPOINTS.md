@@ -20,7 +20,7 @@
 
 List products (public for buyers, merchant-scoped for merchants).
 
-- **Auth Required:** No (Public) — Returns only `isActive = true` products for buyers. Merchants see all own products.
+- **Auth Required:** Optional — Guests/buyers receive only `isActive = true` products. Authenticated merchants receive their own products, including inactive products, when merchant scope is requested.
 - **Query Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -207,7 +207,7 @@ Update product details (merchant/admin).
 
 ### 2.5 DELETE /products/:id
 
-Soft delete product (set `is_active = false`). Applies BR-PROD-024 active order guard — products with active orders (status NOT IN 'delivered') cannot be deleted.
+Soft delete product (set `is_active = false`). Applies BR-PROD-024: products with any related order not in `{delivered, cancelled}` cannot be deleted.
 
 - **Auth Required:** Yes (`JwtAuthGuard`)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -220,7 +220,7 @@ Soft delete product (set `is_active = false`). Applies BR-PROD-024 active order 
   - `403 MERCHANT_NOT_APPROVED` — Merchant license status is `pending`
   - `403 MERCHANT_REJECTED` — Merchant license status is `rejected` (includes rejection reason)
   - `404 NOT_FOUND` — Product not found
-  - `409 CONFLICT` — Product has orders with status NOT IN ('delivered'). Error message: "Cannot delete product with active orders. All orders must be completed first."
+  - `409 CONFLICT` — Product has orders with status not in `{delivered, cancelled}`. Error message: "Cannot delete product with active orders. All orders must be completed first."
 - **Logic:** Calls `service.softDelete(id, userId)`
 - **Side Effects:** Invalidates product cache and list cache
 
@@ -296,7 +296,7 @@ Bulk activate/deactivate products (merchant/admin).
 
 ### 2.8 DELETE /products/bulk
 
-Bulk soft delete products (merchant/admin). Applies BR-PROD-024 active order guard per product — products with active orders (status NOT IN 'delivered') are skipped.
+Bulk soft delete products (merchant/admin). Applies BR-PROD-024 per product — products with non-terminal orders are skipped.
 
 - **Auth Required:** Yes (`JwtAuthGuard`)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -363,7 +363,7 @@ Get category tree structure (public).
 
 ### 2.10 DELETE /products/all
 
-Delete all products of the authenticated merchant. Applies BR-PROD-024 active order guard per product — products with active orders (status NOT IN 'delivered') are skipped. Only merchant's own products are affected.
+Delete all products matching the authenticated merchant's explicit filters. Products with non-terminal orders are skipped. The default operation targets active products; `isActive` may explicitly select active or inactive products.
 
 - **Auth Required:** Yes (`JwtAuthGuard`)
 - **Headers:** `Authorization: Bearer <accessToken>`
@@ -394,7 +394,7 @@ Delete all products of the authenticated merchant. Applies BR-PROD-024 active or
   - `403 MERCHANT_NOT_APPROVED` — Merchant license status is `pending`
   - `403 MERCHANT_REJECTED` — Merchant license status is `rejected` (includes rejection reason)
   - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
-- **Logic:** Calls `service.deleteAllByMerchant(userId, filters?)`. Iterates all merchant products (or filtered subset), attempts soft delete for each. Products with active orders (status NOT IN 'delivered') are added to `skippedProductIds` array.
+- **Logic:** Calls `service.deleteAllByMerchant(merchantProfile.id, filters?)`. Iterates the filtered merchant products and adds products with non-terminal orders to `skippedProductIds`.
 - **Side Effects:** Invalidates all product caches for the merchant
 
 ### 2.11 GET /products/:id/inventory-transactions
@@ -506,7 +506,7 @@ const merchant = await this.prisma.merchant.findUnique({
 ```typescript
 // Middleware: Verify product belongs to merchant
 const product = await this.prisma.product.findUnique({ where: { id } });
-if (user.role === 'merchant' && product.merchantId !== user.id) {
+if (user.role === 'merchant' && product.merchantId !== merchantProfile.id) {
   throw new ForbiddenException('You can only manage your own products');
 }
 ```
@@ -532,10 +532,10 @@ export class ProductsController { ... }
 | Event | Cache Keys Invalidated | Method |
 |-------|----------------------|--------|
 | Product Created | `cache:products:list:*` | Pattern delete |
-| Product Updated | `cache:product:{id}`, `cache:products:list:*` | Key delete + pattern delete |
-| Product Deleted | `cache:product:{id}`, `cache:products:list:*` | Key delete + pattern delete |
+| Product Updated | `cache:product:{oldSlug}`, `cache:product:{newSlug}`, `cache:products:list:*` | Detail-key deletion + list-cache invalidation |
+| Product Deleted | `cache:product:{slug}`, `cache:products:list:*` | Detail-key deletion + list-cache invalidation |
 | Delete All Products | `cache:products:list:*`, `cache:product:*` | Pattern delete |
-| Stock Updated | `cache:product:{id}` | Key delete |
+| Stock Updated | `cache:product:{slug}`, `cache:products:list:*` | Detail and list-cache invalidation |
 | Bulk Operation | `cache:products:list:*` | Pattern delete |
 
 ---
