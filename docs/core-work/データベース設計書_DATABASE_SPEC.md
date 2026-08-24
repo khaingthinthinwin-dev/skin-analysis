@@ -510,7 +510,7 @@ Manages customer order information.
 | 5 | 合計金額 | `total_amount` | DECIMAL(10,2) | - | - | N | - | Check constraint: `total_amount > 0`. |
 | 6 | 配送先住所 | `shipping_address` | JSONB | - | - | N | - | Shipping address details (JSON). |
 | 7 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | Payment method used. |
-| 8 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment processing status (pending, completed, failed, refunded). |
+| 8 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment processing status (pending, completed). |
 | 9 | クーポンコード | `coupon_code` | VARCHAR(50) | - | - | Y | NULL | Applied coupon code. |
 | 10 | 割引金額 | `discount_amount` | DECIMAL(10,2) | - | - | N | 0 | Discount amount applied. |
 | 11 | 備考 | `notes` | TEXT | - | - | Y | NULL | Order notes from customer. |
@@ -535,7 +535,7 @@ CREATE TABLE orders (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_orders_total CHECK (total_amount > 0),
     CONSTRAINT chk_orders_status CHECK (status IN ('placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered')),
-    CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('pending', 'completed', 'failed', 'refunded')),
+    CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('pending', 'completed')),
     CONSTRAINT fk_orders_buyer FOREIGN KEY (buyer_id)
         REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_orders_merchant FOREIGN KEY (merchant_id)
@@ -792,7 +792,7 @@ Manages payment transactions for advertisements.
 | 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_ad_payments_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
 | 4 | 金額 | `amount` | DECIMAL(10,2) | - | - | N | - | Payment amount. |
 | 5 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | Payment method used. |
-| 6 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded/failed. |
+| 6 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded. |
 | 7 | トランザクションID | `transaction_id` | VARCHAR(255) | - | - | Y | NULL | External payment transaction ID. |
 | 8 | 支払日時 | `paid_at` | TIMESTAMPTZ | - | - | Y | NULL | Payment completion timestamp. |
 | 9 | 返金額 | `refund_amount` | DECIMAL(10,2) | - | - | Y | NULL | Refund amount if applicable. |
@@ -817,7 +817,7 @@ CREATE TABLE ad_payments (
     refunded_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_ad_payments_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded', 'failed')),
+    CONSTRAINT chk_ad_payments_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded')),
     CONSTRAINT fk_ad_payments_ad FOREIGN KEY (ad_id)
         REFERENCES advertisements(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_ad_payments_merchant FOREIGN KEY (merchant_id)

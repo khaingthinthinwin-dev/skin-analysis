@@ -513,7 +513,7 @@ CREATE TABLE wishlist (
 | 5 | 合計金額 | `total_amount` | DECIMAL(10,2) | - | - | N | - | チェック制約: `total_amount > 0`。 |
 | 6 | 配送先住所 | `shipping_address` | JSONB | - | - | N | - | 配送先住所詳細（JSON）。 |
 | 7 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | 使用した決済方法。 |
-| 8 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | 決済処理ステータス（pending, completed, failed, refunded）。 |
+| 8 | 決済ステータス | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | 決済処理ステータス（pending, completed）。 |
 | 9 | クーポンコード | `coupon_code` | VARCHAR(50) | - | - | Y | NULL | 適用されたクーポンコード。 |
 | 10 | 割引金額 | `discount_amount` | DECIMAL(10,2) | - | - | N | 0 | 適用された割引金額。 |
 | 11 | 備考 | `notes` | TEXT | - | - | Y | NULL | 顧客からの注文メモ。 |
@@ -538,7 +538,7 @@ CREATE TABLE orders (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_orders_total CHECK (total_amount > 0),
     CONSTRAINT chk_orders_status CHECK (status IN ('placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled')),
-    CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('pending', 'completed', 'failed', 'refunded')),
+    CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('pending', 'completed')),
     CONSTRAINT fk_orders_buyer FOREIGN KEY (buyer_id)
         REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_orders_merchant FOREIGN KEY (merchant_id)

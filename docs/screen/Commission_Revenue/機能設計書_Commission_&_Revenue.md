@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 7.0 |
+| **Version** | 7.1 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-22 |
+| **Last Updated** | 2026-08-24 |
 | **Author** | Senior System Engineer |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -30,6 +30,7 @@
 | 5.0 | 2026-08-17 | Senior System Engineer | Expanded spec to include Advertisement Fee Revenue: added ad fee KPIs, ad fee trend chart series, ad fee payment status tracking, ad fee in payout calculations, and ad fee in revenue target progress. |
 | 6.0 | 2026-08-21 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v2.10 and DATABASE_SPEC v2.4: merchant payouts simplified to commission-only deduction (ad fees excluded from payouts and revenue target progress), commission rate bounds corrected to 0 < rate ≤ 100 (default 12%), ad payment status enum aligned to pending/completed/refunded/failed, payout status filter includes processing, audit retention and performance targets aligned with Development Rules. |
 | 7.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all route references, screen transitions, and operation triggers. |
+| 7.1 | 2026-08-24 | Senior System Engineer | Aligned payment status enums with DATABASE_SPEC v2.4: removed 'failed' from order payment statuses (pending/completed only), removed 'failed' from ad payment statuses (pending/completed/refunded only). Updated BR-REV-003, BR-ADFE-005, EL-35, EL-36, and cross-reference traceability matrix. |
 
 ---
 
@@ -69,7 +70,7 @@ This screen suite is responsible for the following core functional areas:
 2. **Commission Report Generation** — Generating merchant-level commission reports with filtering, sorting, and pagination.
 3. **Revenue Dashboard KPI** — Displaying revenue KPIs and trend visualization over configurable ranges.
 4. **Ad Fee Revenue Tracking** — Tracking and displaying advertisement fee revenue alongside commission revenue in the dashboard. (Ad fee rate configuration per placement/tier is administered via the Advertisement Management function, REQ §5.3.)
-5. **Payment Status Breakdown** — Summarizing payment statuses across completed, pending, failed, and refunded records (order payments + ad payments).
+5. **Payment Status Breakdown** — Summarizing payment statuses across completed, pending, and refunded records (order payments: pending/completed; ad payments: pending/completed/refunded).
 6. **Merchant Payout Management** — Processing merchant payouts with idempotency and status tracking (commission deduction only; ad fees are platform revenue and are never deducted from payouts).
 7. **Revenue Target Progress** — Configuring monthly/quarterly revenue targets and displaying current progress via a gauge bar (based on completed/settled order sales; ad fees excluded per DBS §3.18).
 8. **AI Revenue Forecast** — Predicting revenue and platform fees from historical data and rendering the forecast as a dotted line alongside the current trend.
@@ -130,7 +131,7 @@ This screen suite is responsible for the following core functional areas:
 
 | No. | Document ID | Document Name | File Path / Reference | Remarks |
 |-----|-------------|---------------|----------------------|---------|
-| 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
+| 1 | SKM-REQ-001 | Requirements Definition (v2.11) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, required fields, and rules. |
 | 2 | SKM-DBS-001 | Database Design Specification (v2.4) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 
@@ -276,7 +277,7 @@ Admin navigates to /admin/commission-revenue
 |---------|-----------|-------------|-------------------|
 | BR-REV-001 | KPI Scope | Revenue KPIs consider only completed/settled orders and exclude refunds from net revenue. | Backend (query aggregation) |
 | BR-REV-002 | Trend Ranges | Revenue trend chart supports `7d`, `30d`, `90d`, and `1y` ranges. | Frontend (toggle group) |
-| BR-REV-003 | Payment Breakdown | Payment status panel summarizes completed, pending, failed, and refunded records. | Backend (query aggregation) + Frontend (badges) |
+| BR-REV-003 | Payment Breakdown | Payment status panel summarizes completed and pending records for orders; completed, pending, and refunded for ad payments. | Backend (query aggregation) + Frontend (badges) |
 
 ### 4.4 Payout Rules
 
@@ -314,7 +315,7 @@ Admin navigates to /admin/commission-revenue
 | BR-ADFE-002 | Ad Fee KPI | Ad fee revenue is displayed as a separate KPI card and included in total platform income. | Backend (query aggregation) + Frontend (KPI cards) |
 | BR-ADFE-003 | Ad Fee Trend | Ad fee trend series is overlaid on the revenue chart as a separate line alongside commission revenue. | Backend (query aggregation) + Frontend (chart series) |
 | BR-ADFE-004 | Ad Fee Not in Payout | Ad fees are platform revenue only and are never deducted from merchant payouts. Net payout = total sales − commission (see BR-REV-016; REQ §7.7, DBS §3.19). | Backend (payout calculation service) |
-| BR-ADFE-005 | Ad Fee Payment Status | Ad fee payment statuses (completed, pending, refunded, failed) are summarized alongside order payment statuses. | Backend (query aggregation) + Frontend (payment panel) |
+| BR-ADFE-005 | Ad Fee Payment Status | Ad fee payment statuses (completed, pending, refunded) are summarized alongside order payment statuses. | Backend (query aggregation) + Frontend (payment panel) |
 | BR-ADFE-006 | Ad Fee Forecast | Ad fee revenue is included in the AI forecast calculation as a separate series. | Backend (forecast service) |
 | BR-ADFE-007 | Ad Fee Target Exclusion | Ad fee revenue is excluded from revenue target progress; targets track order sales revenue only (DBS §3.18). Ad fees remain part of the Total Income KPI (commission + ad fees). | Backend (target progress calculation) |
 
@@ -400,8 +401,8 @@ Admin navigates to /admin/commission-revenue
 | EL-32 | Gauge Bar | Progress Indicator | `revenue.progress` | No | Progress bar displaying current % toward target |
 | EL-33 | Progress Percentage | Text | `revenue.progressLabel` | No | Percentage label rendered beside the gauge bar |
 | EL-34 | Edit Target Button | Button (secondary) | `revenue.editTarget` | No | Opens the edit target dialog |
-| EL-35 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending/failed/refunded) |
-| EL-36 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded/failed) |
+| EL-35 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending) |
+| EL-36 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded) |
 | EL-37 | Ad Fee Summary Card | Card | `revenue.adFeeSummary` | No | Summary of ad fee statistics (active ads, total collected, pending) |
 | EL-38 | Payout Table | Table | — | Yes | Merchant payouts with action button |
 | EL-39 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
@@ -651,7 +652,7 @@ Admin navigates to /admin/commission-revenue
 |-------|-------------|----------------|
 | `adFeeKpis` | Ad payment aggregation | Object of `{ totalAdFees, activeAds, pendingPayments, completedPayments }` |
 | `adFeeTrendPoints` | Ad payment trends query | Array of `{ date, adFee }` points |
-| `adFeePaymentStatus` | Ad payment status aggregation | Object of `{ completed, pending, refunded, failed }` counts/amounts |
+| `adFeePaymentStatus` | Ad payment status aggregation | Object of `{ completed, pending, refunded }` counts/amounts |
 
 ---
 
@@ -882,7 +883,7 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | Forecast algorithm | Trend extrapolation (e.g., linear regression) over selected range |
 | Minimum forecast data points | Backend config (default: 7 historical points) |
 | Ad fee trend series color | Frontend chart config (default: orange/amber) |
-| Ad fee payment status mapping | Backend enum: `pending`, `completed`, `refunded`, `failed` (DBS §3.15) |
+| Ad fee payment status mapping | Backend enum: `pending`, `completed`, `refunded` (DBS §3.15) |
 | Default commission rate | 12% (seeded in `commission_settings`, DBS §3.17) |
 | Payout status enum | `pending`, `processing`, `completed`, `failed` (DBS §3.19) |
 | Ad fee rate configuration | Administered via the Advertisement Management function (REQ §5.3); this screen tracks ad fee revenue only |

@@ -4,11 +4,11 @@
 **Target Screen:** Admin Commission / Revenue Dashboard (手数料・収益管理)  
 **Subsystem:** Commission Management & Revenue Tracking  
 **Function ID:** FN-COMM-001  
-**Version:** 4.0  
+**Version:** 4.1  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-22  
+**Last Updated:** 2026-08-24  
 **Author:** Senior System Engineer  
-**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.4, Functional Spec v6.0)  
+**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.4, Functional Spec v7.1)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -28,7 +28,7 @@
 | 2.5 | 2026-08-18 | Senior System Engineer | Reconciled commission bounds and financial-report mappings with REQUIREMENT_SPEC v1.10 and DATABASE_SPEC v2.2. Explicitly scoped commission and revenue aggregates to completed payments, corrected merchant source mappings, and documented the schema gap for a per-order commission snapshot. |
 | 3.0 | 2026-08-22 | Senior System Engineer | Aligned with Functional Specification v6.0 and DATABASE_SPEC v2.4: removed ad fee deduction from payout calculation (net payout = total - commission only), added failed status to ad payment panel, corrected rate validation to strict > 0, updated audit retention to 2 years/1 year, corrected payout table columns. |
 | 3.1 | 2026-08-22 | Senior System Engineer | Restructured Section 3.1 Screen Layout and Section 4 Item Definitions: each layout (Commission Page, Edit Rate Dialog, Revenue Page, Payout Confirm Dialog, Edit Target Dialog) now uses independent letter labels starting from [A]. Updated all item definitions and cross-references accordingly. |
-| 4.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all layout diagrams, item definitions, behavior triggers, and route references. |
+| 4.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all layout diagrams, item definitions, behavior triggers, and route references. Removed duplicate item definitions. Updated version references to Functional Spec v7.0. |
 
 ### 1.2 Related Documents
 
@@ -37,7 +37,7 @@
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 2.11 | Business workflow logic, user roles, merchant states, and rules. |
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.4 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
-| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 6.0 | Use cases, state transitions, validation rules, business rules, and error handling. |
+| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 7.0 | Use cases, state transitions, validation rules, business rules, and error handling. |
 
 ---
 
@@ -59,7 +59,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 1. **Commission Rate Configuration** — Set and persist the platform commission rate applied to new transactions.
 2. **Commission Report Generation** — Merchant-level commission reports with filtering, sorting, and pagination.
 3. **Revenue Dashboard KPI** — Display revenue KPIs and trend visualization over configurable ranges, including ad fee revenue.
-4. **Payment Status Breakdown** — Summarize payment statuses across completed, pending, failed, and refunded records for both orders and advertisements.
+4. **Payment Status Breakdown** — Summarize payment statuses across completed, pending, and refunded records (order payments: pending/completed; ad payments: pending/completed/refunded).
 5. **Merchant Payout Management** — Process merchant payouts with idempotency and status tracking.
 6. **Revenue Target Progress** — Configure monthly/quarterly revenue targets and display current progress via a gauge bar.
 7. **AI Revenue Forecast** — Predict revenue and platform fees from historical data, rendered as a dotted line alongside the current trend.
@@ -345,40 +345,7 @@ Each layout section below uses its own independent letter labels starting from [
 | 57 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
 | 58 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
 
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 4 | `lblCurrentRate` | Current Rate Label | Static Label (`<label>`) | String | — | Text: "Commission Rate" | — | Hardcoded UI text | i18n key: `commission.rate`. |
-| 5 | `txtCurrentRate` | Current Rate Value | Text | String | Mandatory | Skeleton while loading. | Format: Percentage string (e.g., "10.00%"). | `commission_settings.commission_rate` | Rendered as string to preserve precision. |
-| 6 | `btnEditRate` | Edit Rate Button | Button (`primary`) | — | Mandatory | Visible. Text: "Edit Rate" | — | — | Opens the Edit Rate Dialog (Layout 2). i18n key: `commission.editRate`. |
 
-#### Section [D]: Report Filter Panel (レポートフィルターパネル)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 7 | `lblFromDate` | From Date Label | Static Label (`<label>`) | String | — | Text: "From" | — | Hardcoded UI text | i18n key: `commission.from`. |
-| 8 | `txtFromDate` | From Date Picker | Input (`date`) | DATE | No | Empty (all dates). | Valid ISO date. `from <= to`. | Query param `from` | Applies to report query. |
-| 9 | `lblToDate` | To Date Label | Static Label (`<label>`) | String | — | Text: "To" | — | Hardcoded UI text | i18n key: `commission.to`. |
-| 10 | `txtToDate` | To Date Picker | Input (`date`) | DATE | No | Empty (all dates). | Valid ISO date. `to >= from`. | Query param `to` | Applies to report query. |
-| 11 | `btnApplyFilter` | Apply Button | Button (`primary`) | — | No | Visible. Text: "Apply" | — | — | Fetches filtered report rows. i18n key: `commission.apply`. |
-| 12 | `btnResetFilter` | Reset Button | Button (`secondary`) | — | No | Visible. Text: "Reset" | — | — | Clears filters and reloads default report. i18n key: `commission.reset`. |
-
-#### Section [E]: Commission Report Table (手数料レポートテーブル)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 13 | `tblReport` | Commission Report Table | Table | — | Mandatory | Skeleton while loading. | — | Commission report query | Columns: Merchant, Orders, Revenue, Commission. |
-| 14 | `tblReportMerchant` | Merchant Column | Column (`sortable`) | String(255) | — | — | Sortable. | `merchants.shop_name` via `orders.merchant_id` | Merchant-level grouping. |
-| 15 | `tblReportOrders` | Orders Column | Column (`sortable`) | Integer | — | — | Sortable. | Count of `orders.id` where `payment_status = 'completed'` | Number of completed/settled orders in range. |
-| 16 | `tblReportRevenue` | Revenue Column | Column (`sortable`) | Decimal(12,2) | — | — | Rendered as currency string. | Sum of `orders.total_amount` where `payment_status = 'completed'` | Currency formatting via locale; only completed/settled orders are included. |
-| 17 | `tblReportCommission` | Commission Column | Column (`sortable`) | Decimal(12,2) | — | — | Rendered as currency string. | Application-level aggregation using the rate effective when each transaction was created | Commission = completed-order total × transaction-time commission rate. Historical transactions must not be recomputed using the current setting. |
-| 18 | `pgReport` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the report table. Per DEVELOPMENT_RULES, admin-only endpoints must validate `@UseGuards(JwtAuthGuard, RolesGuard)` and `@Roles('admin')`. |
-
-#### Section [F]: Footer Controls (フッターコントロール)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 19 | `btnLanguageToggleComm` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
-| 20 | `btnThemeToggleComm` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
 
 ---
 

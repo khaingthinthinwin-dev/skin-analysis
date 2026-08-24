@@ -121,7 +121,7 @@ Buyer sees suspicious review
 #### Reviews & Reports Management Layout (`/admin/reviews`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -157,7 +157,7 @@ Buyer sees suspicious review
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [G] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -166,10 +166,10 @@ Buyer sees suspicious review
 #### Review Detail Modal Layout
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    MODAL OVERLAY                         │
+│                    MODAL OVERLAY                        │
 │              ┌─────────────────────────────┐            │
 │              │   [A] MODAL HEADER          │            │
-│              │   "Review Detail"  [X Close] │            │
+│              │   "Review Detail"  [X Close]│            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
 │              │   [B] USER INFO CARD        │            │
@@ -198,7 +198,7 @@ Buyer sees suspicious review
 #### Merchants Management Layout (`/admin/merchants`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -229,7 +229,7 @@ Buyer sees suspicious review
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -237,68 +237,68 @@ Buyer sees suspicious review
 
 #### Merchant Detail Modal Layout
 ```text
-┌─────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
-│              ┌─────────────────────────────┐            │
-│              │   [A] MODAL HEADER          │            │
+│              ┌──────────────────────────────┐            │
+│              │   [A] MODAL HEADER           │            │
 │              │   "Merchant Detail" [X Close]│            │
-│              ├─────────────────────────────┤            │
-│              │                             │            │
-│              │   [B] SHOP INFO CARD        │            │
-│              │   Logo | Banner | Name      │            │
-│              │   Description               │            │
-│              │                             │            │
-│              │   [C] LICENSE VIEWER        │            │
-│              │   PDF Display / Download    │            │
-│              │                             │            │
-│              │   [D] USER INFO CARD        │            │
-│              │   Name | Email | Phone      │            │
-│              │   Registration Date         │            │
-│              │                             │            │
-│              │   [E] REJECTION REASON      │            │
-│              │   Textarea (conditional)    │            │
-│              │                             │            │
-│              │   [F] ACTION BUTTONS        │            │
-│              │   [Approve] [Reject]        │            │
-│              └─────────────────────────────┘            │
-└─────────────────────────────────────────────────────────┘
+│              ├──────────────────────────────┤            │
+│              │                              │            │
+│              │   [B] SHOP INFO CARD         │            │
+│              │   Logo | Banner | Name       │            │
+│              │   Description                │            │
+│              │                              │            │
+│              │   [C] LICENSE VIEWER         │            │
+│              │   PDF Display / Download     │            │
+│              │                              │            │
+│              │   [D] USER INFO CARD         │            │
+│              │   Name | Email | Phone       │            │
+│              │   Registration Date          │            │
+│              │                              │            │
+│              │   [E] REJECTION REASON       │            │
+│              │   Textarea (conditional)     │            │
+│              │                              │            │
+│              │   [F] ACTION BUTTONS         │            │
+│              │   [Approve] [Reject]         │            │
+│              └──────────────────────────────┘            │
+└──────────────────────────────────────────────────────────┘
 ```
 
 #### Product Content Moderation Layout (`/admin/content`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [A] PAGE HEADER                    │   │
+│  │              [A] PAGE HEADER                     │   │
 │  │   Page Title: "Product Content Moderation"       │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [B] STATS BAR                      │   │
+│  │              [B] STATS BAR                       │   │
 │  │   Total | Active | Inactive                      │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [C] FILTER TABS                    │   │
+│  │              [C] FILTER TABS                     │   │
 │  │   All | Active | Inactive                        │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [D] SEARCH + SORT BAR              │   │
+│  │              [D] SEARCH + SORT BAR               │   │
 │  │   [Search Input] [Sort Dropdown] [Bulk Actions]  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [E] PRODUCTS TABLE                 │   │
+│  │              [E] PRODUCTS TABLE                  │   │
 │  │   Checkbox | Image | Name | Shop | Price         │   │
 │  │   Status Badge | Owner | Date | Actions Dropdown │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [F] PAGINATION                     │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │              [F] PAGINATION                      │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -307,11 +307,11 @@ Buyer sees suspicious review
 #### Product Moderation Modal Layout
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    MODAL OVERLAY                         │
+│                    MODAL OVERLAY                        │
 │              ┌─────────────────────────────┐            │
 │              │   [A] MODAL HEADER          │            │
-│              │   "Product Moderation"       │            │
-│              │              [X Close]       │            │
+│              │   "Product Moderation"      │            │
+│              │              [X Close]      │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
 │              │   [B] PRODUCT INFO CARD     │            │
@@ -343,38 +343,38 @@ Buyer sees suspicious review
 #### Users Management Layout (`/admin/users`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [A] PAGE HEADER                    │   │
+│  │              [A] PAGE HEADER                     │   │
 │  │   Page Title: "User Management"                  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [B] STATS BAR                      │   │
+│  │              [B] STATS BAR                       │   │
 │  │   Total | Active | Inactive | Admin              │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [C] FILTER TABS                    │   │
+│  │              [C] FILTER TABS                     │   │
 │  │   All | Active | Inactive | Admin                │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [D] SEARCH BAR                     │   │
+│  │              [D] SEARCH BAR                      │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [E] USERS TABLE                    │   │
+│  │              [E] USERS TABLE                     │   │
 │  │   Avatar | Name | Email | Role                   │   │
 │  │   Status Badge | Joined Date | Actions Dropdown  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              [F] PAGINATION                     │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │              [F] PAGINATION                      │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -383,10 +383,10 @@ Buyer sees suspicious review
 #### User Detail Modal Layout
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    MODAL OVERLAY                         │
+│                    MODAL OVERLAY                        │
 │              ┌─────────────────────────────┐            │
 │              │   [A] MODAL HEADER          │            │
-│              │   "User Detail" [X Close]    │            │
+│              │   "User Detail" [X Close]   │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
 │              │   [B] USER INFO CARD        │            │

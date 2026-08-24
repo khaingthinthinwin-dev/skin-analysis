@@ -37,7 +37,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -61,7 +61,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [E] SEARCH + SORT BAR                         │   │
+│  │   [E] SEARCH + SORT BAR                          │   │
 │  │   [Search Input] [Sort Dropdown] [Bulk Actions]  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -73,7 +73,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [G] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -83,10 +83,10 @@ The Review & Content Moderation module consists of three admin pages, each with 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    MODAL OVERLAY                         │
+│                    MODAL OVERLAY                        │
 │              ┌─────────────────────────────┐            │
 │              │   [A] MODAL HEADER          │            │
-│              │   "Review Detail"  [X Close] │            │
+│              │   "Review Detail"  [X Close]│            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
 │              │   [B] USER INFO CARD        │            │
@@ -115,35 +115,35 @@ The Review & Content Moderation module consists of three admin pages, each with 
 ### 2.3 Report Review Modal Layout
 
 ```
-┌─────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
-│              ┌─────────────────────────────┐            │
-│              │   [A] MODAL HEADER          │            │
-│              │   "Report Review" [X Close] │            │
-│              ├─────────────────────────────┤            │
-│              │                             │            │
-│              │   [B] REVIEW PREVIEW        │            │
-│              │   User | Product | Rating   │            │
-│              │   Review Body (truncated)   │            │
-│              │                             │            │
-│              │   [C] REPORT REASON         │            │
-│              │   Radio: Spam | Inappropriate│           │
-│              │   Radio: Fake | Other        │           │
-│              │                             │            │
-│              │   [D] REPORT DETAIL         │            │
-│              │   Textarea (optional)       │            │
-│              │                             │            │
-│              │   [E] ACTION BUTTONS        │            │
-│              │   [Cancel] [Submit Report]  │            │
-│              └─────────────────────────────┘            │
-└─────────────────────────────────────────────────────────┘
+│              ┌──────────────────────────────┐            │
+│              │   [A] MODAL HEADER           │            │
+│              │   "Report Review" [X Close]  │            │
+│              ├──────────────────────────────┤            │
+│              │                              │            │
+│              │   [B] REVIEW PREVIEW         │            │
+│              │   User | Product | Rating    │            │
+│              │   Review Body (truncated)    │            │
+│              │                              │            │
+│              │   [C] REPORT REASON          │            │
+│              │   Radio: Spam | Inappropriate│            │
+│              │   Radio: Fake | Other        │            │
+│              │                              │            │
+│              │   [D] REPORT DETAIL          │            │
+│              │   Textarea (optional)        │            │
+│              │                              │            │
+│              │   [E] ACTION BUTTONS         │            │
+│              │   [Cancel] [Submit Report]   │            │
+│              └──────────────────────────────┘            │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ### 2.4 Merchants Management Layout (`/admin/merchants`)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -162,7 +162,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [D] SEARCH BAR                                │   │
+│  │   [D] SEARCH BAR                                 │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -182,38 +182,38 @@ The Review & Content Moderation module consists of three admin pages, each with 
 ### 2.5 Merchant Detail Modal Layout
 
 ```
-┌─────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────┐
 │                    MODAL OVERLAY                         │
-│              ┌─────────────────────────────┐            │
-│              │   [A] MODAL HEADER          │            │
+│              ┌──────────────────────────────┐            │
+│              │   [A] MODAL HEADER           │            │
 │              │   "Merchant Detail" [X Close]│            │
-│              ├─────────────────────────────┤            │
-│              │                             │            │
-│              │   [B] SHOP INFO CARD        │            │
-│              │   Logo | Banner | Name      │            │
-│              │   Description               │            │
-│              │                             │            │
-│              │   [C] LICENSE VIEWER        │            │
-│              │   PDF Display / Download    │            │
-│              │                             │            │
-│              │   [D] USER INFO CARD        │            │
-│              │   Name | Email | Phone      │            │
-│              │   Registration Date         │            │
-│              │                             │            │
-│              │   [E] REJECTION REASON      │            │
-│              │   Textarea (conditional)    │            │
-│              │                             │            │
-│              │   [F] ACTION BUTTONS        │            │
-│              │   [Approve] [Reject]        │            │
-│              └─────────────────────────────┘            │
-└─────────────────────────────────────────────────────────┘
+│              ├──────────────────────────────┤            │
+│              │                              │            │
+│              │   [B] SHOP INFO CARD         │            │
+│              │   Logo | Banner | Name       │            │
+│              │   Description                │            │
+│              │                              │            │
+│              │   [C] LICENSE VIEWER         │            │
+│              │   PDF Display / Download     │            │
+│              │                              │            │
+│              │   [D] USER INFO CARD         │            │
+│              │   Name | Email | Phone       │            │
+│              │   Registration Date          │            │
+│              │                              │            │
+│              │   [E] REJECTION REASON       │            │
+│              │   Textarea (conditional)     │            │
+│              │                              │            │
+│              │   [F] ACTION BUTTONS         │            │
+│              │   [Approve] [Reject]         │            │
+│              └──────────────────────────────┘            │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ### 2.6 Product Content Moderation Layout (`/admin/content`)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -232,7 +232,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [D] SEARCH + SORT BAR                         │   │
+│  │   [D] SEARCH + SORT BAR                          │   │
 │  │   [Search Input] [Sort Dropdown] [Bulk Actions]  │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -244,7 +244,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -254,11 +254,11 @@ The Review & Content Moderation module consists of three admin pages, each with 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    MODAL OVERLAY                         │
+│                    MODAL OVERLAY                        │
 │              ┌─────────────────────────────┐            │
 │              │   [A] MODAL HEADER          │            │
-│              │   "Product Moderation"       │            │
-│              │              [X Close]       │            │
+│              │   "Product Moderation"      │            │
+│              │              [X Close]      │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
 │              │   [B] PRODUCT INFO CARD     │            │
@@ -291,7 +291,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -310,7 +310,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [D] SEARCH BAR                                │   │
+│  │   [D] SEARCH BAR                                 │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -322,7 +322,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -332,10 +332,10 @@ The Review & Content Moderation module consists of three admin pages, each with 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    MODAL OVERLAY                         │
+│                    MODAL OVERLAY                        │
 │              ┌─────────────────────────────┐            │
 │              │   [A] MODAL HEADER          │            │
-│              │   "User Detail" [X Close]    │            │
+│              │   "User Detail" [X Close]   │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
 │              │   [B] USER INFO CARD        │            │
@@ -357,7 +357,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -376,7 +376,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │   [D] SEARCH BAR                                │   │
+│  │   [D] SEARCH BAR                                 │   │
 │  │   [Search Input]                                 │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
@@ -388,7 +388,7 @@ The Review & Content Moderation module consists of three admin pages, each with 
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │              [F] PAGINATION                      │   │
-│  │   < 1 2 3 ... 10 >    Page Size: [20]           │   │
+│  │   < 1 2 3 ... 10 >    Page Size: [20]            │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
@@ -398,10 +398,10 @@ The Review & Content Moderation module consists of three admin pages, each with 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    MODAL OVERLAY                         │
+│                    MODAL OVERLAY                        │
 │              ┌─────────────────────────────┐            │
 │              │   [A] MODAL HEADER          │            │
-│              │   "Report Detail" [X Close]  │            │
+│              │   "Report Detail" [X Close] │            │
 │              ├─────────────────────────────┤            │
 │              │                             │            │
 │              │   [B] REPORTER CARD         │            │

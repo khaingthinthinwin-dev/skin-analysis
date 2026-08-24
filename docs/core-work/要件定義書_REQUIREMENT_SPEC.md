@@ -314,6 +314,7 @@ Select Package → Upload Content → Pay Fee → Admin Review → Approved → 
 |---------|-------------|
 | Manage Packages | Create, edit, activate/deactivate ad packages |
 | Set Pricing | Configure placement rates and tiers |
+| Manage Ad Fees | Admin can set/update ad fee rates by placement and tier |
 | Review Advertisements | Approve/reject merchant ads |
 | View Ad Analytics | Platform-wide ad performance |
 | Package History | Track pricing changes |
@@ -369,11 +370,9 @@ Select Package → Upload Content → Pay Fee → Admin Review → Approved → 
 | Feature | Description |
 |---------|-------------|
 | Platform Sales | Total revenue, order counts, and ad fees |
-| Revenue Dashboard | Platform revenue trends |
+| Revenue Dashboard | Platform-wide revenue trends (commission + ad fees combined) |
 | Commission Fee | Platform commission on each sale (admin-configurable rate) |
 | Manage Commission Rate | Admin can set/update commission rate |
-| Ad Fee | Advertising fees from merchant ad purchases |
-| Manage Ad Fees | Admin can set/update ad fee rates by placement and tier |
 | Payouts | Process merchant payouts (net of commission) |
 | Revenue Targets | Set and track monthly/quarterly targets |
 
