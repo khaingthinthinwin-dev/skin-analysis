@@ -29,6 +29,7 @@
 | 2.0 | 2026-08-14 | Software Architect | Aligned with DATABASE_SPEC v2.0 & REQUIREMENT_SPEC v1.5: replaced CUID references with UUID (`gen_random_uuid()`); integrated dynamic fee pricing via `ad_fee_settings` (placement × tier), payment transaction ledger via `ad_payments` (linked to `merchants`), and fee audit log via `ad_fee_history`; updated DB traceability matrix. |
 | 2.1 | 2026-08-18 | Software Architect | Aligned with DATABASE_SPEC v2.2 & REQUIREMENT_SPEC v1.7: corrected `payment_status` enum to `pending/completed/refunded/failed` (DB canonical); added ad duration limits (7–30 days, M-AD-013/014), per-merchant max 2 active ads (M-AD-012), ad states flow (M-AD-010), auto-refund on rejection (M-AD-011); updated traceability matrix. |
 | 2.2 | 2026-08-21 | Software Architect | Aligned with REQUIREMENT_SPEC v2.10 & DATABASE_SPEC v2.4: introduced package-based advertisement model (placement × tier packages from `ad_fee_settings`; fee = `daily_rate × duration_days`; duration fixed per package, 7–30 days catalog bounds); `expires_at` now system-derived from package duration; added platform display rules (slider max 5 per rotation, priority Premium > Standard > Basic, round-robin within tier, 5-second auto-rotation); removed per-merchant max 2 active ads limit (no longer defined in REQ v2.10); corrected admin approve/reject to `PATCH` endpoints; added admin ad fee settings management (view/update rates with `ad_fee_history` audit) and merchant package browsing; re-anchored requirement traceability to REQ v2.10 sections (legacy M-AD IDs retained as internal anchors); flagged open item: `advertisements` does not persist `placement`/`tier`. |
+| 2.3 | 2026-08-24 | Software Architect | Changed pending merchant behavior: pending merchants can now view the dashboard/product list page (read-only) instead of being redirected with an error toast. All CRUD operations (create/edit/delete/pay/submit) are restricted and hidden for pending merchants; only approved merchants have full access to merchant features. |
 
 ---
 
@@ -210,13 +211,20 @@ This subsystem is responsible for the following core functional areas:
               pending/reject│       │approved
                           ▼        ▼
               ┌────────────────┐ ┌─────────────────────────┐
-              │  Home Page     │ │  Advertisement          │
-              │                │ │  Management Page        │
-              │                │ │  /merchant/ads          │
-              └────────────────┘ └─────────────┬───────────┘
-                                               │
-                                               ▼
-                                 ┌──────────────────────┐
+              │  Advertisement │ │  Advertisement          │
+              │  Management    │ │  Management Page        │
+              │  Page          │ │  /merchant/ads          │
+              │  (Read-Only)   │ │  (Full Access)          │
+              │                │ │                         │
+              │  ┌───────────┐ │ │  CRUD operations:       │
+              │  │ View Ad   │ │ │  - New Ad button shown  │
+              │  │ List Only │ │ │  - Edit/Delete buttons   │
+              │  │           │ │ │  - Pay & Submit enabled  │
+              │  │ CRUD      │ │ │  - All features active   │
+              │  │ operations│ │ └─────────────┬───────────┘
+              │  │ hidden    │ │               │
+              │  └───────────┘ │               ▼
+              └────────────────┘ ┌──────────────────────┐
                                  │  Merchant Dashboard  │
                                  │  /merchant/ads       │
                                  └──────────┬───────────┘
@@ -226,6 +234,8 @@ This subsystem is responsible for the following core functional areas:
                 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
                 │ View Ad List    │ │ New Ad          │ │ Edit Ad         │
                 │ (UC-AD-004)     │ │ (UC-AD-001)     │ │ (UC-AD-005)     │
+                │                 │ │ [HIDDEN if      │ │ [HIDDEN if      │
+                │                 │ │  pending]       │ │  pending]       │
                 └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
                          │                   │                   │
                          ▼                   ▼                   ▼
@@ -599,6 +609,14 @@ This subsystem is responsible for the following core functional areas:
 - Sorted by newest first
 - Status filter shows "All statuses"
 - Loading skeleton during fetch
+- **Pending merchant restrictions:** When `license_status` is `'pending'` or `'reject'`, the following UI elements are hidden/disabled:
+  - EL-03 (New Ad Button) — hidden
+  - EL-15a (Pay & Submit Button) — hidden
+  - EL-15b (Resubmit Button) — hidden
+  - EL-16 (Edit Button) — hidden
+  - EL-17 (Delete Button) — hidden
+  - Ad list remains viewable (read-only) with status badges visible
+  - Info banner displayed: "Your shop is pending approval. You can view your ads but cannot create or modify them until your shop is approved."
 
 ### 5.2 Screen: Create / Edit Advertisement (Dialog)
 
@@ -701,7 +719,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/ads` |
 | **Request Content-Type** | `multipart/form-data` (when image attached) or `application/json` |
 | **Pre-Submission Validation** | Full DTO validation (class-validator) + Zod schema |
-| **Processing Steps** | 1. Validate JWT token and merchant role. 2. Resolve merchant's shop (GET /shops/merchant). 3. Verify shop exists and `is_approved = true`. 4. Validate all fields (placement, tier, title, announcement message, image, start date). 5. Resolve active package from `ad_fee_settings` by (`placement`, `tier`); if not found return `400 AD_PACKAGE_INVALID`. 6. Upload image (if provided). 7. Compute `expires_at = starts_at + duration_days`; derive `week_number` from `starts_at`. 8. Create advertisement record with `shop_id`, `approval_status = pending`, `payment_status = pending`. 9. Invalidate active ads cache (`DEL cache:ads:active`). 10. Log `AD_CREATED` audit event. 11. Return created advertisement DTO. |
+| **Processing Steps** | 1. Validate JWT token and merchant role. 2. Resolve merchant's shop (GET /shops/merchant). 3. Verify shop exists and `is_approved = true`. **If shop is not approved, return `403 SHOP_NOT_APPROVED` with message "Your shop is pending approval. You cannot create advertisements until your shop is approved."** 4. Validate all fields (placement, tier, title, announcement message, image, start date). 5. Resolve active package from `ad_fee_settings` by (`placement`, `tier`); if not found return `400 AD_PACKAGE_INVALID`. 6. Upload image (if provided). 7. Compute `expires_at = starts_at + duration_days`; derive `week_number` from `starts_at`. 8. Create advertisement record with `shop_id`, `approval_status = pending`, `payment_status = pending`. 9. Invalidate active ads cache (`DEL cache:ads:active`). 10. Log `AD_CREATED` audit event. 11. Return created advertisement DTO. |
 | **Success Response** | 201 Created with advertisement data |
 | **Post-Action** | Close dialog, refresh ad list, show success toast. Ad appears as draft with "Pay & Submit" action. |
 
@@ -713,7 +731,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/ads/:id/pay` |
 | **Request Content-Type** | `application/json` (payment info; payment gateway stubbed) |
 | **Pre-Submission Validation** | Advertisement ownership check; ad must be in `payment_status = pending` |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Confirm ad is not yet paid. 5. Resolve fee = package `daily_rate × duration_days` from the ad's selected placement & tier via `ad_fee_settings`. 6. Process payment (stubbed) for `payment_amount`. 7. Record transaction in `ad_payments` with `payment_status = completed`, `amount`, `payment_method`, `transaction_id`, `paid_at`. 8. Update advertisement `payment_status = completed`, `payment_amount`, `payment_reference`. 9. Log `AD_PAID` audit event. 10. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Confirm ad is not yet paid. **5. Verify shop `is_approved = true`; if not, return `403 SHOP_NOT_APPROVED`.** 6. Resolve fee = package `daily_rate × duration_days` from the ad's selected placement & tier via `ad_fee_settings`. 7. Process payment (stubbed) for `payment_amount`. 8. Record transaction in `ad_payments` with `payment_status = completed`, `amount`, `payment_method`, `transaction_id`, `paid_at`. 9. Update advertisement `payment_status = completed`, `payment_amount`, `payment_reference`. 10. Log `AD_PAID` audit event. 11. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Enable "Submit for Approval" button; show success toast |
 
@@ -725,7 +743,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `POST /api/v1/ads/:id/submit` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Advertisement ownership check; `payment_status = completed` required |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Verify `payment_status = completed`. 5. Set `approval_status = pending` (submit). 6. Invalidate active ads cache. 7. Notify admin of pending approval. 8. Log `AD_SUBMITTED` audit event. 9. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement; verify ownership. 4. Verify `payment_status = completed`. **5. Verify shop `is_approved = true`; if not, return `403 SHOP_NOT_APPROVED`.** 6. Set `approval_status = pending` (submit). 7. Invalidate active ads cache. 8. Notify admin of pending approval. 9. Log `AD_SUBMITTED` audit event. 10. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Ad becomes read-only for merchant until admin decision |
 
@@ -764,6 +782,7 @@ This subsystem is responsible for the following core functional areas:
 | **Processing Steps** | 1. Validate query parameters. 2. Resolve merchant's shop id. 3. Build Prisma WHERE with `shop_id = <merchant shop id>`. 4. Apply status filter (active: `is_active = true` AND approved AND completed AND in schedule) and approval status filter. 5. Apply pagination via `idx_advertisements_shop_id`. 6. Return paginated response with meta. |
 | **Success Response** | 200 OK with advertisement list and pagination meta |
 | **Cache** | None (per-merchant, not cached) |
+| **Note** | This endpoint is accessible to all authenticated merchants regardless of `license_status`. Pending merchants receive a read-only view; CRUD action buttons are hidden client-side. |
 
 ### 6.7 Operation: Update Advertisement
 
@@ -773,7 +792,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `PATCH /api/v1/ads/:id` |
 | **Request Content-Type** | `multipart/form-data` or `application/json` |
 | **Pre-Submission Validation** | Full DTO validation, advertisement ownership check |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. 5. Validate provided fields; if `starts_at` changed, recompute `expires_at = starts_at + package duration_days` and re-derive `week_number`. 6. Update advertisement record. 7. If ad was `rejected`, reset `approval_status = pending` for resubmission. 8. Invalidate active ads cache (`DEL cache:ads:active`). 9. Log `AD_UPDATED` audit event. 10. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. **5. Verify shop `is_approved = true`; if not, return `403 SHOP_NOT_APPROVED`.** 6. Validate provided fields; if `starts_at` changed, recompute `expires_at = starts_at + package duration_days` and re-derive `week_number`. 7. Update advertisement record. 8. If ad was `rejected`, reset `approval_status = pending` for resubmission. 9. Invalidate active ads cache (`DEL cache:ads:active`). 10. Log `AD_UPDATED` audit event. 11. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Close dialog, refresh ad list, show success toast |
 
@@ -785,7 +804,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `DELETE /api/v1/ads/:id` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Advertisement ownership check |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. 5. Set `is_active = false` (soft delete). 6. Invalidate active ads cache (`DEL cache:ads:active`). 7. Log `AD_DELETED` audit event. 8. Return soft-deleted ad info. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and merchant role. 3. Find advertisement by id. 4. Verify `advertisement.shop_id == merchant's shop id`. **5. Verify shop `is_approved = true`; if not, return `403 SHOP_NOT_APPROVED`.** 6. Set `is_active = false` (soft delete). 7. Invalidate active ads cache (`DEL cache:ads:active`). 8. Log `AD_DELETED` audit event. 9. Return soft-deleted ad info. |
 | **Success Response** | 200 OK with `{ id, isActive: false }` |
 | **Post-Action** | Remove ad from list view, show success toast |
 
@@ -992,7 +1011,8 @@ Same as Create Advertisement, with all fields optional (partial update). When `s
 |-------------|------------|----------|---------------------|
 | `400` | `BAD_REQUEST` | Validation failures (incl. missing `reason`, missing `announcementMessage`) | Field-level inline errors + top banner |
 | `401` | `UNAUTHORIZED` | Missing or invalid JWT | Redirect to login |
-| `403` | `FORBIDDEN` | Not merchant/admin, not ad owner, or shop not approved | "Shop is not approved" / "You don't have permission to manage this ad" |
+| `403` | `FORBIDDEN` | Not merchant/admin, not ad owner | "You don't have permission to manage this ad" |
+| `403` | `SHOP_NOT_APPROVED` | Pending merchant attempts CRUD operation (create/edit/delete/pay/submit) | Read-only view: "Your shop is pending approval. You can view your ads but cannot create or modify them until your shop is approved." (CRUD operations hidden in UI) |
 | `404` | `NOT_FOUND` | Advertisement not found | "Advertisement not found" with refresh option |
 | `409` | `CONFLICT` | `expires_at <= starts_at` | "Invalid schedule dates" with inline date error |
 | `409` | `WEEKLY_LIMIT_REACHED` | Weekly ad limit (5/week) reached on approve | "Weekly advertisement limit reached (max 5)" |
@@ -1045,8 +1065,11 @@ Same as Create Advertisement, with all fields optional (partial update). When `s
 | Role | View Own Ads | Create Ads | Edit Ads | Delete Ads | Pay Fee / Submit | Approve / Reject | View Active Ads (Public) |
 |------|:------------:|:----------:|:--------:|:----------:|:----------------:|:----------------:|:------------------------:|
 | `buyer` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
-| `merchant` | ✓ (own shop) | ✓ (own shop) | ✓ (own shop) | ✓ (own shop) | ✓ (own shop) | ✗ | ✓ |
+| `merchant` (pending) | ✓ (own shop, read-only) | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| `merchant` (approved) | ✓ (own shop) | ✓ (own shop) | ✓ (own shop) | ✓ (own shop) | ✓ (own shop) | ✗ | ✓ |
 | `admin` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+> **Note:** When `license_status` is `'pending'` or `'reject'`, merchants can access the Advertisement Management page in **read-only mode** — the ad list is visible but all CRUD operations (create, edit, delete, pay, submit) are hidden and restricted. Only merchants with `license_status = 'approved'` have full access to merchant features.
 
 ### 10.4 Ownership Enforcement
 
@@ -1074,6 +1097,8 @@ export class AdminAdvertisementsController {
 ```
 
 Merchants can only read/update/delete/pay/submit ads whose `shop_id` matches their own shop. Attempts to access another merchant's ad MUST return `403 Forbidden`. Admin bypasses ownership checks. Approve/reject endpoints MUST require `admin` role only.
+
+**Pending Merchant Restrictions:** Merchants with `license_status` of `'pending'` or `'reject'` can access the ad list (read-only) but all mutation operations (create, update, delete, pay, submit) MUST verify `shop.is_approved = true` and return `403 SHOP_NOT_APPROVED` if the shop is not approved. The frontend hides CRUD action buttons for pending merchants, providing a read-only view of the ad list.
 
 ### 10.5 Security Audit Logging
 
@@ -1117,8 +1142,8 @@ The Advertisement Management screen does not require WebSocket connections. Adve
 |--------|--------|-----------|
 | Merchant dashboard | `/merchant/advertisements` | Click "Advertisements" menu |
 | Admin dashboard | `/admin/advertisements` | Click "Advertisement Moderation" menu |
-| Merchant | Home Page | `license_status` is `'pending'` or `'reject'` |
-| Merchant | `/merchant/advertisements` (Advertisement Management Page) | `license_status` is `'approved'` |
+| Merchant | `/merchant/advertisements` (Advertisement Management Page, Read-Only) | `license_status` is `'pending'` or `'reject'` — CRUD operations hidden, ad list viewable |
+| Merchant | `/merchant/advertisements` (Advertisement Management Page, Full Access) | `license_status` is `'approved'` |
 | Any protected route (unauthenticated) | `/login` | No valid access token |
 
 ### 12.2 Internal Navigation
