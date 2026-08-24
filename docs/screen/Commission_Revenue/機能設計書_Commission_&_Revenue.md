@@ -10,7 +10,7 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 7.1 |
+| **Version** | 7.2 |
 | **Created** | 2026-08-05 |
 | **Last Updated** | 2026-08-24 |
 | **Author** | Senior System Engineer |
@@ -31,6 +31,7 @@
 | 6.0 | 2026-08-21 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v2.10 and DATABASE_SPEC v2.4: merchant payouts simplified to commission-only deduction (ad fees excluded from payouts and revenue target progress), commission rate bounds corrected to 0 < rate ≤ 100 (default 12%), ad payment status enum aligned to pending/completed/refunded/failed, payout status filter includes processing, audit retention and performance targets aligned with Development Rules. |
 | 7.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all route references, screen transitions, and operation triggers. |
 | 7.1 | 2026-08-24 | Senior System Engineer | Aligned payment status enums with DATABASE_SPEC v2.4: removed 'failed' from order payment statuses (pending/completed only), removed 'failed' from ad payment statuses (pending/completed/refunded only). Updated BR-REV-003, BR-ADFE-005, EL-35, EL-36, and cross-reference traceability matrix. |
+| 7.2 | 2026-08-24 | Senior System Engineer | UI cleanup of the Revenue tab payment panels: removed the "Failed" and "Refunded" status cards from the Payment Status Panel (EL-35) and the "Ad Failed" status card from the Ad Payment Status Panel (EL-36). Adjusted panel grid layout and spacing for a balanced display — order payment badges in a single-row 2-column grid, ad payment badges in a single-row 3-column grid. Updated default state and verification checklist accordingly. |
 
 ---
 
@@ -401,8 +402,8 @@ Admin navigates to /admin/commission-revenue
 | EL-32 | Gauge Bar | Progress Indicator | `revenue.progress` | No | Progress bar displaying current % toward target |
 | EL-33 | Progress Percentage | Text | `revenue.progressLabel` | No | Percentage label rendered beside the gauge bar |
 | EL-34 | Edit Target Button | Button (secondary) | `revenue.editTarget` | No | Opens the edit target dialog |
-| EL-35 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending) |
-| EL-36 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded) |
+| EL-35 | Payment Status Panel | Panel | — | No | Summary badges for order payments (completed/pending), evenly spaced in a single-row 2-column badge grid. "Failed" / "Refunded" cards are not rendered. |
+| EL-36 | Ad Payment Status Panel | Panel | — | No | Summary badges for ad fee payments (completed/pending/refunded), evenly spaced in a single-row 3-column badge grid. "Ad Failed" card is not rendered. |
 | EL-37 | Ad Fee Summary Card | Card | `revenue.adFeeSummary` | No | Summary of ad fee statistics (active ads, total collected, pending) |
 | EL-38 | Payout Table | Table | — | Yes | Merchant payouts with action button |
 | EL-39 | Process Button | Button (primary) | `revenue.process` | No | Process a pending payout |
@@ -435,7 +436,7 @@ Admin navigates to /admin/commission-revenue
 - Forecast dotted line hidden when historical data is insufficient
 - Process buttons disabled for non-pending payouts
 - Confirmation dialog and edit target dialog closed
-- Ad payment status panel shows summary alongside order payment status
+- Order payment panel shows Completed and Pending badges in a single-row 2-column grid; ad payment panel shows Ad Completed, Ad Pending, and Ad Refunded badges in a single-row 3-column grid ("Failed" / "Refunded" / "Ad Failed" cards are not rendered)
 
 ---
 
@@ -960,6 +961,7 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 - [ ] Forecast values never written back to financial records or used in aggregations
 - [ ] Ad fee revenue included in total platform income KPI
 - [ ] Ad fee payment status tracked alongside order payment status
+- [ ] Payment status panels render only supported statuses (orders: completed/pending; ads: completed/pending/refunded) with balanced grid spacing
 - [ ] Ad fee trend series rendered as separate line on revenue chart
 - [ ] Payout net amount computed as total − commission only (no ad fee deduction)
 - [ ] Revenue target progress aggregated from order sales (`order_items.total_price`), excluding ad fees

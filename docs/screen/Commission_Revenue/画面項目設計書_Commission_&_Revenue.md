@@ -4,11 +4,11 @@
 **Target Screen:** Admin Commission / Revenue Dashboard (手数料・収益管理)  
 **Subsystem:** Commission Management & Revenue Tracking  
 **Function ID:** FN-COMM-001  
-**Version:** 4.1  
+**Version:** 4.2  
 **Created:** 2026-08-10  
 **Last Updated:** 2026-08-24  
 **Author:** Senior System Engineer  
-**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.4, Functional Spec v7.1)  
+**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.4, Functional Spec v7.2)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -29,6 +29,8 @@
 | 3.0 | 2026-08-22 | Senior System Engineer | Aligned with Functional Specification v6.0 and DATABASE_SPEC v2.4: removed ad fee deduction from payout calculation (net payout = total - commission only), added failed status to ad payment panel, corrected rate validation to strict > 0, updated audit retention to 2 years/1 year, corrected payout table columns. |
 | 3.1 | 2026-08-22 | Senior System Engineer | Restructured Section 3.1 Screen Layout and Section 4 Item Definitions: each layout (Commission Page, Edit Rate Dialog, Revenue Page, Payout Confirm Dialog, Edit Target Dialog) now uses independent letter labels starting from [A]. Updated all item definitions and cross-references accordingly. |
 | 4.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all layout diagrams, item definitions, behavior triggers, and route references. Removed duplicate item definitions. Updated version references to Functional Spec v7.0. |
+| 4.1 | 2026-08-24 | Senior System Engineer | Aligned payment status enums with Functional Spec v7.1 / DATABASE_SPEC v2.4 (order payments: pending/completed; ad payments: pending/completed/refunded). |
+| 4.2 | 2026-08-24 | Senior System Engineer | Removed the "Failed" and "Refunded" badges from the Payment Status Panel (Section [J]) and the "Ad Failed" badge from the Ad Payment Status Panel (Section [K]). Adjusted badge grid layout and spacing for a neat display — order badges in a single-row 2-column grid, ad badges in a single-row 3-column grid. Renumbered downstream item definitions, removed unused i18n keys, updated API response example and test checklist. Aligned with Functional Spec v7.2. |
 
 ### 1.2 Related Documents
 
@@ -37,7 +39,7 @@
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 2.11 | Business workflow logic, user roles, merchant states, and rules. |
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.4 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
-| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 7.0 | Use cases, state transitions, validation rules, business rules, and error handling. |
+| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 7.2 | Use cases, state transitions, validation rules, business rules, and error handling. |
 
 ---
 
@@ -132,12 +134,11 @@ Single page with two tabs: Commission and Revenue. Each section uses its own ind
 │  │   [I5] Edit Target Button                         │  │
 │  │                                                   │  │
 │  │   [J] PAYMENT STATUS PANEL                        │  │
-│  │   [J1] Completed  [J2] Pending                    │  │
-│  │   [J3] Failed     [J4] Refunded                   │  │
+│  │   [J1] Completed     [J2] Pending                 │  │
 │  │                                                   │  │
 │  │   [K] AD PAYMENT STATUS PANEL                     │  │
 │  │   [K1] Ad Completed  [K2] Ad Pending              │  │
-│  │   [K3] Ad Refunded  [K4] Ad Failed                │  │
+│  │   [K3] Ad Refunded                                │  │
 │  │                                                   │  │
 │  │   [L] AD FEE SUMMARY CARD                         │  │
 │  │   Active Ads / Total Collected / Pending          │  │
@@ -301,49 +302,50 @@ Each layout section below uses its own independent letter labels starting from [
 
 #### Section [J]: Payment Status Panel (決済ステータスパネル) — Tab 2
 
+Displays order payment statuses only (Completed, Pending). The "Failed" and "Refunded" badges were removed per Functional Spec v7.2 (DATABASE_SPEC v2.4: order `payment_status` is `pending`/`completed` only). The two remaining badges are evenly spaced in a single-row 2-column grid (`grid-cols-2`) so the panel stays balanced.
+
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 38 | `lblPayCompleted` | Completed Badge | Badge (`success`) | Integer | — | Skeleton while loading. | Count + label. | Payment aggregation | `bg-green-100 text-green-800`. |
-| 39 | `lblPayPending` | Pending Badge | Badge (`warning`) | Integer | — | Skeleton while loading. | Count + label. | Payment aggregation | `bg-amber-100 text-amber-800`. |
-| 40 | `lblPayFailed` | Failed Badge | Badge (`destructive`) | Integer | — | Skeleton while loading. | Count + label. | Payment aggregation | `bg-red-100 text-red-800`. |
-| 41 | `lblPayRefunded` | Refunded Badge | Badge (`secondary`) | Integer | — | Skeleton while loading. | Count + label. | Payment aggregation | Neutral styling. |
+| 38 | `lblPayCompleted` | Completed Badge | Badge (`success`) | Integer | — | Skeleton while loading. | Count + label. | Payment aggregation | `bg-green-100 text-green-800`. Rendered in the 2-column badge grid (left cell). |
+| 39 | `lblPayPending` | Pending Badge | Badge (`warning`) | Integer | — | Skeleton while loading. | Count + label. | Payment aggregation | `bg-amber-100 text-amber-800`. Rendered in the 2-column badge grid (right cell). |
 
 #### Section [K]: Ad Payment Status Panel (広告決済ステータスパネル) — Tab 2
 
+Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed" badge was removed per Functional Spec v7.2 (DATABASE_SPEC v2.4: ad `payment_status` is `pending`/`completed`/`refunded` only). The three remaining badges are evenly spaced in a single-row 3-column grid (`grid-cols-3`) so the panel stays balanced.
+
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 42 | `pnlAdPaymentStatus` | Ad Payment Status Panel | Panel | — | No | Skeleton while loading. | — | Ad payment status aggregation | Summary badges for ad fee payments alongside order payment status. i18n key: `revenue.adPaymentStatus`. |
-| 43 | `lblAdPayCompleted` | Ad Completed Badge | Badge (`success`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | `bg-green-100 text-green-800`. i18n key: `revenue.adPaymentCompleted`. |
-| 44 | `lblAdPayPending` | Ad Pending Badge | Badge (`warning`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | `bg-amber-100 text-amber-800`. i18n key: `revenue.adPaymentPending`. |
-| 45 | `lblAdPayRefunded` | Ad Refunded Badge | Badge (`secondary`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | Neutral styling. i18n key: `revenue.adPaymentRefunded`. |
-| 46 | `lblAdPayFailed` | Ad Failed Badge | Badge (`destructive`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | `bg-red-100 text-red-800`. i18n key: `revenue.adPaymentFailed`. |
+| 40 | `pnlAdPaymentStatus` | Ad Payment Status Panel | Panel | — | No | Skeleton while loading. | — | Ad payment status aggregation | Summary badges for ad fee payments alongside order payment status. Badges laid out in a single-row 3-column grid (`grid-cols-3`). i18n key: `revenue.adPaymentStatus`. |
+| 41 | `lblAdPayCompleted` | Ad Completed Badge | Badge (`success`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | `bg-green-100 text-green-800`. i18n key: `revenue.adPaymentCompleted`. |
+| 42 | `lblAdPayPending` | Ad Pending Badge | Badge (`warning`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | `bg-amber-100 text-amber-800`. i18n key: `revenue.adPaymentPending`. |
+| 43 | `lblAdPayRefunded` | Ad Refunded Badge | Badge (`secondary`) | Integer | — | Skeleton while loading. | Count + label. | Ad payment aggregation | Neutral styling. i18n key: `revenue.adPaymentRefunded`. |
 
 #### Section [L]: Ad Fee Summary Card (広告料金サマリーカード) — Tab 2
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 47 | `lblAdFeeSummary` | Ad Fee Summary Card | Card | — | No | Skeleton while loading. | — | Ad fee summary aggregation | Shows active ads, total collected, and pending payments. i18n key: `revenue.adFeeSummary`. |
+| 44 | `lblAdFeeSummary` | Ad Fee Summary Card | Card | — | No | Skeleton while loading. | — | Ad fee summary aggregation | Shows active ads, total collected, and pending payments. i18n key: `revenue.adFeeSummary`. |
 
 #### Section [M]: Payout Table (出金テーブル) — Tab 2
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 48 | `tblPayout` | Payout Table | Table | — | Mandatory | Skeleton while loading. | — | Payout records | Columns: Merchant, Total, Commission, Net, Status, Date, Action. |
-| 49 | `tblPayoutMerchant` | Merchant Column | Column | String(255) | — | — | — | `merchants.shop_name` via `payouts.merchant_id` | Merchant display name. |
-| 50 | `tblPayoutTotal` | Total Amount Column | Column | Decimal(12,2) | — | — | Currency string. | `payouts.total_amount` | Gross payout before deductions. |
-| 51 | `tblPayoutCommission` | Commission Column | Column | Decimal(12,2) | — | — | Currency string. | `payouts.commission_amount` | Platform commission deducted. |
-| 52 | `tblPayoutNet` | Net Amount Column | Column | Decimal(12,2) | — | — | Currency string. | Calculated: `total_amount - commission_amount` (ad fees excluded per BR-ADFE-004) | Net payout to merchant. |
-| 53 | `tblPayoutStatus` | Status Column | Column (Badge) | Enum | — | — | `pending` / `processing` / `completed` / `failed`. | Payout status | Badge color by status. |
-| 54 | `tblPayoutDate` | Date Column | Column | Timestamp | — | — | Locale-aware date format. | `payouts.created_at` | — |
-| 55 | `btnProcessPayout` | Process Button | Button (`primary`) | — | No | Visible only for `pending` rows. Disabled for others. Text: "Process" | — | — | Opens Payout Confirmation Dialog (Layout 3). i18n key: `revenue.process`. |
-| 56 | `pgPayout` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the payout table. |
+| 45 | `tblPayout` | Payout Table | Table | — | Mandatory | Skeleton while loading. | — | Payout records | Columns: Merchant, Total, Commission, Net, Status, Date, Action. |
+| 46 | `tblPayoutMerchant` | Merchant Column | Column | String(255) | — | — | — | `merchants.shop_name` via `payouts.merchant_id` | Merchant display name. |
+| 47 | `tblPayoutTotal` | Total Amount Column | Column | Decimal(12,2) | — | — | Currency string. | `payouts.total_amount` | Gross payout before deductions. |
+| 48 | `tblPayoutCommission` | Commission Column | Column | Decimal(12,2) | — | — | Currency string. | `payouts.commission_amount` | Platform commission deducted. |
+| 49 | `tblPayoutNet` | Net Amount Column | Column | Decimal(12,2) | — | — | Currency string. | Calculated: `total_amount - commission_amount` (ad fees excluded per BR-ADFE-004) | Net payout to merchant. |
+| 50 | `tblPayoutStatus` | Status Column | Column (Badge) | Enum | — | — | `pending` / `processing` / `completed` / `failed`. | Payout status | Badge color by status. |
+| 51 | `tblPayoutDate` | Date Column | Column | Timestamp | — | — | Locale-aware date format. | `payouts.created_at` | — |
+| 52 | `btnProcessPayout` | Process Button | Button (`primary`) | — | No | Visible only for `pending` rows. Disabled for others. Text: "Process" | — | — | Opens Payout Confirmation Dialog (Layout 3). i18n key: `revenue.process`. |
+| 53 | `pgPayout` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the payout table. |
 
 #### Section [N]: Footer Controls (フッターコントロール)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 57 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
-| 58 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
+| 54 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
+| 55 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
 
 
 
@@ -355,32 +357,32 @@ Each layout section below uses its own independent letter labels starting from [
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 21 | `dlgEditRate` | Edit Rate Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via Layout 1 `btnEditRate`. Close on save/cancel/backdrop. |
-| 22 | `lblRateTitle` | Dialog Title | Static Label | String | — | Text: "Edit Commission Rate" | — | Hardcoded UI text | i18n key: `commission.editRateTitle`. |
+| 56 | `dlgEditRate` | Edit Rate Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via Layout 1 `btnEditRate`. Close on save/cancel/backdrop. |
+| 57 | `lblRateTitle` | Dialog Title | Static Label | String | — | Text: "Edit Commission Rate" | — | Hardcoded UI text | i18n key: `commission.editRateTitle`. |
 
 #### Section [B]: Rate Input
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 23 | `txtRateInput` | Rate Input | Input (`number`) | Decimal(5,2) | Mandatory | Pre-filled with current rate. | Regex `/^\d+(\.\d{1,2})?$/`, 0 < value <= 100. | `commission_settings.commission_rate` | Rendered/transmitted as string. AutoFocus: true. i18n key: `commission.ratePlaceholder`. |
+| 58 | `txtRateInput` | Rate Input | Input (`number`) | Decimal(5,2) | Mandatory | Pre-filled with current rate. | Regex `/^\d+(\.\d{1,2})?$/`, 0 < value <= 100. | `commission_settings.commission_rate` | Rendered/transmitted as string. AutoFocus: true. i18n key: `commission.ratePlaceholder`. |
 
 #### Section [C]: Inline Field Error
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 24 | `errRateInput` | Inline Field Error | Text (conditional) | String | Conditional | Hidden. Shown on validation failure. | — | — | Error codes: VAL-COMM-001, VAL-COMM-002, VAL-COMM-003. |
+| 59 | `errRateInput` | Inline Field Error | Text (conditional) | String | Conditional | Hidden. Shown on validation failure. | — | — | Error codes: VAL-COMM-001, VAL-COMM-002, VAL-COMM-003. |
 
 #### Section [D]: Cancel Button
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 25 | `btnRateCancel` | Cancel Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without saving. i18n key: `commission.cancel`. |
+| 60 | `btnRateCancel` | Cancel Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without saving. i18n key: `commission.cancel`. |
 
 #### Section [E]: Save Button
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 26 | `btnRateSave` | Save Button | Button (`primary`) | — | Mandatory | Visible. Text: "Save" | — | — | Validates and submits rate update. Loading: Spinner + disabled. i18n key: `commission.save`. |
+| 61 | `btnRateSave` | Save Button | Button (`primary`) | — | Mandatory | Visible. Text: "Save" | — | — | Validates and submits rate update. Loading: Spinner + disabled. i18n key: `commission.save`. |
 
 ---
 
@@ -390,26 +392,26 @@ Each layout section below uses its own independent letter labels starting from [
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 69 | `dlgPayoutConfirm` | Confirmation Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via Layout 1 `btnProcessPayout`. Confirm/cancel/backdrop closes. |
-| 70 | `lblPayoutConfirmMsg` | Confirmation Message | Static Label | String | — | Text: "Process payout for {merchant}?" | — | Hardcoded UI text | i18n key: `revenue.confirmMessage`. |
+| 62 | `dlgPayoutConfirm` | Confirmation Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via Layout 1 `btnProcessPayout`. Confirm/cancel/backdrop closes. |
+| 63 | `lblPayoutConfirmMsg` | Confirmation Message | Static Label | String | — | Text: "Process payout for {merchant}?" | — | Hardcoded UI text | i18n key: `revenue.confirmMessage`. |
 
 #### Section [B]: Payout Amount
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 71 | `txtPayoutAmount` | Payout Amount | Static Label | Decimal(12,2) | — | Shows net payout amount. | Currency string. | `payouts.total_amount - payouts.commission_amount` (ad fees excluded per BR-ADFE-004) | Read-only summary of the amount payable to the merchant. |
+| 64 | `txtPayoutAmount` | Payout Amount | Static Label | Decimal(12,2) | — | Shows net payout amount. | Currency string. | `payouts.total_amount - payouts.commission_amount` (ad fees excluded per BR-ADFE-004) | Read-only summary of the amount payable to the merchant. |
 
 #### Section [C]: Cancel Button
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 72 | `btnPayoutCancel` | Cancel Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without processing. i18n key: `revenue.cancel`. |
+| 65 | `btnPayoutCancel` | Cancel Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without processing. i18n key: `revenue.cancel`. |
 
 #### Section [D]: Confirm Button
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 73 | `btnPayoutConfirm` | Confirm Button | Button (`primary`) | — | Mandatory | Visible. Text: "Confirm" | — | — | Submits payout processing. Loading: Spinner + disabled. i18n key: `revenue.confirm`. |
+| 66 | `btnPayoutConfirm` | Confirm Button | Button (`primary`) | — | Mandatory | Visible. Text: "Confirm" | — | — | Submits payout processing. Loading: Spinner + disabled. i18n key: `revenue.confirm`. |
 
 ---
 
@@ -419,38 +421,38 @@ Each layout section below uses its own independent letter labels starting from [
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 74 | `dlgEditTarget` | Edit Target Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via Layout 1 `btnEditTarget`. Close on save/cancel/backdrop. |
-| 75 | `lblTargetTitle` | Dialog Title | Static Label | String | — | Text: "Edit Revenue Target" | — | Hardcoded UI text | i18n key: `revenue.editTarget`. |
+| 67 | `dlgEditTarget` | Edit Target Dialog | Dialog (Modal) | — | — | Closed by default. | — | — | Open via Layout 1 `btnEditTarget`. Close on save/cancel/backdrop. |
+| 68 | `lblTargetTitle` | Dialog Title | Static Label | String | — | Text: "Edit Revenue Target" | — | Hardcoded UI text | i18n key: `revenue.editTarget`. |
 
 #### Section [B]: Target Amount Input
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 76 | `txtTargetAmount` | Target Amount Input | Input (`number`) | Decimal(12,2) | Mandatory | Pre-filled with current target amount (if any). | Regex `/^\d+(\.\d{1,2})?$/`, value > 0. | `revenue_targets.target_amount` | Rendered/transmitted as string. AutoFocus: true. i18n key: `revenue.targetPlaceholder`. |
+| 69 | `txtTargetAmount` | Target Amount Input | Input (`number`) | Decimal(12,2) | Mandatory | Pre-filled with current target amount (if any). | Regex `/^\d+(\.\d{1,2})?$/`, value > 0. | `revenue_targets.target_amount` | Rendered/transmitted as string. AutoFocus: true. i18n key: `revenue.targetPlaceholder`. |
 
 #### Section [C]: Inline Field Error
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 77 | `errTargetAmount` | Inline Field Error | Text (conditional) | String | Conditional | Hidden. Shown on validation failure. | — | — | Error codes: VAL-COMM-007, VAL-COMM-008. |
+| 70 | `errTargetAmount` | Inline Field Error | Text (conditional) | String | Conditional | Hidden. Shown on validation failure. | — | — | Error codes: VAL-COMM-007, VAL-COMM-008. |
 
 #### Section [D]: Target Period Select
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 78 | `selTargetPeriod` | Target Period Select | Select | Enum | Mandatory | Default: current target period or `monthly`. | Options: `monthly`, `quarterly`. | `revenue_targets.period` | i18n key: `revenue.targetPeriodLabel`. |
+| 71 | `selTargetPeriod` | Target Period Select | Select | Enum | Mandatory | Default: current target period or `monthly`. | Options: `monthly`, `quarterly`. | `revenue_targets.period` | i18n key: `revenue.targetPeriodLabel`. |
 
 #### Section [E]: Cancel Button
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 79 | `btnTargetCancel` | Cancel Target Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without saving. i18n key: `revenue.cancelTarget`. |
+| 72 | `btnTargetCancel` | Cancel Target Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes dialog without saving. i18n key: `revenue.cancelTarget`. |
 
 #### Section [F]: Save Button
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 80 | `btnTargetSave` | Save Target Button | Button (`primary`) | — | Mandatory | Visible. Text: "Save" | — | — | Validates and submits target upsert (overwrites existing for same period, BR-REV-009). Loading: Spinner + disabled. i18n key: `revenue.saveTarget`. |
+| 73 | `btnTargetSave` | Save Target Button | Button (`primary`) | — | Mandatory | Visible. Text: "Save" | — | — | Validates and submits target upsert (overwrites existing for same period, BR-REV-009). Loading: Spinner + disabled. i18n key: `revenue.saveTarget`. |
 
 ---
 
@@ -753,9 +755,7 @@ Each layout section below uses its own independent letter labels starting from [
     ],
     "payments": {
       "completed": 120,
-      "pending": 8,
-      "failed": 2,
-      "refunded": 3
+      "pending": 8
     }
   }
 }
@@ -955,8 +955,6 @@ Each layout section below uses its own independent letter labels starting from [
 | `revenue.range1y` | "1y" |
 | `revenue.payCompleted` | "Completed" |
 | `revenue.payPending` | "Pending" |
-| `revenue.payFailed` | "Failed" |
-| `revenue.payRefunded` | "Refunded" |
 | `revenue.process` | "Process" |
 | `revenue.confirmMessage` | "Process payout for {merchant}?" |
 | `revenue.confirm` | "Confirm" |
@@ -1027,8 +1025,6 @@ Each layout section below uses its own independent letter labels starting from [
 | `revenue.range1y` | "1年" |
 | `revenue.payCompleted` | "完了" |
 | `revenue.payPending` | "保留中" |
-| `revenue.payFailed` | "失敗" |
-| `revenue.payRefunded` | "返金" |
 | `revenue.process` | "処理" |
 | `revenue.confirmMessage` | "{merchant} の出金を処理しますか？" |
 | `revenue.confirm` | "確認" |
@@ -1142,6 +1138,7 @@ Each layout section below uses its own independent letter labels starting from [
 - **Revenue Target Gauge:** Progress above 100% is clamped for gauge display and shown separately as "over target" (BR-REV-008). Only one active target per period type is stored; saving for the same period overwrites it (BR-REV-009).
 - **AI Forecast:** Forecast values are non-committing estimates — they are never written back to financial records or used in KPI/aggregation calculations (BR-REV-015). The dotted line is hidden with an informational note when historical data is insufficient (BR-REV-014).
 - **Ad Fee Revenue:** Ad fee revenue is displayed as a separate KPI card and included in total platform income. Ad fee trend series is overlaid on the revenue chart as a separate line. Ad fee payment statuses (completed, pending, refunded) are summarized alongside order payment statuses in a dedicated panel.
+- **Payment Status Panels:** The order payment panel renders only Completed and Pending badges in a single-row 2-column grid; the ad payment panel renders Completed, Pending, and Refunded badges in a single-row 3-column grid. The "Failed" / "Refunded" order badges and the "Ad Failed" badge are intentionally omitted — grid columns and gaps were rebalanced so both panels remain visually aligned across all breakpoints.
 
 ---
 
@@ -1173,7 +1170,8 @@ Each layout section below uses its own independent letter labels starting from [
 - [ ] Trend chart renders revenue and commission series
 - [ ] Range toggle defaults to `30d`
 - [ ] Changing range to `7d` / `90d` / `1y` refetches and updates chart
-- [ ] Payment status badges show correct counts and colors
+- [ ] Payment status panel shows only Completed and Pending badges with correct counts and colors (no Failed/Refunded badges)
+- [ ] Payment status panel and ad payment panel badges align neatly in their grids at mobile/tablet/desktop breakpoints
 - [ ] Payout table shows merchant, amount, status, and date
 - [ ] Process button visible only for pending payouts
 - [ ] Process button disabled for non-pending payouts
@@ -1198,7 +1196,7 @@ Each layout section below uses its own independent letter labels starting from [
 - [ ] Forecast values never affect KPI or aggregation totals
 - [ ] Ad fee KPI card displays correct value with currency formatting
 - [ ] Ad fee trend series renders on the chart alongside commission series
-- [ ] Ad payment status panel shows correct counts and colors for completed, pending, and refunded
+- [ ] Ad payment status panel shows only Completed, Pending, and Refunded badges with correct counts and colors (no Ad Failed badge)
 - [ ] Ad fee summary card displays correctly with active ads, total collected, and pending payments
 - [ ] Total income card shows combined commission + ad fees
 - [ ] Changing range refetches ad fee trend data
