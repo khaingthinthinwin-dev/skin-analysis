@@ -10,9 +10,9 @@
 | **Target Screen** | Purchase & Checkout (購入・チェックアウト) |
 | **Subsystem** | Buyer Module — Checkout, Order Placement & Order History |
 | **Function ID** | FN-CHECK-001, FN-ORDER-001 |
-| **Version** | 1.1 |
+| **Version** | 1.2 |
 | **Created** | 2026-08-17 |
-| **Last Updated** | 2026-08-18 |
+| **Last Updated** | 2026-08-24 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -23,6 +23,7 @@
 
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
+| 1.2 | 2026-08-23 | Software Architect | Removed shipping fee and tax fee from checkout calculation. Total is now calculated as subtotal - discount. |
 | 1.1 | 2026-08-18 | Software Architect | Added checkout persistence design for cart conversion, inventory transaction logging, and order status history tracking. |
 | 1.0 | 2026-08-17 | Software Architect | Initial functional specification for Purchase and Checkout pages covering use cases, business rules, validation, error handling, and permission control. Aligned with REQUIREMENT_SPEC v1.5, DATABASE_SPEC v2.0, and DEVELOPMENT_RULES v2.0. |
 
@@ -62,7 +63,7 @@ This screen is responsible for the following core functional areas:
 
 1. **Checkout Flow** — Guiding the user through shipping address entry, payment method selection, coupon application, and order summary review before final confirmation.
 2. **Coupon Validation** — Validating and applying discount codes (percentage or fixed) at checkout, enforcing expiry, minimum order amount, and single-use constraints.
-3. **Order Calculation** — Computing subtotal, discount amount, shipping cost, tax, and final total based on cart items, applied coupons, and tax rules.
+3. **Order Calculation** — Computing subtotal, discount amount, and final total based on cart items and applied coupons.
 4. **Order Placement** — Creating order records with status `placed`, decrementing stock atomically, clearing the cart, and returning order confirmation.
 5. **Order History** — Displaying a paginated list of all past orders with status, date, total, and item count.
 6. **Order Details** — Showing full order information including items, shipping address, payment status, and order timeline.
@@ -148,8 +149,7 @@ This screen is responsible for the following core functional areas:
 | UC-CHECK-004 | Place Order | User is on checkout page. Shipping address valid. Payment method selected. Stock validated. | Order created with status `placed`. Stock decremented. Cart cleared. Order confirmation displayed. | Authenticated Buyer |
 | UC-CHECK-005 | View Order History | User is authenticated. User has past orders. | Paginated order list displayed with status, date, total, and item count. | Authenticated Buyer |
 | UC-CHECK-006 | View Order Detail | User is authenticated. Order exists and belongs to user. | Full order detail displayed with items, shipping address, payment status, and timeline. | Authenticated Buyer |
-| UC-CHECK-007 | Track Order | User is authenticated. Order exists and is not `cancelled`. | Order tracking timeline displayed with current status and estimated delivery. | Authenticated Buyer |
-| UC-CHECK-008 | Cancel Order | User is authenticated. Order status is `placed` or `confirmed`. | Order status updated to `cancelled`. Stock replenished. | Authenticated Buyer |
+| UC-CHECK-007 | Track Order | User is authenticated. Order exists. | Order tracking timeline displayed with current status and estimated delivery. | Authenticated Buyer |
 
 ### 2.2 Primary Business Workflow — Checkout
 
@@ -207,7 +207,7 @@ This screen is responsible for the following core functional areas:
      │  2. Enter Shipping Address                       　    │
      │  3. Select Payment Method                         　   │
      │  4. Apply Coupon Code (optional)                  　   │
-     │  5. Review Total (subtotal - discount + shipping + tax)│
+      │  5. Review Total (subtotal - discount)                               　│
      │  6. Click "Place Order"                              　│
      └──────────────────┬─────────────────────────────────────┘
                         │
@@ -312,8 +312,8 @@ This screen is responsible for the following core functional areas:
 | B-CHECK-001 | User can enter shipping address |
 | B-CHECK-002 | User can select payment method |
 | B-CHECK-003 | User can review order before confirming |
-| B-CHECK-004 | System calculates subtotal, shipping, tax, total |
-| B-CHECK-005 | Order is created with status "pending" |
+| B-CHECK-004 | System calculates subtotal, discount, total |
+| B-CHECK-005 | Order is created with status "placed" |
 | B-CHECK-006 | Stock is decremented on order creation |
 | B-CHECK-007 | User can view order confirmation |
 | B-CHECK-008 | User can view order history |
@@ -334,7 +334,6 @@ This screen is responsible for the following core functional areas:
 | `shipped` | Order sent to courier | ✗ | ✓ (to `out_for_delivery`) | ✓ |
 | `out_for_delivery` | Order on the way to buyer | ✗ | ✗ | ✓ |
 | `delivered` | Buyer received order | ✗ | ✗ | ✓ |
-| `cancelled` | Order cancelled (buyer or merchant) | ✗ | ✗ | ✓ |
 
 ### 3.2 Payment Status States
 
@@ -354,9 +353,6 @@ This screen is responsible for the following core functional areas:
 | TR-ORDER-03 | `packed` | `shipped` | Merchant ships order | Courier assigned, tracking number provided |
 | TR-ORDER-04 | `shipped` | `out_for_delivery` | Courier dispatches for delivery | — |
 | TR-ORDER-05 | `out_for_delivery` | `delivered` | Buyer receives order | Buyer confirms or auto-confirm after 7 days |
-| TR-ORDER-06 | `placed` | `cancelled` | Buyer cancels order | Before `shipped` status |
-| TR-ORDER-07 | `confirmed` | `cancelled` | Merchant cancels order | Before `shipped` status, reason required |
-| TR-ORDER-08 | `cancelled` | — | Stock replenishment | Automatic stock return on cancellation |
 
 ### 3.4 Checkout Form States
 
@@ -386,14 +382,12 @@ This screen is responsible for the following core functional areas:
 | BR-CHECK-007 | Price Lock | Order total is calculated at order creation time using current DB prices. Cart prices are informational only. | Backend (order service) |
 | BR-CHECK-008 | Subtotal Calculation | Subtotal = sum of (unit_price × quantity) for all items. | Backend (computed field) |
 | BR-CHECK-009 | Discount Calculation | Discount is calculated after subtotal, based on applied coupon. Percentage discount: subtotal × (discount_value / 100). Fixed discount: discount_value (capped at subtotal). | Backend (order service) |
-| BR-CHECK-010 | Shipping Cost | Shipping cost is calculated based on order total and destination. (Stubbed: flat rate for MVP.) | Backend (order service) |
-| BR-CHECK-011 | Tax Calculation | Tax = (subtotal - discount) × tax_rate. (Stubbed: 0% for MVP.) | Backend (order service) |
-| BR-CHECK-012 | Total Calculation | total = subtotal - discount + shipping + tax. Total must be > 0. | Backend (order service) |
-| BR-CHECK-013 | Atomic Stock Decrement | Stock is decremented atomically within the order transaction. If any item fails stock check, entire order is rejected. | Backend (Prisma transaction) |
-| BR-CHECK-014 | Cart Clearance | Successful order placement clears all items from the user's cart. | Backend (order service) |
-| BR-CHECK-015 | Order Confirmation | Order confirmation page displays order ID, status, items, and total. | Frontend |
-| BR-CHECK-016 | Checkout Persistence Atomicity | Creation of an order, order items, initial status history, inventory transactions, product stock updates, coupon usage update, and cart-item deletion must commit or roll back as one database transaction. | Backend (Prisma transaction) |
-| BR-CHECK-017 | Immutable Order Snapshot | Each `order_items` row copies the cart item quantity and the current authoritative product price at checkout. Later changes to `cart_items` or `products` must not alter the order. | Backend (order service) |
+| BR-CHECK-010 | Total Calculation | total = subtotal - discount. Total must be > 0. | Backend (order service) |
+| BR-CHECK-011 | Atomic Stock Decrement | Stock is decremented atomically within the order transaction. If any item fails stock check, entire order is rejected. | Backend (Prisma transaction) |
+| BR-CHECK-012 | Cart Clearance | Successful order placement clears all items from the user's cart. | Backend (order service) |
+| BR-CHECK-013 | Order Confirmation | Order confirmation page displays order ID, status, items, and total. | Frontend |
+| BR-CHECK-014 | Checkout Persistence Atomicity | Creation of an order, order items, initial status history, inventory transactions, product stock updates, coupon usage update, and cart-item deletion must commit or roll back as one database transaction. | Backend (Prisma transaction) |
+| BR-CHECK-015 | Immutable Order Snapshot | Each `order_items` row copies the cart item quantity and the current authoritative product price at checkout. Later changes to `cart_items` or `products` must not alter the order. | Backend (order service) |
 
 ### 4.2 Coupon Rules
 
@@ -417,25 +411,14 @@ This screen is responsible for the following core functional areas:
 | BR-HIST-002 | Pagination | Order history is paginated with default 10 items per page. | Backend (query params) |
 | BR-HIST-003 | Sort Order | Orders are sorted by created_at descending (newest first). | Backend (default query) |
 
-### 4.4 Order Cancellation Rules
-
-| Rule ID | Rule Name | Description | Enforcement Layer |
-|---------|-----------|-------------|-------------------|
-| BR-CANCEL-001 | Buyer Cancellation | Buyers can cancel orders with status `placed` or `confirmed`. | Backend (service validation) |
-| BR-CANCEL-002 | Stock Replenishment | On cancellation, stock is replenished atomically. | Backend (Prisma transaction) |
-| BR-CANCEL-003 | Coupon Restoration | On cancellation, if a coupon was used, the coupon used_count is decremented. | Backend (Prisma transaction) |
-| BR-CANCEL-004 | Cancellation Notification | On cancellation, a notification is sent to the merchant. | Backend (notifications service) |
-| BR-CANCEL-005 | Cancellation Persistence Atomicity | Status update, cancellation history, stock restoration, restoration inventory transactions, and coupon restoration (if applicable) are committed or rolled back together. | Backend (Prisma transaction) |
-
 ### 4.5 Display Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-DISP-001 | Order Status Badge | Display order status with color-coded badge (placed: blue, confirmed: yellow, shipped: purple, delivered: green, cancelled: red). | Frontend |
+| BR-DISP-001 | Order Status Badge | Display order status with color-coded badge (placed: blue, confirmed: yellow, shipped: purple, delivered: green). | Frontend |
 | BR-DISP-002 | Price Formatting | Display all prices with locale-appropriate currency formatting. | Frontend (i18n) |
 | BR-DISP-003 | Order Timeline | Display order status timeline as vertical stepper with timestamps. | Frontend |
 | BR-DISP-004 | Estimated Delivery | Show estimated delivery date for orders in `shipped` or `out_for_delivery` status. | Frontend |
-| BR-DISP-005 | Cancel Button | Show "Cancel Order" button only for orders in `placed` or `confirmed` status. | Frontend |
 
 ---
 
@@ -463,31 +446,29 @@ This screen is responsible for the following core functional areas:
 | EL-10 | Apply Coupon Button | Button (secondary) | `checkout.applyCoupon` | No | Validate and apply coupon |
 | EL-11 | Discount Amount | Text (green) | `checkout.discount` | Conditional | "-$X.XX" if coupon applied |
 | EL-12 | Remove Coupon Button | Button (ghost) | `checkout.removeCoupon` | Conditional | Remove applied coupon |
-| EL-13 | Shipping Cost | Text | `checkout.shipping` | Yes | Shipping fee |
-| EL-14 | Tax Amount | Text | `checkout.tax` | Yes | Tax amount |
-| EL-15 | Total Amount | Text (bold) | `checkout.total` | Yes | Final total amount |
-| EL-16 | Recipient Name | Input (text) | `checkout.recipientName` | Yes | Name of person receiving the order |
-| EL-17 | Phone Number | Input (tel) | `checkout.phone` | Yes | Contact phone for delivery |
-| EL-18 | Address Line 1 | Input (text) | `checkout.address1` | Yes | Street address |
-| EL-19 | Address Line 2 | Input (text) | `checkout.address2` | No | Apartment, suite, unit, etc. |
-| EL-20 | City | Input (text) | `checkout.city` | Yes | City or municipality |
-| EL-21 | State/Province | Input (text) | `checkout.state` | Yes | State or province |
-| EL-22 | Postal Code | Input (text) | `checkout.postalCode` | Yes | ZIP or postal code |
-| EL-23 | Country | Select | `checkout.country` | Yes | Country selection dropdown |
-| EL-24 | Payment Method | Radio Group | `checkout.paymentMethod` | Yes | Payment method selection |
-| EL-25 | Cash on Delivery | Radio Button | `checkout.cod` | Yes | Pay when order arrives |
-| EL-26 | Bank Transfer | Radio Button | `checkout.bankTransfer` | Yes | Pay via bank transfer |
-| EL-27 | Card Payment | Radio Button | `checkout.cardPayment` | Yes | Credit/debit card (stubbed) |
-| EL-28 | Order Notes | Textarea | `checkout.notes` | No | Optional notes for merchant |
-| EL-29 | Place Order Button | Button (primary, large) | `checkout.placeOrder` | Yes | Submit order |
-| EL-30 | Back to Cart Link | Link | `checkout.backToCart` | Yes | "← Back to Cart" |
-| EL-31 | Guest Login Alert Modal | Dialog/Modal | `checkout.guestLoginAlert` | Conditional | Alert modal for unauthenticated users: "Please log in to complete your purchase." with [Log in] button navigating to `/login` |
-| EL-32 | Loading Overlay | Overlay | — | Conditional | Shown during order submission |
-| EL-33 | Stock Warning Alert | Alert | — | Conditional | "Some items have changed stock availability" |
+| EL-13 | Total Amount | Text (bold) | `checkout.total` | Yes | Final total amount |
+| EL-14 | Recipient Name | Input (text) | `checkout.recipientName` | Yes | Name of person receiving the order |
+| EL-15 | Phone Number | Input (tel) | `checkout.phone` | Yes | Contact phone for delivery |
+| EL-16 | Address Line 1 | Input (text) | `checkout.address1` | Yes | Street address |
+| EL-17 | Address Line 2 | Input (text) | `checkout.address2` | No | Apartment, suite, unit, etc. |
+| EL-18 | City | Input (text) | `checkout.city` | Yes | City or municipality |
+| EL-19 | State/Province | Input (text) | `checkout.state` | Yes | State or province |
+| EL-20 | Postal Code | Input (text) | `checkout.postalCode` | Yes | ZIP or postal code |
+| EL-21 | Country | Select | `checkout.country` | Yes | Country selection dropdown |
+| EL-22 | Payment Method | Radio Group | `checkout.paymentMethod` | Yes | Payment method selection |
+| EL-23 | Cash on Delivery | Radio Button | `checkout.cod` | Yes | Pay when order arrives |
+| EL-24 | Bank Transfer | Radio Button | `checkout.bankTransfer` | Yes | Pay via bank transfer |
+| EL-25 | Card Payment | Radio Button | `checkout.cardPayment` | Yes | Credit/debit card (stubbed) |
+| EL-26 | Order Notes | Textarea | `checkout.notes` | No | Optional notes for merchant |
+| EL-27 | Place Order Button | Button (primary, large) | `checkout.placeOrder` | Yes | Submit order |
+| EL-28 | Back to Cart Link | Link | `checkout.backToCart` | Yes | "← Back to Cart" |
+| EL-29 | Guest Login Alert Modal | Dialog/Modal | `checkout.guestLoginAlert` | Conditional | Alert modal for unauthenticated users: "Please log in to complete your purchase." with [Log in] button navigating to `/login` |
+| EL-30 | Loading Overlay | Overlay | — | Conditional | Shown during order submission |
+| EL-31 | Stock Warning Alert | Alert | — | Conditional | "Some items have changed stock availability" |
 
 **Default State:**
 - Order items displayed in summary with thumbnails and quantities
-- Subtotal, shipping, tax, and total calculated and displayed
+- Subtotal, and total calculated and displayed
 - Shipping address form with required fields
 - Payment method defaults to "Cash on Delivery"
 - Place Order button disabled until form is valid
@@ -503,15 +484,15 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-34 | Success Icon | Icon (checkmark) | — | Yes | Large green checkmark |
-| EL-35 | Success Title | Heading (h1) | `checkout.confirmation.title` | Yes | "Order Placed Successfully!" |
-| EL-36 | Order ID | Text | `checkout.confirmation.orderId` | Yes | "Order #ABC-12345" |
-| EL-37 | Order Status | Badge | `checkout.confirmation.status` | Yes | "Placed" status badge |
-| EL-38 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | "Estimated delivery: Aug 20, 2026" |
-| EL-39 | Order Summary Card | Card | — | Yes | Items, totals, shipping address |
-| EL-40 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigate to /products |
-| EL-41 | View Order Button | Button (secondary) | `checkout.confirmation.viewOrder` | Yes | Navigate to /orders/:orderId |
-| EL-42 | Print Receipt Button | Button (ghost) | `checkout.confirmation.print` | No | Print order confirmation |
+| EL-32 | Success Icon | Icon (checkmark) | — | Yes | Large green checkmark |
+| EL-33 | Success Title | Heading (h1) | `checkout.confirmation.title` | Yes | "Order Placed Successfully!" |
+| EL-34 | Order ID | Text | `checkout.confirmation.orderId` | Yes | "Order #ABC-12345" |
+| EL-35 | Order Status | Badge | `checkout.confirmation.status` | Yes | "Placed" status badge |
+| EL-36 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | "Estimated delivery: Aug 20, 2026" |
+| EL-37 | Order Summary Card | Card | — | Yes | Items, totals, shipping address |
+| EL-38 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigate to /products |
+| EL-39 | View Order Button | Button (secondary) | `checkout.confirmation.viewOrder` | Yes | Navigate to /orders/:orderId |
+| EL-40 | Print Receipt Button | Button (ghost) | `checkout.confirmation.print` | No | Print order confirmation |
 
 **Default State:**
 - Success animation on load
@@ -529,25 +510,23 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-43 | Page Title | Heading (h1) | `orders.title` | Yes | "Order History" / "注文履歴" |
-| EL-44 | Order Count | Text | `orders.orderCount` | Yes | "{count} orders" |
-| EL-45 | Orders Table | Table | — | Yes | Table of order rows |
-| EL-46 | Order Row | Row | — | Yes | Order ID, date, status, items count, total, actions |
-| EL-47 | Order ID | Text (link) | — | Yes | Clickable order ID linking to detail |
-| EL-48 | Order Date | Text | — | Yes | Formatted order date |
-| EL-49 | Order Status | Badge | — | Yes | Color-coded status badge |
-| EL-50 | Item Count | Text | — | Yes | Number of items in order |
-| EL-51 | Order Total | Text | — | Yes | Total amount with currency |
-| EL-52 | View Detail Button | Button (ghost) | `orders.viewDetail` | Yes | Navigate to order detail |
-| EL-53 | Cancel Button | Button (ghost/danger) | `orders.cancel` | Conditional | Show only for cancellable orders |
-| EL-54 | Empty State | EmptyState | `orders.empty` | Conditional | "No orders yet. Start shopping!" |
-| EL-55 | Pagination | Pagination | — | Conditional | Page navigation (if > 1 page) |
-| EL-56 | Loading Skeleton | Skeleton | — | Conditional | Shown while loading order data |
+| EL-41 | Page Title | Heading (h1) | `orders.title` | Yes | "Order History" / "注文履歴" |
+| EL-42 | Order Count | Text | `orders.orderCount` | Yes | "{count} orders" |
+| EL-43 | Orders Table | Table | — | Yes | Table of order rows |
+| EL-44 | Order Row | Row | — | Yes | Order ID, date, status, items count, total, actions |
+| EL-45 | Order ID | Text (link) | — | Yes | Clickable order ID linking to detail |
+| EL-46 | Order Date | Text | — | Yes | Formatted order date |
+| EL-47 | Order Status | Badge | — | Yes | Color-coded status badge |
+| EL-48 | Item Count | Text | — | Yes | Number of items in order |
+| EL-49 | Order Total | Text | — | Yes | Total amount with currency |
+| EL-50 | View Detail Button | Button (ghost) | `orders.viewDetail` | Yes | Navigate to order detail |
+| EL-52 | Empty State | EmptyState | `orders.empty` | Conditional | "No orders yet. Start shopping!" |
+| EL-53 | Pagination | Pagination | — | Conditional | Page navigation (if > 1 page) |
+| EL-54 | Loading Skeleton | Skeleton | — | Conditional | Shown while loading order data |
 
 **Default State:**
 - Orders displayed in table sorted by newest first
 - Status badges with color coding
-- Cancel button shown only for `placed` or `confirmed` orders
 - Pagination controls at bottom
 
 ### 5.4 Screen: Order Detail Page (`/orders/:orderId`)
@@ -560,31 +539,27 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-57 | Page Title | Heading (h1) | `orderDetail.title` | Yes | "Order Detail" / "注文詳細" |
-| EL-58 | Order ID | Text | `orderDetail.orderId` | Yes | "Order #ABC-12345" |
-| EL-59 | Order Date | Text | `orderDetail.orderDate` | Yes | Formatted order date |
-| EL-60 | Order Status | Badge | `orderDetail.status` | Yes | Current status badge |
-| EL-61 | Order Items Section | Container | — | Yes | List of ordered products |
-| EL-62 | Order Item Row | Row | — | Yes | Product image, name, quantity, unit price, line total |
-| EL-63 | Subtotal | Text | `orderDetail.subtotal` | Yes | Sum of line totals |
-| EL-64 | Discount | Text (green) | `orderDetail.discount` | Conditional | Discount amount if coupon applied |
-| EL-65 | Shipping Cost | Text | `orderDetail.shipping` | Yes | Shipping fee |
-| EL-66 | Tax | Text | `orderDetail.tax` | Yes | Tax amount |
-| EL-67 | Total Amount | Text (bold) | `orderDetail.total` | Yes | Final total |
-| EL-68 | Shipping Address Card | Card | — | Yes | Recipient name, phone, full address |
-| EL-69 | Payment Info Card | Card | — | Yes | Payment method and status |
-| EL-70 | Order Notes | Text | `orderDetail.notes` | Conditional | Buyer's notes if provided |
-| EL-71 | Order Timeline | Timeline/Stepper | — | Yes | Vertical status timeline with timestamps |
-| EL-72 | Timeline Step | Step Item | — | Yes | Status name, timestamp, description |
-| EL-73 | Tracking Number | Text | `orderDetail.trackingNumber` | Conditional | Courier tracking number (if shipped) |
-| EL-74 | Estimated Delivery | Text | `orderDetail.estimatedDelivery` | Conditional | Estimated delivery date |
-| EL-75 | Cancel Order Button | Button (danger) | `orderDetail.cancel` | Conditional | Show only for cancellable orders |
-| EL-76 | Back to Orders Link | Link | `orderDetail.backToOrders` | Yes | "← Back to Orders" |
+| EL-55 | Page Title | Heading (h1) | `orderDetail.title` | Yes | "Order Detail" / "注文詳細" |
+| EL-56 | Order ID | Text | `orderDetail.orderId` | Yes | "Order #ABC-12345" |
+| EL-57 | Order Date | Text | `orderDetail.orderDate` | Yes | Formatted order date |
+| EL-58 | Order Status | Badge | `orderDetail.status` | Yes | Current status badge |
+| EL-59 | Order Items Section | Container | — | Yes | List of ordered products |
+| EL-60 | Order Item Row | Row | — | Yes | Product image, name, quantity, unit price, line total |
+| EL-61 | Subtotal | Text | `orderDetail.subtotal` | Yes | Sum of line totals |
+| EL-62 | Discount | Text (green) | `orderDetail.discount` | Conditional | Discount amount if coupon applied |
+| EL-63 | Total Amount | Text (bold) | `orderDetail.total` | Yes | Final total |
+| EL-64 | Shipping Address Card | Card | — | Yes | Recipient name, phone, full address |
+| EL-65 | Payment Info Card | Card | — | Yes | Payment method and status |
+| EL-66 | Order Notes | Text | `orderDetail.notes` | Conditional | Buyer's notes if provided |
+| EL-67 | Order Timeline | Timeline/Stepper | — | Yes | Vertical status timeline with timestamps |
+| EL-68 | Timeline Step | Step Item | — | Yes | Status name, timestamp, description |
+| EL-69 | Tracking Number | Text | `orderDetail.trackingNumber` | Conditional | Courier tracking number (if shipped) |
+| EL-70 | Estimated Delivery | Text | `orderDetail.estimatedDelivery` | Conditional | Estimated delivery date |
+| EL-72 | Back to Orders Link | Link | `orderDetail.backToOrders` | Yes | "← Back to Orders" |
 
 **Default State:**
 - Full order details displayed
 - Timeline showing current status
-- Cancel button shown only for `placed` or `confirmed` orders
 
 ### 5.5 Screen: Order Tracking Page (`/orders/:orderId/tracking`)
 
@@ -596,15 +571,15 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-77 | Page Title | Heading (h1) | `tracking.title` | Yes | "Track Order" / "注文追踪" |
-| EL-78 | Order ID | Text | `tracking.orderId` | Yes | "Order #ABC-12345" |
-| EL-79 | Current Status | Badge (large) | `tracking.currentStatus` | Yes | Current status with icon |
-| EL-80 | Tracking Timeline | Timeline/Stepper | — | Yes | Full status timeline |
-| EL-81 | Timeline Step | Step Item | — | Yes | Status icon, name, timestamp, description |
-| EL-82 | Estimated Delivery Card | Card | — | Conditional | Estimated delivery date and carrier info |
-| EL-83 | Tracking Number | Text | `tracking.trackingNumber` | Conditional | Courier tracking number |
-| EL-84 | Carrier Name | Text | `tracking.carrier` | Conditional | Shipping carrier name |
-| EL-85 | Back to Order Link | Link | `tracking.backToOrder` | Yes | "← Back to Order Detail" |
+| EL-73 | Page Title | Heading (h1) | `tracking.title` | Yes | "Track Order" / "注文追踪" |
+| EL-74 | Order ID | Text | `tracking.orderId` | Yes | "Order #ABC-12345" |
+| EL-75 | Current Status | Badge (large) | `tracking.currentStatus` | Yes | Current status with icon |
+| EL-76 | Tracking Timeline | Timeline/Stepper | — | Yes | Full status timeline |
+| EL-77 | Timeline Step | Step Item | — | Yes | Status icon, name, timestamp, description |
+| EL-78 | Estimated Delivery Card | Card | — | Conditional | Estimated delivery date and carrier info |
+| EL-79 | Tracking Number | Text | `tracking.trackingNumber` | Conditional | Courier tracking number |
+| EL-80 | Carrier Name | Text | `tracking.carrier` | Conditional | Shipping carrier name |
+| EL-81 | Back to Order Link | Link | `tracking.backToOrder` | Yes | "← Back to Order Detail" |
 
 ---
 
@@ -646,7 +621,7 @@ This screen is responsible for the following core functional areas:
 | **Request Content-Type** | `application/json` |
 | **Request Body** | `{ shippingAddress: ShippingAddressDTO, paymentMethod: string, couponCode?: string, notes?: string }` |
 | **Pre-Submission Validation** | All required fields present, cart not empty |
-| **Processing Steps** | 1. Validate JWT token. 2. Verify user role is `buyer`. 3. Validate request body (DTO). 4. Fetch cart items with current product prices and stock. 5. Re-validate stock for all items. 6. Calculate subtotal from DB prices. 7. Validate and apply coupon if provided (BR-COUPON-001~008). 8. Calculate discount, shipping, tax, total. 9. Create order record (status: `placed`). 10. Create order_items records. 11. Decrement stock atomically for all items. 12. Increment coupon used_count if coupon applied. 13. Clear user's cart. 14. Send order notification to merchant. 15. Return order confirmation. 16. Log ORDER_PLACED event. |
+| **Processing Steps** | 1. Validate JWT token. 2. Verify user role is `buyer`. 3. Validate request body (DTO). 4. Fetch cart items with current product prices and stock. 5. Re-validate stock for all items. 6. Calculate subtotal from DB prices. 7. Validate and apply coupon if provided (BR-COUPON-001~008). 8. Calculate discount and total. 9. Create order record (status: `placed`). 10. Create order_items records. 11. Decrement stock atomically for all items. 12. Increment coupon used_count if coupon applied. 13. Clear user's cart. 14. Send order notification to merchant. 15. Return order confirmation. 16. Log ORDER_PLACED event. |
 | **Success Response** | 201 Created with order confirmation data |
 | **Error Response** | 400 (validation), 409 (insufficient stock) |
 | **Post-Action** | Navigate to order confirmation page |
@@ -671,9 +646,8 @@ For each created `order_items` row, read the locked `products.stock_quantity` as
 | Event | `transaction_type` | `quantity` | `before_quantity` / `after_quantity` | Reference and audit fields |
 |-------|--------------------|------------|----------------------------------------|----------------------------|
 | Order confirmation | `order_created` | `-order_items.quantity` | Stock immediately before/after the decrement | `product_id`, `merchant_id`, `reference_type = 'order'`, `reference_id = orders.id`, `reason = 'Checkout order placed'`, `created_by = buyer_id` |
-| Order cancellation | `order_cancelled` | `+order_items.quantity` | Stock immediately before/after the restoration | `product_id`, `merchant_id`, `reference_type = 'order'`, `reference_id = orders.id`, `reason` includes cancellation reason when supplied, `created_by` is the cancelling user/system |
 
-The transaction log is append-only: a cancellation creates compensating `order_cancelled` rows and never edits or deletes the original `order_created` rows. Restoration is permitted only when the status change to `cancelled` succeeds; retry/idempotency handling must ensure an order can receive at most one successful cancellation/restoration set.
+The transaction log is append-only: `order_created` rows are never edited or deleted during normal operation.
 
 ##### C. Order Status History Tracking (`order_status_history`)
 
@@ -683,7 +657,6 @@ The transaction log is append-only: a cancellation creates compensating `order_c
 |------------|------------------------|----------------|
 | Checkout succeeds | Create as `placed` | Insert `order_id`, the `placed` status ID, `changed_by = buyer_id`, and note `Order placed via checkout`. |
 | Merchant confirms | `placed` to `confirmed` | Insert the `confirmed` status ID, `changed_by = merchant user ID`, and optional operational note. |
-| Buyer/merchant cancellation | `placed` or `confirmed` to `cancelled` | Insert the `cancelled` status ID, `changed_by` as the actor, and the supplied cancellation reason (if any). |
 | System/courier fulfillment transition | Update to the allowed next state | Insert the target status ID; `changed_by` is the acting user when known, otherwise `NULL`, with a system/courier note. |
 
 Status history rows are never updated or deleted during normal operation. The order-tracking API joins `order_status_history` to `order_statuses`, orders by `created_at ASC` (then `id ASC` as a tie-breaker), and returns each status, timestamp, actor where permitted, and note. The service rejects invalid or terminal-state transitions before updating either table.
@@ -719,23 +692,9 @@ Status history rows are never updated or deleted during normal operation. The or
 | **Trigger** | Click "Track Order" button on order detail |
 | **API Endpoint** | `GET /api/v1/orders/:id/tracking` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Pre-Submission Validation** | User authenticated, order exists, belongs to user, not cancelled |
+| **Pre-Submission Validation** | User authenticated, order exists, belongs to user |
 | **Processing Steps** | 1. Validate JWT token. 2. Find order by ID. 3. Verify `buyer_id = user.id`. 4. Build status timeline from order history. 5. Calculate estimated delivery date. 6. Return tracking data. |
 | **Success Response** | 200 OK with tracking timeline and estimated delivery |
-
-### 6.7 Operation: Cancel Order
-
-| Attribute | Specification |
-|-----------|---------------|
-| **Trigger** | "Cancel Order" button click on order detail or history |
-| **API Endpoint** | `POST /api/v1/orders/:id/cancel` |
-| **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Request Body** | `{ reason?: string }` |
-| **Pre-Submission Validation** | User authenticated, order exists, belongs to user, status is `placed` or `confirmed` |
-| **Processing Steps** | 1. Validate JWT token. 2. Find order by ID and lock it. 3. Verify `buyer_id = user.id`. 4. Verify order status is `placed` or `confirmed` and has not already been cancelled. 5. In one database transaction, update `orders.status` to `cancelled`; insert the `cancelled` row in `order_status_history`; for every `order_items` row restore product stock with a guarded atomic update and insert an `inventory_transactions` row (`transaction_type = 'order_cancelled'`, positive quantity, before/after quantities, `reference_type = 'order'`, `reference_id = order.id`); and decrement coupon used_count if applicable. 6. Commit. 7. Send cancellation notification to merchant. 8. Return success response. 9. Log ORDER_CANCELLED event. |
-| **Success Response** | 200 OK with updated order data |
-| **Error Response** | 400 (cannot cancel), 404 (not found), 403 (not owner) |
-| **Post-Action** | Update order status badge; show success toast |
 
 ---
 
@@ -770,12 +729,6 @@ Status history rows are never updated or deleted during normal operation. The or
 | `couponCode` | Coupon Code | クーポンコード | VARCHAR(50) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(50)` |
 | `subtotal` | Subtotal | 小計 | DECIMAL(10,2) | Yes | `@IsNumber()`, `@Min(0)` |
 
-### 7.4 Input Specification — Cancel Order (入力定義)
-
-| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
-|-------|-------------------|-------------------|-------------------|:--------:|------------|
-| `reason` | Cancellation Reason | キャンセル理由 | TEXT | No | `@IsOptional()`, `@IsString()`, `@MaxLength(500)` |
-
 ### 7.5 Output Specification — Order Confirmation (出力定義)
 
 | Field | Data Source | Display Format |
@@ -785,13 +738,11 @@ Status history rows are never updated or deleted during normal operation. The or
 | `status` | `orders.status` | Status enum string |
 | `subtotal` | Calculated | Currency formatted string |
 | `discountAmount` | `orders.discount_amount` | Currency formatted string |
-| `shippingCost` | Calculated | Currency formatted string |
-| `tax` | Calculated | Currency formatted string |
 | `total` | `orders.total_amount` | Currency formatted string |
 | `paymentMethod` | `orders.payment_method` | Payment method string |
 | `shippingAddress` | `orders.shipping_address` | JSON object |
 | `createdAt` | `orders.created_at` | ISO 8601 timestamp |
-| `estimatedDelivery` | Calculated from shipping | Date formatted string |
+| `estimatedDelivery` | Calculated | Date formatted string |
 
 ### 7.6 Output Specification — Order Summary (出力定義)
 
@@ -803,7 +754,6 @@ Status history rows are never updated or deleted during normal operation. The or
 | `itemCount` | Count of `order_items` | Integer |
 | `total` | `orders.total_amount` | Currency formatted string |
 | `createdAt` | `orders.created_at` | ISO 8601 timestamp |
-| `canCancel` | Status is `placed` or `confirmed` | Boolean |
 
 ### 7.7 Output Specification — Order Detail (出力定義)
 
@@ -819,8 +769,6 @@ Status history rows are never updated or deleted during normal operation. The or
 | `items[].totalPrice` | `order_items.total_price` | Currency formatted string |
 | `subtotal` | Calculated | Currency formatted string |
 | `discountAmount` | `orders.discount_amount` | Currency formatted string |
-| `shippingCost` | Calculated | Currency formatted string |
-| `tax` | Calculated | Currency formatted string |
 | `total` | `orders.total_amount` | Currency formatted string |
 | `shippingAddress` | `orders.shipping_address` | JSON object |
 | `paymentMethod` | `orders.payment_method` | String |
@@ -876,13 +824,6 @@ Status history rows are never updated or deleted during normal operation. The or
 | — | Minimum order amount not met | "Minimum order amount not met" | "最低注文金額を満たしていません" |
 | — | Usage limit reached | "Coupon usage limit reached" | "クーポンの使用回数上限に達しました" |
 
-### 8.4 Cancel Order Validation
-
-| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
-|-------|-----------------|--------------------|--------------------|
-| — | Order status must be 'placed' or 'confirmed' | "Order cannot be cancelled at this stage" | "この段階では注文をキャンセルできません" |
-| — | Order must belong to user | "Order not found" | "注文が見つかりません" |
-
 ### 8.5 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback before API calls.
@@ -930,19 +871,10 @@ Status history rows are never updated or deleted during normal operation. The or
 | `403` | `FORBIDDEN` | Accessing another user's order | Toast: "Order not found" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | Toast: "Something went wrong. Please try again." |
 
-### 9.4 Error Classification Table — Order Cancellation
-
-| HTTP Status | Error Code | Scenario | User-Facing Behavior |
-|-------------|------------|----------|---------------------|
-| `400` | `BAD_REQUEST` | Order cannot be cancelled (wrong status) | Toast: "Order cannot be cancelled at this stage" |
-| `404` | `NOT_FOUND` | Order not found | Toast: "Order not found" |
-| `403` | `FORBIDDEN` | Not order owner | Toast: "Order not found" |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | Toast: "Something went wrong. Please try again." |
-
 ### 9.5 Frontend Error Display Behavior
 
 - **Field-Level Validation**: Red border and inline text below invalid input.
-- **Toast Notifications**: Used for API errors and successful actions (order placed, cancelled).
+- **Toast Notifications**: Used for API errors and successful actions (order placed).
 - **Loading States**: Spinner on Place Order button; full-page overlay during submission.
 - **Stock Warnings**: Alert banner if stock changes detected during checkout.
 - **Empty State**: Shown when no orders exist in history.
@@ -966,15 +898,14 @@ Status history rows are never updated or deleted during normal operation. The or
 | `GET /orders` | Protected (Buyer) | View order history |
 | `GET /orders/:id` | Protected (Buyer) | View order detail |
 | `GET /orders/:id/tracking` | Protected (Buyer) | Track order status |
-| `POST /orders/:id/cancel` | Protected (Buyer) | Cancel order |
 
 ### 10.3 Role-Based Access
 
-| Role | Can Access Checkout | Can Place Orders | Can View History | Can Cancel Orders |
-|------|:-------------------:|:----------------:|:----------------:|:-----------------:|
-| `buyer` | ✓ | ✓ | ✓ | ✓ (own orders) |
-| `merchant` | ✗ | ✗ | ✗ | ✗ |
-| `admin` | ✗ | ✗ | ✗ | ✗ |
+| Role | Can Access Checkout | Can Place Orders | Can View History |
+|------|:-------------------:|:----------------:|:----------------:|
+| `buyer` | ✓ | ✓ | ✓ |
+| `merchant` | ✗ | ✗ | ✗ |
+| `admin` | ✗ | ✗ | ✗ |
 
 ### 10.4 Ownership Rules
 
@@ -998,14 +929,12 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 |-------|---------|--------|--------|
 | `order_placed` | Order successfully placed | Merchant | In-app notification: "New order received" |
 | `order_status_changed` | Merchant updates order status | Buyer | In-app notification: "Your order status has been updated" |
-| `order_cancelled` | Buyer cancels order | Merchant | In-app notification: "Order has been cancelled" |
 
 ### 11.3 Client-Side State Updates
 
 | Event | Trigger | Action |
 |-------|---------|--------|
 | `order:placed` | Order submission success | Navigate to confirmation page; clear cart state |
-| `order:cancelled` | Cancel button click | Update status badge; show success toast |
 | `coupon:applied` | Apply button click | Update order summary totals |
 | `coupon:removed` | Remove button click | Reset totals to pre-coupon values |
 
@@ -1063,7 +992,6 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 | Order History Page Load | ≤ 2 seconds |
 | Order Detail Page Load | ≤ 1 second |
 | Stock Validation Check | ≤ 100 milliseconds |
-| Order Cancellation API | ≤ 1 second |
 
 ### 13.2 Caching Strategy
 
@@ -1073,7 +1001,6 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 | Stock quantities | Real-time from DB | — |
 | Coupon validation | No cache (must be current) | — |
 | Order data | No cache (user-specific, real-time) | — |
-| Shipping rates | Redis cache | 1 hour |
 
 ### 13.3 Security Considerations
 
@@ -1105,9 +1032,6 @@ Defined via `.env` configuration:
 | Definition Key | Default Value | Description |
 |----------------|---------------|-------------|
 | `ORDER_NUMBER_PREFIX` | `ORD` | Prefix for order reference numbers |
-| `SHIPPING_COST_FLAT` | `5.00` | Flat-rate shipping cost (MVP) |
-| `TAX_RATE` | `0.0` | Tax rate as decimal (0% for MVP) |
-| `ORDER_CANCELLATION_WINDOW_HOURS` | `24` | Hours after `confirmed` status before cancellation is blocked |
 | `ORDER_AUTO_CONFIRM_DAYS` | `7` | Days after delivery before auto-confirm |
 | `ORDER_HISTORY_PAGE_SIZE` | `10` | Default items per page in order history |
 | `MAX_ORDER_ITEMS` | `50` | Maximum items per order |
@@ -1124,8 +1048,8 @@ Defined via `.env` configuration:
 | B-CHECK-001 | User can enter shipping address | UC-CHECK-001, Sec 5.1, Sec 7.1 |
 | B-CHECK-002 | User can select payment method | UC-CHECK-001, Sec 5.1, Sec 7.2 |
 | B-CHECK-003 | User can review order before confirming | UC-CHECK-001, Sec 5.1 |
-| B-CHECK-004 | System calculates subtotal, shipping, tax, total | BR-CHECK-008~012, Sec 6.3 |
-| B-CHECK-005 | Order is created with status "pending" | UC-CHECK-004, Sec 6.3 |
+| B-CHECK-004 | System calculates subtotal, discount, total | BR-CHECK-008~010, Sec 6.3 |
+| B-CHECK-005 | Order is created with status "placed" | UC-CHECK-004, Sec 6.3 |
 | B-CHECK-006 | Stock is decremented on order creation | BR-CHECK-013, Sec 6.3 |
 | B-CHECK-007 | User can view order confirmation | UC-CHECK-004, Sec 5.2 |
 | B-CHECK-008 | User can view order history | UC-CHECK-005, Sec 5.3, Sec 6.4 |
