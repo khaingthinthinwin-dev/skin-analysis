@@ -748,7 +748,7 @@ CREATE TABLE advertisements (
 | No（項番） | Logical Name（論理名） | Physical Name（物理名） | Data Type & Length（データ型・桁数） | PK | FK | Nullable（NULL許容） | Default Value（初期値） | Constraints & Remarks（制約・備考） |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
-| 2 | 配置場所 | `placement` | VARCHAR(50) | - | - | N | - | 広告配置場所（homepage_slider, product_sidebar, category_banner, search_top）。 |
+| 2 | 配置場所 | `placement` | VARCHAR(50) | - | - | N | - | 広告配置場所（homepage_banner, product_sidebar, category_banner, search_top）。 |
 | 3 | ティア | `tier` | VARCHAR(20) | - | - | N | - | 価格ティア（basic, standard, premium）。 |
 | 4 | 日額料金 | `daily_rate` | DECIMAL(10,2) | - | - | N | - | 日次広告料金。 |
 | 5 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | 設定の有効ステータス。 |

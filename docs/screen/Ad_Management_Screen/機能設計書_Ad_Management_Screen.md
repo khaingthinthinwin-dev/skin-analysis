@@ -385,7 +385,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | BR-ADM-040 | Date Range Required | Revenue analytics queries must specify a date_from and date_to range. | Backend (DTO validation) |
 | BR-ADM-041 | Maximum Range | Maximum analytics date range is 365 days. | Backend (validation) |
 | BR-ADM-042 | Revenue Source | Revenue is aggregated from `ad_payments` where `payment_status='completed'` and `advertisements.approval_status='approved'`. | Backend (query logic) |
-| BR-ADM-043 | Placement Breakdown | Revenue can be broken down by placement (homepage_slider, product_sidebar, category_banner, search_top). | Backend (GROUP BY placement) |
+| BR-ADM-043 | Placement Breakdown | Revenue can be broken down by placement (homepage_banner, product_sidebar, category_banner, search_top). | Backend (GROUP BY placement) |
 | BR-ADM-044 | Tier Breakdown | Revenue can be broken down by tier (basic, standard, premium). | Backend (GROUP BY tier) |
 
 ### 4.6 Export Rules
@@ -853,7 +853,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
-| `placement` | Placement | 配置場所 | VARCHAR(50) | Yes | Select | `@IsIn(['homepage_slider', 'product_sidebar', 'category_banner', 'search_top'])` |
+| `placement` | Placement | 配置場所 | VARCHAR(50) | Yes | Select | `@IsIn(['homepage_banner', 'product_sidebar', 'category_banner', 'search_top'])` |
 | `tier` | Tier | ティア | VARCHAR(20) | Yes | Select | `@IsIn(['basic', 'standard', 'premium'])` |
 | `daily_rate` | Daily Rate | 日額料金 | DECIMAL(10,2) | Yes | Input (number) | `@IsNumber()`, `@Min(0.01)` |
 | `duration_days` | Duration (Days) | 期間（日数） | INTEGER | Yes | Input (number) | `@IsInt()`, `@Min(1)` |
@@ -873,7 +873,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `dateFrom` | Start Date | 開始日 | DATE | Yes | Date Picker | `@IsDate()`, required |
 | `dateTo` | End Date | 終了日 | DATE | Yes | Date Picker | `@IsDate()`, must be >= dateFrom, max 365 days range |
-| `placement` | Placement Filter | 配置場所フィルター | VARCHAR(50)[] | No | Multi-Select | Each `@IsIn(['homepage_slider', 'product_sidebar', 'category_banner', 'search_top'])` |
+| `placement` | Placement Filter | 配置場所フィルター | VARCHAR(50)[] | No | Multi-Select | Each `@IsIn(['homepage_banner', 'product_sidebar', 'category_banner', 'search_top'])` |
 | `tier` | Tier Filter | ティアフィルター | VARCHAR(20)[] | No | Multi-Select | Each `@IsIn(['basic', 'standard', 'premium'])` |
 
 ### 7.8 Input Specification — Export Reports (入力定義)

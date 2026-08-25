@@ -744,7 +744,7 @@ Manages advertising fee rates by placement and tier, including package duration 
 | No (項番) | Logical Name (論理名) | Physical Name (物理名) | Data Type & Length (データ型・桁数) | PK | FK | Nullable (NULL許容) | Default Value (初期値) | Constraints & Remarks (制約・備考) |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 設定ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
-| 2 | 配置場所 | `placement` | VARCHAR(50) | - | - | N | - | Ad placement location (homepage_slider, product_sidebar, category_banner, search_top). |
+| 2 | 配置場所 | `placement` | VARCHAR(50) | - | - | N | - | Ad placement location (homepage_banner, product_sidebar, category_banner, search_top). |
 | 3 | ティア | `tier` | VARCHAR(20) | - | - | N | - | Pricing tier (basic, standard, premium). |
 | 4 | 日額料金 | `daily_rate` | DECIMAL(10,2) | - | - | N | - | Daily advertising rate. |
 | 5 | 期間（日数） | `duration_days` | INTEGER | - | - | N | - | Ad duration in days for this placement. Check: `duration_days > 0`. |
@@ -774,7 +774,7 @@ CREATE TABLE ad_fee_settings (
 #### Default Fee Settings
 | Placement | Basic | Standard | Premium | Duration | Max Ads |
 |-----------|-------|----------|---------|----------|---------|
-| Homepage Slider | $3.00/day | $5.00/day | $8.00/day | 7 Days | 1 |
+| Homepage Banner | $3.00/day | $5.00/day | $8.00/day | 7 Days | 1 |
 | Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day | 15 Days | 3 |
 | Category Banner | $2.50/day | $4.00/day | $7.00/day | 30 Days | 5 |
 | Search Results Top | $1.50/day | $2.50/day | $5.00/day | 7 Days | 6 |

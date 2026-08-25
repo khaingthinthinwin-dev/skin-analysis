@@ -470,7 +470,7 @@ npm run db:seed
 > - Order statuses (placed → confirmed → packed → shipped → out_for_delivery → delivered)
 > - User roles (buyer, merchant, admin)
 > - Discount types (percentage, fixed)
-> - Ad fee settings (homepage_slider, product_sidebar, category_banner, search_top)
+> - Ad fee settings (homepage_banner, product_sidebar, category_banner, search_top)
 > - Commission settings (default 12%)
 >
 > Without seeding, the application will not function correctly.

@@ -66,9 +66,9 @@ async function main() {
 
   // Ad Fee Settings (aligned with DATABASE_SPEC v2.3)
   const adFeeSettings = [
-    { placement: 'homepage_slider', tier: 'basic', dailyRate: 3.00, durationDays: 7, maxAds: 1 },
-    { placement: 'homepage_slider', tier: 'standard', dailyRate: 5.00, durationDays: 7, maxAds: 1 },
-    { placement: 'homepage_slider', tier: 'premium', dailyRate: 8.00, durationDays: 7, maxAds: 1 },
+    { placement: 'homepage_banner', tier: 'basic', dailyRate: 3.00, durationDays: 7, maxAds: 1 },
+    { placement: 'homepage_banner', tier: 'standard', dailyRate: 5.00, durationDays: 7, maxAds: 1 },
+    { placement: 'homepage_banner', tier: 'premium', dailyRate: 8.00, durationDays: 7, maxAds: 1 },
     { placement: 'product_sidebar', tier: 'basic', dailyRate: 2.00, durationDays: 15, maxAds: 3 },
     { placement: 'product_sidebar', tier: 'standard', dailyRate: 3.50, durationDays: 15, maxAds: 3 },
     { placement: 'product_sidebar', tier: 'premium', dailyRate: 6.00, durationDays: 15, maxAds: 3 },
