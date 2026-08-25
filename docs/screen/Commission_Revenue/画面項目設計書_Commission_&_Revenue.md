@@ -4,11 +4,11 @@
 **Target Screen:** Admin Commission / Revenue Dashboard (手数料・収益管理)  
 **Subsystem:** Commission Management & Revenue Tracking  
 **Function ID:** FN-COMM-001  
-**Version:** 4.2  
+**Version:** 5.0  
 **Created:** 2026-08-10  
-**Last Updated:** 2026-08-24  
+**Last Updated:** 2026-08-25  
 **Author:** Senior System Engineer  
-**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.5, Functional Spec v7.2)  
+**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.5, Functional Spec v8.0)  
 **Classification:** Internal — Engineering Division
 
 ---
@@ -31,6 +31,7 @@
 | 4.0 | 2026-08-22 | Senior System Engineer | Merged Commission Page and Revenue Page into a single page with tabs (`/admin/commission-revenue`). Tab 1: Commission (rate config + reports). Tab 2: Revenue (KPIs + chart + target + payouts). Updated all layout diagrams, item definitions, behavior triggers, and route references. Removed duplicate item definitions. Updated version references to Functional Spec v7.0. |
 | 4.1 | 2026-08-24 | Senior System Engineer | Aligned payment status enums with Functional Spec v7.1 / DATABASE_SPEC v2.4 (order payments: pending/completed; ad payments: pending/completed/refunded). |
 | 4.2 | 2026-08-24 | Senior System Engineer | Removed the "Failed" and "Refunded" badges from the Payment Status Panel (Section [J]) and the "Ad Failed" badge from the Ad Payment Status Panel (Section [K]). Adjusted badge grid layout and spacing for a neat display — order badges in a single-row 2-column grid, ad badges in a single-row 3-column grid. Renumbered downstream item definitions, removed unused i18n keys, updated API response example and test checklist. Aligned with Functional Spec v7.2. |
+| 5.0 | 2026-08-25 | Senior System Engineer | Added Export functionality: export button items on Commission tab (Section [F]), Revenue tab (Section [O]), and Payout table (Section [M]). Added Layout 5 (Export Modal) with 11 item definitions (date range picker, format selection, generate/cancel buttons, recent exports table). Added export behavior sections (5.16~5.19), export validation error codes (VAL-EXP-001~004), export API error codes (EXP_001~007), export DB field mapping (Section 7.7), export API response mappings (Section 8.15~8.19), export i18n keys (EN/JA), and export test cases. Aligned with Functional Spec v8.0. |
 
 ### 1.2 Related Documents
 
@@ -39,14 +40,14 @@
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 2.11 | Business workflow logic, user roles, merchant states, and rules. |
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.5 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
-| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 7.2 | Use cases, state transitions, validation rules, business rules, and error handling. |
+| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 8.0 | Use cases, state transitions, validation rules, business rules, and error handling. |
 
 ---
 
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Commission and Revenue pages are the admin-side financial management screens of the Cosmetics Finder platform. They enable platform administrators to configure the platform commission rate, browse merchant-level commission reports, monitor revenue KPIs and trends including ad fee revenue, review payment status for both orders and advertisements, and process merchant payouts. Additionally, administrators can configure monthly/quarterly revenue targets and monitor current progress via a gauge bar, and view AI-generated revenue and platform fee forecasts overlaid on the trend chart as a dotted line.
+The Commission and Revenue pages are the admin-side financial management screens of the Cosmetics Finder platform. They enable platform administrators to configure the platform commission rate, browse merchant-level commission reports, monitor revenue KPIs and trends including ad fee revenue, review payment status for both orders and advertisements, and process merchant payouts. Additionally, administrators can configure monthly/quarterly revenue targets and monitor current progress via a gauge bar, view AI-generated revenue and platform fee forecasts overlaid on the trend chart as a dotted line, and export financial reports (commission, revenue, payout) as CSV or Excel files.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -54,7 +55,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 | :--- | :--- |
 | **Primary Actors** | Platform Administrator (Admin) |
 | **Required Authentication** | JWT access token |
-| **Data Scope** | Commission settings, reports, revenue KPIs, revenue targets, forecast data, ad fee revenue, ad payment status, payout records |
+| **Data Scope** | Commission settings, reports, revenue KPIs, revenue targets, forecast data, ad fee revenue, ad payment status, payout records, export jobs |
 | **Access Control** | Protected routes — admin-only (`ProtectedRoute roles={['admin']}`) |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
@@ -65,9 +66,10 @@ The Commission and Revenue pages are the admin-side financial management screens
 5. **Merchant Payout Management** — Process merchant payouts with idempotency and status tracking.
 6. **Revenue Target Progress** — Configure monthly/quarterly revenue targets and display current progress via a gauge bar.
 7. **AI Revenue Forecast** — Predict revenue and platform fees from historical data, rendered as a dotted line alongside the current trend.
-8. **Error Handling** — Consistent error states with alert banners and inline field errors.
-9. **Internationalization** — Full i18n support for EN, JA, MY.
-10. **Responsive Design** — Responsive KPI grid, tables, and chart layouts.
+8. **Export Functionality** — Export commission reports, revenue data, and payout history as CSV or Excel files with configurable date ranges.
+9. **Error Handling** — Consistent error states with alert banners and inline field errors.
+10. **Internationalization** — Full i18n support for EN, JA, MY.
+11. **Responsive Design** — Responsive KPI grid, tables, and chart layouts.
 
 ---
 
@@ -75,7 +77,7 @@ The Commission and Revenue pages are the admin-side financial management screens
 
 ### 3.1 Overall Page Structure (全体画面構成)
 
-Single page with two tabs: Commission and Revenue. Each section uses its own independent letter labels starting from [A].
+Single page with two tabs: Commission and Revenue. Each section uses its own independent letter labels starting from [A]. An Export Modal (Layout 5) is shared across both tabs.
 
 ---
 
@@ -111,6 +113,7 @@ Single page with two tabs: Commission and Revenue. Each section uses its own ind
 │  │   [F] COMMISSION REPORT TABLE                     │  │
 │  │   Merchant / Orders / Revenue / Commission        │  │
 │  │   [F1] Pagination                                 │  │
+│  │   [F2] Export Commission Button                    │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
 │  ┌───────────────────────────────────────────────────┐  │
@@ -143,11 +146,14 @@ Single page with two tabs: Commission and Revenue. Each section uses its own ind
 │  │   [L] AD FEE SUMMARY CARD                         │  │
 │  │   Active Ads / Total Collected / Pending          │  │
 │  │                                                   │  │
+│  │   [O] EXPORT BUTTONS                              │  │
+│  │   [O1] Export Revenue Button  [O2] Export Payout  │  │
+│  │                                                   │  │
 │  │   [M] PAYOUT TABLE                                │  │
 │  │   [M1] Merchant  [M2] Total  [M3] Commission      │  │
 │  │   [M4] Net  [M5] Status  [M6] Date                │  │
 │  │   [M7] Process Button (per pending row)           │  │
-│  │   [M8] Pagination                                 │  │
+│  │   [M8] Pagination  [M9] Export Payout Button      │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
 │  ┌───────────────────────────────────────────────────┐  │
@@ -199,14 +205,51 @@ Single page with two tabs: Commission and Revenue. Each section uses its own ind
 └─────────────────────────────────────────────┘
 ```
 
+#### Layout 5: Export Modal (エクスポートモーダル)
+
+```text
+┌─────────────────────────────────────────────┐
+│              [A] EXPORT MODAL               │
+│  ┌─────────────────────────────────────┐    │
+│  │   [B] Modal Title                   │    │
+│  │   "Export Report"                   │    │
+│  └─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────┐    │
+│  │   [C] Report Type Display           │    │
+│  │   (Commission / Revenue / Payout)   │    │
+│  └─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────┐    │
+│  │   [D] Date Range Picker             │    │
+│  │   [E] Date Range Error (cond.)      │    │
+│  └─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────┐    │
+│  │   [F] Format Radio Group            │    │
+│  │   (CSV / Excel)                     │    │
+│  └─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────┐    │
+│  │   [G] Estimated Rows Text (cond.)   │    │
+│  └─────────────────────────────────────┘    │
+│  [H] Generate Button   [I] Cancel Button   │
+│  ┌─────────────────────────────────────┐    │
+│  │   [J] Recent Exports Heading        │    │
+│  │   "Recent Exports"                  │    │
+│  └─────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────┐    │
+│  │   [K] Recent Exports Table          │    │
+│  │   Type / Format / Range / Status    │    │
+│  │   / Generated / Download            │    │
+│  └─────────────────────────────────────┘    │
+└─────────────────────────────────────────────┘
+```
+
 ### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
 | Breakpoint | Min Width | Layout Behavior |
 | :--- | :--- | :--- |
-| Mobile (default) | 0px | Stacked KPI cards, single column, horizontally scrollable tables |
-| Tablet (`md:`) | 768px | Two-column KPI grid, scrollable tables |
-| Desktop (`lg:`) | 1024px | Multi-column KPI grid, full-width tables |
-| Wide (`xl:`) | 1280px | Multi-column KPI grid, full-width tables with enhanced spacing |
+| Mobile (default) | 0px | Stacked KPI cards, single column, horizontally scrollable tables. Export modal full-width. |
+| Tablet (`md:`) | 768px | Two-column KPI grid, scrollable tables. Export modal centered with fixed width. |
+| Desktop (`lg:`) | 1024px | Multi-column KPI grid, full-width tables. Export modal centered with max-width. |
+| Wide (`xl:`) | 1280px | Multi-column KPI grid, full-width tables with enhanced spacing. Export modal centered with max-width. |
 
 ---
 
@@ -266,6 +309,7 @@ Each layout section below uses its own independent letter labels starting from [
 | 17 | `tblReportRevenue` | Revenue Column | Column (`sortable`) | Decimal(12,2) | — | — | Rendered as currency string. | Sum of `orders.total_amount` where `payment_status = 'completed'` | Currency formatting via locale; only completed/settled orders are included. |
 | 18 | `tblReportCommission` | Commission Column | Column (`sortable`) | Decimal(12,2) | — | — | Rendered as currency string. | Application-level aggregation using the rate effective when each transaction was created | Commission = completed-order total × transaction-time commission rate. Historical transactions must not be recomputed using the current setting. |
 | 19 | `pgReport` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the report table. Per DEVELOPMENT_RULES, admin-only endpoints must validate `@UseGuards(JwtAuthGuard, RolesGuard)` and `@Roles('admin')`. |
+| 20 | `btnExportCommission` | Export Commission Button | Button (`secondary`) | — | No | Visible. Text: "Export" | — | — | Opens the Export Modal (Layout 5) with report type pre-set to "Commission". i18n key: `commission.export`. |
 
 #### Section [G]: KPI Cards (収益KPIカード) — Tab 2
 
@@ -339,13 +383,21 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | 51 | `tblPayoutDate` | Date Column | Column | Timestamp | — | — | Locale-aware date format. | `payouts.created_at` | — |
 | 52 | `btnProcessPayout` | Process Button | Button (`primary`) | — | No | Visible only for `pending` rows. Disabled for others. Text: "Process" | — | — | Opens Payout Confirmation Dialog (Layout 3). i18n key: `revenue.process`. |
 | 53 | `pgPayout` | Pagination | Pagination | — | No | First page. | Default page size 20. | Query params `page`, `limit` | Page controls for the payout table. |
+| 54 | `btnExportPayout` | Export Payout Button | Button (`secondary`) | — | No | Visible. Text: "Export" | — | — | Opens the Export Modal (Layout 5) with report type pre-set to "Payout". i18n key: `revenue.exportPayout`. |
 
 #### Section [N]: Footer Controls (フッターコントロール)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 54 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
-| 55 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
+| 55 | `btnLanguageToggle` | Language Toggle | Toggle Group | Enum | — | Default: Browser language or "en" | Options: EN, JA, MY | — | Switches all i18n keys. Persists to localStorage. |
+| 56 | `btnThemeToggle` | Theme Toggle | Icon Button | Enum | — | Default: System preference | Options: light, dark, system | — | Cycles light → dark → system. Uses `next-themes`. |
+
+#### Section [O]: Export Buttons (エクスポートボタン) — Tab 2 (Revenue)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 57 | `btnExportRevenue` | Export Revenue Button | Button (`secondary`) | — | No | Visible. Text: "Export" | — | — | Opens the Export Modal (Layout 5) with report type pre-set to "Revenue". i18n key: `revenue.export`. |
+| 58 | `btnExportPayoutRevenue` | Export Payout Button (Revenue Tab) | Button (`secondary`) | — | No | Visible. Text: "Export Payout History" | — | — | Opens the Export Modal (Layout 5) with report type pre-set to "Payout". i18n key: `revenue.exportPayout`. |
 
 
 
@@ -453,6 +505,78 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 73 | `btnTargetSave` | Save Target Button | Button (`primary`) | — | Mandatory | Visible. Text: "Save" | — | — | Validates and submits target upsert (overwrites existing for same period, BR-REV-009). Loading: Spinner + disabled. i18n key: `revenue.saveTarget`. |
+
+---
+
+### 4.5 Layout 5: Export Modal
+
+#### Section [A]: Modal Container
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 74 | `dlgExport` | Export Modal | Dialog (Modal) | — | — | Closed by default. | — | — | Open via Layout 1 `btnExportCommission`, `btnExportPayout`, `btnExportRevenue`, or `btnExportPayoutRevenue`. Close on cancel/backdrop/success. |
+
+#### Section [B]: Modal Title
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 75 | `lblExportTitle` | Modal Title | Heading (`h3`) | String | — | Text: "Export Report" | — | Hardcoded UI text | i18n key: `export.title`. |
+
+#### Section [C]: Report Type Display
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 76 | `lblExportReportType` | Report Type Display | Text | String | Mandatory | Displays the report type: "Commission", "Revenue", or "Payout" | — | Set by the trigger button | Read-only display of the export type. i18n key: `export.reportType`. |
+
+#### Section [D]: Date Range Picker
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 77 | `drpExportDateRange` | Date Range Picker | Date Range Picker | — | Mandatory | Empty (admin must select). | Valid ISO dates. `dateFrom <= dateTo`. Max 365 days. | — | Required for export generation. i18n key: `export.dateRange`. |
+
+#### Section [E]: Date Range Error
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 78 | `errExportDateRange` | Date Range Error | Text (conditional) | String | Conditional | Hidden. Shown on validation failure. | — | — | Error codes: VAL-EXP-001, VAL-EXP-002, VAL-EXP-003. |
+
+#### Section [F]: Format Radio Group
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 79 | `rgExportFormat` | Format Radio Group | Radio Group | Enum | Mandatory | Default: `csv` | Options: `csv`, `xlsx` | — | Selects the export file format. No PDF support. i18n key: `export.format`. |
+
+#### Section [G]: Estimated Rows Text
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 80 | `lblEstimatedRows` | Estimated Rows Text | Text (conditional) | String | Conditional | Hidden until date range is applied. Text: "Estimated {n} rows" | — | Backend row count query | Displayed after date range is set. Indicates sync (≤1000) vs async (>1000) generation. i18n key: `export.estimatedRows`. |
+
+#### Section [H]: Generate Button
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 81 | `btnExportGenerate` | Generate Button | Button (`primary`) | — | Mandatory | Visible. Text: "Generate Report" | — | — | Validates inputs and triggers export generation. Loading: Spinner + disabled during generation. i18n key: `export.generate`. |
+
+#### Section [I]: Cancel Button
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 82 | `btnExportCancel` | Cancel Button | Button (`secondary`) | — | No | Visible. Text: "Cancel" | — | — | Closes the Export Modal without generating. i18n key: `export.cancel`. |
+
+#### Section [J]: Recent Exports Heading
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 83 | `lblRecentExports` | Recent Exports Heading | Heading (`h3`) | String | — | Text: "Recent Exports" | — | Hardcoded UI text | Displayed below the modal in the Commission/Revenue page. i18n key: `export.recentExports`. |
+
+#### Section [K]: Recent Exports Table
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 84 | `tblRecentExports` | Recent Exports Table | Table | — | No | Empty while loading. | — | Export jobs query | Columns: Report Type, Format, Date Range, Status, Generated At, Download. |
+| 85 | `tblRecentExportStatus` | Status Column | Table Column | Enum | Mandatory | — | `processing` / `ready` / `expired` | `export_jobs.status` | Badge styling by status: processing = warning, ready = success, expired = secondary. |
+| 86 | `tblRecentExportDownload` | Download Column | Table Column | Button | — | Download button visible when `status = 'ready'`. | — | `GET /api/v1/admin/exports/:jobId/download` | Triggers file download. Disabled during processing. i18n key: `export.download`. |
 
 ---
 
@@ -608,6 +732,53 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
   - `400`: Alert banner "Invalid range".
   - `500` (`SYS_001`): Alert banner with retry option.
 
+### 5.16 Export Button Click — Open Export Modal (`btnExportCommission` / `btnExportRevenue` / `btnExportPayout` / `btnExportPayoutRevenue` onClick)
+- **Trigger:** User clicks any Export button on the Commission tab (`btnExportCommission`), Revenue tab (`btnExportRevenue`), or Payout table (`btnExportPayout`, `btnExportPayoutRevenue`).
+- **Processing Logic:**
+  1. Open the Export Modal (`dlgExport`).
+  2. Set `lblExportReportType` to the corresponding report type: "Commission", "Revenue", or "Payout" based on which button was clicked.
+  3. Reset modal state: clear date range (`drpExportDateRange`), set format to default CSV (`rgExportFormat`), hide estimated rows (`lblEstimatedRows`).
+  4. Load recent exports list for the current report type from `GET /api/v1/admin/exports?reportType={type}`.
+- **Exception Handling:**
+  - `500` (`SYS_001`): Alert banner with retry option.
+
+### 5.17 Export Generation (`btnExportGenerate` onClick)
+- **Trigger:** User clicks "Generate" in the Export Modal after selecting date range and format.
+- **Processing Logic:**
+  1. **Client-Side Pre-Check:** Validate `dateFrom` and `dateTo` are valid ISO dates, `dateFrom <= dateTo`, date range ≤ 365 days, format is `csv` or `xlsx`.
+  2. **Backend Dispatch:** `POST /api/v1/admin/commission/export`, `POST /api/v1/admin/revenue/export`, or `POST /api/v1/admin/revenue/payouts/export` depending on report type. Request body: `{ dateFrom, dateTo, format }`.
+  3. **Sync Path (≤1000 rows):** Backend returns `{ downloadUrl: string }`. Show download link in a success toast. Trigger immediate download.
+  4. **Async Path (>1000 rows):** Backend returns `{ jobId: string, status: 'processing' }`. Show processing toast. Refresh recent exports table. Admin receives notification with download link when ready.
+  5. Log `EXPORT_GENERATED` event to audit_logs (BR-EXP-005).
+- **Post-Execution UI:** On success, close modal and refresh recent exports table. Show success toast with download link (sync) or processing notification (async).
+- **Exception Handling:**
+  - `400 EXP_001`: Missing dateFrom or dateTo. Inline error on date range picker.
+  - `400 EXP_002`: dateTo before dateFrom. Inline error on date range picker.
+  - `400 EXP_003`: Date range exceeds 365 days. Inline error on date range picker.
+  - `400 EXP_004`: Invalid format. Alert banner.
+  - `500 EXP_007`: Export generation failed. Alert banner with retry option.
+  - `NET_ERR`: Network connectivity issue. Alert banner.
+
+### 5.18 Export Download (`tblRecentExportDownload` onClick)
+- **Trigger:** User clicks "Download" on the recent exports table, or async job completion notification.
+- **Processing Logic:**
+  1. **Status Check:** `GET /api/v1/admin/exports/:jobId/status`. If status = `processing`, show "still processing" toast. If `expired`, show expired message. If `ready`, proceed to download.
+  2. **Download:** `GET /api/v1/admin/exports/:jobId/download`. Stream file to client. Trigger browser file download.
+  3. Log `EXPORT_DOWNLOADED` event to audit_logs.
+- **Exception Handling:**
+  - `404 EXP_005`: Export job not found. Alert banner.
+  - `410 EXP_006`: Export file expired. Alert banner with message "This export has expired. Please generate a new one."
+  - `500` (`SYS_001`): Alert banner with retry option.
+
+### 5.19 Recent Exports Load (Export Modal open)
+- **Trigger:** Export Modal opened via any export button click.
+- **Processing Logic:**
+  1. Fetch recent export jobs for the current report type: `GET /api/v1/admin/exports?reportType={type}`.
+  2. Populate `tblRecentExports` with rows: report type, format, date range, status, generated at, download button.
+  3. If no recent exports, show empty state message.
+- **Exception Handling:**
+  - `500` (`SYS_001`): Alert banner with retry option.
+
 ---
 
 ## 6. Validation & Error Message Mapping (バリデーション及びエラーメッセージマッピング)
@@ -628,6 +799,15 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | **VAL-COMM-008** | `txtTargetAmount` | Target amount not a valid decimal or ≤ 0 | Red border. Text below field. | "Target amount must be a positive number with up to 2 decimal places" | "目標金額は0より大きい小数第2位までの数値で入力してください" |
 | **VAL-COMM-009** | `selTargetPeriod` / `tglTargetPeriod` | Period is not `monthly`/`quarterly` | Red border. Text below field. | "Invalid target period" | "無効な目標期間です" |
 
+### 6.1.1 Export Validation Errors
+
+| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **VAL-EXP-001** | `drpExportDateRange` | `dateFrom` or `dateTo` is empty | Red border. Text below field. | "Start date and end date are required" | "開始日と終了日は必須です" |
+| **VAL-EXP-002** | `drpExportDateRange` | `dateTo` is before `dateFrom` | Red border. Text below field. | "End date must be after start date" | "終了日は開始日以降である必要があります" |
+| **VAL-EXP-003** | `drpExportDateRange` | Date range exceeds 365 days | Red border. Text below field. | "Date range cannot exceed 365 days" | "日付範囲は365日を超えることはできません" |
+| **VAL-EXP-004** | `rgExportFormat` | Format is not `csv` or `xlsx` | Alert banner | "Invalid export format. Use CSV or Excel." | "無効なエクスポート形式です。CSVまたはExcelを使用してください" |
+
 ### 6.2 API Error Handling
 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
@@ -640,6 +820,13 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | **COMM_006** | `lblForecastNote` | Insufficient historical data for forecast (422 response) | Informational note next to chart | "Not enough historical data to generate a forecast" | "予測を生成するのに十分な履歴データがありません" |
 | **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
 | **NET_ERR** | `alertError` | Network error | Alert banner (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+| **EXP_001** | `errExportDateRange` | Missing dateFrom or dateTo (400 response) | Inline error on date range picker | "Start date and end date are required" | "開始日と終了日は必須です" |
+| **EXP_002** | `errExportDateRange` | dateTo before dateFrom (400 response) | Inline error on date range picker | "End date must be after start date" | "終了日は開始日以降である必要があります" |
+| **EXP_003** | `errExportDateRange` | Date range exceeds 365 days (400 response) | Inline error on date range picker | "Date range cannot exceed 365 days" | "日付範囲は365日を超えることはできません" |
+| **EXP_004** | `rgExportFormat` | Invalid format (400 response) | Alert banner | "Invalid export format. Use CSV or Excel." | "無効なエクスポート形式です。CSVまたはExcelを使用してください" |
+| **EXP_005** | `alertError` | Export job not found (404 response) | Alert banner (destructive) | "Export job not found" | "エクスポートジョブが見つかりません" |
+| **EXP_006** | `alertError` | Export file expired (410 response) | Alert banner (destructive) | "This export has expired. Please generate a new one." | "このエクスポートは期限切れです。新しいものを生成してください。" |
+| **EXP_007** | `alertError` | Export generation failed (500 response) | Alert banner (destructive) | "Report generation failed. Please try again." | "レポートの生成に失敗しました。もう一度お試しください。" |
 
 ---
 
@@ -669,6 +856,21 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | Net Revenue | `total_amount` | Completed orders, net of refunded payments | Decimal(10,2) (excludes refunds) |
 | Ad Fee Revenue | `amount` | `ad_payments` (with `payment_status = 'completed'`) | Decimal(10,2) |
 | Total Income | Calculated | — | `total commission + ad fee revenue` |
+
+### 7.7 Export Jobs → Database
+
+| Form Field | API Field | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- | :--- |
+| Report Type | `reportType` | `report_type` | `export_jobs` | VARCHAR(50) (`'commission'`, `'revenue'`, `'payout'`) |
+| Export Format | `format` | `format` | `export_jobs` | VARCHAR(10) (`'csv'`, `'xlsx'`) |
+| Date From | `dateFrom` | `date_from` | `export_jobs` | DATE |
+| Date To | `dateTo` | `date_to` | `export_jobs` | DATE |
+| Status | `status` | `status` | `export_jobs` | VARCHAR(20) (`'processing'`, `'ready'`, `'expired'`) |
+| File Path | `filePath` | `file_path` | `export_jobs` | TEXT (nullable) |
+| Row Count | `rowCount` | `row_count` | `export_jobs` | INTEGER (nullable) |
+| Generated By | `generatedBy` | `generated_by` | `export_jobs` | UUID FK (references `users.id`) |
+| Generated At | `generatedAt` | `generated_at` | `export_jobs` | TIMESTAMPTZ |
+| Expires At | `expiresAt` | `expires_at` | `export_jobs` | TIMESTAMPTZ |
 
 ### 7.4 Payout → Database
 
@@ -870,6 +1072,82 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 
 **Note:** Per REQUIREMENT_SPEC §2.5 and DEVELOPMENT_RULES §2.7, all Commission and Revenue endpoints are admin-only. Backend must enforce via `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')`. Non-admin users (buyer, merchant) receive this error.
 
+### 8.15 Export Commission/Revenue/Payout — Sync Success Response
+
+```json
+{
+  "data": {
+    "downloadUrl": "/api/v1/admin/exports/clx0000000001/download"
+  }
+}
+```
+
+### 8.16 Export — Async Success Response
+
+```json
+{
+  "data": {
+    "jobId": "clx0000000002",
+    "status": "processing"
+  }
+}
+```
+
+### 8.17 Export Job Status Response
+
+```json
+{
+  "data": {
+    "status": "ready"
+  }
+}
+```
+
+### 8.18 Recent Exports List Response
+
+```json
+{
+  "data": {
+    "exports": [
+      {
+        "jobId": "clx0000000001",
+        "reportType": "commission",
+        "format": "csv",
+        "dateRange": { "from": "2026-01-01", "to": "2026-08-25" },
+        "status": "ready",
+        "generatedAt": "2026-08-25T10:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### 8.19 Export Job Not Found Error Response
+
+```json
+{
+  "statusCode": 404,
+  "error": "NOT_FOUND",
+  "errorCode": "EXP_005",
+  "message": "Export job not found",
+  "timestamp": "2026-08-25T10:00:00.000Z",
+  "path": "/api/v1/admin/exports/clx0000000001/status"
+}
+```
+
+### 8.20 Export File Expired Error Response
+
+```json
+{
+  "statusCode": 410,
+  "error": "GONE",
+  "errorCode": "EXP_006",
+  "message": "This export has expired. Please generate a new one.",
+  "timestamp": "2026-08-25T10:00:00.000Z",
+  "path": "/api/v1/admin/exports/clx0000000001/download"
+}
+```
+
 ### 8.13 Ad Fee Revenue Success Response
 
 ```json
@@ -939,6 +1217,12 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | `commission.reportCommission` | "Commission" |
 | `commission.saveSuccess` | "Commission rate updated successfully" |
 
+### 9.1.1 English (en) — Commission Export
+
+| Key | Value |
+| :--- | :--- |
+| `commission.export` | "Export" |
+
 ### 9.2 English (en) — Revenue
 
 | Key | Value |
@@ -988,6 +1272,28 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | `errors.serverError` | "Something went wrong. Please try again" |
 | `errors.networkError` | "Network error. Please check your connection" |
 
+### 9.2.1 English (en) — Export
+
+| Key | Value |
+| :--- | :--- |
+| `export.title` | "Export Report" |
+| `export.reportType` | "Report Type" |
+| `export.dateRange` | "Date Range" |
+| `export.format` | "Export Format" |
+| `export.estimatedRows` | "Estimated {n} rows" |
+| `export.generate` | "Generate Report" |
+| `export.cancel` | "Cancel" |
+| `export.download` | "Download" |
+| `export.recentExports` | "Recent Exports" |
+| `export.processing` | "Processing" |
+| `export.ready` | "Ready" |
+| `export.expired` | "Expired" |
+| `export.success` | "Export generated successfully" |
+| `export.asyncNotice` | "Your export is being generated. You will be notified when it's ready." |
+| `export.expiredMessage` | "This export has expired. Please generate a new one." |
+| `revenue.export` | "Export" |
+| `revenue.exportPayout` | "Export Payout History" |
+
 ### 9.3 Japanese (ja) — Commission
 
 | Key | Value |
@@ -1008,6 +1314,12 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | `commission.reportRevenue` | "売上" |
 | `commission.reportCommission` | "手数料" |
 | `commission.saveSuccess` | "手数料率が正常に更新されました" |
+
+### 9.3.1 Japanese (ja) — Commission Export
+
+| Key | Value |
+| :--- | :--- |
+| `commission.export` | "エクスポート" |
 
 ### 9.4 Japanese (ja) — Revenue
 
@@ -1057,6 +1369,28 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | `errors.unauthorized` | "このページへのアクセス権限がありません" |
 | `errors.serverError` | "問題が発生しました。もう一度お試しください" |
 | `errors.networkError` | "ネットワークエラー。接続を確認してください" |
+
+### 9.4.1 Japanese (ja) — Export
+
+| Key | Value |
+| :--- | :--- |
+| `export.title` | "レポートをエクスポート" |
+| `export.reportType` | "レポートタイプ" |
+| `export.dateRange` | "日付範囲" |
+| `export.format` | "エクスポート形式" |
+| `export.estimatedRows` | "推定{n}行" |
+| `export.generate` | "レポートを生成" |
+| `export.cancel` | "キャンセル" |
+| `export.download` | "ダウンロード" |
+| `export.recentExports` | "最近のエクスポート" |
+| `export.processing` | "処理中" |
+| `export.ready` | "完了" |
+| `export.expired` | "期限切れ" |
+| `export.success` | "エクスポートが正常に生成されました" |
+| `export.asyncNotice` | "エクスポートを生成中です。準備ができ次第通知されます。" |
+| `export.expiredMessage` | "このエクスポートは期限切れです。新しいものを生成してください。" |
+| `revenue.export` | "エクスポート" |
+| `revenue.exportPayout` | "出金履歴をエクスポート" |
 
 ---
 
@@ -1113,7 +1447,21 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 | Property | Value |
 | :--- | :--- |
 | **Location** | `frontend/src/components/ui/table.tsx` |
-| **Usage** | Commission report table and payout table |
+| **Usage** | Commission report table, payout table, and recent exports table |
+
+### 10.7 Radio Group Component
+
+| Property | Value |
+| :--- | :--- |
+| **Location** | `frontend/src/components/ui/radio-group.tsx` |
+| **Usage** | Export format selection (CSV / Excel) in Export Modal |
+
+### 10.8 Date Range Picker Component
+
+| Property | Value |
+| :--- | :--- |
+| **Location** | `frontend/src/components/ui/date-range-picker.tsx` |
+| **Usage** | Export date range selection in Export Modal |
 
 ### 10.7 Progress Component
 
@@ -1138,6 +1486,7 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 - **Revenue Target Gauge:** Progress above 100% is clamped for gauge display and shown separately as "over target" (BR-REV-008). Only one active target per period type is stored; saving for the same period overwrites it (BR-REV-009).
 - **AI Forecast:** Forecast values are non-committing estimates — they are never written back to financial records or used in KPI/aggregation calculations (BR-REV-015). The dotted line is hidden with an informational note when historical data is insufficient (BR-REV-014).
 - **Ad Fee Revenue:** Ad fee revenue is displayed as a separate KPI card and included in total platform income. Ad fee trend series is overlaid on the revenue chart as a separate line. Ad fee payment statuses (completed, pending, refunded) are summarized alongside order payment statuses in a dedicated panel.
+- **Export Functionality:** Export buttons are available on both Commission tab (below report table) and Revenue tab (below payout table). The Export Modal (Layout 5) supports CSV and Excel formats only (no PDF). Date range is required with a 365-day maximum. Large exports (>1000 rows) are generated asynchronously; admin receives a download link via notification when ready. Export files are retained for 24 hours, then deleted. All export actions are logged to audit_logs (BR-EXP-005).
 - **Payment Status Panels:** The order payment panel renders only Completed and Pending badges in a single-row 2-column grid; the ad payment panel renders Completed, Pending, and Refunded badges in a single-row 3-column grid. The "Failed" / "Refunded" order badges and the "Ad Failed" badge are intentionally omitted — grid columns and gaps were rebalanced so both panels remain visually aligned across all breakpoints.
 
 ---
@@ -1201,7 +1550,32 @@ Displays ad fee payment statuses (Completed, Pending, Refunded). The "Ad Failed"
 - [ ] Total income card shows combined commission + ad fees
 - [ ] Changing range refetches ad fee trend data
 
-### 12.3 Global Tests
+### 12.3 Export Tests
+
+- [ ] Export Commission button opens Export Modal with report type "Commission"
+- [ ] Export Revenue button opens Export Modal with report type "Revenue"
+- [ ] Export Payout button opens Export Modal with report type "Payout"
+- [ ] Export modal shows empty date range and default CSV format on open
+- [ ] Empty date range rejected with error (VAL-EXP-001)
+- [ ] dateTo before dateFrom rejected with error (VAL-EXP-002)
+- [ ] Date range exceeding 365 days rejected with error (VAL-EXP-003)
+- [ ] Invalid format rejected with error (VAL-EXP-004)
+- [ ] Estimated rows shown after date range is applied
+- [ ] Generate button disabled during generation (spinner)
+- [ ] Sync export (≤1000 rows) returns download URL and triggers download
+- [ ] Async export (>1000 rows) returns job ID and shows processing toast
+- [ ] Recent exports table displays previously generated exports
+- [ ] Download button enabled when status = ready
+- [ ] Download button hidden/disabled when status = processing
+- [ ] Expired export shows expired message with suggestion to regenerate
+- [ ] Export job not found shows alert (EXP_005)
+- [ ] Export file expired shows alert (EXP_006)
+- [ ] Cancel button closes modal without generating
+- [ ] Export actions logged to audit_logs
+- [ ] Export files retained for 24 hours then deleted
+- [ ] Unauthorized export access blocked (403 COMM_002)
+
+### 12.4 Global Tests
 
 - [ ] Language toggle switches all labels (EN/JA/MY)
 - [ ] Locale-aware currency formatting updates with language
