@@ -449,7 +449,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-22 | Status Filter | Select | `ads.filterByStatus` | No | All, Pending, Approved, Rejected |
-| EL-23 | Placement Filter | Select | `ads.filterByPlacement` | No | All, Homepage Slider, Product Sidebar, Category Banner, Search Top |
+| EL-23 | Placement Filter | Select | `ads.filterByPlacement` | No | All, Homepage Banner, Product Sidebar, Category Banner, Search Top |
 | EL-24 | Tier Filter | Select | `ads.filterByTier` | No | All, Basic, Standard, Premium |
 | EL-25 | Shop Search | Input (search) | `ads.searchShop` | No | Search by shop name |
 | EL-26 | Date Range Filter | Date Range Picker | `ads.filterByDate` | No | Filter by submission date range |
@@ -474,7 +474,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-31 | Modal Title | Heading (h3) | `ads.reviewAd` | No | "Review Advertisement" |
 | EL-32 | Shop Info | Text | `ads.shopInfo` | Yes | Shop name |
 | EL-33 | Ad Title | Text | — | Yes | Advertisement title |
-| EL-34 | Placement & Tier | Text | `ads.placementTier` | Yes | "Homepage Slider — Standard" |
+| EL-34 | Placement & Tier | Text | `ads.placementTier` | Yes | "Homepage Banner — Standard" |
 | EL-35 | Image Preview | Image | — | Yes | Ad banner image |
 | EL-36 | Announcement Message | Text | `ads.message` | Yes | Banner message |
 | EL-37 | Link URL | Link | `ads.linkUrl` | No | Click-through URL |

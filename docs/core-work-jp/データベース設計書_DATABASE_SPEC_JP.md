@@ -772,7 +772,7 @@ CREATE TABLE ad_fee_settings (
 #### Default Fee Settings（デフォルト料金設定）
 | Placement | Basic | Standard | Premium |
 |-----------|-------|----------|---------|
-| Homepage Slider | $3.00/day | $5.00/day | $8.00/day |
+| Homepage Banner | $3.00/day | $5.00/day | $8.00/day |
 | Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day |
 | Category Banner | $2.50/day | $4.00/day | $7.00/day |
 | Search Results Top | $1.50/day | $2.50/day | $5.00/day |
