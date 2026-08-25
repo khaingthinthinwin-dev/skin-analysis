@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Ad Management (管理者広告管理) — Ad Review, Approval, Fee Management, Analytics & Reporting |
 | **Subsystem** | Advertisement Management — Admin Ad Approval, Bulk Operations, Package/Fee Management, Revenue Analytics, Export Reports |
 | **Function ID** | FN-ADM-001 |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | 2026-08-24 |
-| **Last Updated** | 2026-08-24 |
+| **Last Updated** | 2026-08-25 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -24,6 +24,7 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-24 | Software Architect | Initial functional specification for Admin Ad Management Screen: ad review/approval (single & bulk), fee management, revenue analytics, and export reports. |
+| 1.1 | 2026-08-25 | Software Architect | Removed SKM-FDS-AUTH-001 from related documents (out of scope). Added missing Create and Deactivate operations for fee settings to support full CRUD. Restricted export feature strictly to CSV format (removed Excel and PDF). |
 
 ---
 
@@ -63,8 +64,8 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 4. **Package & Fee Management** — Creating, editing, activating/deactivating fee settings per placement and tier. All changes logged to fee history with timestamps, before/after values, and reasons.
 5. **Fee History Tracking** — Recording all pricing changes with full audit trail.
 6. **Revenue Breakdown Analytics** — Providing financial charts, graphs, and summary metrics breaking down generated ad revenue by placement location and pricing tier over custom date ranges.
-7. **Export Reports** — Exporting Ad Performance reports, Shop ad submission history, and Fee History logs in CSV, Excel, or PDF formats.
-8. **Audit Logging** — Recording all significant admin actions (approve, reject, bulk approve, bulk reject, fee update) to the audit trail.
+7. **Export Reports** — Exporting Ad Performance reports, Shop ad submission history, and Fee History logs in CSV format.
+8. **Audit Logging** — Recording all significant admin actions (approve, reject, bulk approve, bulk reject, fee create, fee update, fee deactivate) to the audit trail.
 
 ### 1.3 Target Users
 
@@ -94,7 +95,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
                                                           ▼
                                                ┌────────────────────────┐
                                                │  Export Engine         │
-                                               │  (CSV / Excel / PDF)   │
+                                               │  (CSV)                 │
                                                └────────────────────────┘
 ```
 
@@ -114,7 +115,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `date_to` | Admin Input | Analytics/export end date |
 | `placement_filter` | Admin Input | Filter analytics by placement |
 | `tier_filter` | Admin Input | Filter analytics by tier |
-| `export_format` | Admin Input | Export format: csv, xlsx, pdf |
+| `export_format` | Admin Input | Export format: csv |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
@@ -123,7 +124,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `fee_settings` | Fee DTO | Current fee configuration per placement/tier |
 | `fee_history` | History List | Pricing change history with timestamps |
 | `revenue_analytics` | Analytics DTO | Revenue breakdown by placement, tier, date range |
-| `export_file` | File | Generated CSV/Excel/PDF report |
+| `export_file` | File | Generated CSV report |
 
 ### 1.6 Related Documents
 
@@ -132,7 +133,6 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business workflow logic, ad display rules, monetization rules. |
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`advertisements`, `ad_payments`, `ad_fee_settings`, `ad_fee_history`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, naming conventions, API standards. |
-| 4 | SKM-FDS-AUTH-001 | Functional Specification (Auth) | `docs/screen/SignUp_LogIn/機能設計書_SignUp_Login.md` | Reference template for functional specification format. |
 
 ---
 
@@ -151,9 +151,11 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | UC-ADM-007 | Manage Ad Fee Settings | Admin is authenticated. | Admin can view, create, edit, activate/deactivate fee settings per placement and tier. | Admin |
 | UC-ADM-008 | View Fee Change History | Admin wants to see pricing history. | Historical fee changes displayed with timestamps, reasons, and before/after values. | Admin |
 | UC-ADM-009 | View Revenue Breakdown Analytics | Admin wants financial performance data. | Revenue charts and summary metrics broken down by placement and tier over custom date range. | Admin |
-| UC-ADM-010 | Export Ad Performance Report | Admin wants to export ad performance data. | CSV/Excel/PDF file generated with ad metrics (impressions, clicks, CTR, revenue) per ad. | Admin |
-| UC-ADM-011 | Export Shop Submission History | Admin wants shop ad submission records. | CSV/Excel/PDF file generated with all ad submissions, statuses, and outcomes per shop. | Admin |
-| UC-ADM-012 | Export Fee History Log | Admin wants fee change audit trail. | CSV/Excel/PDF file generated with all fee setting changes, timestamps, and reasons. | Admin |
+| UC-ADM-010 | Export Ad Performance Report | Admin wants to export ad performance data. | CSV file generated with ad metrics (impressions, clicks, CTR, revenue) per ad. | Admin |
+| UC-ADM-011 | Export Shop Submission History | Admin wants shop ad submission records. | CSV file generated with all ad submissions, statuses, and outcomes per shop. | Admin |
+| UC-ADM-012 | Export Fee History Log | Admin wants fee change audit trail. | CSV file generated with all fee setting changes, timestamps, and reasons. | Admin |
+| UC-ADM-013 | Create Fee Setting | Admin wants to add a new fee configuration for a placement and tier. | New fee setting created with status active. `ad_fee_history` record created with `old_daily_rate=null`. | Admin |
+| UC-ADM-014 | Deactivate Fee Setting | Admin wants to deactivate an existing active fee setting. | Fee setting status set to inactive. Existing ads using this setting are unaffected. | Admin |
 
 ### 2.2 Primary Business Workflow — Admin Ad Review (Single & Bulk)
 
@@ -234,7 +236,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 │ Charts &     │            ▼
 │ Metrics:     │   ┌──────────────────┐
 │ - Revenue by │   │ Format Selection │
-│   Placement  │   │ CSV / Excel / PDF│
+│   Placement  │   │ CSV              │
 │ - Revenue by │   └────────┬─────────┘
 │   Tier       │            │
 │ - Total Rev  │            ▼
@@ -371,6 +373,10 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | BR-ADM-033 | Daily Rate Validation | Daily rate must be > 0. | Backend (DTO validation + DB check constraint) |
 | BR-ADM-034 | Duration Validation | Duration days must be > 0. | Backend (DTO validation + DB check constraint) |
 | BR-ADM-035 | Max Ads Validation | Max ads must be > 0. | Backend (DTO validation + DB check constraint) |
+| BR-ADM-036 | Create Fee Audit | On fee setting creation, log FEE_CREATED event to audit_logs with placement, tier, and initial values. | Backend (service logic) |
+| BR-ADM-037 | Deactivate Fee Guard | Deactivation is only permitted on fee settings with `is_active=true`. | Backend (state check) |
+| BR-ADM-038 | Deactivate Fee Logging | On fee setting deactivation, log FEE_DEACTIVATED event to audit_logs. | Backend (service logic) |
+| BR-ADM-039 | Deactivate Fee History | Deactivation is logged to `ad_fee_history` with the final values before deactivation. | Backend (service logic) |
 
 ### 4.5 Revenue Analytics Rules
 
@@ -386,7 +392,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-ADM-050 | Format Validation | Export format must be one of: csv, xlsx, pdf. | Backend (DTO validation) |
+| BR-ADM-050 | Format Validation | Export format must be csv. | Backend (DTO validation) |
 | BR-ADM-051 | Date Range for Export | Exports require a date range. Maximum 365 days. | Backend (DTO validation) |
 | BR-ADM-052 | Async Generation | Large exports (>1000 rows) are generated asynchronously. Admin receives a download link via notification when ready. | Backend (job queue) |
 | BR-ADM-053 | Export Retention | Generated export files are retained for 24 hours, then deleted. | Backend (cleanup job) |
@@ -511,7 +517,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 ### 5.5 Screen: Package & Fee Management (`/admin/advertisements/packages`)
 
-**Purpose:** Allow admins to view, edit, activate/deactivate fee settings per placement and tier.
+**Purpose:** Allow admins to view, create, edit, activate/deactivate fee settings per placement and tier.
 
 #### 5.5.1 UI Elements
 
@@ -522,6 +528,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-70 | Page Title | Heading (h1) | `ads.packages` | No | "Package & Fee Management" |
 | EL-71 | Back to Ads Button | Button (text) | `ads.backToAds` | No | Return to Advertisement Management |
 | EL-72 | View History Button | Button (secondary) | `ads.viewFeeHistory` | No | Navigate to fee change history |
+| EL-72a | Create Fee Setting Button | Button (primary) | `ads.createFeeSetting` | No | Open create fee setting modal |
 
 **Fee Settings Table:**
 
@@ -535,6 +542,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-78 | Status Column | Table Column | `ads.status` | Yes | Active/Inactive badge |
 | EL-79 | Actions Column | Table Column | `ads.actions` | Yes | Edit / Deactivate buttons |
 | EL-80 | Edit Button | Button (secondary) | `ads.edit` | No | Open edit fee modal |
+| EL-80a | Deactivate Button | Button (danger) | `ads.deactivate` | No | Deactivate active fee setting |
 
 **Edit Fee Modal:**
 
@@ -547,6 +555,29 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-85 | Change Reason | Textarea | `ads.changeReason` | Yes | Reason for fee change (max 1000 chars) |
 | EL-86 | Save Button | Button (primary) | `ads.save` | Yes | Save fee changes |
 | EL-87 | Cancel Button | Button (secondary) | `ads.cancel` | No | Close modal |
+
+**Create Fee Modal:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-88 | Placement Select | Select | `ads.placement` | Yes | Select placement location |
+| EL-89 | Tier Select | Select | `ads.tier` | Yes | Select pricing tier |
+| EL-81a | Daily Rate Input | Input (number) | `ads.dailyRate` | Yes | Daily rate |
+| EL-82a | Duration Input | Input (number) | `ads.duration` | Yes | Duration in days |
+| EL-83a | Max Ads Input | Input (number) | `ads.maxAds` | Yes | Maximum ads allowed |
+| EL-84a | Effective From | Date Picker | `ads.effectiveFrom` | Yes | When setting takes effect |
+| EL-85a | Change Reason | Textarea | `ads.changeReason` | Yes | Reason for creating fee setting (max 1000 chars) |
+| EL-86a | Create Button | Button (primary) | `ads.create` | Yes | Create fee setting |
+| EL-87a | Cancel Button | Button (secondary) | `ads.cancel` | No | Close modal |
+
+**Deactivate Fee Confirmation Modal:**
+
+| Element ID | Element Name | Element Type | i18n Key | Required | Description |
+|------------|--------------|--------------|----------|:--------:|-------------|
+| EL-90a | Modal Title | Heading (h3) | `ads.deactivateFeeTitle` | No | "Deactivate Fee Setting" |
+| EL-90b | Warning Message | Alert | `ads.deactivateFeeWarning` | No | "This fee setting will be deactivated. Existing ads using this fee will be unaffected." |
+| EL-90c | Confirm Deactivate Button | Button (danger) | `ads.confirmDeactivate` | Yes | Confirm deactivation |
+| EL-90d | Cancel Button | Button (secondary) | `ads.cancel` | No | Close modal |
 
 ### 5.6 Screen: Fee Change History (`/admin/advertisements/fee-history`)
 
@@ -635,7 +666,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-128 | Tier Filter | Multi-Select | `ads.filterByTier` | No | Filter by tier(s) |
 | EL-129 | Status Filter | Multi-Select | `ads.filterByStatus` | No | Filter by approval status (for ad performance & submission history) |
 | EL-130 | Shop Filter | Input (search) | `ads.filterByShop` | No | Filter by shop name (for submission history) |
-| EL-131 | Format Selection | Radio Group | `ads.exportFormat` | Yes | CSV / Excel (XLSX) / PDF |
+| EL-131 | Format Selection | Radio Group | `ads.exportFormat` | Yes | CSV |
 | EL-132 | Export Button | Button (primary) | `ads.generateExport` | Yes | "Generate Report" |
 | EL-133 | Estimated Rows Text | Text | `ads.estimatedRows` | No | "Estimated {n} rows" (shown after filters applied) |
 
@@ -645,7 +676,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-134 | Recent Exports Heading | Heading (h3) | `ads.recentExports` | No | "Recent Exports" |
 | EL-135 | Report Type Column | Table Column | `ads.reportType` | Yes | Type of report |
-| EL-136 | Format Column | Table Column | `ads.format` | Yes | CSV/Excel/PDF |
+| EL-136 | Format Column | Table Column | `ads.format` | Yes | CSV |
 | EL-137 | Date Range Column | Table Column | `ads.dateRange` | Yes | Date range of report |
 | EL-138 | Status Column | Table Column | `ads.status` | Yes | Processing/Ready/Expired/Failed |
 | EL-139 | Download Column | Table Column | `ads.download` | Yes | Download button (when ready) |
@@ -718,10 +749,12 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | Navigate to `/admin/advertisements/packages` |
-| **API Endpoints** | `GET /api/v1/admin/ad-fees` (list), `PUT /api/v1/admin/ad-fees/:id` (update) |
+| **API Endpoints** | `GET /api/v1/admin/ad-fees` (list), `POST /api/v1/admin/ad-fees` (create), `PUT /api/v1/admin/ad-fees/:id` (update), `PATCH /api/v1/admin/ad-fees/:id/deactivate` (deactivate) |
 | **Processing Steps (GET)** | 1. Validate admin role. 2. Query all `ad_fee_settings`. 3. Return fee settings list. |
+| **Processing Steps (POST)** | 1. Validate admin role. 2. Validate daily_rate > 0, duration_days > 0, max_ads > 0. 3. Check uniqueness: no active setting exists for the given placement+tier. If conflict, return 409. 4. Create `ad_fee_settings` record with `is_active=true`. 5. Create `ad_fee_history` record: `ad_fee_setting_id=<new_id>`, `old_daily_rate=null`, `new_daily_rate=daily_rate`, `old_duration_days=null`, `new_duration_days=duration_days`, `old_max_ads=null`, `new_max_ads=max_ads`, `changed_by=currentAdmin.id`, `change_reason`, `effective_from`. 6. Log FEE_CREATED event to audit_logs. 7. Return created fee setting. |
 | **Processing Steps (PUT)** | 1. Validate admin role. 2. Find fee setting by ID. 3. Validate daily_rate > 0, duration_days > 0, max_ads > 0. 4. Create `ad_fee_history` record: `ad_fee_setting_id`, `old_daily_rate`, `new_daily_rate`, `old_duration_days`, `new_duration_days`, `old_max_ads`, `new_max_ads`, `changed_by=currentAdmin.id`, `change_reason`, `effective_from`. 5. Update `ad_fee_settings` record with new values. 6. Log FEE_UPDATED event to audit_logs. 7. Return updated fee setting. |
-| **Success Response** | 200 OK with updated fee setting |
+| **Processing Steps (PATCH deactivate)** | 1. Validate admin role. 2. Find fee setting by ID. 3. Verify `is_active=true`. If already inactive, return 400. 4. Create `ad_fee_history` record: `ad_fee_setting_id`, `old_daily_rate=daily_rate`, `new_daily_rate=null`, `old_duration_days=duration_days`, `new_duration_days=null`, `old_max_ads=max_ads`, `new_max_ads=null`, `changed_by=currentAdmin.id`, `change_reason`, `effective_from=currentTimestamp`. 5. Update `ad_fee_settings`: set `is_active=false`. 6. Log FEE_DEACTIVATED event to audit_logs. 7. Return deactivated fee setting. |
+| **Success Response** | 200 OK with fee setting (created, updated, or deactivated) |
 
 ### 6.8 Operation: View Fee Change History
 
@@ -749,7 +782,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 |-----------|---------------|
 | **Trigger** | Click "Generate Report" with Ad Performance selected |
 | **API Endpoint** | `POST /api/v1/admin/ads/export/ad-performance` |
-| **Request Body** | `{ dateFrom: string, dateTo: string, placement?: string[], tier?: string[], status?: string[], format: 'csv' \| 'xlsx' \| 'pdf' }` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, placement?: string[], tier?: string[], status?: string[], format: 'csv' }` |
 | **Processing Steps** | 1. Validate admin role. 2. Validate inputs (date range, format). 3. Query ad performance data: for each ad in date range, gather title, shop, placement, tier, status, impressions, clicks, CTR, fee paid, revenue. 4. Apply filters. 5. If result set > 1000 rows: create export job, return job ID, generate asynchronously. 6. If ≤ 1000 rows: generate file synchronously. 7. Format file based on `format` parameter. 8. Store file in export storage with 24-hour TTL. 9. Log EXPORT_GENERATED event to audit_logs. 10. Return download URL or job ID. |
 | **Success Response** | 200 OK with `{ downloadUrl: string }` or `{ jobId: string, status: 'processing' }` |
 
@@ -759,7 +792,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 |-----------|---------------|
 | **Trigger** | Click "Generate Report" with Submission History selected |
 | **API Endpoint** | `POST /api/v1/admin/ads/export/submission-history` |
-| **Request Body** | `{ dateFrom: string, dateTo: string, shop?: string, format: 'csv' \| 'xlsx' \| 'pdf' }` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, shop?: string, format: 'csv' }` |
 | **Processing Steps** | 1. Validate admin role. 2. Validate inputs. 3. Query all ad submissions in date range: for each ad, gather shop name, title, placement, tier, submitted date, approval status, rejection reason (if rejected), approved/rejected by, approved/rejected at, fee paid, refund amount (if refunded). 4. Apply shop filter if provided. 5. Generate file. 6. Log EXPORT_GENERATED event. 7. Return download URL or job ID. |
 | **Success Response** | 200 OK with `{ downloadUrl: string }` or `{ jobId: string, status: 'processing' }` |
 
@@ -769,7 +802,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 |-----------|---------------|
 | **Trigger** | Click "Generate Report" with Fee History selected, or "Export" on fee history page |
 | **API Endpoint** | `POST /api/v1/admin/ads/export/fee-history` |
-| **Request Body** | `{ dateFrom: string, dateTo: string, placement?: string[], tier?: string[], format: 'csv' \| 'xlsx' \| 'pdf' }` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, placement?: string[], tier?: string[], format: 'csv' }` |
 | **Processing Steps** | 1. Validate admin role. 2. Validate inputs. 3. Query `ad_fee_history` joined with `ad_fee_settings` and `users` where `created_at` within date range. 4. Apply filters. 5. For each record: gather placement, tier, old daily rate, new daily rate, old duration, new duration, old max ads, new max ads, changed by (admin name), change reason, effective from, created at. 6. Generate file. 7. Log EXPORT_GENERATED event. 8. Return download URL or job ID. |
 | **Success Response** | 200 OK with `{ downloadUrl: string }` or `{ jobId: string, status: 'processing' }` |
 
@@ -816,7 +849,25 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `effective_from` | Effective From | 適用開始日 | TIMESTAMP | Yes | Date Picker | `@IsDate()` |
 | `change_reason` | Change Reason | 変更理由 | TEXT | Yes | Textarea | `@IsNotEmpty()`, `@MaxLength(1000)` |
 
-### 7.5 Input Specification — Revenue Analytics (入力定義)
+### 7.5 Input Specification — Create Fee Setting (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `placement` | Placement | 配置場所 | VARCHAR(50) | Yes | Select | `@IsIn(['homepage_slider', 'product_sidebar', 'category_banner', 'search_top'])` |
+| `tier` | Tier | ティア | VARCHAR(20) | Yes | Select | `@IsIn(['basic', 'standard', 'premium'])` |
+| `daily_rate` | Daily Rate | 日額料金 | DECIMAL(10,2) | Yes | Input (number) | `@IsNumber()`, `@Min(0.01)` |
+| `duration_days` | Duration (Days) | 期間（日数） | INTEGER | Yes | Input (number) | `@IsInt()`, `@Min(1)` |
+| `max_ads` | Max Ads | 最大広告数 | INTEGER | Yes | Input (number) | `@IsInt()`, `@Min(1)` |
+| `effective_from` | Effective From | 適用開始日 | TIMESTAMP | Yes | Date Picker | `@IsDate()` |
+| `change_reason` | Change Reason | 変更理由 | TEXT | Yes | Textarea | `@IsNotEmpty()`, `@MaxLength(1000)` |
+
+### 7.6 Input Specification — Deactivate Fee Setting (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `change_reason` | Change Reason | 変更理由 | TEXT | Yes | Textarea | `@IsNotEmpty()`, `@MaxLength(1000)` |
+
+### 7.7 Input Specification — Revenue Analytics (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
@@ -825,7 +876,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `placement` | Placement Filter | 配置場所フィルター | VARCHAR(50)[] | No | Multi-Select | Each `@IsIn(['homepage_slider', 'product_sidebar', 'category_banner', 'search_top'])` |
 | `tier` | Tier Filter | ティアフィルター | VARCHAR(20)[] | No | Multi-Select | Each `@IsIn(['basic', 'standard', 'premium'])` |
 
-### 7.6 Input Specification — Export Reports (入力定義)
+### 7.8 Input Specification — Export Reports (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
@@ -836,9 +887,9 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `tier` | Tier Filter | ティアフィルター | VARCHAR(20)[] | No | Multi-Select | Each `@IsIn([...])` |
 | `status` | Status Filter | ステータスフィルター | VARCHAR(20)[] | No | Multi-Select | Each `@IsIn(['pending', 'approved', 'rejected'])` |
 | `shop` | Shop Filter | 店舗フィルター | VARCHAR(255) | No | Input (search) | `@MaxLength(255)` |
-| `format` | Export Format | エクスポート形式 | ENUM | Yes | Radio Group | `@IsIn(['csv', 'xlsx', 'pdf'])` |
+| `format` | Export Format | エクスポート形式 | ENUM | Yes | Radio Group | `@IsIn(['csv'])` |
 
-### 7.7 Output Specification — Ad DTO (出力定義)
+### 7.9 Output Specification — Ad DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -865,7 +916,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `createdAt` | `advertisements.created_at` | ISO 8601 timestamp |
 | `analytics` | Analytics tracking | `{ impressions: number, clicks: number, ctr: number }` |
 
-### 7.8 Output Specification — Bulk Result DTO (出力定義)
+### 7.10 Output Specification — Bulk Result DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -877,7 +928,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `ad_ids` | Input echo | UUID string array |
 | `errors` | Validation | Array of `{ adId: string, reason: string }` for any failed items |
 
-### 7.9 Output Specification — Fee Setting DTO (出力定義)
+### 7.11 Output Specification — Fee Setting DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -890,7 +941,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `isActive` | `ad_fee_settings.is_active` | Boolean |
 | `updatedAt` | `ad_fee_settings.updated_at` | ISO 8601 timestamp |
 
-### 7.10 Output Specification — Fee History DTO (出力定義)
+### 7.12 Output Specification — Fee History DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -909,7 +960,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `effectiveFrom` | `ad_fee_history.effective_from` | ISO 8601 timestamp |
 | `createdAt` | `ad_fee_history.created_at` | ISO 8601 timestamp |
 
-### 7.11 Output Specification — Revenue Analytics DTO (出力定義)
+### 7.13 Output Specification — Revenue Analytics DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -922,7 +973,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `byTier[]` | GROUP BY tier | Array of `{ tier, tierName, adCount, revenue, avgCtr }` |
 | `trend[]` | GROUP BY date | Array of `{ date, revenue, adCount }` |
 
-### 7.12 Output Specification — Export Job DTO (出力定義)
+### 7.14 Output Specification — Export Job DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -962,7 +1013,27 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `effective_from` | Required, valid date | "Effective date is required" | "適用開始日は必須です" |
 | `change_reason` | Required, 1-1000 chars | "Change reason is required" | "変更理由は必須です" |
 
-### 8.4 Revenue Analytics Validation (Strict Mode)
+### 8.4 Create Fee Setting Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `placement` | Required, valid enum | "Placement is required" / "Invalid placement" | "配置場所は必須です" / "無効な配置場所です" |
+| `tier` | Required, valid enum | "Tier is required" / "Invalid tier" | "ティアは必須です" / "無効なティアです" |
+| `daily_rate` | Required, > 0 | "Daily rate must be greater than 0" | "日額料金は0より大きい必要があります" |
+| `duration_days` | Required, > 0 integer | "Duration must be at least 1 day" | "期間は最低1日である必要があります" |
+| `max_ads` | Required, > 0 integer | "Max ads must be at least 1" | "最大広告数は最低1である必要があります" |
+| `effective_from` | Required, valid date | "Effective date is required" | "適用開始日は必須です" |
+| `change_reason` | Required, 1-1000 chars | "Change reason is required" | "変更理由は必須です" |
+| Uniqueness | No active setting exists for placement+tier | "A fee setting already exists for this placement and tier" | "この配置場所とティアのfee設定は既に存在します" |
+
+### 8.5 Deactivate Fee Setting Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| Fee setting ID | Must exist and be active | "Fee setting not found" / "Fee setting is already inactive" | "fee設定が見つかりません" / "fee設定は既に無効です" |
+| `change_reason` | Required, 1-1000 chars | "Change reason is required" | "変更理由は必須です" |
+
+### 8.6 Revenue Analytics Validation (Strict Mode)
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
@@ -970,7 +1041,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `dateTo` | Required, valid date, >= dateFrom | "End date is required" / "End date must be after start date" | "終了日は必須です" / "終了日は開始日より後である必要があります" |
 | Range | Max 365 days | "Date range cannot exceed 365 days" | "日付範囲は365日を超えることはできません" |
 
-### 8.5 Export Validation (Strict Mode)
+### 8.7 Export Validation (Strict Mode)
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
@@ -979,7 +1050,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `dateFrom` | Required | "Start date is required" | "開始日は必須です" |
 | `dateTo` | Required, >= dateFrom | "End date is required" / "End date must be after start date" | "終了日は必須です" / "終了日は開始日より後である必要があります" |
 
-### 8.6 Validation Enforcement Layers
+### 8.8 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
@@ -1025,6 +1096,8 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `400` | `BAD_REQUEST` | Invalid max_ads (<=0) | "Max ads must be at least 1" |
 | `409` | `CONFLICT` | Duplicate placement+tier combination | "A fee setting already exists for this placement and tier" |
 | `404` | `NOT_FOUND` | Fee setting not found | "Fee setting not found" |
+| `400` | `BAD_REQUEST` | Deactivate: fee setting already inactive | "Fee setting is already inactive" |
+| `400` | `BAD_REQUEST` | Missing change reason for create/deactivate | "Change reason is required" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
 ### 9.4 Error Classification Table — Revenue Analytics
@@ -1041,7 +1114,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
 | `400` | `BAD_REQUEST` | Invalid report type | "Invalid report type" |
-| `400` | `BAD_REQUEST` | Invalid format | "Invalid export format. Use CSV, XLSX, or PDF." |
+| `400` | `BAD_REQUEST` | Invalid format | "Invalid export format. Use CSV." |
 | `400` | `BAD_REQUEST` | Missing date range | "Date range is required" |
 | `404` | `NOT_FOUND` | Export job not found | "Export job not found" |
 | `410` | `GONE` | Export file expired | "This export has expired. Please generate a new one." |
@@ -1075,7 +1148,9 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `/api/v1/admin/ads/bulk/approve` | POST | `admin` | Bulk approve ads |
 | `/api/v1/admin/ads/bulk/reject` | POST | `admin` | Bulk reject ads |
 | `/api/v1/admin/ad-fees` | GET | `admin` | List fee settings |
+| `/api/v1/admin/ad-fees` | POST | `admin` | Create fee setting |
 | `/api/v1/admin/ad-fees/:id` | PUT | `admin` | Update fee setting |
+| `/api/v1/admin/ad-fees/:id/deactivate` | PATCH | `admin` | Deactivate fee setting |
 | `/api/v1/admin/ad-fees/history` | GET | `admin` | View fee change history |
 | `/api/v1/admin/ads/analytics/revenue` | GET | `admin` | Revenue breakdown analytics |
 | `/api/v1/admin/ads/export/ad-performance` | POST | `admin` | Export ad performance report |
@@ -1101,6 +1176,8 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `BULK_AD_APPROVED` | adminId, adIds[], count, timestamp | 2 years |
 | `BULK_AD_REJECTED` | adminId, adIds[], count, rejectionReason, refundsProcessed, timestamp | 2 years |
 | `FEE_UPDATED` | adminId, feeSettingId, oldValue, newValue, changeReason, timestamp | 2 years |
+| `FEE_CREATED` | adminId, feeSettingId, placement, tier, dailyRate, durationDays, maxAds, changeReason, timestamp | 2 years |
+| `FEE_DEACTIVATED` | adminId, feeSettingId, placement, tier, changeReason, timestamp | 2 years |
 | `EXPORT_GENERATED` | adminId, reportType, format, dateRange, rowCount, timestamp | 1 year |
 | `EXPORT_DOWNLOADED` | adminId, exportJobId, timestamp | 1 year |
 
@@ -1147,6 +1224,8 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `/admin/advertisements` | `/admin/advertisements/analytics` | Click "Revenue Analytics" |
 | `/admin/advertisements` | `/admin/advertisements/export` | Click "Export" |
 | `/admin/advertisements/packages` | Edit Fee Modal | Click "Edit" on fee setting |
+| `/admin/advertisements/packages` | Create Fee Modal | Click "Create Fee Setting" |
+| `/admin/advertisements/packages` | Deactivate Fee Confirmation Modal | Click "Deactivate" on fee setting |
 | `/admin/advertisements/packages` | `/admin/advertisements/fee-history` | Click "View History" |
 | `/admin/advertisements/fee-history` | `/admin/advertisements/packages` | Click "Back to Packages" |
 | `/admin/advertisements/analytics` | `/admin/advertisements` | Click "Back to Ads" |
@@ -1161,6 +1240,8 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | Bulk Approve Modal | Closed | Confirm / Cancel |
 | Bulk Reject Modal | Closed | Confirm (with reason) / Cancel |
 | Edit Fee Modal | Closed | Save / Cancel |
+| Create Fee Modal | Closed | Create / Cancel |
+| Deactivate Fee Confirmation Modal | Closed | Confirm / Cancel |
 
 ---
 
@@ -1234,7 +1315,7 @@ Defined via `.env` configuration:
 |----------------|-------------------------|----------------------------|
 | B-ADM-003 | Ads require admin approval before display | UC-ADM-001~003, Sec 6.2~6.3, BR-ADM-001~005 |
 | B-ADM-006 | Refund issued on ad rejection | UC-ADM-003, 005, Sec 6.3, 6.5, BR-ADM-004 |
-| B-ADM-007 | Admin can manage packages and set pricing | UC-ADM-007, Sec 6.7, BR-ADM-030~035 |
+| B-ADM-007 | Admin can manage packages and set pricing | UC-ADM-007, 013~014, Sec 6.7, BR-ADM-030~039 |
 | B-ADM-008 | Admin can approve/reject ads with reason | UC-ADM-002~003, Sec 6.2~6.3, BR-ADM-001~005 |
 | B-ADM-009 | Ad display rules: priority and round-robin | BR-ADM-020~025 |
 | B-ADM-010 | Slider max 5 ads, auto-rotation | BR-ADM-024~025 |
@@ -1250,7 +1331,7 @@ Defined via `.env` configuration:
 |----------------|-------------------------------|
 | `advertisements` | List Ads (SELECT), Approve/Reject Single (UPDATE), Bulk Approve/Reject (BATCH UPDATE) |
 | `ad_payments` | Refund on Rejection (UPDATE), Revenue Analytics (SELECT), Export (SELECT) |
-| `ad_fee_settings` | List Fee Settings (SELECT), Update Fee (UPDATE), Analytics Breakdown (JOIN) |
+| `ad_fee_settings` | List Fee Settings (SELECT), Create Fee (INSERT), Update Fee (UPDATE), Deactivate Fee (UPDATE), Analytics Breakdown (JOIN) |
 | `ad_fee_history` | Fee Change Logging (INSERT), View History (SELECT), Export Fee History (SELECT) |
 | `shops` | Ad List with Shop Info (JOIN) |
 | `users` | Admin Identity on Approval (JOIN), Fee History Changed By (JOIN) |
@@ -1264,7 +1345,6 @@ Defined via `.env` configuration:
 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` |
 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` |
 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` |
-| SKM-FDS-AUTH-001 | Functional Specification (Auth) | `docs/screen/SignUp_LogIn/機能設計書_SignUp_Login.md` |
 
 ---
 
