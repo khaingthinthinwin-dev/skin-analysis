@@ -4,9 +4,9 @@
 **Target Screen:** Search & Filter Page (検索・フィルタページ)  
 **Subsystem:** All Roles — Product Search, Filtering, Sorting & Pagination  
 **Function ID:** FN-SEARCH-001  
-**Version:** 2.3  
+**Version:** 2.6  
 **Created:** 2026-08-07  
-**Last Updated:** 2026-08-21  
+**Last Updated:** 2026-08-25  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -25,6 +25,9 @@
 | 2.1 | 2026-08-17 | Senior System Engineer | Further alignment with SignUp_Login (画面項目設計書 SKM-SIS-SCR-001) format and naming conventions. Enhanced section organization, improved consistency across all table formats, and ensured all Item Definitions follow standardized component type and data type conventions per DEVELOPMENT_RULES v2.0. |
 | 2.2 | 2026-08-18 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.10, DATABASE_SPEC v2.2, and DEVELOPMENT_RULES v2.1. Updated subsystem from "Buyer Module" to "All Roles". Added sponsored advertisement display (Sec 4.4 item39, Sec 5.15, Sec 8.5). Added 401/403 error codes for guest/merchant/admin shopping restrictions (Sec 6.2). Added guest alert modal behavior (Sec 11). Added Myanmar (MY) i18n translations (Sec 9.3). Fixed CUID→UUID in validation messages. |
 | 2.3 | 2026-08-21 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v2.10 / DATABASE_SPEC v2.4 / DEVELOPMENT_RULES v2.1: stale cross-references updated (Rule 4.6.4 → REQUIREMENT_SPEC §5.3 Advertisement Display Rules), related document versions refreshed, and merchant approval gating (`merchants.license_status`, DBS §3.2) reflected in visibility notes. |
+| 2.4 | 2026-08-24 | Senior System Engineer | Redesigned the Sponsored Advertisement (`slotAdTop`) presentation: slide-down UI panel above the product grid with animated slide-down entrance; advertisement description text now rendered together with title, image/banner, and CTA; responsive desktop (horizontal) / mobile (stacked) slide layouts. Added slide sub-item definitions (Sec 4.4 items 40–46), updated layout diagrams (Sec 3.1), breakpoints (Sec 3.2), behavior (Sec 5.15), API response note (Sec 8.5), i18n keys (Sec 9), shared component (Sec 10.8), UI/UX & accessibility notes (Sec 11), and test checklist (Sec 12.7). 5-second auto-slide, maximum 5 ads, API, approval, schedule, and tier-priority rules unchanged. |
+| 2.5 | 2026-08-24 | Senior System Engineer | Relocated the Sponsored Advertisement slide-down panel (`slotAdTop`, [D0]–[D0d]) out of [D] Results Area: the panel now renders horizontally centered between [A] Page Header / Title and [B] Search Bar, spanning the full container width, with [B] Search Bar immediately below it. Updated layout diagrams (Sec 3.1), responsive breakpoints (Sec 3.2), item definition sections (ad panel moved to new Sec 4.2; former Secs 4.2–4.5 renumbered to 4.3–4.6), behavior (Sec 5.15), shared component (Sec 10.8), UI/UX & accessibility notes (Sec 11), and test checklist (Sec 12.7). Slide-down animation, 5-second auto-slide, maximum 5 ads, API, approval, schedule, and tier-priority rules unchanged. |
+| 2.6 | 2026-08-25 | Senior System Engineer | Reorganized page layout flow to **A → Advertisement → B+C → D**: Search Bar ([B]) and Filters Panel ([C]) now render in the same row/section instead of [B] being above and [C] being a sidebar alongside [D]. On desktop, [B] and [C] are side-by-side with [D] Results Area below. On mobile, [B] and [C] trigger are in the same row with [D] below. Updated layout diagrams (Sec 3.1), responsive breakpoints (Sec 3.2), ad panel position description (Sec 4.2), Search Bar notes (Sec 4.3), Filters Panel notes (Sec 4.4), ad slide-down behavior target (Sec 5.15), SponsoredAdSlider component description (Sec 10.8), UI/UX & accessibility notes (Sec 11), and test checklist (Sec 12.7). All existing functionality, styling, and ad rules unchanged. |
 
 ### 1.2 Related Documents
 
@@ -61,7 +64,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 7. **Performance Caching** — Repeat queries and category tree served from Redis cache (product list TTL 2 min, category tree TTL 30 min).
 8. **Responsive Design** — Desktop: fixed filters sidebar + multi-column product grid. Mobile: bottom-sheet filter drawer + single-column product display.
 9. **View Mode Toggle** — Switch result layout between responsive Grid (1–4 columns, adaptive) and mobile-optimized List (single-column stacked rows). Selection persists to `localStorage`, defaults to Grid, and does not affect URL state or trigger refetch.
-10. **Sponsored Advertisements** — Render approved advertisement images/banners from Merchant-purchased Advertisement Packages in the Search Results Top placement via `GET /api/v1/ads?placement=search_top` with 5-min Redis TTL. Display up to 5 eligible ads in a 5-second auto-sliding container without blocking product results.
+10. **Sponsored Advertisements** — Render approved advertisement images/banners from Merchant-purchased Advertisement Packages in the Search Results Top placement via `GET /api/v1/ads?placement=search_top` with 5-min Redis TTL. Eligible ads (max 5) display in a slide-down panel horizontally centered between the page header ([A]) and the search bar + filters row ([B]+[C]), spanning the full container width with the search bar + filters rendered immediately below — animated slide-down entrance, each slide showing title, description, image/banner, and CTA together, with a responsive horizontal layout on desktop and stacked layout on mobile — auto-sliding every 5 seconds without blocking product results.
 
 ---
 
@@ -80,33 +83,44 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 │               │   Logo + System Name                │                │
 │               │   "Cosmetics Finder"                │                │
 │               │   [A1] Page Title: "Search Products"│                │
-│               ├─────────────────────────────────────┤                │
+│               └─────────────────────────────────────┘                │
 │                                                                      │
-│               ┌─────────────────────────────────────┐                │
-│               │   [B] SEARCH BAR                    │                │
-│               │   [B1] Keyword Input                │                │
-│               │   [B2] Search Button  [B3] Clear    │                │
-│               ├─────────────────────────────────────┤                │
+│ ┌──────────────────────────────────────────────────────────────────┐ │
+│ │           [D0] SPONSORED AD SLIDE-DOWN PANEL (cond.)             │ │
+│ │                (slides down on ad load, centered)                │ │
+│ │          ┌─────────────┬──────────────────────────┐              │ │
+│ │          │ [D0a]       │ [D0b] Ad Title           │              │ │
+│ │          │ Image /     │ [D0c] Description        │              │ │
+│ │          │ Banner      │ [D0d] CTA Button         │              │ │
+│ │          └─────────────┴──────────────────────────┘              │ │
+│ │      (full container width, horizontally centered between        │ │
+│ │       [A] and [B+C]; horizontal slide, 5s auto-slide, max 5)    │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                      │
-│ ┌──────────────────────┐   ┌──────────────────────────────────────┐  │
-│ │  [C] FILTERS PANEL   │   │   [D] RESULTS AREA                   │  │
-│ │                      │   │   [D1] Results Count                 │  │
-│ │  [C1] Categories     │   │   [D2] Sort Select  [D2a] View Toggle│  │
-│ │  [C2] Skin Type      │   │   [D3] Active Filter Chips           │  │
-│ │  [C3] Ingredients    │   │   [D4] Product Grid / List           │  │
-│ │  [C4] Price Range    │   │   [D5] Pagination + Page Size        │  │
-│ │  [C5] Rating         │   │                                      │  │
-│ │                      │   │   (cond.) Loading Skeleton /         │  │
-│ │  [C6] Apply Filters  │   │           Empty State /              │  │
-│ │  [C7] Reset Filters  │   │           Error Banner               │  │
-│ ├──────────────────────┤   ├──────────────────────────────────────┤  │
+│ ┌──────────────────────────┐  ┌──────────────────────────────────┐  │
+│ │  [B] SEARCH BAR          │  │  [C] FILTERS PANEL               │  │
+│ │  [B1] Keyword Input      │  │  [C1] Categories                 │  │
+│ │  [B2] Search  [B3] Clear │  │  [C2] Skin Type  [C3] Ingredients│  │
+│ │                          │  │  [C4] Price Range  [C5] Rating    │  │
+│ └──────────────────────────┘  │  [C6] Apply Filters              │  │
+│                                │  [C7] Reset Filters              │  │
+│                                └──────────────────────────────────┘  │
+│                                                                      │
+│ ┌──────────────────────────────────────────────────────────────────┐ │
+│ │  [D] RESULTS AREA                                                 │ │
+│ │  [D1] Results Count  [D2] Sort Select  [D2a] View Toggle        │ │
+│ │  [D3] Active Filter Chips                                        │ │
+│ │  [D4] Product Grid / List                                        │ │
+│ │  [D5] Pagination + Page Size                                     │ │
+│ │  (cond.) Loading Skeleton / Empty State / Error Banner            │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                      │
 │               ┌─────────────────────────────────────┐                │
 │               │   [E] FOOTER CONTROLS               │                │
 │               │   [Language] [Theme]                │                │
-│               ├─────────────────────────────────────┤                │
+│               └─────────────────────────────────────┘                │
 │                                                                      │
-┌──────────────────────────────────────────────────────────────────────┐
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 #### Mobile Layout (< 768px)
@@ -116,11 +130,24 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 ├───────────────────────────────────────────────────────┤
 │   [A] PAGE HEADER (Logo + System Name)                │
 │   [A1] Page Title: "Search Products"                  │
-│   [B] SEARCH BAR ([B1] Input [B2] Search [B3] Clear)  │
+│   [D0] SPONSORED AD SLIDE-DOWN PANEL (cond.)          │
+│      ┌──────────────────────────────────────┐         │
+│      │ [D0a] Image/Banner (full-width)      │         │
+│      │ [D0b] Title                          │         │
+│      │ [D0c] Description (2-line clamp)     │         │
+│      │ [D0d] CTA Button (full-width)        │         │
+│      └──────────────────────────────────────┘         │
+│      (stacked, full container width, horizontally     │
+│       centered between [A] and [B+C], 5s auto-slide,  │
+│       max 5 ads)                                      │
+│   ┌──────────────────────────┐┌──────────────┐        │
+│   │ [B] SEARCH BAR           ││[C] FILTERS   │        │
+│   │ [B1] Input [B2] [B3]     ││  TRIGGER     │        │
+│   └──────────────────────────┘└──────────────┘        │
 │   [D1] Results Count  [D2] Sort Select                │
 │   [D2a] View Toggle (Grid/List)                       │
 │   [D3] Active Filter Chips Row                        │
-│   [D4] PRODUCT GRID (1– 2 cols) / LIST (stacked rows) │
+│   [D4] PRODUCT GRID (1–2 cols) / LIST (stacked rows)  │
 │   [D5] Pagination   [D6] Page Size Select             │
 │   [E] FOOTER CONTROLS ([Language] [Theme])            │
 │                                                       │
@@ -129,17 +156,17 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 │      [C4] Price Range  [C5] Rating                    │
 │      [C6] Apply Filters  [C7] Reset Filters           │
 │                                                       │
-┌───────────────────────────────────────────────────────┐
+└───────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
 | Breakpoint | Min Width | Layout Behavior |
 | :--- | :--- | :--- |
-| Mobile (default) | 0px | Filters drawer (trigger button in results header). Grid view: 1–2 columns; List view: stacked rows. Grid/List view toggle in results toolbar (persists to localStorage). Filter chips row above results. |
-| Tablet (`md:`) | 768px | Narrower filters sidebar + results grid with 2–3 columns. Grid/List view toggle in results toolbar. |
-| Desktop (`lg:`) | 1024px | Full filters sidebar + results grid with 4 columns. Grid/List view toggle in results toolbar. |
-| Wide (`xl:`) | 1280px | Filters sidebar + results grid with 4 columns, enhanced spacing. Grid/List view toggle in results toolbar. |
+| Mobile (default) | 0px | Search bar ([B]) and filter trigger button ([C]) in the same row. Filters open as a bottom-sheet/overlay drawer. Grid view: 1–2 columns; List view: stacked rows. Grid/List view toggle in results toolbar (persists to localStorage). Filter chips row above results. Sponsored ad slide-down panel (`slotAdTop`) renders between the page header and the search bar + filters row, spanning the full container width, stacked: full-width 16:9 image on top; title, description, and full-width CTA below. Results area ([D]) below the search + filters row. |
+| Tablet (`md:`) | 768px | Search bar ([B]) and filters panel ([C]) in the same row — search bar left, compact filters right. Results grid with 2–3 columns. Grid/List view toggle in results toolbar. Sponsored ad slide-down panel switches to horizontal layout (image left, text block right), spanning the full container width, horizontally centered between the page header and the search + filters row. |
+| Desktop (`lg:`) | 1024px | Search bar ([B]) and filters panel ([C]) side-by-side in the same row — search bar left, full filters sidebar right. Results area ([D]) below the search + filters row with 4-column grid. Grid/List view toggle in results toolbar. Sponsored ad slide-down panel renders horizontal (image left, text block right), spanning the full container width (not confined to the results area), horizontally centered between the page header and the search + filters row. |
+| Wide (`xl:`) | 1280px | Same as `lg:` with enhanced spacing. Search bar + filters in the same row, results below with 4-column grid. Sponsored ad slide-down panel identical to `lg:` (full container width, centered between page header and search + filters row) with enhanced spacing. |
 
 ---
 
@@ -153,7 +180,24 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | 2 | `lblSystemName` | System Name | Static Label (`<span>`) | String | — | Visible; always displayed. Text: "Cosmetics Finder" | — | Hardcoded UI text | Tailwind: `font-bold text-lg`. |
 | 3 | `lblPageTitle` | Page Title | Heading (`<h1>`) | String | Mandatory | Visible. Text: "Search Products" | — | i18n key `search.title` | Screen reader landmark. Switches to "商品検索" in JA. |
 
-### 4.2 Section [B]: Search Bar (検索バー)
+### 4.2 Section [D0]: Sponsored Ad Slide-Down Panel (スポンサー広告スライドダウンパネル)
+
+Rendered horizontally centered between Section [A] (Page Header / Title) and the [B]+[C] (Search Bar + Filters) row across the full container width; the [B] Search Bar + [C] Filters Panel row renders immediately below this panel.
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 39 | `slotAdTop` | Sponsored Ad Slot — Search Results Top (Slide-Down Panel) | Slide-down panel (`div`, animated expand/collapse) | — | Conditional | Hidden until ad response arrives. On first eligible ad: panel slides down into view directly below [A] Page Header / Title and above the [B]+[C] (Search Bar + Filters) row — horizontally centered across the full container width (translateY −100% → 0 with height expand, 300ms ease-out, once per mount), pushing the search bar + filters row and product results down smoothly. | Maximum 5 ads; auto-slide every 5 seconds (BR-SEARCH-026). | `GET /api/v1/ads?placement=search_top` (5-min Redis TTL, `cache:ads:search-top`) | Displays the Merchant's approved advertisement records from purchased Advertisement Packages whose placement includes Search Results Top. Applies package placement and tier priority rules (Premium > Standard > Basic, round-robin within a tier). Only approved, active, in-schedule ads are eligible (REQUIREMENT_SPEC §5.3). On ad fetch error or no eligible ads: hidden — no slide-down occurs (graceful degradation). `prefers-reduced-motion: reduce` skips the entrance animation (instant appear; rotation rules unchanged). Visually distinct from organic results via `badgeSponsored`. |
+| 40 | `trackAdSlides` | Ad Slide Track *(sub-item of `slotAdTop`)* | Slider track (`div`, vertical) | — | Conditional | Renders when `slotAdTop` is expanded. | Vertical slide-down transition between slides (500ms ease-in-out); advance interval 5s (unchanged). | `data[]` from `GET /api/v1/ads?placement=search_top` | Auto-advancement pauses on hover or while keyboard focus is inside `slotAdTop`; resumes on pointer leave / blur (WCAG 2.2.2). Loops after the last slide. |
+| 41 | `cardAdSlide` | Ad Slide Card *(sub-item of `slotAdTop`)* | Card (flex container) | — | Per ad (≤ 5) | One card per eligible ad. Card spans the full container width, centered within `slotAdTop`. | Desktop/tablet (≥ 768px): horizontal — image left (w-80), text block right. Mobile (< 768px): stacked — image top, content below. | `data[]` ad object | Responsive re-layout is CSS-only (Tailwind breakpoints); no refetch and no rotation reset on breakpoint change. Whole card clickable (BR-SEARCH-029). |
+| 42 | `imgAdBanner` | Ad Image / Banner *(sub-item of `slotAdTop`)* | Image (`<img>`) | VARCHAR(500) URL | Mandatory (per ad) | Rendered per slide. | Desktop: fixed 320×120, `object-cover`. Mobile: full-width 16:9, `object-cover`. Lazy-loaded. | `advertisements.image_url` → `imageUrl` | `alt` built from i18n template `search.sponsored.adAlt` with the ad title. |
+| 43 | `lblAdTitle` | Ad Title *(sub-item of `slotAdTop`)* | Heading (`<h3>`) | VARCHAR(255) | Mandatory (per ad) | Rendered per slide. | Single-line truncation (`truncate`). | `advertisements.title` → `title` | Displayed together with `imgAdBanner`, `txtAdDescription`, and `btnAdCta` inside the same `cardAdSlide`. |
+| 44 | `txtAdDescription` | Ad Description *(sub-item of `slotAdTop`)* | Paragraph (`<p>`) | TEXT | Optional | Rendered per slide when present. | Clamped to 2 lines (`line-clamp-2`) on all breakpoints. | `advertisements.description` → `description` | Displayed with title, image/banner, and CTA. Hidden when null/empty without breaking layout. |
+| 45 | `btnAdCta` | Ad CTA Button *(sub-item of `slotAdTop`)* | Button/Link (`primary`) | VARCHAR(100) label / VARCHAR(500) URL | Mandatory (per ad) | Rendered per slide. | Desktop: inline, right-aligned. Mobile: full-width. Keyboard-focusable link with visible primary focus ring. | `advertisements.cta_text` / `cta_url` → `ctaText` / `ctaUrl` | Navigates to the ad target (BR-SEARCH-029); fires `ad.click` analytics event with `ad_id` and `placement`. |
+| 46 | `badgeSponsored` | Sponsored Badge *(sub-item of `slotAdTop`)* | Badge (`span`) | — | Mandatory (per slide) | Visible on every slide. | Text: i18n key `search.sponsored.label`; uppercase, amber background + dark text. | Hardcoded UI element | Distinguishes ads from organic results (REQUIREMENT_SPEC §5.3). |
+
+### 4.3 Section [B]: Search Bar (検索バー)
+
+On desktop/tablet, rendered side-by-side with Section [C] (Filters Panel) in the same row. On mobile, rendered alongside the filter trigger button in the same row, below the ad panel and above the results area.
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -161,12 +205,14 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | 5 | `btnSearch` | Search Button | Button (`submit`, `primary`) | — | Mandatory | Visible. Search icon. Text: "Search" | — | — | Submits keyword immediately, bypassing debounce (ST-DEB-003). Loading: spinner. |
 | 6 | `btnClearSearch` | Clear Search | Button (`ghost`/icon) | — | — | Hidden when `q` is empty. Visible when keyword present. | — | — | Clears `q` param and refetches default catalog (ST-DEB-003). |
 
-### 4.3 Section [C]: Filters Panel (フィルタパネル)
+### 4.4 Section [C]: Filters Panel (フィルタパネル)
+
+On desktop/tablet, rendered side-by-side with Section [B] (Search Bar) in the same row. On mobile, accessible via a trigger button alongside the search bar in the same row, opening as a bottom-sheet/overlay drawer.
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 7 | `pnlFilters` | Filters Panel | Aside (sidebar / drawer) | — | Mandatory | Desktop: visible sidebar. Mobile: hidden drawer. | — | — | Container for all filter groups. Title: i18n key `search.filtersTitle`. |
-| 8 | `btnMobileFilter` | Mobile Filter Trigger | Button (`icon`, outline) | — | Conditional | Hidden on desktop. Visible on mobile. Text: "Filters" with icon. | — | — | Opens `pnlFilters` as drawer on mobile (EL-28). |
+| 8 | `btnMobileFilter` | Mobile Filter Trigger | Button (`icon`, outline) | — | Conditional | Hidden on desktop. Visible on mobile in the same row as the search bar. Text: "Filters" with icon. | — | — | Opens `pnlFilters` as drawer on mobile (EL-28). |
 | 9 | `grpCategories` | Category Group | Accordion | — | No | Collapsed by default. | — | — | Nested category checkboxes (tree) from `GET /api/v1/categories`. |
 | 10 | `chkCategory` | Category Checkbox | Checkbox | — | No | Unchecked by default. | — | `categories.id` (query param `categoryId`) | Selecting a category includes all descendant categories (BR-SEARCH-010). Single select. |
 | 11 | `grpSkinType` | Skin Type Group | Accordion | — | No | Collapsed by default. | — | — | Filter group with 5 skin type options. |
@@ -181,7 +227,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | 20 | `btnApplyFilters` | Apply Filters Button | Button (`primary`) | — | Mandatory | Visible. Text: "Apply Filters" | — | — | Applies current selections, resets `page` to 1 (BR-SEARCH-011). |
 | 21 | `btnResetFilters` | Reset Filters Button | Button (`outline`) | — | No | Visible. Text: "Reset Filters" | — | — | Clears all filters, keeps keyword `q` intact. Resets `page` to 1. |
 
-### 4.4 Section [D]: Results Area (結果エリア)
+### 4.5 Section [D]: Results Area (結果エリア)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -200,9 +246,8 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | 34 | `alertError` | Error Banner | Alert (`destructive`) | String | Conditional | Hidden by default. Shown on API/network error. | — | API error response | Tailwind: `border-destructive/50 text-destructive`. Dismissible. Includes Retry button. |
 | 35 | `pgnPagination` | Pagination | Pagination | — | No | Visible when `totalPages > 1`. | `page` ≥ 1, `limit` 1–100 | `meta.page`, `meta.totalPages` | Previous/next + page numbers. First/last page boundaries disable buttons (Sec 3.3). |
 | 36 | `selPageSize` | Page Size Select | Select | Enum | No | Default: 20 | Options: 10 / 20 / 50 / 100 | Query param `limit` | Changing page size resets `page` to 1. |
-| 39 | `slotAdTop` | Sponsored Ad Slot — Search Results Top | Slider container (`div`) | — | Conditional | Hidden until ad response arrives. Rendered above the first product row. | Maximum 5 ads; auto-slide every 5 seconds. | `GET /api/v1/ads?placement=search_top` (5-min Redis TTL, `cache:ads:search-top`) | Displays the Merchant's approved advertisement images/banners from purchased Advertisement Packages whose placement includes Search Results Top. Applies package placement and tier priority rules (Premium > Standard > Basic, round-robin within a tier). Only approved, active, in-schedule ads are eligible. On ad fetch error or no eligible ads: hidden (graceful degradation). CTA click tracked via `ad.click` analytics event. REQUIREMENT_SPEC §5.3: ad slot must be visually distinct from organic results (e.g., "Sponsored" label badge). |
 
-### 4.5 Section [E]: Footer Controls (フッターコントロール)
+### 4.6 Section [E]: Footer Controls (フッターコントロール)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -302,7 +347,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - **Exception Handling:** None applicable.
 
 ### 5.11 Mobile Filter Drawer (`btnMobileFilter` onClick)
-- **Trigger:** User clicks the "Filters" trigger button on mobile.
+- **Trigger:** User clicks the filter trigger button in the search + filters row on mobile.
 - **Processing Logic:**
   1. Open `pnlFilters` as a bottom-sheet/overlay drawer.
   2. Focus trap + `aria-modal` applied.
@@ -340,12 +385,16 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - **Trigger:** Component mounts (Search & Filter page loaded).
 - **Processing Logic:**
   1. **Fetch ad slot:** `GET /api/v1/ads?placement=search_top` — parallel to product results fetch, does not block or defer product loading.
-  2. **Filter:** Select approved advertisement images/banners from Merchant-purchased Advertisement Packages for the Search Results Top placement. Keep only approved, active ads whose schedule covers the current time.
+  2. **Filter:** Select approved advertisement records from Merchant-purchased Advertisement Packages for the Search Results Top placement. Keep only approved, active ads whose schedule covers the current time.
   3. **Prioritize:** Apply package placement and tier priority rules (Premium > Standard > Basic), with round-robin rotation within each tier, then limit the slider to a maximum of 5 ads.
-  4. **Cache:** Cache the resulting ad list in Redis with key `cache:ads:search-top`, TTL 5 minutes (BR-SEARCH-025).
-  5. **Render:** If eligible ads exist, render them in `slotAdTop` above the first product row and auto-slide every 5 seconds. Display a "Sponsored" label badge (REQUIREMENT_SPEC §5.3) to distinguish them from organic results.
-  6. **Error handling:** On ad fetch error or empty response, hide `slotAdTop` (graceful degradation — ad failure never blocks product results).
-  7. **Click tracking:** CTA click triggers `ad.click` analytics event with `ad_id` and `placement`.
+  4. **Cache:** Cache the resulting ad list in Redis with key `cache:ads:search-top`, TTL 5 minutes (BR-SEARCH-028).
+  5. **Slide-down entrance:** If eligible ads exist, `slotAdTop` slides down into view directly between the page header ([A]) and the search bar + filters row ([B]+[C]) — horizontally centered across the full container width — height expands from 0 while the panel translates from −100% to 0 (300ms ease-out, once per mount), smoothly pushing the search bar + filters row and product grid down. With `prefers-reduced-motion: reduce`, the panel appears instantly without animation.
+  6. **Render slide content:** Each slide renders the ad's image/banner (`imgAdBanner`), title (`lblAdTitle`), description (`txtAdDescription`, hidden when absent), and CTA (`btnAdCta`) together in one `cardAdSlide`, plus the "Sponsored Ad" badge (`badgeSponsored`) on every slide (REQUIREMENT_SPEC §5.3). Description clamped to 2 lines; title truncated to 1 line.
+  7. **Auto-slide:** Advance to the next ad every 5 seconds using a vertical slide-down transition (current slide exits upward, next enters from the top, 500ms). Maximum 5 slides; loops back to the first after the last.
+  8. **Responsive layout:** Desktop/tablet (≥ 768px): horizontal slide — image left (320×120, object-cover), text block right, inline CTA. Mobile (< 768px): stacked slide — full-width 16:9 image, title, description, full-width CTA below. On all breakpoints the panel spans the full container width and stays horizontally centered between [A] and the [B]+[C] row. Layout switching is CSS-only (breakpoints); no refetch and no rotation reset occurs when crossing breakpoints.
+  9. **Pause on interaction:** Auto-advancement pauses while the pointer hovers over, or keyboard focus is within, `slotAdTop`; it resumes on pointer leave / blur (WCAG 2.2.2). The 5-second interval itself is unchanged.
+  10. **Error handling:** On ad fetch error or empty response, hide `slotAdTop` entirely — no slide-down entrance runs (graceful degradation; ad failure never blocks product results).
+  11. **Click tracking:** CTA click triggers `ad.click` analytics event with `ad_id` and `placement`.
 - **Exception Handling:** None (ad slot failure is non-critical; page functions normally without ads).
 
 ---
@@ -528,7 +577,7 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 }
 ```
 
-**Note:** Ad response is fetched independently and cached in Redis (key `cache:ads:search-top`, TTL 5 min). Ad failure never blocks product results.
+**Note:** Ad response is fetched independently and cached in Redis (key `cache:ads:search-top`, TTL 5 min). Ad failure never blocks product results. Each slide in the `slotAdTop` slide-down panel renders `title`, `description`, `imageUrl`, and `ctaText`/`ctaUrl` together.
 
 ### 8.6 Shopping Restriction Error Response (401 Guest)
 
@@ -611,6 +660,9 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | `search.errors.retry` | "Retry" |
 | `search.sponsored` | "Sponsored" |
 | `search.sponsored.label` | "Sponsored Ad" |
+| `search.sponsored.panelLabel` | "Sponsored advertisements" |
+| `search.sponsored.adAlt` | "Advertisement: {title}" |
+| `search.sponsored.slideStatus` | "Sponsored ad {position} of {total}: {title}" |
 | `search.errors.loginRequired` | "Please log in to continue" |
 | `search.errors.shoppingNotAllowed` | "Shopping features are only available to buyers" |
 
@@ -667,6 +719,9 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | `search.errors.retry` | "再試行" |
 | `search.sponsored` | " sponsor" |
 | `search.sponsored.label` | " sponsor広告" |
+| `search.sponsored.panelLabel` | "スポンサー広告" |
+| `search.sponsored.adAlt` | "広告: {title}" |
+| `search.sponsored.slideStatus` | "スポンサー広告 {position} / {total}: {title}" |
 | `search.errors.loginRequired` | "ログインしてください" |
 | `search.errors.shoppingNotAllowed` | "買い物機能はバイヤーのみ利用できます" |
 
@@ -728,13 +783,21 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 | **Purpose** | Renders the Grid/List view toggle and the product items in either a responsive grid (1–4 columns) or a stacked, mobile-friendly list |
 | **Usage** | `tglViewMode`, `btnGridMode`, `btnListMode`; drives the layout of `gridProducts` / `cardProduct` / `sklLoading` |
 
+### 10.8 SponsoredAdSlider Component
+
+| Property | Value |
+| :--- | :--- |
+| **Location** | `frontend/src/features/search/components/SponsoredAdSlider.tsx` |
+| **Purpose** | Slide-down sponsored advertisement panel: fetches eligible ads, renders the animated slide-down container (`slotAdTop`) — horizontally centered between the page header ([A]) and the search bar + filters row ([B]+[C]) across the full container width, with the search bar + filters rendered immediately below — and per-ad slide cards (image, title, description, CTA, Sponsored badge) with responsive horizontal/stacked layouts and 5-second auto-rotation |
+| **Usage** | `slotAdTop` and sub-items `trackAdSlides`, `cardAdSlide`, `imgAdBanner`, `lblAdTitle`, `txtAdDescription`, `btnAdCta`, `badgeSponsored` (Sec 4.2 items 39–46, Sec 5.15) |
+
 ---
 
 ## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
 
 - **Design System:** Luxury Cosmetics Theme — Primary `#7C3AED` (Purple), Accent `#EC4899` (Pink), Secondary `#F3E8FF` (Lavender).
 - **URL-State Single Source of Truth:** All search/filter/sort/page state persisted in URL query params (BR-SEARCH-003). Back-button and share-URL friendly.
-- **Responsive Viewport Design:** Desktop filters sidebar + 4-column grid; tablet 2–3 columns; mobile filter drawer + 1–2 column grid (Sec 3.2).
+- **Responsive Viewport Design:** Desktop: search bar + filters side-by-side in the same row, results below with 4-column grid; tablet: search bar + compact filters in the same row, 2–3 column results; mobile: search bar + filter trigger in the same row, filter drawer + 1–2 column results (Sec 3.2).
 - **Accessibility:** Every control keyboard navigable. ARIA labels required. Drawer uses focus trap + `aria-modal`. Error messages announced via `role="alert"`. Chips announce removal.
 - **View Mode Toggle:** Segmented Grid/List control in the results toolbar next to `selSort`. Grid renders the responsive 1–4 column card layout; List renders single-column stacked rows (thumbnail left, title/description/price right) optimized for narrow viewports — no horizontal scroll, long text truncated. Selection is device-independent, persisted to `localStorage` (`search.viewMode`), defaults to Grid, and is never serialized into the URL, so search/filter/sort/pagination state is unaffected.
 - **View Toggle Accessibility:** `tglViewMode` renders as `role="group"` with a visible label; each segment is a focusable button with `aria-pressed` reflecting the active mode and an `aria-label` (i18n). Focus indicator uses the primary color ring. Operable by keyboard (Tab / Enter / Space; arrow-key navigation within the group) and by touch (targets ≥ 44px). Active mode changes announced to screen readers via `aria-live="polite"`.
@@ -743,7 +806,10 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - **Design Tokens:** Status badges use standard color mapping — success: `bg-green-100 text-green-800`, error: `bg-red-100 text-red-800`, warning: `bg-amber-100 text-amber-800`. Rating stars use Beauty Pink.
 - **Guest Alert Modal (401):** When a guest (unauthenticated user) attempts a shopping action (add to cart/wishlist), display an alert modal with "Please log in to continue" message and an "OK" button. The modal must NOT auto-close. Clicking "OK" redirects to `/login?redirect=<encoded_current_path>`. The redirect preserves the user's search context after login.
 - **Merchant/Admin Shopping Restriction (403):** When a Merchant or Admin user attempts a shopping action (add to cart/wishlist), display an alert banner with "Shopping features are only available to buyers" message. The banner does NOT auto-close. Merchant/Admin users are strictly prohibited from shopping features per DEVELOPMENT_RULES Section 5.4.
-- **Sponsored Ad Slot:** Ad slot rendered in `slotAdTop` above the first product row. Must display "Sponsored" label badge to distinguish from organic results (REQUIREMENT_SPEC §5.3). Ad fetch is independent of product results — never blocks or defers product loading.
+- **Sponsored Ad Slide-Down Panel:** `slotAdTop` renders horizontally centered between the page header ([A]) and the search bar + filters row ([B]+[C]) as a slide-down panel spanning the full container width — when eligible ads load it expands downward (height 0 → auto with translateY −100% → 0, 300ms ease-out, once per mount), smoothly pushing the search bar + filters row and all content below it down. Hidden entirely on ad fetch error or when no ads are eligible — no slide-down occurs. Ad fetch is independent of product results — never blocks or defers product loading.
+- **Ad Slide Composition:** Every slide shows the ad's image/banner, title, description, CTA button, and the "Sponsored" badge together (REQUIREMENT_SPEC §5.3). Title truncated to 1 line; description clamped to 2 lines and hidden when absent. Slide transitions are vertical slide-down (500ms) on a 5-second interval (max 5 ads, tier priority + round-robin unchanged).
+- **Ad Panel Responsiveness:** On all breakpoints the panel spans the full container width, horizontally centered between [A] and the [B]+[C] row, with [B]+[C] immediately below. Desktop/tablet (≥ 768px): horizontal slide — image 320×120 (`object-cover`) left, text block right, inline right-aligned CTA. Mobile (< 768px): stacked slide — full-width 16:9 image, title, description, full-width CTA below. Breakpoint switches are CSS-only: no refetch, no rotation reset.
+- **Ad Panel Accessibility:** Container exposes `role="region"` + `aria-label` (`search.sponsored.panelLabel`). Auto-advancement pauses on hover and while keyboard focus is inside the panel, resuming on leave/blur (WCAG 2.2.2). Slide changes announced via `aria-live="polite"` using `search.sponsored.slideStatus`. Images carry descriptive `alt` from `search.sponsored.adAlt`. CTA is a focusable link with a visible primary focus ring; the whole-slide click area must not trap keyboard users. `prefers-reduced-motion: reduce` disables the entrance and slide transitions (instant swap; 5-second interval unchanged).
 - **Guest Data Leakage:** Guest user search state (filters, keywords) must not persist across sessions. No shopping-related data (cart count, wishlist) exposed to guests.
 
 ---
@@ -804,8 +870,10 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 
 ### 12.5 Responsive & State Tests
 
-- [ ] Filters sidebar visible on desktop
+- [ ] Search bar + filters in the same row on desktop/tablet
 - [ ] Filters drawer opens via trigger on mobile
+- [ ] Desktop/tablet: ad panel above the search + filters row
+- [ ] Mobile: ad panel above the search bar + filter trigger row
 - [ ] Drawer applies/clears filter changes correctly
 - [ ] Drawer close (X) dismisses without applying
 - [ ] Loading skeleton shown during fetch
@@ -838,12 +906,29 @@ The Search & Filter page serves as the discovery and exploration entry point wit
 - [ ] Screen reader announces the active view mode
 - [ ] Touch targets ≥ 44px on mobile
 
-### 12.7 Sponsored Advertisement Tests
+### 12.7 Sponsored Advertisement (Slide-Down Panel) Tests
 
 - [ ] Ad slot fetched from `GET /api/v1/ads?placement=search_top`
-- [ ] Ad slot rendered above first product row in `slotAdTop`
-- [ ] "Sponsored" label badge displayed (REQUIREMENT_SPEC §5.3)
-- [ ] Ad slot failure (error/empty) gracefully hidden — product results unaffected
+- [ ] Ad slot rendered between the page header ([A]) and the search bar + filters row ([B]+[C]) in `slotAdTop`
+- [ ] Panel horizontally centered across the full container width; not confined to the results area
+- [ ] Search bar + filters row ([B]+[C]) renders immediately below the ad panel
+- [ ] Panel slides down smoothly (300ms ease-out) when ads load, pushing the search bar + filters row and product results down
+- [ ] Slide-down entrance runs once per mount (no replay on refetch/re-render)
+- [ ] Each slide displays image/banner, title, description, and CTA together
+- [ ] "Sponsored" label badge displayed on every slide (REQUIREMENT_SPEC §5.3)
+- [ ] Description clamped to 2 lines; long titles truncated to 1 line
+- [ ] Description hidden gracefully when absent (null/empty)
+- [ ] Desktop/tablet (≥ 768px): horizontal slide layout — image left (320×120), text block right, inline CTA
+- [ ] Mobile (< 768px): stacked slide layout — full-width 16:9 image, full-width CTA; search bar + filter trigger in same row below ad
+- [ ] Breakpoint switch re-layouts slides without refetch and without resetting rotation
+- [ ] Auto-slide advances every 5 seconds with vertical slide-down transition (unchanged)
+- [ ] Maximum 5 ads enforced in the slider (unchanged)
+- [ ] Tier priority (Premium > Standard > Basic, round-robin within tier) unchanged (BR-SEARCH-026)
+- [ ] Auto-advancement pauses on hover and on keyboard focus inside the panel; resumes on leave/blur
+- [ ] `prefers-reduced-motion: reduce` disables entrance/slide animations; interval unchanged
+- [ ] Panel exposed as `role="region"` with i18n aria-label; slide changes announced via `aria-live="polite"`
+- [ ] Ad images have descriptive alt text; CTA is keyboard-focusable with visible focus ring
+- [ ] Ad slot failure (error/empty) gracefully hidden — no slide-down occurs; product results unaffected
 - [ ] Ad slot cached in Redis (`cache:ads:search-top`, TTL 5 min)
 - [ ] Ad CTA click triggers `ad.click` analytics event
 - [ ] Ad slot independent of product results fetch (parallel, non-blocking)
