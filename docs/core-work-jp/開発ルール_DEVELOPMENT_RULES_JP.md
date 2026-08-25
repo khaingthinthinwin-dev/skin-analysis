@@ -191,185 +191,206 @@ import { SomeType } from './types';
 ## 2.1 バックエンドモジュール構造（NestJS + PostgreSQL）
 
 ```
-backend/src/
-├── main.ts                              # ブートストラップエントリーポイント
-├── app.module.ts                        # ルートモジュール
-├── config/                              # 環境検証＆アプリ設定
+backend/src
+│
+├── main.ts                                         # ブートストラップエントリーポイント
+├── app.module.ts                                   # ルートモジュール
+│
+├── config/
 │   ├── config.module.ts
 │   ├── config.service.ts
-│   └── validation.ts                    # Zod envスキーマ
-├── common/                              # 横断的関心事（共有）
-│   ├── decorators/                      # @Roles(), @CurrentUser(), @Public()
+│   └── validation.ts
+│
+├── common/                             # 共同開発
+│   ├── decorators/
 │   │   ├── roles.decorator.ts
 │   │   ├── current-user.decorator.ts
 │   │   └── public.decorator.ts
-│   ├── guards/                          # JwtAuthGuard, RolesGuard
+│   │
+│   ├── guards/
 │   │   ├── jwt-auth.guard.ts
 │   │   └── roles.guard.ts
-│   ├── filters/                         # AllExceptionsFilter
+│   │
+│   ├── filters/
 │   │   └── all-exceptions.filter.ts
-│   ├── interceptors/                    # ログ、変換、タイムアウト
+│   │
+│   ├── interceptors/
 │   │   ├── logging.interceptor.ts
 │   │   ├── transform.interceptor.ts
 │   │   └── timeout.interceptor.ts
-│   ├── pipes/                           # ValidationPipe
+│   │
+│   ├── pipes/
 │   │   └── validation.pipe.ts
-│   ├── dto/                             # 共有DTO（ページネーションなど）
+│   │
+│   ├── dto/
 │   │   ├── pagination.dto.ts
 │   │   └── pagination-response.dto.ts
-│   ├── interfaces/                      # 共有インターフェース
-│   │   ├── pagination.interface.ts
-│   │   └── api-response.interface.ts
-│   └── utils/                           # 純粋ユーティリティ関数
-│       ├── slug.util.ts
-│       └── date.util.ts
-├── modules/                             # 機能モジュール
-│   ├── auth/                            # [ATM] 認証
+│   │
+│   ├── interfaces/
+│   │   ├── api-response.interface.ts
+│   │   └── pagination.interface.ts
+│   │
+│   └── utils/
+│       ├── date.util.ts
+│       └── slug.util.ts
+│
+├── modules/
+│   │
+│   ├── auth/                           # [ATM]
 │   │   ├── auth.module.ts
 │   │   ├── auth.controller.ts
 │   │   ├── auth.service.ts
-│   │   ├── strategies/                  # JWT戦略
-│   │   │   ├── jwt-access.strategy.ts
-│   │   │   └── jwt-refresh.strategy.ts
-│   │   ├── guards/                      # LocalAuthGuard
-│   │   │   └── local-auth.guard.ts
-│   │   ├── dto/                         # LoginDto, RegisterDto
+│   │   ├── dto/
 │   │   │   ├── login.dto.ts
 │   │   │   └── register.dto.ts
-│   │   ├── auth.service.spec.ts
-│   │   └── README.md                    # [ATM] 所有者
-│   ├── users/                           # [ATM] ユーザー管理
+│   │   ├── guards/
+│   │   └── strategies/
+│   │
+│   ├── users/                          # [ATM]
 │   │   ├── users.module.ts
 │   │   ├── users.controller.ts
 │   │   ├── users.service.ts
-│   │   ├── dto/
-│   │   │   ├── update-user.dto.ts
-│   │   │   └── user-response.dto.ts
-│   │   ├── users.service.spec.ts
-│   │   └── README.md                    # [ATM] 所有者
-│   ├── skin-analysis/                   # [ATM] AI肌分析
-│   │   ├── skin-analysis.module.ts
-│   │   ├── skin-analysis.controller.ts
-│   │   ├── skin-analysis.service.ts
-│   │   ├── dto/
-│   │   │   └── skin-analysis.dto.ts
-│   │   ├── skin-analysis.service.spec.ts
-│   │   └── README.md                    # [ATM] 所有者
-│   ├── matching/                        # [HAML] マッチング＆レコメンド
-│   │   ├── matching.module.ts
-│   │   ├── matching.controller.ts
-│   │   ├── matching.service.ts
-│   │   ├── dto/
-│   │   │   └── match-query.dto.ts
-│   │   ├── matching.service.spec.ts
-│   │   └── README.md                    # [HAML] 所有者
-│   ├── products/                        # [TMO] 商品管理
-│   │   ├── products.module.ts
-│   │   ├── products.controller.ts
-│   │   ├── products.service.ts
-│   │   ├── dto/
-│   │   │   ├── create-product.dto.ts
-│   │   │   ├── update-product.dto.ts
-│   │   │   └── product-query.dto.ts
-│   │   ├── products.service.spec.ts
-│   │   └── README.md                    # [TMO] 所有者
-│   ├── search/                          # [TRPH] 検索・フィルタ
-│   │   ├── search.module.ts
-│   │   ├── search.controller.ts
-│   │   ├── search.service.ts
-│   │   ├── dto/
-│   │   │   └── search-query.dto.ts
-│   │   ├── search.service.spec.ts
-│   │   └── README.md                    # [TRPH] 所有者
-│   ├── categories/                      # [TRPH] カテゴリフィルタ
-│   │   ├── categories.module.ts
-│   │   ├── categories.controller.ts
-│   │   ├── categories.service.ts
-│   │   ├── categories.service.spec.ts
-│   │   └── README.md                    # [TRPH] 所有者
-│   ├── wishlist/                        # [EEM] ウィッシュリスト
-│   │   ├── wishlist.module.ts
-│   │   ├── wishlist.controller.ts
-│   │   ├── wishlist.service.ts
-│   │   ├── wishlist.service.spec.ts
-│   │   └── README.md                    # [EEM] 所有者
-│   ├── cart/                            # [EEM] ショッピングカート
-│   │   ├── cart.module.ts
-│   │   ├── cart.controller.ts
-│   │   ├── cart.service.ts
-│   │   ├── dto/
-│   │   │   └── add-to-cart.dto.ts
-│   │   ├── cart.service.spec.ts
-│   │   └── README.md                    # [EEM] 所有者
-│   ├── orders/                          # [EEM] 注文＆支払い
-│   │   ├── orders.module.ts
-│   │   ├── orders.controller.ts
-│   │   ├── orders.service.ts
-│   │   ├── dto/
-│   │   │   ├── create-order.dto.ts
-│   │   │   └── update-order-status.dto.ts
-│   │   ├── orders.service.spec.ts
-│   │   └── README.md                    # [EEM] 所有者
-│   ├── promotions/                      # [ZSLS] プロモーション
-│   │   ├── promotions.module.ts
-│   │   ├── promotions.controller.ts
-│   │   ├── promotions.service.ts
-│   │   ├── dto/
-│   │   │   ├── create-promotion.dto.ts
-│   │   │   └── validate-promotion.dto.ts
-│   │   ├── promotions.service.spec.ts
-│   │   └── README.md                    # [ZSLS] 所有者
-│   ├── advertisements/                  # [WYT] 広告管理
-│   │   ├── advertisements.module.ts
-│   │   ├── advertisements.controller.ts
-│   │   ├── advertisements.service.ts
-│   │   ├── advertisements.service.spec.ts
-│   │   └── README.md                    # [WYT] 所有者
-│   ├── reviews/                         # [PET] レビュー管理
-│   │   ├── reviews.module.ts
-│   │   ├── reviews.controller.ts
-│   │   ├── reviews.service.ts
-│   │   ├── dto/
-│   │   │   └── create-review.dto.ts
-│   │   ├── reviews.service.spec.ts
-│   │   └── README.md                    # [PET] 所有者
-│   ├── analytics/                       # [PET/WYT] 分析ダッシュボード
-│   │   ├── analytics.module.ts
-│   │   ├── analytics.controller.ts
-│   │   ├── analytics.service.ts
-│   │   ├── analytics.service.spec.ts
-│   │   └── README.md                    # [PET/WYT] 所有者
-│   ├── admin/                           # [PET/PPH] 管理者パネル
-│   │   ├── admin.module.ts
-│   │   ├── admin.controller.ts
-│   │   ├── admin.service.ts
-│   │   ├── admin.service.spec.ts
-│   │   └── README.md                    # [PET/PPH] 所有者
-│   ├── commission/                      # [PPH] 手数料＆収益
-│       ├── commission.module.ts
-│       ├── commission.controller.ts
-│       ├── commission.service.ts
-│       ├── commission.service.spec.ts
-│       └── README.md                    # [PPH] 所有者
-│   └── notifications/                   # [ATM] ウェブサイト通知システム
-│       ├── notifications.module.ts
-│       ├── notifications.controller.ts
-│       ├── notifications.service.ts
-│       ├── dto/
-│       │   └── notification-response.dto.ts
-│       ├── notifications.service.spec.ts
-│       └── README.md                    # [ATM] 所有者
-└── shared/                              # グローバル共有サービス
-    ├── shared.module.ts
-    ├── prisma/                          # PrismaModule, PrismaService（PostgreSQL）
-    │   ├── prisma.module.ts
-    │   └── prisma.service.ts
-    ├── redis/                           # RedisModule, RedisService
-    │   ├── redis.module.ts
-    │   └── redis.service.ts
-    └── mail/                            # MailModule（将来用）
-        ├── mail.module.ts
-        └── mail.service.ts
+│   │   └── dto/
+│   │
+│   ├── buyer/
+│   │   ├── skin-analysis/              # [ATM]
+│   │   │   ├── skin-analysis.module.ts
+│   │   │   ├── skin-analysis.controller.ts
+│   │   │   └── skin-analysis.service.ts
+│   │   │
+│   │   ├── matching/                   # [ATM]
+│   │   │   ├── matching.module.ts
+│   │   │   ├── matching.controller.ts
+│   │   │   └── matching.service.ts
+│   │   │
+│   │   ├── wishlist/                   # [EEM]
+│   │   │   ├── wishlist.module.ts
+│   │   │   ├── wishlist.controller.ts
+│   │   │   └── wishlist.service.ts
+│   │   │
+│   │   ├── cart/                       # [EEM]
+│   │   │   ├── cart.module.ts
+│   │   │   ├── cart.controller.ts
+│   │   │   └── cart.service.ts
+│   │   │
+│   │   └── orders/                     # [EEM]
+│   │       ├── orders.module.ts
+│   │       ├── orders.controller.ts
+│   │       ├── orders.service.ts
+│   │       └── dto/
+│   │
+│   ├── catalog/
+│   │   ├── products/                   # [TMO]
+│   │   │   ├── products.module.ts
+│   │   │   ├── products.controller.ts
+│   │   │   ├── products.service.ts
+│   │   │   └── dto/
+│   │   │
+│   │   ├── categories/                 # [TRPH]
+│   │   │   ├── categories.module.ts
+│   │   │   ├── categories.controller.ts
+│   │   │   └── categories.service.ts
+│   │   │
+│   │   └── search/                     # [TRPH]
+│   │       ├── search.module.ts
+│   │       ├── search.controller.ts
+│   │       ├── search.service.ts
+│   │       └── dto/
+│   │
+│   ├── merchant/
+│   │   ├── products/                   # [ZSLS]
+│   │   │   ├── merchant-products.module.ts
+│   │   │   ├── merchant-products.controller.ts
+│   │   │   └── merchant-products.service.ts
+│   │   │
+│   │   ├── promotions/                 # [ZSLS]
+│   │   │   ├── promotions.module.ts
+│   │   │   ├── promotions.controller.ts
+│   │   │   └── promotions.service.ts
+│   │   │
+│   │   └── advertisements/             # [WYT]
+│   │       ├── advertisements.module.ts
+│   │       ├── advertisements.controller.ts
+│   │       └── advertisements.service.ts
+│   │
+│   ├── admin/
+│   │   ├── user-management/            # [PET]
+│   │   │   ├── user-management.module.ts
+│   │   │   ├── user-management.controller.ts
+│   │   │   └── user-management.service.ts
+│   │   │
+│   │   ├── merchant-management/        # [PET]
+│   │   │   ├── merchant-management.module.ts
+│   │   │   ├── merchant-management.controller.ts
+│   │   │   └── merchant-management.service.ts
+│   │   │
+│   │   ├── review-management/          # [PET]
+│   │   │   ├── reviews.module.ts
+│   │   │   ├── reviews.controller.ts
+│   │   │   └── reviews.service.ts
+│   │   │
+│   │   ├── content-moderation/         # [PET]
+│   │   │   ├── moderation.module.ts
+│   │   │   ├── moderation.controller.ts
+│   │   │   └── moderation.service.ts
+│   │   │
+│   │   ├── advertisement-management/   # [PET]
+│   │   │   ├── advertisement-approval.module.ts
+│   │   │   ├── advertisement-approval.controller.ts
+│   │   │   └── advertisement-approval.service.ts
+│   │   │
+│   │   ├── commission-revenue/         # [PPH]
+│   │   │   ├── commission.module.ts
+│   │   │   ├── commission.controller.ts
+│   │   │   └── commission.service.ts
+│   │   │
+│   │   └── audit-logs/                 # [ATM]
+│   │       ├── audit-logs.module.ts
+│   │       ├── audit-logs.controller.ts
+│   │       └── audit-logs.service.ts
+│   │
+│   └── shared/
+│       │
+│       ├── profile/                    # [ATM]
+│       │   ├── profile.module.ts
+│       │   ├── profile.controller.ts
+│       │   └── profile.service.ts
+│       │
+│       ├── notifications/              # [ATM]
+│       │   ├── notifications.module.ts
+│       │   ├── notifications.controller.ts
+│       │   └── notifications.service.ts
+│       │
+│       └── order-insights/             # [HAML]
+│           ├── order-insights.module.ts
+│           ├── order-insights.controller.ts
+│           ├── order-insights.service.ts
+│           ├── dto/
+│           │   ├── order-history-query.dto.ts
+│           └── README.md
+│
+├── shared/
+│   ├── shared.module.ts
+│   │
+│   ├── prisma/                         # 共有
+│   │   ├── prisma.module.ts
+│   │   └── prisma.service.ts
+│   │
+│   ├── redis/                          # 共有
+│   │   ├── redis.module.ts
+│   │   └── redis.service.ts
+│   │
+│   └── mail/                           # 共有（将来用）
+│       ├── mail.module.ts
+│       └── mail.service.ts
+│
+└── database/                           # 共有
+    ├── prisma/
+    │   ├── schema.prisma
+    │   ├── migrations/
+    │   └── seed.ts
+    │
+    └── seeds/
 ```
 
 **バックエンドモジュールルール:**
@@ -382,260 +403,150 @@ backend/src/
 - コントローラーはHTTP関心事のみを処理。ビジネスロジックはサービスに属する。
 - サービスはビジネスロジックとデータアクセスを含む。コントローラーからPrismaを直接呼び出さない。
 
+### 2.1.1 開発者所有者タグ
+
+| タグ | 開発者 | モジュール |
+|-----|-----------|---------|
+| **[ATM]** | ATM | Auth、Users、Skin Analysis、Notifications、Profile、Matching & Recommendation、Audit Logs |
+| **[TMO]** | TMO | Products（catalog） |
+| **[TRPH]** | TRPH | Search、Categories |
+| **[EEM]** | EEM | Wishlist、Cart、Orders |
+| **[ZSLS]** | ZSLS | Promotions、Merchant Products |
+| **[WYT]** | WYT | Advertisements |
+| **[HAML]** | HAML | Order Insights |
+| **[PET]** | PET | Reviews、Admin（user/merchant/content moderation、Advertisements） |
+| **[PPH]** | PPH | Commission、Revenue |
+
 ## 2.2 フロントエンドページ構造（React + TypeScript）
 
 ```
-frontend/src/
-├── app/                                 # アプリシェル＆ルーティング
-│   ├── App.tsx                          # ルートコンポーネント
-│   └── routes.tsx                       # ルート定義
-├── pages/                               # ルートレベルコンポーネント
-│   ├── Home.tsx
-│   ├── Login.tsx                        # [ATM]
-│   ├── Register.tsx                     # [ATM]
-│   ├── Profile.tsx                      # [ATM]
-│   ├── Settings.tsx
-│   ├── NotFound.tsx
-│   ├── Unauthorized.tsx
-│   ├── products/
-│   │   ├── ProductList.tsx
-│   │   ├── ProductDetail.tsx            # [TMO]
-│   │   └── ProductSearch.tsx            # [TRPH]
-│   ├── cart/
-│   │   └── Cart.tsx                     # [EEM]
-│   ├── checkout/
-│   │   └── Checkout.tsx                 # [EEM]
-│   ├── wishlist/
-│   │   └── Wishlist.tsx                 # [EEM]
-│   ├── skin-analysis/
-│   │   └── SkinAnalysis.tsx             # [ATM]
-│   ├── matching/
-│   │   └── Recommendations.tsx          # [HAML]
+frontend/src
+│
+├── app/
+│   ├── App.tsx                                        # ルートアプリケーションコンポーネント
+│   └── routes.tsx                                     # ルート設定
+│
+├── pages/
+│   │
+│   ├── About.tsx                          # Aboutページ
+│   ├── NotFound.tsx                       # 404ページ
+│   ├── Settings.tsx                       # ユーザー設定ページ
+│   ├── Unauthorized.tsx                   # アクセス拒否ページ
+│   │
+│   ├── auth/                           # [ATM]
+│   │   ├── Login.tsx                   # [ATM] ユーザーログインページ
+│   │   └── Register.tsx                # [ATM] ユーザー登録ページ
+│   │
+│   ├── buyer/
+│   │   ├── Dashboard.tsx               # [TRPH] 検索＆フィルタホーム
+│   │   ├── SearchFilter.tsx            # [TRPH] 商品検索とフィルタリング
+│   │   ├── ProductDetail.tsx           # [TMO] 商品詳細とレビュー
+│   │   ├── Wishlist.tsx                # [EEM] 保存された商品
+│   │   ├── Cart.tsx                    # [EEM] ショッピングカート
+│   │   ├── Checkout.tsx                # [EEM] チェックアウト＆支払い
+│   │   ├── SkinAnalysis.tsx            # [ATM] 肌分析/プロフィール設定
+│   │   ├── MatchingRecommendations.tsx # [ATM] 商品レコメンド
+│   │   └── RecommendationHistory.tsx   # [ATM] レコメンド履歴
+│   │
 │   ├── merchant/
-│   │   ├── Dashboard.tsx                # [WYT]
-│   │   ├── Products.tsx                 # [ZSLS]
-│   │   ├── ProductForm.tsx              # [ZSLS]
-│   │   ├── Promotions.tsx               # [ZSLS]
-│   │   ├── Advertisements.tsx           # [WYT]
-│   │   └── SalesAnalytics.tsx           # [WYT]
+│   │   ├── Dashboard.tsx               # [ZSLS] 商品管理ホーム
+│   │   ├── ProductManagement.tsx       # [ZSLS] 商品CRUD
+│   │   ├── Advertisements.tsx          # [WYT] 広告管理
+│   │   └── Promotions.tsx              # [ZSLS] プロモーション管理
+│   │
 │   ├── admin/
-│       ├── Dashboard.tsx                # [PET]
-│       ├── Users.tsx                    # [PET]
-│       ├── Reviews.tsx                  # [PET]
-│       ├── ContentModeration.tsx        # [PET]
-│       ├── Reports.tsx                  # [PET]
-│       ├── Commission.tsx               # [PPH]
-│       └── Revenue.tsx                  # [PPH]
-│   └── notifications/                   # [ATM]
-│       └── Notifications.tsx
+│   │   ├── Dashboard.tsx               # [PET] 管理者ダッシュボード概要
+│   │   ├── ReviewManagement.tsx        # [PET]
+│   │   ├── ContentModeration.tsx       # [PET]
+│   │   ├── UserManagement.tsx          # [PET]
+│   │   ├── MerchantManagement.tsx      # [PET]
+│   │   ├── AdvertisementManagement.tsx # [PET]
+│   │   ├── CommissionRevenue.tsx       # [PPH]
+│   │   └── AuditLog.tsx                # [ATM]
+│   │
+│   └── shared/
+│       ├── Profile.tsx                 # [ATM] プロフィール設定
+│       ├── Notifications.tsx           # [ATM] 通知センター
+│       └── OrderInsights.tsx           # [HAML] 注文＆レポートダッシュボード
+│
+├── features/
+│   │
+│   ├── auth/                           # [ATM]
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   └── schemas/
+│   │
+│   ├── buyer/
+│   │   ├── skin-analysis/              # [ATM]
+│   │   ├── matching/                   # [ATM]
+│   │   ├── products/                   # [TMO]
+│   │   ├── wishlist/                   # [EEM]
+│   │   ├── cart/                       # [EEM]
+│   │   └── checkout/                   # [EEM]
+│   │
+│   ├── merchant/
+│   │   ├── products/                   # [ZSLS]
+│   │   ├── promotions/                 # [ZSLS]
+│   │   └── advertisements/             # [WYT]
+│   │
+│   ├── admin/
+│   │   ├── user-management/            # [PET]
+│   │   ├── merchant-management/        # [PET]
+│   │   ├── content-moderation/         # [PET]
+│   │   ├── review-management/          # [PET]
+│   │   ├── advertisement-management/   # [PET]
+│   │   ├── commission-revenue/         # [PPH]
+│   │   └── audit-log/                  # [ATM]
+│   │
+│   └── shared/
+│       ├── profile/                    # [ATM]
+│       │   ├── components/
+│       │   ├── hooks/
+│       │   └── services/
+│       │
+│       ├── notifications/              # [ATM]
+│       │   ├── components/
+│       │   ├── hooks/
+│       │   └── services/
+│       │
+│       └── order-insights/             # [HAML]
+│           ├── components/
+│           │   ├── OrderHistoryTable.tsx
+│           │   ├── OrderDetailModal.tsx
+│           │   └── OrderStatusChart.tsx
+│           ├── hooks/
+│           │   └── useOrderInsights.ts
+│           └── services/
+│               └── orderInsights.service.ts
+│
 ├── components/
-│   ├── ui/                              # shadcn/uiプリミティブ（手動編集禁止）
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── label.tsx
-│   │   ├── card.tsx
-│   │   ├── dialog.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── table.tsx
-│   │   ├── badge.tsx
-│   │   ├── select.tsx
-│   │   ├── textarea.tsx
-│   │   ├── toast.tsx
-│   │   ├── form.tsx
-│   │   ├── avatar.tsx
-│   │   ├── skeleton.tsx
-│   │   └── separator.tsx
-│   ├── layout/                          # Header, Footer, Sidebar, MainLayout
-│   │   ├── Header.tsx
-│   │   ├── Footer.tsx
-│   │   ├── Sidebar.tsx
-│   │   ├── MainLayout.tsx
-│   │   ├── DashboardLayout.tsx
-│   │   └── AuthLayout.tsx
-│   ├── common/                          # ThemeToggle, LanguageToggle, ErrorBoundary
-│   │   ├── ThemeToggle.tsx
-│   │   ├── LanguageToggle.tsx
-│   │   ├── ErrorBoundary.tsx
-│   │   ├── LoadingSpinner.tsx
-│   │   └── EmptyState.tsx
-│   └── auth/                            # ProtectedRoute
-│       └── ProtectedRoute.tsx
-├── features/                            # 機能固有コンポーネント＆ロジック
-│   ├── auth/                            # [ATM] 認証
-│   │   ├── components/
-│   │   │   ├── LoginForm.tsx
-│   │   │   ├── RegisterForm.tsx
-│   │   │   └── AuthTabs.tsx
-│   │   ├── hooks/
-│   │   │   └── useAuth.ts
-│   │   ├── schemas/
-│   │   │   └── auth.schema.ts
-│   │   ├── services/
-│   │   │   └── auth.service.ts
-│   │   └── README.md                    # [ATM] 所有者
-│   ├── skin-analysis/                   # [ATM] 肌分析
-│   │   ├── components/
-│   │   │   ├── AnalysisUpload.tsx
-│   │   │   ├── AnalysisResults.tsx
-│   │   │   └── AnalysisHistory.tsx
-│   │   ├── hooks/
-│   │   │   └── useSkinAnalysis.ts
-│   │   ├── services/
-│   │   │   └── analysis.service.ts
-│   │   └── README.md                    # [ATM] 所有者
-│   ├── matching/                        # [HAML] マッチング＆レコメンド
-│   │   ├── components/
-│   │   │   ├── RecommendationCard.tsx
-│   │   │   ├── MatchResultList.tsx
-│   │   │   └── SkinTypeFilter.tsx
-│   │   ├── hooks/
-│   │   │   └── useMatching.ts
-│   │   ├── services/
-│   │   │   └── matching.service.ts
-│   │   └── README.md                    # [HAML] 所有者
-│   ├── products/                        # [TMO] 商品
-│   │   ├── components/
-│   │   │   ├── ProductCard.tsx
-│   │   │   ├── ProductGrid.tsx
-│   │   │   ├── ProductDetail.tsx
-│   │   │   └── ProductReviews.tsx
-│   │   ├── hooks/
-│   │   │   ├── useProducts.ts
-│   │   │   └── useProductDetail.ts
-│   │   ├── services/
-│   │   │   └── product.service.ts
-│   │   └── README.md                    # [TMO] 所有者
-│   ├── search/                          # [TRPH] 検索＆フィルタ
-│   │   ├── components/
-│   │   │   ├── SearchBar.tsx
-│   │   │   ├── FilterPanel.tsx
-│   │   │   └── SearchResults.tsx
-│   │   ├── hooks/
-│   │   │   └── useSearch.ts
-│   │   ├── services/
-│   │   │   └── search.service.ts
-│   │   └── README.md                    # [TRPH] 所有者
-│   ├── wishlist/                        # [EEM] ウィッシュリスト
-│   │   ├── components/
-│   │   │   ├── WishlistItem.tsx
-│   │   │   └── WishlistGrid.tsx
-│   │   ├── hooks/
-│   │   │   └── useWishlist.ts
-│   │   ├── services/
-│   │   │   └── wishlist.service.ts
-│   │   └── README.md                    # [EEM] 所有者
-│   ├── cart/                            # [EEM] カート
-│   │   ├── components/
-│   │   │   ├── CartItem.tsx
-│   │   │   ├── CartSummary.tsx
-│   │   │   └── CartDrawer.tsx
-│   │   ├── hooks/
-│   │   │   └── useCart.ts
-│   │   ├── services/
-│   │   │   └── cart.service.ts
-│   │   └── README.md                    # [EEM] 所有者
-│   ├── checkout/                        # [EEM] チェックアウト
-│   │   ├── components/
-│   │   │   ├── CheckoutForm.tsx
-│   │   │   ├── PaymentMethod.tsx
-│   │   │   └── OrderSummary.tsx
-│   │   ├── hooks/
-│   │   │   └── useCheckout.ts
-│   │   ├── services/
-│   │   │   └── checkout.service.ts
-│   │   └── README.md                    # [EEM] 所有者
-│   ├── merchant/                        # [ZSLS/WYT] マーチャント
-│   │   ├── components/
-│   │   │   ├── DashboardStats.tsx       # [WYT]
-│   │   │   ├── OrdersTable.tsx
-│   │   │   ├── ProductForm.tsx          # [ZSLS]
-│   │   │   ├── PromotionForm.tsx        # [ZSLS]
-│   │   │   ├── AdvertisementForm.tsx    # [WYT]
-│   │   │   └── SalesChart.tsx           # [WYT]
-│   │   ├── hooks/
-│   │   │   ├── useMerchant.ts
-│   │   │   ├── useProducts.ts           # [ZSLS]
-│   │   │   ├── usePromotions.ts         # [ZSLS]
-│   │   │   ├── useAdvertisements.ts     # [WYT]
-│   │   │   └── useSalesAnalytics.ts     # [WYT]
-│   │   ├── services/
-│   │   │   ├── merchant.service.ts
-│   │   │   ├── product.service.ts       # [ZSLS]
-│   │   │   ├── promotion.service.ts     # [ZSLS]
-│   │   │   ├── advertisement.service.ts # [WYT]
-│   │   │   └── sales.service.ts         # [WYT]
-│   │   └── README.md                    # [ZSLS/WYT] 所有者
-│   ├── admin/                           # [PET/PPH] 管理者
-│       ├── components/
-│       │   ├── AdminStats.tsx
-│       │   ├── UsersTable.tsx           # [PET]
-│       │   ├── ReviewsTable.tsx         # [PET]
-│       │   ├── ContentModeration.tsx    # [PET]
-│       │   ├── ReportChart.tsx          # [PET]
-│       │   ├── CommissionTable.tsx      # [PPH]
-│       │   └── RevenueChart.tsx         # [PPH]
-│       ├── hooks/
-│       │   ├── useAdmin.ts
-│       │   ├── useModeration.ts         # [PET]
-│       │   ├── useReports.ts            # [PET]
-│       │   └── useCommission.ts         # [PPH]
-│       ├── services/
-│       │   ├── admin.service.ts
-│       │   ├── moderation.service.ts    # [PET]
-│       │   ├── report.service.ts        # [PET]
-│       │   └── commission.service.ts    # [PPH]
-│       └── README.md                    # [PET/PPH] 所有者
-│   └── notifications/                   # [ATM] 通知
-│       ├── components/
-│       │   ├── NotificationBell.tsx
-│       │   └── NotificationPanel.tsx
-│       ├── hooks/
-│       │   └── useNotifications.ts
-│       ├── services/
-│       │   └── notification.service.ts
-│       └── README.md                    # [ATM] 所有者
-├── hooks/                               # 共有カスタムフック
-│   ├── useDebounce.ts
-│   ├── useLocalStorage.ts
-│   └── useMediaQuery.ts
-├── providers/                           # コンテキストプロバイダー
-│   ├── AuthProvider.tsx
-│   ├── ThemeProvider.tsx
-│   ├── QueryProvider.tsx
-│   └── I18nProvider.tsx
-├── services/                            # APIサービスレイヤー
-│   ├── api-client.ts                    # axios/fetch構成
-│   └── queryKeys.ts                     # TanStack Queryキー
-├── schemas/                             # 共有Zodスキーマ
-│   ├── pagination.schema.ts
-│   └── common.schema.ts
-├── types/                               # 共有TypeScript型
-│   ├── api.types.ts
-│   ├── user.types.ts
-│   ├── product.types.ts
-│   └── index.ts
-├── lib/                                 # ユーティリティ、APIクライアント、定数
-│   ├── utils.ts                         # cn()ユーティリティ
-│   ├── constants.ts                     # アプリ定数
-│   └── api.ts                           # APIクライアント
-└── i18n/                                # i18next設定
-    ├── index.ts
-    └── locales/
-        ├── en/
-        │   ├── common.json
-        │   ├── auth.json
-        │   ├── products.json
-        │   └── cart.json
-        ├── ja/
-        │   ├── common.json
-        │   ├── auth.json
-        │   ├── products.json
-        │   └── cart.json
-        └── my/
-            ├── common.json
-            ├── auth.json
-            ├── products.json
-            └── cart.json
+│   ├── ui/                             # 共同開発
+│   ├── layout/                         # 共同開発
+│   ├── navigation/
+│   │   ├── BuyerNavbar.tsx             # 共同開発
+│   │   ├── MerchantNavbar.tsx          # 共同開発
+│   │   ├── AdminNavbar.tsx             # 共同開発
+│   │   └── RoleBasedMenu.tsx           # 共同開発
+│   │
+│   ├── common/                         # 共同開発
+│   └── auth/                           # [ATM]
+│
+├── layouts/
+│   ├── MainLayout.tsx                 # 共同開発
+│   ├── DashboardLayout.tsx            # 共同開発
+│   ├── BuyerLayout.tsx                 # 共同開発
+│   ├── MerchantLayout.tsx              # 共同開発
+│   ├── AdminLayout.tsx                 # 共同開発
+│   └── AuthLayout.tsx                  # [ATM]
+│
+├── hooks/                              # 共同開発
+├── providers/                          # 共同開発
+├── services/                           # 共同開発
+├── schemas/                            # 共同開発
+├── types/                              # 共同開発
+├── lib/                                # 共同開発
+└── i18n/                               # 共同開発
 ```
 
 **フロントエンド構造ルール:**
@@ -645,6 +556,27 @@ frontend/src/
 - 各機能フォルダには開発者所有者を記載した`README.md`が必須。
 - ファイルごとに1コンポーネント。型は名前付きエクスポート、コンポーネントはデフォルトエクスポート。
 - ルートレベルコンポーネントは`pages/`に。再利用可能なコンポーネントは`components/`または`features/`に。
+- レイアウトはページコンテンツをラップするトップレベルコンポーネント（管理者サイドバー、認証フォーム、メインヘッダー/フッター）。
+- `features/shared/`は複数のロールで使用されるクロス機能共有コンポーネント（分析チャート、プロフィール）を含む。
+
+### 2.2.1 開発者所有者タグ
+
+| タグ | 開発者 | モジュール |
+|-----|-----------|---------|
+| **[ATM]** | ATM | Authentication、Users、Skin Analysis、Notifications、Profile、Matching & Recommendation、Audit Logs |
+| **[HAML]** | HAML | Order Insights |
+| **[TMO]** | TMO | Products（catalog） |
+| **[TRPH]** | TRPH | Search、Categories |
+| **[EEM]** | EEM | Wishlist、Cart、Orders、Checkout |
+| **[ZSLS]** | ZSLS | Promotions、Merchant Products |
+| **[WYT]** | WYT | Advertisements |
+| **[PET]** | PET | Reviews、Admin（user/merchant/content moderation、Advertisements） |
+| **[PPH]** | PPH | Commission、Revenue |
+
+**所有権ルール:**
+- 各モジュールフォルダには割り当てられた開発者タグの`README.md`が必須。
+- `Shared` / `Co-developed`モジュールは共同でメンテナンス。
+- 管理者ページは共有管理機能に`[PET/PPH]`を使用。
 
 ## 2.3 共有フォルダ制限
 
@@ -1495,172 +1427,7 @@ GET /api/v1/products?cursor=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d&limit=20
 - モバイル: 4カラムグリッド。
 - スペーシングスケール: 4、8、12、16、20、24、32、40、48、64px。
 
-## 9.2 商品カード
-
-**レイアウト:**
-
-```
-┌─────────────────────────────┐
-│  [商品画像]                  │
-│  アスペクト比: 1:1           │
-│  オブジェクトフィット: cover  │
-├─────────────────────────────┤
-│  カテゴリバッジ（オプション） │
-│  商品名（最大2行）           │
-│  ★★★★☆ (4.2) · 128レビュー  │
-│  $29.99  $39.99（取り消し線）│
-│  [肌タイプタグ]              │
-│  [♡ お気に入り追加]          │
-└─────────────────────────────┘
-```
-
-**商品カードルール:**
-- 画像: 1:1アスペクト比、遅延読み込み、フォールドプレースホルダー。
-- 名前: `line-clamp-2`で最大2行、太字ウェイト。
-- 評価: Lucide `Star`アイコン、ビューティーピink (#EC4899) カラー、ハーフスター対応、レビュー数リンク。
-- 価格: 現在の価格は太字、比較価格は取り消し線、通貨フォーマット。
-- タグ: 肌タイプの小さなピルバッジ（例: "Oily"、"Sensitive"）、ソフトラベンダー (#F3E8FF) 背景。
-- お気に入り: ハートアイコントグル、ビューティーピink (#EC4899) カラー、クリック時アニメーション。
-- ホバー: 微細なシャドウエレベーション、オプションのクイックビューボタン。
-- カード背景: ラグジュアリービューティーの美学のためのソフトラベンダー (#F3E8FF)。
-- ボーダー: プレミアム感のためのライトグレーボーダーと角丸。
-
-## 9.3 AI分析画面
-
-**アップロード画面:**
-
-```
-┌─────────────────────────────────────────┐
-│  📸 AI肌分析                            │
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │                                 │    │
-│  │   [ドロップゾーン / アップロードエリア] │    │
-│  │   ドラッグ＆ドロップまたはクリックしてアップロード │    │
-│  │   JPG, PNG, WebP · 最大10MB     │    │
-│  │                                 │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  [プレビュー画像]（アップロード後）        │
-│  [今すぐ分析]ボタン（プライマリ）         │
-│                                         │
-│  過去の分析:                             │
-│  ┌──────┐ ┌──────┐ ┌──────┐           │
-│  │日付1 │ │日付2 │ │日付3 │           │
-│  └──────┘ └──────┘ └──────┘           │
-└─────────────────────────────────────────┘
-```
-
-**結果画面:**
-
-```
-┌─────────────────────────────────────────┐
-│  分析結果                               │
-│                                         │
-│  肌タイプ: 混合肌                       │
-│  推定年齢: 28                           │
-│                                         │
-│  状態:                                  │
-│  ┌─────────────────────────────────┐    │
-│  │ 🟢 軽度ニキビ        低    87%  │    │
-│  │ 🟡 脂性              中    92%  │    │
-│  │ 🟢 保湿力            良好  78%  │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  おすすめ商品:                           │
-│  ┌──────────┐ ┌──────────┐             │
-│  │商品1     │ │商品2     │             │
-│  │94%一致   │ │91%一致   │             │
-│  └──────────┘ └──────────┘             │
-│                                         │
-│  [再分析] [履歴確認]                     │
-└─────────────────────────────────────────┘
-```
-
-**AI画面ルール:**
-- ローディング状態: 分析中のスケルトンシマーメまたはスピナー、ラベンダー背景。
-- エラー状態: リトライボタン付きの明確なエラーメッセージ。
-- 長時間実行分析のプログレスインジケーター。
-- 状態の重大度: カラーコードバッジ（緑=低、黄=中、赤=高）。
-- 信頼度はパーセンテージバーで表示。
-- 商品は一致スコアの降順でソート。
-- 「再分析」ボタンは常に利用可能、ラグジュアリーパープル (#7C3AED) 背景。
-- アップロードエリア: ソフトラベンダー (#F3E8FF) 背景とパープルボーダー。
-- 結果ページ: クリーンな白背景とラベンダーカードセクション。
-- CTAボタン: ラグジュアリーパープル (#7C3AED) と白テキスト。
-
-## 9.4 出品者ダッシュボード設計
-
-```
-┌─────────────────────────────────────────┐
-│  出品者ダッシュボード                     │
-│                                         │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │
-│  │総売上│ │注文数│ │平均  │ │評価  │  │
-│  │      │ │  127 │ │$45.2 │ │4.7★  │  │
-│  │$5,740│ │      │ │      │ │      │  │
-│  └──────┘ └──────┘ └──────┘ └──────┘  │
-│                                         │
-│  売上トレンド（チャート）                 │
-│  ┌─────────────────────────────────┐    │
-│  │  📈 ラインチャート / バーチャート │    │
-│  │  過去30日                        │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  最近の注文                              │
-│  ┌─────────────────────────────────┐    │
-│  │ 注文番号 │ 顧客    │ 金額  │状態│    │
-│  │ #1001   │ John D. │ $89.99 │ ✓│    │
-│  │ #1000   │ Jane S. │ $34.50 │ ⏳│    │
-│  └─────────────────────────────────┘    │
-└─────────────────────────────────────────┘
-```
-
-**ダッシュボードルール:**
-- KPIカード: 大きな数字、ラベル、トレンドインジケーター（パーセンテージ付き上下矢印）、ソフトラベンダー (#F3E8FF) 背景。
-- チャート: Rechartsまたは同等のものを使用。レスポンシブ、インタラクティブ、プライマリチャートカラーとしてラグジュアリーパープル (#7C3AED)。
-- テーブル: ソート可能なカラム、ページネーション、ステータスバッジ、ラグジュアリー美学。
-- 時間範囲セレクター: 7日、30日、90日、1年。
-- すべての金額は通貨シンボル付きでフォーマット。
-- ヘッダー: ラグジュアリーパープル (#7C3AED) 背景と白テキスト。
-- サイドバー: クリーンな白背景とアクティブアイテムのパープルアクセント。
-
-## 9.5 管理者ダッシュボード設計
-
-```
-┌─────────────────────────────────────────┐
-│  管理者ダッシュボード                     │
-│                                         │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │
-│  │ユーザー│ │出品者│ │注文数│ │収益  │  │
-│  │1,247 │ │  42  │ │3,891 │ │$127K │  │
-│  │+12%  │ │ +3   │ │ +8%  │ │ +15% │  │
-│  └──────┘ └──────┘ └──────┘ └──────┘  │
-│                                         │
-│  保留アクション                          │
-│  ┌─────────────────────────────────┐    │
-│  │ 🔔 5件の出品者承認が保留中       │    │
-│  │ 🔔 12件のレビューがモデレーション待ち│    │
-│  │ 🔔 2件のコンテンツレポート        │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  収益＆ユーザー成長チャート               │
-│  ┌─────────────────────────────────┐    │
-│  │  📈 デュアルアクシスチャート     │    │
-│  └─────────────────────────────────┘    │
-└─────────────────────────────────────────┘
-```
-
-**管理者ダッシュボードルール:**
-- 保留アクションのアラートバッジ（出品者承認、レビューモデレーション）、ビューティーピink (#EC4899) アクセント。
-- トレンドインジケーター付きのプラットフォーム全体の指標、ソフトラベンダー (#F3E8FF) 背景。
-- 一般的な管理者タスクのクイックアクションボタン、ラグジュアリーパープル (#7C3AED) スタイリング。
-- すべてのチャートはインタラクティブであること（ホバーツールチップ、クリックでドリルダウン）、パープルベースのカラースキーム。
-- ヘッダー: ラグジュアリーパープル (#7C3AED) 背景と白テキスト。
-- サイドバー: クリーンな白背景とアクティブアイテムのパープルアクセント。
-- 収益チャート: プレミアム美学のためのパープルグラデーションフィルク使用。
-
-## 9.6 カラーパレット
+## 9.2 カラーパレット
 
 **ラグジュアリーコスメティックスデザインシステム - 公式カラーパレット**
 
@@ -1724,7 +1491,7 @@ ring              → フォーカスリング (ラグジュアリーパープ�
 - 出品者ダッシュボードと管理者ダッシュボードは同じパープルベースのテーマに従うべき。
 - お気に入りアイコン、評価要素、プロモーションバッジはピンクアクセントを使用すべき。
 
-## 9.7 タイポグラフィ
+## 9.3 タイポグラフィ
 
 | エレメント | Tailwindクラス | 使用 |
 |---------|-----------------|-------|
@@ -1743,44 +1510,7 @@ ring              → フォーカスリング (ラグジュアリーパープ�
 - 最大行の長さ: 可読性のために60-80文字。
 - テキスト切り詰めには`line-clamp-*`ユーティリティを使用。
 
-## 9.8 フォーム
-
-**フォームレイアウト:**
-
-```
-┌─────────────────────────────────────────┐
-│  フォームタイトル                         │
-│                                         │
-│  ラベル                                  │
-│  ┌─────────────────────────────────┐    │
-│  │ 入力                             │    │
-│  └─────────────────────────────────┘    │
-│  ヘルパーテキスト / エラーメッセージ      │
-│                                         │
-│  ラベル                                  │
-│  ┌─────────────────────────────────┐    │
-│  │ セレクト ▼                       │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  ┌──────────────┐ ┌──────────────┐     │
-│  │ キャンセル    │ │ 送信         │     │
-│  └──────────────┘ └──────────────┘     │
-└─────────────────────────────────────────┘
-```
-
-**フォームルール:**
-- ラベルは`htmlFor`/`id`を通じて入力に関連付けが必須。
-- エラーメッセージは入力の下に`aria-describedby`でリンクして表示が必須。
-- 必須フィールドには視覚的インジケーター（アスタリスク）と`aria-required`が必須。
-- 送信ボタンは送信中にローディング状態を表示が必須、ラグジュアリーパープル (#7C3AED) 背景。
-- フォーム送信はローディング中に無効化が必須。
-- エラー表示にはshadcn/uiの`FormMessage`コンポーネントを使用。
-- 検証エラーはアラートではなくインラインで表示が必須。
-- キャンセルボタンは`variant="outline"`を使用。送信はパープルスタイリングのデフォルトバリアントを使用。
-- 入力背景: ラグジュアリービューティーの美学のためのソフトラベンダー (#F3E8FF)。
-- フォーカス状態: 一貫したブランドアイデンティティのためのパープルリング (#7C3AED)。
-
-## 9.9 テーブル
+## 9.4 テーブル
 
 **テーブル構造:**
 
@@ -1808,7 +1538,7 @@ ring              → フォーカスリング (ラグジュアリーパープ�
 - 行ホバー: プレミアム感のためのライトラベンダー背景。
 - ステータスバッジ: パープルとピンクアクセントの更新されたステータスバッジカラーを使用。
 
-## 9.10 モーダル（ダイアログ）
+## 9.5 モーダル（ダイアログ）
 
 **モーダル構造:**
 
@@ -1836,7 +1566,7 @@ ring              → フォーカスリング (ラグジュアリーパープ�
 - モーダル背景: ラグジュアリーエステティックのためのサブティルラベンダーボーダー付きの白。
 - ヘッダー: ブランド一貫性のためのラグジュアリーパープル (#7C3AED) アクセントまたはボーダー。
 
-## 9.11 ステータスバッジ
+## 9.6 ステータスバッジ
 
 | ステータス | バッジカラー | テキスト |
 |--------|------------|------|
@@ -1860,6 +1590,255 @@ ring              → フォーカスリング (ラグジュアリーパープ�
 - 情報の伝達にカラーのみを使用しない。テキストラベルを含める。
 - プロモーションバッジとセールインジケーターにはビューティーピink (#EC4899) を使用。
 - 処理中状態とブランド関連バッジにはラグジュアリーパープル (#7C3AED) を使用。
+
+## 9.7 グローバルナビゲーション＆レイアウトアーキテクチャ（ヘッダー＆左サイドバー）
+
+**ロール別ナビゲーション仕様（REQUIREMENT_SPEC.mdベース）:**
+
+### 1. ロール別ナビゲーションアイテムマトリクス
+
+#### 🛍️ バイヤーポータル（`role = 'BUYER'`）
+| ラベル | href | アイコン | 目的 / 機能 |
+|-------|------|------|-------------------|
+| Dashboard | `/dashboard` | `LayoutDashboard` | 商品商品発見、検索＆フィルタリング、プロモーションバナー |
+| Skin Analysis | `/skin-analysis` | `Sparkles` | AI写真アップロード、分析結果、レコメンド＆履歴 |
+| Matching & Recommendations | `/recommendations` | `Wand2` | パーソナライズされたAI肌商品マッチング＆レコメンド |
+| Order Details | `/orders` | `Package` | 購入者注文履歴、詳細＆追跡タイムライン（placed → delivered） |
+
+#### 🏬 マーチャントポータル（`role = 'MERCHANT'`）
+| ラベル | href | アイコン | 目的 / 機能 |
+|-------|------|------|-------------------|
+| Dashboard | `/merchant/dashboard` | `LayoutDashboard` | 商品管理ホーム（商品の作成、編集、削除、在庫ステータスサマリー） |
+| Orders | `/merchant/orders` | `ShoppingBag` | 注文ライフサイクル処理（確認、梱包、発送、配送） |
+| Promotions | `/merchant/promotions` | `Tag` | ショップクーポンと割引ルールの作成＆管理 |
+| Advertisements | `/merchant/ads` | `Megaphone` | 広告パッケージの閲覧、広告の購入、パフォーマンス追跡 |
+| Sales Overview | `/merchant/analytics` | `BarChart3` | 収益サマリー、注文合計、売上トレンド |
+
+#### 🛡️ 管理者ポータル（`role = 'ADMIN'`）
+| ラベル | href | アイコン | 目的 / 機能 |
+|-------|------|------|-------------------|
+| Dashboard | `/admin/dashboard` | `LayoutDashboard` | システムセキュリティログ＆管理者アクション監査証跡 |
+| User Management | `/admin/users` | `Users` | ユーザーの閲覧、アクティブ/インアクティブステータスの切り替え |
+| Merchant Management | `/admin/merchants` | `UserCheck` | 出品者申請の確認（承認/却下） |
+| Ad Management | `/admin/ads` | `Megaphone` | 広告パッケージテンプレートの作成、出品者広告投稿の確認 |
+| Review Moderation | `/admin/reviews` | `MessageSquare` | すべてのレビューの閲覧、報告されたコンテンツのモデレーション/フラグ付け |
+| Revenue & Payouts | `/admin/revenue` | `DollarSign` | プラットフォーム手数料（12%）、広告料金、出品者支払いの追跡 |
+| Content Moderation | `/admin/content` | `FileText` | ユーザー生成コンテンツのモデレーション、ポリシー違反のフラグ付け＆削除 |
+| Orders | `/admin/orders` | `ClipboardList` | 購入者と出品者間のすべてのプラットフォーム注文の閲覧＆監視 |
+
+---
+
+### 2. 標準TypeScriptナビゲーション設定（`navConfig.ts`）
+
+```typescript
+import { 
+  LayoutDashboard, 
+  Sparkles, 
+  Wand2, 
+  ShoppingBag, 
+  Package, 
+  Tag, 
+  Megaphone, 
+  BarChart3, 
+  Users, 
+  UserCheck, 
+  MessageSquare, 
+  DollarSign,
+  FileText,
+  ClipboardList,
+  LucideIcon
+} from 'lucide-react';
+
+export type UserRole = 'BUYER' | 'MERCHANT' | 'ADMIN';
+
+export interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export interface RoleNavConfig {
+  portalTitle: string;
+  mainNav: NavItem[];
+  footerNav: NavItem[];
+}
+
+export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
+  BUYER: {
+    portalTitle: 'Buyer Portal',
+    mainNav: [
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Skin Analysis', href: '/skin-analysis', icon: Sparkles },
+      { label: 'Matching & Recommendations', href: '/recommendations', icon: Wand2 },
+      { label: 'Order Details', href: '/orders', icon: Package },
+    ],
+    footerNav: []
+  },
+  MERCHANT: {
+    portalTitle: 'Merchant Portal',
+    mainNav: [
+      { label: 'Dashboard', href: '/merchant/dashboard', icon: LayoutDashboard },
+      { label: 'Orders', href: '/merchant/orders', icon: ShoppingBag },
+      { label: 'Promotions', href: '/merchant/promotions', icon: Tag },
+      { label: 'Advertisements', href: '/merchant/ads', icon: Megaphone },
+      { label: 'Sales Overview', href: '/merchant/analytics', icon: BarChart3 },
+    ],
+    footerNav: []
+  },
+  ADMIN: {
+    portalTitle: 'Admin Portal',
+    mainNav: [
+      { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+      { label: 'User Management', href: '/admin/users', icon: Users },
+      { label: 'Merchant Management', href: '/admin/merchants', icon: UserCheck },
+      { label: 'Ad Management', href: '/admin/ads', icon: Megaphone },
+      { label: 'Review Moderation', href: '/admin/reviews', icon: MessageSquare },
+      { label: 'Revenue & Payouts', href: '/admin/revenue', icon: DollarSign },
+      { label: 'Content Moderation', href: '/admin/content', icon: FileText },
+      { label: 'Orders', href: '/admin/orders', icon: ClipboardList },
+    ],
+    footerNav: []
+  }
+};
+```
+
+---
+
+### 3. ロール対応サイドバーコンポーネント（`Sidebar.tsx`）
+
+```tsx
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Sparkles } from 'lucide-react';
+import { roleNavConfigs, UserRole } from '@/config/navConfig';
+
+interface SidebarProps {
+  role?: UserRole;
+}
+
+export function Sidebar({ role = 'BUYER' }: SidebarProps) {
+  const pathname = usePathname();
+  const config = roleNavConfigs[role] || roleNavConfigs.BUYER;
+
+  return (
+    <aside className="fixed left-0 top-0 z-40 w-64 h-screen bg-background border-r border-border flex flex-col justify-between select-none">
+      {/* ブランドヘッダー */}
+      <div>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-border/60">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold tracking-tight text-foreground leading-tight">
+              Cosmetics Finder
+            </h1>
+            <p className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase">
+              {config.portalTitle}
+            </p>
+          </div>
+        </div>
+
+        {/* メインロールナビゲーションアイテム */}
+        <nav className="px-3 py-4 space-y-1">
+          {config.mainNav.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}/`));
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                  ${isActive 
+                    ? 'bg-purple-100/60 text-primary font-semibold shadow-xs' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}
+                `}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* フッターナビゲーションアイテム */}
+      <div className="px-3 py-4 border-t border-border/60 space-y-1">
+        {config.footerNav.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                ${isActive 
+                  ? 'bg-purple-100/60 text-primary font-semibold' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}
+              `}
+            >
+              <Icon className="w-4 h-4 text-muted-foreground" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+```
+
+---
+
+### 4. トップヘッダーコンポーネント（`Header.tsx`）
+
+```tsx
+import React from 'react';
+import { Globe, Heart, ShoppingBag, Bell } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
+export function Header() {
+  return (
+    <header className="sticky top-0 z-30 w-full h-16 bg-background/95 backdrop-blur-md border-b border-border px-6 flex items-center justify-end">
+
+      {/* アクションアイコン＆ユーザープロフィール */}
+      <div className="flex items-center gap-4">
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+          <Globe className="w-5 h-5" />
+        </button>
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors relative">
+          <Heart className="w-5 h-5" />
+        </button>
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors relative">
+          <ShoppingBag className="w-5 h-5" />
+        </button>
+        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors relative">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent animate-pulse" />
+        </button>
+        
+        {/* ユーザープロフィールアバター */}
+        <div className="pl-2 border-l border-border">
+          <Avatar className="w-9 h-9 border border-primary/20">
+            <AvatarImage src="/avatars/user.jpg" alt="User Profile" />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">CF</AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+**ロール別ナビゲーションレイアウトルール:**
+- サイドバーはログインユーザーのロール（`BUYER`、`MERCHANT`、`ADMIN`）に割り当てられた正確なアイテムをレンダリングが必須。
+- `Pending`または`Rejected`承認状態の出品者は制限されたナビゲーションアクセス（ダッシュボード＆プロフィールのみ）を持つことが必須。
+- アクティブなサイドバーメニューアイテムはソフトラベンダーハイライト（`bg-purple-100/60`または`bg-secondary`）、太字プライマリテキスト（`text-primary`）、`Sparkles`またはアクティブアイコンを使用が必須。
+- コンテンツエリアはデスクトップビューポートで`ml-64`（margin-left: 256px）でオフセットが必須。
 
 ---
 

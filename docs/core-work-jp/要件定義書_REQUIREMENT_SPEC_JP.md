@@ -62,6 +62,34 @@ AI搭載のスキンケアマーケットプレイス。ユーザーの肌状態
 - プラットフォーム管理のための管理者パネル
 - 多言語対応（英語、ミャンマー語、日本語）
 
+### 1.5 技術スタック（Technology Stack）
+
+#### バックエンド
+- **ランタイム:** Node.js v22+ (LTS)
+- **フレームワーク:** NestJS v11
+- **言語:** TypeScript v5.7+
+- **ORM:** Prisma v6
+- **データベース:** PostgreSQL v16
+- **キャッシュ:** Redis v7 (ioredis v6)
+- **認証:** JWT（アクセストークン＋リフレッシュトークン）、Argon2パスワードハッシュ
+- **APIドキュメント:** Swagger/OpenAPI v11
+
+#### フロントエンド
+- **UIライブラリ:** React v19
+- **バンドラー:** Vite v6
+- **言語:** TypeScript v5.7+（strict）
+- **ルーティング:** React Router v7
+- **ステート管理:** TanStack Query v5
+- **フォーム:** React Hook Form + Zod
+- **UIコンポーネント:** shadcn/ui (Radix UI)
+- **スタイリング:** Tailwind CSS v4
+- **i18n:** i18next（英語、ミャンマー語、日本語）
+- **テスト:** Vitest、Testing Library、MSW v2
+
+#### サービス（Services）
+- **メール配信:** Resend（トランザクショナルメール：メール認証、パスワードリセット）
+- **ワークフロー自動化:** n8n（スケジュールジョブ、イベント駆動ワークフロー、サードパーティ統合、社内自動化）
+
 ---
 
 ## 2. ユーザーロールと権限

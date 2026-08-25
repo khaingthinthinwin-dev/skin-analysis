@@ -135,8 +135,7 @@ INSERT INTO order_statuses (status_code, status_name, display_order, is_terminal
 ('packed', 'Packed', 3, FALSE, '注文が梱包され、発送準備完了'),
 ('shipped', 'Shipped', 4, FALSE, '注文が運送業者に引き渡された'),
 ('out_for_delivery', 'Out for Delivery', 5, FALSE, '注文が購入者へ配達中'),
-('delivered', 'Delivered', 6, TRUE, '購入者が注文を受け取った'),
-('cancelled', 'Cancelled', 7, TRUE, '注文がキャンセルされた（購入者または出品者）');
+('delivered', 'Delivered', 6, TRUE, '購入者が注文を受け取った');
 
 -- Seed Discount Types
 INSERT INTO discount_types (type_code, type_name, is_active) VALUES
@@ -509,7 +508,7 @@ CREATE TABLE wishlist (
 | 1 | 注文ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
 | 2 | 購入者ID | `buyer_id` | UUID | - | Y | N | - | フォーリンキー（`fk_orders_buyer`）。`users(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
 | 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | フォーリンキー（`fk_orders_merchant`）。`merchants(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
-| 4 | ステータス | `status` | VARCHAR(30) | - | - | N | 'placed' | 注文ステータス（placed, confirmed, packed, shipped, out_for_delivery, delivered, cancelled）。 |
+| 4 | ステータス | `status` | VARCHAR(30) | - | - | N | 'placed' | 注文ステータス（placed, confirmed, packed, shipped, out_for_delivery, delivered）。 |
 | 5 | 合計金額 | `total_amount` | DECIMAL(10,2) | - | - | N | - | チェック制約: `total_amount > 0`。 |
 | 6 | 配送先住所 | `shipping_address` | JSONB | - | - | N | - | 配送先住所詳細（JSON）。 |
 | 7 | 決済方法 | `payment_method` | VARCHAR(50) | - | - | N | - | 使用した決済方法。 |
@@ -537,7 +536,7 @@ CREATE TABLE orders (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_orders_total CHECK (total_amount > 0),
-    CONSTRAINT chk_orders_status CHECK (status IN ('placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled')),
+    CONSTRAINT chk_orders_status CHECK (status IN ('placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered')),
     CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('pending', 'completed')),
     CONSTRAINT fk_orders_buyer FOREIGN KEY (buyer_id)
         REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -751,9 +750,11 @@ CREATE TABLE advertisements (
 | 2 | 配置場所 | `placement` | VARCHAR(50) | - | - | N | - | 広告配置場所（homepage_banner, product_sidebar, category_banner, search_top）。 |
 | 3 | ティア | `tier` | VARCHAR(20) | - | - | N | - | 価格ティア（basic, standard, premium）。 |
 | 4 | 日額料金 | `daily_rate` | DECIMAL(10,2) | - | - | N | - | 日次広告料金。 |
-| 5 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | 設定の有効ステータス。 |
-| 6 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
-| 7 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
+| 5 | 期間（日数） | `duration_days` | INTEGER | - | - | N | - | この配置場所の広告期間（日数）。チェック：`duration_days > 0`。 |
+| 6 | 最大広告数 | `max_ads` | INTEGER | - | - | N | - | この配置場所で許可される最大広告数。チェック：`max_ads > 0`。 |
+| 7 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | 設定の有効ステータス。 |
+| 8 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 9 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード最終更新タイムスタンプ。 |
 
 #### Reference SQL DDL
 ```sql
@@ -762,20 +763,24 @@ CREATE TABLE ad_fee_settings (
     placement VARCHAR(50) NOT NULL,
     tier VARCHAR(20) NOT NULL,
     daily_rate DECIMAL(10,2) NOT NULL,
+    duration_days INTEGER NOT NULL,
+    max_ads INTEGER NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_ad_fee_settings_placement_tier UNIQUE (placement, tier)
+    CONSTRAINT uq_ad_fee_settings_placement_tier UNIQUE (placement, tier),
+    CONSTRAINT chk_ad_fee_settings_duration CHECK (duration_days > 0),
+    CONSTRAINT chk_ad_fee_settings_max_ads CHECK (max_ads > 0)
 );
 ```
 
 #### Default Fee Settings（デフォルト料金設定）
-| Placement | Basic | Standard | Premium |
-|-----------|-------|----------|---------|
-| Homepage Banner | $3.00/day | $5.00/day | $8.00/day |
-| Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day |
-| Category Banner | $2.50/day | $4.00/day | $7.00/day |
-| Search Results Top | $1.50/day | $2.50/day | $5.00/day |
+| Placement | Basic | Standard | Premium | Duration | Max Ads |
+|-----------|-------|----------|---------|----------|---------|
+| Homepage Banner | $3.00/day | $5.00/day | $8.00/day | 7 Days | 1 |
+| Product Page Sidebar | $2.00/day | $3.50/day | $6.00/day | 15 Days | 3 |
+| Category Banner | $2.50/day | $4.00/day | $7.00/day | 30 Days | 5 |
+| Search Results Top | $1.50/day | $2.50/day | $5.00/day | 7 Days | 6 |
 
 ---
 
@@ -835,10 +840,14 @@ CREATE TABLE ad_payments (
 | 2 | 料金設定ID | `ad_fee_setting_id` | UUID | - | Y | N | - | フォーリンキー（`fk_ad_fee_history_setting`）。`ad_fee_settings(id)`を参照。ON DELETE CASCADE ON UPDATE CASCADE。 |
 | 3 | 旧日額料金 | `old_daily_rate` | DECIMAL(10,2) | - | - | Y | NULL | 前回の日額料金（初回作成時はNULL）。 |
 | 4 | 新日額料金 | `new_daily_rate` | DECIMAL(10,2) | - | - | N | - | 変更後の新しい日額料金。 |
-| 5 | 変更者ID | `changed_by` | UUID | - | Y | N | - | フォーリンキー（`fk_ad_fee_history_changed_by`）。`users(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
-| 6 | 変更理由 | `change_reason` | TEXT | - | - | Y | NULL | 料金変更の理由。 |
-| 7 | 適用開始日時 | `effective_from` | TIMESTAMPTZ | - | - | N | - | 新しいレートが適用される時期。 |
-| 8 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
+| 5 | 旧期間（日数） | `old_duration_days` | INTEGER | - | - | Y | NULL | 前回の期間（日数）（初回作成時はNULL）。 |
+| 6 | 新期間（日数） | `new_duration_days` | INTEGER | - | - | N | - | 変更後の新しい期間（日数）。 |
+| 7 | 旧最大広告数 | `old_max_ads` | INTEGER | - | - | Y | NULL | 前回の最大広告数（初回作成時はNULL）。 |
+| 8 | 新最大広告数 | `new_max_ads` | INTEGER | - | - | N | - | 変更後の新しい最大広告数。 |
+| 9 | 変更者ID | `changed_by` | UUID | - | Y | N | - | フォーリンキー（`fk_ad_fee_history_changed_by`）。`users(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
+| 10 | 変更理由 | `change_reason` | TEXT | - | - | Y | NULL | 料金変更の理由。 |
+| 11 | 適用開始日時 | `effective_from` | TIMESTAMPTZ | - | - | N | - | 新しいレートが適用される時期。 |
+| 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | レコード作成タイムスタンプ。 |
 
 #### Reference SQL DDL
 ```sql
@@ -847,6 +856,10 @@ CREATE TABLE ad_fee_history (
     ad_fee_setting_id UUID NOT NULL,
     old_daily_rate DECIMAL(10,2),
     new_daily_rate DECIMAL(10,2) NOT NULL,
+    old_duration_days INTEGER,
+    new_duration_days INTEGER NOT NULL,
+    old_max_ads INTEGER,
+    new_max_ads INTEGER NOT NULL,
     changed_by UUID NOT NULL,
     change_reason TEXT,
     effective_from TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -1201,7 +1214,7 @@ CREATE TABLE order_status_history (
 | 1 | 変動ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID形式。 |
 | 2 | 商品ID | `product_id` | UUID | - | Y | N | - | フォーリンキー（`fk_inventory_transactions_product`）。`products(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
 | 3 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | フォーリンキー（`fk_inventory_transactions_merchant`）。`merchants(id)`を参照。ON DELETE RESTRICT ON UPDATE CASCADE。 |
-| 4 | 変動種別 | `transaction_type` | VARCHAR(30) | - | - | N | - | 取引種別: order_created, order_cancelled, restock, manual_adjustment, return。 |
+| 4 | 変動種別 | `transaction_type` | VARCHAR(30) | - | - | N | - | 取引種別: order_created, restock, manual_adjustment, return。 |
 | 5 | 数量 | `quantity` | INTEGER | - | - | N | - | 変動数量（増加は正、減少は負）。 |
 | 6 | 変動前数量 | `before_quantity` | INTEGER | - | - | N | - | 変動前の在庫数。 |
 | 7 | 変動後数量 | `after_quantity` | INTEGER | - | - | N | - | 変動後の在庫数。 |
@@ -1226,7 +1239,7 @@ CREATE TABLE inventory_transactions (
     reason TEXT,
     created_by UUID,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_inventory_transactions_type CHECK (transaction_type IN ('order_created', 'order_cancelled', 'restock', 'manual_adjustment', 'return')),
+    CONSTRAINT chk_inventory_transactions_type CHECK (transaction_type IN ('order_created', 'restock', 'manual_adjustment', 'return')),
     CONSTRAINT fk_inventory_transactions_product FOREIGN KEY (product_id)
         REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_inventory_transactions_merchant FOREIGN KEY (merchant_id)

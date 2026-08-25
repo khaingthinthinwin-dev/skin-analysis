@@ -394,9 +394,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 |---------|-----------|-------------|-------------------|
 | BR-ADM-050 | Format Validation | Export format must be csv. | Backend (DTO validation) |
 | BR-ADM-051 | Date Range for Export | Exports require a date range. Maximum 365 days. | Backend (DTO validation) |
-| BR-ADM-052 | Async Generation | Large exports (>1000 rows) are generated asynchronously. Admin receives a download link via notification when ready. | Backend (job queue) |
-| BR-ADM-053 | Export Retention | Generated export files are retained for 24 hours, then deleted. | Backend (cleanup job) |
-| BR-ADM-054 | Export Audit | All export actions are logged to audit_logs with report type, format, and date range. | Backend (audit service) |
+| BR-ADM-052 | Export Audit | All export actions are logged to audit_logs with report type, format, and date range. | Backend (audit service) |
 
 ### 4.7 Security Rules
 
@@ -783,8 +781,8 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | **Trigger** | Click "Generate Report" with Ad Performance selected |
 | **API Endpoint** | `POST /api/v1/admin/ads/export/ad-performance` |
 | **Request Body** | `{ dateFrom: string, dateTo: string, placement?: string[], tier?: string[], status?: string[], format: 'csv' }` |
-| **Processing Steps** | 1. Validate admin role. 2. Validate inputs (date range, format). 3. Query ad performance data: for each ad in date range, gather title, shop, placement, tier, status, impressions, clicks, CTR, fee paid, revenue. 4. Apply filters. 5. If result set > 1000 rows: create export job, return job ID, generate asynchronously. 6. If ≤ 1000 rows: generate file synchronously. 7. Format file based on `format` parameter. 8. Store file in export storage with 24-hour TTL. 9. Log EXPORT_GENERATED event to audit_logs. 10. Return download URL or job ID. |
-| **Success Response** | 200 OK with `{ downloadUrl: string }` or `{ jobId: string, status: 'processing' }` |
+| **Processing Steps** | 1. Validate admin role. 2. Validate inputs (date range, format). 3. Query ad performance data: for each ad in date range, gather title, shop, placement, tier, status, impressions, clicks, CTR, fee paid, revenue. 4. Apply filters. 5. Generate file synchronously. 6. Format file based on `format` parameter. 7. Stream file to client. 8. Log EXPORT_GENERATED event to audit_logs. |
+| **Success Response** | 200 OK with file stream |
 
 ### 6.11 Operation: Export Shop Submission History
 
@@ -793,8 +791,8 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | **Trigger** | Click "Generate Report" with Submission History selected |
 | **API Endpoint** | `POST /api/v1/admin/ads/export/submission-history` |
 | **Request Body** | `{ dateFrom: string, dateTo: string, shop?: string, format: 'csv' }` |
-| **Processing Steps** | 1. Validate admin role. 2. Validate inputs. 3. Query all ad submissions in date range: for each ad, gather shop name, title, placement, tier, submitted date, approval status, rejection reason (if rejected), approved/rejected by, approved/rejected at, fee paid, refund amount (if refunded). 4. Apply shop filter if provided. 5. Generate file. 6. Log EXPORT_GENERATED event. 7. Return download URL or job ID. |
-| **Success Response** | 200 OK with `{ downloadUrl: string }` or `{ jobId: string, status: 'processing' }` |
+| **Processing Steps** | 1. Validate admin role. 2. Validate inputs. 3. Query all ad submissions in date range: for each ad, gather shop name, title, placement, tier, submitted date, approval status, rejection reason (if rejected), approved/rejected by, approved/rejected at, fee paid, refund amount (if refunded). 4. Apply shop filter if provided. 5. Generate file synchronously. 6. Stream file to client. 7. Log EXPORT_GENERATED event. |
+| **Success Response** | 200 OK with file stream |
 
 ### 6.12 Operation: Export Fee History Log
 
@@ -803,17 +801,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | **Trigger** | Click "Generate Report" with Fee History selected, or "Export" on fee history page |
 | **API Endpoint** | `POST /api/v1/admin/ads/export/fee-history` |
 | **Request Body** | `{ dateFrom: string, dateTo: string, placement?: string[], tier?: string[], format: 'csv' }` |
-| **Processing Steps** | 1. Validate admin role. 2. Validate inputs. 3. Query `ad_fee_history` joined with `ad_fee_settings` and `users` where `created_at` within date range. 4. Apply filters. 5. For each record: gather placement, tier, old daily rate, new daily rate, old duration, new duration, old max ads, new max ads, changed by (admin name), change reason, effective from, created at. 6. Generate file. 7. Log EXPORT_GENERATED event. 8. Return download URL or job ID. |
-| **Success Response** | 200 OK with `{ downloadUrl: string }` or `{ jobId: string, status: 'processing' }` |
-
-### 6.13 Operation: Check Export Status / Download
-
-| Attribute | Specification |
-|-----------|---------------|
-| **Trigger** | Click download on recent exports table, or poll for async job |
-| **API Endpoints** | `GET /api/v1/admin/ads/export/:jobId/status` (status check), `GET /api/v1/admin/ads/export/:jobId/download` (download) |
-| **Processing Steps (Status)** | 1. Validate admin role. 2. Find export job by ID. 3. Return status: processing, ready, expired, failed. |
-| **Processing Steps (Download)** | 1. Validate admin role. 2. Find export job by ID. 3. Verify status is 'ready'. 4. Stream file to client with appropriate Content-Type and Content-Disposition headers. 5. Log EXPORT_DOWNLOADED event. |
+| **Processing Steps** | 1. Validate admin role. 2. Validate inputs. 3. Query `ad_fee_history` joined with `ad_fee_settings` and `users` where `created_at` within date range. 4. Apply filters. 5. For each record: gather placement, tier, old daily rate, new daily rate, old duration, new duration, old max ads, new max ads, changed by (admin name), change reason, effective from, created at. 6. Generate file synchronously. 7. Stream file to client. 8. Log EXPORT_GENERATED event. |
 | **Success Response** | 200 OK with file stream |
 
 ---
@@ -973,18 +961,11 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `byTier[]` | GROUP BY tier | Array of `{ tier, tierName, adCount, revenue, avgCtr }` |
 | `trend[]` | GROUP BY date | Array of `{ date, revenue, adCount }` |
 
-### 7.14 Output Specification — Export Job DTO (出力定義)
+### 7.14 Output Specification — Export (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `jobId` | System-generated | UUID string |
-| `status` | Job state | 'processing' / 'ready' / 'expired' / 'failed' |
-| `downloadUrl` | Storage URL | URL string (when status='ready') |
-| `reportType` | Input echo | String |
-| `format` | Input echo | String |
-| `generatedAt` | Timestamp | ISO 8601 timestamp |
-| `expiresAt` | Timestamp + 24h | ISO 8601 timestamp |
-| `rowCount` | Query count | Integer |
+| `downloadUrl` | Export service | URL string |
 
 ---
 
@@ -1116,8 +1097,6 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `400` | `BAD_REQUEST` | Invalid report type | "Invalid report type" |
 | `400` | `BAD_REQUEST` | Invalid format | "Invalid export format. Use CSV." |
 | `400` | `BAD_REQUEST` | Missing date range | "Date range is required" |
-| `404` | `NOT_FOUND` | Export job not found | "Export job not found" |
-| `410` | `GONE` | Export file expired | "This export has expired. Please generate a new one." |
 | `500` | `INTERNAL_SERVER_ERROR` | Export generation failed | "Report generation failed. Please try again." |
 
 ### 9.6 Frontend Error Display Behavior
@@ -1156,8 +1135,6 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `/api/v1/admin/ads/export/ad-performance` | POST | `admin` | Export ad performance report |
 | `/api/v1/admin/ads/export/submission-history` | POST | `admin` | Export submission history |
 | `/api/v1/admin/ads/export/fee-history` | POST | `admin` | Export fee history |
-| `/api/v1/admin/ads/export/:jobId/status` | GET | `admin` | Check export job status |
-| `/api/v1/admin/ads/export/:jobId/download` | GET | `admin` | Download export file |
 
 ### 10.3 Role-Based Access
 
@@ -1179,7 +1156,6 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | `FEE_CREATED` | adminId, feeSettingId, placement, tier, dailyRate, durationDays, maxAds, changeReason, timestamp | 2 years |
 | `FEE_DEACTIVATED` | adminId, feeSettingId, placement, tier, changeReason, timestamp | 2 years |
 | `EXPORT_GENERATED` | adminId, reportType, format, dateRange, rowCount, timestamp | 1 year |
-| `EXPORT_DOWNLOADED` | adminId, exportJobId, timestamp | 1 year |
 
 ---
 
@@ -1257,7 +1233,6 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | Fee Settings Update | ≤ 500 milliseconds |
 | Revenue Analytics Query | ≤ 2 seconds |
 | Export Generation (≤1000 rows) | ≤ 3 seconds |
-| Export Generation (>1000 rows) | Async, notify when ready |
 
 ### 13.2 Security Considerations
 
@@ -1297,8 +1272,6 @@ Defined via `.env` configuration:
 | Definition Key | Default Value | Description |
 |----------------|---------------|-------------|
 | `AD_BULK_MAX_SIZE` | `50` | Maximum ads per bulk operation |
-| `AD_EXPORT_MAX_ROWS_SYNC` | `1000` | Row count threshold for sync vs async export |
-| `AD_EXPORT_RETENTION_HOURS` | `24` | Hours before generated export files are deleted |
 | `AD_ANALYTICS_MAX_RANGE_DAYS` | `365` | Maximum date range for analytics queries |
 | `AD_SLIDER_MAX` | `5` | Maximum ads per slider rotation |
 | `AD_SLIDER_INTERVAL` | `5000` | Slider auto-rotation interval in milliseconds |

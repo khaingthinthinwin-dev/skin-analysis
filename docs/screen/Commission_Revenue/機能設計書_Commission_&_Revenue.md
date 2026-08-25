@@ -338,10 +338,8 @@ Admin navigates to /admin/commission-revenue
 |---------|-----------|-------------|-------------------|
 | BR-EXP-001 | Export Format | Export format must be one of: `csv`, `xlsx`. | Backend (DTO validation) |
 | BR-EXP-002 | Date Range for Export | Exports require a date range (dateFrom and dateTo). Maximum 365 days. | Backend (DTO validation) |
-| BR-EXP-003 | Async Generation | Large exports (>1000 rows) are generated asynchronously. Admin receives a download link via notification when ready. | Backend (job queue) |
-| BR-EXP-004 | Export Retention | Generated export files are retained for 24 hours, then deleted. | Backend (cleanup job) |
-| BR-EXP-005 | Export Audit | All export actions are logged to audit_logs with report type, format, and date range. | Backend (audit service) |
-| BR-EXP-006 | Data Sanitization | Exported data must not include sensitive fields (password hashes, tokens). | Backend (export service) |
+| BR-EXP-003 | Export Audit | All export actions are logged to audit_logs with report type, format, and date range. | Backend (audit service) |
+| BR-EXP-004 | Data Sanitization | Exported data must not include sensitive fields (password hashes, tokens). | Backend (export service) |
 
 ---
 
@@ -638,9 +636,9 @@ Admin navigates to /admin/commission-revenue
 | **API Endpoint** | `POST /api/v1/admin/commission/export` |
 | **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
 | **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
-| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Count estimated rows. 4. If rows <= 1000: generate file synchronously, return download URL. 5. If rows > 1000: create async export job, return job ID, notify admin when ready. 6. Log EXPORT_GENERATED event to audit_logs. |
-| **Success Response** | 200 OK with `{ downloadUrl: string }` (sync) or `{ jobId: string, status: 'processing' }` (async) |
-| **Post-Action** | Show download link or processing status toast |
+| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Generate file synchronously. 4. Stream file to client. 5. Log EXPORT_GENERATED event to audit_logs. |
+| **Success Response** | 200 OK with file stream |
+| **Post-Action** | Show success toast |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
 
 ### 6.13 Operation: Export Revenue Report
@@ -651,9 +649,9 @@ Admin navigates to /admin/commission-revenue
 | **API Endpoint** | `POST /api/v1/admin/revenue/export` |
 | **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
 | **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
-| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Count estimated rows. 4. If rows <= 1000: generate file synchronously, return download URL. 5. If rows > 1000: create async export job, return job ID, notify admin when ready. 6. Log EXPORT_GENERATED event to audit_logs. |
-| **Success Response** | 200 OK with `{ downloadUrl: string }` (sync) or `{ jobId: string, status: 'processing' }` (async) |
-| **Post-Action** | Show download link or processing status toast |
+| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Generate file synchronously. 4. Stream file to client. 5. Log EXPORT_GENERATED event to audit_logs. |
+| **Success Response** | 200 OK with file stream |
+| **Post-Action** | Show success toast |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
 
 ### 6.14 Operation: Export Payout History
@@ -664,22 +662,10 @@ Admin navigates to /admin/commission-revenue
 | **API Endpoint** | `POST /api/v1/admin/revenue/payouts/export` |
 | **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
 | **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
-| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Count estimated rows. 4. If rows <= 1000: generate file synchronously, return download URL. 5. If rows > 1000: create async export job, return job ID, notify admin when ready. 6. Log EXPORT_GENERATED event to audit_logs. |
-| **Success Response** | 200 OK with `{ downloadUrl: string }` (sync) or `{ jobId: string, status: 'processing' }` (async) |
-| **Post-Action** | Show download link or processing status toast |
+| **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Generate file synchronously. 4. Stream file to client. 5. Log EXPORT_GENERATED event to audit_logs. |
+| **Success Response** | 200 OK with file stream |
+| **Post-Action** | Show success toast |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
-
-### 6.15 Operation: Check Export Status / Download
-
-| Attribute | Specification |
-|-----------|---------------|
-| **Trigger** | Click "Download" on recent exports table, or async job completion notification |
-| **API Endpoints** | `GET /api/v1/admin/exports/:jobId/status` (status check), `GET /api/v1/admin/exports/:jobId/download` (download) |
-| **Processing Steps (Status)** | 1. Validate admin role. 2. Find export job by ID. 3. Return status: processing, ready, expired. |
-| **Processing Steps (Download)** | 1. Validate admin role. 2. Find export job by ID. 3. Verify status = ready. 4. Stream file to client. 5. Log EXPORT_DOWNLOADED event. |
-| **Success Response (Status)** | 200 OK with `{ status: 'processing' \| 'ready' \| 'expired' }` |
-| **Success Response (Download)** | 200 OK with file stream |
-| **Error Response** | 404 Not Found (job not found), 410 Gone (export expired), 500 Internal Server Error |
 
 ---
 
@@ -763,10 +749,7 @@ Admin navigates to /admin/commission-revenue
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `downloadUrl` | Export service | URL string (sync generation) |
-| `jobId` | Export job queue | UUID string (async generation) |
-| `estimatedRows` | Query count | Integer displayed as "Estimated {n} rows" |
-| `recentExports` | Export jobs query | Array of `{ jobId, reportType, format, dateRange, status, generatedAt }` |
+| `downloadUrl` | Export service | URL string |
 
 ---
 
@@ -863,9 +846,7 @@ Admin navigates to /admin/commission-revenue
 | `400` | `EXP_002` | dateTo before dateFrom | "End date must be after start date" |
 | `400` | `EXP_003` | Date range exceeds 365 days | "Date range cannot exceed 365 days" |
 | `400` | `EXP_004` | Invalid format | "Invalid export format. Use CSV or Excel." |
-| `404` | `EXP_005` | Export job not found | "Export job not found" |
-| `410` | `EXP_006` | Export file expired | "This export has expired. Please generate a new one." |
-| `500` | `EXP_007` | Export generation failed | "Report generation failed. Please try again." |
+| `500` | `EXP_005` | Export generation failed | "Report generation failed. Please try again." |
 
 ### 9.5 Frontend Error Display Behavior
 
@@ -902,8 +883,6 @@ Admin navigates to /admin/commission-revenue
 | `POST /api/v1/admin/commission/export` | Protected (Admin) | Export commission report |
 | `POST /api/v1/admin/revenue/export` | Protected (Admin) | Export revenue report |
 | `POST /api/v1/admin/revenue/payouts/export` | Protected (Admin) | Export payout history |
-| `GET /api/v1/admin/exports/:jobId/status` | Protected (Admin) | Check export job status |
-| `GET /api/v1/admin/exports/:jobId/download` | Protected (Admin) | Download export file |
 
 ### 10.3 Role-Based Access
 
@@ -922,7 +901,6 @@ Admin navigates to /admin/commission-revenue
 | `PAYOUT_PROCESSED` | adminId, payoutId, amount, merchantId, ip, timestamp | 2 years |
 | `PAYOUT_FAILED` | adminId, payoutId, reason, ip, timestamp | 1 year |
 | `EXPORT_GENERATED` | adminId, reportType, format, dateRange, rowCount, ip, timestamp | 1 year |
-| `EXPORT_DOWNLOADED` | adminId, exportJobId, ip, timestamp | 1 year |
 
 Retention is aligned with Development Rules §6.4 (admin actions: 2 years; financial records: 1 year).
 
@@ -941,7 +919,7 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | `rateUpdated` | Commission rate saved | Success toast |
 | `targetUpdated` | Revenue target saved | Success toast |
 | `payoutProcessed` | Payout processed | Success toast |
-| `exportReady` | Async export job completed | Toast notification with download link |
+| `exportComplete` | Export generated successfully | Success toast |
 | `forecastUnavailable` | Insufficient historical data | Informational note next to chart |
 | `error` | API error | Dismissible alert banner with retry option |
 | `networkError` | Connectivity issue | Alert banner for connectivity issue |
@@ -991,8 +969,7 @@ No WebSocket or server-sent event integration is required for this release. UI n
 | Page Load (LCP) | ≤ 2 seconds |
 | API Response Time (p95) | ≤ 500 ms |
 | Payout Processing (incl. external settlement) | ≤ 2 seconds |
-| Export Generation (≤1000 rows) | ≤ 3 seconds (synchronous) |
-| Export Generation (>1000 rows) | Async, notify when ready |
+| Export Generation (all sizes) | ≤ 5 seconds (synchronous streaming) |
 | Client-side Cache Stale Time | 5 minutes |
 
 Targets are aligned with Development Rules §10.1–10.2 and Requirements Definition §8.3.
@@ -1032,8 +1009,6 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | Default commission rate | 12% (seeded in `commission_settings`, DBS §3.17) |
 | Payout status enum | `pending`, `processing`, `completed`, `failed` (DBS §3.19) |
 | Ad fee rate configuration | Administered via the Advertisement Management function (REQ §5.3); this screen tracks ad fee revenue only |
-| Export max rows sync | Backend config (default: 1000 rows threshold for sync vs async) |
-| Export retention hours | Backend config (default: 24 hours before generated files are deleted) |
 | Export max date range | Backend config (default: 365 days) |
 
 ---
@@ -1078,8 +1053,6 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | A-EXP-002 | Admin can export revenue reports as CSV/Excel | UC-COMM-013, Sec 6.13 |
 | A-EXP-003 | Admin can export payout history as CSV/Excel | UC-COMM-014, Sec 6.14 |
 | A-EXP-004 | Export requires date range, max 365 days | BR-EXP-002, Sec 4.9, 8.7 |
-| A-EXP-005 | Large exports generated asynchronously | BR-EXP-003, Sec 4.9 |
-| A-EXP-006 | Export files retained for 24 hours | BR-EXP-004, Sec 4.9 |
 
 ### 15.2 API Endpoint Traceability
 
@@ -1100,8 +1073,6 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | `POST /api/v1/admin/commission/export` | Export Commission Report (Sec 6.12) |
 | `POST /api/v1/admin/revenue/export` | Export Revenue Report (Sec 6.13) |
 | `POST /api/v1/admin/revenue/payouts/export` | Export Payout History (Sec 6.14) |
-| `GET /api/v1/admin/exports/:jobId/status` | Check Export Status (Sec 6.15) |
-| `GET /api/v1/admin/exports/:jobId/download` | Download Export (Sec 6.15) |
 
 ### 15.3 Related Document References
 
@@ -1127,8 +1098,6 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 - [ ] Export functionality available on both Commission and Revenue tabs
 - [ ] Export supports CSV and Excel formats only (no PDF)
 - [ ] Export requires date range with 365-day maximum
-- [ ] Large exports (>1000 rows) processed asynchronously
-- [ ] Export files retained for 24 hours then deleted
 - [ ] Export actions logged to audit_logs
 
 ---
