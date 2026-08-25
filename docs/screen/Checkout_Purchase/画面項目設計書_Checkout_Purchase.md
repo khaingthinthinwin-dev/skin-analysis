@@ -1,4 +1,4 @@
-# Screen Items Specification (画面項目設計書) — Checkout & Order Placement
+# Screen Items Specification (画面項目設計書) — Purchase & Checkout
 
 **Document ID:** SKM-SIS-SCR-CHECKOUT-001  
 **Target Screen:** Checkout & Order Placement (チェックアウト・注文)  
