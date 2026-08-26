@@ -2,7 +2,7 @@
 
 **Document ID:** SKM-SIS-SCR-CHECKOUT-001  
 **Target Screen:** Checkout & Order Placement (チェックアウト・注文)  
-**Subsystem:** Buyer Module — Checkout, Order Placement & Order History  
+**Subsystem:** Buyer Module — Checkout & Order Placement  
 **Function ID:** FN-CHECK-001, FN-ORDER-001  
 **Version:** 1.0  
 **Created:** 2026-08-25  
@@ -19,7 +19,7 @@
 
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
-| 1.0 | 2026-08-25 | Senior System Engineer | Initial release. Comprehensive screen items specification for Checkout, Order Confirmation, Order History, Order Detail, and Order Tracking pages. Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.5, DEVELOPMENT_RULES v2.1, and Functional Specification v1.2. |
+| 1.0 | 2026-08-25 | Senior System Engineer | Initial release. Screen items specification for Checkout and Order Confirmation pages. Order History, Order Detail, and Order Tracking pages are developed by the order status screen team. Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.5, DEVELOPMENT_RULES v2.1, and Functional Specification v1.2. |
 
 ### 1.2 Related Documents
 
@@ -35,7 +35,7 @@
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Checkout, Order Confirmation, Order History, Order Detail, and Order Tracking pages provide the complete purchase workflow for authenticated buyers on the Cosmetics Finder platform. These screens convert cart contents into confirmed orders while validating stock availability, applying coupon discounts, calculating totals, and persisting order records for merchant fulfillment and buyer tracking.
+The Checkout and Order Confirmation pages provide the purchase workflow for authenticated buyers on the Cosmetics Finder platform. These screens convert cart contents into confirmed orders while validating stock availability, applying coupon discounts, calculating totals, and persisting order records for merchant fulfillment.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -51,9 +51,6 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 2. **Coupon Validation** — Validating and applying discount codes (percentage or fixed) at checkout, enforcing expiry, minimum order amount, and single-use constraints.
 3. **Order Calculation** — Computing subtotal, discount amount, and final total based on cart items and applied coupons.
 4. **Order Placement** — Creating order records with status `placed`, decrementing stock atomically, clearing the cart, and returning order confirmation.
-5. **Order History** — Displaying a paginated list of all past orders with status, date, total, and item count.
-6. **Order Details** — Showing full order information including items, shipping address, payment status, and order timeline.
-7. **Order Tracking** — Providing real-time order status tracking with timeline visualization and estimated delivery date.
 
 ---
 
@@ -147,119 +144,14 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### Order History Page Layout (`/orders`)
-```text
-┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [L] PAGE HEADER            │            │
-│              │   [L1] Page Title           │            │
-│              │   [L2] Order Count          │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [M] ORDERS TABLE           │            │
-│              │   [M1] Table Header         │            │
-│              │   [M2] Order Row (repeat)   │            │
-│              │     [M2a] Order ID (link)   │            │
-│              │     [M2b] Order Date        │            │
-│              │     [M2c] Status Badge      │            │
-│              │     [M2d] Item Count        │            │
-│              │     [M2e] Order Total       │            │
-│              │     [M2f] View Detail Btn   │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [N] PAGINATION (cond.)     │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [O] EMPTY STATE (cond.)    │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### Order Detail Page Layout (`/orders/:orderId`)
-```text
-┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌─────────────────────────────────────────────────────┐│
-│  │  [P] PAGE HEADER                                    ││
-│  │   [P1] Back to Orders Link                          ││
-│  │   [P2] Page Title "Order Detail"                    ││
-│  │   [P3] Order ID                                     ││
-│  │   [P4] Order Date                                   ││
-│  │   [P5] Status Badge                                 ││
-│  └─────────────────────────────────────────────────────┘│
-│                                                         │
-│  ┌──────────────────────┐  ┌───────────────────────────┐│
-│  │ [Q] ORDER ITEMS      │  │ [R] SHIPPING ADDRESS CARD ││
-│  │   [Q1] Item Row (rpt)│  │   [R1] Recipient Name     ││
-│  │   [Q2] Subtotal      │  │   [R2] Phone              ││
-│  │   [Q3] Discount      │  │   [R3] Full Address       ││
-│  │   [Q4] Total         │  └───────────────────────────┘│
-│  └──────────────────────┘  ┌───────────────────────────┐│
-│                            │ [S] PAYMENT INFO CARD     ││
-│                            │   [S1] Payment Method     ││
-│                            │   [S2] Payment Status     ││
-│                            └───────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────┐│
-│  │  [T] ORDER NOTES (conditional)                      ││
-│  └─────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────┐│
-│  │  [U] ORDER TIMELINE                                 ││
-│  │   [U1] Timeline Step (repeat)                       ││
-│  └─────────────────────────────────────────────────────┘│
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### Order Tracking Page Layout (`/orders/:orderId/tracking`)
-```text
-┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [V] PAGE HEADER            │            │
-│              │   [V1] Back to Order Link   │            │
-│              │   [V2] Page Title           │            │
-│              │   [V3] Order ID             │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [W] CURRENT STATUS         │            │
-│              │   [W1] Status Badge (large) │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [X] TRACKING TIMELINE      │            │
-│              │   [X1] Timeline Step (rpt)  │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │  [Y] DELIVERY INFO (cond.)  │            │
-│              │   [Y1] Estimated Delivery   │            │
-│              │   [Y2] Tracking Number      │            │
-│              │   [Y3] Carrier Name         │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
 ### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
-| Breakpoint | Min Width | Checkout Layout | Order History Layout |
-| :--- | :--- | :--- | :--- |
-| Mobile (default) | 0px | Single column: summary, then form | Card-based list |
-| Tablet (`md:`) | 768px | Two-column: summary left, form right (narrower) | Full-width table (compact) |
-| Desktop (`lg:`) | 1024px | Two-column: summary left, form right | Full-width table |
-| Wide (`xl:`) | 1280px | Two-column: summary left, form right | Full-width table |
+| Breakpoint | Min Width | Checkout Layout |
+| :--- | :--- | :--- |
+| Mobile (default) | 0px | Single column: summary, then form |
+| Tablet (`md:`) | 768px | Two-column: summary left, form right (narrower) |
+| Desktop (`lg:`) | 1024px | Two-column: summary left, form right |
+| Wide (`xl:`) | 1280px | Two-column: summary left, form right |
 
 ---
 
@@ -369,124 +261,6 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 | 53 | `btnViewOrder` | View Order Button | Button (`button`, `secondary`) | — | — | Visible. Text: "View Order" / "注文を表示" | — | — | i18n key: `checkout.confirmation.viewOrder`. Navigates to `/orders/:orderId`. Tailwind: `w-full`. |
 | 54 | `btnPrintReceipt` | Print Receipt Button | Button (`button`, `ghost`) | — | — | Visible. Text: "Print Receipt" / "領収書を印刷" | — | — | i18n key: `checkout.confirmation.print`. Calls `window.print()`. Tailwind: `w-full`. |
 
-### 4.11 Section [L]: Order History Header (注文履歴ヘッダー)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 55 | `lblOrdersTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "Order History" / "注文履歴" | — | Hardcoded UI text | i18n key: `orders.title`. Tailwind: `text-2xl font-bold`. |
-| 56 | `lblOrderCount` | Order Count | Static Label (`<p>`) | Integer | — | Visible. "{count} orders" / "{count}件の注文" | — | API response `total` | i18n key: `orders.orderCount`. Tailwind: `text-muted-foreground`. |
-
-### 4.12 Section [M]: Order History Table (注文履歴テーブル)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 57 | `tblOrders` | Orders Table | Table (`<table>`) | Array | — | Visible. Sorted by `created_at` descending. | — | `orders` JOIN `order_items` | Tailwind: `w-full`. |
-| 58 | `tblHeaderOrders` | Table Header | Table Header (`<thead>`) | — | — | Visible. Columns: Order ID, Date, Status, Items, Total, Actions. | — | — | Tailwind: `border-b`. |
-| 59 | `rowOrder` | Order Row | Table Row (`<tr>`) | Object | — | Visible per order. | — | Order data | Tailwind: `border-b hover:bg-muted/50`. |
-| 60 | `lnkOrderId` | Order ID Link | Link (`<Link>`) | UUID | — | Visible. First 8 chars of UUID. Clickable. | — | `orders.id` | Navigates to `/orders/:orderId`. Tailwind: `font-medium hover:underline`. |
-| 61 | `lblOrderDate` | Order Date | Static Label (`<td>`) | Timestamp | — | Visible. Formatted date. | — | `orders.created_at` | Tailwind: `text-sm text-muted-foreground`. |
-| 62 | `badgeOrderStatus` | Order Status Badge | Badge | Enum | — | Visible. Color-coded status. | — | `orders.status` | Status colors: placed=blue, confirmed=yellow, packed=orange, shipped=purple, out_for_delivery=cyan, delivered=green. |
-| 63 | `lblItemCount` | Item Count | Static Label (`<td>`) | Integer | — | Visible. "{count} items" / "{count}件" | — | Count of `order_items` | Tailwind: `text-sm`. |
-| 64 | `lblOrderTotal` | Order Total | Static Label (`<td>`) | Decimal(10,2) | — | Visible. Formatted total. | — | `orders.total_amount` | Tailwind: `font-medium`. Currency formatted. |
-| 65 | `btnViewDetail` | View Detail Button | Button (`button`, `ghost`) | — | — | Visible. Text: "View" / "詳細" | — | — | i18n key: `orders.viewDetail`. Navigates to `/orders/:orderId`. Tailwind: `text-sm`. |
-
-### 4.13 Section [N]: Pagination (ページネーション)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 66 | `pagOrders` | Pagination Controls | Pagination | Object | Conditional | Hidden when ≤ 1 page. | — | API response `meta` | Previous/Next buttons, page numbers. Tailwind: `flex justify-center mt-4`. |
-
-### 4.14 Section [O]: Empty State (空状態)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 67 | `emptyOrders` | Empty State | EmptyState | — | Conditional | Shown when no orders exist. | — | — | i18n key: `orders.empty`. Icon + "No orders yet. Start shopping!" + link to products. Tailwind: `text-center py-12`. |
-
-### 4.15 Section [P]: Order Detail Header (注文詳細ヘッダー)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 68 | `lnkBackToOrders` | Back to Orders Link | Link (`<Link>`) | String | — | Visible. Text: "← Back to Orders" / "← 注文履歴に戻る" | — | — | i18n key: `orderDetail.backToOrders`. Navigates to `/orders`. Tailwind: `text-sm text-muted-foreground hover:text-primary`. |
-| 69 | `lblDetailTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "Order Detail" / "注文詳細" | — | Hardcoded UI text | i18n key: `orderDetail.title`. Tailwind: `text-2xl font-bold`. |
-| 70 | `lblDetailOrderId` | Order ID | Static Label (`<p>`) | UUID | — | Visible. "Order #ABC-12345" | — | `orders.id` | i18n key: `orderDetail.orderId`. Displays first 8 chars of UUID. |
-| 71 | `lblDetailDate` | Order Date | Static Label (`<p>`) | Timestamp | — | Visible. Formatted date. | — | `orders.created_at` | i18n key: `orderDetail.orderDate`. |
-| 72 | `badgeDetailStatus` | Order Status Badge | Badge | Enum | — | Visible. Current status badge. | — | `orders.status` | i18n key: `orderDetail.status`. Color-coded. |
-
-### 4.16 Section [Q]: Order Detail Items (注文詳細商品)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 73 | `lstDetailItems` | Order Items List | List (`<ul>`) | Array | — | Visible. Populated from order_items. | — | `order_items` JOIN `products` | Tailwind: `divide-y`. |
-| 74 | `itmDetailItem` | Order Item Row | Row (`<li>`) | Object | — | Visible per item. | — | Order item data | Tailwind: `py-4 flex items-center gap-4`. |
-| 75 | `imgDetailItem` | Product Image | Image (`<img>`) | URL | — | Visible. Product thumbnail. | — | `products.images[0]` | Tailwind: `h-16 w-16 rounded-md object-cover`. |
-| 76 | `lblDetailItemName` | Product Name | Static Label (`<span>`) | String(255) | — | Visible. | — | `products.name` | Tailwind: `font-medium`. |
-| 77 | `lblDetailItemQty` | Quantity | Static Label (`<span>`) | Integer | — | Visible. "Qty: {quantity}" | — | `order_items.quantity` | Tailwind: `text-sm text-muted-foreground`. |
-| 78 | `lblDetailItemPrice` | Unit Price | Static Label (`<span>`) | Decimal(10,2) | — | Visible. | — | `order_items.unit_price` | Tailwind: `text-sm`. Currency formatted. |
-| 79 | `lblDetailItemTotal` | Line Total | Static Label (`<span>`) | Decimal(10,2) | — | Visible. | — | `order_items.total_price` | Tailwind: `font-medium`. Currency formatted. |
-| 80 | `lblDetailSubtotal` | Subtotal | Static Label (`<p>`) | Decimal(10,2) | — | Visible. Sum of line totals. | — | Calculated | i18n key: `orderDetail.subtotal`. |
-| 81 | `lblDetailDiscount` | Discount | Static Label (`<p>`) | Decimal(10,2) | Conditional | Shown when coupon applied. | — | `orders.discount_amount` | i18n key: `orderDetail.discount`. Tailwind: `text-green-600`. |
-| 82 | `lblDetailTotal` | Total Amount | Static Label (`<p>`) | Decimal(10,2) | — | Visible. Final total. | — | `orders.total_amount` | i18n key: `orderDetail.total`. Tailwind: `font-bold text-lg`. |
-
-### 4.17 Section [R]: Shipping Address Card (配送先住所カード)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 83 | `cardShippingAddress` | Shipping Address Card | Card | JSONB | — | Visible. Full shipping address. | — | `orders.shipping_address` | Tailwind: `border rounded-lg p-4`. |
-| 84 | `lblShipRecipient` | Recipient Name | Static Label (`<p>`) | String(200) | — | Visible. | — | `shipping_address.recipientName` | Tailwind: `font-medium`. |
-| 85 | `lblShipPhone` | Phone | Static Label (`<p>`) | String(20) | — | Visible. | — | `shipping_address.phone` | Tailwind: `text-sm text-muted-foreground`. |
-| 86 | `lblShipAddress` | Full Address | Static Label (`<p>`) | String | — | Visible. Comma-separated address lines. | — | `shipping_address` fields | Tailwind: `text-sm`. |
-
-### 4.18 Section [S]: Payment Info Card (決済情報カード)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 87 | `cardPaymentInfo` | Payment Info Card | Card | — | — | Visible. | — | — | Tailwind: `border rounded-lg p-4`. |
-| 88 | `lblPaymentMethodValue` | Payment Method | Static Label (`<p>`) | String(50) | — | Visible. | — | `orders.payment_method` | Display payment method label (COD/Bank Transfer/Card). |
-| 89 | `lblPaymentStatus` | Payment Status | Badge | Enum | — | Visible. | — | `orders.payment_status` | Status colors: pending=yellow, completed=green. |
-
-### 4.19 Section [T]: Order Notes (備考 — 注文詳細)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 90 | `lblDetailNotes` | Order Notes | Static Label (`<p>`) | TEXT | Conditional | Shown when notes exist. | — | `orders.notes` | i18n key: `orderDetail.notes`. Tailwind: `text-muted-foreground`. |
-
-### 4.20 Section [U]: Order Timeline (注文タイムライン)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 91 | `timelineOrder` | Order Timeline | Timeline/Stepper | Array | — | Visible. Vertical status timeline. | — | `order_status_history` JOIN `order_statuses` | Tailwind: `relative`. |
-| 92 | `stepTimeline` | Timeline Step | Step Item | Object | — | Visible per status. | — | Status history data | Includes status icon, name, timestamp, description. Completed steps: green. Current: blue. Pending: gray. |
-
-### 4.21 Section [V]: Order Tracking Header (注文追跡ヘッダー)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 93 | `lnkBackToOrder` | Back to Order Link | Link (`<Link>`) | String | — | Visible. Text: "← Back to Order Detail" / "← 注文詳細に戻る" | — | — | i18n key: `tracking.backToOrder`. Navigates to `/orders/:orderId`. |
-| 94 | `lblTrackingTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "Track Order" / "注文追跡" | — | Hardcoded UI text | i18n key: `tracking.title`. Tailwind: `text-2xl font-bold`. |
-| 95 | `lblTrackingOrderId` | Order ID | Static Label (`<p>`) | UUID | — | Visible. "Order #ABC-12345" | — | `orders.id` | i18n key: `tracking.orderId`. |
-
-### 4.22 Section [W]: Current Status (現在のステータス)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 96 | `badgeTrackingStatus` | Current Status Badge | Badge (large) | Enum | — | Visible. Current status with icon. | — | `orders.status` | i18n key: `tracking.currentStatus`. Tailwind: `text-lg px-4 py-2`. |
-
-### 4.23 Section [X]: Tracking Timeline (追跡タイムライン)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 97 | `timelineTracking` | Tracking Timeline | Timeline/Stepper | Array | — | Visible. Full status timeline. | — | `order_status_history` JOIN `order_statuses` | Same as Section [U] timeline. |
-| 98 | `stepTracking` | Timeline Step | Step Item | Object | — | Visible per status. | — | Status history data | Includes status icon, name, timestamp, description. |
-
-### 4.24 Section [Y]: Delivery Info (配信情報)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 99 | `cardDeliveryInfo` | Delivery Info Card | Card | — | Conditional | Shown for shipped/out_for_delivery orders. | — | — | Tailwind: `border rounded-lg p-4 mt-4`. |
-| 100 | `lblEstDelivery` | Estimated Delivery | Static Label (`<p>`) | Date | Conditional | Visible. | — | Calculated | i18n key: `tracking.estimatedDelivery`. |
-| 101 | `lblTrackingNumber` | Tracking Number | Static Label (`<p>`) | String | Conditional | Visible when tracking number exists. | — | Courier integration | i18n key: `tracking.trackingNumber`. |
-| 102 | `lblCarrier` | Carrier Name | Static Label (`<p>`) | String | Conditional | Visible when carrier info exists. | — | Courier integration | i18n key: `tracking.carrier`. |
-
 ---
 
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
@@ -544,41 +318,7 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
   - `401 UNAUTHORIZED`: Redirect to login.
   - `500 INTERNAL_SERVER_ERROR`: Toast: "Something went wrong. Please try again."
 
-### 5.5 View Order History (`/orders`)
-- **Trigger:** Navigation to `/orders`.
-- **Processing Logic:**
-  1. **Authentication Check:** Verify JWT token.
-  2. **Backend Dispatch:** `GET /api/v1/orders?page={page}&limit={limit}`.
-  3. **Backend Execution:** Query orders where `buyer_id = user.id`. Sort by `created_at` descending. Join with order_items for item count. Paginate results.
-  4. **Post-Execution UI:** Render orders table or empty state.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Redirect to login.
-  - Empty orders: Show `emptyOrders` component.
-
-### 5.6 View Order Detail (`btnViewDetail` / `lnkOrderId` onClick)
-- **Trigger:** Click on order ID or "View Detail" button.
-- **Processing Logic:**
-  1. **Authentication Check:** Verify JWT token.
-  2. **Backend Dispatch:** `GET /api/v1/orders/:id`.
-  3. **Backend Execution:** Find order by ID. Verify `buyer_id = user.id`. Fetch order_items with product details. Return full order detail.
-  4. **Post-Execution UI:** Render order detail page.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Redirect to login.
-  - `404 NOT_FOUND`: Toast: "Order not found". Redirect to `/orders`.
-  - `403 FORBIDDEN`: Toast: "Order not found". Redirect to `/orders`.
-
-### 5.7 Track Order (`/orders/:orderId/tracking`)
-- **Trigger:** Click "Track Order" button on order detail.
-- **Processing Logic:**
-  1. **Authentication Check:** Verify JWT token.
-  2. **Backend Dispatch:** `GET /api/v1/orders/:id/tracking`.
-  3. **Backend Execution:** Find order by ID. Verify `buyer_id = user.id`. Build status timeline from order history. Calculate estimated delivery date.
-  4. **Post-Execution UI:** Render tracking page with timeline.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Redirect to login.
-  - `404 NOT_FOUND`: Toast: "Order not found". Redirect to `/orders`.
-
-### 5.8 Guest Checkout Attempt (`dlgGuestAlert` display)
+### 5.5 Guest Checkout Attempt (`dlgGuestAlert` display)
 - **Trigger:** Guest user navigates to `/checkout`.
 - **Processing Logic:**
   1. Detect unauthenticated state.
@@ -590,11 +330,9 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 - **Trigger:** User clicks navigation links.
 - **Processing Logic:**
   1. `lnkBackToCart`: Navigate to `/cart`.
-  2. `lnkBackToOrders`: Navigate to `/orders`.
-  3. `lnkBackToOrder`: Navigate to `/orders/:orderId`.
-  4. `btnContinueShopping`: Navigate to `/products`.
-  5. `btnViewOrder`: Navigate to `/orders/:orderId`.
-  6. `btnPrintReceipt`: Call `window.print()`.
+  2. `btnContinueShopping`: Navigate to `/products`.
+  3. `btnViewOrder`: Navigate to `/orders/:orderId`.
+  4. `btnPrintReceipt`: Call `window.print()`.
 - **Exception Handling:** None applicable.
 
 ---
@@ -640,13 +378,6 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 | **AUTH_001** | `alertError` | Missing or invalid JWT token (401 response) | Redirect to login | "Session expired. Please log in again." | "セッションが期限切れです。再度ログインしてください。" |
 | **SYS_001** | `alertError` | Server error (500 response) | Toast notification | "Something went wrong. Please try again." | "問題が発生しました。もう一度お試しください。" |
 | **NET_ERR** | `alertError` | Network error | Toast notification | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
-
-### 6.5 Order History / Detail Errors
-
-| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **HIST_001** | `alertError` | Order not found (404 response) | Toast notification | "Order not found" | "注文が見つかりません" |
-| **HIST_002** | `alertError` | Accessing another user's order (403 response) | Toast notification | "Order not found" | "注文が見つかりません" |
 
 ### 6.6 Validation Enforcement Layers
 
@@ -723,96 +454,6 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 }
 ```
 
-### 7.4 Order History Success Response
-
-```json
-{
-  "data": [
-    {
-      "orderId": "uuid",
-      "orderNumber": "abc12345",
-      "status": "placed",
-      "itemCount": 3,
-      "total": 89.97,
-      "createdAt": "2026-08-25T12:00:00.000Z"
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "limit": 10,
-    "total": 25,
-    "totalPages": 3
-  }
-}
-```
-
-### 7.5 Order Detail Success Response
-
-```json
-{
-  "data": {
-    "orderId": "uuid",
-    "status": "placed",
-    "items": [
-      {
-        "productName": "Product Name",
-        "productImage": "https://...",
-        "quantity": 2,
-        "unitPrice": 29.99,
-        "totalPrice": 59.98
-      }
-    ],
-    "subtotal": 59.98,
-    "discountAmount": 5.998,
-    "total": 53.982,
-    "shippingAddress": { ... },
-    "paymentMethod": "cod",
-    "paymentStatus": "pending",
-    "couponCode": "SAVE10",
-    "notes": "Please leave at the door",
-    "createdAt": "2026-08-25T12:00:00.000Z",
-    "updatedAt": "2026-08-25T12:00:00.000Z"
-  }
-}
-```
-
-### 7.6 Order Tracking Success Response
-
-```json
-{
-  "data": {
-    "orderId": "uuid",
-    "currentStatus": "shipped",
-    "timeline": [
-      {
-        "status": "placed",
-        "statusName": "Placed",
-        "timestamp": "2026-08-25T12:00:00.000Z",
-        "description": "Order created",
-        "changedBy": "buyer"
-      },
-      {
-        "status": "confirmed",
-        "statusName": "Confirmed",
-        "timestamp": "2026-08-25T12:30:00.000Z",
-        "description": "Merchant confirmed order",
-        "changedBy": "merchant"
-      },
-      {
-        "status": "shipped",
-        "statusName": "Shipped",
-        "timestamp": "2026-08-26T09:00:00.000Z",
-        "description": "Order shipped",
-        "changedBy": "merchant"
-      }
-    ],
-    "estimatedDelivery": "2026-08-30",
-    "trackingNumber": "TRACK123456",
-    "carrier": "FedEx"
-  }
-}
-```
-
 ---
 
 ## 8. i18n Keys Reference (i18nキーリファレンス)
@@ -857,41 +498,6 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 | `checkout.confirmation.viewOrder` | "View Order" |
 | `checkout.confirmation.print` | "Print Receipt" |
 
-### 8.3 English (en) — Order History
-
-| Key | Value |
-| :--- | :--- |
-| `orders.title` | "Order History" |
-| `orders.orderCount` | "{count} orders" |
-| `orders.viewDetail` | "View" |
-| `orders.empty` | "No orders yet. Start shopping!" |
-
-### 8.4 English (en) — Order Detail
-
-| Key | Value |
-| :--- | :--- |
-| `orderDetail.title` | "Order Detail" |
-| `orderDetail.orderId` | "Order #{orderId}" |
-| `orderDetail.orderDate` | "Order Date" |
-| `orderDetail.status` | "Status" |
-| `orderDetail.subtotal` | "Subtotal" |
-| `orderDetail.discount` | "Discount" |
-| `orderDetail.total` | "Total" |
-| `orderDetail.notes` | "Notes" |
-| `orderDetail.backToOrders` | "← Back to Orders" |
-
-### 8.5 English (en) — Tracking
-
-| Key | Value |
-| :--- | :--- |
-| `tracking.title` | "Track Order" |
-| `tracking.orderId` | "Order #{orderId}" |
-| `tracking.currentStatus` | "Current Status" |
-| `tracking.estimatedDelivery` | "Estimated Delivery" |
-| `tracking.trackingNumber` | "Tracking Number" |
-| `tracking.carrier` | "Carrier" |
-| `tracking.backToOrder` | "← Back to Order Detail" |
-
 ### 8.6 Japanese (ja) — Checkout
 
 | Key | Value |
@@ -931,41 +537,6 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 | `checkout.confirmation.continueShopping` | "買い物を続ける" |
 | `checkout.confirmation.viewOrder` | "注文を表示" |
 | `checkout.confirmation.print` | "領収書を印刷" |
-
-### 8.8 Japanese (ja) — Order History
-
-| Key | Value |
-| :--- | :--- |
-| `orders.title` | "注文履歴" |
-| `orders.orderCount` | "{count}件の注文" |
-| `orders.viewDetail` | "詳細" |
-| `orders.empty` | "注文はまだありません。買い物を始めましょう！" |
-
-### 8.9 Japanese (ja) — Order Detail
-
-| Key | Value |
-| :--- | :--- |
-| `orderDetail.title` | "注文詳細" |
-| `orderDetail.orderId` | "注文番号 #{orderId}" |
-| `orderDetail.orderDate` | "注文日" |
-| `orderDetail.status` | "ステータス" |
-| `orderDetail.subtotal` | "小計" |
-| `orderDetail.discount` | "割引" |
-| `orderDetail.total` | "合計" |
-| `orderDetail.notes` | "備考" |
-| `orderDetail.backToOrders` | "← 注文履歴に戻る" |
-
-### 8.10 Japanese (ja) — Tracking
-
-| Key | Value |
-| :--- | :--- |
-| `tracking.title` | "注文追跡" |
-| `tracking.orderId` | "注文番号 #{orderId}" |
-| `tracking.currentStatus` | "現在のステータス" |
-| `tracking.estimatedDelivery` | "配達予定日" |
-| `tracking.trackingNumber` | "追跡番号" |
-| `tracking.carrier` | "配送業者" |
-| `tracking.backToOrder` | "← 注文詳細に戻る" |
 
 ---
 
@@ -1018,14 +589,7 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 | `out_for_delivery` | Cyan | `bg-cyan-100 text-cyan-800` |
 | `delivered` | Green | `bg-green-100 text-green-800` |
 
-### 10.2 Order Timeline Component
-
-| Property | Value |
-| :--- | :--- |
-| **Location** | `frontend/src/features/buyer/checkout/components/OrderTimeline.tsx` |
-| **Purpose** | Displays vertical status timeline with timestamps |
-
-### 10.3 Price Formatting Utility
+### 10.2 Price Formatting Utility
 
 | Property | Value |
 | :--- | :--- |
@@ -1087,46 +651,6 @@ The Checkout, Order Confirmation, Order History, Order Detail, and Order Trackin
 - [ ] Continue Shopping navigates to `/products`
 - [ ] View Order navigates to `/orders/:orderId`
 - [ ] Print Receipt calls `window.print()`
-- [ ] All i18n keys render correctly
-
-### 12.3 Order History Page Tests
-
-- [ ] Page title and order count displayed
-- [ ] Orders table displays all orders
-- [ ] Orders sorted by newest first
-- [ ] Order ID is clickable link
-- [ ] Status badges color-coded correctly
-- [ ] Item count displayed
-- [ ] Order total formatted correctly
-- [ ] View Detail button navigates to detail
-- [ ] Pagination works for multiple pages
-- [ ] Empty state shown when no orders
-- [ ] Loading skeleton shown during load
-- [ ] All i18n keys render correctly
-
-### 12.4 Order Detail Page Tests
-
-- [ ] Back to Orders link navigates correctly
-- [ ] Order ID and date displayed
-- [ ] Status badge displayed
-- [ ] Order items list displayed
-- [ ] Item images, names, quantities, prices correct
-- [ ] Subtotal, discount, total displayed
-- [ ] Shipping address card displayed
-- [ ] Payment info card displayed
-- [ ] Order notes displayed (if present)
-- [ ] Order timeline displayed
-- [ ] All i18n keys render correctly
-
-### 12.5 Order Tracking Page Tests
-
-- [ ] Back to Order link navigates correctly
-- [ ] Current status badge displayed
-- [ ] Tracking timeline displayed
-- [ ] Timeline steps show correct status, timestamp
-- [ ] Estimated delivery displayed (if applicable)
-- [ ] Tracking number displayed (if applicable)
-- [ ] Carrier name displayed (if applicable)
 - [ ] All i18n keys render correctly
 
 ### 12.6 Error Handling Tests
