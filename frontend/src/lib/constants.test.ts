@@ -7,7 +7,7 @@ describe('Constants', () => {
   })
 
   it('has correct API_BASE_URL', () => {
-    expect(API_BASE_URL).toBe('http://localhost:8080/api')
+    expect(API_BASE_URL).toBe('http://localhost:8080/api/v1')
   })
 
   it('has correct TOKEN_KEYS', () => {

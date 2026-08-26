@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { LogOut, User, Settings } from 'lucide-react'
+import { LogOut, User, Settings, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
-import { ROUTES } from '@/lib/constants'
+import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
 export function UserNav() {
   const { t } = useTranslation()
@@ -27,6 +27,11 @@ export function UserNav() {
         .toUpperCase()
     : user.email.charAt(0).toUpperCase()
 
+  const handleLogout = () => {
+    logout()
+    window.location.href = ROUTES.HOME
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -39,9 +44,17 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <div className="flex items-center gap-2 p-2">
           <p className="text-sm font-medium">{user.name || user.email}</p>
-          <p className="text-xs text-muted-foreground">{user.role}</p>
+          <span className="ml-auto rounded-full bg-purple-100 dark:bg-purple-950 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700 dark:text-purple-300">
+            {user.role}
+          </span>
         </div>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to={getDashboardRoute(user.role)} className="flex items-center gap-2 font-semibold text-primary">
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to={ROUTES.PROFILE} className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -55,7 +68,7 @@ export function UserNav() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={logout} className="flex items-center gap-2">
+        <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive focus:text-destructive">
           <LogOut className="h-4 w-4" />
           {t('common.logout')}
         </DropdownMenuItem>

@@ -9,13 +9,15 @@ import { MerchantLayout } from '@/layouts/MerchantLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
-const Home = lazy(() => import('@/pages/buyer/Dashboard'))
+const Home = lazy(() => import('@/pages/Home'))
 const About = lazy(() => import('@/pages/About'))
 const Login = lazy(() => import('@/pages/auth/Login'))
 const Register = lazy(() => import('@/pages/auth/Register'))
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'))
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const Profile = lazy(() => import('@/pages/shared/Profile'))
+const Notifications = lazy(() => import('@/pages/shared/Notifications'))
+const OrderInsights = lazy(() => import('@/pages/shared/OrderInsights'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const Unauthorized = lazy(() => import('@/pages/Unauthorized'))
@@ -28,7 +30,6 @@ const AdminReviewManagement = lazy(() => import('@/pages/admin/ReviewManagement'
 const AdminContentModeration = lazy(() => import('@/pages/admin/ContentModeration'))
 const AdminCommissionRevenue = lazy(() => import('@/pages/admin/CommissionRevenue'))
 const CreateAdminAccount = lazy(() => import('@/pages/admin/CreateAdminAccount'))
-
 const AdminAuditLog = lazy(() => import('@/pages/admin/AuditLog'))
 
 const BuyerDashboard = lazy(() => import('@/pages/buyer/Dashboard'))
@@ -108,7 +109,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'admin',
-        element: <ProtectedRoute allowedRoles={['admin']} />,
+        element: <ProtectedRoute allowedRoles={['admin', 'super_admin']} />,
         children: [
           {
             element: <AdminLayout />,
@@ -169,7 +170,6 @@ export const router = createBrowserRouter([
                   </SuspenseWrapper>
                 ),
               },
-
               {
                 path: 'audit-logs',
                 element: (
@@ -183,6 +183,22 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <CreateAdminAccount />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'profile',
+                element: (
+                  <SuspenseWrapper>
+                    <Profile />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'notifications',
+                element: (
+                  <SuspenseWrapper>
+                    <Notifications />
                   </SuspenseWrapper>
                 ),
               },
@@ -269,6 +285,30 @@ export const router = createBrowserRouter([
                   </SuspenseWrapper>
                 ),
               },
+              {
+                path: 'order-insights',
+                element: (
+                  <SuspenseWrapper>
+                    <OrderInsights />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'profile',
+                element: (
+                  <SuspenseWrapper>
+                    <Profile />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'notifications',
+                element: (
+                  <SuspenseWrapper>
+                    <Notifications />
+                  </SuspenseWrapper>
+                ),
+              },
             ],
           },
         ],
@@ -309,6 +349,30 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <MerchantPromotions />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'order-insights',
+                element: (
+                  <SuspenseWrapper>
+                    <OrderInsights />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'profile',
+                element: (
+                  <SuspenseWrapper>
+                    <Profile />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'notifications',
+                element: (
+                  <SuspenseWrapper>
+                    <Notifications />
                   </SuspenseWrapper>
                 ),
               },
