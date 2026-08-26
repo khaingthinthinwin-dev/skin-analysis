@@ -33,10 +33,10 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({ payouts = [], onProces
           ) : (
             payouts.map((p) => (
               <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.merchant_id}</TableCell>
-                <TableCell>${p.total_amount}</TableCell>
-                <TableCell className="text-destructive">-${p.commission_amount}</TableCell>
-                <TableCell className="text-destructive">-${p.ad_fee_amount}</TableCell>
+                <TableCell className="font-medium">{p.merchantId}</TableCell>
+                <TableCell>${p.totalAmount}</TableCell>
+                <TableCell className="text-destructive">-${p.commissionAmount}</TableCell>
+                <TableCell className="text-destructive">-${p.adFeeAmount}</TableCell>
                 <TableCell>
                   <Badge
                     variant={

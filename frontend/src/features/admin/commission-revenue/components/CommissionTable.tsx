@@ -10,7 +10,7 @@ interface CommissionTableProps {
 }
 
 export const CommissionTable: React.FC<CommissionTableProps> = ({ settings, onUpdateRate }) => {
-  const [rate, setRate] = useState<number>(settings?.commission_rate ?? 10);
+  const [rate, setRate] = useState<number>(settings?.commissionRate ?? 10);
 
   return (
     <Card>

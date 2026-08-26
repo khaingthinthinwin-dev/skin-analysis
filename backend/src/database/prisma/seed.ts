@@ -7,9 +7,21 @@ async function main() {
 
   // User Roles
   const userRoles = [
-    { roleCode: 'buyer', roleName: 'Buyer', description: 'Regular customer who purchases products' },
-    { roleCode: 'merchant', roleName: 'Merchant', description: 'Seller who lists and sells products' },
-    { roleCode: 'admin', roleName: 'Administrator', description: 'System administrator with full access' },
+    {
+      roleCode: 'buyer',
+      roleName: 'Buyer',
+      description: 'Regular customer who purchases products',
+    },
+    {
+      roleCode: 'merchant',
+      roleName: 'Merchant',
+      description: 'Seller who lists and sells products',
+    },
+    {
+      roleCode: 'admin',
+      roleName: 'Administrator',
+      description: 'System administrator with full access',
+    },
   ];
 
   for (const role of userRoles) {
@@ -23,12 +35,48 @@ async function main() {
 
   // Order Statuses
   const orderStatuses = [
-    { statusCode: 'placed', statusName: 'Placed', displayOrder: 1, isTerminalState: false, description: 'Order created, awaiting confirmation' },
-    { statusCode: 'confirmed', statusName: 'Confirmed', displayOrder: 2, isTerminalState: false, description: 'Merchant accepted order' },
-    { statusCode: 'packed', statusName: 'Packed', displayOrder: 3, isTerminalState: false, description: 'Order packed and ready to ship' },
-    { statusCode: 'shipped', statusName: 'Shipped', displayOrder: 4, isTerminalState: false, description: 'Order sent to courier' },
-    { statusCode: 'out_for_delivery', statusName: 'Out for Delivery', displayOrder: 5, isTerminalState: false, description: 'Order on the way to buyer' },
-    { statusCode: 'delivered', statusName: 'Delivered', displayOrder: 6, isTerminalState: true, description: 'Buyer received order' },
+    {
+      statusCode: 'placed',
+      statusName: 'Placed',
+      displayOrder: 1,
+      isTerminalState: false,
+      description: 'Order created, awaiting confirmation',
+    },
+    {
+      statusCode: 'confirmed',
+      statusName: 'Confirmed',
+      displayOrder: 2,
+      isTerminalState: false,
+      description: 'Merchant accepted order',
+    },
+    {
+      statusCode: 'packed',
+      statusName: 'Packed',
+      displayOrder: 3,
+      isTerminalState: false,
+      description: 'Order packed and ready to ship',
+    },
+    {
+      statusCode: 'shipped',
+      statusName: 'Shipped',
+      displayOrder: 4,
+      isTerminalState: false,
+      description: 'Order sent to courier',
+    },
+    {
+      statusCode: 'out_for_delivery',
+      statusName: 'Out for Delivery',
+      displayOrder: 5,
+      isTerminalState: false,
+      description: 'Order on the way to buyer',
+    },
+    {
+      statusCode: 'delivered',
+      statusName: 'Delivered',
+      displayOrder: 6,
+      isTerminalState: true,
+      description: 'Buyer received order',
+    },
   ];
 
   for (const status of orderStatuses) {
@@ -58,23 +106,97 @@ async function main() {
 
   // Ad Fee Settings
   const adFeeSettings = [
-    { placement: 'homepage_banner', tier: 'basic', dailyRate: 3.00, durationDays: 7, maxAds: 1 },
-    { placement: 'homepage_banner', tier: 'standard', dailyRate: 5.00, durationDays: 7, maxAds: 1 },
-    { placement: 'homepage_banner', tier: 'premium', dailyRate: 8.00, durationDays: 7, maxAds: 1 },
-    { placement: 'product_sidebar', tier: 'basic', dailyRate: 2.00, durationDays: 15, maxAds: 3 },
-    { placement: 'product_sidebar', tier: 'standard', dailyRate: 3.50, durationDays: 15, maxAds: 3 },
-    { placement: 'product_sidebar', tier: 'premium', dailyRate: 6.00, durationDays: 15, maxAds: 3 },
-    { placement: 'category_banner', tier: 'basic', dailyRate: 2.50, durationDays: 30, maxAds: 5 },
-    { placement: 'category_banner', tier: 'standard', dailyRate: 4.00, durationDays: 30, maxAds: 5 },
-    { placement: 'category_banner', tier: 'premium', dailyRate: 7.00, durationDays: 30, maxAds: 5 },
-    { placement: 'search_top', tier: 'basic', dailyRate: 1.50, durationDays: 7, maxAds: 6 },
-    { placement: 'search_top', tier: 'standard', dailyRate: 2.50, durationDays: 7, maxAds: 6 },
-    { placement: 'search_top', tier: 'premium', dailyRate: 5.00, durationDays: 7, maxAds: 6 },
+    {
+      placement: 'homepage_banner',
+      tier: 'basic',
+      dailyRate: 3.0,
+      durationDays: 7,
+      maxAds: 1,
+    },
+    {
+      placement: 'homepage_banner',
+      tier: 'standard',
+      dailyRate: 5.0,
+      durationDays: 7,
+      maxAds: 1,
+    },
+    {
+      placement: 'homepage_banner',
+      tier: 'premium',
+      dailyRate: 8.0,
+      durationDays: 7,
+      maxAds: 1,
+    },
+    {
+      placement: 'product_sidebar',
+      tier: 'basic',
+      dailyRate: 2.0,
+      durationDays: 15,
+      maxAds: 3,
+    },
+    {
+      placement: 'product_sidebar',
+      tier: 'standard',
+      dailyRate: 3.5,
+      durationDays: 15,
+      maxAds: 3,
+    },
+    {
+      placement: 'product_sidebar',
+      tier: 'premium',
+      dailyRate: 6.0,
+      durationDays: 15,
+      maxAds: 3,
+    },
+    {
+      placement: 'category_banner',
+      tier: 'basic',
+      dailyRate: 2.5,
+      durationDays: 30,
+      maxAds: 5,
+    },
+    {
+      placement: 'category_banner',
+      tier: 'standard',
+      dailyRate: 4.0,
+      durationDays: 30,
+      maxAds: 5,
+    },
+    {
+      placement: 'category_banner',
+      tier: 'premium',
+      dailyRate: 7.0,
+      durationDays: 30,
+      maxAds: 5,
+    },
+    {
+      placement: 'search_top',
+      tier: 'basic',
+      dailyRate: 1.5,
+      durationDays: 7,
+      maxAds: 6,
+    },
+    {
+      placement: 'search_top',
+      tier: 'standard',
+      dailyRate: 2.5,
+      durationDays: 7,
+      maxAds: 6,
+    },
+    {
+      placement: 'search_top',
+      tier: 'premium',
+      dailyRate: 5.0,
+      durationDays: 7,
+      maxAds: 6,
+    },
   ];
 
   for (const setting of adFeeSettings) {
     await prisma.adFeeSetting.upsert({
-      where: { placement_tier: { placement: setting.placement, tier: setting.tier } },
+      where: {
+        placement_tier: { placement: setting.placement, tier: setting.tier },
+      },
       update: {},
       create: setting,
     });
@@ -82,7 +204,6 @@ async function main() {
   console.log('Seeded ad_fee_settings');
 
   console.log('Database seeding complete!');
-
 }
 
 main()

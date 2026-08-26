@@ -1,5 +1,5 @@
 // [PET] Advertisement Management - Admin ad approval queue & fee settings
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAdvertisementApproval } from '@/features/admin/hooks/useAdvertisementApproval';
 import { AdvertisementsTable } from '@/features/admin/components/AdvertisementsTable';
 import { AdFeeSettingsTable } from '@/features/admin/components/AdFeeSettingsTable';
@@ -92,7 +92,7 @@ export default function AdvertisementManagement() {
         <TabsContent value="settings" className="space-y-4">
           <AdFeeSettingsTable
             feeSettings={feeSettingsQuery.data}
-            onUpdateRate={(id, dailyRate) =>
+            onUpdateRate={(id: string, dailyRate: number) =>
               updateFeeSettingMutation.mutate({ id, dailyRate })
             }
           />

@@ -23,7 +23,7 @@ export interface RegisterData {
   name: string
   email: string
   password: string
-  role?: 'buyer' | 'merchant'
+  role?: 'buyer' | 'merchant' | 'admin' | 'super_admin'
   licenseFile?: File | null
 }
 

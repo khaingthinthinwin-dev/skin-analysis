@@ -1,5 +1,4 @@
 // [PET] Content Moderation - Review and deactivate policy-violating products
-import React from 'react';
 import { useModeration } from '@/features/admin/hooks/useModeration';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -69,7 +68,7 @@ export default function ContentModeration() {
                 </TableCell>
               </TableRow>
             ) : (
-              flaggedContentQuery.data?.items?.map((product) => (
+              flaggedContentQuery.data?.items?.map((product: any) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category?.name || 'N/A'}</TableCell>

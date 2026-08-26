@@ -38,27 +38,27 @@ export const MerchantsTable: React.FC<MerchantsTableProps> = ({
           ) : (
             merchants.map((merchant) => (
               <TableRow key={merchant.id}>
-                <TableCell className="font-medium">{merchant.shop_name}</TableCell>
-                <TableCell>{merchant.user?.email || merchant.user_id}</TableCell>
+                <TableCell className="font-medium">{merchant.shopName}</TableCell>
+                <TableCell>{merchant.user?.email || merchant.userId}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
-                      merchant.license_status === 'approved'
+                      merchant.licenseStatus === 'approved'
                         ? 'default'
-                        : merchant.license_status === 'rejected'
+                        : merchant.licenseStatus === 'rejected'
                         ? 'destructive'
                         : 'outline'
                     }
                   >
-                    {merchant.license_status}
+                    {merchant.licenseStatus}
                   </Badge>
                 </TableCell>
-                <TableCell>{new Date(merchant.created_at).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(merchant.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button size="sm" variant="outline" onClick={() => onSelectReview?.(merchant)}>
                     View License
                   </Button>
-                  {merchant.license_status === 'pending' && (
+                  {merchant.licenseStatus === 'pending' && (
                     <Button size="sm" onClick={() => onApprove?.(merchant.id)}>
                       Approve
                     </Button>

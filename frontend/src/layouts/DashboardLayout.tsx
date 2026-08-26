@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function DashboardLayout() {
+interface DashboardLayoutProps {
+  children?: React.ReactNode
+}
+
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -34,7 +38,7 @@ export function DashboardLayout() {
           </Button>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>

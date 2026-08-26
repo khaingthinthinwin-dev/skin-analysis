@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import type { Profile } from '../../types/profile.types'
+import type { Profile } from '@/types/profile.types'
 import { Mail, Phone, Calendar, Shield } from 'lucide-react'
 
 interface ProfileInfoCardProps {

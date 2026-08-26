@@ -1,4 +1,14 @@
-import { IsNumber, IsOptional, IsInt, Min, Max, MinLength, MaxLength, IsEnum, IsString } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  MinLength,
+  MaxLength,
+  IsEnum,
+  IsString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateCommissionSettingsDto {

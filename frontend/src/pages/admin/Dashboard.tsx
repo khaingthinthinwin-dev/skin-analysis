@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAdmin } from '@/features/admin/hooks/useAdmin';
 import { AdminStats } from '@/features/admin/components/AdminStats';
 

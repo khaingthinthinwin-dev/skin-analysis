@@ -1,4 +1,12 @@
-import { IsString, IsBoolean, IsOptional, IsEnum, IsInt, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsBoolean,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetUsersDto {

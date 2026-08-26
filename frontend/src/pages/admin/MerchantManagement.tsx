@@ -1,5 +1,5 @@
 // [PET] Merchant Management - Review business licenses and manage seller applications
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMerchantApproval } from '@/features/admin/hooks/useMerchantApproval';
 import { MerchantsTable } from '@/features/admin/components/MerchantsTable';
 import { LicenseReviewModal } from '@/features/admin/components/LicenseReviewModal';
@@ -76,7 +76,7 @@ export default function MerchantManagement() {
 
       <MerchantsTable
         merchants={merchantsQuery.data?.items}
-        onSelectReview={(m) => setSelectedMerchant(m)}
+        onSelectReview={(m: any) => setSelectedMerchant(m)}
         onApprove={handleApprove}
         onReject={handleReject}
       />

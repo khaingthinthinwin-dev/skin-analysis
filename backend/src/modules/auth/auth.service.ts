@@ -246,7 +246,9 @@ export class AuthService {
     const rateLimitKey = `rate:auth:forgot-password:${email}`;
     const isAllowed = await this.redis.checkRateLimit(rateLimitKey, 3, 3600);
     if (!isAllowed) {
-      throw new UnauthorizedException('Too many requests. Please try again later.');
+      throw new UnauthorizedException(
+        'Too many requests. Please try again later.',
+      );
     }
 
     // Find user by email
@@ -254,7 +256,8 @@ export class AuthService {
 
     // Always return same response regardless of email existence (prevent email enumeration)
     const successMessage = {
-      message: "If an account exists with that email, you'll receive a password reset link shortly.",
+      message:
+        "If an account exists with that email, you'll receive a password reset link shortly.",
     };
 
     if (!user) {
@@ -270,7 +273,10 @@ export class AuthService {
 
     // Generate secure random token
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
 
     // Set 24-hour expiry
     const expiresAt = new Date();
@@ -289,7 +295,9 @@ export class AuthService {
     // In production, send email with reset link containing rawToken
     // For now, just log it (TODO: integrate with email service)
     console.log(`Password reset token for ${email}: ${rawToken}`);
-    console.log(`Reset link: ${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token=${rawToken}`);
+    console.log(
+      `Reset link: ${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token=${rawToken}`,
+    );
 
     return successMessage;
   }
@@ -388,14 +396,19 @@ export class AuthService {
     }
 
     // Verify current password
-    const isPasswordValid = await argon2.verify(user.passwordHash, currentPassword);
+    const isPasswordValid = await argon2.verify(
+      user.passwordHash,
+      currentPassword,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
     // Check if new password is different from current
     if (currentPassword === newPassword) {
-      throw new BadRequestException('New password must be different from current password');
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
     }
 
     // Hash new password

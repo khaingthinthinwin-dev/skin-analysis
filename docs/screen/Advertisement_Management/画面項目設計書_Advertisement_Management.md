@@ -4,7 +4,7 @@
 **Target Screen:** Advertisement Management (広告管理)
 **Subsystem:** Advertisement — Shop Advertisement Management
 **Function ID:** FN-AD-001
-**Version:** 1.0
+**Version:** 1.1
 **Created:** 2026-08-25
 **Last Updated:** 2026-08-25
 **Author:** Senior System Engineer
@@ -20,6 +20,7 @@
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-25 | Senior System Engineer | Initial release. Screen items specification for Merchant Advertisement Management (`/merchant/advertisements`) and Admin Advertisement Moderation (`/admin/ads`) screens, including package catalog, content upload dialog, payment dialog, edit dialog, and admin fee settings panel. |
+| 1.1 | 2026-08-25 | Senior System Engineer | Aligned with DATABASE_SPEC v2.5 and Functional Specification v2.6. Removed application-level states (`draft`, `content_uploaded`) from DB-layer references. Updated: approval status filter options (§4.6), badge colors (§4.7), button visibility conditions (§4.7), backend execution logic (§5.1–5.4), API response examples (§8.1–8.2), DB defaults (§7.2), and test checklist (§12.4–12.5). |
 
 ### 1.2 Related Documents
 
@@ -392,7 +393,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 17 | `selStatusFilter` | Status Filter | Select | Enum | No | Default: "All" | Options: All, Active, Expired, Inactive | — | Filters ad list by display status. i18n: `merchant.ads.filterStatus`. |
-| 18 | `selApprovalFilter` | Approval Status Filter | Select | Enum | No | Default: "All" | Options: All, Draft, Content Uploaded, Pending, Approved, Rejected | — | Filters ad list by `approval_status`. i18n: `merchant.ads.filterApproval`. |
+| 18 | `selApprovalFilter` | Approval Status Filter | Select | Enum | No | Default: "All" | Options: All, Pending, Approved, Rejected | — | Filters ad list by `approval_status`. i18n: `merchant.ads.filterApproval`. |
 | 19 | `txtAdSearch` | Search Input | Input (`text`) | String(100) | No | Empty. Placeholder: "Search ads..." | MaxLength: 100 | — | Searches within own ads by title. i18n: `merchant.ads.search`. |
 
 ### 4.7 Section [G]: Advertisement Card (広告カード)
@@ -401,16 +402,16 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 20 | `imgAdThumbnail` | Ad Thumbnail | Image | URL | No | Placeholder image if no `image_url` uploaded | — | `advertisements.image_url` | Aspect ratio: 16:9. Tailwind: `rounded-lg object-cover`. |
 | 21 | `lblAdTitle` | Ad Title | Static Label (`<h3>`) | String(200) | Yes | Text from `title` field | MaxLength display: 200 | `advertisements.title` | Tailwind: `font-semibold text-base`. |
-| 22 | `badgeApprovalStatus` | Approval Status Badge | Badge | Enum | Yes | Maps to approval status text | — | `advertisements.approval_status` | Colors: draft = `bg-gray-100 text-gray-800`, content_uploaded = `bg-blue-100 text-blue-800`, pending = `bg-amber-100 text-amber-800`, approved = `bg-green-100 text-green-800`, rejected = `bg-red-100 text-red-800`. i18n: `merchant.ads.status.{status}`. |
+| 22 | `badgeApprovalStatus` | Approval Status Badge | Badge | Enum | Yes | Maps to approval status text | — | `advertisements.approval_status` | Colors: pending = `bg-amber-100 text-amber-800`, approved = `bg-green-100 text-green-800`, rejected = `bg-red-100 text-red-800`. i18n: `merchant.ads.status.{status}`. |
 | 23 | `badgePaymentStatus` | Payment Status Badge | Badge | Enum | Yes | Maps to payment status text | — | `advertisements.payment_status` | Colors: pending = `bg-amber-100 text-amber-800`, completed = `bg-green-100 text-green-800`, refunded = `bg-gray-100 text-gray-800`. i18n: `merchant.ads.payment.{status}`. |
 | 24 | `lblAdContent` | Ad Content Preview | Static Label (`<p>`) | String | No | Truncated to 100 chars; full text on hover tooltip | — | `advertisements.content` | Tailwind: `text-muted-foreground text-sm line-clamp-2`. |
 | 25 | `lblAnnouncement` | Announcement Message | Static Label (`<p>`) | String(500) | Yes | Truncated to 60 chars; full text on tooltip | — | `advertisements.announcement_message` | Tailwind: `text-sm font-medium`. |
 | 26 | `lblSchedule` | Schedule Display | Static Label (`<span>`) | String | No | Format: "Aug 24, 2026 → Aug 31, 2026" | — | `advertisements.starts_at` + `advertisements.expires_at` | Only shown when schedule is set. i18n: `merchant.ads.schedule`. |
 | 27 | `lblRejectionReason` | Rejection Reason | Alert (`warning`) | String(2000) | Conditional | Hidden unless `approval_status = 'rejected'` | — | `advertisements.rejection_reason` | Tailwind: `border-amber-500/50 text-amber-700 bg-amber-50`. i18n: `merchant.ads.rejectionReason`. |
-| 28 | `btnPayFee` | Pay Fee Button | Button (`primary`) | — | Conditional | Shown when `approval_status = 'content_uploaded'` AND `payment_status = 'pending'` | — | — | Opens Payment Confirmation dialog (§4.16). i18n: `merchant.ads.payFee`. Tailwind: `bg-primary`. |
+| 28 | `btnPayFee` | Pay Fee Button | Button (`primary`) | — | Conditional | Shown when ad has content (`content IS NOT NULL AND image_url IS NOT NULL`) AND `payment_status = 'pending'` | — | — | Opens Payment Confirmation dialog (§4.16). i18n: `merchant.ads.payFee`. Tailwind: `bg-primary`. |
 | 29 | `btnResubmit` | Resubmit Button | Button (`primary`) | — | Conditional | Shown when `approval_status = 'rejected'` | — | — | Opens Edit Ad Content dialog (§4.17) in resubmit mode (Save & Pay button shown). i18n: `merchant.ads.resubmit`. Tailwind: `bg-primary`. |
-| 30 | `btnEditAd` | Edit Button | Button (`outline`) | — | Conditional | Shown when ad is in `DRAFT`, `CONTENT_UPLOADED`, or `REJECTED` state | — | — | Opens Edit Ad Content dialog (§4.17). i18n: `merchant.ads.edit`. Tailwind: `border-border`. |
-| 31 | `btnDeleteAd` | Delete Button | Button (`destructive`) | — | Conditional | Shown when ad is in `DRAFT`, `CONTENT_UPLOADED`, or `INACTIVE` state | — | — | Confirmation dialog before soft-delete. i18n: `merchant.ads.delete`. Tailwind: `text-destructive`. |
+| 30 | `btnEditAd` | Edit Button | Button (`outline`) | — | Conditional | Shown when ad has content (`content IS NOT NULL AND image_url IS NOT NULL`) AND `payment_status = 'pending'` (content uploaded), OR when `approval_status = 'rejected'` | — | — | Opens Edit Ad Content dialog (§4.17). i18n: `merchant.ads.edit`. Tailwind: `border-border`. |
+| 31 | `btnDeleteAd` | Delete Button | Button (`destructive`) | — | Conditional | Shown when ad has content (`content IS NOT NULL AND image_url IS NOT NULL`) AND `payment_status = 'pending'` (content uploaded), OR when `is_active = false` (inactive) | — | — | Confirmation dialog before soft-delete. i18n: `merchant.ads.delete`. Tailwind: `text-destructive`. |
 | 32 | `swtToggleActive` | Toggle Active Switch | Switch | Boolean | Conditional | Shown when `approval_status = 'approved'` AND `payment_status = 'completed'` | — | `advertisements.is_active` | Toggles `is_active`. i18n: `merchant.ads.toggleActive`. |
 
 ### 4.8 Section [H]: Pagination (ページネーション)
@@ -532,7 +533,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
   1. **Pre-Check:** Verify merchant's `license_status` is `'approved'`. If not, show info banner and block selection.
   2. **Open Confirmation Dialog:** Show Package Selection Confirmation dialog (§4.9) with selected package details.
   3. **Confirm Selection:** On `btnConfirmSelect` click, call `POST /ads/packages/:feeSettingId/select`.
-  4. **Backend Execution:** Validate package is active; verify shop is approved; create advertisement record with `approval_status = draft`, `payment_status = pending`, `is_active = true`.
+   4. **Backend Execution:** Validate package is active; verify shop is approved; create advertisement record with `approval_status = pending`, `payment_status = pending`, `is_active = true`.
   5. **Post-Execution UI:** Close confirmation dialog. Open Upload Content dialog (§4.10) for the newly created draft ad. Show success toast. Refresh ad list.
 - **Exception Handling:**
   - `403 SHOP_NOT_APPROVED`: Display "Your shop is pending approval" in banner.
@@ -544,7 +545,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** Strict validation — `title` not empty (max 200), `announcementMessage` not empty (max 500), `startsAt` ≥ today. Image validation if provided (MIME type, size).
   2. **Backend Dispatch:** `PATCH /api/v1/ads/:id/content` with `{ title, content, image, linkUrl, announcementMessage, startsAt }`.
-  3. **Backend Execution:** Validate content fields; validate image if provided; derive `expires_at = starts_at + duration_days`; set `approval_status = content_uploaded`.
+   3. **Backend Execution:** Validate content fields; validate image if provided; derive `expires_at = starts_at + duration_days`. `approval_status` remains `'pending'` (unchanged).
   4. **Post-Execution UI:** Close dialog. Pay Fee button (`btnPayFee`) becomes available on the ad card. Show success toast. Refresh ad list.
 - **Exception Handling:**
   - `400 BAD_REQUEST`: Display field-level inline errors (missing title, invalid image, etc.).
@@ -556,7 +557,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 - **Processing Logic:**
   1. **Open Payment Dialog:** Show Payment Confirmation dialog (§4.11) with fee summary.
   2. **Confirm Payment:** On `btnPaySubmit` click, call `POST /ads/:id/pay`.
-  3. **Backend Execution:** Validate ad is in `CONTENT_UPLOADED` state; process payment (stubbed); record in `ad_payments`; set `payment_status = completed`, `approval_status = pending`; derive `week_number`.
+   3. **Backend Execution:** Validate ad has content uploaded (`content IS NOT NULL AND image_url IS NOT NULL`) AND `payment_status = 'pending'`; process payment (stubbed); record in `ad_payments`; set `payment_status = completed`. `approval_status` remains `'pending'` (unchanged); derive `week_number`.
   4. **Post-Execution UI:** Close dialog. Ad status updates to PENDING_APPROVAL. Pay Fee button hidden. Show success toast. Refresh ad list.
 - **Exception Handling:**
   - `422 UNPROCESSABLE_ENTITY`: Display "Payment failed. Please try again." in dialog error.
@@ -567,7 +568,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** Strict validation — same as Upload Content.
   2. **Backend Dispatch:** `PATCH /api/v1/ads/:id` with `{ title, content, image, linkUrl, announcementMessage }`.
-  3. **Backend Execution:** Validate ad state allows editing (`DRAFT`, `CONTENT_UPLOADED`, `REJECTED`); update content fields.
+   3. **Backend Execution:** Validate ad allows editing: content uploaded (`content IS NOT NULL AND image_url IS NOT NULL`) AND `payment_status = 'pending'`, OR `approval_status = 'rejected'`; update content fields.
   4. **Post-Execution UI (Save):** Close dialog. Show success toast. Refresh ad list.
   5. **Post-Execution UI (Save & Pay):** Close dialog. Open Payment Confirmation dialog for resubmission payment.
 - **Exception Handling:**
@@ -759,7 +760,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 | :--- | :--- | :--- | :--- |
 | `feeSettingId` (path param) | FK reference to `ad_fee_settings.id` | `advertisements` | UUID |
 | (system-created) | `shop_id` | `advertisements` | UUID NOT NULL (FK → `shops.id`) |
-| (system-created) | `approval_status` | `advertisements` | VARCHAR(20) DEFAULT 'draft' |
+| (system-created) | `approval_status` | `advertisements` | VARCHAR(20) DEFAULT 'pending' |
 | (system-created) | `payment_status` | `advertisements` | VARCHAR(20) DEFAULT 'pending' |
 | (system-created) | `is_active` | `advertisements` | BOOLEAN DEFAULT TRUE |
 
@@ -811,7 +812,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
     "imageUrl": null,
     "linkUrl": null,
     "isActive": true,
-    "approvalStatus": "draft",
+    "approvalStatus": "pending",
     "paymentStatus": "pending",
     "paymentAmount": null,
     "paymentReference": null,
@@ -839,7 +840,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
     "imageUrl": "/uploads/ads/a1b2c3d4-e5f6-7890-abcd-ef1234567890.jpg",
     "linkUrl": "https://example.com/summer-sale",
     "isActive": true,
-    "approvalStatus": "content_uploaded",
+    "approvalStatus": "pending",
     "paymentStatus": "pending",
     "paymentAmount": null,
     "paymentReference": null,
@@ -1304,12 +1305,12 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 
 - [ ] Ad list loads with pagination (20 per page)
 - [ ] Status filter works (All/Active/Expired/Inactive)
-- [ ] Approval status filter works (All/Draft/Content Uploaded/Pending/Approved/Rejected)
+- [ ] Approval status filter works (All/Pending/Approved/Rejected)
 - [ ] Search within own ads works
 - [ ] Ad cards display thumbnail, title, badges, content preview, schedule
 - [ ] Rejection reason shown on rejected ads
-- [ ] Edit button shown on draft/content_uploaded/rejected ads
-- [ ] Delete button shown on draft/content_uploaded/inactive ads
+- [ ] Edit button shown on content_uploaded (content IS NOT NULL, payment_status = pending) or rejected ads
+- [ ] Delete button shown on content_uploaded (content IS NOT NULL, payment_status = pending) or inactive (is_active = false) ads
 - [ ] Toggle switch shown on approved/paid ads
 - [ ] Delete confirmation dialog shown before soft-delete
 - [ ] Toggle switch updates `is_active` immediately
@@ -1320,7 +1321,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 
 - [ ] Edit dialog pre-fills current content values
 - [ ] Image upload shows current image preview
-- [ ] Save button shown for draft/content_uploaded ads
+- [ ] Save button shown for content_uploaded (content IS NOT NULL, payment_status = pending) ads
 - [ ] Save & Pay button shown for rejected ads
 - [ ] Save updates content without changing state
 - [ ] Save & Pay updates content then opens payment dialog

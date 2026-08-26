@@ -40,7 +40,7 @@ export const AdFeeSettingsTable: React.FC<AdFeeSettingsTableProps> = ({
                   <Input
                     type="number"
                     className="w-28"
-                    defaultValue={setting.daily_rate}
+                    defaultValue={setting.dailyRate}
                     id={`rate-${setting.id}`}
                   />
                 </TableCell>

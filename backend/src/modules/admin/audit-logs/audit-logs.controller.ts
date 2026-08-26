@@ -6,7 +6,15 @@ export class AuditLogsController {
   constructor(private readonly auditLogsService: AuditLogsService) {}
 
   @Get()
-  async findAll(@Query() query: { page?: number; limit?: number; action?: string; userId?: string }) {
+  async findAll(
+    @Query()
+    query: {
+      page?: number;
+      limit?: number;
+      action?: string;
+      userId?: string;
+    },
+  ) {
     return this.auditLogsService.findAll(query);
   }
 }
