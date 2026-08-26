@@ -92,7 +92,7 @@ export default function AdvertisementManagement() {
         <TabsContent value="settings" className="space-y-4">
           <AdFeeSettingsTable
             feeSettings={feeSettingsQuery.data}
-            onUpdateRate={(id, dailyRate) =>
+            onUpdateRate={(id: string, dailyRate: number) =>
               updateFeeSettingMutation.mutate({ id, dailyRate })
             }
           />

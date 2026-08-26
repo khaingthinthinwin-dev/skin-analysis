@@ -1,5 +1,5 @@
 import apiClient from '@/lib/api-client'
-import type { Profile, UpdateProfileData, ChangePasswordData } from '../types/profile.types'
+import type { Profile, UpdateProfileData, ChangePasswordData } from '@/types/profile.types'
 
 export const profileService = {
   getProfile: async (): Promise<Profile> => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Merchant } from '../services/merchant.service';
+import { Merchant } from '../../merchant-management/services/merchant.service';
 
 interface LicenseReviewModalProps {
   merchant: Merchant | null;
@@ -37,19 +37,19 @@ export const LicenseReviewModal: React.FC<LicenseReviewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Business License Review: {merchant.shop_name}</DialogTitle>
+          <DialogTitle>Business License Review: {merchant.shopName}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div>
             <p className="text-sm font-medium text-muted-foreground">Document URL:</p>
             <a
-              href={merchant.business_license_url}
+              href={merchant.businessLicenseUrl}
               target="_blank"
               rel="noreferrer"
               className="text-primary underline text-sm break-all"
             >
-              {merchant.business_license_url}
+              {merchant.businessLicenseUrl}
             </a>
           </div>
 
@@ -59,7 +59,7 @@ export const LicenseReviewModal: React.FC<LicenseReviewModalProps> = ({
               <Textarea
                 placeholder="State rejection details (e.g. expired document)..."
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
               />
             </div>
           ) : null}

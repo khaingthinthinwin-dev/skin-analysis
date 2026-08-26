@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 @Injectable()
@@ -9,14 +13,19 @@ export class AdminService {
   // Dashboard
   // =========================================================================
   async getDashboardStats() {
-    const [totalUsers, totalMerchants, pendingMerchants, pendingAds, pendingReviewReports] =
-      await Promise.all([
-        this.prisma.user.count(),
-        this.prisma.merchant.count({ where: { licenseStatus: 'approved' } }),
-        this.prisma.merchant.count({ where: { licenseStatus: 'pending' } }),
-        this.prisma.advertisement.count({ where: { approvalStatus: 'pending' } }),
-        this.prisma.reviewReport.count({ where: { status: 'pending' } }),
-      ]);
+    const [
+      totalUsers,
+      totalMerchants,
+      pendingMerchants,
+      pendingAds,
+      pendingReviewReports,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.merchant.count({ where: { licenseStatus: 'approved' } }),
+      this.prisma.merchant.count({ where: { licenseStatus: 'pending' } }),
+      this.prisma.advertisement.count({ where: { approvalStatus: 'pending' } }),
+      this.prisma.reviewReport.count({ where: { status: 'pending' } }),
+    ]);
 
     return {
       totalUsers,
@@ -30,7 +39,12 @@ export class AdminService {
   // =========================================================================
   // User Management
   // =========================================================================
-  async getUsers(params: { role?: string; is_active?: boolean; page?: number; limit?: number }) {
+  async getUsers(params: {
+    role?: string;
+    is_active?: boolean;
+    page?: number;
+    limit?: number;
+  }) {
     const { role, is_active, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
@@ -87,7 +101,11 @@ export class AdminService {
   // =========================================================================
   // Review Moderation
   // =========================================================================
-  async getReviews(params: { page?: number; limit?: number; is_approved?: boolean }) {
+  async getReviews(params: {
+    page?: number;
+    limit?: number;
+    is_approved?: boolean;
+  }) {
     const { page = 1, limit = 20, is_approved } = params;
     const skip = (page - 1) * limit;
 
@@ -112,7 +130,9 @@ export class AdminService {
   }
 
   async approveReview(reviewId: string) {
-    const review = await this.prisma.review.findUnique({ where: { id: reviewId } });
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+    });
     if (!review) throw new NotFoundException('Review not found');
 
     return this.prisma.review.update({
@@ -122,7 +142,9 @@ export class AdminService {
   }
 
   async deleteReview(reviewId: string) {
-    const review = await this.prisma.review.findUnique({ where: { id: reviewId } });
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+    });
     if (!review) throw new NotFoundException('Review not found');
 
     return this.prisma.review.delete({ where: { id: reviewId } });
@@ -131,7 +153,11 @@ export class AdminService {
   // =========================================================================
   // Review Reports
   // =========================================================================
-  async getReviewReports(params: { status?: string; page?: number; limit?: number }) {
+  async getReviewReports(params: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
@@ -160,8 +186,14 @@ export class AdminService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async resolveReport(reportId: string, action: 'resolved' | 'rejected', note?: string) {
-    const report = await this.prisma.reviewReport.findUnique({ where: { id: reportId } });
+  async resolveReport(
+    reportId: string,
+    action: 'resolved' | 'rejected',
+    note?: string,
+  ) {
+    const report = await this.prisma.reviewReport.findUnique({
+      where: { id: reportId },
+    });
     if (!report) throw new NotFoundException('Report not found');
 
     return this.prisma.reviewReport.update({
@@ -178,7 +210,9 @@ export class AdminService {
   // Content Moderation
   // =========================================================================
   async deactivateProduct(productId: string) {
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
     if (!product) throw new NotFoundException('Product not found');
 
     return this.prisma.product.update({
@@ -213,7 +247,11 @@ export class AdminService {
   // =========================================================================
   // Merchant Management
   // =========================================================================
-  async getMerchants(params: { status?: string; page?: number; limit?: number }) {
+  async getMerchants(params: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
@@ -237,7 +275,9 @@ export class AdminService {
   }
 
   async approveMerchant(merchantId: string, adminId?: string) {
-    const merchant = await this.prisma.merchant.findUnique({ where: { id: merchantId } });
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { id: merchantId },
+    });
     if (!merchant) throw new NotFoundException('Merchant not found');
     if (merchant.licenseStatus === 'approved') {
       throw new ConflictException('Merchant already approved');
@@ -269,7 +309,9 @@ export class AdminService {
   }
 
   async rejectMerchant(merchantId: string, reason: string, adminId?: string) {
-    const merchant = await this.prisma.merchant.findUnique({ where: { id: merchantId } });
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { id: merchantId },
+    });
     if (!merchant) throw new NotFoundException('Merchant not found');
 
     return this.prisma.merchant.update({
@@ -286,7 +328,11 @@ export class AdminService {
   // =========================================================================
   // Advertisement Management
   // =========================================================================
-  async getAdvertisements(params: { status?: string; page?: number; limit?: number }) {
+  async getAdvertisements(params: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
@@ -316,7 +362,9 @@ export class AdminService {
   }
 
   async approveAdvertisement(adId: string) {
-    const ad = await this.prisma.advertisement.findUnique({ where: { id: adId } });
+    const ad = await this.prisma.advertisement.findUnique({
+      where: { id: adId },
+    });
     if (!ad) throw new NotFoundException('Advertisement not found');
 
     return this.prisma.advertisement.update({
@@ -329,7 +377,9 @@ export class AdminService {
   }
 
   async rejectAdvertisement(adId: string, reason: string) {
-    const ad = await this.prisma.advertisement.findUnique({ where: { id: adId } });
+    const ad = await this.prisma.advertisement.findUnique({
+      where: { id: adId },
+    });
     if (!ad) throw new NotFoundException('Advertisement not found');
 
     return this.prisma.advertisement.update({
@@ -349,7 +399,9 @@ export class AdminService {
   }
 
   async updateAdFeeSetting(settingId: string, dailyRate: number) {
-    const setting = await this.prisma.adFeeSetting.findUnique({ where: { id: settingId } });
+    const setting = await this.prisma.adFeeSetting.findUnique({
+      where: { id: settingId },
+    });
     if (!setting) throw new NotFoundException('Fee setting not found');
 
     return this.prisma.adFeeSetting.update({
@@ -420,7 +472,9 @@ export class AdminService {
   }
 
   async processPayout(payoutId: string, adminId?: string) {
-    const payout = await this.prisma.payout.findUnique({ where: { id: payoutId } });
+    const payout = await this.prisma.payout.findUnique({
+      where: { id: payoutId },
+    });
     if (!payout) throw new NotFoundException('Payout not found');
     if (payout.status !== 'pending') {
       throw new ConflictException('Payout already processed');
@@ -439,7 +493,12 @@ export class AdminService {
   // =========================================================================
   // Audit Logs
   // =========================================================================
-  async getAuditLogs(params: { page?: number; limit?: number; action?: string; userId?: string }) {
+  async getAuditLogs(params: {
+    page?: number;
+    limit?: number;
+    action?: string;
+    userId?: string;
+  }) {
     const { page = 1, limit = 20, action, userId } = params;
     const skip = (page - 1) * limit;
 

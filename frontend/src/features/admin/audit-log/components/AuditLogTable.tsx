@@ -29,11 +29,11 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs = [] }) => {
             logs.map((log) => (
               <TableRow key={log.id}>
                 <TableCell className="font-mono text-xs">
-                  {new Date(log.created_at).toLocaleString()}
+                  {new Date(log.createdAt).toLocaleString()}
                 </TableCell>
-                <TableCell className="font-mono text-xs">{log.user_id}</TableCell>
+                <TableCell className="font-mono text-xs">{log.userId}</TableCell>
                 <TableCell className="font-semibold">{log.action}</TableCell>
-                <TableCell>{log.entity_type} {log.entity_id ? `(${log.entity_id})` : ''}</TableCell>
+                <TableCell>{log.entityType} {log.entityId ? `(${log.entityId})` : ''}</TableCell>
               </TableRow>
             ))
           )}

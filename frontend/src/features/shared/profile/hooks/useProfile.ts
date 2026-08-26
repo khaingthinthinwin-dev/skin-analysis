@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { profileService } from '../services/profile.service'
-import type { UpdateProfileData, ChangePasswordData } from '../types/profile.types'
+import type { UpdateProfileData, ChangePasswordData } from '@/types/profile.types'
 import { useAuth } from '@/providers/AuthProvider'
 
 export function useProfile() {

@@ -40,17 +40,17 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users = [], onToggleStat
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge className={user.is_active ? 'bg-emerald-500' : 'bg-destructive'}>
-                    {user.is_active ? 'Active' : 'Inactive'}
+                  <Badge className={user.isActive ? 'bg-emerald-500' : 'bg-destructive'}>
+                    {user.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
                     size="sm"
-                    variant={user.is_active ? 'destructive' : 'default'}
-                    onClick={() => onToggleStatus?.(user.id, user.is_active)}
+                    variant={user.isActive ? 'destructive' : 'default'}
+                    onClick={() => onToggleStatus?.(user.id, user.isActive)}
                   >
-                    {user.is_active ? 'Deactivate' : 'Activate'}
+                    {user.isActive ? 'Deactivate' : 'Activate'}
                   </Button>
                 </TableCell>
               </TableRow>

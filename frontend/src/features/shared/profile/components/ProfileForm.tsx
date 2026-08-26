@@ -17,7 +17,7 @@ import {
 import { useProfile } from '../hooks/useProfile'
 import { updateProfileSchema, type UpdateProfileFormData } from '@/schemas/profile.schema'
 import { toast } from 'sonner'
-import type { Profile } from '../../types/profile.types'
+import type { Profile } from '@/types/profile.types'
 
 interface ProfileFormProps {
   profile: Profile

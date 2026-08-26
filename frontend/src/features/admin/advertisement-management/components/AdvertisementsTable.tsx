@@ -38,27 +38,27 @@ export const AdvertisementsTable: React.FC<AdvertisementsTableProps> = ({
             ads.map((ad) => (
               <TableRow key={ad.id}>
                 <TableCell className="font-medium">{ad.title}</TableCell>
-                <TableCell className="max-w-xs truncate">{ad.announcement_message}</TableCell>
+                <TableCell className="max-w-xs truncate">{ad.announcementMessage}</TableCell>
                 <TableCell>
-                  <Badge variant={ad.payment_status === 'completed' ? 'default' : 'outline'}>
-                    {ad.payment_status}
+                  <Badge variant={ad.paymentStatus === 'completed' ? 'default' : 'outline'}>
+                    {ad.paymentStatus}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <Badge
                     variant={
-                      ad.approval_status === 'approved'
+                      ad.approvalStatus === 'approved'
                         ? 'default'
-                        : ad.approval_status === 'rejected'
+                        : ad.approvalStatus === 'rejected'
                         ? 'destructive'
                         : 'outline'
                     }
                   >
-                    {ad.approval_status}
+                    {ad.approvalStatus}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  {ad.approval_status === 'pending' && (
+                  {ad.approvalStatus === 'pending' && (
                     <>
                       <Button size="sm" onClick={() => onApprove?.(ad.id)}>
                         Approve

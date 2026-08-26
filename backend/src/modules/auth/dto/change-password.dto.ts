@@ -11,7 +11,8 @@ export class ChangePasswordDto {
   currentPassword: string;
 
   @ApiProperty({
-    description: 'New password (min 8 chars, uppercase, lowercase, number, special char)',
+    description:
+      'New password (min 8 chars, uppercase, lowercase, number, special char)',
     example: 'NewP@ssw0rd',
   })
   @IsString()

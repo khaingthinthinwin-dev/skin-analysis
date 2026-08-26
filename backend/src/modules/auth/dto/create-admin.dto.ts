@@ -34,7 +34,8 @@ export class CreateAdminDto {
   email: string;
 
   @ApiProperty({
-    description: 'Admin password (min 8 chars, uppercase, lowercase, number, special char)',
+    description:
+      'Admin password (min 8 chars, uppercase, lowercase, number, special char)',
     example: 'AdminP@ssw0rd',
   })
   @IsString()

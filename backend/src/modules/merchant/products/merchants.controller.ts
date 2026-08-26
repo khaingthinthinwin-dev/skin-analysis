@@ -1,4 +1,12 @@
-import { Controller, Get, Patch, Param, Query, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { MerchantsService } from './merchants.service';
 
 @Controller('merchants')
@@ -6,7 +14,9 @@ export class MerchantsController {
   constructor(private readonly merchantsService: MerchantsService) {}
 
   @Get()
-  async findAll(@Query() query: { status?: string; page?: number; limit?: number }) {
+  async findAll(
+    @Query() query: { status?: string; page?: number; limit?: number },
+  ) {
     return this.merchantsService.findAll(query);
   }
 
@@ -21,7 +31,10 @@ export class MerchantsController {
   }
 
   @Patch(':id/reject')
-  async reject(@Param('id') id: string, @Body() body: { adminId: string; reason: string }) {
+  async reject(
+    @Param('id') id: string,
+    @Body() body: { adminId: string; reason: string },
+  ) {
     return this.merchantsService.reject(id, body.adminId, body.reason);
   }
 }

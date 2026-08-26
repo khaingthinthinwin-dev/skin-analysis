@@ -150,7 +150,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Request password reset email' })
   @ApiResponse({
     status: 200,
-    description: 'Reset email sent (or email not found - same response for security)',
+    description:
+      'Reset email sent (or email not found - same response for security)',
   })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
@@ -172,10 +173,16 @@ export class AuthController {
   @Post('create-admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create admin account (admin/super_admin only)' })
-  @ApiResponse({ status: 201, description: 'Admin account created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Admin account created successfully',
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - insufficient permissions',
+  })
   @ApiResponse({ status: 409, description: 'Email already registered' })
   async createAdmin(@Body() createAdminDto: CreateAdminDto) {
     return this.authService.createAdmin(createAdminDto);
@@ -186,8 +193,14 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change password' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 400, description: 'Validation error or new password same as current' })
-  @ApiResponse({ status: 401, description: 'Unauthorized or incorrect current password' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or new password same as current',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized or incorrect current password',
+  })
   async changePassword(
     @CurrentUser() user: AuthUser,
     @Body() changePasswordDto: ChangePasswordDto,

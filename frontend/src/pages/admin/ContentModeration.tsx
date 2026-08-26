@@ -69,7 +69,7 @@ export default function ContentModeration() {
                 </TableCell>
               </TableRow>
             ) : (
-              flaggedContentQuery.data?.items?.map((product) => (
+              flaggedContentQuery.data?.items?.map((product: any) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category?.name || 'N/A'}</TableCell>

@@ -27,7 +27,13 @@ export class AdminController {
   // =========================================================================
   @Get('users')
   async getUsers(
-    @Query() query: { role?: string; is_active?: boolean; page?: number; limit?: number },
+    @Query()
+    query: {
+      role?: string;
+      is_active?: boolean;
+      page?: number;
+      limit?: number;
+    },
   ) {
     return this.adminService.getUsers(query);
   }
@@ -87,9 +93,7 @@ export class AdminController {
   }
 
   @Get('products/flagged')
-  async getFlaggedContent(
-    @Query() query: { page?: number; limit?: number },
-  ) {
+  async getFlaggedContent(@Query() query: { page?: number; limit?: number }) {
     return this.adminService.getflaggedContent(query);
   }
 
@@ -191,7 +195,13 @@ export class AdminController {
   // =========================================================================
   @Get('audit-logs')
   async getAuditLogs(
-    @Query() query: { page?: number; limit?: number; action?: string; userId?: string },
+    @Query()
+    query: {
+      page?: number;
+      limit?: number;
+      action?: string;
+      userId?: string;
+    },
   ) {
     return this.adminService.getAuditLogs(query);
   }
