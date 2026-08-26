@@ -1,7 +1,7 @@
 # Screen Items Specification (画面項目設計書) — Purchase & Checkout
 
 **Document ID:** SKM-SIS-SCR-CHECKOUT-001  
-**Target Screen:** Checkout & Order Placement (チェックアウト・注文)  
+**Target Screen:** Purchase & Checkout (購入・チェックアウト)  
 **Subsystem:** Buyer Module — Checkout & Order Placement  
 **Function ID:** FN-CHECK-001, FN-ORDER-001  
 **Version:** 1.0  
