@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAdmin } from '@/features/admin/hooks/useAdmin';
+import { useAdmin } from '@/features/admin/user-management/hooks/useAdmin';
 import { AdminStats } from '@/features/admin/components/AdminStats';
 
 export default function Dashboard() {

@@ -1,7 +1,7 @@
 // [PET] Review Management - Moderate product reviews and handle reports
 import React, { useState } from 'react';
-import { useModeration } from '@/features/admin/hooks/useModeration';
-import { ReviewsTable } from '@/features/admin/components/ReviewsTable';
+import { useModeration } from '@/features/admin/content-moderation/hooks/useModeration';
+import { ReviewsTable } from '@/features/admin/review-management/components/ReviewsTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

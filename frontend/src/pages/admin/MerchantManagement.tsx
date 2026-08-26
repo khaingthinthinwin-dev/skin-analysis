@@ -1,9 +1,9 @@
 // [PET] Merchant Management - Review business licenses and manage seller applications
 import React, { useState } from 'react';
-import { useMerchantApproval } from '@/features/admin/hooks/useMerchantApproval';
-import { MerchantsTable } from '@/features/admin/components/MerchantsTable';
-import { LicenseReviewModal } from '@/features/admin/components/LicenseReviewModal';
-import { Merchant } from '@/features/admin/services/merchant.service';
+import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
+import { MerchantsTable } from '@/features/admin/merchant-management/components/MerchantsTable';
+import { LicenseReviewModal } from '@/features/admin/content-moderation/components/LicenseReviewModal';
+import { Merchant } from '@/features/admin/merchant-management/services/merchant.service';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';

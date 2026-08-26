@@ -1,8 +1,8 @@
 // [PPH] Commission & Revenue - Manage platform fees, payouts, and revenue targets
 import React from 'react';
-import { useCommission } from '@/features/admin/hooks/useCommission';
-import { CommissionTable } from '@/features/admin/components/CommissionTable';
-import { PayoutTable } from '@/features/admin/components/PayoutTable';
+import { useCommission } from '@/features/admin/commission-revenue/hooks/useCommission';
+import { CommissionTable } from '@/features/admin/commission-revenue/components/CommissionTable';
+import { PayoutTable } from '@/features/admin/commission-revenue/components/PayoutTable';
 import { toast } from '@/components/ui/toast';
 
 export default function CommissionAndRevenue() {

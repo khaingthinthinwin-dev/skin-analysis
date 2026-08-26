@@ -1,6 +1,6 @@
 // [PET] Content Moderation - Review and deactivate policy-violating products
 import React from 'react';
-import { useModeration } from '@/features/admin/hooks/useModeration';
+import { useModeration } from '@/features/admin/content-moderation/hooks/useModeration';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';

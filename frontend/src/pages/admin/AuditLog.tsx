@@ -1,7 +1,7 @@
 // [PET/PPH] Audit Log - Append-only security and platform action audit trail
 import React, { useState } from 'react';
-import { useAuditLogs } from '@/features/admin/hooks/useAuditLogs';
-import { AuditLogTable } from '@/features/admin/components/AuditLogTable';
+import { useAuditLogs } from '@/features/admin/audit-log/hooks/useAuditLogs';
+import { AuditLogTable } from '@/features/admin/audit-log/components/AuditLogTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

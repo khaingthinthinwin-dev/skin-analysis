@@ -1,7 +1,7 @@
 // [PET] User Management - Manage user accounts, roles, and status
 import React, { useState } from 'react';
-import { useAdmin } from '@/features/admin/hooks/useAdmin';
-import { UsersTable } from '@/features/admin/components/UsersTable';
+import { useAdmin } from '@/features/admin/user-management/hooks/useAdmin';
+import { UsersTable } from '@/features/admin/user-management/components/UsersTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
