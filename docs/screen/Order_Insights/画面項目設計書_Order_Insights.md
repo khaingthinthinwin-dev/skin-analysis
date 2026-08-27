@@ -1,10 +1,10 @@
 # Screen Items Specification (画面項目設計書) — Order Insights
 
 **Document ID:** SKM-SIS-OI-001  
-**Target Screen:** Buyer Order History, Buyer Order Detail, Buyer Order Tracking, Merchant Order Insights (Sales/Revenue Summary + Order List), Merchant Order Detail, Admin Order Insights (All Orders)  
+**Target Screen:** Buyer Order History, Buyer Order Detail, Buyer Order Tracking, Merchant Order Insights (Sales/Revenue Summary + Order List), Merchant Order Detail, Admin Order Insights (All Orders + Order Detail)  
 **Subsystem:** Order Insights  
 **Function ID:** FN-OI-001 (Buyer Order Insights), FN-OI-002 (Merchant Order Insights), FN-OI-003 (Admin Order Insights)  
-**Version:** 1.1  
+**Version:** 1.2
 **Created:** 2026-08-26  
 **Last Updated:** 2026-08-26  
 **Author:** Senior System Engineer  
@@ -21,6 +21,7 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-26 | Senior System Engineer | Initial release. Screen item specification for the Order Insights subsystem, aligned with SKM-FDS-OI-001 (機能設計書) v2.0 §5 Screen Specifications and §7 Input/Output Specification. |
 | 1.1 | 2026-08-26 | Senior System Engineer | **Restructured to fully match the house template `画面項目設計書_Commission_&_Revenue.md`.** Added an ASCII box-diagram Layout per screen using local `[A]`/`[B]`/`[C]` section letters (restarting per layout); converted every item table to the same 10-column format with EL-OI-xx retained as a "Maps to (EL-OI)" cross-reference column; added §5 Item Behaviors, §6 Validation & Error Message Mapping (from FDS §8/§9), §7 Database Fields Mapping (from FDS §15.2), §8 API Response Mapping (from FDS §7), §9 i18n Keys, §10 Shared Components, §11 Special UI Notes, §12 Testing Checklist. Cross-checked Screen 5 (Merchant Order Detail) against the new `Design_Photos/merchant-order-detail.png` design. |
+| 1.2 | 2026-08-27 | Senior System Engineer | Added Layout 7 Admin Order Detail at `/admin/orders/:id` with local item IDs, unrestricted order-items table, Shop/Merchant identity, totals, customer information, and shared Track Order navigation; added read-only behavior, tests, and cross-check for `Design_Photos/admin-order-detail.png`. |
 
 ### 1.2 Related Documents (関連ドキュメント)
 
@@ -46,6 +47,7 @@ The Order Insights subsystem gives each role a view of the orders that belong to
 | Layout 4 — Merchant Order Insights | `/merchant/orders` | FN-OI-002 | Merchant, Admin |
 | Layout 5 — Merchant Order Detail | `/merchant/orders/:id` | FN-OI-002 | Merchant |
 | Layout 6 — Admin All Orders | `/admin/orders` | FN-OI-003 | Admin |
+| Layout 7 — Admin Order Detail | `/admin/orders/:id` | FN-OI-003 | Admin |
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -261,6 +263,39 @@ Each screen below is described with an ASCII box diagram using **local section l
 ```
 
 ---
+
+#### Layout 7: Admin Order Detail (`/admin/orders/:id`)
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                     BROWSER VIEWPORT                          │
+├──────────────────────────────────────────────────────────────┤
+│  ← All Orders                 /admin/orders/:id                │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  [A] ORDER HEADER (cardAdminOrderHeader)               │  │
+│  │  Order #  •  Placed date/time  •  Status  •  Payment   │  │
+│  └────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  [B] SHOP / MERCHANT (cardAdminShopInfo)               │  │
+│  │  Shop Name  •  Merchant ID                             │  │
+│  └────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  [C] ITEMS TABLE (tblAdminOrderItems)                  │  │
+│  │  Product / Qty / Unit Price / Line Total               │  │
+│  └────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  [D] TOTALS PANEL (cardAdminTotals)                    │  │
+│  │  Subtotal  /  Discount (+coupon)  /  Total             │  │
+│  └────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  [E] CUSTOMER INFORMATION (cardAdminCustomerInfo)      │  │
+│  │  Name / Email / Phone / Shipping Address               │  │
+│  └────────────────────────────────────────────────────────┘  │
+│  [F] TRACK ORDER (btnAdminTrackOrder)                       │  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
 ### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
 | Breakpoint | Min Width | Layout Behavior |
@@ -357,7 +392,7 @@ Legend for the **Required** column: `Yes` / `No` / `Cond.` (conditional) / `—`
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
 | 1 | `btnTrackOrder` | Track Order Button / 注文追跡ボタン | Button (primary) | — | Yes | Visible | Navigates to `/orders/:id/tracking` | — | i18n key: `orders.track`. | EL-OI-16 |
 
-> **Note (flagged):** §7.5 order-detail DTO additionally carries `customer.*` (merchant/admin only, BR-OI-015/033) and `shop.name`/`shop.merchantId`. Buyer Order Detail renders `shop.name` only; `shop.merchantId` remains admin-only. Customer fields are rendered on Layouts 5/6, not on the buyer detail.
+> **Note (flagged):** §7.5 order-detail DTO additionally carries `customer.*` (merchant/admin only, BR-OI-015/033) and `shop.name`/`shop.merchantId`. Buyer Order Detail renders `shop.name` only; `shop.merchantId` remains admin-only. Customer fields are rendered on Layouts 5/7, not on the buyer detail.
 
 ---
 ### 4.3 Layout 3: Order Tracking (注文追跡) — `/orders/:id/tracking` (Buyer / Merchant / Admin)
@@ -483,7 +518,7 @@ Legend for the **Required** column: `Yes` / `No` / `Cond.` (conditional) / `—`
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
-| 1 | `btnTrackOrder` | Track Order Button / 注文追跡ボタン | Button | — | Yes | Visible | Navigates to `/merchant/orders/:id/tracking` | — | i18n key: `orders.track`. | EL-OI-55 |
+| 1 | `btnTrackOrder` | Track Order Button / 注文追跡ボタン | Button | — | Yes | Visible | Navigates to `/orders/:id/tracking` | — | i18n key: `orders.track`. Uses the shared Layout 3 tracking route. | EL-OI-55 |
 
 #### Section [G]: Change Status (Change Status アクション)
 
@@ -534,6 +569,49 @@ Legend for the **Required** column: `Yes` / `No` / `Cond.` (conditional) / `—`
 | 1 | `emptyAdminOrderList` | Empty State / 空状態 | Illustration + Text | — | Yes | Hidden; shown when 0 rows match | "No orders match the current filters." + Clear Filters CTA | — | i18n key: `admin.orders.empty`. BR-OI-030. | EL-OI-69 |
 
 ---
+### 4.7 Layout 7: Admin Order Detail (`/admin/orders/:id`)
+
+**Purpose:** Allow an admin to inspect any platform order, its shop/merchant identity, unrestricted order items, totals, and customer information. This screen is read-only per BR-OI-007 and contains no Change Status action or other state-mutating control.
+
+#### Section [A]: Order Header (注文ヘッダー)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | `cardAdminOrderHeader` | Order Header / 注文ヘッダー | Card | — | Yes | Visible | Order #, placed date/time, status badge, payment status badge | `orders.id`, `orders.created_at`, `orders.status`, `orders.payment_status` | i18n key: `orders.detail.header`. Read-only per BR-OI-007. | — (local UI ID) |
+
+#### Section [B]: Shop / Merchant (ショップ／販売者)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | `cardAdminShopInfo` | Shop / Merchant Information / ショップ／販売者情報 | Card | String / UUID | Yes | Visible | Shop name and merchant ID | `shop.name` / `shop.merchantId` (`merchants.shop_name` / `merchants.id` via `orders.merchant_id`) | i18n key: `admin.orders.detail.shopInfo`. Admin-only per BR-OI-015/033. | — (local UI ID) |
+
+#### Section [C]: Unrestricted Items Table (全注文明細テーブル)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | `tblAdminOrderItems` | Order Items Table / 注文明細テーブル | Table | UUID / INTEGER / DECIMAL(10,2) | Yes | Loading skeleton | Columns: Product, Qty, Unit Price, Line Total | `order_items` without a `merchant_id` filter; `products.name` | i18n key: `orders.detail.items`. All items in the order are shown. Prices are frozen (BR-OI-017); unrestricted for Admin per §6.2 step 4. | — (local UI ID) |
+
+#### Section [D]: Totals Panel (合計パネル)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | `cardAdminTotals` | Totals Panel / 合計パネル | Card | DECIMAL(10,2) / VARCHAR(50) | Yes | — | Rows: Subtotal, Discount (with coupon code when present), Total | Derived subtotal, `orders.discount_amount`, `orders.coupon_code`, `orders.total_amount` | i18n key: `orders.detail.totals`. Read-only per BR-OI-007. | — (local UI ID) |
+
+#### Section [E]: Customer Information (顧客情報)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | `cardAdminCustomerInfo` | Customer Information / 顧客情報 | Card | String | Yes | — | Name, email, phone, shipping address | `customer.name`, `customer.email`, `customer.phone` via `orders.buyer_id` → `users`; `orders.shipping_address` | i18n key: `merchant.orders.customer`. Admin-only per BR-OI-015/033; PII limited to fulfilment needs. | — (local UI ID) |
+
+#### Section [F]: Track Order (注文追跡ボタン)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | `btnAdminTrackOrder` | Track Order Button / 注文追跡ボタン | Button | — | Yes | Visible | Navigates to `/orders/:id/tracking` | — | i18n key: `orders.track`. Uses the shared Layout 3 tracking route; read-only navigation only per BR-OI-007. | — (local UI ID) |
+
+> **Note (flagged for FDS owner):** FDS §5 defines no Admin Order Detail element IDs. All Layout 7 item IDs are local UI IDs; no EL-OI number is invented. The FDS should backfill this screen's element definitions in a future revision.
+
+---
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
 
 Derived from FDS §6 Functional Operation Specification. All screens are read-only; no behavior below mutates order data.
@@ -556,13 +634,13 @@ Derived from FDS §6 Functional Operation Specification. All screens are read-on
   - `429 TOO_MANY_REQUESTS`: banner with retry-after seconds.
   - `500 INTERNAL_SERVER_ERROR`: destructive alert with retry.
 
-### 5.2 Order Detail Load (row click / View) — Layouts 2, 5
+### 5.2 Order Detail Load (row click / View) — Layouts 2, 5, 7
 - **Trigger:** Click an order row or "View" action.
 - **Processing Logic:**
   1. Validate JWT and `:id` (UUID).
   2. Load order with `order_items` (join `products` for name/image).
   3. Verify ownership per BR-OI-008 — mismatch → `404` (indistinguishable from not-found).
-  4. Merchant: restrict `order_items` to `merchant_id` = own.
+  4. Merchant: restrict `order_items` to `merchant_id` = own; Admin: leave `order_items` unrestricted.
   5. Project totals (`total_amount`, `discount_amount`, `coupon_code`) and `payment_status`.
   6. Attach customer-information block only for merchant/admin (BR-OI-015/033).
   7. Render detail; write `ORDER_DETAIL_VIEWED` audit event.
@@ -873,6 +951,7 @@ All keys below are resolved for EN / JA / MY (FDS §13.6). Order-status names an
 | `merchant.revenue.rateNote` | "Commission rate applied at order creation" |
 | `merchant.revenue.period` | "Period" |
 | `admin.orders.title` | "All Orders" |
+| `admin.orders.detail.shopInfo` | "Shop / Merchant" |
 | `admin.orders.filter.shop` | "Shop / Merchant" |
 | `admin.orders.filter.status` | "Status" |
 | `admin.orders.table` | "Orders" |
@@ -912,6 +991,7 @@ All keys below are resolved for EN / JA / MY (FDS §13.6). Order-status names an
 | `merchant.revenue.rateNote` | "注文作成時のコミッション率を適用" |
 | `merchant.revenue.period` | "期間" |
 | `admin.orders.title` | "全注文" |
+| `admin.orders.detail.shopInfo` | "ショップ / 販売者" |
 | `admin.orders.filter.shop` | "ショップ / 出品者" |
 | `admin.orders.empty` | "条件に一致する注文がありません。" |
 | `common.view` | "詳細" |
@@ -941,6 +1021,7 @@ All keys below are resolved for EN / JA / MY (FDS §13.6). Order-status names an
 | `merchant.revenue.aov` | "ပျမ်းမျှမှာယူမှုတန်ဖိုး" |
 | `merchant.revenue.period` | "ကာလ" |
 | `admin.orders.title` | "မှာယူမှုအားလုံး" |
+| `admin.orders.detail.shopInfo` | "ဆိုင် / ရောင်းချသူ" |
 | `admin.orders.empty` | "စစ်ထုတ်မှုနှင့် ကိုက်ညီသော မှာယူမှုမရှိပါ။" |
 | `common.view` | "ကြည့်ရှုရန်" |
 | `common.back` | "မှာယူမှုသို့ ပြန်သွားရန်" |
@@ -951,8 +1032,8 @@ All keys below are resolved for EN / JA / MY (FDS §13.6). Order-status names an
 
 | Component | Used by | Notes |
 | :--- | :--- | :--- |
-| `StatusBadge` | Layouts 1, 2, 4 [D], 5, 6 | Colour-coding per BR-OI-031; i18n label from `order_statuses.status_name`. |
-| `PaymentBadge` | Layouts 2, 5 | `pending` / `completed` (amber / green). |
+| `StatusBadge` | Layouts 1, 2, 4 [D], 5, 6, 7 | Colour-coding per BR-OI-031; i18n label from `order_statuses.status_name`. |
+| `PaymentBadge` | Layouts 2, 5, 7 | `pending` / `completed` (amber / green). |
 | `DataTable` | Layouts 1, 2, 4 [D], 5, 6 | Skeleton loading; server-side pagination/sort; `meta` handling. |
 | `VerticalStepper` | Layout 3 | Renders 6 steps; `done`/`current`/`upcoming`; culminating marker `#7C3AED`. |
 | `EmptyState` | Layouts 1, 6 | Illustrated empty state + CTA (BR-OI-030). |
@@ -975,6 +1056,7 @@ Each Figma screenshot in `docs/screen/Order_Insights/Design_Photos/` was cross-c
 | `order insight merchant.png` | Layout 4 Merchant Order Insights | OK — Sales tiles, Revenue Summary group, own-shop list match EL-OI-30..47. |
 | `admin-order-insights.png` | Layout 6 Admin All Orders | OK — elements match EL-OI-60..69. |
 | `merchant-order-detail.png` | Layout 5 Merchant Order Detail | **Flagged** — see notes below. |
+| `admin-order-detail.png` | Layout 7 Admin Order Detail | OK — shop/merchant identity, unrestricted items, totals, customer information, and Track Order match the reference. |
 
 **Flagged items (documented as notes, not asserted as fact):**
 - **Merchant Order Detail — Discount:** The `merchant-order-detail.png` design mock shows a **Discount** line in the Totals Panel. This matches FDS §5.5 and §7.5: the Totals Panel (EL-OI-52) renders **Subtotal, Discount, and Total**, with the coupon code shown when present. The §7.2 DB mapping applies `discount_amount` and `coupon_code` to the order-detail totals for both buyer and merchant detail.
@@ -1062,7 +1144,7 @@ Each Figma screenshot in `docs/screen/Order_Insights/Design_Photos/` was cross-c
 - [ ] Totals panel shows **Subtotal, Discount, and Total**; coupon code is shown when present (EL-OI-52)
 - [ ] Customer Information shows name, email, phone, and shipping address only (BR-OI-033)
 - [ ] Order notes hidden when null
-- [ ] Track Order navigates to `/merchant/orders/:id/tracking`
+- [ ] Track Order navigates to `/orders/:id/tracking` (shared Layout 3 route)
 - [ ] Change Status link **navigates only** to Order Fulfillment; no status-change API call here
 - [ ] Status badge is read-only (EL-OI-56)
 - [ ] Cross-shop order returns 404 (BR-OI-008)
@@ -1082,7 +1164,19 @@ Each Figma screenshot in `docs/screen/Order_Insights/Design_Photos/` was cross-c
 - [ ] Non-admin attempting `merchantId`/`shopId` is blocked with 403 (BR-OI-001)
 - [ ] Admin filter parameters are rejected as `403` for buyer/merchant callers
 
-### 12.7 Global Tests (全画面共通)
+### 12.7 Admin Order Detail Tests (Layout 7)
+
+- [ ] Order header shows order number, placed date/time, status badge, and payment status badge
+- [ ] Shop / Merchant card shows `shop.name` and `shop.merchantId` for Admin only (BR-OI-015/033)
+- [ ] Items table shows all order lines without a `merchant_id` filter (§6.2 step 4)
+- [ ] Totals panel shows Subtotal, Discount, and Total; coupon code is shown when present
+- [ ] Customer Information shows name, email, phone, and shipping address only (BR-OI-015/033)
+- [ ] Track Order navigates to `/orders/:id/tracking` (shared Layout 3 route)
+- [ ] No Change Status action or other state-mutating control is rendered (BR-OI-007)
+- [ ] Invalid or missing orders return the standard 404 panel
+
+---
+### 12.8 Global Tests (全画面共通)
 
 - [ ] All screens load with skeleton until data arrives
 - [ ] Empty states render `0` / `—` and illustrations, never error styling (BR-OI-030)
