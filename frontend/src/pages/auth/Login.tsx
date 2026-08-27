@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -29,8 +29,11 @@ import { getDashboardRoute, ROUTES } from '@/lib/constants'
 
 export default function Login() {
   const { t } = useTranslation()
-  const { login } = useAuth()
+  const { login, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const navigate = useNavigate()
+
+  if (authLoading) return null
+  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
