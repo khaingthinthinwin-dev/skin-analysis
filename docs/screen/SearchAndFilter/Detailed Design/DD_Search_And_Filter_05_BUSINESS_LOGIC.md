@@ -62,7 +62,7 @@ This document specifies the core business logic, caching strategy, filter buildi
      - Query `advertisements` where `approval_status = 'approved'`
      - Filter: `starts_at <= NOW()` AND `expires_at >= NOW()`
      - Join with `shops` where `is_approved = true` AND `merchants` where `license_status = 'approved'` (BR-SEARCH-013)
-     - Order by tier priority → round-robin within tier (Sec 4.3, REQ §5.3)
+    - Apply the advertisement selection and rotation algorithm: Premium > Standard > Basic, round-robin within tier, maximum 5 ads (Sec 9.1, REQ §5.3)
      - Cap at maximum 5 ads (BR-SEARCH-026)
      - Seed Redis with TTL 5 min (BR-SEARCH-028)
    - Return `{ data: ads }` (empty array if no ads)
@@ -345,15 +345,16 @@ private buildCategoryTree(categories: Category[]): CategoryNodeDto[] {
 
 ## 9. Ad Display Logic
 
-### 9.1 Ad Filtering and Ordering
+### 9.1 Advertisement Selection and Rotation Logic
 
 ```typescript
-private async getActiveAds(placement: string): Promise<SponsoredAdDto[]> {
+private async getSearchTopAds(): Promise<SponsoredAdDto[]> {
   const now = new Date();
 
   const ads = await this.prisma.advertisement.findMany({
     where: {
-      placement,
+      // BR-SEARCH-026: Search Results Top placement only
+      placement: 'search_top',
       approvalStatus: 'approved',
       startsAt: { lte: now },
       expiresAt: { gte: now },
@@ -362,21 +363,36 @@ private async getActiveAds(placement: string): Promise<SponsoredAdDto[]> {
         merchant: { licenseStatus: 'approved' },
       },
     },
-    orderBy: [
-      // BR-SEARCH-026: Tier priority (Premium > Standard > Basic)
-      { tier: 'asc' },        // premium < standard < basic
-    ],
     include: { shop: true },
   });
 
-  // BR-SEARCH-026 (REQ §5.3): Round-robin rotation within the same tier.
-  // The slider renders a maximum of 5 ads, rotating automatically every 5 seconds;
-  // the starting offset rotates per request so each ad receives impressions.
-  // Capped at 5 ads maximum (BR-SEARCH-026).
-  const capped = ads.slice(0, 5);
-  return this.roundRobinWithinTier(capped).map(this.serializeAd);
+  // BR-SEARCH-026 (REQ §5.3): Apply explicit tier priority, then rotate
+  // ads within each tier using a persisted Redis offset before taking the cap.
+  const byTier = groupBy(ads, (ad) => ad.tier);
+  const ordered: Advertisement[] = [];
+
+  for (const tier of ['premium', 'standard', 'basic'] as const) {
+    const tierAds = byTier[tier] ?? [];
+    if (tierAds.length === 0) continue;
+
+    const rotationKey = `rotation:ads:search-top:${tier}`;
+    const offset = await this.redis.incr(rotationKey) % tierAds.length;
+    ordered.push(...rotate(tierAds, offset));
+  }
+
+  return ordered.slice(0, 5).map(this.serializeAd);
 }
 ```
+
+**Selection algorithm:**
+
+1. Query only advertisements with `approval_status = 'approved'` and `placement = 'search_top'`.
+2. Require the current time to be within the inclusive active window: `starts_at <= NOW() <= expires_at`.
+3. Require the linked shop to have `shops.is_approved = true` and the linked merchant to have `merchants.license_status = 'approved'`.
+4. Group eligible ads by tier and process tiers in strict priority order: **Premium**, then **Standard**, then **Basic**. Tier ordering is applied explicitly and must not depend on database enum or lexical ordering.
+5. For each tier containing multiple ads, use a Redis-backed round-robin offset (`rotation:ads:search-top:{tier}`) to rotate the starting ad on each selection. Preserve the tier order while rotating within that tier so exposure is distributed fairly without allowing a lower tier to precede a higher tier.
+6. Concatenate the rotated tier groups and return only the first 5 ads. If fewer than 5 eligible ads exist, return all eligible ads.
+7. Cache the selected result for 5 minutes. Rotation state is maintained independently of the response cache so repeated selection cycles advance the offset fairly.
 
 ### 9.2 Ad Slide-Down Panel Behavior
 

@@ -248,7 +248,8 @@ export function useCategoryTree() {
 ### 4.4 FilterChips Component
 
 - **File Path:** `frontend/src/features/search/components/FilterChips.tsx`
-- Renders active filter tags/chips row from URL query params (BR-SEARCH-019)
+- Displays active filter tags/chips from URL query params (BR-SEARCH-019)
+- Each chip exposes an individual remove action so users can remove that filter value without clearing the others
 - One chip per active filter value (e.g., "Skin Type: Dry", "$10–$50", "Rating: 4★+")
 - Close (×) icon on each chip removes that single filter value, resets `page` to 1 (BR-SEARCH-022)
 - "Clear all" button removes all filters at once, keeps keyword `q` (BR-SEARCH-023)
@@ -290,17 +291,23 @@ export function useCategoryTree() {
 ### 4.9 SponsoredAdSlider Component
 
 - **File Path:** `frontend/src/features/search/components/SponsoredAdSlider.tsx`
-- Slide-down sponsored advertisement panel between page header ([A]) and search bar + filters row ([B]+[C])
+- Renders the sponsored advertisement slide-down panel between page header ([A]) and search bar + filters row ([B]+[C])
 - Fetches eligible ads via `GET /api/v1/ads?placement=search_top` — parallel to product results fetch, does not block product loading
 - Renders animated slide-down container (`slotAdTop`) spanning the full container width, horizontally centered between [A] and [B]+[C], with search bar + filters rendered immediately below
 - Per-ad slide cards (`cardAdSlide`) with: image/banner (`imgAdBanner`), title (`lblAdTitle`), description (`txtAdDescription`), CTA (`btnAdCta`), "Sponsored" badge (`badgeSponsored`)
 - Desktop/tablet (≥ 768px): horizontal slide — image 320×120 (`object-cover`) left, text block right, inline CTA
 - Mobile (< 768px): stacked slide — full-width 16:9 image, title, description, full-width CTA below
 - Auto-slides every 5 seconds with vertical slide-down transition (500ms); maximum 5 ads
-- Auto-advancement pauses on hover/keyboard focus; resumes on leave/blur (WCAG 2.2.2)
-- `prefers-reduced-motion: reduce` disables entrance/slide animations; 5-second interval unchanged
+- Auto-advancement pauses while the slider or any slider content is hovered or keyboard-focused; resumes when both hover and focus have ended (WCAG 2.2.2)
+- `prefers-reduced-motion: reduce` disables all entrance and slide animations; auto-slide is disabled while the preference is enabled
 - Hidden on ad fetch error or no eligible ads — graceful degradation; ad failure never blocks product results
 - Sub-items: `trackAdSlides` (slider track), `cardAdSlide` (per-ad card), `imgAdBanner` (image), `lblAdTitle` (title), `txtAdDescription` (description), `btnAdCta` (CTA link), `badgeSponsored` (sponsor badge)
+
+## 4.10 Accessibility — SponsoredAdSlider
+
+- The slider is keyboard reachable, and focus entering the slider pauses auto-slide immediately.
+- Hovering over the slider pauses auto-slide immediately. Auto-slide resumes only after the pointer leaves and focus has left the slider, preventing either interaction from restarting the timer prematurely.
+- When `prefers-reduced-motion: reduce` matches, disable auto-slide and all slide-down/slide-transition animation; content remains available through static keyboard controls.
 
 ---
 
