@@ -78,25 +78,22 @@ export class RateLimitInterceptor implements NestInterceptor {
     config: RateLimitConfig,
   ): Promise<void> {
     try {
+      if (response.headersSent) return;
+
       const key = `ratelimit:${ip}:${path}`;
       const now = Date.now();
       const windowStart = now - config.windowMs;
 
-      // Get current request count
       const redis = this.redisService.getClient();
       if (!redis) return;
 
-      // Remove old entries
       await redis.zremrangebyscore(key, 0, windowStart);
-
-      // Count current requests
       const currentCount = await redis.zcard(key);
-
-      // Add current request
       await redis.zadd(key, now, `${now}`);
       await redis.expire(key, Math.ceil(config.windowMs / 1000));
 
-      // Set rate limit headers
+      if (response.headersSent) return;
+
       response.setHeader('X-RateLimit-Limit', config.maxRequests);
       response.setHeader(
         'X-RateLimit-Remaining',
@@ -110,9 +107,8 @@ export class RateLimitInterceptor implements NestInterceptor {
         'X-RateLimit-Policy',
         `${config.maxRequests};w=${Math.ceil(config.windowMs / 1000)}`,
       );
-    } catch (error) {
+    } catch {
       // Silently fail - don't break the request if Redis is unavailable
-      console.error('Rate limit header error:', error);
     }
   }
 }

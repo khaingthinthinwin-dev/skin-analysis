@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
 import { UserNav } from '@/components/common/UserNav'
 import { useAuth } from '@/hooks/useAuth'
-import { ROUTES } from '@/lib/constants'
+import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
 const navItems = [
   { key: 'home', href: ROUTES.HOME },
@@ -18,7 +18,7 @@ const navItems = [
 
 export function Header() {
   const { t } = useTranslation()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const location = useLocation()
   const [open, setOpen] = useState(false)
 
@@ -46,6 +46,14 @@ export function Header() {
               {t(`nav.${item.key}`)}
             </Link>
           ))}
+          {isAuthenticated && user && (
+            <Link
+              to={getDashboardRoute(user.role)}
+              className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
+            >
+              Dashboard
+            </Link>
+          )}
         </nav>
 
         {/* Desktop Actions */}

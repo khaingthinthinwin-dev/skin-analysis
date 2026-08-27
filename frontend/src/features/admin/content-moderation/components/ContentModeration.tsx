@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, Trash2 } from 'lucide-react';
 
 interface ContentModerationProps {
-  flaggedItems?: any[];
+  flaggedItems?: Record<string, unknown>[];
   onRemoveItem?: (id: string) => void;
 }
 

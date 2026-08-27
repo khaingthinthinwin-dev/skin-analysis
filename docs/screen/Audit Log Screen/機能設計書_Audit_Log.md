@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Audit Log (管理者監査ログ) — Audit Trail Viewing, Filtering, and Export |
 | **Subsystem** | Audit Logging — Admin Audit Trail, Change Tracking, Security Monitoring |
 | **Function ID** | FN-AUDIT-001 |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | 2026-08-25 |
-| **Last Updated** | 2026-08-25 |
+| **Last Updated** | 2026-08-27 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -24,6 +24,7 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-25 | Software Architect | Initial functional specification for Admin Audit Log Screen: audit trail viewing, filtering, detail inspection, and CSV export. |
+| 1.1 | 2026-08-27 | Software Architect | Updated for admin-controlled manual deletion: removed system auto-purge, added `DELETE /api/v1/admin/audit-logs/files` endpoint, updated business rules (BR-AUDIT-001, BR-AUDIT-007, BR-AUDIT-034, BR-AUDIT-041), state transitions, permissions, and configurable items. CSV export files retained indefinitely until admin manual delete. |
 
 ---
 
@@ -31,17 +32,19 @@
 
 1. [Functional Overview](#1-functional-overview)
 2. [Use Cases and Business Workflow](#2-use-cases-and-business-workflow)
-3. [Business Rules](#3-business-rules)
-4. [Screen Specifications](#4-screen-specifications)
-5. [Functional Operation Specification](#5-functional-operation-specification)
-6. [Input / Output Specification](#6-input--output-specification)
-7. [Input Validation Rules](#7-input-validation-rules)
-8. [Error Handling Specification](#8-error-handling-specification)
-9. [Permission and Access Control](#9-permission-and-access-control)
-10. [Screen Transition Specification](#10-screen-transition-specification)
-11. [Non-Functional Considerations](#11-non-functional-considerations)
-12. [Configurable Items (External Definitions)](#12-configurable-items-external-definitions)
-13. [Cross-Reference Traceability Matrix](#13-cross-reference-traceability-matrix)
+3. [State Transition Specification](#3-state-transition-specification)
+4. [Business Rules](#4-business-rules)
+5. [Screen Specifications](#5-screen-specifications)
+6. [Functional Operation Specification](#6-functional-operation-specification)
+7. [Input / Output Specification](#7-input--output-specification)
+8. [Input Validation Rules](#8-input-validation-rules)
+9. [Error Handling Specification](#9-error-handling-specification)
+10. [Permission and Access Control](#10-permission-and-access-control)
+11. [Real-Time Notification Behavior](#11-real-time-notification-behavior)
+12. [Screen Transition Specification](#12-screen-transition-specification)
+13. [Non-Functional Considerations](#13-non-functional-considerations)
+14. [Configurable Items (External Definitions)](#14-configurable-items-external-definitions)
+15. [Cross-Reference Traceability Matrix](#15-cross-reference-traceability-matrix)
 
 ---
 
@@ -63,6 +66,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 4. **Search** — Full-text search across action names, entity types, and user information.
 5. **CSV Export** — Exporting filtered audit log data in CSV format for external analysis and compliance reporting.
 6. **Real-Time Monitoring** — Auto-refresh capability to monitor recent system activity in near real-time.
+7. **Manual Deletion** — Authorized admins can manually delete DB audit log records and CSV export files that are at least 90 days old. No system auto-purge exists.
 
 ### 1.3 Target Users
 
@@ -70,7 +74,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 |-----------|-------|
 | **Primary Actor** | Platform Administrator |
 | **Required Authentication** | JWT Bearer Token (`admin` role) |
-| **Data Scope** | All platform audit log entries (append-only). |
+| **Data Scope** | All platform audit log entries (append-only, with admin manual deletion for records >= 90 days). |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
 
@@ -78,7 +82,8 @@ This document defines every screen, operation, business rule, and API endpoint t
 ┌──────────────────────────┐      ┌─────────────────────────────────────┐
 │   Admin Actor            │      │         audit_logs                  │
 │ (Views, Filters,        ├─────►│  Reads log entries                  │
-│  Exports Audit Logs)    │      │  Append-only (no write from UI)     │
+│  Exports, Deletes       │      │  Append-only + Admin Manual Delete  │
+│  Audit Logs & CSVs)     │      │  (>= 90 days only)                 │
 └──────────────────────────┘      └──────────────┬────────────────────┘
                                                  │
                                       ┌──────────┴─────────────┐
@@ -143,6 +148,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | UC-AUDIT-005 | Export Audit Logs (CSV) | Admin has applied filters to audit log list. | CSV file generated containing filtered audit log entries. | Admin |
 | UC-AUDIT-006 | View User Audit History | Admin wants to see all actions by a specific user. | Audit log list filtered to show only entries for the selected user. | Admin |
 | UC-AUDIT-007 | View Entity Audit History | Admin wants to see all changes to a specific entity. | Audit log list filtered to show only entries for the selected entity type and ID. | Admin |
+| UC-AUDIT-008 | Manually Delete Audit Logs & CSV Files | Admin wants to purge old audit records and exported CSV files. | DB audit log records and CSV export files aged >= 90 days are permanently deleted. Records and files younger than 90 days are rejected. | Admin |
 
 ### 2.2 Primary Business Workflow — Audit Log Viewing and Filtering
 
@@ -202,6 +208,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | 4 | Admin clicks "Export CSV" with current filters | — | CSV file generated and downloaded | System |
 | 5 | Admin optionally clicks "User Audit History" link on a log entry | — | List filtered by that user | Admin |
 | 6 | Admin optionally clicks "Entity Audit History" link on a log entry | — | List filtered by that entity | Admin |
+| 7 | **Manual delete path:** Admin selects records/files aged >= 90 days and confirms deletion | — | Selected records and files permanently deleted | Admin |
 
 ### 2.4 Relevant Requirements Covered
 
@@ -216,20 +223,72 @@ This document defines every screen, operation, business rule, and API endpoint t
 
 ---
 
-## 3. Business Rules
+## 3. State Transition Specification
 
-### 3.1 Audit Log Data Rules
+### 3.1 Audit Log Retention States
+
+| State | Description | Records Available to Admin | Allowed Write Operation |
+|-------|-------------|:--------------------------:|-------------------------|
+| `ACTIVE` | Append-only audit log record younger than 90 days. Cannot be deleted by anyone. | Yes | INSERT only |
+| `DELETABLE` | Audit log record aged >= 90 days (`AUDIT_LOG_MIN_RETENTION_DAYS`). Eligible for admin manual deletion. | Yes | INSERT only |
+| `DELETED` | Record removed by an authorized admin via manual delete. | No | None |
+
+### 3.2 CSV Export File States
+
+| State | Description | Transition Trigger |
+|-------|-------------|-------------------|
+| `NOT_STARTED` | No export job has been created for the request. | Admin submits a valid CSV export request |
+| `QUEUED` | Export request is accepted and waiting for processing. | Export request validation succeeds |
+| `PROCESSING` | Matching audit logs are read and the CSV file is generated. | Export worker starts |
+| `COMPLETED` | CSV file is available for download. Retained until admin manually deletes it. | File generation succeeds |
+| `FAILED` | CSV generation failed or the request exceeded a configured limit. | Processing or validation error |
+| `DELETED` | Generated export file removed by an authorized admin via manual delete. | Admin deletes the CSV file |
+
+CSV export transitions perform read-only queries against `audit_logs`. No export state transition deletes, archives, purges, updates, or otherwise modifies audit log records. Export files are retained indefinitely until manually deleted by an authorized admin.
+
+### 3.3 Auto-Refresh States
+
+| State | Description | Transition Trigger |
+|-------|-------------|-------------------|
+| `DISABLED` | The audit log list does not refresh automatically. | Admin turns auto-refresh off |
+| `ENABLED` | The list refreshes every `AUDIT_LOG_AUTO_REFRESH_INTERVAL` milliseconds. | Admin turns auto-refresh on |
+| `REFRESHING` | A read-only list request is in progress. | Refresh interval elapses or admin requests refresh |
+| `PAUSED` | Automatic refresh is temporarily paused while the page is hidden or a request is in flight. | Page visibility change or request overlap |
+| `ERROR` | The latest refresh request failed; existing list data remains unchanged. | Refresh request returns an error |
+
+### 3.4 State Transition Matrix
+
+| Transition ID | From State | To State | Trigger / Guard Condition |
+|---------------|------------|----------|---------------------------|
+| TR-AUDIT-001 | `ACTIVE` | `DELETABLE` | Record ages past 90 days (`>= AUDIT_LOG_MIN_RETENTION_DAYS`); no automatic action taken |
+| TR-AUDIT-002 | `DELETABLE` | `DELETED` | Authorized admin manually deletes the record via `DELETE /api/v1/admin/audit-logs/files` |
+| TR-AUDIT-003 | `NOT_STARTED` | `QUEUED` | Valid CSV export request submitted by an admin |
+| TR-AUDIT-004 | `QUEUED` | `PROCESSING` | Export worker starts the read-only query |
+| TR-AUDIT-005 | `PROCESSING` | `COMPLETED` | CSV file generated successfully; optional `audit.export` event appended |
+| TR-AUDIT-006 | `PROCESSING` | `FAILED` | Query, validation, storage, or generation failure |
+| TR-AUDIT-007 | `COMPLETED` | `DELETED` | Authorized admin manually deletes the CSV file via `DELETE /api/v1/admin/audit-logs/files` |
+| TR-AUDIT-008 | `DISABLED` | `ENABLED` | Admin enables auto-refresh |
+| TR-AUDIT-009 | `ENABLED` | `REFRESHING` | Refresh interval elapses |
+| TR-AUDIT-010 | `REFRESHING` | `ENABLED` | Read-only list query succeeds |
+| TR-AUDIT-011 | `REFRESHING` | `ERROR` | Read-only list query fails |
+
+---
+
+## 4. Business Rules
+
+### 4.1 Audit Log Data Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-AUDIT-001 | Append-Only | Audit logs are append-only. No UPDATE or DELETE operations are permitted on `audit_logs` table. | Backend (DB constraint + service) |
+| BR-AUDIT-001 | Append-Only with Admin Manual Deletion | Audit logs are append-only (no UPDATE). DELETE is permitted only for authorized admins (role: `admin`) manually deleting records that are at least 90 days old (`>= AUDIT_LOG_MIN_RETENTION_DAYS`). Records younger than 90 days cannot be deleted by anyone. | Backend (DB constraint + service) |
+| BR-AUDIT-007 | No System Auto-Purge | System background auto-deletion of both DB audit log records and exported CSV files is completely removed. There is no scheduled retention purge job. All deletion is manual and admin-initiated only. | Backend (no scheduled job) |
 | BR-AUDIT-002 | No Sensitive Data | Audit logs must never contain passwords, access tokens, refresh tokens, or authentication secrets in old_value or new_value fields. | Backend (service logic) |
 | BR-AUDIT-003 | Actor Identification | Each log entry must record the `user_id` of the actor. System-generated actions may have `user_id = NULL`. | Backend (service logic) |
 | BR-AUDIT-004 | Timestamp Accuracy | Each log entry must record `created_at` as the exact UTC timestamp of the action. | Backend (DB default) |
 | BR-AUDIT-005 | IP Address Capture | When available, the client IP address must be captured in `ip_address` field. | Backend (interceptor) |
 | BR-AUDIT-006 | User Agent Capture | When available, the client user agent must be captured in `user_agent` field. | Backend (interceptor) |
 
-### 3.2 Audit Event Coverage Rules
+### 4.2 Audit Event Coverage Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
@@ -243,7 +302,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | BR-AUDIT-017 | Payout Events | All payout processing events must be logged with amount and status. | Backend (commission-revenue module) |
 | BR-AUDIT-018 | Review Moderation Events | All review approve, reject, and flag events must be logged. | Backend (review-management module) |
 
-### 3.3 Viewing and Filtering Rules
+### 4.3 Viewing and Filtering Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
@@ -254,7 +313,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | BR-AUDIT-024 | Combined Filters | Multiple filters can be combined (AND logic). | Backend (query builder) |
 | BR-AUDIT-025 | Search Scope | Free-text search matches against `action`, `entity_type`, and joined `users.name` / `users.email`. | Backend (query logic) |
 
-### 3.4 Export Rules
+### 4.4 Export Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
@@ -262,26 +321,27 @@ This document defines every screen, operation, business rule, and API endpoint t
 | BR-AUDIT-031 | Export Applies Current Filters | Export generates data using the same filters currently applied to the list view. | Backend (query reuse) |
 | BR-AUDIT-032 | Export Date Range Limit | Maximum export date range is 365 days. | Backend (validation) |
 | BR-AUDIT-033 | Export Row Limit | Maximum 10,000 rows per export. If filtered results exceed this limit, admin is notified. | Backend (validation) |
-| BR-AUDIT-034 | Export Audit | Export actions themselves are logged to audit_logs with action `audit.export`. | Backend (service logic) |
+| BR-AUDIT-034 | Export Is Read-Only | CSV export using search, date range, or filters performs only SELECT/read operations. It MUST NOT delete, archive, purge, or modify any audit log record. Generated CSV export files are stored separately and managed via admin manual deletion only. | Backend (service and DB permissions) |
+| BR-AUDIT-035 | Export Audit | A successful export may append an `audit.export` event; recording that event does not modify or purge the exported records. | Backend (service logic) |
 
-### 3.5 Security Rules
+### 4.5 Security Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-AUDIT-040 | RBAC Enforcement | All audit log endpoints require `admin` role via JwtAuthGuard + RolesGuard. | Backend (NestJS guards) |
-| BR-AUDIT-041 | No Bulk Delete | Audit logs cannot be deleted or purged via the API. | Backend (no delete endpoints) |
+| BR-AUDIT-041 | Admin Manual Delete Only | Audit logs can be deleted only by authorized admins via `DELETE /api/v1/admin/audit-logs/files`. Only records and CSV files aged >= 90 days are eligible. Non-admin roles and records younger than 90 days are rejected. | Backend (delete endpoint + guard) |
 | BR-AUDIT-042 | No Modification | Audit logs cannot be modified via the API. | Backend (no update endpoints) |
 | BR-AUDIT-043 | Export Data Sanitization | Exported data must not include sensitive fields. | Backend (export service) |
 
 ---
 
-## 4. Screen Specifications
+## 5. Screen Specifications
 
-### 4.1 Screen: Admin Audit Log List (`/admin/audit-logs`)
+### 5.1 Screen: Admin Audit Log List (`/admin/audit-logs`)
 
 **Purpose:** Display all audit log entries in a sortable, filterable, paginated table.
 
-#### 4.1.1 UI Elements
+#### 5.1.1 UI Elements
 
 **Page Header:**
 
@@ -329,11 +389,11 @@ This document defines every screen, operation, business rule, and API endpoint t
 | AL-33 | Next Button | Button (secondary) | `audit.next` | No | Next page |
 | AL-34 | Page Size Select | Select | `audit.pageSize` | No | Items per page: 25, 50, 100, 200 |
 
-### 4.2 Screen: Audit Log Detail Modal
+### 5.2 Screen: Audit Log Detail Modal
 
 **Purpose:** Display full details of a single audit log entry including old/new values.
 
-#### 4.2.1 UI Elements
+#### 5.2.1 UI Elements
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
@@ -355,9 +415,9 @@ This document defines every screen, operation, business rule, and API endpoint t
 
 ---
 
-## 5. Functional Operation Specification
+## 6. Functional Operation Specification
 
-### 5.1 Operation: List Audit Logs
+### 6.1 Operation: List Audit Logs
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -367,7 +427,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | **Processing Steps** | 1. Validate JWT token and admin role. 2. Build query with filters (userId, action, entityType, entityId, date range, ipAddress). 3. If `search` provided, add LIKE conditions on `action`, `entity_type`, and joined `users.name`/`users.email`. 4. Apply sort (default: `created_at DESC`). 5. Paginate results. 6. For each entry, join with `users` table to get actor name/email. 7. Return paginated audit log list. |
 | **Success Response** | 200 OK with paginated audit log list |
 
-### 5.2 Operation: View Audit Log Detail
+### 6.2 Operation: View Audit Log Detail
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -376,17 +436,28 @@ This document defines every screen, operation, business rule, and API endpoint t
 | **Processing Steps** | 1. Validate JWT token and admin role. 2. Find audit log entry by ID. 3. Join with `users` table for actor details. 4. Return full audit log DTO with old_value, new_value, ip_address, user_agent. |
 | **Success Response** | 200 OK with audit log detail |
 
-### 5.3 Operation: Export Audit Logs (CSV)
+### 6.3 Operation: Export Audit Logs (CSV)
 
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | Click "Export CSV" button |
 | **API Endpoint** | `POST /api/v1/admin/audit-logs/export` |
 | **Request Body** | `{ userId?: string, action?: string, entityType?: string, entityId?: string, dateFrom?: string, dateTo?: string, ipAddress?: string, search?: string, format: 'csv' }` |
-| **Processing Steps** | 1. Validate JWT token and admin role. 2. Validate inputs (date range max 365 days). 3. Build query with same filters as list endpoint. 4. Check row count — if > 10,000 rows, return 400 with warning. 5. Generate CSV file with columns: Timestamp, Actor Name, Actor Email, Actor Role, Action, Entity Type, Entity ID, Old Value, New Value, IP Address, User Agent. 6. Store file in export storage with 24-hour TTL. 7. Log EXPORT_GENERATED event to audit_logs with action `audit.export`. 8. Return download URL. |
+| **Processing Steps** | 1. Validate JWT token and admin role. 2. Validate inputs (date range max 365 days). 3. Build a read-only query with the same filters as the list endpoint. 4. Check row count — if > 10,000 rows, return 400 with warning; do not modify audit logs. 5. Generate CSV file with columns: Timestamp, Actor Name, Actor Email, Actor Role, Action, Entity Type, Entity ID, Old Value, New Value, IP Address, User Agent. 6. Store file in export storage with no automatic TTL expiration (retained until admin manually deletes). 7. Optionally append an `audit.export` event to `audit_logs`; this event is independent of the exported records and does not delete, archive, purge, or update them. 8. Return download URL. |
 | **Success Response** | 200 OK with `{ downloadUrl: string }` |
 
-### 5.4 Operation: Get Available Filter Options
+### 6.4 Operation: Manual Delete Audit Logs and CSV Export Files
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Admin clicks "Delete Audit Logs & CSV Files" button and confirms |
+| **API Endpoint** | `DELETE /api/v1/admin/audit-logs/files` |
+| **Request Body** | `{ olderThanDays?: number, recordIds?: string[], fileIds?: string[] }` |
+| **Processing Steps** | 1. Validate JWT token and admin role. 2. If `olderThanDays` provided, validate it is >= `AUDIT_LOG_MIN_RETENTION_DAYS` (90). 3. Select DB audit log records where `created_at` is older than the specified threshold (default: 90 days). 4. Select generated CSV export files where `created_at` is older than the specified threshold. 5. Delete selected records and files in controlled batches. 6. Optionally append an `audit.admin.delete` event recording the deletion. 7. Return count of deleted records and files. |
+| **Success Response** | 200 OK with `{ deletedRecords: number, deletedFiles: number }` |
+| **Error Responses** | 400 if `olderThanDays` < 90; 403 if non-admin; 400 if no eligible records/files |
+
+### 6.5 Operation: Get Available Filter Options
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -397,9 +468,9 @@ This document defines every screen, operation, business rule, and API endpoint t
 
 ---
 
-## 6. Input / Output Specification
+## 7. Input / Output Specification
 
-### 6.1 Input Specification — List Audit Logs (入力定義)
+### 7.1 Input Specification — List Audit Logs (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
@@ -416,7 +487,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `sortBy` | Sort By | ソート | VARCHAR(50) | No | — | `@IsOptional()`, `@IsIn(['created_at', 'action', 'entity_type'])`, default 'created_at' |
 | `sortOrder` | Sort Order | ソート順 | VARCHAR(4) | No | — | `@IsOptional()`, `@IsIn(['asc', 'desc'])`, default 'desc' |
 
-### 6.2 Input Specification — Export Audit Logs (入力定義)
+### 7.2 Input Specification — Export Audit Logs (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
@@ -430,7 +501,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `search` | Search | 検索 | VARCHAR(255) | No | — | `@IsOptional()`, `@MaxLength(255)` |
 | `format` | Export Format | エクスポート形式 | ENUM | Yes | — | `@IsIn(['csv'])` |
 
-### 6.3 Output Specification — Audit Log List DTO (出力定義)
+### 7.3 Output Specification — Audit Log List DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -446,7 +517,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `ipAddress` | `audit_logs.ip_address` | String or null |
 | `createdAt` | `audit_logs.created_at` | ISO 8601 timestamp |
 
-### 6.4 Output Specification — Audit Log Detail DTO (出力定義)
+### 7.4 Output Specification — Audit Log Detail DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -464,18 +535,33 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `userAgent` | `audit_logs.user_agent` | String or null |
 | `createdAt` | `audit_logs.created_at` | ISO 8601 timestamp |
 
-### 6.5 Output Specification — Filter Options DTO (出力定義)
+### 7.5 Output Specification — Filter Options DTO (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
 | `actions` | DISTINCT `audit_logs.action` | String array |
 | `entityTypes` | DISTINCT `audit_logs.entity_type` | String array |
 
+### 7.6 Input Specification — Manual Delete Audit Logs & CSV Files (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `olderThanDays` | Minimum Age (Days) | 最小経過日数 | INTEGER | No | — | `@IsOptional()`, `@Min(90)`, default 90 |
+| `recordIds` | Record IDs | レコードID配列 | UUID[] | No | — | `@IsOptional()`, each `@IsUUID()` |
+| `fileIds` | File IDs | ファイルID配列 | UUID[] | No | — | `@IsOptional()`, each `@IsUUID()` |
+
+### 7.7 Output Specification — Manual Delete Result DTO (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `deletedRecords` | Count of deleted audit log records | Integer |
+| `deletedFiles` | Count of deleted CSV export files | Integer |
+
 ---
 
-## 7. Input Validation Rules
+## 8. Input Validation Rules
 
-### 7.1 List Audit Logs Validation (Strict Mode)
+### 8.1 List Audit Logs Validation (Strict Mode)
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
@@ -490,7 +576,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `sortBy` | Must be valid sort field | "Invalid sort field" | "無効なソートフィールドです" |
 | `sortOrder` | Must be 'asc' or 'desc' | "Sort order must be 'asc' or 'desc'" | "ソート順は'asc'または'desc'である必要があります" |
 
-### 7.2 Export Audit Logs Validation (Strict Mode)
+### 8.2 Export Audit Logs Validation (Strict Mode)
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
@@ -499,18 +585,28 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `dateTo` | Optional, valid date, >= dateFrom | "End date must be after start date" | "終了日は開始日より後である必要があります" |
 | Range | Max 365 days | "Date range cannot exceed 365 days" | "日付範囲は365日を超えることはできません" |
 | Row Count | Max 10,000 rows | "Export exceeds maximum row limit (10,000). Please narrow your filters." | "エクスポートが最大行制限（10,000）を超えています。フィルターを絞り込んでください。" |
+| Operation | Read-only SELECT/file generation; must not delete, archive, purge, or modify audit log records | "CSV export is read-only" | "CSVエクスポートは読み取り専用です" |
 
-### 7.3 Validation Enforcement Layers
+### 8.3 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
 3. **Database (Constraint)**: DB indexes as performance safety net.
 
+### 8.4 Manual Delete Audit Logs & CSV Files Validation (Strict Mode)
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `olderThanDays` | Optional, must be >= 90 if provided | "Minimum retention period is 90 days" | "最小保持期間は90日です" |
+| `recordIds` | Optional, each must be valid UUID | "Invalid record ID format" | "無効なレコードID形式です" |
+| `fileIds` | Optional, each must be valid UUID | "Invalid file ID format" | "無効なファイルID形式です" |
+| Age Check | Target records/files must be >= 90 days old | "Records and files younger than 90 days cannot be deleted" | "90日未満のレコードとファイルは削除できません" |
+
 ---
 
-## 8. Error Handling Specification
+## 9. Error Handling Specification
 
-### 8.1 Error Response Structure
+### 9.1 Error Response Structure
 
 ```json
 {
@@ -522,7 +618,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 }
 ```
 
-### 8.2 Error Classification Table — Audit Log Viewing
+### 9.2 Error Classification Table — Audit Log Viewing
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
@@ -533,16 +629,26 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `404` | `NOT_FOUND` | Audit log entry not found | "Audit log entry not found" |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
-### 8.3 Error Classification Table — Export
+### 9.3 Error Classification Table — Export
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
 | `400` | `BAD_REQUEST` | Invalid export format | "Export format must be CSV" |
 | `400` | `BAD_REQUEST` | Date range exceeds 365 days | "Date range cannot exceed 365 days" |
 | `400` | `BAD_REQUEST` | Export exceeds row limit | "Export exceeds maximum row limit (10,000). Please narrow your filters." |
+| `400` | `BAD_REQUEST` | Export attempted to perform a write or purge operation | "CSV export is read-only." |
 | `500` | `INTERNAL_SERVER_ERROR` | Export generation failed | "Report generation failed. Please try again." |
 
-### 8.4 Frontend Error Display Behavior
+### 9.4 Error Classification Table — Manual Deletion
+
+| HTTP Status | Error Code | Scenario | User-Facing Behavior |
+|-------------|------------|----------|---------------------|
+| `400` | `BAD_REQUEST` | `olderThanDays` is less than 90 | "Minimum retention period is 90 days. Records and files younger than 90 days cannot be deleted." |
+| `400` | `BAD_REQUEST` | No eligible records or files found | "No records or files eligible for deletion (must be >= 90 days old)." |
+| `403` | `FORBIDDEN` | Non-admin attempting deletion | "Access denied" |
+| `500` | `INTERNAL_SERVER_ERROR` | Deletion failed | "Deletion failed. Please try again." |
+
+### 9.5 Frontend Error Display Behavior
 
 - **Field-Level Validation**: Red border and inline text below invalid input.
 - **Form-Level Summary**: Alert banner at top of form listing all errors.
@@ -551,42 +657,69 @@ This document defines every screen, operation, business rule, and API endpoint t
 
 ---
 
-## 9. Permission and Access Control
+## 10. Permission and Access Control
 
-### 9.1 Authentication Requirements
+### 10.1 Authentication Requirements
 
 - JSON Web Token (JWT) Bearer Token passed via `Authorization` header for all endpoints.
 - Refresh token stored in httpOnly cookie for session management.
 
-### 9.2 Protected Endpoints (Admin Only)
+### 10.2 Protected Endpoints (Admin Only)
 
 | Endpoint | Method | Required Role | Description |
 |----------|--------|---------------|-------------|
 | `/api/v1/admin/audit-logs` | GET | `admin` | List audit logs with filters |
 | `/api/v1/admin/audit-logs/:id` | GET | `admin` | View audit log detail |
 | `/api/v1/admin/audit-logs/export` | POST | `admin` | Export audit logs as CSV |
+| `/api/v1/admin/audit-logs/files` | DELETE | `admin` | Manually delete audit log records and CSV export files aged >= 90 days |
 | `/api/v1/admin/audit-logs/filters` | GET | `admin` | Get available filter options |
 
-### 9.3 Role-Based Access
+### 10.3 Role-Based Access
 
-| Role | Can View Audit Logs | Can Export Audit Logs |
-|------|:-------------------:|:---------------------:|
-| `buyer` | No | No |
-| `merchant` | No | No |
-| `admin` | Yes | Yes |
+| Role | Can View Audit Logs | Can Export Audit Logs | Can Delete Audit Logs & CSV Files |
+|------|:-------------------:|:---------------------:|:---------------------------------:|
+| `buyer` | No | No | No |
+| `merchant` | No | No | No |
+| `admin` | Yes | Yes | Yes (records/files >= 90 days only) |
 
-### 9.4 Security Audit Logging
+### 10.4 Security Audit Logging
 
 | Event | Data Logged | Retention |
 |-------|-------------|-----------|
-| `AUDIT_VIEWED` | adminId, filters, resultCount, timestamp | 1 year |
-| `AUDIT_EXPORTED` | adminId, filters, rowCount, format, timestamp | 1 year |
+| `AUDIT_VIEWED` | adminId, filters, resultCount, timestamp | Governed by admin manual deletion |
+| `AUDIT_EXPORTED` | adminId, filters, rowCount, format, timestamp | Governed by admin manual deletion |
+| `AUDIT_DELETED` | adminId, deletedRecordCount, deletedFileCount, olderThanDays, timestamp | Governed by admin manual deletion |
 
 ---
 
-## 10. Screen Transition Specification
+## 11. Real-Time Notification Behavior
 
-### 10.1 Inbound Navigation
+### 11.1 Auto-Refresh Behavior
+
+The Admin Audit Log screen uses authenticated polling rather than WebSocket push. When enabled, the client requests the current filtered list every `AUDIT_LOG_AUTO_REFRESH_INTERVAL` milliseconds (default: 30 seconds).
+
+| Event | Trigger | Client Action | Data Operation |
+|-------|---------|---------------|----------------|
+| `autoRefreshEnabled` | Admin enables the toggle | Start the configured polling interval | Read-only `GET` request |
+| `auditLogRefresh` | Polling interval elapses | Reload the current page and filters | Read-only `SELECT` |
+| `newActivityDetected` | Response contains newer records | Update the list and show a non-blocking notification | No audit log mutation |
+| `autoRefreshDisabled` | Admin disables the toggle | Stop polling and retain the current list | None |
+| `refreshError` | Refresh request fails | Preserve existing data and show an error notification | No audit log mutation |
+
+### 11.2 Refresh and Consistency Rules
+
+- Auto-refresh uses the same filters, sort order, and pagination state currently shown by the administrator.
+- Refresh requests are read-only and MUST NOT delete, archive, purge, or update audit log records.
+- The client pauses polling when the page is hidden or when another refresh request is still in progress.
+- A failed refresh does not clear existing results; the next scheduled interval may retry.
+- Export actions are initiated explicitly by the administrator and are independent of auto-refresh.
+- Manual deletion of audit logs and CSV export files is initiated explicitly by the administrator and is independent of auto-refresh and export operations.
+
+---
+
+## 12. Screen Transition Specification
+
+### 12.1 Inbound Navigation
 
 | Source | Target | Condition |
 |--------|--------|-----------|
@@ -594,7 +727,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | Admin Dashboard | `/admin/audit-logs` | Click "Recent Activity" shortcut |
 | Any Admin Page | `/admin/audit-logs` | Click "View Audit Trail" link on entity detail |
 
-### 10.2 Internal Navigation
+### 12.2 Internal Navigation
 
 | Source | Target | Trigger |
 |--------|--------|---------|
@@ -603,7 +736,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 | `/admin/audit-logs` | `/admin/audit-logs?entityType=...&entityId=...` | Click "View Entity History" on log detail |
 | `/admin/audit-logs` | Entity Detail Page | Click entity ID link on log row |
 
-### 10.3 Modal Transitions
+### 12.3 Modal Transitions
 
 | Source | Target | Trigger |
 |--------|--------|---------|
@@ -611,9 +744,9 @@ This document defines every screen, operation, business rule, and API endpoint t
 
 ---
 
-## 11. Non-Functional Considerations
+## 13. Non-Functional Considerations
 
-### 11.1 Performance Requirements
+### 13.1 Performance Requirements
 
 | Metric | Target |
 |--------|--------|
@@ -623,18 +756,19 @@ This document defines every screen, operation, business rule, and API endpoint t
 | CSV Export Generation (≤10,000 rows) | ≤ 5 seconds |
 | Auto-Refresh Interval | 30 seconds |
 
-### 11.2 Security Considerations
+### 13.2 Security Considerations
 
 | Concern | Mitigation |
 |---------|------------|
 | Admin Bypass | RBAC enforced via JwtAuthGuard + RolesGuard on all endpoints |
-| Data Integrity | Audit logs are append-only (no UPDATE/DELETE in DB) |
+| Data Integrity | Audit logs are append-only (no UPDATE in DB); DELETE restricted to admin manual deletion for records >= 90 days only |
 | Sensitive Data Exposure | Passwords, tokens, secrets never logged in old_value/new_value |
 | Export Data Leakage | Exports exclude sensitive fields, logged to audit |
 | SQL Injection | Parameterized queries via Prisma ORM |
 | Large Dataset Performance | DB indexes on user_id, action, entity_type, entity_id, created_at |
+| Accidental Deletion | Minimum 90-day age requirement enforced; admin must confirm deletion; deletion logged as audit event |
 
-### 11.3 Responsive Design Requirements
+### 13.3 Responsive Design Requirements
 
 | Breakpoint | Layout |
 |------------|--------|
@@ -642,7 +776,21 @@ This document defines every screen, operation, business rule, and API endpoint t
 | Tablet (768px – 1023px) | Stacked filters, responsive table |
 | Mobile (< 768px) | Card-based log list, full-width modals |
 
-### 11.4 Accessibility Requirements
+### 13.4 Accessibility Requirements
+
+### 13.5 Background Jobs and Retention
+
+There is no system background auto-deletion job for audit log records or exported CSV files. All deletion of both DB audit log records and generated CSV export files is performed exclusively by authorized admins via manual deletion.
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Auto-Purge** | Completely removed. No scheduled background retention purge job exists. |
+| **Admin Manual Deletion** | Authorized admins (role: `admin`) can manually delete DB audit log records and CSV export files that are at least 90 days old via `DELETE /api/v1/admin/audit-logs/files`. |
+| **Minimum Age Requirement** | Records and CSV files younger than 90 days (`< AUDIT_LOG_MIN_RETENTION_DAYS`) cannot be deleted by anyone, including admins. |
+| **Export File Retention** | Generated CSV export files are retained indefinitely until manually deleted by an authorized admin. There is no automatic TTL expiration. |
+| **Auditability** | Each admin deletion is optionally logged as an `audit.admin.delete` event for traceability. |
+
+The Admin Audit Log UI exposes a manual delete operation for authorized admins. Export-file expiration deletes are removed; only admin-initiated manual deletion is supported.
 
 | Requirement | Implementation |
 |-------------|----------------|
@@ -653,7 +801,7 @@ This document defines every screen, operation, business rule, and API endpoint t
 
 ---
 
-## 12. Configurable Items (External Definitions)
+## 14. Configurable Items (External Definitions)
 
 Defined via `.env` configuration:
 
@@ -662,33 +810,32 @@ Defined via `.env` configuration:
 | `AUDIT_LOG_PAGE_SIZE` | `50` | Default number of entries per page |
 | `AUDIT_LOG_MAX_PAGE_SIZE` | `200` | Maximum entries per page |
 | `AUDIT_LOG_EXPORT_MAX_ROWS` | `10000` | Maximum rows per CSV export |
-| `AUDIT_LOG_EXPORT_RETENTION_HOURS` | `24` | Hours before generated export files are deleted |
 | `AUDIT_LOG_AUTO_REFRESH_INTERVAL` | `30000` | Auto-refresh interval in milliseconds |
-| `AUDIT_LOG_RETENTION_DAYS` | `730` | Days to retain audit logs (default: 2 years) |
+| `AUDIT_LOG_MIN_RETENTION_DAYS` | `90` | Minimum age (in days) before audit log records or CSV export files can be manually deleted by an admin. Records and files younger than this value are protected from deletion. |
 
 ---
 
-## 13. Cross-Reference Traceability Matrix
+## 15. Cross-Reference Traceability Matrix
 
-### 13.1 Requirements Definition Traceability
+### 15.1 Requirements Definition Traceability
 
 | Requirement ID | Requirement Description | Covered By (This Document) |
 |----------------|-------------------------|----------------------------|
-| B-ADM-016 | Audit logs record all significant system actions | UC-AUDIT-001~007, BR-AUDIT-010~018 |
-| B-ADM-017 | Audit logs track who did what, when, with before/after values | UC-AUDIT-004, Sec 6.4, BR-AUDIT-003~004 |
-| B-ADM-018 | Audit logs are filterable by user, action type, entity | UC-AUDIT-002~003, Sec 5.1, BR-AUDIT-020~025 |
-| B-ADM-019 | Audit logs are append-only (no UPDATE or DELETE) | BR-AUDIT-001, BR-AUDIT-041~042 |
-| B-ADM-020 | Only admins can view audit logs | UC-AUDIT-001~007, Sec 9, BR-AUDIT-040 |
+| B-ADM-016 | Audit logs record all significant system actions | UC-AUDIT-001~008, BR-AUDIT-010~018 |
+| B-ADM-017 | Audit logs track who did what, when, with before/after values | UC-AUDIT-004, Sec 7.4, BR-AUDIT-003~004 |
+| B-ADM-018 | Audit logs are filterable by user, action type, entity | UC-AUDIT-002~003, Sec 6.1, BR-AUDIT-020~025 |
+| B-ADM-019 | Audit logs are append-only with admin-only manual deletion for records >= 90 days | BR-AUDIT-001, BR-AUDIT-041 |
+| B-ADM-020 | Only admins can view audit logs | UC-AUDIT-001~008, Sec 10, BR-AUDIT-040 |
 | B-ADM-021 | Audit log data excludes sensitive fields | BR-AUDIT-002, BR-AUDIT-043 |
 
-### 13.2 Database Design Traceability
+### 15.2 Database Design Traceability
 
 | Database Table | Relevant Functional Operations |
 |----------------|-------------------------------|
-| `audit_logs` | List Logs (SELECT), View Detail (SELECT), Export (SELECT) |
+| `audit_logs` | List Logs (SELECT), View Detail (SELECT), Export (SELECT), Manual Delete (DELETE) |
 | `users` | Join for actor info (JOIN) |
 
-### 13.3 Related Document References
+### 15.3 Related Document References
 
 | Document ID | Document Name | File Path |
 |-------------|---------------|-----------|

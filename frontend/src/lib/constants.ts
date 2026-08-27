@@ -2,7 +2,7 @@ import type { UserRole } from '@/types/auth.types'
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Cosmetics Finder'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
 export const TOKEN_KEYS = {
   ACCESS: 'accessToken',
@@ -20,6 +20,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   PROFILE: '/dashboard/profile',
   SETTINGS: '/dashboard/settings',
+  BUYER_DASHBOARD: '/buyer',
   MERCHANT_DASHBOARD: '/merchant',
   ADMIN_DASHBOARD: '/admin',
   ADMIN_CREATE_ADMIN: '/admin/create-admin',
@@ -33,6 +34,7 @@ export function getDashboardRoute(role: UserRole): string {
     case 'super_admin':
       return ROUTES.ADMIN_DASHBOARD
     case 'buyer':
+      return ROUTES.BUYER_DASHBOARD
     default:
       return ROUTES.HOME
   }

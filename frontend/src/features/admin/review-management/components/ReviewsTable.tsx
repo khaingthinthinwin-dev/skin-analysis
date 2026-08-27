@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Trash2 } from 'lucide-react';
 
 interface ReviewsTableProps {
-  reviews?: any[];
+  reviews?: Record<string, unknown>[];
   onApprove?: (id: string) => void;
   onDelete?: (id: string) => void;
 }

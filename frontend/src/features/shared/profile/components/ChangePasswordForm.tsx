@@ -46,7 +46,7 @@ export function ChangePasswordForm() {
       })
       toast.success(t('profile.password.success', 'Password changed successfully'))
       form.reset()
-    } catch (error) {
+    } catch {
       toast.error(t('profile.password.error', 'Failed to change password'))
     }
   }

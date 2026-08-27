@@ -1,8 +1,7 @@
 // [PET] Review Management - Moderate product reviews and handle reports
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useModeration } from '@/features/admin/content-moderation/hooks/useModeration';
 import { ReviewsTable } from '@/features/admin/review-management/components/ReviewsTable';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toast';
@@ -90,7 +89,7 @@ export default function ReviewManagement() {
                 <p className="text-center py-6 text-muted-foreground">No review reports.</p>
               ) : (
                 <div className="space-y-4">
-                  {reviewReportsQuery.data?.items?.map((report: any) => (
+                  {reviewReportsQuery.data?.items?.map((report: Record<string, unknown>) => (
                     <div key={report.id} className="border rounded-lg p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <div>

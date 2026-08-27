@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -28,11 +28,11 @@ import {
 } from '@/components/ui/form'
 import { useAuth } from '@/hooks/useAuth'
 import { registerSchema, type RegisterFormData } from '@/schemas/auth.schema'
-import { ROUTES } from '@/lib/constants'
+import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
 export default function Register() {
   const { t } = useTranslation()
-  const { register } = useAuth()
+  const { register, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -55,6 +55,9 @@ export default function Register() {
     },
     mode: 'onTouched',
   })
+
+  if (authLoading) return null
+  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
 
   const password = form.watch('password')
   const role = form.watch('role')
