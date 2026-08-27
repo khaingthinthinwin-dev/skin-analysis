@@ -49,8 +49,8 @@ export class AdminService {
     const { role, is_active, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: { role?: string; isActive?: boolean } = {};
-    if (role) where.role = role;
+    const where: { roleCode?: string; isActive?: boolean } = {};
+    if (role) where.roleCode = role;
     if (is_active !== undefined) where.isActive = is_active;
 
     const [items, total] = await Promise.all([
@@ -60,7 +60,7 @@ export class AdminService {
           id: true,
           email: true,
           name: true,
-          role: true,
+          roleCode: true,
           isActive: true,
           emailVerified: true,
           createdAt: true,
