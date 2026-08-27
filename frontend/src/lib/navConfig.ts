@@ -150,6 +150,41 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
       },
     ],
   },
+  super_admin: {
+    portalTitle: 'Admin Console',
+    roleLabel: 'Admin',
+    roleBadgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+    sections: [
+      {
+        title: 'Overview',
+        items: [
+          { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+        ],
+      },
+      {
+        title: 'Management',
+        items: [
+          { label: 'Users', href: '/admin/users', icon: Users },
+          { label: 'Merchants', href: '/admin/merchants', icon: UserCheck },
+          { label: 'Advertisements', href: '/admin/advertisements', icon: Megaphone },
+          { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
+          { label: 'Content', href: '/admin/content', icon: FileText },
+        ],
+      },
+      {
+        title: 'Finance & Governance',
+        items: [
+          { label: 'Commission & Revenue', href: '/admin/commission-revenue', icon: DollarSign },
+          { label: 'Audit Logs', href: '/admin/audit-logs', icon: ClipboardList },
+        ],
+      },
+      {
+        title: 'Account',
+        items: [
+          { label: 'Admin Profile', href: '/admin/profile', icon: ShieldCheck },
+          { label: 'Notifications', href: '/admin/notifications', icon: Bell },
+        ],
+      },
+    ],
+  },
 }
-
-roleNavConfigs.super_admin = roleNavConfigs.admin

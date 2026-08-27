@@ -8,8 +8,6 @@ import {
   ChevronRight,
   Shield,
   Zap,
-  Award,
-  Gem,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -43,13 +41,6 @@ export default function Home() {
       description:
         'Curated selection of premium skincare products from trusted brands and dermatologists.',
     },
-  ]
-
-  const benefits = [
-    { icon: Shield, title: 'Dermatologist Approved', description: 'All recommendations are backed by skin experts' },
-    { icon: Zap, title: 'Instant Results', description: 'Get your personalized analysis in under 30 seconds' },
-    { icon: Award, title: 'Premium Quality', description: 'Only the finest products make it to our recommendations' },
-    { icon: Gem, title: 'Personalized Care', description: 'Every recommendation is unique to your skin profile' },
   ]
 
   return (

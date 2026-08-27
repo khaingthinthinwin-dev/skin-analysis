@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { Outlet } from 'react-router'
 import { Menu, Bell, HelpCircle, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
 import { Sidebar } from '@/components/layout/Sidebar'
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -51,7 +52,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-muted/10">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

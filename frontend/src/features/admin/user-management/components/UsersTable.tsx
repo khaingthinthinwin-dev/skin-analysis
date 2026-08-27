@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 interface UsersTableProps {
-  users?: any[];
+  users?: Record<string, unknown>[];
   onToggleStatus?: (userId: string, currentStatus: boolean) => void;
 }
 

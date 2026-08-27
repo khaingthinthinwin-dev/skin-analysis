@@ -19,7 +19,7 @@ interface RadioGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 let groupCounter = 0
 
 const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
-  ({ className, children, onValueChange, value, defaultValue, name, ...props }, ref) => {
+  ({ className, children, onValueChange, value, name, ...props }, ref) => {
     const groupName = React.useMemo(() => name || `radio-group-${++groupCounter}`, [name])
 
     return (

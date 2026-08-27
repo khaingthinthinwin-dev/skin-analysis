@@ -1,7 +1,6 @@
-import { Wand2, Sparkles, Star, ShoppingCart, ArrowRight } from 'lucide-react'
+import { Wand2, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Link } from 'react-router'
 
 export default function MatchingRecommendations() {
   const recommendations = [

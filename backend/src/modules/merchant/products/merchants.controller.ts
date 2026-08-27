@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Param,
-  Query,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query, Body } from '@nestjs/common';
 import { MerchantsService } from './merchants.service';
 
 @Controller('merchants')

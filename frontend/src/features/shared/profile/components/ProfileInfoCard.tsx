@@ -55,7 +55,7 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
         {/* Avatar and Name Section */}
         <div className="flex items-center space-x-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={profile.avatarUrl || undefined} alt={profile.name} />
+            <AvatarImage src={profile.avatar || undefined} alt={profile.name} />
             <AvatarFallback className="text-lg">{getInitials(profile.name)}</AvatarFallback>
           </Avatar>
           <div className="space-y-1">

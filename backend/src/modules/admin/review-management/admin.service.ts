@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -48,7 +49,7 @@ export class AdminService {
     const { role, is_active, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { role?: string; isActive?: boolean } = {};
     if (role) where.role = role;
     if (is_active !== undefined) where.isActive = is_active;
 
@@ -109,7 +110,7 @@ export class AdminService {
     const { page = 1, limit = 20, is_approved } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { isApproved?: boolean } = {};
     if (is_approved !== undefined) where.isApproved = is_approved;
 
     const [items, total] = await Promise.all([
@@ -161,7 +162,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { status?: string } = {};
     if (status) where.status = status;
 
     const [items, total] = await Promise.all([
@@ -255,7 +256,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { licenseStatus?: string } = {};
     if (status) where.licenseStatus = status;
 
     const [items, total] = await Promise.all([
@@ -336,7 +337,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { approvalStatus?: string } = {};
     if (status) where.approvalStatus = status;
 
     const [items, total] = await Promise.all([
@@ -446,7 +447,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { status?: string } = {};
     if (status) where.status = status;
 
     const [items, total] = await Promise.all([
@@ -502,7 +503,7 @@ export class AdminService {
     const { page = 1, limit = 20, action, userId } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: { action?: { contains: string }; userId?: string } = {};
     if (action) where.action = { contains: action };
     if (userId) where.userId = userId;
 

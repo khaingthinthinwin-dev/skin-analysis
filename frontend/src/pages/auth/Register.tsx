@@ -34,9 +34,6 @@ export default function Register() {
   const { t } = useTranslation()
   const { register, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const navigate = useNavigate()
-
-  if (authLoading) return null
-  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -58,6 +55,9 @@ export default function Register() {
     },
     mode: 'onTouched',
   })
+
+  if (authLoading) return null
+  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
 
   const password = form.watch('password')
   const role = form.watch('role')

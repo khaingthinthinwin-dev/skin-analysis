@@ -31,9 +31,6 @@ export default function Login() {
   const { t } = useTranslation()
   const { login, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const navigate = useNavigate()
-
-  if (authLoading) return null
-  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +43,9 @@ export default function Login() {
     },
     mode: 'onTouched',
   })
+
+  if (authLoading) return null
+  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
