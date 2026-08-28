@@ -29,7 +29,6 @@ export function UserNav() {
 
   const handleLogout = () => {
     logout()
-    window.location.href = ROUTES.HOME
   }
 
   return (

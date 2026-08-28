@@ -58,6 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('refreshToken')
     setUser(null)
     queryClient.clear()
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      window.location.href = '/'
+    }
   }, [queryClient])
 
   const refreshUser = useCallback(async () => {

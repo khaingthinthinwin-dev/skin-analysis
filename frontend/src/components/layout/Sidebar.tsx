@@ -44,6 +44,11 @@ export function Sidebar({
   const handleLogout = overrideLogout || authLogout
   const config = roleNavConfigs[activeRole] || roleNavConfigs.buyer
 
+  const handleLogoutClick = () => {
+    handleLogout()
+    onClose()
+  }
+
   const renderBadge = (item: NavItem) => {
     if (!item.badge) return null
 
@@ -233,10 +238,7 @@ export function Sidebar({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  handleLogout()
-                  onClose()
-                }}
+                onClick={handleLogoutClick}
                 className="shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 title={t('common.logout', 'Log out')}
                 aria-label={t('common.logout', 'Log out')}
@@ -247,10 +249,7 @@ export function Sidebar({
           </div>
         ) : (
           <button
-            onClick={() => {
-              handleLogout()
-              onClose()
-            }}
+            onClick={handleLogoutClick}
             className={cn(
               'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-destructive/10 hover:text-destructive',
               isCollapsed && 'justify-center'
