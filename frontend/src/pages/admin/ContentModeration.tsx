@@ -7,6 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
+interface FlaggedProduct {
+  id: string;
+  name: string;
+  category?: { name: string };
+  merchant?: { shopName: string };
+}
+
 export default function ContentModeration() {
   const { flaggedContentQuery, deactivateProductMutation } = useModeration();
 
@@ -68,7 +75,7 @@ export default function ContentModeration() {
                 </TableCell>
               </TableRow>
             ) : (
-              flaggedContentQuery.data?.items?.map((product: Record<string, unknown>) => (
+              flaggedContentQuery.data?.items?.map((product: FlaggedProduct) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category?.name || 'N/A'}</TableCell>
@@ -80,7 +87,7 @@ export default function ContentModeration() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => handleRemove(product.id, product.name)}
+                      onClick={() => handleRemove(String(product.id), String(product.name))}
                       disabled={deactivateProductMutation.isPending}
                     >
                       Remove
