@@ -157,6 +157,48 @@ The Recommendations page is the personalized product discovery entry point in th
 └──────────────────────────────────────────────────────────────────┘
 ```
 
+#### Recommendations Page — Stale Analysis State (`source = "ai"`, analysis > 24h old)
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│                         BROWSER VIEWPORT                         │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  [A] PAGE HEADER                                           │  │
+│  │  [A1] Page Title: "Recommended for You"                    │  │
+│  │  [A2] Source Badge: "🧬 AI Analysis" (emerald green)       │  │
+│  │  [A3] Source Subtitle: "Based on your AI analysis · {N}"   │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  [A4] RETAKE PROMPT BANNER (subtle compact)                │  │
+│  │  "💡 Want Fresh Results?"                                   │  │
+│  │  "Retake your skin analysis for updated recommendations"   │  │
+│  │  Right: CTA "Retake Analysis →"                            │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  [D0] AD SLIDE-DOWN PANEL (carousel)                       │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────────────────────────────────┐  │
+│  │  [B] FILTERS │  │  [C] RECOMMENDATION GRID                 │  │
+│  │  PANEL       │  │  4 columns desktop / 2 tablet / 1 mobile │  │
+│  │              │  │                                          │  │
+│  │  [B1] Skin   │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐   │  │
+│  │  Type (pre-  │  │  │Card 1│ │Card 2│ │Card 3│ │Card 4│   │  │
+│  │  selected)   │  │  │92%   │ │87%   │ │85%   │ │80%   │   │  │
+│  │              │  │  │match │ │match │ │match │ │match │   │  │
+│  │  [B2] Price  │  │  └──────┘ └──────┘ └──────┘ └──────┘   │  │
+│  │  Range       │  │                                          │  │
+│  │              │  │  [C5] PAGINATION (desktop)               │  │
+│  └──────────────┘  └──────────────────────────────────────────┘  │
+│                                                                  │
+│  [E] HISTORY SECTION (shown when history exists)                 │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
 ### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
 | Breakpoint | Min Width | Layout Behavior |
@@ -177,10 +219,10 @@ The Recommendations page is the personalized product discovery entry point in th
 | 1 | `lblPageTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "Recommended for You" / "あなたへのおすすめ" | — | Hardcoded UI text | Shown for both `source = "ai"` and `source = "generic"`. i18n key: `matching.title`. |
 | 2 | `lblSourceBadge` | Source Badge | Badge / Pill | Enum | — | Conditional. If `source = "ai"`: "🧬 AI Analysis" (emerald green). If `source = "generic"`: "⬡ General Picks" (amber). | — | `response.source` | Tailwind: `bg-emerald-100 text-emerald-800` (ai) or `bg-amber-100 text-amber-800` (generic). i18n key: `matching.source`. |
 | 3 | `lblSourceSubtitle` | Source Subtitle | Text (`<p>`) | String | — | If `source = "ai"`: "Based on your AI analysis · {skinType} · {N} results". If `source = "generic"`: "Showing featured products · No skin analysis found". | — | `response.source`, `response.meta.total` | i18n key: `matching.subtitle`. Dynamic interpolation. |
-| 4 | `lnkStartAnalysis` | Start Skin Analysis CTA | Link / Button (`<Link>`) | String | Conditional | Visible only when `source = "generic"`. Text: "✦ Start Skin Analysis →". Rose-gold styling. | — | — | Navigates to `/buyer/skin-analysis`. Part of Profile Prompt Banner (A4). i18n key: `matching.profilePrompt.cta`. |
-| 5 | `lblProfilePromptHeading` | Profile Prompt Heading | Heading (`<h3>`) | String | Conditional | Visible only when `source = "generic"`. Text: "Get Personalized Recommendations". | — | Hardcoded UI text | Part of Profile Prompt Banner (A4). i18n key: `matching.profilePrompt.heading`. |
-| 6 | `lblProfilePromptBody` | Profile Prompt Body | Text (`<p>`) | String | Conditional | Visible only when `source = "generic"`. Text: "Run an AI skin analysis to receive products matched to your skin type and concerns". | — | Hardcoded UI text | Part of Profile Prompt Banner (A4). i18n key: `matching.profilePrompt.body`. |
-| 7 | `imgProfilePromptIllustration` | Profile Prompt Illustration | Image (`<img>`) | URL | Conditional | Visible only when `source = "generic"`. AI face scan illustration. | — | Static asset | Part of Profile Prompt Banner (A4). Alt text: "AI Skin Analysis Illustration". |
+| 4 | `lnkStartAnalysis` | Start Skin Analysis CTA | Link / Button (`<Link>`) | String | Conditional | **3 states:** (a) `source = "generic"`: Visible. Text: "✦ Start Skin Analysis →". Rose-gold styling. (b) `source = "ai"` AND analysis > 24h old: Visible. Text: "Retake Analysis →". Subtle styling. (c) `source = "ai"` AND analysis ≤ 24h old: Hidden. | — | — | Navigates to `/buyer/skin-analysis`. Part of Profile Prompt Banner (A4). i18n key: `matching.profilePrompt.cta` or `matching.profilePrompt.retake.cta`. |
+| 5 | `lblProfilePromptHeading` | Profile Prompt Heading | Heading (`<h3>`) | String | Conditional | **3 states:** (a) `source = "generic"`: "Get Personalized Recommendations". (b) `source = "ai"` AND analysis > 24h old: "Want Fresh Results?". (c) `source = "ai"` AND analysis ≤ 24h old: Hidden. | — | Hardcoded UI text | Part of Profile Prompt Banner (A4). i18n key: `matching.profilePrompt.heading` or `matching.profilePrompt.retake.heading`. |
+| 6 | `lblProfilePromptBody` | Profile Prompt Body | Text (`<p>`) | String | Conditional | **3 states:** (a) `source = "generic"`: "Run an AI skin analysis to receive products matched to your skin type and concerns". (b) `source = "ai"` AND analysis > 24h old: "Retake your skin analysis for updated recommendations". (c) `source = "ai"` AND analysis ≤ 24h old: Hidden. | — | Hardcoded UI text | Part of Profile Prompt Banner (A4). i18n key: `matching.profilePrompt.body` or `matching.profilePrompt.retake.body`. |
+| 7 | `imgProfilePromptIllustration` | Profile Prompt Illustration | Image (`<img>`) | URL | Conditional | **3 states:** (a) `source = "generic"`: Visible. AI face scan illustration. (b) `source = "ai"` AND analysis > 24h old: Hidden (subtle banner has no illustration). (c) `source = "ai"` AND analysis ≤ 24h old: Hidden. | — | Static asset | Part of Profile Prompt Banner (A4). Alt text: "AI Skin Analysis Illustration". |
 
 ### 4.2 Section [B]: Filters Panel (フィルターパネル)
 
@@ -591,6 +633,9 @@ The Recommendations page is the personalized product discovery entry point in th
 | `matching.profilePrompt.heading` | "Get Personalized Recommendations" |
 | `matching.profilePrompt.body` | "Run an AI skin analysis to receive products matched to your skin type and concerns" |
 | `matching.profilePrompt.cta` | "Start Skin Analysis →" |
+| `matching.profilePrompt.retake.heading` | "Want Fresh Results?" |
+| `matching.profilePrompt.retake.body` | "Retake your skin analysis for updated recommendations" |
+| `matching.profilePrompt.retake.cta` | "Retake Analysis →" |
 | `matching.filtersTitle` | "Filters" |
 | `matching.filters.skinType` | "Skin Type" |
 | `matching.filters.minPrice` | "Min Price" |
@@ -630,6 +675,9 @@ The Recommendations page is the personalized product discovery entry point in th
 | `matching.profilePrompt.heading` | "パーソナライズされたおすすめを受け取る" |
 | `matching.profilePrompt.body` | "AI肌分析を実行して、あなたの肌タイプや悩みに合った商品を受け取りましょう" |
 | `matching.profilePrompt.cta` | "肌分析を開始 →" |
+| `matching.profilePrompt.retake.heading` | "最新の結果を確認しますか？" |
+| `matching.profilePrompt.retake.body` | "肌分析をやり直して、最新のおすすめを受け取りましょう" |
+| `matching.profilePrompt.retake.cta` | "肌分析をやり直す →" |
 | `matching.filtersTitle` | "フィルター" |
 | `matching.filters.skinType` | "肌タイプ" |
 | `matching.filters.minPrice` | "最低価格" |
@@ -669,6 +717,9 @@ The Recommendations page is the personalized product discovery entry point in th
 | `matching.profilePrompt.heading` | "ကိုယ်ပိုင်လုပ်ဆောင်ချက် အကြံပြုချက်များ ရယူပါ" |
 | `matching.profilePrompt.body` | "သင့်အသားအရေအမျိုးအစားနှင့် ပြဿနာများနှင့် ကိုက်ညီသည့် ထုတ်ကုန်များ ရရှိရန် AI အသားအရေ ခွဲခမ်းစိတ်ဖြာချက်ကို ဆောင်ရွက်ပါ" |
 | `matching.profilePrompt.cta` | "အသားအရေ ခွဲခမ်းစိတ်ဖြာချက် စတင်ပါ →" |
+| `matching.profilePrompt.retake.heading` | "နောက်ဆုံးရလဒ်များ ရလိုပါသလား?" |
+| `matching.profilePrompt.retake.body` | "အသားအရေ ခွဲခမ်းစိတ်ဖြာချက်ကို ပြန်လည်ဆောင်ရွက်ပြီး နောက်ဆုံးအကြံပြုချက်များ ရရှိပါ" |
+| `matching.profilePrompt.retake.cta` | "အသားအရေ ခွဲခမ်းစိတ်ဖြာချက် ပြန်လည်ဆောင်ရွက်ပါ →" |
 | `matching.filtersTitle` | "ဇကာ" |
 | `matching.filters.skinType` | "အသားအရေအမျိုးအစား" |
 | `matching.filters.minPrice` | "အနည်းဆုံးစျေးနှုန်း" |

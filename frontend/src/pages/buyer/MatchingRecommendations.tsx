@@ -1,48 +1,83 @@
-import { Wand2, ShoppingCart } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Wand2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { MatchResultList } from '@/features/buyer/matching/components/MatchResultList'
+import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
+import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
+import { RecommendationHistory } from '@/features/buyer/matching/components/RecommendationHistory'
+import { SkinTypeFilter } from '@/features/buyer/matching/components/SkinTypeFilter'
+import { usePersonalizedRecommendations, useRecommendationHistory, useAdPanel } from '@/features/buyer/matching/hooks/useMatching'
 
 export default function MatchingRecommendations() {
-  const recommendations = [
-    { id: 1, name: 'Centella Soothing Calming Gel Cream', reason: 'Matches your Combination skin & reduces redness', score: '96%', price: '$28.00', rating: 4.9 },
-    { id: 2, name: 'Hyaluronic Acid Hydrating Essence', reason: 'Provides deep hydration without clogging pores', score: '94%', price: '$34.00', rating: 4.8 },
-    { id: 3, name: 'Gentle Salicylic Acid Cleansing Foam', reason: 'Controls T-Zone oiliness and prevents breakout', score: '91%', price: '$22.50', rating: 4.7 },
-  ]
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([])
+
+  // TODO: Parse search params and fetch data
+  const params = {
+    skinTypes: searchParams.get('skinTypes') || undefined,
+    minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
+    maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
+    sort: searchParams.get('sort') as any || undefined,
+    order: searchParams.get('order') as any || undefined,
+    page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
+  }
+
+  const { data, isLoading } = usePersonalizedRecommendations(params)
+  const { data: historyData } = useRecommendationHistory()
+  const { data: adData } = useAdPanel()
+
+  const source = data?.source || 'generic'
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">AI Matched Recommendations</h1>
-        <p className="text-sm text-muted-foreground">Personalized product list generated based on your skin profile score</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+          Recommended for You
+        </h1>
+        <Badge variant={source === 'ai' ? 'default' : 'secondary'} className="mt-2">
+          {source === 'ai' ? '🧬 AI Analysis' : '⬡ General Picks'}
+        </Badge>
       </div>
 
-      {/* Recommendations Cards */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {recommendations.map((item) => (
-          <Card key={item.id} className="border-border/80 shadow-xs flex flex-col justify-between">
-            <div className="relative h-40 bg-gradient-to-tr from-purple-100/70 to-pink-100/70 flex items-center justify-center p-4">
-              <span className="absolute top-3 right-3 rounded-full bg-purple-600 text-white px-2.5 py-0.5 text-xs font-extrabold shadow-xs">
-                {item.score} Match
-              </span>
-              <Wand2 className="h-12 w-12 text-purple-600" />
-            </div>
-            <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-              <div>
-                <h3 className="text-base font-bold text-foreground line-clamp-1">{item.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.reason}</p>
-              </div>
+      {/* Profile Prompt Banner */}
+      <ProfilePromptBanner source={source} />
 
-              <div className="flex items-center justify-between pt-3 border-t border-border/50">
-                <span className="text-lg font-extrabold text-foreground">{item.price}</span>
-                <Button size="sm" className="gap-1.5 font-bold">
-                  <ShoppingCart className="h-4 w-4" /> Add to Cart
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Ad Panel */}
+      {adData?.data && (
+        <AdSlidePanel ads={adData.data} />
+      )}
+
+      <div className="flex gap-6">
+        {/* Filters Sidebar */}
+        <aside className="hidden lg:block w-64 shrink-0">
+          <SkinTypeFilter
+            selected={selectedSkinTypes}
+            onChange={setSelectedSkinTypes}
+          />
+          {/* TODO: Add price range, ingredients, sort filters */}
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1 space-y-6">
+          <MatchResultList
+            products={data?.data || []}
+            source={source}
+            isLoading={isLoading}
+          />
+
+          {/* TODO: Add pagination */}
+        </div>
       </div>
+
+      {/* History Section */}
+      {historyData?.data && historyData.data.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold">Previously Recommended</h2>
+          <RecommendationHistory sessions={historyData.data} />
+        </section>
+      )}
     </div>
   )
 }

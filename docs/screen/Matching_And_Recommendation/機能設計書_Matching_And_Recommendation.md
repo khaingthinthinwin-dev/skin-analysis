@@ -290,8 +290,9 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 
 | Source | Description | Used When | UI Indicators | Can Refresh |
 |--------|-------------|-----------|---------------|:-----------:|
-| `AI_ANALYSIS` | Latest valid AI skin analysis result (skin type + conditions) | Latest completed analysis is no more than 24 hours old | Badge: "🧬 AI Analysis" (emerald green) · Match score badges on cards · History section visible when sessions exist | ✓ (run new analysis) |
-| `GENERIC` | Featured + top-rated products as fallback. Page displays a profile prompt banner asking to run a new AI analysis. | No valid analysis is available, including when the latest analysis is older than 24 hours | Badge: "⬡ General Picks" (amber) · Category badges on cards · History section remains visible when sessions exist | ✓ (run new analysis) |
+| `AI_ANALYSIS` (fresh) | Latest valid AI skin analysis result (skin type + conditions) | Latest completed analysis is no more than 24 hours old | Badge: "🧬 AI Analysis" (emerald green) · Match score badges on cards · **No** prompt banner · History section visible when sessions exist | ✓ (run new analysis) |
+| `AI_ANALYSIS` (stale) | AI analysis exists but is older than 24 hours | Latest completed analysis is more than 24 hours old | Badge: "🧬 AI Analysis" (emerald green) · Match score badges on cards · **Subtle** prompt banner: "Want Fresh Results?" · History section visible when sessions exist | ✓ (retake analysis) |
+| `GENERIC` | Featured + top-rated products as fallback | No valid analysis is available | Badge: "⬡ General Picks" (amber) · Category badges on cards · **Prominent** prompt banner: "Start Skin Analysis →" · History section remains visible when sessions exist | ✓ (run new analysis) |
 
 ---
 
@@ -304,7 +305,7 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 | BR-MATCH-001 | Recommendation Source Selection | The recommendations page has no buyer-selected mode. If the buyer's latest completed AI analysis is no more than 24 hours old, return `source = "ai"` and AI-based recommendations. If no valid analysis is available, including a stale analysis older than 24 hours, return `source = "generic"` and generic featured/top-rated recommendation results with the profile prompt banner. | Backend (matching service) |
 | BR-MATCH-002 | Authentication for Recommendations | The `/buyer/recommendations` page and personalized API require a valid JWT and a `buyer` role (or higher). Guest / unauthenticated users are blocked and redirected to login. | Backend (JwtAuthGuard) + Frontend Router |
 | BR-MATCH-003 | Analysis Freshness | An AI analysis result is considered current for 24 hours after analysis; results beyond the window are treated as stale and fall back to generic. | Backend (analysis cache TTL) |
-| BR-MATCH-004 | Generic Display Without Valid Analysis | When the buyer has no valid AI analysis result (`source = "generic"`), including a stale analysis: (1) Show "⬡ General Picks" amber badge in page header. (2) Display prominent Profile Prompt Banner (EL-03a) with CTA "Start Skin Analysis →". (3) Render product cards with category-status badges instead of match score badges. (4) Sort products by `is_featured desc`, then `avg_rating desc`. (5) Keep recommendation history visible when completed analysis sessions exist; history is independent of the current recommendation source. | Backend (matching service) + Frontend UI |
+| BR-MATCH-004 | Profile Prompt Banner — Time-Based Display | The Profile Prompt Banner (EL-03a) adapts based on analysis freshness: **(a) No analysis (`source = "generic"`):** Show full-width prominent banner with heading "Get Personalized Recommendations", body text, and CTA "Start Skin Analysis →". **(b) Stale analysis (`source = "ai"`, analysis > 24h old):** Show subtle banner with heading "Want Fresh Results?", body "Retake your skin analysis for updated recommendations", and CTA "Retake Analysis →". **(c) Fresh analysis (`source = "ai"`, analysis ≤ 24h old):** Hide banner completely. In all cases, when `source = "generic"`: show "⬡ General Picks" amber badge, render category-status badges on cards, sort by `is_featured desc` then `avg_rating desc`. History section remains visible when completed sessions exist, independent of source. | Backend (matching service) + Frontend UI |
 | BR-MATCH-005 | Guest Access Restriction | Unauthenticated visitors attempting to access `/buyer/recommendations` are redirected to the Login page. | Frontend (Auth Route Guard) |
 | BR-MATCH-006 | Filter Override | If the buyer explicitly changes the `skinTypes` filter, the filtered value overrides the analysis-derived skin types for that query. | Backend (query precedence) |
 
@@ -398,7 +399,7 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 | EL-01 | Page Title | Heading (h1) | `matching.title` | Yes | "Recommended for You" / "あなたへのおすすめ" — shown for both analysis-result and no-analysis results |
 | EL-02 | Source Badge | Badge / Pill | `matching.source` | Yes | If buyer has analysis results: "🧬 AI Analysis" emerald green pill. If buyer has no analysis results: "⬡ General Picks" amber/orange pill. |
 | EL-02a | Source Subtitle | Text | `matching.subtitle` | Yes | If buyer has analysis results: "Based on your AI analysis · {skinType} · {N} results". If buyer has no analysis results: "Showing featured products · No skin analysis found". |
-| EL-03a | Profile Prompt Banner | Container / Banner | `matching.profilePrompt` | Conditional (no analysis result only) | Full-width prominent banner shown **only** when `source = "generic"` because the buyer has no valid analysis result. Contains: left side = AI face scan illustration, center = heading "Get Personalized Recommendations" + body text "Run an AI skin analysis to receive products matched to your skin type and concerns", right side = CTA button "✦ Start Skin Analysis →" (rose-gold, navigates to `/buyer/skin-analysis`). Hidden when `source = "ai"`. |
+| EL-03a | Profile Prompt Banner | Container / Banner | `matching.profilePrompt` | Conditional | Full-width banner with **3 states**: **(a) No analysis (`source = "generic"`):** Prominent banner with AI face scan illustration, heading "Get Personalized Recommendations", body "Run an AI skin analysis to receive products matched to your skin type and concerns", CTA "✦ Start Skin Analysis →" (rose-gold). **(b) Stale analysis (`source = "ai"`, analysis > 24h old):** Subtle compact banner with heading "Want Fresh Results?", body "Retake your skin analysis for updated recommendations", CTA "Retake Analysis →". **(c) Fresh analysis (`source = "ai"`, analysis ≤ 24h old):** Hidden. Navigates to `/buyer/skin-analysis`. |
 | EL-06 | Filters Panel | Aside (desktop sidebar / mobile drawer) | `matching.filtersTitle` | Yes | Filter groups: Skin Type, Price Range, Min Rating, Ingredients, and Sort. If buyer has analysis results: Skin Type pre-selected from analysis result. If buyer has no analysis results: all unchecked. |
 | EL-17 | Recommendation Grid | Grid | — | Yes | Responsive grid of `RecommendationCard` components. 4 columns desktop / 2 columns tablet / 1 column mobile. |
 | EL-19 | Product Card Badge | Badge | — | Conditional | If buyer has analysis results: "92% match" (green→teal gradient pill) on each card. If buyer has no analysis results: category-status badge — "⭐ Featured" (amber), "🏆 Top Rated" (teal), "🔥 Best Seller" (orange), or "✨ New" (purple) based on product flags. No match score shown for generic results. |
@@ -425,14 +426,14 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 
 #### 5.1.2 Conditional Rendering Summary
 
-| UI Element | Buyer Has Analysis Results (`source = "ai"`) | Buyer Has No Analysis Results (`source = "generic"`) |
-|------------|:------------------------------------------:|:------------------------------------------------:|
-| EL-02 Source Badge | "🧬 AI Analysis" (green) | "⬡ General Picks" (amber) |
-| EL-03a Profile Prompt Banner | ✗ Hidden | ✓ Shown (prominent full-width) |
-| EL-19 Card Badge | Match score ("92% match") | Category badge (Featured / Top Rated / Best Seller) |
-| EL-31/32 History Section | ✓ Shown when history exists | ✓ Shown when history exists |
-| EL-41 Ad Panel | ✓ Shown | ✓ Shown |
-| EL-06 Filters — Skin Type pre-selected | ✓ From analysis | ✗ All unchecked |
+| UI Element | Buyer Has Fresh Analysis (`source = "ai"`, ≤ 24h) | Buyer Has Stale Analysis (`source = "ai"`, > 24h) | Buyer Has No Analysis (`source = "generic"`) |
+|------------|:------------------------------------------:|:------------------------------------------------:|:------------------------------------------------:|
+| EL-02 Source Badge | "🧬 AI Analysis" (green) | "🧬 AI Analysis" (green) | "⬡ General Picks" (amber) |
+| EL-03a Profile Prompt Banner | ✗ Hidden | ✓ Shown (subtle compact: "Want Fresh Results?") | ✓ Shown (prominent full-width) |
+| EL-19 Card Badge | Match score ("92% match") | Match score ("92% match") | Category badge (Featured / Top Rated / Best Seller) |
+| EL-31/32 History Section | ✓ Shown when history exists | ✓ Shown when history exists | ✓ Shown when history exists |
+| EL-41 Ad Panel | ✓ Shown | ✓ Shown | ✓ Shown |
+| EL-06 Filters — Skin Type pre-selected | ✓ From analysis | ✓ From analysis | ✗ All unchecked |
 
 ---
 
