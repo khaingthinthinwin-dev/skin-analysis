@@ -214,6 +214,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.roleCode,
+      avatar: user.avatarUrl || undefined,
       avatarUrl: user.avatarUrl,
       merchantId: null,
       licenseStatus: null,

@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import type { Profile } from '@/types/profile.types'
-import { Mail, Phone, Calendar, Shield } from 'lucide-react'
+import { Mail, Calendar, Shield } from 'lucide-react'
 
 interface ProfileInfoCardProps {
   profile: Profile
@@ -42,6 +42,8 @@ function formatDate(dateString: string): string {
 
 export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
   const { t } = useTranslation()
+  const userRole = profile.role || (profile as any).roleCode || 'buyer'
+  const roleDefault = userRole === 'super_admin' ? 'Super Admin' : userRole.charAt(0).toUpperCase() + userRole.slice(1)
 
   return (
     <Card>
@@ -60,9 +62,9 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
           </Avatar>
           <div className="space-y-1">
             <h3 className="text-2xl font-semibold">{profile.name}</h3>
-            <Badge className={getRoleBadgeColor(profile.role)}>
+            <Badge className={getRoleBadgeColor(userRole)}>
               <Shield className="mr-1 h-3 w-3" />
-              {t(`roles.${profile.role}`, profile.role)}
+              {t(`roles.${userRole}`, roleDefault)}
             </Badge>
           </div>
         </div>
@@ -80,16 +82,6 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
             <div>
               <p className="text-sm font-medium">{t('profile.info.email', 'Email')}</p>
               <p className="text-sm text-muted-foreground">{profile.email}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">{t('profile.info.phone', 'Phone')}</p>
-              <p className="text-sm text-muted-foreground">
-                {profile.phone || t('profile.info.notProvided', 'Not provided')}
-              </p>
             </div>
           </div>
         </div>

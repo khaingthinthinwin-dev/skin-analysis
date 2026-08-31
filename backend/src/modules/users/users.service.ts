@@ -36,7 +36,11 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return {
+      ...user,
+      role: user.roleCode,
+      avatar: user.avatarUrl || undefined,
+    };
   }
 
   async findByEmail(email: string) {
@@ -48,10 +52,16 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto) {
     await this.findById(id);
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
     });
+
+    return {
+      ...updatedUser,
+      role: updatedUser.roleCode,
+      avatar: updatedUser.avatarUrl || undefined,
+    };
   }
 
   async updatePassword(id: string, passwordHash: string) {

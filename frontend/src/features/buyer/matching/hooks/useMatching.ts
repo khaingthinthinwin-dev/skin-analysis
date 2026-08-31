@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack-query'
+import { useQuery } from '@tanstack/react-query'
 import { matchingService } from '../services/matching.service'
 import type { MatchQueryParams } from '@/schemas/matching.schema'
 

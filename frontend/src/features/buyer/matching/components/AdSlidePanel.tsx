@@ -10,10 +10,10 @@ interface AdSlidePanelProps {
   onClick?: (adId: string) => void
 }
 
-export function AdSlidePanel({ ads, onImpression, onClick }: AdSlidePanelProps) {
+export function AdSlidePanel({ ads, onImpression: _onImpression, onClick }: AdSlidePanelProps) {
   // TODO: Implement ad carousel with auto-slide
   const [current, setCurrent] = useState(0)
-  const timerRef = useRef<NodeJS.Timeout>()
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     // TODO: Implement 5-second auto-rotation

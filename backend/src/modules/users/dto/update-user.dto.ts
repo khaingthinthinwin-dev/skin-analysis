@@ -17,7 +17,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   avatarUrl?: string;
 
   @ApiPropertyOptional({ example: '+1234567890' })

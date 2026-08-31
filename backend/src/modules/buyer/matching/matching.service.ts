@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../shared/prisma/prisma.service';
-import { RedisService } from '../../shared/redis/redis.service';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { RedisService } from '../../../shared/redis/redis.service';
 import { MatchQueryDto } from './dto/match-query.dto';
 
 @Injectable()

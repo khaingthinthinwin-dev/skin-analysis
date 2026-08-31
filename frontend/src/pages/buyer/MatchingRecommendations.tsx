@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Wand2 } from 'lucide-react'
+import { useSearchParams } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { MatchResultList } from '@/features/buyer/matching/components/MatchResultList'
 import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
@@ -10,7 +9,7 @@ import { SkinTypeFilter } from '@/features/buyer/matching/components/SkinTypeFil
 import { usePersonalizedRecommendations, useRecommendationHistory, useAdPanel } from '@/features/buyer/matching/hooks/useMatching'
 
 export default function MatchingRecommendations() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([])
 
   // TODO: Parse search params and fetch data

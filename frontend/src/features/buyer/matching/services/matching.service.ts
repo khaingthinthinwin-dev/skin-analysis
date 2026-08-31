@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/apiClient'
+import apiClient from '@/lib/api-client'
 import type { MatchQueryParams, RecommendationResponse, AdPanelResponse, HistoryResponse } from '@/schemas/matching.schema'
 
 export const matchingService = {
