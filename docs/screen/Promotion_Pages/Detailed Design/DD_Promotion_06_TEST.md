@@ -32,15 +32,19 @@ Mock dependencies: `PrismaService`, `RedisService`, `LoggerService`.
 | **listPromotions** | Approved merchant | Returns own promotions paginated, newest first |
 | **listPromotions** | Search by code fragment | Returns only matching promotions |
 | **listPromotions** | Status filter "expired" | Returns only expired promotions |
+| **listPromotions** | Status filter "scheduled" | Returns only scheduled promotions (`is_active=true`, `starts_at` in future) |
 | **listPromotions** | Pending merchant | Returns read-only list (no error) |
+| **listPromotions** | Rejected merchant (restricted read-only) | Returns read-only list revealing rejection reason; mutation controls suppressed |
 | **updatePromotion** | Owner, `used_count=0`, valid fields | Updates record, invalidates caches, returns updated DTO |
 | **updatePromotion** | Owner, `used_count>0` | Throws `ConflictException` (409) `PROMO_EDIT_RESTRICTED` |
 | **updatePromotion** | Not owner | Throws `ForbiddenException` (403) |
 | **updatePromotion** | Promotion missing | Throws `NotFoundException` (404) `PROMO_NOT_FOUND` |
+| **updatePromotion** | Rejected license | Throws `ForbiddenException` (403) `MERCHANT_REJECTED` |
 | **updatePromotion** | Toggle `{isActive:false}` | Flips `is_active`, invalidates caches |
 | **deletePromotion** | Owner, `used_count=0` | Hard-deletes record, invalidates caches, returns void |
 | **deletePromotion** | `used_count>0` | Throws `ConflictException` (409) `PROMO_DELETE_RESTRICTED` |
 | **deletePromotion** | Not owner | Throws `ForbiddenException` (403) |
+| **deletePromotion** | Rejected license | Throws `ForbiddenException` (403) `MERCHANT_REJECTED` |
 | **validateCoupon** | Valid coupon, order meets minimum | Returns `{ valid: true, discountAmount, finalAmount }`; usage NOT incremented |
 | **validateCoupon** | Code not found | Throws `BadRequestException` (400) `PROMO_NOT_FOUND` |
 | **validateCoupon** | `is_active=false` | Throws `BadRequestException` (400) `PROMO_INACTIVE` |
@@ -78,18 +82,18 @@ Mock dependencies: `PromotionsService`.
 | Initial render (approved) | Shows skeleton then table with pagination |
 | Search input (debounced) | Calls list API with `search`, resets to page 1 |
 | Status filter | Filters via API with `status` param |
+| Status filter "scheduled" | "Scheduled" option present and filters future-start promotions |
 | Empty state | Displays "no promotions" message |
 | Expired expiry date | Red highlight applied |
 | Usage display | Shows "used / max" (or "used / ∞") |
 | Pagination | Prev/Next and page numbers navigate |
 | I18n EN/JA/MY | All labels render per selected language |
 
-### 3.2 `PromotionListPage.test.tsx` — Pending/Restricted
+### 3.2 `PromotionListPage.test.tsx` — Pending / Restricted
 
 | Scenario | Expected Outcome |
 |----------|------------------|
 | Pending banner shown | Displays banner when `licenseStatus='pending'` |
-| Rejected banner shown | Displays banner + rejection reason when available |
 | Add New hidden | `btnAddPromotion` not rendered |
 | Edit hidden | `btnEdit` not rendered |
 | Delete hidden | `btnDelete` not rendered |
@@ -98,13 +102,28 @@ Mock dependencies: `PromotionsService`.
 | Filter functional | Status filter still works (read-only) |
 | Data shown | Table shows promotions read-only |
 
+### 3.2.1 `PromotionListPage.test.tsx` — Rejected (Read-Only)
+
+| Scenario | Expected Outcome |
+|----------|------------------|
+| Rejected banner shown | Displays banner + rejection reason when `licenseStatus='rejected'` and reason available |
+| Rejection reason rendered | Reason text from API displayed in the banner |
+| Add New hidden | `btnAddPromotion` not rendered |
+| Edit hidden | `btnEdit` not rendered |
+| Delete hidden | `btnDelete` not rendered |
+| Toggle hidden | `swtActive` not rendered |
+| Search functional | Search still filters read-only data |
+| Filter functional | Status filter still works on read-only data |
+| Data shown | Table renders promotions read-only, no `PROMO_REJECTED` error |
+
 ### 3.3 `PromotionForm.test.tsx` (Create)
 
 | Scenario | Expected Outcome |
 |----------|------------------|
 | Default state | Empty fields; code auto-focused; start = now; `isActive` = true |
 | Code validation | Required, max 50, alphanumeric/hyphen/underscore |
-| Description | Required, max 500 |
+| Description optional (empty accepted) | Empty description submits successfully (no error) |
+| Description max length | Description > 500 characters rejected ("must not exceed 500 characters") |
 | Discount type | Both `percentage`/`fixed` selectable |
 | Discount value | Required, > 0; percentage 1–99 |
 | Min order | Optional, ≥ 0 |
@@ -148,6 +167,7 @@ Mock dependencies: `PromotionsService`.
 | **E2E-PROMO-10** | **i18n & Theme**<br>1. Toggle EN/JA/MY and verify labels.<br>2. Toggle light/dark/system theme. |
 | **E2E-PROMO-11** | **Validation Errors**<br>1. Submit empty form.<br>2. Verify all inline field errors appear. |
 | **E2E-PROMO-12** | **Pagination**<br>1. With >20 promotions, navigate pages and verify correctness. |
+| **E2E-PROMO-13** | **Rejected Merchant Restriction**<br>1. Login as rejected merchant (licenseStatus = rejected).<br>2. Navigate to /merchant/promotions.<br>3. Verify read-only list + rejection banner with reason, no mutation controls (Add/Edit/Delete/Toggle hidden).<br>4. Verify search/filter/list remain functional (read-only).<br>5. Attempt create/edit/delete → verify 403 `MERCHANT_REJECTED` toast/error. |
 
 ---
 

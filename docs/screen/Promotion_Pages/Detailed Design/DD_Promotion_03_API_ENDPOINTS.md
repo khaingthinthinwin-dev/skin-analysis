@@ -28,7 +28,7 @@ export class PromotionsController {
 - **Auth:** Yes (merchant/admin; license `approved`)
 - **Body:** `CreatePromotionDto`
   - `code` (string, required, max 50, `^[A-Za-z0-9_-]+$`)
-  - `description` (string, required, max 500)
+  - `description` (string, optional, max 500)
   - `discountType` (enum: `percentage` | `fixed`, required)
   - `discountValue` (number, required, > 0; percentage must be 1–99)
   - `minOrderAmount` (number, optional, ≥ 0)
@@ -53,7 +53,7 @@ export class PromotionsController {
 ### 2.2 GET /promotions (list)
 
 - **Auth Required:** Yes (merchant/admin)
-- **Query Params:** `page` (default 1), `limit` (default 20, max 100), `search` (optional, by code), `status` (optional: `active` | `inactive` | `expired`)
+- **Query Params:** `page` (default 1), `limit` (default 20, max 100), `search` (optional, by code), `status` (optional: `active` | `inactive` | `scheduled` | `expired`)
 - **Response:** `200 OK` — `{ data: PromotionResponseDto[], meta: { page, limit, total, totalPages } }`
 - **Error Responses:** `401 UNAUTHORIZED`, `429 TOO_MANY_REQUESTS`
 - **Logic:** `service.listPromotions(merchantId, page, limit, search, status)`; pending/rejected merchants still receive their own read-only list.

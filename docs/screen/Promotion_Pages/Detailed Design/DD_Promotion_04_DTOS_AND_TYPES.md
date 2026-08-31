@@ -39,10 +39,10 @@ export class CreatePromotionDto {
   })
   code: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Description is required' })
   @MaxLength(500, { message: 'Description must not exceed 500 characters' })
-  description: string;
+  description?: string;
 
   @IsEnum(DiscountType, { message: "Discount type must be 'percentage' or 'fixed'" })
   discountType: DiscountType;
@@ -174,7 +174,7 @@ export class PromotionListQueryDto {
   page?: number = 1;
   limit?: number = 20;
   search?: string;
-  status?: 'active' | 'inactive' | 'expired';
+  status?: 'active' | 'inactive' | 'scheduled' | 'expired';
 }
 ```
 
@@ -205,6 +205,7 @@ export interface PromotionType {
 export type PromotionStatus =
   | 'active'
   | 'inactive'
+  | 'scheduled'
   | 'expired'
   | 'max_uses_reached';
 ```

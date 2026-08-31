@@ -36,7 +36,10 @@ The module manages the promotion lifecycle from creation (`ACTIVE`) through deac
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ACTIVE : Create (default is_active=true)
+    [*] --> SCHEDULED : Create (starts_at in future, is_active=true)
+    SCHEDULED --> ACTIVE : Time reaches starts_at
+    SCHEDULED --> INACTIVE : Toggle is_active=false
+    SCHEDULED --> DELETED : Hard delete (used_count = 0)
 
     ACTIVE --> INACTIVE : Toggle is_active=false
     INACTIVE --> ACTIVE : Toggle is_active=true
@@ -55,6 +58,7 @@ stateDiagram-v2
 
 | State | Description | Can Edit | Can Delete | Can Validate |
 |-------|-------------|:--------:|:----------:|:------------:|
+| `SCHEDULED` | `is_active = true` and `starts_at` in the future | ✓ (if `used_count = 0`) | ✓ (if `used_count = 0`) | ✗ |
 | `ACTIVE` | `is_active = true` and within validity period | ✓ (if `used_count = 0`) | ✓ (if `used_count = 0`) | ✓ |
 | `INACTIVE` | `is_active = false` | ✓ | ✓ (if `used_count = 0`) | ✗ |
 | `EXPIRED` | Current time is at/after `expires_at` | ✓ | ✓ (if `used_count = 0`) | ✗ |

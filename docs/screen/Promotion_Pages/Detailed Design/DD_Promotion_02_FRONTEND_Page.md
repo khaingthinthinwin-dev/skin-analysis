@@ -130,8 +130,8 @@ export const promotionSchema = z
       .regex(/^[A-Za-z0-9_-]+$/, 'Code can only contain letters, numbers, hyphens, and underscores'),
     description: z
       .string()
-      .min(1, 'Description is required')
-      .max(500, 'Description must not exceed 500 characters'),
+      .max(500, 'Description must not exceed 500 characters')
+      .optional(),
     discountType: z.enum(['percentage', 'fixed'], { required_error: 'Discount type is required' }),
     discountValue: z
       .number({ required_error: 'Discount value is required' })
@@ -195,7 +195,7 @@ export const couponValidationSchema = z.object({
 
 ### 4.5 StatusBadge / DiscountTypeBadge
 
-- **StatusBadge:** renders Active / Inactive / Expired based on `is_active` and `expires_at`.
+- **StatusBadge:** renders Active / Inactive / Scheduled / Expired based on `is_active`, `starts_at`, and `expires_at`.
 - **DiscountTypeBadge:** "percentage" (blue) / "fixed" (green).
 
 ---
@@ -248,7 +248,7 @@ export const couponValidationSchema = z.object({
 | Item | Options |
 |------|---------|
 | Discount Type | `percentage` ("Percentage (%)"), `fixed` ("Fixed Amount (MMK)") |
-| Status Filter | All, Active, Inactive, Expired |
+| Status Filter | Active, Inactive, Scheduled, Expired |
 | Role Scope | Merchant (own), Admin (all), Buyer (validate only) |
 
 ---

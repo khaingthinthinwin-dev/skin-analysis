@@ -33,7 +33,7 @@ This document specifies the core business logic, validation rules, and Redis cac
 ### 2.2 listPromotions(merchantId, page, limit, search, status)
 
 1. **License:** Pending/rejected merchants may still list (read-only). License check is informational; outcome is the same list.
-2. **Query:** `WHERE merchant_id = ?`; apply `search` (code `contains`, case-insensitive) and `status` filter (derived from `is_active`, `starts_at`, `expires_at`).
+2. **Query:** `WHERE merchant_id = ?`; apply `search` (code `contains`, case-insensitive) and `status` filter (derived from `is_active`, `starts_at`, `expires_at`: `active`, `inactive`, `scheduled`, `expired`).
 3. **Ordering:** newest first (`created_at DESC`).
 4. **Pagination:** `page`/`limit` (default 20, max 100); compute `meta.total/totalPages`.
 5. **Cache:** read/refresh from `promo:list:{merchantId}` (TTL 120s); invalidate on any CRUD for the merchant.
@@ -186,7 +186,7 @@ async setPromotionCache(promo: Promotion): Promise<void> {
 | Field | Rule | Enforcement |
 |-------|------|-------------|
 | `code` | Required, 1–50, `^[A-Za-z0-9_-]+$`, globally unique | DTO + DB `uq_promotions_code` |
-| `description` | Required, ≤ 500 | DTO |
+| `description` | Optional, ≤ 500 | DTO |
 | `discountType` | `percentage` \| `fixed` | DTO |
 | `discountValue` | > 0; percentage 1–99; `DECIMAL(10,2)` | DTO + validation service |
 | `minOrderAmount` | Optional, ≥ 0 | DTO |
