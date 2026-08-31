@@ -197,15 +197,15 @@ Admin accounts are **system-seeded only**. Users cannot self-register as admin. 
 
 ### 3.1 AI Skin Analysis
 
-| Feature | Description |
-|---------|-------------|
-| Upload Photo | Upload facial image (JPG, PNG, WebP, max 10MB) |
-| View Analysis Results | Skin type, conditions with severity, estimated age |
-| View Recommendations | Personalized product recommendations with match scores |
-| Analysis History | View all past analyses with date/time |
-| Analysis Comparison | Compare multiple analyses side-by-side |
-| Recommendation Explanation | Understand why each product was recommended |
-| Recommendation Feedback | Rate recommendations as helpful/not helpful |
+| ID | Feature | Description |
+|----|---------|-------------|
+| B-AI-001 | Upload Photo | Upload facial image (JPG, PNG, WebP, max 10MB) |
+| B-AI-002 | View Analysis Results | Skin type, conditions with severity, estimated age |
+| B-AI-003 | Analysis History | View all past analyses with date/time |
+| B-AI-004 | View Recommendations | Personalized product recommendations with match scores |
+| B-AI-005 | Analysis Comparison | Compare multiple analyses side-by-side |
+| B-AI-006 | Recommendation Explanation | Understand why each product was recommended |
+| B-AI-007 | Recommendation Feedback | Rate recommendations as helpful/not helpful |
 
 #### Analysis Flow
 ```
@@ -214,24 +214,39 @@ Upload Photo → AI Analysis → View Results → Get Recommendations → Save t
 
 ### 3.2 Shopping
 
-| Feature | Description |
-|---------|-------------|
-| Browse Products | Search and filter products by category and price |
-| Product Details | View images, description, price, reviews, skin type compatibility |
-| Wishlist | Save products for later |
-| Cart | Add products, update quantities, view totals |
-| Checkout | Enter shipping address, select payment method, review order |
-| Order History | View past orders with status timeline |
-| Order Tracking | Track order status from placed to delivered |
-| Write Reviews | Rate and review purchased products |
+| ID | Feature | Description |
+|----|---------|-------------|
+| B-PROD-001 | Browse Products | Search and filter products by category and price |
+| B-PROD-002 | Product Details | View images, description, price, reviews, skin type compatibility |
+| B-PROD-003 | Wishlist | Save products for later |
+| B-PROD-004 | Cart | Add products, update quantities, view totals |
+| B-PROD-005 | Checkout | Enter shipping address, select payment method, review order |
+| B-PROD-006 | Skin Type Compatibility | Product detail shows skin type compatibility |
+| B-PROD-007 | Order History | View past orders with status timeline |
+| B-PROD-008 | Order Tracking | Track order status from placed to delivered |
+| B-PROD-009 | Write Reviews | Rate and review purchased products |
 
 ### 3.3 Order Insights (Buyer)
 
-| Feature | Description |
-|---------|-------------|
-| Order History | View all past orders |
-| Order Detail | View order items, totals, payment status |
-| Order Tracking | Track status timeline (placed → confirmed → shipped → delivered) |
+| ID | Feature | Description |
+|----|---------|-------------|
+| B-ORD-001 | Order History | View all past orders |
+| B-ORD-002 | Order Detail | View order items, totals, payment status |
+| B-ORD-003 | Order Tracking | Track status timeline (placed → confirmed → shipped → delivered) |
+
+### 3.4 Matching & Recommendations
+
+| ID | Feature | Description |
+|----|---------|-------------|
+| B-MATCH-001 | Personalized Recommendations | System provides personalized recommendations based on skin analysis results |
+| B-MATCH-002 | Filter by Skin Type | User can filter products by skin type |
+| B-MATCH-003 | Filter by Ingredients | User can filter products by ingredients |
+| B-MATCH-004 | Filter by Price Range | User can filter products by price range |
+| B-MATCH-006 | Recommended for You Section | System displays "Recommended for You" section |
+| B-MATCH-007 | Recommendation History | System tracks recommendation history for buyers |
+| B-MATCH-008 | Sponsored Ads Panel | System displays sponsored ads via Slide-Down Panel |
+| B-MATCH-009 | Similar Products | System recommends similar products (shared category + skin type compatibility) |
+| B-MATCH-010 | Cross-Screen Ad Panel | Cross-screen ad panel (D0) displays sponsored ads across 6 screens |
 
 ---
 
@@ -264,13 +279,13 @@ Upload Photo → AI Analysis → View Results → Get Recommendations → Save t
 
 ### 4.4 Advertisements
 
-| Feature | Description |
-|---------|-------------|
-| View Packages | Browse available advertisement packages |
-| Purchase Ad | Select package, upload image, set schedule, pay fee |
-| Submit for Approval | Admin must approve before display |
-| View Analytics | Impressions, clicks, click-through rate |
-| Resubmit Rejected Ads | Edit and resubmit after rejection |
+| ID | Feature | Description |
+|----|---------|-------------|
+| B-AD-001 | View Packages | Browse available advertisement packages |
+| B-AD-002 | Purchase Ad | Select package, upload image, set schedule, pay fee |
+| B-AD-003 | Submit for Approval | Admin must approve before display |
+| B-AD-004 | View Analytics | Impressions, clicks, click-through rate |
+| B-AD-005 | Resubmit Rejected Ads | Edit and resubmit after rejection |
 
 #### Advertisement Flow
 ```
@@ -343,19 +358,19 @@ Select Package → Upload Content → Pay Fee → Admin Review → Approved → 
 
 ### 5.4 Review Moderation
 
-| Feature | Description |
-|---------|-------------|
-| View Reviews | All platform reviews |
-| Moderate Reviews | Approve, reject, or flag reviews |
-| Handle Reports | Review reported content |
+| ID | Feature | Description |
+|----|---------|-------------|
+| B-REV-001 | View Reviews | All platform reviews |
+| B-REV-002 | Moderate Reviews | Approve, reject, or flag reviews |
+| B-REV-003 | Handle Reports | Review reported content |
 
 ### 5.5 Content Moderation
 
-| Feature | Description |
-|---------|-------------|
-| Merchant Registration | Approve/reject new merchants |
-| Product Moderation | Review reported products |
-| Content Reports | Handle user-reported content |
+| ID | Feature | Description |
+|----|---------|-------------|
+| B-CNT-001 | Merchant Registration | Approve/reject new merchants |
+| B-CNT-002 | Product Moderation | Review reported products |
+| B-CNT-003 | Content Reports | Handle user-reported content |
 
 ### 5.6 Order Insights (Admin)
 
@@ -600,7 +615,7 @@ All roles see only their own data:
 **Document Management:**
 - Author: Software Architect
 - Created: 2026-08-03
-- Last Updated: 2026-08-14
+- Last Updated: 2026-08-21
 - Next Review: Phase 2 Planning
 
 ---
