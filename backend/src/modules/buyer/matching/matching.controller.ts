@@ -12,20 +12,20 @@ export class MatchingController {
 
   @Get('personalized')
   @Roles('buyer')
-  async getPersonalized(@Query() query: MatchQueryDto) {
+  getPersonalized(@Query() query: MatchQueryDto) {
     // TODO: Implement personalized recommendations
     return this.matchingService.getPersonalized(query);
   }
 
   @Get('similar/:productId')
-  async getSimilar(@Param('productId') productId: string) {
+  getSimilar(@Param('productId') productId: string) {
     // TODO: Implement similar products
     return this.matchingService.getSimilar(productId);
   }
 
   @Get('history')
   @Roles('buyer')
-  async getHistory(@Query() query: { page?: number; limit?: number }) {
+  getHistory(@Query() query: { page?: number; limit?: number }) {
     // TODO: Implement recommendation history
     return this.matchingService.getHistory(query);
   }

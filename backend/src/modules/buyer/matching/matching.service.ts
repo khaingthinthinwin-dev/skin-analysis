@@ -10,7 +10,7 @@ export class MatchingService {
     private readonly redis: RedisService,
   ) {}
 
-  async getPersonalized(query: MatchQueryDto) {
+  getPersonalized(_query: MatchQueryDto) {
     // TODO: Implement personalized recommendations
     // 1. Determine source (ai/generic) based on analysis freshness
     // 2. Check Redis cache
@@ -20,7 +20,7 @@ export class MatchingService {
     throw new Error('Not implemented');
   }
 
-  async getSimilar(productId: string) {
+  getSimilar(_productId: string) {
     // TODO: Implement similar products
     // 1. Get source product category and skin types
     // 2. Query products with same category + skin type overlap
@@ -29,7 +29,7 @@ export class MatchingService {
     throw new Error('Not implemented');
   }
 
-  async getHistory(query: { page?: number; limit?: number }) {
+  getHistory(_query: { page?: number; limit?: number }) {
     // TODO: Implement recommendation history
     // 1. Query skin_analyses joined with skin_analysis_recommendations
     // 2. Group by analysis session
@@ -38,7 +38,11 @@ export class MatchingService {
     throw new Error('Not implemented');
   }
 
-  private computeMatchScore(product: any, skinType: string, concerns: string[]): number {
+  private computeMatchScore(
+    _product: any,
+    _skinType: string,
+    _concerns: string[],
+  ): number {
     // TODO: Implement match score calculation
     // Score = Skin Type (50) + Concern (20) + Rating (20) + Featured (10)
     return 0;

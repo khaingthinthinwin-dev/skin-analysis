@@ -1,7 +1,21 @@
 import apiClient from '@/lib/api-client'
 import type { Profile, UpdateProfileData, ChangePasswordData } from '@/types/profile.types'
+import type { UserRole } from '@/types/auth.types'
 
-function normalizeProfile(raw: any): Profile {
+interface ProfileResponseData {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  avatar?: string
+  avatarUrl?: string
+  phone?: string
+  emailVerified?: boolean
+  createdAt: string
+  updatedAt?: string
+}
+
+function normalizeProfile(raw: ProfileResponseData): Profile {
   return {
     ...raw,
     avatar: raw.avatar || raw.avatarUrl || undefined,
@@ -10,12 +24,12 @@ function normalizeProfile(raw: any): Profile {
 
 export const profileService = {
   getProfile: async (): Promise<Profile> => {
-    const response = await apiClient.get<{ data: any }>('/users/me')
+    const response = await apiClient.get<{ data: ProfileResponseData }>('/users/me')
     return normalizeProfile(response.data.data)
   },
 
   updateProfile: async (data: UpdateProfileData): Promise<Profile> => {
-    const response = await apiClient.patch<{ data: any }>('/users/me', data)
+    const response = await apiClient.patch<{ data: ProfileResponseData }>('/users/me', data)
     return normalizeProfile(response.data.data)
   },
 

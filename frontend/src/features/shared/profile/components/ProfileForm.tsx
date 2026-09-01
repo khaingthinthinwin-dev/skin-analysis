@@ -80,7 +80,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const { updateProfile } = useProfile()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const initialAvatar = profile.avatar || (profile as any).avatarUrl || ''
+  const initialAvatar = profile.avatar || profile.avatarUrl || ''
   const [avatarPreview, setAvatarPreview] = useState<string>(initialAvatar)
   const [isProcessingImage, setIsProcessingImage] = useState(false)
 

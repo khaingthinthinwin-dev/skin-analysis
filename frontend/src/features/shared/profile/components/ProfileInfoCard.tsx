@@ -42,7 +42,7 @@ function formatDate(dateString: string): string {
 
 export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
   const { t } = useTranslation()
-  const userRole = profile.role || (profile as any).roleCode || 'buyer'
+  const userRole = profile.role || profile.roleCode || 'buyer'
   const roleDefault = userRole === 'super_admin' ? 'Super Admin' : userRole.charAt(0).toUpperCase() + userRole.slice(1)
 
   return (

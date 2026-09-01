@@ -18,8 +18,9 @@ export function AdSlidePanel({ ads, onImpression: _onImpression, onClick }: AdSl
   useEffect(() => {
     // TODO: Implement 5-second auto-rotation
     // TODO: Implement IntersectionObserver for impression tracking
+    const timer = timerRef.current
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
+      if (timer) clearInterval(timer)
     }
   }, [])
 

@@ -7,18 +7,25 @@ import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
 import { RecommendationHistory } from '@/features/buyer/matching/components/RecommendationHistory'
 import { SkinTypeFilter } from '@/features/buyer/matching/components/SkinTypeFilter'
 import { usePersonalizedRecommendations, useRecommendationHistory, useAdPanel } from '@/features/buyer/matching/hooks/useMatching'
+import type { MatchQueryParams } from '@/schemas/matching.schema'
 
 export default function MatchingRecommendations() {
   const [searchParams] = useSearchParams()
   const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>([])
 
   // TODO: Parse search params and fetch data
-  const params = {
+  const sortParam = searchParams.get('sort')
+  const orderParam = searchParams.get('order')
+  const params: MatchQueryParams = {
     skinTypes: searchParams.get('skinTypes') || undefined,
     minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
     maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
-    sort: searchParams.get('sort') as any || undefined,
-    order: searchParams.get('order') as any || undefined,
+    sort: sortParam && ['matchScore', 'price', 'rating', 'createdAt'].includes(sortParam)
+      ? sortParam as MatchQueryParams['sort']
+      : undefined,
+    order: orderParam && ['asc', 'desc'].includes(orderParam)
+      ? orderParam as MatchQueryParams['order']
+      : undefined,
     page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
   }
 

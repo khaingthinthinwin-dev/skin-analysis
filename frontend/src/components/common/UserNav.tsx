@@ -27,7 +27,7 @@ export function UserNav() {
         .toUpperCase()
     : user.email.charAt(0).toUpperCase()
 
-  const avatarSrc = (user as any).avatar || (user as any).avatarUrl || undefined
+  const avatarSrc = user.avatar || user.avatarUrl || undefined
 
   const handleLogout = () => {
     logout()

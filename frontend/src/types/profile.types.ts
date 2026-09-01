@@ -4,6 +4,7 @@ export interface Profile extends User {
   phone?: string | null
   emailVerified?: boolean
   updatedAt?: string
+  roleCode?: string
 }
 
 export interface UpdateProfileData {
