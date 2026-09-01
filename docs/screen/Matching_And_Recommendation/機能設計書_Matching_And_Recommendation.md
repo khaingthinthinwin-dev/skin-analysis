@@ -51,7 +51,7 @@
 
 ### 1.1 Purpose and Scope
 
-This screen serves as the personalized product discovery entry point within the Cosmetics Finder platform. The Matching & Recommendation subsystem provides the complete set of capabilities necessary for buyers to receive personalized skincare product recommendations derived from their AI skin analysis results, to narrow those recommendations through multi-dimensional matching filters (skin type, ingredients, price range, review rating), and to discover similar products from any product detail context.
+This screen serves as the personalized product discovery entry point within the Cosmetics Finder platform. The Matching & Recommendation subsystem provides the complete set of capabilities necessary for buyers to receive personalized skincare product recommendations derived from their AI skin analysis results, to narrow those recommendations through multi-dimensional matching filters (skin type, ingredients, price range), and to discover similar products from any product detail context.
 
 This subsystem bridges AI skin analysis and the product catalog. It is responsible for translating a buyer's AI-detected skin conditions into a ranked, score-annotated set of compatible products while maintaining performance through Redis caching and guaranteeing that only active products from approved merchant shops are ever surfaced.
 
@@ -116,8 +116,7 @@ This screen is responsible for the following core functional areas:
 | `ingredients` | Query Parameter | Ingredient filter (comma-separated) |
 | `minPrice` | Query Parameter | Lower price bound |
 | `maxPrice` | Query Parameter | Upper price bound |
-| `rating` | Query Parameter | Minimum average rating (1–5) |
-| `sort` | Query Parameter | Sort field (`matchScore`, `price`, `rating`, `createdAt`) |
+| `sort` | Query Parameter | Sort field (`matchScore`, `price`, `createdAt`) |
 | `order` | Query Parameter | Sort direction (`asc`, `desc`) |
 | `page` | Query Parameter | Page number (1-indexed) |
 | `limit` | Query Parameter | Items per page (max 50) |
@@ -250,7 +249,6 @@ This screen is responsible for the following core functional areas:
 | B-MATCH-002 | User can filter products by skin type |
 | B-MATCH-003 | User can filter products by ingredients |
 | B-MATCH-004 | User can filter products by price range |
-| B-MATCH-005 | User can filter products by review rating |
 | B-MATCH-006 | System displays "Recommended for You" section |
 | B-MATCH-007 | System tracks recommendation history for buyers |
 | B-MATCH-008 | System displays sponsored ads via Slide-Down Panel |
@@ -345,7 +343,7 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-MATCH-024 | Default Sort | AI-analysis recommendation results default to `matchScore desc`; no-analysis generic results default to `is_featured desc`, then `avg_rating desc`; similar results default to `createdAt desc`. | Backend (service logic) |
-| BR-MATCH-025 | Sort Allowlist | `sort` ∈ {`matchScore`, `price`, `rating`, `createdAt`}; `order` ∈ {`asc`, `desc`}; other values rejected. | Backend (DTO validation) |
+| BR-MATCH-025 | Sort Allowlist | `sort` ∈ {`matchScore`, `price`, `createdAt`}; `order` ∈ {`asc`, `desc`}; other values rejected. | Backend (DTO validation) |
 | BR-MATCH-026 | Pagination Defaults | `page` defaults to 1; `limit` defaults to 20; `limit` maximum 50. | Backend (DTO defaults) |
 | BR-MATCH-027 | Result Counting | `total` counts the full match set ignoring pagination (`skip`/`take`). | Backend (Prisma `count`) |
 | BR-MATCH-028 | Decimal Serialization | `price`, `compare_at_price`, and `avg_rating` serialized as strings. | Backend (serializer) |
@@ -377,7 +375,7 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 | BR-MATCH-047 | Panel Position | The panel is positioned between content sections (not overlaying content). Position varies by screen: below hero (Homepage), above results (Search/Category), below add-to-cart (Product Detail), between organic sections (Recommendation), above checkout (Cart). | Frontend (per-screen layout) |
 | BR-MATCH-048 | Auto-Slide | Panel auto-slides every 5 seconds. Auto-slide pauses on hover (desktop) or touch (mobile). Manual left/right arrows override auto-slide. Dot indicators show current position. | Frontend (AdSlidePanel) |
 | BR-MATCH-049 | Max Slides Per Screen | Maximum 5 ads per panel per screen. If fewer than 5 eligible ads exist, the panel shows only available ads (no placeholders). | Backend (ad service) |
-| BR-MATCH-050 | Round-Robin Rotation | Ads with the same priority amount rotate round-robin across page views. Rotation is session-based. | Backend (ad service) |
+| BR-MATCH-050 | Round-Robin Rotation | Ads with the same `payment_amount` rotate round-robin across page views. **Implementation:** (1) Group eligible ads by `payment_amount` tier. (2) Within each tier, maintain a session-based rotation index stored in Redis key `ad_rotation:{session_id}:{placement}`. (3) On each page load, select the next ad in the tier using `index % tier_count`. (4) Increment index after each selection. (5) When index reaches tier count, reset to 0 (circular). (6) If session has no index, start at 0. (7) Redis TTL for rotation key = 24 hours. (8) Fallback: if Redis unavailable, use `ORDER BY created_at ASC` (deterministic but non-rotating). | Backend (ad service + Redis) |
 | BR-MATCH-051 | Advertisement Priority | Eligible ads are prioritized by `advertisements.payment_amount desc`, then `advertisements.created_at desc`. | Backend (ad service) |
 | BR-MATCH-052 | Panel Impression Tracking | When the panel becomes visible (IntersectionObserver threshold ≥ 50%), all ads currently in the viewport are recorded as impressions via the ad panel API. | Frontend + Backend (ad tracking) |
 | BR-MATCH-053 | Panel Disclosure | Every panel must display a disclosure footer: "Sponsored products are paid placements from merchants". | Frontend (AdSlidePanel) |
@@ -400,11 +398,11 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 | EL-02 | Source Badge | Badge / Pill | `matching.source` | Yes | If buyer has analysis results: "🧬 AI Analysis" emerald green pill. If buyer has no analysis results: "⬡ General Picks" amber/orange pill. |
 | EL-02a | Source Subtitle | Text | `matching.subtitle` | Yes | If buyer has analysis results: "Based on your AI analysis · {skinType} · {N} results". If buyer has no analysis results: "Showing featured products · No skin analysis found". |
 | EL-03a | Profile Prompt Banner | Container / Banner | `matching.profilePrompt` | Conditional | Full-width banner with **3 states**: **(a) No analysis (`source = "generic"`):** Prominent banner with AI face scan illustration, heading "Get Personalized Recommendations", body "Run an AI skin analysis to receive products matched to your skin type and concerns", CTA "✦ Start Skin Analysis →" (rose-gold). **(b) Stale analysis (`source = "ai"`, analysis > 24h old):** Subtle compact banner with heading "Want Fresh Results?", body "Retake your skin analysis for updated recommendations", CTA "Retake Analysis →". **(c) Fresh analysis (`source = "ai"`, analysis ≤ 24h old):** Hidden. Navigates to `/buyer/skin-analysis`. |
-| EL-06 | Filters Panel | Aside (desktop sidebar / mobile drawer) | `matching.filtersTitle` | Yes | Filter groups: Skin Type, Price Range, Min Rating, Ingredients, and Sort. If buyer has analysis results: Skin Type pre-selected from analysis result. If buyer has no analysis results: all unchecked. |
+| EL-06 | Filters Panel | Aside (desktop sidebar / mobile drawer) | `matching.filtersTitle` | Yes | Filter groups: Skin Type, Price Range, Ingredients, and Sort. If buyer has analysis results: Skin Type pre-selected from analysis result. If buyer has no analysis results: all unchecked. |
 | EL-17 | Recommendation Grid | Grid | — | Yes | Responsive grid of `RecommendationCard` components. 4 columns desktop / 2 columns tablet / 1 column mobile. |
 | EL-19 | Product Card Badge | Badge | — | Conditional | If buyer has analysis results: "92% match" (green→teal gradient pill) on each card. If buyer has no analysis results: category-status badge — "⭐ Featured" (amber), "🏆 Top Rated" (teal), "🔥 Best Seller" (orange), or "✨ New" (purple) based on product flags. No match score shown for generic results. |
 | EL-20 | Skin Type Tags | Tag Group | — | Conditional | Screen item mapping: `lblSkinTypeTags`. Compatible skin types are displayed on each product card below the product name. |
-| EL-21 | Sort Controls | Select / Dropdown | `matching.sort` | Yes | Sort field (`matchScore`, `price`, `rating`, `createdAt`) and sort direction (`asc`, `desc`). Defaults follow BR-MATCH-024. Any sort change resets `page` to 1. |
+| EL-21 | Sort Controls | Select / Dropdown | `matching.sort` | Yes | Sort field (`matchScore`, `price`, `createdAt`) and sort direction (`asc`, `desc`). Defaults follow BR-MATCH-024. Any sort change resets `page` to 1. |
 | EL-22 | Pagination | Pagination | `matching.pagination` | Conditional | Previous/next + page numbers. Desktop only. |
 | EL-23 | Load More Button | Button (outline) | `matching.loadMore` | Conditional | Mobile: infinite-scroll trigger. Rose-gold ghost button. |
 | EL-24 | Empty State | EmptyState | `matching.empty` | Conditional | "No matching products" + Reset Filters button. |
@@ -544,8 +542,7 @@ Sponsored products are not inserted into the recommendation grid. Advertisement 
 | `ingredients` | Optional, array of strings | "Invalid ingredients" | "無効な成分です" |
 | `minPrice` | Optional, ≥ 0 | "Minimum price must be 0 or more" | "最低価格は0以上である必要があります" |
 | `maxPrice` | Optional, ≥ 0 | "Maximum price must be 0 or more" | "最高価格は0以上である必要があります" |
-| `rating` | Optional, 1–5 | "Rating must be between 1 and 5" | "評価は1〜5の間である必要があります" |
-| `sort` | Optional, matchScore/price/rating/createdAt | "Invalid sort field" | "無効な並び順項目です" |
+| `sort` | Optional, matchScore/price/createdAt | "Invalid sort field" | "無効な並び順項目です" |
 | `order` | Optional, asc/desc | "Invalid sort direction" | "無効な並び順です" |
 | `page` | Optional, ≥ 1 | "Page must be at least 1" | "ページは1以上である必要があります" |
 | `limit` | Optional, 1–50 | "Limit must be between 1 and 50" | "件数は1〜50の間である必要があります" |
@@ -576,7 +573,7 @@ Sponsored products are not inserted into the recommendation grid. Advertisement 
 ```json
 {
   "statusCode": 400,
-  "message": ["limit must not be greater than 50", "rating must not be greater than 5"],
+  "message": ["limit must not be greater than 50"],
   "error": "Bad Request",
   "timestamp": "2026-08-13T12:00:00.000Z",
   "path": "/api/v1/recommendations/personalized"

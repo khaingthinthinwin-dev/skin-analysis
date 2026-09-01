@@ -21,7 +21,6 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-28 | Senior System Engineer | Initial release. Screen items specification for Recommendations page covering personalized recommendations, matching filters, recommendation history, and cross-screen ad panel. |
 | 1.1 | 2026-08-30 | Senior System Engineer | Added missing DB field mappings to §7.1: `slug`, `compare_at_price`, `avgRating`, `reviewCount`. |
-| 1.1 | 2026-08-30 | Senior System Engineer | Added missing DB field mappings to §7.1: `slug`, `compare_at_price`, `avgRating`, `reviewCount`. |
 
 ### 1.2 Related Documents
 
@@ -37,7 +36,7 @@
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Recommendations page is the personalized product discovery entry point in the Cosmetics Finder platform. It displays skincare product recommendations derived from the buyer's AI skin analysis results, with multi-dimensional matching filters (skin type, ingredients, price range, review rating). When no valid AI analysis exists, it shows generic featured/top-rated products with a prompt to run AI analysis. The page also displays recommendation history and a cross-screen sponsored ad panel.
+The Recommendations page is the personalized product discovery entry point in the Cosmetics Finder platform. It displays skincare product recommendations derived from the buyer's AI skin analysis results, with multi-dimensional matching filters (skin type, ingredients, price range). When no valid AI analysis exists, it shows generic featured/top-rated products with a prompt to run AI analysis. The page also displays recommendation history and a cross-screen sponsored ad panel.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -95,14 +94,14 @@ The Recommendations page is the personalized product discovery entry point in th
 │  │  [B2] Price  │  │  └──────┘ └──────┘ └──────┘ └──────┘   │  │
 │  │  Range       │  │                                          │  │
 │  │              │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐   │  │
-│  │  [B3] Min    │  │  │Card 5│ │Card 6│ │Card 7│ │Card 8│   │  │
-│  │  Rating      │  │  └──────┘ └──────┘ └──────┘ └──────┘   │  │
+│  │  [B3]        │  │  │Card 5│ │Card 6│ │Card 7│ │Card 8│   │  │
+│  │  Ingredients │  │  └──────┘ └──────┘ └──────┘ └──────┘   │  │
 │  │              │  │                                          │  │
-│  │  [B4]        │  │  [C5] PAGINATION (desktop)               │  │
-│  │  Ingredients │  │  [C6] LOAD MORE (mobile)                 │  │
+│  │  [B4] Reset  │  │  [C5] PAGINATION (desktop)               │  │
+│  │  Filters     │  │  [C6] LOAD MORE (mobile)                 │  │
 │  │              │  │                                          │  │
-│  │  [B5] Reset  │  │                                          │  │
-│  │  Filters     │  │                                          │  │
+│  │              │  │                                          │  │
+│  │              │  │                                          │  │
 │  │              │  │                                          │  │
 │  └──────────────┘  └──────────────────────────────────────────┘  │
 │                                                                  │
@@ -233,7 +232,7 @@ The Recommendations page is the personalized product discovery entry point in th
 | 10 | `txtMinPrice` | Minimum Price Input | Input (`number`) | Number | — | Empty. Placeholder: "Min" | ≥ 0. Decimal precision: 2. | URL query param `minPrice` | `price >= minPrice` (BR-MATCH-018). i18n key: `matching.filters.minPrice`. |
 | 11 | `txtMaxPrice` | Maximum Price Input | Input (`number`) | Number | — | Empty. Placeholder: "Max" | ≥ 0. Must be ≥ `txtMinPrice` if both set. Decimal precision: 2. | URL query param `maxPrice` | `price <= maxPrice` (BR-MATCH-018). i18n key: `matching.filters.maxPrice`. |
 | 13 | `chkIngredients` | Ingredients Filter | Checkbox Group | Array of String | — | All unchecked. | Valid ingredient strings | URL query param `ingredients` | Uses `hasSome` semantics on `products.ingredients` array (BR-MATCH-017). i18n key: `matching.filters.ingredients`. |
-| 14 | `selSortField` | Sort Field Select | Select / Dropdown | Enum | — | Default: `matchScore` for `source = "ai"`; no user-selected sort for `source = "generic"`. | Options: `matchScore`, `price`, `rating`, `createdAt`; generic results use the backend default `is_featured desc`, then `avg_rating desc`. | URL query param `sort` | Sort allowlist follows BR-MATCH-025. i18n key: `matching.sort.field`. |
+| 14 | `selSortField` | Sort Field Select | Select / Dropdown | Enum | — | Default: `matchScore` for `source = "ai"`; no user-selected sort for `source = "generic"`. | Options: `matchScore`, `price`, `createdAt`; generic results use the backend default `is_featured desc`, then `avg_rating desc`. | URL query param `sort` | Sort allowlist follows BR-MATCH-025. i18n key: `matching.sort.field`. |
 | 15 | `selSortOrder` | Sort Direction Select | Select / Dropdown | Enum | — | Default: `desc`. | Options: `asc`, `desc`. | URL query param `order` | Sort direction allowlist follows BR-MATCH-025. i18n key: `matching.sort.order`. |
 | 16 | `btnResetFilters` | Reset Filters Button | Button (`button`, `outline`) | — | — | Visible. Text: "Reset Filters" / "フィルターをリセット" | — | — | Resets all filter params to defaults, resets `page` to 1 (BR-MATCH-020). i18n key: `matching.filters.reset`. |
 | 17 | `btnApplyFilters` | Apply Filters Button | Button (`submit`, `default`) | — | — | Visible (mobile only). Text: "Apply Filters" | — | — | Triggers fetch with current filter params. Disabled during loading. i18n key: `matching.filters.apply`. |
@@ -260,40 +259,40 @@ The Recommendations page is the personalized product discovery entry point in th
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 27 | `pagPagination` | Pagination Controls | Pagination | — | Conditional | Desktop only. Previous/next arrows + page numbers. | Page ≥ 1. Max page from `response.meta.totalPages`. | `response.meta` | i18n key: `matching.pagination`. |
-| 28 | `btnLoadMore` | Load More Button | Button (`button`, `outline`) | — | Conditional | Mobile only. Infinite-scroll trigger. Rose-gold ghost button. Text: "Load More" / "もっと見る" | — | — | i18n key: `matching.loadMore`. |
+| 31 | `pagPagination` | Pagination Controls | Pagination | — | Conditional | Desktop only. Previous/next arrows + page numbers. | Page ≥ 1. Max page from `response.meta.totalPages`. | `response.meta` | i18n key: `matching.pagination`. |
+| 32 | `btnLoadMore` | Load More Button | Button (`button`, `outline`) | — | Conditional | Mobile only. Infinite-scroll trigger. Rose-gold ghost button. Text: "Load More" / "もっと見る" | — | — | i18n key: `matching.loadMore`. |
 
 ### 4.5 Section [E]: Recommendation History (おすすめ履歴)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 29 | `lblHistoryTitle` | History Section Heading | Heading (`<h2>`) | String | Conditional | Visible when the buyer has past completed analysis sessions, regardless of `source`. Text: "📋 Previously Recommended" | — | Hardcoded UI text | History is independent of the current recommendation source. i18n key: `matching.historyTitle`. |
-| 30 | `accHistorySessions` | History Session Accordion | Accordion Group | — | Conditional | Rows grouped by analysis date (e.g. "Aug 20, 2026 — Oily Skin Analysis"). | — | `response.data` from `GET /api/v1/recommendations/history` | Expanded row shows mini-cards. Collapsed row shows date header + chevron. i18n key: N/A (dynamic data). |
-| 31 | `cardHistoryProduct` | History Product Mini-Card | Card (compact) | — | Conditional | Shows: product image + name + match score + price. | — | `history.products[i]` | Click navigates to `/buyer/products/:id`. i18n key: N/A (composite). |
-| 32 | `emptyHistory` | History Empty State | EmptyState | — | Conditional | Text: "No recommendation history yet". Shown when the buyer has no completed analysis sessions, regardless of the current `source`. | — | — | i18n key: `matching.historyEmpty`. |
+| 33 | `lblHistoryTitle` | History Section Heading | Heading (`<h2>`) | String | Conditional | Visible when the buyer has past completed analysis sessions, regardless of `source`. Text: "📋 Previously Recommended" | — | Hardcoded UI text | History is independent of the current recommendation source. i18n key: `matching.historyTitle`. |
+| 34 | `accHistorySessions` | History Session Accordion | Accordion Group | — | Conditional | Rows grouped by analysis date (e.g. "Aug 20, 2026 — Oily Skin Analysis"). | — | `response.data` from `GET /api/v1/recommendations/history` | Expanded row shows mini-cards. Collapsed row shows date header + chevron. i18n key: N/A (dynamic data). |
+| 35 | `cardHistoryProduct` | History Product Mini-Card | Card (compact) | — | Conditional | Shows: product image + name + match score + price. | — | `history.products[i]` | Click navigates to `/buyer/products/:id`. i18n key: N/A (composite). |
+| 36 | `emptyHistory` | History Empty State | EmptyState | — | Conditional | Text: "No recommendation history yet". Shown when the buyer has no completed analysis sessions, regardless of the current `source`. | — | — | i18n key: `matching.historyEmpty`. |
 
 ### 4.6 Section [D0]: Cross-Screen Ad Slide-Down Panel (広告スライドダウンパネル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 33 | `pnlAdSlideDown` | Ad Slide-Down Panel | Carousel | — | Conditional | Horizontal glass-morphism carousel. Up to 5 ad slides. Shown for both `source = "ai"` and `source = "generic"`. | — | `GET /api/v1/ads/panel?placement=category_banner` (recommendation panel uses the existing category-banner placement) | i18n key: N/A (composite). |
-| 34 | `imgAdBanner` | Ad Slide Image | Image (`<img>`) | URL | — | Left side of each slide. Aspect ratio 16:9. | — | `ads[i].imageUrl` | Lazy loading. |
-| 35 | `lblAdTitle` | Ad Slide Title | Text (`<h4>`) | String | — | Center of each slide. | — | `ads[i].title` | i18n key: N/A (dynamic data). |
-| 36 | `lblAdDescription` | Ad Slide Description | Text (`<p>`) | String | — | Center of each slide, below title. May be null. | — | `ads[i].description` | i18n key: N/A (dynamic data). |
-| 37 | `btnAdCta` | Ad CTA Button | Button (`button`, `default`) | — | — | Right side of each slide. Text: "Shop Now" / "View Product" / "Add to Cart". | Hidden or disabled when `ads[i].linkUrl` is null. | `ads[i].ctaText` | Navigates to `ads[i].linkUrl` when present. i18n key: N/A (dynamic). |
-| 38 | `btnAdPrev` | Ad Previous Arrow | Icon Button | — | — | Left arrow. Overrides auto-slide. | — | — | i18n key: N/A. |
-| 39 | `btnAdNext` | Ad Next Arrow | Icon Button | — | — | Right arrow. Overrides auto-slide. | — | — | i18n key: N/A. |
-| 40 | `dotAdIndicators` | Ad Dot Indicators | Dot Group | Integer | — | Current position indicator. Filled dot = active slide. | — | — | i18n key: N/A. |
-| 41 | `lblAdDisclosure` | Ad Disclosure Footer | Text (`<p>`) | String | — | Always visible below panel. Italic. Text: "Sponsored products are paid placements from merchants" / "スポンサー商品はマーチャントによる有料掲載です" | — | Static disclosure text | BR-MATCH-053. i18n key: `matching.adPanel.disclosure`. |
+| 37 | `pnlAdSlideDown` | Ad Slide-Down Panel | Carousel | — | Conditional | Horizontal glass-morphism carousel. Up to 5 ad slides. Shown for both `source = "ai"` and `source = "generic"`. | — | `GET /api/v1/ads/panel?placement=category_banner` (recommendation panel uses the existing category-banner placement) | i18n key: N/A (composite). |
+| 38 | `imgAdBanner` | Ad Slide Image | Image (`<img>`) | URL | — | Left side of each slide. Aspect ratio 16:9. | — | `ads[i].imageUrl` | Lazy loading. |
+| 39 | `lblAdTitle` | Ad Slide Title | Text (`<h4>`) | String | — | Center of each slide. | — | `ads[i].title` | i18n key: N/A (dynamic data). |
+| 40 | `lblAdDescription` | Ad Slide Description | Text (`<p>`) | String | — | Center of each slide, below title. May be null. | — | `ads[i].description` | i18n key: N/A (dynamic data). |
+| 41 | `btnAdCta` | Ad CTA Button | Button (`button`, `default`) | — | — | Right side of each slide. Text: "Shop Now" / "View Product" / "Add to Cart". | Hidden or disabled when `ads[i].linkUrl` is null. | `ads[i].ctaText` | Navigates to `ads[i].linkUrl` when present. i18n key: N/A (dynamic). |
+| 42 | `btnAdPrev` | Ad Previous Arrow | Icon Button | — | — | Left arrow. Overrides auto-slide. | — | — | i18n key: N/A. |
+| 43 | `btnAdNext` | Ad Next Arrow | Icon Button | — | — | Right arrow. Overrides auto-slide. | — | — | i18n key: N/A. |
+| 44 | `dotAdIndicators` | Ad Dot Indicators | Dot Group | Integer | — | Current position indicator. Filled dot = active slide. | — | — | i18n key: N/A. |
+| 45 | `lblAdDisclosure` | Ad Disclosure Footer | Text (`<p>`) | String | — | Always visible below panel. Italic. Text: "Sponsored products are paid placements from merchants" / "スポンサー商品はマーチャントによる有料掲載です" | — | Static disclosure text | BR-MATCH-053. i18n key: `matching.adPanel.disclosure`. |
 
 ### 4.7 Section [F]: Error & Empty States (エラー・空状態)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 42 | `alertError` | Error Banner | Alert (`destructive`) | String | Conditional | Hidden by default. Shown on API errors (400/401/429/500). Contains error message + retry button. | — | API error response message | i18n key: `matching.errors.serverError`. |
-| 43 | `btnRetry` | Retry Button | Button (`button`, `outline`) | — | Conditional | Inside `alertError`. Text: "Retry" / "再試行" | — | — | Refetches last failed query. i18n key: `matching.errors.retry`. |
-| 44 | `emptyResults` | Empty Results State | EmptyState | — | Conditional | Shown when query returns `total = 0`. Text: "No matching products" + Reset Filters button. | — | `response.meta.total = 0` | i18n key: `matching.empty`. |
-| 45 | `btnResetFiltersEmpty` | Reset Filters (Empty State) | Button (`button`, `outline`) | — | Conditional | Inside `emptyResults`. Text: "Reset Filters" | — | — | Resets all filters to defaults. i18n key: `matching.empty.resetFilters`. |
+| 46 | `alertError` | Error Banner | Alert (`destructive`) | String | Conditional | Hidden by default. Shown on API errors (400/401/429/500). Contains error message + retry button. | — | API error response message | i18n key: `matching.errors.serverError`. |
+| 47 | `btnRetry` | Retry Button | Button (`button`, `outline`) | — | Conditional | Inside `alertError`. Text: "Retry" / "再試行" | — | — | Refetches last failed query. i18n key: `matching.errors.retry`. |
+| 48 | `emptyResults` | Empty Results State | EmptyState | — | Conditional | Shown when query returns `total = 0`. Text: "No matching products" + Reset Filters button. | — | `response.meta.total = 0` | i18n key: `matching.empty`. |
+| 49 | `btnResetFiltersEmpty` | Reset Filters (Empty State) | Button (`button`, `outline`) | — | Conditional | Inside `emptyResults`. Text: "Reset Filters" | — | — | Resets all filters to defaults. i18n key: `matching.empty.resetFilters`. |
 
 ---
 
@@ -334,7 +333,7 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Exception Handling:**
   - `VAL-MATCH-003` / `VAL-MATCH-004`: Inline error "Minimum/Maximum price must be 0 or more".
 
-### 5.5 Filter Change — Ingredients (`chkIngredients` onChange)
+### 5.4 Filter Change — Ingredients (`chkIngredients` onChange)
 - **Trigger:** Buyer checks/unchecks an ingredient checkbox.
 - **Processing Logic:**
   1. Update URL query param `ingredients` (comma-separated).
@@ -344,7 +343,7 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Exception Handling:**
   - `VAL-MATCH-002`: "Invalid ingredients".
 
-### 5.6 Reset Filters (`btnResetFilters` onClick / `btnResetFiltersEmpty` onClick)
+### 5.5 Reset Filters (`btnResetFilters` onClick / `btnResetFiltersEmpty` onClick)
 - **Trigger:** Buyer clicks "Reset Filters" button.
 - **Processing Logic:**
   1. Clear all filter URL params (`skinTypes`, `ingredients`, `minPrice`, `maxPrice`).
@@ -353,7 +352,7 @@ The Recommendations page is the personalized product discovery entry point in th
   4. Trigger refetch with default params.
 - **Exception Handling:** None applicable.
 
-### 5.7 Sort Change
+### 5.6 Sort Change
 - **Trigger:** Buyer changes sort dropdown.
 - **Processing Logic:**
   1. Update URL query params `sort` and `order`.
@@ -363,7 +362,7 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Exception Handling:**
   - `VAL-MATCH-006`: "Invalid sort field".
 
-### 5.8 Pagination — Page Change (`pagPagination` onPageChange)
+### 5.7 Pagination — Page Change (`pagPagination` onPageChange)
 - **Trigger:** Buyer clicks a page number or previous/next arrow.
 - **Processing Logic:**
   1. Update URL query param `page`.
@@ -371,7 +370,7 @@ The Recommendations page is the personalized product discovery entry point in th
   3. Scroll to top of grid.
 - **Exception Handling:** None applicable.
 
-### 5.9 Load More — Mobile (`btnLoadMore` onClick)
+### 5.8 Load More — Mobile (`btnLoadMore` onClick)
 - **Trigger:** Buyer clicks "Load More" button on mobile.
 - **Processing Logic:**
   1. Increment `page` by 1.
@@ -379,13 +378,13 @@ The Recommendations page is the personalized product discovery entry point in th
   3. Append new results to existing grid.
 - **Exception Handling:** None applicable.
 
-### 5.10 Recommendation Card Click (`cardRecommendation` onClick)
+### 5.9 Recommendation Card Click (`cardRecommendation` onClick)
 - **Trigger:** Buyer clicks a recommendation card (image or name).
 - **Processing Logic:**
   1. Navigate to `/buyer/products/:id`.
 - **Exception Handling:** None applicable (navigation only).
 
-### 5.11 History Session Expand/Collapse (`accHistorySessions` onToggle)
+### 5.10 History Session Expand/Collapse (`accHistorySessions` onToggle)
 - **Trigger:** Buyer clicks a history session accordion row.
 - **Processing Logic:**
   1. Toggle expanded/collapsed state.
@@ -393,7 +392,7 @@ The Recommendations page is the personalized product discovery entry point in th
   3. Collapsed: Show only date header + chevron.
 - **Exception Handling:** None applicable.
 
-### 5.12 Ad Panel — Auto-Slide
+### 5.11 Ad Panel — Auto-Slide
 - **Trigger:** Page load (panel visible).
 - **Processing Logic:**
   1. Start 5-second auto-slide timer (BR-MATCH-048).
@@ -402,21 +401,21 @@ The Recommendations page is the personalized product discovery entry point in th
   4. Dot indicators update on slide change.
 - **Exception Handling:** None applicable.
 
-### 5.13 Ad Panel — Impression Tracking
+### 5.12 Ad Panel — Impression Tracking
 - **Trigger:** Panel becomes visible (IntersectionObserver threshold ≥ 50%).
 - **Processing Logic:**
   1. Fire-and-forget `POST /api/v1/ads/track/impression` with visible ad IDs.
   2. Record impression event via ad tracking service.
 - **Exception Handling:** Silent (no user-facing error).
 
-### 5.14 Ad Panel — CTA Click (`btnAdCta` onClick)
+### 5.13 Ad Panel — CTA Click (`btnAdCta` onClick)
 - **Trigger:** Buyer clicks "Shop Now" / "View Product" CTA on ad slide.
 - **Processing Logic:**
   1. Fire-and-forget `POST /api/v1/ads/track/click` with `adId`.
   2. Navigate to `ad.linkUrl`.
 - **Exception Handling:** None applicable.
 
-### 5.15 Start Skin Analysis CTA (`lnkStartAnalysis` onClick)
+### 5.14 Start Skin Analysis CTA (`lnkStartAnalysis` onClick)
 - **Trigger:** Buyer clicks "Start Skin Analysis →" in Profile Prompt Banner.
 - **Processing Logic:**
   1. Navigate to `/buyer/skin-analysis`.
@@ -610,7 +609,7 @@ The Recommendations page is the personalized product discovery entry point in th
 ```json
 {
   "statusCode": 400,
-  "message": ["limit must not be greater than 50", "rating must not be greater than 5"],
+  "message": ["limit must not be greater than 50"],
   "error": "Bad Request",
   "timestamp": "2026-08-28T12:00:00.000Z",
   "path": "/api/v1/recommendations/personalized"
