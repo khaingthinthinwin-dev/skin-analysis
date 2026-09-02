@@ -4,11 +4,11 @@ export interface Profile extends User {
   phone?: string | null
   emailVerified?: boolean
   updatedAt?: string
+  roleCode?: string
 }
 
 export interface UpdateProfileData {
   name?: string
-  phone?: string
   avatarUrl?: string
 }
 

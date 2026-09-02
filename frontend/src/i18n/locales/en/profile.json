@@ -17,7 +17,11 @@
     "memberSince": "Member Since",
     "emailVerification": "Email Verification",
     "verified": "Verified",
-    "notVerified": "Not Verified"
+    "notVerified": "Not Verified",
+    "licenseStatus": "License Status",
+    "licenseApproved": "Approved",
+    "licenseRejected": "Rejected",
+    "licensePending": "Pending"
   },
   "form": {
     "title": "Edit Profile",

@@ -46,7 +46,7 @@ export function ChangePasswordForm() {
       })
       toast.success(t('profile.password.success', 'Password changed successfully'))
       form.reset()
-    } catch (error) {
+    } catch {
       toast.error(t('profile.password.error', 'Failed to change password'))
     }
   }
@@ -71,21 +71,23 @@ export function ChangePasswordForm() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showCurrentPassword ? 'text' : 'password'}
                         placeholder={t('profile.password.currentPlaceholder', 'Enter your current password')}
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        tabIndex={-1}
                       >
                         {showCurrentPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                       </Button>
                     </div>
@@ -104,21 +106,23 @@ export function ChangePasswordForm() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showNewPassword ? 'text' : 'password'}
                         placeholder={t('profile.password.newPlaceholder', 'Create a new password')}
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                         onClick={() => setShowNewPassword(!showNewPassword)}
+                        tabIndex={-1}
                       >
                         {showNewPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                       </Button>
                     </div>
@@ -141,21 +145,23 @@ export function ChangePasswordForm() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder={t('profile.password.confirmPlaceholder', 'Confirm your new password')}
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        tabIndex={-1}
                       >
                         {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                       </Button>
                     </div>

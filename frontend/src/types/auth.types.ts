@@ -9,6 +9,7 @@ export interface User {
   role: UserRole
   merchantId?: string | null
   avatar?: string
+  avatarUrl?: string
   licenseUrl?: string | null
   licenseStatus?: LicenseStatus
   createdAt: string

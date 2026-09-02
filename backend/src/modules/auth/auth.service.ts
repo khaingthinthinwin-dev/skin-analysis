@@ -17,7 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { CreateAdminDto, AdminRole } from './dto/create-admin.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { RedisService } from '../../shared/redis/redis.service';
@@ -83,6 +83,8 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
+        avatar: user.avatarUrl || undefined,
+        avatarUrl: user.avatarUrl,
       },
       ...tokens,
     };
@@ -119,6 +121,8 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.roleCode,
+        avatar: user.avatarUrl || undefined,
+        avatarUrl: user.avatarUrl,
       },
       ...tokens,
     };
@@ -214,6 +218,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.roleCode,
+      avatar: user.avatarUrl || undefined,
       avatarUrl: user.avatarUrl,
       merchantId: null,
       licenseStatus: null,

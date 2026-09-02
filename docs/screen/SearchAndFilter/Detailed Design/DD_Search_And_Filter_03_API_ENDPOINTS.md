@@ -71,7 +71,7 @@ Search, filter, sort, and paginate the product catalog.
   - `500 INTERNAL_SERVER_ERROR` — Server error
 - **Logic:** Calls `service.searchProducts(query)`
 - **Cache:** Redis key `cache:products:list:{hashOfQuery}`, TTL 2 minutes
-- **Guard Conditions:** Only `is_active = true` products from approved merchants (`merchants.license_status = 'approved'`, DBS §3.2) and approved shops (`shops.is_approved = true`)
+- **Product Visibility Restriction:** Return only products that satisfy all of the following conditions: `products.is_active = true`, `merchants.license_status = 'approved'`, and `shops.is_approved = true`. The merchant and shop conditions are conjunctive: exclude every product whose merchant license is not approved or whose shop is not approved (`merchants.license_status <> 'approved'` or `shops.is_approved <> true`), as well as every inactive product (DBS §3.2; BR-SEARCH-012, BR-SEARCH-013).
 - **Rate Limit:** 60 requests per IP per minute
 
 ### 2.2 GET /categories
@@ -158,7 +158,7 @@ Retrieve full product detail by slug.
   - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
   - `500 INTERNAL_SERVER_ERROR` — Server error
 - **Logic:** Calls `service.getProductBySlug(slug)`
-- **Guard Conditions:** Only `is_active = true` products from approved merchants (`merchants.license_status = 'approved'`) and approved shops (`shops.is_approved = true`)
+- **Product Visibility Restriction:** Return a product only when all of the following conditions are satisfied: `products.is_active = true`, `merchants.license_status = 'approved'`, and `shops.is_approved = true`. Exclude the product from detail responses when its merchant license is not approved or its shop is not approved (`merchants.license_status <> 'approved'` or `shops.is_approved <> true`), as well as when it is inactive; such a product is treated as not found (`404 NOT_FOUND`) (DBS §3.2; BR-SEARCH-012, BR-SEARCH-013).
 - **Rate Limit:** 60 requests per IP per minute
 
 ### 2.4 GET /ads

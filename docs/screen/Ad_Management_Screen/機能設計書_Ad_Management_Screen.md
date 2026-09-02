@@ -12,7 +12,7 @@
 | **Function ID** | FN-ADM-001 |
 | **Version** | 1.1 |
 | **Created** | 2026-08-24 |
-| **Last Updated** | 2026-08-25 |
+| **Last Updated** | 2026-08-27 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -409,7 +409,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 ## 5. Screen Specifications
 
-### 5.1 Screen: Admin Advertisement List (`/admin/advertisements`)
+### 5.1 Screen: Admin Advertisement List (`/admin/ads`)
 
 **Purpose:** Display all advertisements with filtering, searching, and bulk selection capabilities.
 
@@ -513,7 +513,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-62 | Confirm Approve Button | Button (success) | `ads.confirmBulkApprove` | Yes | Confirm and execute bulk approval |
 | EL-63 | Cancel Button | Button (secondary) | `ads.cancel` | No | Close modal |
 
-### 5.5 Screen: Package & Fee Management (`/admin/advertisements/packages`)
+### 5.5 Screen: Package & Fee Management (`/admin/ads/packages`)
 
 **Purpose:** Allow admins to view, create, edit, activate/deactivate fee settings per placement and tier.
 
@@ -577,7 +577,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-90c | Confirm Deactivate Button | Button (danger) | `ads.confirmDeactivate` | Yes | Confirm deactivation |
 | EL-90d | Cancel Button | Button (secondary) | `ads.cancel` | No | Close modal |
 
-### 5.6 Screen: Fee Change History (`/admin/advertisements/fee-history`)
+### 5.6 Screen: Fee Change History (`/admin/ads/fee-history`)
 
 **Purpose:** Display historical fee changes with timestamps, reasons, and before/after values.
 
@@ -592,7 +592,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-94 | History Table | Data Table | — | Yes | Columns: Date, Placement, Tier, Old Rate, New Rate, Changed By, Reason |
 | EL-95 | Export Button | Button (secondary) | `ads.exportFeeHistory` | No | Export fee history log |
 
-### 5.7 Screen: Revenue Analytics (`/admin/advertisements/analytics`)
+### 5.7 Screen: Revenue Analytics (`/admin/ads/analytics`)
 
 **Purpose:** Display financial charts and summary metrics for ad revenue breakdown by placement and tier.
 
@@ -633,7 +633,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | EL-113 | Ads by Placement Table | Data Table | `ads.adsByPlacement` | Yes | Table: placement, ad count, total revenue, avg CTR |
 | EL-114 | Ads by Tier Table | Data Table | `ads.adsByTier` | Yes | Table: tier, ad count, total revenue, avg CTR |
 
-### 5.8 Screen: Export Reports (`/admin/advertisements/export`)
+### 5.8 Screen: Export Reports (`/admin/ads/export`)
 
 **Purpose:** Allow admins to export Ad Performance reports, Shop ad submission history, and Fee History logs.
 
@@ -688,7 +688,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Navigate to `/admin/advertisements` |
+| **Trigger** | Navigate to `/admin/ads` |
 | **API Endpoint** | `GET /api/v1/admin/ads` |
 | **Query Parameters** | `status` (optional), `placement` (optional), `tier` (optional), `shop` (optional search), `dateFrom` (optional), `dateTo` (optional), `page`, `limit` |
 | **Processing Steps** | 1. Validate JWT token and admin role. 2. Query `advertisements` joined with `shops` and `ad_fee_settings`. 3. Apply filters (status, placement, tier, shop search, date range). 4. Paginate results. 5. Return paginated ad list with shop info, fee info, and payment status. |
@@ -746,7 +746,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Navigate to `/admin/advertisements/packages` |
+| **Trigger** | Navigate to `/admin/ads/packages` |
 | **API Endpoints** | `GET /api/v1/admin/ad-fees` (list), `POST /api/v1/admin/ad-fees` (create), `PUT /api/v1/admin/ad-fees/:id` (update), `PATCH /api/v1/admin/ad-fees/:id/deactivate` (deactivate) |
 | **Processing Steps (GET)** | 1. Validate admin role. 2. Query all `ad_fee_settings`. 3. Return fee settings list. |
 | **Processing Steps (POST)** | 1. Validate admin role. 2. Validate daily_rate > 0, duration_days > 0, max_ads > 0. 3. Check uniqueness: no active setting exists for the given placement+tier. If conflict, return 409. 4. Create `ad_fee_settings` record with `is_active=true`. 5. Create `ad_fee_history` record: `ad_fee_setting_id=<new_id>`, `old_daily_rate=null`, `new_daily_rate=daily_rate`, `old_duration_days=null`, `new_duration_days=duration_days`, `old_max_ads=null`, `new_max_ads=max_ads`, `changed_by=currentAdmin.id`, `change_reason`, `effective_from`. 6. Log FEE_CREATED event to audit_logs. 7. Return created fee setting. |
@@ -768,7 +768,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Navigate to `/admin/advertisements/analytics` |
+| **Trigger** | Navigate to `/admin/ads/analytics` |
 | **API Endpoint** | `GET /api/v1/admin/ads/analytics/revenue` |
 | **Query Parameters** | `dateFrom` (required), `dateTo` (required), `placement` (optional), `tier` (optional) |
 | **Processing Steps** | 1. Validate admin role. 2. Validate date range (dateFrom < dateTo, max 365 days). 3. Query `ad_payments` joined with `advertisements` and `ad_fee_settings` where `payment_status='completed'` and `advertisements.approval_status='approved'` and `paid_at` within date range. 4. Apply placement/tier filters if provided. 5. **Summary Metrics:** Calculate totalRevenue, totalAdsApproved, totalFeesCollected, avgRevenuePerAd, totalRefunds. 6. **By Placement:** GROUP BY placement, calculate revenue per placement. 7. **By Tier:** GROUP BY tier, calculate revenue per tier. 8. **Trend:** GROUP BY date (or week/month based on range), calculate daily revenue. 9. Return analytics DTO with all metrics and chart data. |
@@ -1185,27 +1185,27 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| Admin Dashboard | `/admin/advertisements` | Click "Advertisement Management" in nav |
-| Admin Dashboard | `/admin/advertisements/analytics` | Click "Revenue Analytics" shortcut |
-| New ad submission notification | `/admin/advertisements` | Click notification for new ad review |
+| Admin Dashboard | `/admin/ads` | Click "Advertisement Management" in nav |
+| Admin Dashboard | `/admin/ads/analytics` | Click "Revenue Analytics" shortcut |
+| New ad submission notification | `/admin/ads` | Click notification for new ad review |
 
 ### 12.2 Internal Navigation
 
 | Source | Target | Trigger |
 |--------|--------|---------|
-| `/admin/advertisements` | Ad Review Modal | Click "Review" on ad row |
-| `/admin/advertisements` | Bulk Reject Modal | Click "Bulk Reject" with ads selected |
-| `/admin/advertisements` | Bulk Approve Modal | Click "Bulk Approve" with ads selected |
-| `/admin/advertisements` | `/admin/advertisements/packages` | Click "Manage Packages" |
-| `/admin/advertisements` | `/admin/advertisements/analytics` | Click "Revenue Analytics" |
-| `/admin/advertisements` | `/admin/advertisements/export` | Click "Export" |
-| `/admin/advertisements/packages` | Edit Fee Modal | Click "Edit" on fee setting |
-| `/admin/advertisements/packages` | Create Fee Modal | Click "Create Fee Setting" |
-| `/admin/advertisements/packages` | Deactivate Fee Confirmation Modal | Click "Deactivate" on fee setting |
-| `/admin/advertisements/packages` | `/admin/advertisements/fee-history` | Click "View History" |
-| `/admin/advertisements/fee-history` | `/admin/advertisements/packages` | Click "Back to Packages" |
-| `/admin/advertisements/analytics` | `/admin/advertisements` | Click "Back to Ads" |
-| `/admin/advertisements/export` | `/admin/advertisements` | Click "Back to Ads" |
+| `/admin/ads` | Ad Review Modal | Click "Review" on ad row |
+| `/admin/ads` | Bulk Reject Modal | Click "Bulk Reject" with ads selected |
+| `/admin/ads` | Bulk Approve Modal | Click "Bulk Approve" with ads selected |
+| `/admin/ads` | `/admin/ads/packages` | Click "Manage Packages" |
+| `/admin/ads` | `/admin/ads/analytics` | Click "Revenue Analytics" |
+| `/admin/ads` | `/admin/ads/export` | Click "Export" |
+| `/admin/ads/packages` | Edit Fee Modal | Click "Edit" on fee setting |
+| `/admin/ads/packages` | Create Fee Modal | Click "Create Fee Setting" |
+| `/admin/ads/packages` | Deactivate Fee Confirmation Modal | Click "Deactivate" on fee setting |
+| `/admin/ads/packages` | `/admin/ads/fee-history` | Click "View History" |
+| `/admin/ads/fee-history` | `/admin/ads/packages` | Click "Back to Packages" |
+| `/admin/ads/analytics` | `/admin/ads` | Click "Back to Ads" |
+| `/admin/ads/export` | `/admin/ads` | Click "Back to Ads" |
 | Any admin ad page | `/admin/dashboard` | Navigate away |
 
 ### 12.3 Modal Transitions

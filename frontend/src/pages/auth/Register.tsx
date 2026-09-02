@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -28,11 +28,11 @@ import {
 } from '@/components/ui/form'
 import { useAuth } from '@/hooks/useAuth'
 import { registerSchema, type RegisterFormData } from '@/schemas/auth.schema'
-import { ROUTES } from '@/lib/constants'
+import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
 export default function Register() {
   const { t } = useTranslation()
-  const { register } = useAuth()
+  const { register, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -55,6 +55,9 @@ export default function Register() {
     },
     mode: 'onTouched',
   })
+
+  if (authLoading) return null
+  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
 
   const password = form.watch('password')
   const role = form.watch('role')
@@ -172,11 +175,12 @@ export default function Register() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showPassword ? 'text' : 'password'}
                         placeholder={t('auth.register.passwordPlaceholder')}
                         autoComplete="new-password"
                         maxLength={128}
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
@@ -187,9 +191,9 @@ export default function Register() {
                         tabIndex={-1}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
                           <Eye className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="sr-only">
                           {showPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}
@@ -229,10 +233,11 @@ export default function Register() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder={t('auth.register.confirmPasswordPlaceholder')}
                         autoComplete="new-password"
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
@@ -243,9 +248,9 @@ export default function Register() {
                         tabIndex={-1}
                       >
                         {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
                           <Eye className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="sr-only">
                           {showConfirmPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}

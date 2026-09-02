@@ -105,5 +105,11 @@
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
     "copyright": "© 2026 Cosmetics Finder. 全著作権所有。"
+  },
+  "roles": {
+    "buyer": "購入者",
+    "merchant": "出品者",
+    "admin": "管理者",
+    "super_admin": "スーパー管理者"
   }
 }

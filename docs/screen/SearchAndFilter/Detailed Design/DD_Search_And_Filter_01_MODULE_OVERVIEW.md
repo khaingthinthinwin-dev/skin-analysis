@@ -9,7 +9,7 @@
 
 The **Search & Filter Module** (検索・フィルタモジュール) is the product discovery and exploration subsystem within the Cosmetics Finder platform. It provides the complete set of capabilities necessary for all users (Visitor, Buyer, Merchant, Admin — REQUIREMENT_SPEC §2.2) to locate skincare products by keyword search, navigate the hierarchical category tree, apply multi-dimensional filters (skin type, ingredients, price range, minimum rating), sort results, and paginate through the catalog. The search results page also hosts the "Search Results Top" sponsored advertisement placement (REQUIREMENT_SPEC §5.3). All search state is persisted in URL query parameters as the single source of truth, ensuring results are shareable, bookmarkable, and back-button friendly. Performance is maintained through Redis cache-aside patterns (product list TTL 2 min, category tree TTL 30 min) and TanStack Query client-side caching.
 
-**Page layout flow:** A → Advertisement → B+C → D — The page header ([A]) renders at the top, followed by the sponsored ad slide-down panel (between [A] and [B+C]), then the search bar ([B]) and filters panel ([C]) in the same row, with the results area ([D]) below. On desktop, [B] and [C] are side-by-side; on mobile, [B] and [C] trigger are in the same row.
+**Page layout flow:** A → Advertisement → B+C → D — The page header ([A]) renders at the top, followed by the sponsored ad slide-down panel (between [A] and [B+C]), then the search bar ([B]) and filters panel ([C]) in the same row, with the results area ([D]) below. On desktop, [B] and [C] are side-by-side; on mobile, [B] and [C] trigger are in the same row. On page load, the Ad API and Product Search API start in parallel and are non-blocking: the ad response may slide down when ready, while product search renders independently and is never delayed by ad loading.
 
 ---
 
@@ -54,7 +54,7 @@ stateDiagram-v2
     ERROR --> LOADING : Retry clicked
     ERROR --> IDLE : Clear all filters + keyword
     
-    LOADING --> LOADING : Supersede in-flight query (new query replaces old)
+    LOADING --> LOADING : URL state changed (cancel/overwrite prior query; latest request only)
 ```
 
 **Query Lifecycle States:**
@@ -69,19 +69,21 @@ stateDiagram-v2
 
 ---
 
-## 4. URL-State Architecture & Permissions
+## 4. URL-State Architecture & Request Lifecycle
 
 1. **URL as Single Source of Truth**: All search state (`q`, `categoryId`, `skinTypes`, `ingredients`, `minPrice`, `maxPrice`, `rating`, `sort`, `order`, `page`, `limit`) is persisted in URL query parameters (BR-SEARCH-003). Never React Context.
-2. **Public Endpoints**: Search, category browsing, and product detail require no authentication — fully open to visitors and authenticated users alike.
-3. **Visibility Rules**: Only `is_active = true` products from `shops.is_approved = true` are surfaced (BR-SEARCH-012, BR-SEARCH-013). Out-of-stock products remain listed but flagged `isInStock: false` (BR-SEARCH-014).
-4. **Debounce**: Keyword input fires after 300ms of typing inactivity (ST-DEB-001). Search button and filter changes fire immediately (ST-DEB-003).
-5. **Cache-Aside Pattern**: Redis checked first → miss → query DB → seed Redis. List cache key is a hash of serialized query params. Always set TTL; never cache sensitive data (BR-SEARCH-005).
-6. **Page Reset on Change**: Any filter or sort change resets `page` to 1 (BR-SEARCH-011).
-7. **Supersede In-Flight**: If a new query fires while a previous request is still in-flight, the previous request is cancelled/ignored; only the latest state renders (ST-DEB-004).
-8. **Rate Limiting**: Public search endpoint is rate-limited to protect against abuse (429 response with retry-after).
-9. **Data Isolation**: Unapproved merchant/shop products are excluded at the query level (REQUIREMENT_SPEC §2.4, DEV §12.2). SQL injection prevented via Prisma parameterized queries.
-10. **View Mode Toggle**: Grid/List toggle persists to `localStorage` (`search.viewMode`), defaults to Grid, and is never written to URL params — search/filter/sort/page state is unaffected. Switching views re-renders already-fetched data — no API refetch triggered.
-11. **Sponsored Ad Panel**: `slotAdTop` renders between the page header ([A]) and the search bar + filters row ([B]+[C]) as a slide-down panel spanning the full container width. Ad fetch is independent of product results — never blocks or defers product loading. On ad fetch error or no eligible ads: hidden — graceful degradation.
+2. **Separate URL-State Lifecycle**: URL search-state parsing, validation, serialization, and history updates are managed separately from product request execution. Each canonical URL-state snapshot produces one product query; unrelated UI state must not trigger a search.
+3. **Latest State Wins**: When the canonical URL search state changes, cancel the previous in-flight product request where supported, overwrite its request identity, and start the latest request. Ignore any late response whose request identity no longer matches the current URL state; only the latest result may update the UI (ST-DEB-004).
+4. **Parallel Ad and Product Requests**: The Ad API (`GET /api/v1/ads?placement=search_top`) and Product Search API start independently and in parallel. Ad loading, failure, or an empty response must never block, cancel, defer, or replace product search. The ad panel degrades to hidden on failure or when no eligible ad exists.
+5. **Public Endpoints**: Search, category browsing, and product detail require no authentication — fully open to visitors and authenticated users alike.
+6. **Visibility Rules**: Only `is_active = true` products from `shops.is_approved = true` are surfaced (BR-SEARCH-012, BR-SEARCH-013). Out-of-stock products remain listed but flagged `isInStock: false` (BR-SEARCH-014).
+7. **Debounce**: Keyword input fires after 300ms of typing inactivity (ST-DEB-001). Search button and filter changes fire immediately (ST-DEB-003).
+8. **Cache-Aside Pattern**: Redis checked first → miss → query DB → seed Redis. List cache key is a hash of serialized query params. Always set TTL; never cache sensitive data (BR-SEARCH-005).
+9. **Page Reset on Change**: Any filter or sort change resets `page` to 1 (BR-SEARCH-011).
+10. **Rate Limiting**: Public search endpoint is rate-limited to protect against abuse (429 response with retry-after).
+11. **Data Isolation**: Unapproved merchant/shop products are excluded at the query level (REQUIREMENT_SPEC §2.4, DEV §12.2). SQL injection prevented via Prisma parameterized queries.
+12. **View Mode Toggle**: Grid/List toggle persists to `localStorage` (`search.viewMode`), defaults to Grid, and is never written to URL params — search/filter/sort/page state is unaffected. Switching views re-renders already-fetched data — no API refetch triggered.
+13. **Sponsored Ad Panel**: `slotAdTop` renders between the page header ([A]) and the search bar + filters row ([B]+[C]) as a slide-down panel spanning the full container width.
 
 ---
 

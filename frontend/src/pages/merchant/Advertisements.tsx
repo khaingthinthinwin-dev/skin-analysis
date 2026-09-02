@@ -1,6 +1,6 @@
-import { Megaphone, Plus, Eye, MousePointerClick, Clock } from 'lucide-react'
+import { Megaphone, Plus, Eye, MousePointerClick } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function Advertisements() {
   const ads = [

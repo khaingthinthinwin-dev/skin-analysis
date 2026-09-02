@@ -2,9 +2,10 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import type { User } from '../services/admin.service';
 
 interface UsersTableProps {
-  users?: any[];
+  users?: User[];
   onToggleStatus?: (userId: string, currentStatus: boolean) => void;
 }
 
@@ -31,7 +32,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users = [], onToggleStat
             </TableRow>
           ) : (
             users.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={String(user.id)}>
                 <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
@@ -48,7 +49,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users = [], onToggleStat
                   <Button
                     size="sm"
                     variant={user.isActive ? 'destructive' : 'default'}
-                    onClick={() => onToggleStatus?.(user.id, user.isActive)}
+                    onClick={() => onToggleStatus?.(String(user.id), user.isActive)}
                   >
                     {user.isActive ? 'Deactivate' : 'Activate'}
                   </Button>

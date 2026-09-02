@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import type { Profile } from '@/types/profile.types'
-import { Mail, Phone, Calendar, Shield } from 'lucide-react'
+import { Mail, Calendar, Shield, FileCheck } from 'lucide-react'
 
 interface ProfileInfoCardProps {
   profile: Profile
@@ -42,6 +42,8 @@ function formatDate(dateString: string): string {
 
 export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
   const { t } = useTranslation()
+  const userRole = profile.role || profile.roleCode || 'buyer'
+  const roleDefault = userRole === 'super_admin' ? 'Super Admin' : userRole.charAt(0).toUpperCase() + userRole.slice(1)
 
   return (
     <Card>
@@ -55,14 +57,14 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
         {/* Avatar and Name Section */}
         <div className="flex items-center space-x-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={profile.avatarUrl || undefined} alt={profile.name} />
+            <AvatarImage src={profile.avatar || undefined} alt={profile.name} />
             <AvatarFallback className="text-lg">{getInitials(profile.name)}</AvatarFallback>
           </Avatar>
           <div className="space-y-1">
             <h3 className="text-2xl font-semibold">{profile.name}</h3>
-            <Badge className={getRoleBadgeColor(profile.role)}>
+            <Badge className={getRoleBadgeColor(userRole)}>
               <Shield className="mr-1 h-3 w-3" />
-              {t(`roles.${profile.role}`, profile.role)}
+              {t(`roles.${userRole}`, roleDefault)}
             </Badge>
           </div>
         </div>
@@ -82,16 +84,6 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
               <p className="text-sm text-muted-foreground">{profile.email}</p>
             </div>
           </div>
-
-          <div className="flex items-center space-x-3">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">{t('profile.info.phone', 'Phone')}</p>
-              <p className="text-sm text-muted-foreground">
-                {profile.phone || t('profile.info.notProvided', 'Not provided')}
-              </p>
-            </div>
-          </div>
         </div>
 
         <Separator />
@@ -101,6 +93,32 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
           <h4 className="text-sm font-medium text-muted-foreground">
             {t('profile.info.accountDetails', 'Account Details')}
           </h4>
+
+          {userRole === 'merchant' && (
+            <div className="flex items-center space-x-3">
+              <FileCheck className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">
+                  {t('profile.info.licenseStatus', 'License Status')}
+                </p>
+                <Badge
+                  variant={
+                    profile.licenseStatus === 'approved'
+                      ? 'default'
+                      : profile.licenseStatus === 'rejected'
+                        ? 'destructive'
+                        : 'secondary'
+                  }
+                >
+                  {profile.licenseStatus === 'approved'
+                    ? t('profile.info.licenseApproved', 'Approved')
+                    : profile.licenseStatus === 'rejected'
+                      ? t('profile.info.licenseRejected', 'Rejected')
+                      : t('profile.info.licensePending', 'Pending')}
+                </Badge>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center space-x-3">
             <Calendar className="h-4 w-4 text-muted-foreground" />

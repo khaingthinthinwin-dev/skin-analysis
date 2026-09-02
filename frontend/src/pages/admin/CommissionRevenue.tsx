@@ -1,5 +1,4 @@
 // [PPH] Commission & Revenue - Manage platform fees, payouts, and revenue targets
-import React from 'react';
 import { useCommission } from '@/features/admin/commission-revenue/hooks/useCommission';
 import { CommissionTable } from '@/features/admin/commission-revenue/components/CommissionTable';
 import { PayoutTable } from '@/features/admin/commission-revenue/components/PayoutTable';

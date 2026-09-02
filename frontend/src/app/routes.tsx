@@ -40,7 +40,6 @@ const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
 const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysis'))
 const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRecommendations'))
-const BuyerRecommendationHistory = lazy(() => import('@/pages/buyer/RecommendationHistory'))
 
 const MerchantDashboard = lazy(() => import('@/pages/merchant/Dashboard'))
 const MerchantProductManagement = lazy(() => import('@/pages/merchant/ProductManagement'))
@@ -112,7 +111,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'admin',
-        element: <ProtectedRoute allowedRoles={['admin', 'super_admin']} />,
+        element: <ProtectedRoute roles={['admin', 'super_admin']} />,
         children: [
           {
             element: <AdminLayout />,
@@ -211,7 +210,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'buyer',
-        element: <ProtectedRoute allowedRoles={['buyer']} />,
+        element: <ProtectedRoute roles={['buyer']} />,
         children: [
           {
             element: <BuyerLayout />,
@@ -281,14 +280,6 @@ export const router = createBrowserRouter([
                 ),
               },
               {
-                path: 'recommendation-history',
-                element: (
-                  <SuspenseWrapper>
-                    <BuyerRecommendationHistory />
-                  </SuspenseWrapper>
-                ),
-              },
-              {
                 path: 'order-insights',
                 element: (
                   <SuspenseWrapper>
@@ -318,7 +309,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'merchant',
-        element: <ProtectedRoute allowedRoles={['merchant']} />,
+        element: <ProtectedRoute roles={['merchant']} />,
         children: [
           {
             element: <MerchantLayout />,

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { ShieldCheck, Users, UserCheck, Megaphone, DollarSign, ClipboardList, ArrowRight } from 'lucide-react'
+import { ShieldCheck, Users, UserCheck, Megaphone, DollarSign, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useAdmin } from '@/features/admin/user-management/hooks/useAdmin'
