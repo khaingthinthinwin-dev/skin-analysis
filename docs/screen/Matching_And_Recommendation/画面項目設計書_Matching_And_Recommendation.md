@@ -4,9 +4,9 @@
 **Target Screen:** Recommendations Page (おすすめ商品ページ)  
 **Subsystem:** Buyer Module — Smart Product Matching & Personalized Recommendation  
 **Function ID:** FN-MATCH-001  
-**Version:** 1.0  
-**Created:** 2026-08-28  
-**Last Updated:** 2026-08-28  
+**Version:** 1.1  
+**Created:** 2026-09-01  
+**Last Updated:** 2026-09-02  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -19,8 +19,8 @@
 
 | Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
-| 1.0 | 2026-08-28 | Senior System Engineer | Initial release. Screen items specification for Recommendations page covering personalized recommendations, matching filters, recommendation history, and cross-screen ad panel. |
-| 1.1 | 2026-08-30 | Senior System Engineer | Added missing DB field mappings to §7.1: `slug`, `compare_at_price`, `avgRating`, `reviewCount`. |
+| 1.0 | 2026-09-01 | Senior System Engineer | Initial release. Screen items specification for Recommendations page covering personalized recommendations, matching filters, recommendation history, and cross-screen ad panel. |
+| 1.1 | 2026-09-02 | Senior System Engineer | Added missing DB field mappings to §7.1: `slug`, `compare_at_price`, `avgRating`, `reviewCount`. |
 
 ### 1.2 Related Documents
 

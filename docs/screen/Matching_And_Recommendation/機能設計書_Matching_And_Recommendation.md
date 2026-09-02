@@ -11,8 +11,8 @@
 | **Subsystem** | Buyer Module — Smart Product Matching & Personalized Recommendation |
 | **Function ID** | FN-MATCH-001 |
 | **Version** | 1.0 |
-| **Created** | 2026-08-28 |
-| **Last Updated** | 2026-08-28 |
+| **Created** | 2026-08-26 |
+| **Last Updated** | 2026-08-31 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
