@@ -43,8 +43,11 @@ const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRe
 
 const MerchantDashboard = lazy(() => import('@/pages/merchant/Dashboard'))
 const MerchantProductManagement = lazy(() => import('@/pages/merchant/ProductManagement'))
+const MerchantProductCreate = lazy(() => import('@/pages/merchant/ProductCreate'))
+const MerchantProductEdit = lazy(() => import('@/pages/merchant/ProductEdit'))
 const MerchantAdvertisements = lazy(() => import('@/pages/merchant/Advertisements'))
 const MerchantPromotions = lazy(() => import('@/pages/merchant/Promotions'))
+import { MerchantErrorBoundary } from '@/components/merchant/MerchantErrorBoundary'
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>{children}</Suspense>
@@ -307,6 +310,7 @@ export const router = createBrowserRouter([
       {
         path: 'merchant',
         element: <ProtectedRoute roles={['merchant']} />,
+        errorElement: <MerchantErrorBoundary />,
         children: [
           {
             element: <MerchantLayout />,
@@ -324,6 +328,22 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <MerchantProductManagement />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'products/new',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantProductCreate />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'products/:id/edit',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantProductEdit />
                   </SuspenseWrapper>
                 ),
               },
