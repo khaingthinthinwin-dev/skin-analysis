@@ -65,15 +65,16 @@ export class UpdateProductDto {
   lowStockThreshold?: number;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }): string[] => {
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value);
+        const parsed: unknown = JSON.parse(value);
+        return Array.isArray(parsed) ? (parsed as string[]) : [];
       } catch {
         return [];
       }
     }
-    return value;
+    return Array.isArray(value) ? (value as string[]) : [];
   })
   @IsArray()
   @IsString({ each: true })
@@ -81,30 +82,32 @@ export class UpdateProductDto {
   skinTypes?: string[];
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }): string[] => {
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value);
+        const parsed: unknown = JSON.parse(value);
+        return Array.isArray(parsed) ? (parsed as string[]) : [];
       } catch {
         return [];
       }
     }
-    return value;
+    return Array.isArray(value) ? (value as string[]) : [];
   })
   @IsArray()
   @IsString({ each: true })
   ingredients?: string[];
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }): string[] => {
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value);
+        const parsed: unknown = JSON.parse(value);
+        return Array.isArray(parsed) ? (parsed as string[]) : [];
       } catch {
         return [];
       }
     }
-    return value;
+    return Array.isArray(value) ? (value as string[]) : [];
   })
   @IsArray()
   @IsString({ each: true })
@@ -112,34 +115,35 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }): boolean => {
     if (typeof value === 'string') {
       return value.toLowerCase() === 'true';
     }
-    return value;
+    return Boolean(value);
   })
   isActive?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }): boolean => {
     if (typeof value === 'string') {
       return value.toLowerCase() === 'true';
     }
-    return value;
+    return Boolean(value);
   })
   isFeatured?: boolean;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }): string[] => {
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value);
+        const parsed: unknown = JSON.parse(value);
+        return Array.isArray(parsed) ? (parsed as string[]) : [];
       } catch {
         return [];
       }
     }
-    return value;
+    return Array.isArray(value) ? (value as string[]) : [];
   })
   @IsArray()
   @IsString({ each: true })

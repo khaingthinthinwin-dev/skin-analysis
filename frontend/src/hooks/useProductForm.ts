@@ -1,8 +1,10 @@
-import { useForm } from 'react-hook-form'
+import { useForm, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createProductSchema, updateProductSchema } from '@/schemas/product.schema'
-import type { CreateProductFormData, UpdateProductFormData } from '@/schemas/product.schema'
+import { createProductSchema } from '@/schemas/product.schema'
+import type { CreateProductFormData, UpdateProductFormData, ProductFormData } from '@/schemas/product.schema'
 import type { Product } from '@/types/product.types'
+
+export type { CreateProductFormData, UpdateProductFormData, ProductFormData }
 
 function toNum(v: unknown): number {
   if (typeof v === 'number') return v
@@ -23,51 +25,59 @@ function toNumOrUndefined(v: unknown): number | undefined {
   return undefined
 }
 
-export function useCreateProductForm() {
-  return useForm<CreateProductFormData>({
+export function useProductForm(options: {
+  mode: 'create' | 'edit'
+  product?: Product
+}): UseFormReturn<ProductFormData> {
+  const { mode, product } = options
+  return useForm<ProductFormData>({
     resolver: zodResolver(createProductSchema),
-    defaultValues: {
-      name: '',
-      shortDescription: '',
-      description: '',
-      categoryId: '',
-      sku: '',
-      price: 0,
-      compareAtPrice: undefined,
-      stockQuantity: 0,
-      lowStockThreshold: 10,
-      skinTypes: [],
-      ingredients: [],
-      tags: [],
-      isActive: true,
-      isFeatured: false,
-      images: [],
-    },
+    defaultValues:
+      mode === 'edit' && product
+        ? {
+            name: product.name,
+            shortDescription: product.shortDescription,
+            description: product.description,
+            categoryId: product.category?.id ?? '',
+            sku: product.sku ?? '',
+            price: toNum(product.price),
+            compareAtPrice: toNumOrUndefined(product.compareAtPrice),
+            stockQuantity: toNum(product.stockQuantity),
+            lowStockThreshold: toNum(product.lowStockThreshold),
+            skinTypes: product.skinTypes ?? [],
+            ingredients: product.ingredients ?? [],
+            tags: product.tags ?? [],
+            isActive: product.isActive,
+            isFeatured: product.isFeatured,
+            retainedImageUrls: product.images ?? [],
+            images: [],
+          }
+        : {
+            name: '',
+            shortDescription: '',
+            description: '',
+            categoryId: '',
+            sku: '',
+            price: 0,
+            compareAtPrice: undefined,
+            stockQuantity: 0,
+            lowStockThreshold: 10,
+            skinTypes: [],
+            ingredients: [],
+            tags: [],
+            isActive: true,
+            isFeatured: false,
+            retainedImageUrls: [],
+            images: [],
+          },
   })
 }
 
-export function useUpdateProductForm(product?: Product) {
-  return useForm<UpdateProductFormData>({
-    resolver: zodResolver(updateProductSchema),
-    defaultValues: product
-      ? {
-          name: product.name,
-          shortDescription: product.shortDescription,
-          description: product.description,
-          categoryId: product.category.id,
-          sku: product.sku ?? '',
-          price: toNum(product.price),
-          compareAtPrice: toNumOrUndefined(product.compareAtPrice),
-          stockQuantity: toNum(product.stockQuantity),
-          lowStockThreshold: toNum(product.lowStockThreshold),
-          skinTypes: product.skinTypes ?? [],
-          ingredients: product.ingredients ?? [],
-          tags: product.tags ?? [],
-          isActive: product.isActive,
-          isFeatured: product.isFeatured,
-          retainedImageUrls: product.images ?? [],
-          images: [],
-        }
-      : undefined,
-  })
+export function useCreateProductForm() {
+  return useProductForm({ mode: 'create' })
 }
+
+export function useUpdateProductForm(product?: Product) {
+  return useProductForm({ mode: 'edit', product })
+}
+

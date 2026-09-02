@@ -310,6 +310,7 @@ export const router = createBrowserRouter([
       {
         path: 'merchant',
         element: <ProtectedRoute roles={['merchant']} />,
+        errorElement: <MerchantErrorBoundary />,
         children: [
           {
             element: <MerchantLayout />,

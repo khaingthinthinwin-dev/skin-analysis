@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
@@ -278,7 +277,8 @@ export class ProductsService {
       }
     }
 
-    const effectivePrice = dto.price !== undefined ? dto.price : Number(existing.price);
+    const effectivePrice =
+      dto.price !== undefined ? dto.price : Number(existing.price);
     if (
       dto.compareAtPrice !== undefined &&
       dto.compareAtPrice !== null &&

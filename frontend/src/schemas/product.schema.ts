@@ -24,40 +24,34 @@ export const createProductSchema = z.object({
   categoryId: z.string().min(1, 'Category is required'),
   sku: z.string().max(100, 'SKU must not exceed 100 characters').optional().or(z.literal('')),
   price: z
-    .number({ invalid_type_error: 'Price must be a number' })
+    .number({ message: 'Price must be a number' })
     .min(0.01, 'Price must be greater than 0'),
   compareAtPrice: z
-    .number({ invalid_type_error: 'Compare at price must be a number' })
+    .number({ message: 'Compare at price must be a number' })
     .min(0, 'Compare at price must be 0 or greater')
-    .optional()
-    .or(z.nan())
-    .transform((v) => (isNaN(v) ? undefined : v)),
+    .optional(),
   stockQuantity: z
-    .number({ invalid_type_error: 'Stock quantity must be a number' })
+    .number({ message: 'Stock quantity must be a number' })
     .int('Stock quantity must be a whole number')
-    .min(0, 'Stock quantity must be 0 or greater')
-    .default(0),
+    .min(0, 'Stock quantity must be 0 or greater'),
   lowStockThreshold: z
-    .number({ invalid_type_error: 'Low stock threshold must be a number' })
+    .number({ message: 'Low stock threshold must be a number' })
     .int('Low stock threshold must be a whole number')
     .min(0, 'Low stock threshold must be 0 or greater')
-    .optional()
-    .default(10),
-  skinTypes: z.array(z.string()).optional().default([]),
-  ingredients: z.array(z.string()).optional().default([]),
-  tags: z.array(z.string()).optional().default([]),
-  isActive: z.boolean().optional().default(true),
-  isFeatured: z.boolean().optional().default(false),
-  images: z.array(imageFileSchema).max(10, 'Maximum 10 images allowed').optional().default([]),
+    .optional(),
+  skinTypes: z.array(z.string()),
+  ingredients: z.array(z.string()),
+  tags: z.array(z.string()),
+  isActive: z.boolean(),
+  isFeatured: z.boolean(),
+  retainedImageUrls: z.array(z.string()),
+  images: z.array(imageFileSchema).max(10, 'Maximum 10 images allowed'),
 })
 
 export type CreateProductFormData = z.infer<typeof createProductSchema>
+export type ProductFormData = CreateProductFormData
 
-export const updateProductSchema = createProductSchema.partial().extend({
-  isActive: z.boolean(),
-  retainedImageUrls: z.array(z.string()).optional().default([]),
-  images: z.array(imageFileSchema).max(10, 'Maximum 10 images allowed').optional().default([]),
-})
+export const updateProductSchema = createProductSchema.partial()
 
 export type UpdateProductFormData = z.infer<typeof updateProductSchema>
 

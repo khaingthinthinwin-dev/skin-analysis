@@ -12,7 +12,7 @@ import { ImagePreviewGrid } from './ImagePreviewGrid'
 import { TagInput } from './TagInput'
 import { CategorySelect } from './CategorySelect'
 import { RichTextEditor } from './RichTextEditor'
-import { useCreateProductForm, useUpdateProductForm } from '@/hooks/useProductForm'
+import { useProductForm, type ProductFormData } from '@/hooks/useProductForm'
 import { useCreateProduct, useUpdateProduct } from '@/hooks/useProducts'
 import type { Product } from '@/types/product.types'
 
@@ -34,10 +34,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
 
-  const createForm = useCreateProductForm()
-  const updateForm = useUpdateProductForm(product)
-
-  const form = mode === 'edit' ? updateForm : createForm
+  const form = useProductForm({ mode, product })
   const {
     register,
     handleSubmit,
@@ -46,21 +43,15 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     formState: { errors },
   } = form
 
-  const onSubmit = async (data: Record<string, unknown>) => {
+  const onSubmit = async (data: ProductFormData) => {
     try {
       if (mode === 'create') {
-        await createProduct.mutateAsync(data as Parameters<typeof createProduct.mutateAsync>[0])
+        await createProduct.mutateAsync(data)
         toast.success('Product created successfully')
       } else if (product) {
-        const normalizedData = {
-          ...data,
-          isActive: data.isActive === undefined ? undefined : Boolean(data.isActive),
-          isFeatured: data.isFeatured === undefined ? undefined : Boolean(data.isFeatured),
-        }
-
         await updateProduct.mutateAsync({
           id: product.id,
-          data: normalizedData as Parameters<typeof updateProduct.mutateAsync>[0]['data'],
+          data,
         })
         toast.success('Product updated successfully')
       }
@@ -80,12 +71,12 @@ export function ProductForm({ product, mode }: ProductFormProps) {
       const data = form.getValues()
       const draftData = { ...data, isActive: false }
       if (mode === 'create') {
-        await createProduct.mutateAsync(draftData as Parameters<typeof createProduct.mutateAsync>[0])
+        await createProduct.mutateAsync(draftData)
         toast.success('Product saved as draft')
       } else if (product) {
         await updateProduct.mutateAsync({
           id: product.id,
-          data: { ...draftData, isActive: false } as Parameters<typeof updateProduct.mutateAsync>[0]['data'],
+          data: draftData,
         })
         toast.success('Product saved as draft')
       }
