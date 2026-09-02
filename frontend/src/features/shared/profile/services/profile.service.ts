@@ -1,6 +1,6 @@
 import apiClient from '@/lib/api-client'
 import type { Profile, UpdateProfileData, ChangePasswordData } from '@/types/profile.types'
-import type { UserRole } from '@/types/auth.types'
+import type { UserRole, LicenseStatus } from '@/types/auth.types'
 
 interface ProfileResponseData {
   id: string
@@ -11,6 +11,8 @@ interface ProfileResponseData {
   avatarUrl?: string
   phone?: string
   emailVerified?: boolean
+  licenseUrl?: string | null
+  licenseStatus?: LicenseStatus
   createdAt: string
   updatedAt?: string
 }

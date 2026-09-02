@@ -30,6 +30,14 @@ export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
+      include: {
+        merchantProfile: {
+          select: {
+            licenseStatus: true,
+            businessLicenseUrl: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -40,6 +48,8 @@ export class UsersService {
       ...user,
       role: user.roleCode,
       avatar: user.avatarUrl || undefined,
+      licenseStatus: user.merchantProfile?.licenseStatus || null,
+      licenseUrl: user.merchantProfile?.businessLicenseUrl || null,
     };
   }
 
@@ -55,12 +65,22 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
+      include: {
+        merchantProfile: {
+          select: {
+            licenseStatus: true,
+            businessLicenseUrl: true,
+          },
+        },
+      },
     });
 
     return {
       ...updatedUser,
       role: updatedUser.roleCode,
       avatar: updatedUser.avatarUrl || undefined,
+      licenseStatus: updatedUser.merchantProfile?.licenseStatus || null,
+      licenseUrl: updatedUser.merchantProfile?.businessLicenseUrl || null,
     };
   }
 

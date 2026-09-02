@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import type { Profile } from '@/types/profile.types'
-import { Mail, Calendar, Shield } from 'lucide-react'
+import { Mail, Calendar, Shield, FileCheck } from 'lucide-react'
 
 interface ProfileInfoCardProps {
   profile: Profile
@@ -93,6 +93,32 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
           <h4 className="text-sm font-medium text-muted-foreground">
             {t('profile.info.accountDetails', 'Account Details')}
           </h4>
+
+          {userRole === 'merchant' && (
+            <div className="flex items-center space-x-3">
+              <FileCheck className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">
+                  {t('profile.info.licenseStatus', 'License Status')}
+                </p>
+                <Badge
+                  variant={
+                    profile.licenseStatus === 'approved'
+                      ? 'default'
+                      : profile.licenseStatus === 'rejected'
+                        ? 'destructive'
+                        : 'secondary'
+                  }
+                >
+                  {profile.licenseStatus === 'approved'
+                    ? t('profile.info.licenseApproved', 'Approved')
+                    : profile.licenseStatus === 'rejected'
+                      ? t('profile.info.licenseRejected', 'Rejected')
+                      : t('profile.info.licensePending', 'Pending')}
+                </Badge>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center space-x-3">
             <Calendar className="h-4 w-4 text-muted-foreground" />
