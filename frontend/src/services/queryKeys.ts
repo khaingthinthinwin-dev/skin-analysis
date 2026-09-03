@@ -14,6 +14,11 @@ export const queryKeys = {
     list: (filters: ProductFilters) => [...queryKeys.products.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.products.all, id] as const,
   },
+  merchantProducts: {
+    all: ['merchantProducts'] as const,
+    list: (filters?: ProductFilters) => [...queryKeys.merchantProducts.all, 'list', filters] as const,
+    detail: (id: string) => [...queryKeys.merchantProducts.all, id] as const,
+  },
   wishlist: {
     all: ['wishlist'] as const,
     items: () => [...queryKeys.wishlist.all, 'items'] as const,

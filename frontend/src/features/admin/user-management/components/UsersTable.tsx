@@ -9,14 +9,6 @@ interface UsersTableProps {
   onToggleStatus?: (userId: string, currentStatus: boolean) => void;
 }
 
-interface User {
-  id: string;
-  name?: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-}
-
 export const UsersTable: React.FC<UsersTableProps> = ({ users = [], onToggleStatus }) => {
   return (
     <div className="rounded-md border bg-card">
