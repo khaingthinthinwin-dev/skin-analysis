@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService } from '../services/admin.service';
 
-export function useAdmin(params?: { role?: string; is_active?: boolean; page?: number; limit?: number }) {
+export function useAdmin(params?: {
+  status?: 'active' | 'inactive' | 'admin';
+  search?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
+}) {
   const queryClient = useQueryClient();
 
   const dashboardQuery = useQuery({
@@ -19,6 +26,7 @@ export function useAdmin(params?: { role?: string; is_active?: boolean; page?: n
       adminService.toggleUserStatus(userId, isActive),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard-stats'] });
     },
   });
 

@@ -12,9 +12,10 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role?: string;
+  roleCode: string;
+  avatarUrl?: string | null;
   isActive: boolean;
-  emailVerified: boolean;
   createdAt: string;
   merchant?: {
     id: string;
@@ -33,22 +34,24 @@ export interface PaginatedResponse<T> {
 
 export const adminService = {
   getDashboardStats: async (): Promise<DashboardStats> => {
-    const response = await api.get<DashboardStats>('/admin/dashboard-stats');
-    return response.data;
+    const response = await api.get('/admin/dashboard-stats');
+    return response.data.data;
   },
 
   getUsers: async (params?: {
-    role?: string;
-    is_active?: boolean;
+    status?: 'active' | 'inactive' | 'admin';
+    search?: string;
     page?: number;
     limit?: number;
+    sort?: string;
+    order?: 'asc' | 'desc';
   }): Promise<PaginatedResponse<User>> => {
     const response = await api.get('/admin/users', { params });
-    return response.data;
+    return response.data.data;
   },
 
-  toggleUserStatus: async (userId: string, isActive: boolean): Promise<User> => {
-    const response = await api.patch(`/admin/users/${userId}/status`, { is_active: isActive });
-    return response.data;
+  toggleUserStatus: async (userId: string, isActive: boolean): Promise<{ id: string; isActive: boolean; updatedAt: string }> => {
+    const response = await api.patch(`/admin/users/${userId}/status`, { isActive });
+    return response.data.data;
   },
 };
