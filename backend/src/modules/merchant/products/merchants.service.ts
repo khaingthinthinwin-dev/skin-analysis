@@ -9,7 +9,7 @@ export class MerchantsService {
     const { status, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = status
+    const where: { licenseStatus?: string } = status
       ? { licenseStatus: status }
       : {};
 
