@@ -1,4 +1,5 @@
 import type { ProductFilters } from '@/types'
+import type { ProductQueryParams } from '@/types/product.types'
 
 export const queryKeys = {
   auth: {
@@ -16,7 +17,7 @@ export const queryKeys = {
   },
   merchantProducts: {
     all: ['merchantProducts'] as const,
-    list: (filters?: ProductFilters) => [...queryKeys.merchantProducts.all, 'list', filters] as const,
+    list: (filters?: ProductQueryParams) => [...queryKeys.merchantProducts.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.merchantProducts.all, id] as const,
   },
   wishlist: {
