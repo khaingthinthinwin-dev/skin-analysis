@@ -10,8 +10,8 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 interface FlaggedProduct {
   id: string;
   name: string;
-  category?: { name: string };
-  merchant?: { shopName: string };
+  category?: { name?: string };
+  merchant?: { shopName?: string };
 }
 
 export default function ContentModeration() {
@@ -87,7 +87,7 @@ export default function ContentModeration() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => handleRemove(String(product.id), String(product.name))}
+                      onClick={() => handleRemove(product.id, product.name)}
                       disabled={deactivateProductMutation.isPending}
                     >
                       Remove

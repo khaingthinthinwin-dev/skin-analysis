@@ -5,7 +5,6 @@ import { ReviewsTable } from '@/features/admin/review-management/components/Revi
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toast';
-import type { ReviewReport } from '@/features/admin/content-moderation/services/moderation.service';
 
 export default function ReviewManagement() {
   const [page] = useState(1);
@@ -90,8 +89,8 @@ export default function ReviewManagement() {
                 <p className="text-center py-6 text-muted-foreground">No review reports.</p>
               ) : (
                 <div className="space-y-4">
-                  {reviewReportsQuery.data?.items?.map((report: ReviewReport) => (
-                    <div key={String(report.id)} className="border rounded-lg p-4 space-y-2">
+                  {reviewReportsQuery.data?.items?.map((report) => (
+                    <div key={report.id} className="border rounded-lg p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="font-medium">Reason:</span>{' '}
@@ -115,13 +114,13 @@ export default function ReviewManagement() {
                       {report.status === 'pending' && (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleResolveReport(String(report.id), 'resolved')}
+                            onClick={() => handleResolveReport(report.id, 'resolved')}
                             className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md"
                           >
                             Resolve
                           </button>
                           <button
-                            onClick={() => handleResolveReport(String(report.id), 'rejected')}
+                            onClick={() => handleResolveReport(report.id, 'rejected')}
                             className="px-3 py-1 text-sm bg-destructive text-destructive-foreground rounded-md"
                           >
                             Reject

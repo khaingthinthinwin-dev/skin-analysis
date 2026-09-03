@@ -1,4 +1,0 @@
-#!/bin/sh
-
-# Commit message format validation is disabled.
-exit 0

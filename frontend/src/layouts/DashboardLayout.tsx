@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { Outlet } from 'react-router'
+import { useState } from 'react'
 import { Menu, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
