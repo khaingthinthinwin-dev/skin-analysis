@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 @Injectable()
@@ -14,7 +15,7 @@ export class AuditLogsService {
     const { page = 1, limit = 20, action, userId } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (action) where.action = action;
     if (userId) where.userId = userId;
 
@@ -42,8 +43,8 @@ export class AuditLogsService {
     action: string;
     entityType: string;
     entityId?: string;
-    oldValue?: any;
-    newValue?: any;
+    oldValue?: Prisma.InputJsonValue;
+    newValue?: Prisma.InputJsonValue;
     ipAddress?: string;
     userAgent?: string;
   }) {

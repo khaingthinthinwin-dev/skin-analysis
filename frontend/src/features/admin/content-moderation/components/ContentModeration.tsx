@@ -4,8 +4,15 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, Trash2 } from 'lucide-react';
 
 interface ContentModerationProps {
-  flaggedItems?: any[];
+  flaggedItems?: FlaggedItem[];
   onRemoveItem?: (id: string) => void;
+}
+
+interface FlaggedItem {
+  id: string;
+  name?: string;
+  title?: string;
+  flagReason?: string;
 }
 
 export const ContentModeration: React.FC<ContentModerationProps> = ({

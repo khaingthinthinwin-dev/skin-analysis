@@ -1,5 +1,5 @@
-import { History, Sparkles, Calendar, CheckCircle2 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Calendar } from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export default function RecommendationHistory() {
   const history = [

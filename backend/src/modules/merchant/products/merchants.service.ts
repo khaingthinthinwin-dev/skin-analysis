@@ -9,7 +9,9 @@ export class MerchantsService {
     const { status, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = status ? { licenseStatus: status } : {};
+    const where: Record<string, unknown> = status
+      ? { licenseStatus: status }
+      : {};
 
     const [items, total] = await Promise.all([
       this.prisma.merchant.findMany({

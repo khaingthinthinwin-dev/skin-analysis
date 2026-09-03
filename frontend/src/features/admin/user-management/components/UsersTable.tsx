@@ -4,8 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 interface UsersTableProps {
-  users?: any[];
+  users?: User[];
   onToggleStatus?: (userId: string, currentStatus: boolean) => void;
+}
+
+interface User {
+  id: string;
+  name?: string;
+  email: string;
+  role: string;
+  isActive: boolean;
 }
 
 export const UsersTable: React.FC<UsersTableProps> = ({ users = [], onToggleStatus }) => {

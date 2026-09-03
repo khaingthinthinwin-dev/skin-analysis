@@ -1,5 +1,5 @@
 // [PET] Advertisement Management - Admin ad approval queue & fee settings
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAdvertisementApproval } from '@/features/admin/advertisement-management/hooks/useAdvertisementApproval';
 import { AdvertisementsTable } from '@/features/admin/advertisement-management/components/AdvertisementsTable';
 import { AdFeeSettingsTable } from '@/features/admin/advertisement-management/components/AdFeeSettingsTable';

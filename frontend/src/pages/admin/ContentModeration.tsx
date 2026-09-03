@@ -1,5 +1,4 @@
 // [PET] Content Moderation - Review and deactivate policy-violating products
-import React from 'react';
 import { useModeration } from '@/features/admin/content-moderation/hooks/useModeration';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,6 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+
+interface FlaggedProduct {
+  id: string;
+  name: string;
+  category?: { name?: string };
+  merchant?: { shopName?: string };
+}
 
 export default function ContentModeration() {
   const { flaggedContentQuery, deactivateProductMutation } = useModeration();
@@ -69,7 +75,7 @@ export default function ContentModeration() {
                 </TableCell>
               </TableRow>
             ) : (
-              flaggedContentQuery.data?.items?.map((product: any) => (
+              flaggedContentQuery.data?.items?.map((product: FlaggedProduct) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.category?.name || 'N/A'}</TableCell>

@@ -32,7 +32,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     defaultValues: {
       name: profile.name || '',
       phone: profile.phone || '',
-      avatarUrl: profile.avatarUrl || '',
+      avatarUrl: profile.avatar || '',
     },
   })
 
@@ -40,7 +40,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     try {
       await updateProfile.mutateAsync(data)
       toast.success(t('profile.form.success', 'Profile updated successfully'))
-    } catch (error) {
+    } catch {
       toast.error(t('profile.form.error', 'Failed to update profile'))
     }
   }
