@@ -3,6 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, Trash2 } from 'lucide-react';
 
+interface FlaggedItem {
+  id: string;
+  name?: string;
+  title?: string;
+  flagReason?: string;
+}
+
 interface ContentModerationProps {
   flaggedItems?: FlaggedItem[];
   onRemoveItem?: (id: string) => void;

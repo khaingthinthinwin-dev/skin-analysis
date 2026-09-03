@@ -147,5 +147,11 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "copyright": "© 2026 Cosmetics Finder. All rights reserved."
+  },
+  "roles": {
+    "buyer": "Buyer",
+    "merchant": "Merchant",
+    "admin": "Admin",
+    "super_admin": "Super Admin"
   }
 }

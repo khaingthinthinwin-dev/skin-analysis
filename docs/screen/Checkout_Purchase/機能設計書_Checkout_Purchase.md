@@ -10,9 +10,9 @@
 | **Target Screen** | Purchase & Checkout (購入・チェックアウト) |
 | **Subsystem** | Buyer Module — Checkout, Order Placement & Order History |
 | **Function ID** | FN-CHECK-001, FN-ORDER-001 |
-| **Version** | 1.2 |
+| **Version** | 1.3 |
 | **Created** | 2026-08-17 |
-| **Last Updated** | 2026-08-24 |
+| **Last Updated** | 2026-08-27 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -24,6 +24,7 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.2 | 2026-08-23 | Software Architect | Removed shipping fee and tax fee from checkout calculation. Total is now calculated as subtotal - discount. |
+| 1.3 | 2026-08-27 | Software Architect | Added sponsored ad slot specification for Checkout Top placement (UC-CHECK-008, Sec 4.4, Sec 5.1 EL-32~39, Sec 6.2, Sec 7.4, Sec 9.2.1, Sec 10.2, Sec 13.2). Includes ad fetch API, tier priority rules (Premium > Standard > Basic), round-robin rotation, slide-down panel behavior, auto-slide (5s interval, max 5 ads), responsive layouts, graceful degradation on error, pause-on-interaction (WCAG 2.2.2), reduced-motion support, click tracking analytics, Redis caching (TTL 5min), and cross-reference traceability updates. |
 | 1.1 | 2026-08-18 | Software Architect | Added checkout persistence design for cart conversion, inventory transaction logging, and order status history tracking. |
 | 1.0 | 2026-08-17 | Software Architect | Initial functional specification for Purchase and Checkout pages covering use cases, business rules, validation, error handling, and permission control. Aligned with REQUIREMENT_SPEC v1.5, DATABASE_SPEC v2.0, and DEVELOPMENT_RULES v2.0. |
 
@@ -65,10 +66,11 @@ This screen is responsible for the following core functional areas:
 2. **Coupon Validation** — Validating and applying discount codes (percentage or fixed) at checkout, enforcing expiry, minimum order amount, and single-use constraints.
 3. **Order Calculation** — Computing subtotal, discount amount, and final total based on cart items and applied coupons.
 4. **Order Placement** — Creating order records with status `placed`, decrementing stock atomically, clearing the cart, and returning order confirmation.
-5. **Order History** — Displaying a paginated list of all past orders with status, date, total, and item count.
-6. **Order Details** — Showing full order information including items, shipping address, payment status, and order timeline.
-7. **Order Tracking** — Providing real-time order status tracking with timeline visualization and estimated delivery date.
-8. **Notification Delivery** — Sending order confirmation and status change notifications to the buyer and relevant merchant.
+5. **Sponsored Ad Display** — Rendering a slide-down ad panel on the checkout page with approved, active, in-schedule ads from Merchant-purchased Advertisement Packages, applying package placement and tier priority rules.
+6. **Order History** — Displaying a paginated list of all past orders with status, date, total, and item count.
+7. **Order Details** — Showing full order information including items, shipping address, payment status, and order timeline.
+8. **Order Tracking** — Providing real-time order status tracking with timeline visualization and estimated delivery date.
+9. **Notification Delivery** — Sending order confirmation and status change notifications to the buyer and relevant merchant.
 
 ### 1.3 Target Users
 
@@ -150,6 +152,7 @@ This screen is responsible for the following core functional areas:
 | UC-CHECK-005 | View Order History | User is authenticated. User has past orders. | Paginated order list displayed with status, date, total, and item count. | Authenticated Buyer |
 | UC-CHECK-006 | View Order Detail | User is authenticated. Order exists and belongs to user. | Full order detail displayed with items, shipping address, payment status, and timeline. | Authenticated Buyer |
 | UC-CHECK-007 | Track Order | User is authenticated. Order exists. | Order tracking timeline displayed with current status and estimated delivery. | Authenticated Buyer |
+| UC-CHECK-008 | View Sponsored Ad Slot | User is authenticated. Checkout page loaded. | Approved, active, in-schedule ads displayed in slide-down panel with tier priority (Premium > Standard > Basic). Auto-slides every 5 seconds, max 5 ads. | Authenticated Buyer |
 
 ### 2.2 Primary Business Workflow — Checkout
 
@@ -403,7 +406,24 @@ This screen is responsible for the following core functional areas:
 | BR-COUPON-008 | One Coupon Per Order | Only one coupon can be applied per order. Applying a new coupon replaces the previous one. | Backend (service logic) |
 | BR-COUPON-009 | Usage Increment | On successful order, coupon used_count is incremented atomically. | Backend (Prisma transaction) |
 
-### 4.3 Order History Rules
+### 4.3 Sponsored Ad Rules
+
+| Rule ID | Rule Name | Description | Enforcement Layer |
+|---------|-----------|-------------|-------------------|
+| BR-AD-001 | Placement Eligibility | Ads are eligible only if they belong to a purchased Advertisement Package whose placement includes Checkout Top. | Backend (ads service) |
+| BR-AD-002 | Approval Status | Only approved ads (`is_approved = true`) are eligible. | Backend (ads service) |
+| BR-AD-003 | Active Status | Only active ads (`is_active = true`) are eligible. | Backend (ads service) |
+| BR-AD-004 | Schedule Check | Ads whose `schedule_start <= now <= schedule_end` are eligible. | Backend (ads service) |
+| BR-AD-005 | Tier Priority | Ads are prioritized by package tier: Premium > Standard > Basic. | Backend (ads service) |
+| BR-AD-006 | Round-Robin Rotation | Within the same tier, ads are rotated using round-robin. | Backend (ads service) |
+| BR-AD-007 | Maximum Ads | The slide-down panel displays a maximum of 5 ads. | Backend (ads service) |
+| BR-AD-008 | Cache Strategy | Ad slot results are cached in Redis with key `cache:ads:checkout-top`, TTL 5 minutes. | Backend (ads service) |
+| BR-AD-009 | Graceful Degradation | On ad fetch error or no eligible ads, the ad panel is hidden — checkout functions normally without ads. | Frontend |
+| BR-AD-010 | Reduced Motion | When `prefers-reduced-motion: reduce`, slide-down animation is skipped (instant appear). Rotation rules unchanged. | Frontend |
+| BR-AD-011 | Pause on Interaction | Auto-advancement pauses on hover or keyboard focus within ad panel; resumes on pointer leave / blur (WCAG 2.2.2). | Frontend |
+| BR-AD-012 | Click Tracking | CTA click fires `ad.click` analytics event with `ad_id` and `placement`. | Frontend |
+
+### 4.4 Order History Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
@@ -465,6 +485,23 @@ This screen is responsible for the following core functional areas:
 | EL-29 | Guest Login Alert Modal | Dialog/Modal | `checkout.guestLoginAlert` | Conditional | Alert modal for unauthenticated users: "Please log in to complete your purchase." with [Log in] button navigating to `/login` |
 | EL-30 | Loading Overlay | Overlay | — | Conditional | Shown during order submission |
 | EL-31 | Stock Warning Alert | Alert | — | Conditional | "Some items have changed stock availability" |
+| EL-32 | Sponsored Ad Slide-Down Panel | Slide-down panel (div) | `checkout.sponsored.label` | Conditional | Hidden until ad response arrives. On first eligible ad: slides down into view below [A] Page Header and above [B]+[C] row — horizontally centered across full container width (300ms ease-out, once per mount). Contains up to 5 ad slides with auto-slide every 5 seconds. |
+| EL-33 | Ad Slide Track | Slider track (div) | — | Conditional | Renders when ad panel is expanded. Vertical slide-down transition between slides (500ms ease-in-out); advance interval 5s. |
+| EL-34 | Ad Slide Card | Card (flex container) | — | Conditional | One card per eligible ad (max 5). Desktop/tablet (≥ 768px): horizontal — image left (w-80), text block right. Mobile (< 768px): stacked — image top, content below. Whole card clickable. |
+| EL-35 | Ad Image / Banner | Image (img) | — | Conditional | Desktop: fixed 320×120, object-cover. Mobile: full-width 16:9, object-cover. Lazy-loaded. Alt text from i18n template. |
+| EL-36 | Ad Title | Heading (h3) | — | Conditional | Single-line truncation. |
+| EL-37 | Ad Description | Paragraph (p) | — | Conditional | Clamped to 2 lines. Hidden when null/empty. |
+| EL-38 | Ad CTA Button | Button/Link (primary) | — | Conditional | Desktop: inline, right-aligned. Mobile: full-width. Keyboard-focusable with visible primary focus ring. |
+| EL-39 | Sponsored Badge | Badge (span) | `checkout.sponsored.label` | Mandatory | Text: "Sponsored" / "スポンサー提供". Uppercase, amber background + dark text. Distinguishes ads from organic content. |
+| EL-40 | Success Icon | Icon (checkmark) | — | Yes | Large green checkmark |
+| EL-41 | Success Title | Heading (h1) | `checkout.confirmation.title` | Yes | "Order Placed Successfully!" |
+| EL-42 | Order ID | Text | `checkout.confirmation.orderId` | Yes | "Order #ABC-12345" |
+| EL-43 | Order Status | Badge | `checkout.confirmation.status` | Yes | "Placed" status badge |
+| EL-44 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | "Estimated delivery: Aug 20, 2026" |
+| EL-45 | Order Summary Card | Card | — | Yes | Items, totals, shipping address |
+| EL-46 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigate to /products |
+| EL-47 | View Order Button | Button (secondary) | `checkout.confirmation.viewOrder` | Yes | Navigate to /orders/:orderId |
+| EL-48 | Print Receipt Button | Button (ghost) | `checkout.confirmation.print` | No | Print order confirmation |
 
 **Default State:**
 - Order items displayed in summary with thumbnails and quantities
@@ -484,15 +521,15 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-32 | Success Icon | Icon (checkmark) | — | Yes | Large green checkmark |
-| EL-33 | Success Title | Heading (h1) | `checkout.confirmation.title` | Yes | "Order Placed Successfully!" |
-| EL-34 | Order ID | Text | `checkout.confirmation.orderId` | Yes | "Order #ABC-12345" |
-| EL-35 | Order Status | Badge | `checkout.confirmation.status` | Yes | "Placed" status badge |
-| EL-36 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | "Estimated delivery: Aug 20, 2026" |
-| EL-37 | Order Summary Card | Card | — | Yes | Items, totals, shipping address |
-| EL-38 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigate to /products |
-| EL-39 | View Order Button | Button (secondary) | `checkout.confirmation.viewOrder` | Yes | Navigate to /orders/:orderId |
-| EL-40 | Print Receipt Button | Button (ghost) | `checkout.confirmation.print` | No | Print order confirmation |
+| EL-40 | Success Icon | Icon (checkmark) | — | Yes | Large green checkmark |
+| EL-41 | Success Title | Heading (h1) | `checkout.confirmation.title` | Yes | "Order Placed Successfully!" |
+| EL-42 | Order ID | Text | `checkout.confirmation.orderId` | Yes | "Order #ABC-12345" |
+| EL-43 | Order Status | Badge | `checkout.confirmation.status` | Yes | "Placed" status badge |
+| EL-44 | Estimated Delivery | Text | `checkout.confirmation.estimatedDelivery` | Conditional | "Estimated delivery: Aug 20, 2026" |
+| EL-45 | Order Summary Card | Card | — | Yes | Items, totals, shipping address |
+| EL-46 | Continue Shopping Button | Button (primary) | `checkout.confirmation.continueShopping` | Yes | Navigate to /products |
+| EL-47 | View Order Button | Button (secondary) | `checkout.confirmation.viewOrder` | Yes | Navigate to /orders/:orderId |
+| EL-48 | Print Receipt Button | Button (ghost) | `checkout.confirmation.print` | No | Print order confirmation |
 
 **Default State:**
 - Success animation on load
@@ -510,19 +547,19 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-41 | Page Title | Heading (h1) | `orders.title` | Yes | "Order History" / "注文履歴" |
-| EL-42 | Order Count | Text | `orders.orderCount` | Yes | "{count} orders" |
-| EL-43 | Orders Table | Table | — | Yes | Table of order rows |
-| EL-44 | Order Row | Row | — | Yes | Order ID, date, status, items count, total, actions |
-| EL-45 | Order ID | Text (link) | — | Yes | Clickable order ID linking to detail |
-| EL-46 | Order Date | Text | — | Yes | Formatted order date |
-| EL-47 | Order Status | Badge | — | Yes | Color-coded status badge |
-| EL-48 | Item Count | Text | — | Yes | Number of items in order |
-| EL-49 | Order Total | Text | — | Yes | Total amount with currency |
-| EL-50 | View Detail Button | Button (ghost) | `orders.viewDetail` | Yes | Navigate to order detail |
-| EL-52 | Empty State | EmptyState | `orders.empty` | Conditional | "No orders yet. Start shopping!" |
-| EL-53 | Pagination | Pagination | — | Conditional | Page navigation (if > 1 page) |
-| EL-54 | Loading Skeleton | Skeleton | — | Conditional | Shown while loading order data |
+| EL-49 | Page Title | Heading (h1) | `orders.title` | Yes | "Order History" / "注文履歴" |
+| EL-50 | Order Count | Text | `orders.orderCount` | Yes | "{count} orders" |
+| EL-51 | Orders Table | Table | — | Yes | Table of order rows |
+| EL-52 | Order Row | Row | — | Yes | Order ID, date, status, items count, total, actions |
+| EL-53 | Order ID | Text (link) | — | Yes | Clickable order ID linking to detail |
+| EL-54 | Order Date | Text | — | Yes | Formatted order date |
+| EL-55 | Order Status | Badge | — | Yes | Color-coded status badge |
+| EL-56 | Item Count | Text | — | Yes | Number of items in order |
+| EL-57 | Order Total | Text | — | Yes | Total amount with currency |
+| EL-58 | View Detail Button | Button (ghost) | `orders.viewDetail` | Yes | Navigate to order detail |
+| EL-59 | Empty State | EmptyState | `orders.empty` | Conditional | "No orders yet. Start shopping!" |
+| EL-60 | Pagination | Pagination | — | Conditional | Page navigation (if > 1 page) |
+| EL-61 | Loading Skeleton | Skeleton | — | Conditional | Shown while loading order data |
 
 **Default State:**
 - Orders displayed in table sorted by newest first
@@ -539,23 +576,23 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-55 | Page Title | Heading (h1) | `orderDetail.title` | Yes | "Order Detail" / "注文詳細" |
-| EL-56 | Order ID | Text | `orderDetail.orderId` | Yes | "Order #ABC-12345" |
-| EL-57 | Order Date | Text | `orderDetail.orderDate` | Yes | Formatted order date |
-| EL-58 | Order Status | Badge | `orderDetail.status` | Yes | Current status badge |
-| EL-59 | Order Items Section | Container | — | Yes | List of ordered products |
-| EL-60 | Order Item Row | Row | — | Yes | Product image, name, quantity, unit price, line total |
-| EL-61 | Subtotal | Text | `orderDetail.subtotal` | Yes | Sum of line totals |
-| EL-62 | Discount | Text (green) | `orderDetail.discount` | Conditional | Discount amount if coupon applied |
-| EL-63 | Total Amount | Text (bold) | `orderDetail.total` | Yes | Final total |
-| EL-64 | Shipping Address Card | Card | — | Yes | Recipient name, phone, full address |
-| EL-65 | Payment Info Card | Card | — | Yes | Payment method and status |
-| EL-66 | Order Notes | Text | `orderDetail.notes` | Conditional | Buyer's notes if provided |
-| EL-67 | Order Timeline | Timeline/Stepper | — | Yes | Vertical status timeline with timestamps |
-| EL-68 | Timeline Step | Step Item | — | Yes | Status name, timestamp, description |
-| EL-69 | Tracking Number | Text | `orderDetail.trackingNumber` | Conditional | Courier tracking number (if shipped) |
-| EL-70 | Estimated Delivery | Text | `orderDetail.estimatedDelivery` | Conditional | Estimated delivery date |
-| EL-72 | Back to Orders Link | Link | `orderDetail.backToOrders` | Yes | "← Back to Orders" |
+| EL-62 | Page Title | Heading (h1) | `orderDetail.title` | Yes | "Order Detail" / "注文詳細" |
+| EL-63 | Order ID | Text | `orderDetail.orderId` | Yes | "Order #ABC-12345" |
+| EL-64 | Order Date | Text | `orderDetail.orderDate` | Yes | Formatted order date |
+| EL-65 | Order Status | Badge | `orderDetail.status` | Yes | Current status badge |
+| EL-66 | Order Items Section | Container | — | Yes | List of ordered products |
+| EL-67 | Order Item Row | Row | — | Yes | Product image, name, quantity, unit price, line total |
+| EL-68 | Subtotal | Text | `orderDetail.subtotal` | Yes | Sum of line totals |
+| EL-69 | Discount | Text (green) | `orderDetail.discount` | Conditional | Discount amount if coupon applied |
+| EL-70 | Total Amount | Text (bold) | `orderDetail.total` | Yes | Final total |
+| EL-71 | Shipping Address Card | Card | — | Yes | Recipient name, phone, full address |
+| EL-72 | Payment Info Card | Card | — | Yes | Payment method and status |
+| EL-73 | Order Notes | Text | `orderDetail.notes` | Conditional | Buyer's notes if provided |
+| EL-74 | Order Timeline | Timeline/Stepper | — | Yes | Vertical status timeline with timestamps |
+| EL-75 | Timeline Step | Step Item | — | Yes | Status name, timestamp, description |
+| EL-76 | Tracking Number | Text | `orderDetail.trackingNumber` | Conditional | Courier tracking number (if shipped) |
+| EL-77 | Estimated Delivery | Text | `orderDetail.estimatedDelivery` | Conditional | Estimated delivery date |
+| EL-78 | Back to Orders Link | Link | `orderDetail.backToOrders` | Yes | "← Back to Orders" |
 
 **Default State:**
 - Full order details displayed
@@ -571,15 +608,15 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-73 | Page Title | Heading (h1) | `tracking.title` | Yes | "Track Order" / "注文追踪" |
-| EL-74 | Order ID | Text | `tracking.orderId` | Yes | "Order #ABC-12345" |
-| EL-75 | Current Status | Badge (large) | `tracking.currentStatus` | Yes | Current status with icon |
-| EL-76 | Tracking Timeline | Timeline/Stepper | — | Yes | Full status timeline |
-| EL-77 | Timeline Step | Step Item | — | Yes | Status icon, name, timestamp, description |
-| EL-78 | Estimated Delivery Card | Card | — | Conditional | Estimated delivery date and carrier info |
-| EL-79 | Tracking Number | Text | `tracking.trackingNumber` | Conditional | Courier tracking number |
-| EL-80 | Carrier Name | Text | `tracking.carrier` | Conditional | Shipping carrier name |
-| EL-81 | Back to Order Link | Link | `tracking.backToOrder` | Yes | "← Back to Order Detail" |
+| EL-79 | Page Title | Heading (h1) | `tracking.title` | Yes | "Track Order" / "注文追踪" |
+| EL-80 | Order ID | Text | `tracking.orderId` | Yes | "Order #ABC-12345" |
+| EL-81 | Current Status | Badge (large) | `tracking.currentStatus` | Yes | Current status with icon |
+| EL-82 | Tracking Timeline | Timeline/Stepper | — | Yes | Full status timeline |
+| EL-83 | Timeline Step | Step Item | — | Yes | Status icon, name, timestamp, description |
+| EL-84 | Estimated Delivery Card | Card | — | Conditional | Estimated delivery date and carrier info |
+| EL-85 | Tracking Number | Text | `tracking.trackingNumber` | Conditional | Courier tracking number |
+| EL-86 | Carrier Name | Text | `tracking.carrier` | Conditional | Shipping carrier name |
+| EL-87 | Back to Order Link | Link | `tracking.backToOrder` | Yes | "← Back to Order Detail" |
 
 ---
 
@@ -597,7 +634,40 @@ This screen is responsible for the following core functional areas:
 | **Success Response** | 200 OK with cart items, subtotal, stock status, and user addresses |
 | **Post-Action** | Render checkout form with order summary |
 
-### 6.2 Operation: Validate Coupon Code
+### 6.2 Operation: Load Sponsored Ad Slot
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | Component mounts (Checkout page loaded) |
+| **API Endpoint** | `GET /api/v1/ads?placement=checkout_top` |
+| **Request Headers** | None (public cache) |
+| **Pre-Submission Validation** | User authenticated (page-level) |
+| **Processing Steps** | 1. Fetch ad slot in parallel to cart data fetch (does not block checkout loading). 2. Filter: Select approved advertisement records from Merchant-purchased Advertisement Packages for the Checkout Top placement. 3. Filter: Keep only approved, active ads whose schedule covers the current time (`is_approved = true`, `is_active = true`, `schedule_start <= now <= schedule_end`). 4. Apply package placement and tier priority rules (Premium > Standard > Basic), with round-robin rotation within each tier. 5. Limit the slider to a maximum of 5 ads. 6. Cache the resulting ad list in Redis with key `cache:ads:checkout-top`, TTL 5 minutes. 7. If eligible ads exist, slide panel into view (300ms ease-out, once per mount). With `prefers-reduced-motion: reduce`, panel appears instantly without animation. 8. Render each ad's image/banner, title, description (hidden when absent), CTA button, and Sponsored badge. 9. Auto-advance to the next ad every 5 seconds using vertical slide-down transition (500ms). Maximum 5 slides; loop after the last. 10. Pause auto-advancement on hover or keyboard focus within ad panel; resume on pointer leave / blur (WCAG 2.2.2). |
+| **Success Response** | 200 OK with array of ad objects |
+| **Error Response** | On error or empty response: hide ad panel entirely (graceful degradation) |
+| **Post-Action** | Render ad panel if eligible ads exist; otherwise skip ad panel rendering |
+
+#### 6.2.1 Ad Slot Response Structure
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "imageUrl": "https://cdn.example.com/ads/banner1.jpg",
+      "title": "Summer Sale - 20% Off",
+      "description": "Limited time offer on all skincare products.",
+      "ctaText": "Shop Now",
+      "ctaUrl": "https://example.com/summer-sale",
+      "priority": "premium",
+      "scheduleStart": "2026-08-20T00:00:00.000Z",
+      "scheduleEnd": "2026-09-30T23:59:59.000Z"
+    }
+  ]
+}
+```
+
+### 6.3 Operation: Validate Coupon Code
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -611,7 +681,7 @@ This screen is responsible for the following core functional areas:
 | **Error Response** | 400 Bad Request (invalid/expired/limited coupon) |
 | **Post-Action** | Update order summary with discount |
 
-### 6.3 Operation: Place Order
+### 6.4 Operation: Place Order
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -626,7 +696,7 @@ This screen is responsible for the following core functional areas:
 | **Error Response** | 400 (validation), 409 (insufficient stock) |
 | **Post-Action** | Navigate to order confirmation page |
 
-#### 6.3.1 Checkout Persistence and Transaction Design
+#### 6.4.1 Checkout Persistence and Transaction Design
 
 All write steps below are executed inside one database transaction. The service uses row-level locks (or an equivalent conditional update) for the selected product rows so that stock is rechecked against the latest committed value. A failure at any step rolls back the order, order items, stock changes, inventory records, coupon update, and cart changes; no partial order is exposed to the buyer or merchant.
 
@@ -661,7 +731,7 @@ The transaction log is append-only: `order_created` rows are never edited or del
 
 Status history rows are never updated or deleted during normal operation. The order-tracking API joins `order_status_history` to `order_statuses`, orders by `created_at ASC` (then `id ASC` as a tie-breaker), and returns each status, timestamp, actor where permitted, and note. The service rejects invalid or terminal-state transitions before updating either table.
 
-### 6.4 Operation: View Order History
+### 6.5 Operation: View Order History
 
 | Attribute | Specification |
 |-----------|---------------|
@@ -728,6 +798,20 @@ Status history rows are never updated or deleted during normal operation. The or
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
 | `couponCode` | Coupon Code | クーポンコード | VARCHAR(50) | Yes | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(50)` |
 | `subtotal` | Subtotal | 小計 | DECIMAL(10,2) | Yes | `@IsNumber()`, `@Min(0)` |
+
+### 7.4 Output Specification — Sponsored Ad Slot (出力定義)
+
+| Field | Data Source | Display Format |
+|-------|-------------|----------------|
+| `id` | `advertisements.id` | UUID string |
+| `imageUrl` | `advertisements.image_url` | URL string |
+| `title` | `advertisements.title` | String |
+| `description` | `advertisements.description` | String (nullable) |
+| `ctaText` | `advertisements.cta_text` | String |
+| `ctaUrl` | `advertisements.cta_url` | URL string |
+| `priority` | Package tier | "premium" / "standard" / "basic" |
+| `scheduleStart` | `advertisements.schedule_start` | ISO 8601 timestamp |
+| `scheduleEnd` | `advertisements.schedule_end` | ISO 8601 timestamp |
 
 ### 7.5 Output Specification — Order Confirmation (出力定義)
 
@@ -862,6 +946,17 @@ Status history rows are never updated or deleted during normal operation. The or
 | `409` | `CONFLICT` | Insufficient stock during submission | Toast: "Some items are no longer available. Please review your cart." |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | Toast: "Something went wrong. Please try again." |
 
+### 9.2.1 Error Classification Table — Sponsored Ad Slot
+
+| HTTP Status | Error Code | Scenario | User-Facing Behavior |
+|-------------|------------|----------|---------------------|
+| `400` | `BAD_REQUEST` | Invalid placement parameter | Ad panel hidden (graceful degradation) |
+| `404` | `NOT_FOUND` | No eligible ads for placement | Ad panel hidden (graceful degradation) |
+| `500` | `INTERNAL_SERVER_ERROR` | Ad service error | Ad panel hidden (graceful degradation) |
+| `503` | `SERVICE_UNAVAILABLE` | Ad service unavailable | Ad panel hidden (graceful degradation) |
+
+Note: Ad slot failures are non-critical. The checkout page functions normally without ads.
+
 ### 9.3 Error Classification Table — Order History & Detail
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
@@ -893,6 +988,7 @@ Status history rows are never updated or deleted during normal operation. The or
 | Endpoint | Access Level | Description |
 |----------|-------------|-------------|
 | `GET /checkout` | Protected (Buyer) | Load checkout page data |
+| `GET /ads` | Public (cached) | Load sponsored ad slot for checkout |
 | `POST /checkout/validate-coupon` | Protected (Buyer) | Validate and apply coupon |
 | `POST /orders` | Protected (Buyer) | Place new order |
 | `GET /orders` | Protected (Buyer) | View order history |
@@ -989,6 +1085,7 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 | Checkout Page Load | ≤ 2 seconds |
 | Order Placement API | ≤ 2 seconds |
 | Coupon Validation API | ≤ 500 milliseconds |
+| Ad Slot Load | ≤ 500 milliseconds (parallel, non-blocking) |
 | Order History Page Load | ≤ 2 seconds |
 | Order Detail Page Load | ≤ 1 second |
 | Stock Validation Check | ≤ 100 milliseconds |
@@ -1001,6 +1098,7 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 | Stock quantities | Real-time from DB | — |
 | Coupon validation | No cache (must be current) | — |
 | Order data | No cache (user-specific, real-time) | — |
+| Ad slot (checkout_top) | Redis cache | 5 minutes |
 
 ### 13.3 Security Considerations
 
@@ -1019,9 +1117,9 @@ The Checkout and Order pages operate with standard REST API calls. Real-time Web
 
 | Breakpoint | Checkout Layout | Order History Layout |
 |------------|-----------------|---------------------|
-| Desktop (≥ 1024px) | Two-column: summary left, form right | Full-width table |
-| Tablet (768px – 1023px) | Two-column: summary left, form right (narrower) | Full-width table (compact) |
-| Mobile (< 768px) | Single column: summary, then form | Card-based list |
+| Desktop (≥ 1024px) | Two-column: summary left, form right. Ad panel horizontal (image left, text right), full width above columns. | Full-width table |
+| Tablet (768px – 1023px) | Two-column: summary left, form right (narrower). Ad panel horizontal (image left, text right), full width above columns. | Full-width table (compact) |
+| Mobile (< 768px) | Single column: summary, then form. Ad panel stacked (image top, content below), full width between header and form. | Card-based list |
 
 ---
 
@@ -1055,6 +1153,7 @@ Defined via `.env` configuration:
 | B-CHECK-008 | User can view order history | UC-CHECK-005, Sec 5.3, Sec 6.4 |
 | B-CHECK-009 | User can view order details | UC-CHECK-006, Sec 5.4, Sec 6.5 |
 | B-CHECK-010 | Order confirmation notification is sent | Sec 11.2 |
+| B-CHECK-011 | System displays sponsored ads with tier priority | UC-CHECK-008, Sec 5.1 (EL-32~39), Sec 6.2, BR-AD-001~012 |
 
 ### 15.2 Database Design Traceability
 
@@ -1067,6 +1166,8 @@ Defined via `.env` configuration:
 | `order_status_history` | Insert initial `placed` status and every later state transition; read in chronological order for tracking timeline |
 | `inventory_transactions` | Insert append-only stock-decrement records on order creation and compensating restoration records on cancellation |
 | `products` | Stock validation (SELECT), Price lookup (SELECT), Stock decrement (UPDATE) |
+| `advertisements` | Load ad slot for checkout_top placement (SELECT), Click tracking (analytics) |
+| `advertisement_packages` | Determine package tier priority (SELECT) |
 | `promotions` | Coupon validation (SELECT), Usage increment (UPDATE used_count) |
 | `users` | Shipping address source (from JWT user context) |
 

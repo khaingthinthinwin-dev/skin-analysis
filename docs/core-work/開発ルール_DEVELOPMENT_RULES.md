@@ -1619,8 +1619,8 @@ ring              → Focus rings (Luxury Purple)
 | Label | Href | Icon | Purpose / Feature |
 |-------|------|------|-------------------|
 | Dashboard | `/dashboard` | `LayoutDashboard` | Product discovery, search & filtering, promotional banners |
-| Skin Analysis | `/skin-analysis` | `Sparkles` | AI Photo Upload, Analysis Results, Recommendations & History |
-| Matching & Recommendations | `/recommendations` | `Wand2` | Personalized AI skin product matching & recommendations |
+| Skin Analysis | `/buyer/skin-analysis` | `Sparkles` | AI Photo Upload, Analysis Results, Recommendations & History |
+| Matching & Recommendations | `/buyer/recommendations` | `Wand2` | Personalized AI skin product matching & recommendations |
 | Order Details | `/orders` | `Package` | Buyer order history, details & tracking timeline (placed → delivered) |
 
 #### 🏬 Merchant Portal (`role = 'MERCHANT'`)
@@ -1686,8 +1686,8 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
     portalTitle: 'Buyer Portal',
     mainNav: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Skin Analysis', href: '/skin-analysis', icon: Sparkles },
-      { label: 'Matching & Recommendations', href: '/recommendations', icon: Wand2 },
+      { label: 'Skin Analysis', href: '/buyer/skin-analysis', icon: Sparkles },
+      { label: 'Matching & Recommendations', href: '/buyer/recommendations', icon: Wand2 },
       { label: 'Order Details', href: '/orders', icon: Package },
     ],
     footerNav: []
@@ -2233,11 +2233,14 @@ Select Package → Upload Content → Pay Fee → Admin Review → Approved → 
 - **Dynamic Display**: When active & approved ads exist (`is_active = true`, `approval_status = 'approved'`), they MUST automatically render in their respective page placement view.
 - **Empty State**: If no active ad exists for a placement, the container collapses cleanly without leaving blank placeholder margins.
 - **Multi-Merchant Placement**: Multiple merchants may purchase ads for the same placement.
-- **Priority Order**: Rotation order follows package tier: **Premium > Standard > Basic**.
+- **Priority Order**: Rotation order follows package tier: **Premium > Standard > Basic**. Within the same tier, priority is determined by `payment_amount desc`.
 - **Round-Robin Rotation**: Ads within the same tier level are rotated using round-robin.
 - **Rotation Speed**: Sliders automatically rotate every 5 seconds.
 - **Rotation Limit**: Maximum 5 advertisements shown per slider rotation.
 - **Exclusion Handling**: Expired, inactive, or rejected ads are immediately excluded from rotation.
+
+**Cross-Screen Slide-Down Panel (D0):**
+The placement table above defines individual banner/sidebar placements. In implementation, a unified **Cross-Screen Slide-Down Panel (D0)** horizontal carousel component (defined in SKM-FDS-MATCH-001) is used across 6 screens: Homepage, Search Results, Category Pages, Product Detail, Recommendation, and Cart. Per-screen positioning varies by context (Homepage: below hero, Search/Category: above results, Product Detail: below add-to-cart, Recommendation: between organic sections, Cart: above checkout). The panel reuses the existing `category_banner` placement parameter.
 
 ## 12.8 AI Skin Analysis Rules
 

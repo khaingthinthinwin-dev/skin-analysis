@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import {
   Brain,
@@ -11,10 +11,16 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ROUTES } from '@/lib/constants'
+import { ROUTES, getDashboardRoute } from '@/lib/constants'
+import { useAuth } from '@/hooks/useAuth'
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 export default function Home() {
   const { t } = useTranslation()
+  const { isAuthenticated, isLoading, user } = useAuth()
+
+  if (isLoading) return <LoadingSpinner className="min-h-screen" />
+  if (isAuthenticated && user) return <Navigate to={getDashboardRoute(user.role)} replace />
 
   const features = [
     {
