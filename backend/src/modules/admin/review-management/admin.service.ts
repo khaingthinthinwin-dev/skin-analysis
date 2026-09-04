@@ -100,7 +100,13 @@ export class AdminService {
             select: { id: true, name: true, email: true, avatarUrl: true },
           },
           product: {
-            select: { id: true, name: true, images: true, slug: true, price: true },
+            select: {
+              id: true,
+              name: true,
+              images: true,
+              slug: true,
+              price: true,
+            },
           },
         },
         skip,

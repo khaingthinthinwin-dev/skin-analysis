@@ -52,7 +52,7 @@ import {
   CheckCircle,
   XCircle,
   SlidersHorizontal,
-  ArrowUpDown,
+  MoreHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -100,7 +100,10 @@ function useReviewStats() {
   }, []);
 
   useEffect(() => {
-    fetchStats();
+    const loadStats = async () => {
+      await fetchStats();
+    };
+    loadStats();
   }, [fetchStats]);
 
   return { stats, refreshStats: fetchStats };
@@ -125,6 +128,73 @@ function getImageUrl(url: string): string {
   const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
   const base = raw.replace(/\/api\/v1\/?$/, '');
   return base + url;
+}
+
+// ─── Helper Components ──────────────────────────────────────────────────────
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`text-sm ${
+            star <= rating ? 'text-yellow-400' : 'text-gray-600'
+          }`}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ReviewStatusBadge({ isApproved }: { isApproved: boolean }) {
+  return (
+    <Badge
+      variant={isApproved ? 'default' : 'outline'}
+      className={
+        isApproved
+          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+      }
+    >
+      {isApproved ? (
+        <CheckCircle className="h-3 w-3 mr-1" />
+      ) : (
+        <Clock className="h-3 w-3 mr-1" />
+      )}
+      {isApproved ? 'Approved' : 'Pending'}
+    </Badge>
+  );
+}
+
+function ReportStatusBadge({ status }: { status: string }) {
+  const variants: Record<string, string> = {
+    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    reviewed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    resolved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+  };
+  return (
+    <Badge variant="outline" className={variants[status] || ''}>
+      {status}
+    </Badge>
+  );
+}
+
+function ReasonBadge({ reason }: { reason: string }) {
+  const variants: Record<string, string> = {
+    spam: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    inappropriate: 'bg-red-500/10 text-red-400 border-red-500/20',
+    fake: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    other: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  };
+  return (
+    <Badge variant="outline" className={variants[reason] || ''}>
+      {reason}
+    </Badge>
+  );
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
@@ -369,70 +439,6 @@ export default function ReviewManagement() {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
     return avatarColors[Math.abs(hash) % avatarColors.length];
-  };
-
-  // ── Helper: Star rating display ──────────────────────────────────────────
-  const StarRating = ({ rating }: { rating: number }) => (
-    <div className="flex">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={`text-sm ${
-            star <= rating ? 'text-yellow-400' : 'text-gray-600'
-          }`}
-        >
-          ★
-        </span>
-      ))}
-    </div>
-  );
-
-  // ── Helper: Status badge ─────────────────────────────────────────────────
-  const ReviewStatusBadge = ({ isApproved }: { isApproved: boolean }) => (
-    <Badge
-      variant={isApproved ? 'default' : 'outline'}
-      className={
-        isApproved
-          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-      }
-    >
-      {isApproved ? (
-        <CheckCircle className="h-3 w-3 mr-1" />
-      ) : (
-        <Clock className="h-3 w-3 mr-1" />
-      )}
-      {isApproved ? 'Approved' : 'Pending'}
-    </Badge>
-  );
-
-  const ReportStatusBadge = ({ status }: { status: string }) => {
-    const variants: Record<string, string> = {
-      pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-      reviewed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-      resolved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
-    };
-    return (
-      <Badge variant="outline" className={variants[status] || ''}>
-        {status}
-      </Badge>
-    );
-  };
-
-  // ── Helper: Reason badge ─────────────────────────────────────────────────
-  const ReasonBadge = ({ reason }: { reason: string }) => {
-    const variants: Record<string, string> = {
-      spam: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-      inappropriate: 'bg-red-500/10 text-red-400 border-red-500/20',
-      fake: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-      other: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    };
-    return (
-      <Badge variant="outline" className={variants[reason] || ''}>
-        {reason}
-      </Badge>
-    );
   };
 
   // ── Helper: Page numbers ─────────────────────────────────────────────────
