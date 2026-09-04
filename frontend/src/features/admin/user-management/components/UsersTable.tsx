@@ -3,8 +3,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
+interface UserItem {
+  id: string;
+  name?: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}
+
 interface UsersTableProps {
-  users?: Record<string, unknown>[];
+  users?: UserItem[];
   onToggleStatus?: (userId: string, currentStatus: boolean) => void;
 }
 

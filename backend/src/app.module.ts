@@ -7,6 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { MerchantsModule } from './modules/merchant/products/merchants.module';
 import { AuditLogsModule } from './modules/admin/audit-logs/audit-logs.module';
 import { AdminModule } from './modules/admin/review-management/admin.module';
+import { SearchModule } from './modules/catalog/search/search.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -20,6 +21,7 @@ import { AppService } from './app.service';
     MerchantsModule,
     AuditLogsModule,
     AdminModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

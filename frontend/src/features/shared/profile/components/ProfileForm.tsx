@@ -32,7 +32,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     defaultValues: {
       name: profile.name || '',
       phone: profile.phone || '',
-      avatar: profile.avatar || '',
+      avatarUrl: profile.avatar || '',
     },
   })
 

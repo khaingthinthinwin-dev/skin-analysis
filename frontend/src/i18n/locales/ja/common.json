@@ -1,0 +1,39 @@
+{
+  "search": {
+    "title": "コスメ検索＆フィルター",
+    "subtitle": "あなたの肌プロフィールに合ったスキンケア製品を見つけましょう",
+    "placeholder": "製品名、成分、または悩みで検索...",
+    "noResults": "製品が見つかりません",
+    "noResultsHint": "検索条件やフィルターを調整してください。",
+    "error": "問題が発生しました",
+    "errorHint": "製品の読み込みに失敗しました。もう一度お試しください。",
+    "showing": "表示中",
+    "of": "/",
+    "products": "件",
+    "previous": "前へ",
+    "next": "次へ",
+    "filters": "フィルター",
+    "category": "カテゴリ",
+    "allCategories": "すべてのカテゴリ",
+    "skinType": "肌タイプ",
+    "priceRange": "価格帯",
+    "min": "最小",
+    "max": "最大",
+    "apply": "適用",
+    "rating": "評価",
+    "sort": {
+      "newest": "新着順",
+      "priceLow": "価格：安い順",
+      "priceHigh": "価格：高い順",
+      "highestRated": "評価が高い順"
+    },
+    "view": {
+      "grid": "グリッド表示",
+      "list": "リスト表示"
+    },
+    "outOfStock": "在庫切れ",
+    "sale": "セール",
+    "add": "追加",
+    "learnMore": "詳細を見る"
+  }
+}
