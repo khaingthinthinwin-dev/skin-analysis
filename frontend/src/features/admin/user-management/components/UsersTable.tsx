@@ -37,7 +37,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users = [], onToggleStat
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize">
-                    {user.role}
+                    {user.roleCode ?? user.role ?? 'buyer'}
                   </Badge>
                 </TableCell>
                 <TableCell>
