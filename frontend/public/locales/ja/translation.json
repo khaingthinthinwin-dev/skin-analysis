@@ -87,6 +87,48 @@
       "cta": "始める"
     }
   },
+  "wishlist": {
+    "title": "お気に入り",
+    "itemCount": "{{count}}件の商品が保存されています",
+    "moveToCart": "カートに追加",
+    "remove": "削除",
+    "emptyTitle": "まだお気に入りに追加された商品がありません",
+    "emptyMessage": "商品を閲覧してお気に入りを追加しましょう。",
+    "continueShopping": "買い物を続ける",
+    "unavailable": "この商品は現在在庫切れです。",
+    "inStock": "在庫あり",
+    "lowStock": "残りわずか",
+    "outOfStock": "在庫切れ",
+    "guestLoginAlert": {
+      "title": "ログインが必要です",
+      "message": "お気に入りに商品を追加するにはログインしてください。",
+      "loginButton": "ログイン",
+      "closeButton": "キャンセル"
+    }
+  },
+  "cart": {
+    "title": "カート",
+    "itemCount": "{{count}}件の商品がカートに入っています",
+    "subtotal": "小計",
+    "totalItems": "合計点数",
+    "checkout": "購入手続きへ",
+    "continueShopping": "買い物を続ける",
+    "browseProducts": "商品を見る",
+    "remove": "削除",
+    "emptyTitle": "カートは空です",
+    "emptyMessage": "お買い物を始めましょう！",
+    "inStock": "在庫あり",
+    "lowStock": "残り{{n}}個",
+    "outOfStock": "在庫切れ",
+    "decreaseQuantity": "数量を減らす",
+    "increaseQuantity": "数量を増やす",
+    "guestLoginAlert": {
+      "title": "ログインが必要です",
+      "message": "カートに商品を追加するにはログインしてください。",
+      "loginButton": "ログイン",
+      "closeButton": "キャンセル"
+    }
+  },
   "footer": {
     "brand": "Cosmetics Finder",
     "tagline": "あなたのビューティージャーニーはここから始まります。",

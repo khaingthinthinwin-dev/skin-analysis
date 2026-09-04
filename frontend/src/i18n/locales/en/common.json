@@ -1,0 +1,39 @@
+{
+  "search": {
+    "title": "Cosmetics Search & Filter",
+    "subtitle": "Find skincare products matched to your skin profile",
+    "placeholder": "Search by product name, ingredient, or concern...",
+    "noResults": "No products found",
+    "noResultsHint": "Try adjusting your search or filter criteria.",
+    "error": "Something went wrong",
+    "errorHint": "Failed to load products. Please try again.",
+    "showing": "Showing",
+    "of": "of",
+    "products": "products",
+    "previous": "Previous",
+    "next": "Next",
+    "filters": "Filters",
+    "category": "Category",
+    "allCategories": "All Categories",
+    "skinType": "Skin Type",
+    "priceRange": "Price Range",
+    "min": "Min",
+    "max": "Max",
+    "apply": "Apply",
+    "rating": "Rating",
+    "sort": {
+      "newest": "Newest",
+      "priceLow": "Price: Low to High",
+      "priceHigh": "Price: High to Low",
+      "highestRated": "Highest Rated"
+    },
+    "view": {
+      "grid": "Grid view",
+      "list": "List view"
+    },
+    "outOfStock": "Out of stock",
+    "sale": "SALE",
+    "add": "Add",
+    "learnMore": "Learn more"
+  }
+}
