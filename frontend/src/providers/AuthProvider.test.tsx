@@ -2,6 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAuth, AuthProvider } from './AuthProvider'
 
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => { store[key] = value }),
+    removeItem: vi.fn((key: string) => { delete store[key] }),
+    clear: vi.fn(() => { store = {} }),
+    get length() { return Object.keys(store).length },
+    key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
+  }
+})()
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
+
 // Mock authService
 vi.mock('@/services/auth.service', () => ({
   authService: {
@@ -18,13 +32,19 @@ vi.mock('@tanstack/react-query', () => ({
   }),
 }))
 
+// Mock window.location
+Object.defineProperty(window, 'location', {
+  value: { href: '/', pathname: '/' },
+  writable: true,
+})
+
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
 )
 
 describe('AuthProvider', () => {
   beforeEach(() => {
-    localStorage.clear()
+    localStorageMock.clear()
     vi.clearAllMocks()
   })
 
@@ -45,7 +65,6 @@ describe('AuthProvider', () => {
 
   it('starts with no user and not authenticated', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
-    // Wait for initial loading to complete
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
