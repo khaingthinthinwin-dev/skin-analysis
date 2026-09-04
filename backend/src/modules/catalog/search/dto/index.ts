@@ -4,6 +4,7 @@ export {
   SortOrder,
   SkinType,
 } from './product-query.dto';
+export { SearchQueryDto } from './search-query.dto';
 export { AdsQueryDto, AdPlacement } from './ads-query.dto';
 export { ProductSlugParamDto } from './product-slug-param.dto';
 export {

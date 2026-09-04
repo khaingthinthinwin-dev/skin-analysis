@@ -122,6 +122,10 @@ export class SearchService {
     return { data: detail };
   }
 
+  async findBySlug(slug: string): Promise<{ data: ProductDetailDto }> {
+    return this.getProductBySlug(slug);
+  }
+
   async getAdsByPlacement(
     _placement: AdPlacement,
   ): Promise<{ data: SponsoredAdDto[] }> {
