@@ -37,8 +37,8 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({
             </TableRow>
           ) : (
             reviews.map((rev) => (
-              <TableRow key={String(rev.id)}>
-                <TableCell className="font-medium">{rev.product?.name || 'N/A'}</TableCell>
+              <TableRow key={rev.id}>
+                <TableCell className="font-medium">{rev.product?.name || rev.product?.id}</TableCell>
                 <TableCell>★ {rev.rating}/5</TableCell>
                 <TableCell className="max-w-xs truncate">{rev.body || rev.title || 'No comment'}</TableCell>
                 <TableCell>
@@ -48,11 +48,11 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({
                 </TableCell>
                 <TableCell className="text-right space-x-1">
                   {!rev.isApproved && (
-                    <Button size="icon" variant="ghost" onClick={() => onApprove?.(String(rev.id))}>
+                    <Button size="icon" variant="ghost" onClick={() => onApprove?.(rev.id)}>
                       <Check className="h-4 w-4 text-emerald-600" />
                     </Button>
                   )}
-                  <Button size="icon" variant="ghost" onClick={() => onDelete?.(String(rev.id))}>
+                  <Button size="icon" variant="ghost" onClick={() => onDelete?.(rev.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>

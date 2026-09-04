@@ -1,11 +1,11 @@
-import slugify from 'slugify';
-
 export function generateSlug(name: string): string {
-  return slugify(name, {
-    lower: true,
-    strict: true,
-    trim: true,
-  });
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 export function generateUniqueSlug(

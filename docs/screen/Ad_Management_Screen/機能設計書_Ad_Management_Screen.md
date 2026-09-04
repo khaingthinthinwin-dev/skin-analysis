@@ -691,7 +691,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | **Trigger** | Navigate to `/admin/ads` |
 | **API Endpoint** | `GET /api/v1/admin/ads` |
 | **Query Parameters** | `status` (optional), `placement` (optional), `tier` (optional), `shop` (optional search), `dateFrom` (optional), `dateTo` (optional), `page`, `limit` |
-| **Processing Steps** | 1. Validate JWT token and admin role. 2. Query `advertisements` joined with `shops` and `ad_fee_settings`. 3. Apply filters (status, placement, tier, shop search, date range). 4. Paginate results. 5. Return paginated ad list with shop info, fee info, and payment status. |
+| **Processing Steps** | 1. Validate JWT token and admin role. 2. Query `advertisements` with related `shops` and `ad_payments`; fee values are read from the advertisement’s own saved snapshot fields rather than a direct join to `ad_fee_settings`. 3. Apply filters (status, placement, tier, shop search, date range). 4. Paginate results. 5. Return paginated ad list with shop info, fee snapshot info, and payment status. |
 | **Success Response** | 200 OK with paginated ad list |
 
 ### 6.2 Operation: Approve Single Advertisement
@@ -739,7 +739,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 |-----------|---------------|
 | **Trigger** | Click "Review" or "View" on ad row |
 | **API Endpoint** | `GET /api/v1/admin/ads/:id` |
-| **Processing Steps** | 1. Validate JWT token and admin role. 2. Find ad by ID. 3. Join with `shops`, `ad_fee_settings`, `ad_payments`. 4. Return full ad DTO with shop info, fee info, payment info, and analytics. |
+| **Processing Steps** | 1. Validate JWT token and admin role. 2. Find ad by ID. 3. Load related `shops` and `ad_payments`; use the advertisement’s stored fee snapshot fields for placement, tier, daily rate, duration, and total fee instead of a direct `ad_fee_settings` join. 4. Return full ad DTO with shop info, fee snapshot info, payment info, and analytics. |
 | **Success Response** | 200 OK with advertisement detail |
 
 ### 6.7 Operation: Manage Ad Fee Settings
@@ -771,7 +771,7 @@ The advertisement system is a core monetization channel. Shops pay daily fees ba
 | **Trigger** | Navigate to `/admin/ads/analytics` |
 | **API Endpoint** | `GET /api/v1/admin/ads/analytics/revenue` |
 | **Query Parameters** | `dateFrom` (required), `dateTo` (required), `placement` (optional), `tier` (optional) |
-| **Processing Steps** | 1. Validate admin role. 2. Validate date range (dateFrom < dateTo, max 365 days). 3. Query `ad_payments` joined with `advertisements` and `ad_fee_settings` where `payment_status='completed'` and `advertisements.approval_status='approved'` and `paid_at` within date range. 4. Apply placement/tier filters if provided. 5. **Summary Metrics:** Calculate totalRevenue, totalAdsApproved, totalFeesCollected, avgRevenuePerAd, totalRefunds. 6. **By Placement:** GROUP BY placement, calculate revenue per placement. 7. **By Tier:** GROUP BY tier, calculate revenue per tier. 8. **Trend:** GROUP BY date (or week/month based on range), calculate daily revenue. 9. Return analytics DTO with all metrics and chart data. |
+| **Processing Steps** | 1. Validate admin role. 2. Validate date range (dateFrom < dateTo, max 365 days). 3. Query `ad_payments` joined with `advertisements` where `payment_status='completed'` and `advertisements.approval_status='approved'` and `paid_at` within date range; placement and tier are read from the advertisement snapshot fields instead of a direct `ad_fee_settings` join. 4. Apply placement/tier filters if provided. 5. **Summary Metrics:** Calculate totalRevenue, totalAdsApproved, totalFeesCollected, avgRevenuePerAd, totalRefunds. 6. **By Placement:** GROUP BY advertisement placement, calculate revenue per placement. 7. **By Tier:** GROUP BY advertisement tier, calculate revenue per tier. 8. **Trend:** GROUP BY date (or week/month based on range), calculate daily revenue. 9. Return analytics DTO with all metrics and chart data. |
 | **Success Response** | 200 OK with revenue analytics DTO |
 
 ### 6.10 Operation: Export Ad Performance Report
