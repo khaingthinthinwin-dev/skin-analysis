@@ -9,7 +9,18 @@ interface ProductCardProps {
   view: ViewMode
 }
 
+function getImageUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+
+  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+  const base = raw.replace(/\/api\/v1\/?$/, '')
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`
+}
+
 export function ProductCard({ product, view }: ProductCardProps) {
+  const imageUrl = getImageUrl(Array.isArray(product.images) ? product.images[0] : null)
+
   if (view === 'list') {
     return (
       <Link
@@ -18,10 +29,10 @@ export function ProductCard({ product, view }: ProductCardProps) {
       >
         <div className="flex gap-4 p-4">
 <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-muted">
-            {product.images[0] ? (
+            {imageUrl ? (
               <>
                 <img
-                  src={product.images[0]}
+                  src={imageUrl}
                   alt={product.name}
                   className="h-full w-full rounded-lg object-cover"
                   onError={(e) => {
@@ -76,10 +87,10 @@ export function ProductCard({ product, view }: ProductCardProps) {
     <Card className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
       <Link to={`/products/${product.slug}`} className="block">
         <div className="relative aspect-square bg-muted">
-          {product.images[0] ? (
+          {imageUrl ? (
             <>
               <img
-                src={product.images[0]}
+                src={imageUrl}
                 alt={product.name}
                 className="h-full w-full object-cover"
                 onError={(e) => {

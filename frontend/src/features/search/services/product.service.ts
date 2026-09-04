@@ -22,12 +22,12 @@ function buildProductParams(params: SearchParams): Record<string, string> {
 export const productService = {
   async search(params: SearchParams): Promise<ProductListResponse> {
     const queryParams = buildProductParams(params)
-    const response = await api.get<{ data: ProductListResponse }>('/products', { params: queryParams })
+    const response = await api.get<{ data: ProductListResponse }>('/search/products', { params: queryParams })
     return response.data.data
   },
 
   async getBySlug(slug: string): Promise<{ data: ProductDetail }> {
-    const response = await api.get<{ data: { data: ProductDetail } }>(`/products/${slug}`)
+    const response = await api.get<{ data: { data: ProductDetail } }>(`/search/products/${slug}`)
     return response.data.data
   },
 }
