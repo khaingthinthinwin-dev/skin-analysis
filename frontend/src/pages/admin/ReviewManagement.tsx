@@ -2,17 +2,9 @@
 import { useState } from 'react';
 import { useModeration } from '@/features/admin/content-moderation/hooks/useModeration';
 import { ReviewsTable } from '@/features/admin/review-management/components/ReviewsTable';
-import { Review as ReviewType } from '@/features/admin/content-moderation/services/moderation.service';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toast';
-
-interface ReviewReport {
-  id: string;
-  reason: string;
-  status: string;
-  description?: string;
-}
 
 export default function ReviewManagement() {
   const [page] = useState(1);
@@ -84,15 +76,7 @@ export default function ReviewManagement() {
 
         <TabsContent value="reviews" className="space-y-4">
           <ReviewsTable
-            reviews={reviewsQuery.data?.items?.map((r: ReviewType) => ({
-              id: r.id,
-              product: r.product,
-              product_id: r.product?.id,
-              rating: r.rating,
-              body: r.body,
-              title: r.title,
-              is_approved: r.isApproved,
-            }))}
+            reviews={reviewsQuery.data?.items}
             onApprove={handleApprove}
             onDelete={handleDelete}
           />

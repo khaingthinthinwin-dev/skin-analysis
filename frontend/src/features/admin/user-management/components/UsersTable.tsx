@@ -4,16 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { User } from '../services/admin.service';
 
-interface UserItem {
-  id: string;
-  name?: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-}
-
 interface UsersTableProps {
-  users?: UserItem[];
+  users?: User[];
   onToggleStatus?: (userId: string, currentStatus: boolean) => void;
 }
 

@@ -5,18 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Trash2 } from 'lucide-react';
 import type { Review } from '@/features/admin/content-moderation/services/moderation.service';
 
-interface ReviewItem {
-  id: string;
-  product?: { name?: string };
-  product_id?: string;
-  rating: number;
-  body?: string;
-  title?: string;
-  is_approved: boolean;
-}
-
 interface ReviewsTableProps {
-  reviews?: ReviewItem[];
+  reviews?: Review[];
   onApprove?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
