@@ -4,9 +4,9 @@
 **Target Screen:** Admin Ad Management (管理者広告管理)  
 **Subsystem:** Advertisement Management — Admin Ad Review, Fee Management, Analytics, Export  
 **Function ID:** FN-ADM-001  
-**Version:** 1.1  
+**Version:** 1.2
 **Created:** 2026-08-26  
-**Last Updated:** 2026-08-27  
+**Last Updated:** 2026-08-28
 **Author:** Software Architect  
 **Review Status:** Released (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -21,6 +21,7 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-26 | Software Architect | Initial screen items specification for Admin Ad Management screens: ad list, ad review modal, bulk approve/reject modals, package & fee management, fee change history, revenue analytics, and export reports. |
 | 1.1 | 2026-08-27 | Software Architect | Updated for business flow consistency: clarified Package/Fee Setting relationship, added fee calculation display rule (Total Fee = Daily Rate × Duration), added payment behavior display, improved review modal with fee/schedule/refund info, improved reject confirmation UI, added fee locking rule, clarified schedule and max ads display, added business rules summary and confirmation-required items. |
+| 1.2 | 2026-08-28 | Software Architect | Aligned admin routes, moderation APIs, fee-setting APIs, report-specific export APIs, advertisement DB column names, and revenue aggregation conditions with the latest functional and database specifications. |
 
 ### 1.2 Related Documents
 
@@ -29,7 +30,7 @@
 | 1 | SKM-REQ-001 | Requirements Definition (v2.10) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business rules, ad display rules, monetization rules. |
 | 2 | SKM-DBS-001 | Database Design Specification (v2.5) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures (`advertisements`, `ad_payments`, `ad_fee_settings`, `ad_fee_history`), constraints. |
 | 3 | SKM-DEV-001 | Development Rules (v2.1) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
-| 4 | SKM-FDS-ADM-001 | Functional Specification — Admin Ad Management (v1.1) | `docs/screen/Ad_Management_Screen/機能設計書_Ad_Management_Screen.md` | Use cases, state transitions, validation rules, error handling. |
+| 4 | SKM-FDS-ADM-001 | Functional Specification — Admin Ad Management (v1.2) | `docs/screen/Ad_Management_Screen/機能設計書_Ad_Management_Screen.md` | Use cases, state transitions, validation rules, error handling. |
 
 ---
 
@@ -269,7 +270,7 @@ Admin selects multiple ads (PENDING only)
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### Package & Fee Management Layout (`/admin/advertisements/packages`)
+#### Package & Fee Management Layout (`/admin/ads/packages`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                    BROWSER VIEWPORT                     │
@@ -292,7 +293,7 @@ Admin selects multiple ads (PENDING only)
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### Fee Change History Layout (`/admin/advertisements/fee-history`)
+#### Fee Change History Layout (`/admin/ads/fee-history`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                    BROWSER VIEWPORT                     │
@@ -323,7 +324,7 @@ Admin selects multiple ads (PENDING only)
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### Revenue Analytics Layout (`/admin/advertisements/analytics`)
+#### Revenue Analytics Layout (`/admin/ads/analytics`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                    BROWSER VIEWPORT                     │
@@ -360,7 +361,7 @@ Admin selects multiple ads (PENDING only)
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### Export Reports Layout (`/admin/advertisements/export`)
+#### Export Reports Layout (`/admin/ads/export`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                    BROWSER VIEWPORT                     │
@@ -412,9 +413,9 @@ Admin selects multiple ads (PENDING only)
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 1 | `lblAdsTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Advertisement Management" | — | i18n key: `admin.ads.title` | Tailwind: `text-2xl font-bold`. |
 | 2 | `badgePendingCount` | Pending Count Badge | Badge | Integer | — | Populated on load | — | `COUNT(advertisements WHERE status = 'pending')` | Amber badge. Shows number of pending ads. |
-| 3 | `btnManagePackages` | Manage Packages Button | Button (`outline`) | — | — | Visible. Text: "Manage Packages" | — | — | Navigates to `/admin/advertisements/packages`. |
-| 4 | `btnRevenueAnalytics` | Revenue Analytics Button | Button (`outline`) | — | — | Visible. Text: "Revenue Analytics" | — | — | Navigates to `/admin/advertisements/analytics`. |
-| 5 | `btnExport` | Export Button | Button (`outline`) | — | — | Visible. Text: "Export" | — | — | Navigates to `/admin/advertisements/export`. |
+| 3 | `btnManagePackages` | Manage Packages Button | Button (`outline`) | — | — | Visible. Text: "Manage Packages" | — | — | Navigates to `/admin/ads/packages`. |
+| 4 | `btnRevenueAnalytics` | Revenue Analytics Button | Button (`outline`) | — | — | Visible. Text: "Revenue Analytics" | — | — | Navigates to `/admin/ads/analytics`. |
+| 5 | `btnExport` | Export Button | Button (`outline`) | — | — | Visible. Text: "Export" | — | — | Navigates to `/admin/ads/export`. |
 
 ### 4.2 Section [B]: Filter Bar — Ad List (フィルターバー — 広告リスト)
 
@@ -434,15 +435,15 @@ Admin selects multiple ads (PENDING only)
 | 12 | `chkSelectAd` | Select Ad Checkbox | Checkbox | Boolean | No | Per-row. Unchecked | — | — | Enables bulk action buttons. |
 | 13 | `lblShopName` | Shop Name | Static Label | String | — | Populated from DB | — | `shops.name` | `font-medium text-sm`. |
 | 14 | `lblAdTitle` | Ad Title | Static Label | String | — | Populated from DB | — | `advertisements.title` | `text-sm`. |
-| 15 | `lblPlacement` | Placement | Static Label | String | — | Populated from DB | — | `advertisements.placement` | Localized placement name. |
-| 16 | `lblTier` | Tier | Badge | Enum | — | Populated from DB | — | `advertisements.tier` | Standard badge colors. |
-| 17 | `badgeAdStatus` | Ad Status Badge | Badge | Enum | — | Green (Approved — eligible for display per schedule), Red (Rejected — not displayed, refunded), Amber (Pending — awaiting admin review) | — | `advertisements.status` | Standard status badge colors. Only PENDING ads can be approved or rejected. |
+| 15 | `lblPlacement` | Placement | Static Label | String | — | Populated from DB | — | `ad_fee_settings.placement` | Localized placement name. |
+| 16 | `lblTier` | Tier | Badge | Enum | — | Populated from DB | — | `ad_fee_settings.tier` | Standard badge colors. |
+| 17 | `badgeAdStatus` | Ad Status Badge | Badge | Enum | — | Green (Approved — eligible for display per schedule), Red (Rejected — not displayed, refunded), Amber (Pending — awaiting admin review) | — | `advertisements.approval_status` | Standard status badge colors. Only PENDING ads can be approved or rejected. |
 | 18 | `badgePaymentStatus` | Payment Status Badge | Badge | Enum | — | Green (Completed), Amber (Pending), Gray (Refunded) | — | `advertisements.payment_status` | Standard status badge colors. |
 | 19 | `lblSubmittedAt` | Submitted Date | Static Label | DateTime | — | ISO 8601 formatted | — | `advertisements.created_at` | Localized date format via i18n. |
-| 20 | `lblFee` | Fee | Static Label | Decimal | — | Formatted with currency | — | `advertisements.fee_amount` | Localized currency format. |
+| 20 | `lblFee` | Fee | Static Label | Decimal | — | Formatted with currency | — | `advertisements.payment_amount` | Localized currency format. |
 | 21 | `btnReviewAd` | Review Button | Button (`outline`) | — | — | Visible. Text: "Review" | — | — | Opens Ad Review Modal. Only for pending ads. |
 | 22 | `btnViewAd` | View Button | Button (`outline`) | — | — | Visible. Text: "View" | — | — | Opens Ad Review Modal (read-only). |
-| 23 | `lblAdListSchedule` | Schedule (Ad List) | Static Label | String | — | "2026-09-01 ~ 2026-09-07" | — | `advertisements.start_date`, `advertisements.end_date` | Localized date range format. Display period = End Date - Start Date + 1 day. |
+| 23 | `lblAdListSchedule` | Schedule (Ad List) | Static Label | String | — | "2026-09-01 ~ 2026-09-07" | — | `advertisements.starts_at`, `advertisements.expires_at` | Localized date range format. Display period = End Date - Start Date + 1 day. |
 
 ### 4.4 Section [D]: Bulk Action Bar (一括操作バー)
 
@@ -478,11 +479,11 @@ Admin selects multiple ads (PENDING only)
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 33 | `imgAdBanner` | Ad Banner Image | Image | URL | — | Ad banner image | — | `advertisements.image_url` | `w-full rounded`. |
-| 34 | `lblAdMessage` | Announcement Message | Static Label | String | — | Populated from DB | — | `advertisements.message` | `font-medium`. |
+| 34 | `lblAdMessage` | Announcement Message | Static Label | String | — | Populated from DB | — | `advertisements.announcement_message` | `font-medium`. |
 | 35 | `lblAdLinkUrl` | Link URL | Static Label (Link) | String | — | Populated from DB or "—" | — | `advertisements.link_url` | Clickable link. |
 | 36 | `lblAdContent` | Content Description | Static Label (`<p>`) | Text | — | Populated from DB or "—" | — | `advertisements.content` | `text-sm whitespace-pre-wrap`. |
-| 37 | `lblAdSchedule` | Schedule | Static Label | String | — | "2026-09-01 ~ 2026-09-07" | — | `advertisements.start_date`, `advertisements.end_date` | Localized date range format. Display period = End Date - Start Date + 1 day. |
-| 38 | `lblAdDuration` | Duration | Static Label | String | — | "{n} days" | — | Computed from `advertisements.start_date` and `advertisements.end_date` | Display only. Business Rule Confirmation Required: exact date-counting rule. |
+| 37 | `lblAdSchedule` | Schedule | Static Label | String | — | "2026-09-01 ~ 2026-09-07" | — | `advertisements.starts_at`, `advertisements.expires_at` | Localized date range format. Display period = End Date - Start Date + 1 day. |
+| 38 | `lblAdDuration` | Duration | Static Label | String | — | "{n} days" | — | Computed from `advertisements.starts_at` and `advertisements.expires_at` | Display only. Business Rule Confirmation Required: exact date-counting rule. |
 
 ### 4.9 Section [D]: Fee & Payment Info in Review Modal (レビューモーダル内料金・決済情報)
 
@@ -492,7 +493,7 @@ Admin selects multiple ads (PENDING only)
 | 40 | `lblDurationDisplay` | Duration | Static Label | String | — | "{n} days" | — | `ad_fee_settings.duration_days` (locked at purchase) | Fee Locking Rule. |
 | 41 | `lblTotalFeeDisplay` | Total Fee | Static Label (`<strong>`) | Decimal | — | "Daily Rate × Duration = Total Fee" | — | Computed: `daily_rate × duration_days` (locked at purchase) | **Fee Calculation Display Rule.** Fee Locking Rule: amount is locked at purchase time. |
 | 42 | `lblFeePaid` | Fee Paid | Static Label | Decimal | — | Formatted with currency | — | `ad_payments.amount` | The amount actually paid by the Merchant. Fee Locking Rule. |
-| 43 | `badgePaymentStatusDetail` | Payment Status | Badge | Enum | — | Green (Completed), Amber (Pending), Gray (Refunded) | — | `ad_payments.status` | Standard status badge colors. |
+| 43 | `badgePaymentStatusDetail` | Payment Status | Badge | Enum | — | Green (Completed), Amber (Pending), Gray (Refunded) | — | `ad_payments.payment_status` | Standard status badge colors. |
 | 44 | `lblRefundInfo` | Refund Information | Static Label | String | — | Visible only when status = REJECTED. "Refund: {amount} (100% of paid amount)" | — | Computed: `ad_payments.amount` | Shown after Admin rejection. Fee Locking Rule. |
 
 ### 4.10 Section [E]: Rejection Reason & Refund Info (却下理由・返金情報)
@@ -564,7 +565,7 @@ Admin selects multiple ads (PENDING only)
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 63 | `lblPackagesTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Package & Fee Management" | — | i18n key: `admin.ads.packages` | `text-2xl font-bold`. |
 | 64 | `btnBackToAdsFromPackages` | Back to Ads Button | Button (`text`) | — | — | Visible. Text: "← Back to Ads" | — | — | Navigates to `/admin/ads`. |
-| 65 | `btnViewFeeHistory` | View History Button | Button (`outline`) | — | — | Visible. Text: "View History" | — | — | Navigates to `/admin/advertisements/fee-history`. |
+| 65 | `btnViewFeeHistory` | View History Button | Button (`outline`) | — | — | Visible. Text: "View History" | — | — | Navigates to `/admin/ads/fee-history`. |
 | 66 | `btnCreateFeeSetting` | Create Fee Setting Button | Button (`primary`) | — | — | Visible. Text: "+ Create Fee Setting" | — | — | Opens Create Fee Modal. |
 
 ### 4.20 Section [B]: Fee Settings Table (Fee設定テーブル)
@@ -658,7 +659,7 @@ Admin selects multiple ads (PENDING only)
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 103 | `lblFeeHistoryTitle` | Page Title | Static Label (`<h1>`) | String | — | Visible. Text: "Fee Change History" | — | i18n key: `admin.ads.feeHistory` | `text-2xl font-bold`. |
-| 104 | `btnBackToPackages` | Back to Packages Button | Button (`text`) | — | — | Visible. Text: "← Back to Packages" | — | — | Navigates to `/admin/advertisements/packages`. |
+| 104 | `btnBackToPackages` | Back to Packages Button | Button (`text`) | — | — | Visible. Text: "← Back to Packages" | — | — | Navigates to `/admin/ads/packages`. |
 
 ### 4.31 Section [B]: Filter Bar — Fee History (フィルターバー — Fee履歴)
 
@@ -674,8 +675,8 @@ Admin selects multiple ads (PENDING only)
 | 107 | `lblHistoryDate` | Date | Static Label | DateTime | — | ISO 8601 formatted | — | `ad_fee_history.created_at` | Localized date format. |
 | 108 | `lblHistoryPlacement` | Placement | Static Label | String | — | Populated from DB | — | `ad_fee_history.placement` | — |
 | 109 | `badgeHistoryTier` | Tier | Badge | Enum | — | Populated from DB | — | `ad_fee_history.tier` | Standard badge colors. |
-| 110 | `lblOldRate` | Old Rate | Static Label | Decimal | — | Formatted with currency | — | `ad_fee_history.old_rate` | Localized currency format. |
-| 111 | `lblNewRate` | New Rate | Static Label | Decimal | — | Formatted with currency | — | `ad_fee_history.new_rate` | Localized currency format. |
+| 110 | `lblOldRate` | Old Rate | Static Label | Decimal | — | Formatted with currency | — | `ad_fee_history.old_daily_rate` | Localized currency format. |
+| 111 | `lblNewRate` | New Rate | Static Label | Decimal | — | Formatted with currency | — | `ad_fee_history.new_daily_rate` | Localized currency format. |
 | 112 | `lblChangedBy` | Changed By | Static Label | String | — | Populated from DB | — | `users.name` (via `ad_fee_history.changed_by`) | Admin name. |
 | 113 | `lblReason` | Reason | Static Label | Text | — | Populated from DB or "—" | — | `ad_fee_history.reason` | `text-sm`. |
 
@@ -704,26 +705,26 @@ Admin selects multiple ads (PENDING only)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 120 | `statTotalRevenue` | Total Revenue Card | Stats Card | Decimal | — | Populated on load | — | `SUM(ad_payments.amount)` | **Business Rule Confirmation Required:** Revenue calculation definition (Gross vs Net after refunds) not confirmed. |
-| 121 | `statTotalAdsApproved` | Total Ads Approved Card | Stats Card | Integer | — | Populated on load | — | `COUNT(approved ads)` | — |
-| 122 | `statTotalFeesCollected` | Total Fees Collected Card | Stats Card | Decimal | — | Populated on load | — | `SUM(completed payments)` | Localized currency format. |
-| 123 | `statAvgRevenuePerAd` | Avg Revenue Per Ad Card | Stats Card | Decimal | — | Populated on load | — | `totalRevenue / totalAds` | Localized currency format. |
+| 120 | `statTotalRevenue` | Total Revenue Card | Stats Card | Decimal | — | Populated on load | — | `SUM(ad_payments.amount)` where `ad_payments.payment_status = 'completed'`, the related advertisement `approval_status = 'approved'`, and the payment date is within the selected date range | Revenue aggregation condition is fixed: completed payment + approved advertisement + selected date range. |
+| 121 | `statTotalAdsApproved` | Total Ads Approved Card | Stats Card | Integer | — | Populated on load | — | Count of approved advertisements included by the same completed-payment, approved-ad, and selected-date-range conditions | — |
+| 122 | `statTotalFeesCollected` | Total Fees Collected Card | Stats Card | Decimal | — | Populated on load | — | `SUM(ad_payments.amount)` for completed payments linked to approved advertisements within the selected date range | Localized currency format. |
+| 123 | `statAvgRevenuePerAd` | Avg Revenue Per Ad Card | Stats Card | Decimal | — | Populated on load | — | `totalRevenue / totalAds` using the same completed-payment, approved-ad, and selected-date-range conditions | Localized currency format. |
 | 124 | `statTotalRefunds` | Total Refunds Card | Stats Card | Decimal | — | Populated on load | — | `SUM(refunded amounts)` | Localized currency format. Shows total amount refunded due to rejections. |
 
 ### 4.37 Section [D]: Charts (チャート)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 125 | `chartRevenueByPlacement` | Revenue by Placement Chart | Bar Chart | Array | — | Populated on load | — | `GROUP BY placement` | Revenue breakdown by placement. |
-| 126 | `chartRevenueByTier` | Revenue by Tier Chart | Bar Chart | Array | — | Populated on load | — | `GROUP BY tier` | Revenue breakdown by tier. |
-| 127 | `chartRevenueTrend` | Revenue Trend Chart | Line Chart | Array | — | Populated on load | — | `GROUP BY date` | Revenue over time (daily/weekly). |
+| 125 | `chartRevenueByPlacement` | Revenue by Placement Chart | Bar Chart | Array | — | Populated on load | — | `GROUP BY ad_fee_settings.placement` after applying completed-payment, approved-ad, and selected-date-range conditions | Revenue breakdown by placement. |
+| 126 | `chartRevenueByTier` | Revenue by Tier Chart | Bar Chart | Array | — | Populated on load | — | `GROUP BY ad_fee_settings.tier` after applying completed-payment, approved-ad, and selected-date-range conditions | Revenue breakdown by tier. |
+| 127 | `chartRevenueTrend` | Revenue Trend Chart | Line Chart | Array | — | Populated on load | — | `GROUP BY payment date` after applying completed-payment, approved-ad, and selected-date-range conditions | Revenue over time (daily/weekly). |
 
 ### 4.38 Section [E]: Data Tables — Analytics (データテーブル — 分析)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 128 | `tblAdsByPlacement` | Ads by Placement Table | Data Table | Array | — | Populated on load | — | `GROUP BY placement` | Columns: Placement, Ad Count, Total Revenue, Avg CTR. |
-| 129 | `tblAdsByTier` | Ads by Tier Table | Data Table | Array | — | Populated on load | — | `GROUP BY tier` | Columns: Tier, Ad Count, Total Revenue, Avg CTR. |
+| 128 | `tblAdsByPlacement` | Ads by Placement Table | Data Table | Array | — | Populated on load | — | `GROUP BY ad_fee_settings.placement` after applying completed-payment, approved-ad, and selected-date-range conditions | Columns: Placement, Ad Count, Total Revenue, Avg CTR. |
+| 129 | `tblAdsByTier` | Ads by Tier Table | Data Table | Array | — | Populated on load | — | `GROUP BY ad_fee_settings.tier` after applying completed-payment, approved-ad, and selected-date-range conditions | Columns: Tier, Ad Count, Total Revenue, Avg CTR. |
 
 ### 4.39 Section [A]: Page Header — Export Reports (ページヘッダー — エクスポートレポート)
 
@@ -771,9 +772,9 @@ Admin selects multiple ads (PENDING only)
 
 | Item ID | Trigger Event | Processing Logic | Exception Handling |
 | :--- | :--- | :--- | :--- |
-| `btnManagePackages` | Click | Navigate to `/admin/advertisements/packages`. | Show toast error on navigation failure. |
-| `btnRevenueAnalytics` | Click | Navigate to `/admin/advertisements/analytics`. | Show toast error on navigation failure. |
-| `btnExport` | Click | Navigate to `/admin/advertisements/export`. | Show toast error on navigation failure. |
+| `btnManagePackages` | Click | Navigate to `/admin/ads/packages`. | Show toast error on navigation failure. |
+| `btnRevenueAnalytics` | Click | Navigate to `/admin/ads/analytics`. | Show toast error on navigation failure. |
+| `btnExport` | Click | Navigate to `/admin/ads/export`. | Show toast error on navigation failure. |
 | `selStatusFilter` | Change | Update query params, re-fetch ad list with new filter. | Show toast error on API failure. |
 | `selPlacementFilter` | Change | Update query params, re-fetch ad list with new filter. | Show toast error on API failure. |
 | `selTierFilter` | Change | Update query params, re-fetch ad list with new filter. | Show toast error on API failure. |
@@ -793,8 +794,8 @@ Admin selects multiple ads (PENDING only)
 | Item ID | Trigger Event | Processing Logic | Exception Handling |
 | :--- | :--- | :--- | :--- |
 | `btnCloseReviewModal` | Click / Escape | Close modal. Reset form state. | — |
-| `btnApproveAd` | Click | Validate ad is PENDING. Call `PATCH /api/v1/admin/ads/:id/approve`. Close modal. Refresh ad list. Show success toast. | Show toast error if ad is not PENDING. Show toast error on API failure. |
-| `btnRejectAd` | Click | Show rejection confirmation alert. Show rejection reason textarea. Validate reason not empty. Call `PATCH /api/v1/admin/ads/:id/reject` with reason. Close modal. Refresh ad list. Show success toast. | Show validation error if reason empty. Show toast error on API failure. |
+| `btnApproveAd` | Click | Validate ad is PENDING. Call `POST /api/v1/admin/ads/:id/approve`. Close modal. Refresh ad list. Show success toast. | Show toast error if ad is not PENDING. Show toast error on API failure. |
+| `btnRejectAd` | Click | Show rejection confirmation alert. Show rejection reason textarea. Validate reason not empty. Call `POST /api/v1/admin/ads/:id/reject` with reason. Close modal. Refresh ad list. Show success toast. | Show validation error if reason empty. Show toast error on API failure. |
 | `btnCancelReview` | Click | Close modal. Reset form state. | — |
 | `txtRejectionReason` | Input | Update rejection reason state. Show character count. | — |
 
@@ -803,7 +804,7 @@ Admin selects multiple ads (PENDING only)
 | Item ID | Trigger Event | Processing Logic | Exception Handling |
 | :--- | :--- | :--- | :--- |
 | `btnCloseBulkRejectModal` | Click / Escape | Close modal. Reset form state. | — |
-| `btnConfirmBulkReject` | Click | Validate reason not empty. Call `POST /api/v1/admin/ads/bulk-reject` with IDs and reason. Close modal. Refresh ad list. Show success toast. Clear selection. | Show validation error if reason empty. Show toast error on API failure. |
+| `btnConfirmBulkReject` | Click | Validate reason not empty. Call `POST /api/v1/admin/ads/bulk/reject` with IDs and reason. Close modal. Refresh ad list. Show success toast. Clear selection. | Show validation error if reason empty. Show toast error on API failure. |
 | `btnCancelBulkReject` | Click | Close modal. Reset form state. | — |
 | `txtBulkRejectReason` | Input | Update rejection reason state. Show character count. | — |
 
@@ -812,7 +813,7 @@ Admin selects multiple ads (PENDING only)
 | Item ID | Trigger Event | Processing Logic | Exception Handling |
 | :--- | :--- | :--- | :--- |
 | `btnCloseBulkApproveModal` | Click / Escape | Close modal. | — |
-| `btnConfirmBulkApprove` | Click | Call `POST /api/v1/admin/ads/bulk-approve` with IDs. Close modal. Refresh ad list. Show success toast. Clear selection. | Show toast error on API failure. |
+| `btnConfirmBulkApprove` | Click | Call `POST /api/v1/admin/ads/bulk/approve` with IDs. Close modal. Refresh ad list. Show success toast. Clear selection. | Show toast error on API failure. |
 | `btnCancelBulkApprove` | Click | Close modal. | — |
 
 ### 5.5 Package & Fee Management Behaviors
@@ -820,20 +821,20 @@ Admin selects multiple ads (PENDING only)
 | Item ID | Trigger Event | Processing Logic | Exception Handling |
 | :--- | :--- | :--- | :--- |
 | `btnBackToAdsFromPackages` | Click | Navigate to `/admin/ads`. | Show toast error on navigation failure. |
-| `btnViewFeeHistory` | Click | Navigate to `/admin/advertisements/fee-history`. | Show toast error on navigation failure. |
+| `btnViewFeeHistory` | Click | Navigate to `/admin/ads/fee-history`. | Show toast error on navigation failure. |
 | `btnCreateFeeSetting` | Click | Open Create Fee Modal. | — |
 | `btnEditFee` | Click | Fetch fee setting details. Open Edit Fee Modal. | Show toast error if setting not found. |
 | `btnDeactivateFee` | Click | Open Deactivate Fee Confirmation Modal. | — |
-| `btnSaveFee` | Click | Validate all fields. Call `PATCH /api/v1/admin/ads/fees/:id`. Close modal. Refresh fee list. Show success toast. | Show validation errors inline. Show toast error on API failure. |
-| `btnCreateFee` | Click | Validate all fields. Check uniqueness (placement+tier). Call `POST /api/v1/admin/ads/fees`. Close modal. Refresh fee list. Show success toast. | Show validation errors inline. Show toast error on duplicate. Show toast error on API failure. |
-| `btnConfirmDeactivateFee` | Click | Call `PATCH /api/v1/admin/ads/fees/:id/deactivate`. Close modal. Refresh fee list. Show success toast. | Show toast error on API failure. |
+| `btnSaveFee` | Click | Validate all fields. Call `PUT /api/v1/admin/ad-fees/:id`. Close modal. Refresh fee list. Show success toast. | Show validation errors inline. Show toast error on API failure. |
+| `btnCreateFee` | Click | Validate all fields. Check uniqueness (placement+tier). Call `POST /api/v1/admin/ad-fees`. Close modal. Refresh fee list. Show success toast. | Show validation errors inline. Show toast error on duplicate. Show toast error on API failure. |
+| `btnConfirmDeactivateFee` | Click | Call `PATCH /api/v1/admin/ad-fees/:id/deactivate`. Close modal. Refresh fee list. Show success toast. | Show toast error on API failure. |
 | `btnCancelEditFee` / `btnCancelCreateFee` / `btnCancelDeactivateFee` | Click | Close modal. Reset form state. | — |
 
 ### 5.6 Fee Change History Behaviors
 
 | Item ID | Trigger Event | Processing Logic | Exception Handling |
 | :--- | :--- | :--- | :--- |
-| `btnBackToPackages` | Click | Navigate to `/admin/advertisements/packages`. | Show toast error on navigation failure. |
+| `btnBackToPackages` | Click | Navigate to `/admin/ads/packages`. | Show toast error on navigation failure. |
 | `selHistoryPlacementFilter` | Change | Update query params, re-fetch history list. | Show toast error on API failure. |
 | `selHistoryTierFilter` | Change | Update query params, re-fetch history list. | Show toast error on API failure. |
 | `pagFeeHistory` | Page change | Update page query param, re-fetch history list. | Show toast error on API failure. |
@@ -855,7 +856,7 @@ Admin selects multiple ads (PENDING only)
 | `cardAdPerformance` | Click | Select report type. Update form state. | — |
 | `cardSubmissionHistory` | Click | Select report type. Update form state. | — |
 | `cardFeeHistory` | Click | Select report type. Update form state. | — |
-| `btnGenerateExport` | Click | Validate report type selected. Validate date range. Call `POST /api/v1/admin/ads/export`. Show estimated rows. Show success toast. | Show validation errors if missing. Show toast error on API failure. |
+| `btnGenerateExport` | Click | Validate report type and date range. Call the report-specific endpoint: `POST /api/v1/admin/ads/export/ad-performance`, `POST /api/v1/admin/ads/export/submission-history`, or `POST /api/v1/admin/ads/export/fee-history`. Show estimated rows and success toast. | Show validation errors if missing. Show toast error on API failure. |
 | `btnDownloadExport` | Click | Trigger file download via blob URL. | Show toast error if file expired or not found. |
 
 ---
@@ -921,17 +922,17 @@ Admin selects multiple ads (PENDING only)
 | :--- | :--- | :--- | :--- |
 | `lblShopName` | `shops.name` | VARCHAR(255) | Via JOIN on `shop_id` |
 | `lblAdTitle` | `advertisements.title` | VARCHAR(255) | — |
-| `lblPlacement` | `advertisements.placement` | VARCHAR(50) | Enum: `homepage_banner`, `product_sidebar`, `category_banner`, `search_top` |
-| `lblTier` | `advertisements.tier` | VARCHAR(20) | Enum: `basic`, `standard`, `premium` |
-| `badgeAdStatus` | `advertisements.status` | VARCHAR(20) | Enum: `pending`, `approved`, `rejected` |
+| `lblPlacement` | `ad_fee_settings.placement` | VARCHAR(50) | Enum: `homepage_banner`, `product_sidebar`, `category_banner`, `search_top` |
+| `lblTier` | `ad_fee_settings.tier` | VARCHAR(20) | Enum: `basic`, `standard`, `premium` |
+| `badgeAdStatus` | `advertisements.approval_status` | VARCHAR(20) | Enum: `pending`, `approved`, `rejected` |
 | `badgePaymentStatus` | `advertisements.payment_status` | VARCHAR(20) | Enum: `pending`, `completed`, `refunded` |
 | `lblSubmittedAt` | `advertisements.created_at` | TIMESTAMP | — |
-| `lblFee` | `advertisements.fee_amount` | DECIMAL(10,2) | — |
+| `lblFee` | `advertisements.payment_amount` | DECIMAL(10,2) | — |
 | `imgAdBanner` | `advertisements.image_url` | TEXT | — |
-| `lblAdMessage` | `advertisements.message` | VARCHAR(500) | — |
+| `lblAdMessage` | `advertisements.announcement_message` | VARCHAR(500) | — |
 | `lblAdLinkUrl` | `advertisements.link_url` | TEXT | — |
 | `lblAdContent` | `advertisements.content` | TEXT | — |
-| `lblAdSchedule` | `advertisements.start_date`, `advertisements.end_date` | DATE | — |
+| `lblAdSchedule` | `advertisements.starts_at`, `advertisements.expires_at` | TIMESTAMPTZ | — |
 | `txtRejectionReason` | `advertisements.rejection_reason` | TEXT | — |
 
 ### 7.2 Ad Payments Table
@@ -939,7 +940,7 @@ Admin selects multiple ads (PENDING only)
 | UI Element | DB Column | Type | Notes |
 | :--- | :--- | :--- | :--- |
 | `lblFeePaid` | `ad_payments.amount` | DECIMAL(10,2) | — |
-| `badgePaymentStatusDetail` | `ad_payments.status` | VARCHAR(20) | Enum: `pending`, `completed`, `refunded` |
+| `badgePaymentStatusDetail` | `ad_payments.payment_status` | VARCHAR(20) | Enum: `pending`, `completed`, `refunded` |
 
 ### 7.3 Ad Fee Settings Table
 
@@ -959,10 +960,10 @@ Admin selects multiple ads (PENDING only)
 | `lblHistoryDate` | `ad_fee_history.created_at` | TIMESTAMP | — |
 | `lblHistoryPlacement` | `ad_fee_history.placement` | VARCHAR(50) | — |
 | `badgeHistoryTier` | `ad_fee_history.tier` | VARCHAR(20) | — |
-| `lblOldRate` | `ad_fee_history.old_rate` | DECIMAL(10,2) | — |
-| `lblNewRate` | `ad_fee_history.new_rate` | DECIMAL(10,2) | — |
+| `lblOldRate` | `ad_fee_history.old_daily_rate` | DECIMAL(10,2) | — |
+| `lblNewRate` | `ad_fee_history.new_daily_rate` | DECIMAL(10,2) | — |
 | `lblChangedBy` | `ad_fee_history.changed_by` | UUID | FK → `users.id` |
-| `lblReason` | `ad_fee_history.reason` | TEXT | — |
+| `lblReason` | `ad_fee_history.change_reason` | TEXT | — |
 
 ---
 
@@ -980,15 +981,15 @@ Admin selects multiple ads (PENDING only)
       "title": "Summer Sale Banner",
       "placement": "homepage_banner",
       "tier": "standard",
-      "status": "pending",
+      "approvalStatus": "pending",
       "paymentStatus": "completed",
-      "feeAmount": 35.00,
+      "paymentAmount": 35.00,
       "imageUrl": "https://cdn.example.com/ads/banner1.jpg",
-      "message": "Summer Sale 50% Off",
+      "announcementMessage": "Summer Sale 50% Off",
       "linkUrl": "https://example.com/sale",
       "content": "Description text...",
-      "startDate": "2026-09-01",
-      "endDate": "2026-09-07",
+      "startsAt": "2026-09-01T00:00:00.000Z",
+      "expiresAt": "2026-09-07T23:59:59.999Z",
       "rejectionReason": null,
       "approvedBy": null,
       "approvedAt": null,
@@ -1010,7 +1011,7 @@ Admin selects multiple ads (PENDING only)
 {
   "data": {
     "id": "clxAd001",
-    "status": "approved",
+    "approvalStatus": "approved",
     "approvedBy": "clxAdmin001",
     "approvedAt": "2026-08-26T12:00:00.000Z",
     "updatedAt": "2026-08-26T12:00:00.000Z"
@@ -1024,7 +1025,7 @@ Admin selects multiple ads (PENDING only)
 {
   "data": {
     "id": "clxAd001",
-    "status": "rejected",
+    "approvalStatus": "rejected",
     "rejectionReason": "Violates advertising policy",
     "updatedAt": "2026-08-26T12:00:00.000Z"
   }
@@ -1039,8 +1040,8 @@ Admin selects multiple ads (PENDING only)
     "approved": 5,
     "failed": 0,
     "results": [
-      { "id": "clxAd001", "status": "approved" },
-      { "id": "clxAd002", "status": "approved" }
+      { "id": "clxAd001", "approvalStatus": "approved" },
+      { "id": "clxAd002", "approvalStatus": "approved" }
     ]
   }
 }
@@ -1055,8 +1056,8 @@ Admin selects multiple ads (PENDING only)
     "failed": 0,
     "refundsProcessed": 5,
     "results": [
-      { "id": "clxAd001", "status": "rejected", "refundStatus": "processed" },
-      { "id": "clxAd002", "status": "rejected", "refundStatus": "processed" }
+      { "id": "clxAd001", "approvalStatus": "rejected", "refundStatus": "processed" },
+      { "id": "clxAd002", "approvalStatus": "rejected", "refundStatus": "processed" }
     ]
   }
 }
@@ -1131,8 +1132,8 @@ Admin selects multiple ads (PENDING only)
       "id": "clxFeeHist001",
       "placement": "homepage_banner",
       "tier": "standard",
-      "oldRate": 4.00,
-      "newRate": 5.00,
+      "oldDailyRate": 4.00,
+      "newDailyRate": 5.00,
       "changedBy": "clxAdmin001",
       "changedByName": "Admin User",
       "reason": "Annual rate adjustment",
@@ -1171,7 +1172,7 @@ Admin selects multiple ads (PENDING only)
   "message": ["placement must be one of the following values: homepage_banner, product_sidebar, category_banner, search_top"],
   "error": "Bad Request",
   "timestamp": "2026-08-26T12:00:00.000Z",
-  "path": "/api/v1/admin/ads/fees"
+  "path": "/api/v1/admin/ad-fees"
 }
 ```
 
@@ -1496,7 +1497,7 @@ Admin selects multiple ads (PENDING only)
 3. The fee amount is clearly displayed to the Merchant/Admin at package selection and in the review modal.
 4. After successful payment and submission, the advertisement enters PENDING review.
 5. **Only PENDING advertisements can be Approved or Rejected.**
-6. Admin approval makes the advertisement eligible for display according to its schedule (Start Date ~ End Date).
+6. Admin approval makes the advertisement eligible for display according to its schedule (`starts_at` ~ `expires_at`).
 7. Admin rejection requires a rejection reason (required, max 1000 characters).
 8. Rejected advertisements are not displayed.
 9. **Admin rejection before display results in a 100% refund of the successfully paid amount.**
@@ -1518,9 +1519,8 @@ The following items require business confirmation before implementation. They ar
 | 4 | Exact Max Ads definition | Whether Max Ads means maximum active advertisements, maximum per placement, or maximum per period is not defined. | Requires confirmation |
 | 5 | Date/duration calculation | Whether the display period counts Start Date and End Date inclusively (e.g., Sep 1–7 = 7 days) or exclusively is not defined. | Requires confirmation |
 | 6 | Timezone | Timezone rules for Start Date, End Date, and schedule display are not defined. | Requires confirmation |
-| 7 | Revenue calculation (Gross vs Net) | Whether Total Revenue in analytics means Gross Revenue or Net Revenue (after refunds) is not defined. | Requires confirmation |
-| 8 | Merchant cancellation/refund rules | Rules for Merchant-initiated cancellation and refund (before Admin review) are not defined in the current document. | Not implemented |
-| 9 | Payment Failed state | The exact UI behavior when payment fails (whether the ad is saved as draft, discarded, or shown in a specific state) is not defined. | Requires confirmation |
+| 7 | Merchant cancellation/refund rules | Rules for Merchant-initiated cancellation and refund (before Admin review) are not defined in the current document. | Not implemented |
+| 8 | Payment Failed state | The exact UI behavior when payment fails (whether the ad is saved as draft, discarded, or shown in a specific state) is not defined. | Requires confirmation |
 
 ---
 

@@ -1,7 +1,4 @@
-import { Sparkles } from 'lucide-react'
-import { LanguageToggle } from '@/components/common/LanguageToggle'
-import { ThemeToggle } from '@/components/common/ThemeToggle'
-import { APP_NAME } from '@/lib/constants'
+import { Header } from '@/components/layout/Header'
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -9,25 +6,16 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
-      <div className="w-full max-w-md space-y-6">
-        {/* Header with Logo */}
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">{APP_NAME}</span>
-          </div>
-        </div>
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Top header bar — same as public pages */}
+      <Header />
 
-        {/* Content */}
-        {children}
-
-        {/* Footer Controls */}
-        <div className="flex items-center justify-center gap-2">
-          <LanguageToggle />
-          <ThemeToggle />
+      {/* Centered form content */}
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          {children}
         </div>
-      </div>
+      </main>
     </div>
   )
 }

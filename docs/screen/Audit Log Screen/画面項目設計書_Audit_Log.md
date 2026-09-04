@@ -35,7 +35,7 @@
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Admin Audit Log screen provides platform administrators with full visibility into all significant system actions performed within the Cosmetics Finder platform. It serves as the central audit trail for security monitoring, compliance, and operational accountability. The screen enables viewing, filtering, searching, and exporting audit log data, as well as manual deletion of records and CSV export files that are at least 90 days old.
+The Admin Audit Log screen provides platform administrators with full visibility into all significant system actions performed within the Cosmetics Finder platform. It serves as the central audit trail for security monitoring, compliance, and operational accountability. The screen enables viewing, filtering, searching, and exporting audit log data, as well as manual deletion of records that are at least 90 days old.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
@@ -53,7 +53,7 @@ The Admin Audit Log screen provides platform administrators with full visibility
 4. **Search** — Full-text search across action names, entity types, and user information.
 5. **CSV Export** — Export filtered audit log data in CSV format.
 6. **Real-Time Monitoring** — Auto-refresh capability every 30 seconds.
-7. **Manual Deletion** — Delete DB audit log records and CSV export files aged >= 90 days.
+7. **Manual Deletion** — Delete DB audit log records aged >= 90 days.
 8. **Internationalization** — Full i18n support for EN, JA, MY.
 9. **Responsive Design** — Desktop table layout, mobile card-based layout.
 
@@ -174,14 +174,14 @@ The Admin Audit Log screen provides platform administrators with full visibility
 ```text
 ┌──────────────────────────────────────────────────────────────┐
 │  [F] DIALOG HEADER                                           │
-│  [F1] Dialog Title: "Delete Audit Logs & CSV Files"          │
+│  [F1] Dialog Title: "Delete Audit Logs"                    │
 │                                            [F2] Close        │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  [F3] Warning Message:                                       │
 │  ┌─────────────────────────────────────────────────────────┐ │
 │  │ ⚠This action will permanently delete audit log records │ │
-│  │ and CSV export files that are at least 90 days old.     │ │
+│  │ that are at least 90 days old.                         │ │
 │  │ This operation cannot be undone.                        │ │
 │  └─────────────────────────────────────────────────────────┘ │
 │                                                              │
@@ -193,8 +193,8 @@ The Admin Audit Log screen provides platform administrators with full visibility
 │                                                              │
 │  [F5] Deletion Scope Summary:                                │
 │  ┌─────────────────────────────────────────────────────────┐ │
-│  │ Audit log records and CSV export files older            │ │
-│  │ than {N} days will be permanently deleted.              │ │
+│  │ Audit log records older than {N} days will be           │ │
+│  │ permanently deleted.                                    │ │
 │  └─────────────────────────────────────────────────────────┘ │
 │                                                              │
 │  ┌───────────────────────────────────────────────────────┐   │
@@ -255,7 +255,7 @@ The Admin Audit Log screen provides platform administrators with full visibility
 | 22 | `colSummary` | Summary Column | Table Column | String | Yes | — | Auto-generated text | Computed | Brief description derived from action + entity_type. Width: auto. i18n: `audit.summary`. |
 | 23 | `colIpAddress` | IP Address Column | Table Column | String | Yes | — | IP string | `audit_logs.ip_address` | Client IP address. May be null for system actions. Width: 130px. i18n: `audit.ipAddress`. |
 | 24 | `btnViewDetail` | View Detail Button | Link (`<Link>`) | — | — | Visible per row. Text: "View Detail" | — | — | Opens audit log detail modal (Section 4.4). i18n: `audit.viewDetail`. |
-| 25 | `lblEmptyState` | Empty State | Empty State | — | — | Hidden by default | — | — | "No audit log entries found." Displayed when filtered results return 0 rows. i18n: `audit.noLogs`. |
+| 25 | `lblEmptyState` | Empty State | Empty State | — | — | Hidden by default | — | — | "No matching records were found." Displayed when filtered results return 0 rows. i18n: `audit.noLogs`. |
 
 ### 4.4 Section [E]: Audit Log Detail Modal (監査ログ詳細モーダル)
 
@@ -291,11 +291,11 @@ The Admin Audit Log screen provides platform administrators with full visibility
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 46 | `lblDeleteDialogTitle` | Dialog Title | Static Label (`<h3>`) | String | — | Visible. Text: "Delete Audit Logs & CSV Files" | — | Hardcoded UI text | i18n: `audit.deleteDialogTitle`. |
+| 46 | `lblDeleteDialogTitle` | Dialog Title | Static Label (`<h3>`) | String | — | Visible. Text: "Delete Audit Logs" | — | Hardcoded UI text | i18n: `audit.deleteDialogTitle`. |
 | 47 | `btnCloseDialog` | Close Button | Button (`secondary`) | — | — | Visible. Text: "Close" | — | — | Closes dialog without performing deletion. i18n: `audit.close`. |
-| 48 | `lblDeleteWarning` | Warning Message | Alert (`warning`) | — | — | Visible | — | — | Informs admin that deletion is permanent and applies to records/files >= 90 days. i18n: `audit.deleteWarning`. |
-| 49 | `txtRetentionDays` | Retention Period Input | Input (`number`) | Number | — | Default: `90` | Min: 90, Max: 3650, Integer only | — | Number of days. Records/files younger than this will NOT be deleted. i18n: `audit.retentionDays`. |
-| 50 | `lblDeleteScopeSummary` | Deletion Scope Summary | Static Label (`<Text>`) | String | Yes | — | "Audit log records and CSV export files older than {N} days will be permanently deleted." | — | Dynamic summary updated based on retention period input. The current list/search filters are NOT used to determine which records are deleted. Deletion eligibility is determined solely by `olderThanDays` — audit log records and CSV export files older than the specified retention period are targeted. Records and files younger than the specified retention period must NOT be deleted. The minimum allowed retention period is 90 days. i18n: `audit.deleteScopeSummary`. |
+| 48 | `lblDeleteWarning` | Warning Message | Alert (`warning`) | — | — | Visible | — | — | Informs admin that deletion is permanent and applies to records >= 90 days. i18n: `audit.deleteWarning`. |
+| 49 | `txtRetentionDays` | Retention Period Input | Input (`number`) | Number | — | Default: `90` | Min: 90 | — | Number of days. Records younger than this will NOT be deleted. i18n: `audit.retentionDays`. |
+| 50 | `lblDeleteScopeSummary` | Deletion Scope Summary | Static Label (`<Text>`) | String | Yes | — | "Audit log records older than {N} days will be permanently deleted." | — | Dynamic summary updated based on retention period input. The current list/search filters are NOT used to determine which records are deleted. Deletion eligibility is determined solely by `olderThanDays` — audit log records older than the specified retention period are targeted. Records younger than the specified retention period must NOT be deleted. The minimum allowed retention period is 90 days. i18n: `audit.deleteScopeSummary`. |
 | 51 | `btnConfirmDelete` | Confirm Delete Button | Button (`danger`) | — | — | Visible. Text: "Confirm Delete" | — | — | Triggers `DELETE /api/v1/admin/audit-logs/files` with `{ olderThanDays: <value> }`. Disabled while request is in progress. Shows spinner during API call. i18n: `audit.confirmDelete`. |
 | 52 | `btnCancelDelete` | Cancel Button | Button (`secondary`) | — | — | Visible. Text: "Cancel" | — | — | Closes dialog without performing deletion. i18n: `audit.cancel`. |
 
@@ -347,7 +347,7 @@ The Admin Audit Log screen provides platform administrators with full visibility
 ### 5.5 Retention Period Input (`txtRetentionDays` onChange)
 - **Trigger:** Admin changes the retention period value.
 - **Processing Logic:**
-  1. **Validation:** Must be >= 90, <= 3650, integer only.
+  1. **Validation:** Must be >= 90.
   2. **Update Summary:** Update deletion scope summary text with new value.
   3. **Enable/Disable Confirm:** Disable confirm button if validation fails.
 - **Exception Handling:**
@@ -358,10 +358,10 @@ The Admin Audit Log screen provides platform administrators with full visibility
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** Validate retention period >= 90.
   2. **Backend Dispatch:** `DELETE /api/v1/admin/audit-logs/files` with `{ olderThanDays: <input value> }`.
-  3. **Backend Execution:** Validate JWT token and admin role. Select DB records where `created_at` older than threshold. Select CSV export files older than threshold. Delete in controlled batches. Return count of deleted records and files.
+  3. **Backend Execution:** Validate JWT token and admin role. Select DB records where `created_at` older than threshold. Delete in controlled batches. Return count of deleted records.
   4. **Post-Execution UI:** Close dialog. Show success toast. Refresh list (or re-fetch if auto-refresh is off).
 - **Exception Handling:**
-  - `400` (BAD_REQUEST): Display "Minimum retention period is 90 days" or "No records or files eligible for deletion".
+  - `400` (BAD_REQUEST): Display "Minimum retention period is 90 days" or "No records eligible for deletion".
   - `403` (FORBIDDEN): Display "Access denied".
   - `500` (INTERNAL_SERVER_ERROR): Display "Deletion failed. Please try again." Dialog remains open for retry.
   - Loading state: Show spinner on confirm button. Disable all inputs during request.
@@ -455,8 +455,6 @@ The Admin Audit Log screen provides platform administrators with full visibility
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-AUDIT-030** | `txtRetentionDays` | Must be >= 90 | Red border. Text below field. | "Retention period must be at least 90 days" | "保持期間は最低90日である必要があります" |
-| **VAL-AUDIT-031** | `txtRetentionDays` | Must be <= 3650 | Red border. Text below field. | "Retention period cannot exceed 3650 days (10 years)" | "保持期間は3650日（10年）を超えることはできません" |
-| **VAL-AUDIT-032** | `txtRetentionDays` | Must be integer | Red border. Text below field. | "Retention period must be a whole number" | "保持期間は整数である必要があります" |
 
 ### 6.5 API Error Responses
 

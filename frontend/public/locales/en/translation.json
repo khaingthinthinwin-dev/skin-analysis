@@ -87,6 +87,48 @@
       "cta": "Get Started"
     }
   },
+  "wishlist": {
+    "title": "My Wishlist",
+    "itemCount": "{{count}} items saved",
+    "moveToCart": "Add to Cart",
+    "remove": "Remove",
+    "emptyTitle": "No items saved yet",
+    "emptyMessage": "Browse products to add favorites.",
+    "continueShopping": "Continue Shopping",
+    "unavailable": "This product is currently unavailable.",
+    "inStock": "In Stock",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock",
+    "guestLoginAlert": {
+      "title": "Log In Required",
+      "message": "Please log in to add items to your wishlist.",
+      "loginButton": "Log In",
+      "closeButton": "Cancel"
+    }
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "itemCount": "{{count}} items in cart",
+    "subtotal": "Subtotal",
+    "totalItems": "Total Items",
+    "checkout": "Proceed to Checkout",
+    "continueShopping": "Continue Shopping",
+    "browseProducts": "Browse Products",
+    "remove": "Remove",
+    "emptyTitle": "Your cart is empty",
+    "emptyMessage": "Start shopping!",
+    "inStock": "In Stock",
+    "lowStock": "Only {{n}} left in stock",
+    "outOfStock": "Out of Stock",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "guestLoginAlert": {
+      "title": "Log In Required",
+      "message": "Please log in to add items to your cart.",
+      "loginButton": "Log In",
+      "closeButton": "Cancel"
+    }
+  },
   "footer": {
     "brand": "Cosmetics Finder",
     "tagline": "Your beauty journey starts here.",
@@ -105,5 +147,11 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "copyright": "© 2026 Cosmetics Finder. All rights reserved."
+  },
+  "roles": {
+    "buyer": "Buyer",
+    "merchant": "Merchant",
+    "admin": "Admin",
+    "super_admin": "Super Admin"
   }
 }

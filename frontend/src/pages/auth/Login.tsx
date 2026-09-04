@@ -104,10 +104,11 @@ export default function Login() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showPassword ? 'text' : 'password'}
                         placeholder={t('auth.login.passwordPlaceholder')}
                         autoComplete="current-password"
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
@@ -118,9 +119,9 @@ export default function Login() {
                         tabIndex={-1}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
                           <Eye className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="sr-only">
                           {showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}

@@ -139,6 +139,15 @@
     border-color: var(--color-border);
   }
 
+  /* Hide browser native password reveal button */
+  input[type="password"]::-ms-reveal {
+    display: none;
+  }
+
+  input[type="password"]::-webkit-credentials-auto-fill-button {
+    display: none;
+  }
+
   html {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
