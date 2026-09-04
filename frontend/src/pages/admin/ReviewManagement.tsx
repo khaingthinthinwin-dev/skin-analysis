@@ -105,7 +105,7 @@ export default function ReviewManagement() {
                 <p className="text-center py-6 text-muted-foreground">No review reports.</p>
               ) : (
                 <div className="space-y-4">
-                  {reviewReportsQuery.data?.items?.map((report: ReviewReport) => (
+                  {reviewReportsQuery.data?.items?.map((report) => (
                     <div key={report.id} className="border rounded-lg p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <div>

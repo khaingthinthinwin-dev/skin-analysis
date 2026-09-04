@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
@@ -27,9 +27,10 @@ export function UserNav() {
         .toUpperCase()
     : user.email.charAt(0).toUpperCase()
 
+  const avatarSrc = user.avatar || user.avatarUrl || undefined
+
   const handleLogout = () => {
     logout()
-    window.location.href = ROUTES.HOME
   }
 
   return (
@@ -37,6 +38,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
+            <AvatarImage src={avatarSrc} alt={user.name} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>

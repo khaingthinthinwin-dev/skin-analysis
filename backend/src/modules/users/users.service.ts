@@ -30,13 +30,27 @@ export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
+      include: {
+        merchantProfile: {
+          select: {
+            licenseStatus: true,
+            businessLicenseUrl: true,
+          },
+        },
+      },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return {
+      ...user,
+      role: user.roleCode,
+      avatar: user.avatarUrl || undefined,
+      licenseStatus: user.merchantProfile?.licenseStatus || null,
+      licenseUrl: user.merchantProfile?.businessLicenseUrl || null,
+    };
   }
 
   async findByEmail(email: string) {
@@ -48,10 +62,26 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto) {
     await this.findById(id);
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
+      include: {
+        merchantProfile: {
+          select: {
+            licenseStatus: true,
+            businessLicenseUrl: true,
+          },
+        },
+      },
     });
+
+    return {
+      ...updatedUser,
+      role: updatedUser.roleCode,
+      avatar: updatedUser.avatarUrl || undefined,
+      licenseStatus: updatedUser.merchantProfile?.licenseStatus || null,
+      licenseUrl: updatedUser.merchantProfile?.businessLicenseUrl || null,
+    };
   }
 
   async updatePassword(id: string, passwordHash: string) {

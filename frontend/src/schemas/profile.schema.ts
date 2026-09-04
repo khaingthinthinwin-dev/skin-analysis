@@ -7,14 +7,10 @@ export const updateProfileSchema = z.object({
     .max(100, 'Name must not exceed 100 characters'),
   phone: z
     .string()
-    .max(20, 'Phone number must not exceed 20 characters')
-    .regex(/^[\d\s\-+()]*$/, 'Invalid phone number format')
     .optional()
     .or(z.literal('')),
   avatarUrl: z
     .string()
-    .url('Invalid URL format')
-    .max(500, 'URL must not exceed 500 characters')
     .optional()
     .or(z.literal('')),
 })

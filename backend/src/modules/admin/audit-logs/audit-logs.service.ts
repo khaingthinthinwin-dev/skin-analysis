@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuditLogsService {
@@ -15,7 +15,7 @@ export class AuditLogsService {
     const { page = 1, limit = 20, action, userId } = query;
     const skip = (page - 1) * limit;
 
-    const where: { action?: string; userId?: string } = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (action) where.action = action;
     if (userId) where.userId = userId;
 

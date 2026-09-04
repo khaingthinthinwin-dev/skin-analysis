@@ -76,7 +76,7 @@ export default function MerchantManagement() {
 
       <MerchantsTable
         merchants={merchantsQuery.data?.items}
-        onSelectReview={(m: Merchant) => setSelectedMerchant(m)}
+        onSelectReview={(merchant) => setSelectedMerchant(merchant)}
         onApprove={handleApprove}
         onReject={handleReject}
       />

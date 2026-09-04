@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 @Injectable()
@@ -48,8 +49,8 @@ export class AdminService {
     const { role, is_active, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: { roleCode?: string; isActive?: boolean } = {};
-    if (role) where.roleCode = role;
+    const where: Prisma.UserWhereInput = {};
+    if (role) where.role = { roleCode: role };
     if (is_active !== undefined) where.isActive = is_active;
 
     const [items, total] = await Promise.all([
@@ -59,7 +60,7 @@ export class AdminService {
           id: true,
           email: true,
           name: true,
-          roleCode: true,
+          role: true,
           isActive: true,
           emailVerified: true,
           createdAt: true,
@@ -109,7 +110,7 @@ export class AdminService {
     const { page = 1, limit = 20, is_approved } = params;
     const skip = (page - 1) * limit;
 
-    const where: { isApproved?: boolean } = {};
+    const where: Prisma.ReviewWhereInput = {};
     if (is_approved !== undefined) where.isApproved = is_approved;
 
     const [items, total] = await Promise.all([
@@ -161,7 +162,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: { status?: string } = {};
+    const where: Prisma.ReviewReportWhereInput = {};
     if (status) where.status = status;
 
     const [items, total] = await Promise.all([
@@ -255,7 +256,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: { licenseStatus?: string } = {};
+    const where: Prisma.MerchantWhereInput = {};
     if (status) where.licenseStatus = status;
 
     const [items, total] = await Promise.all([
@@ -336,7 +337,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: { approvalStatus?: string } = {};
+    const where: Prisma.AdvertisementWhereInput = {};
     if (status) where.approvalStatus = status;
 
     const [items, total] = await Promise.all([
@@ -446,7 +447,7 @@ export class AdminService {
     const { status, page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
 
-    const where: { status?: string } = {};
+    const where: Prisma.PayoutWhereInput = {};
     if (status) where.status = status;
 
     const [items, total] = await Promise.all([
@@ -502,7 +503,7 @@ export class AdminService {
     const { page = 1, limit = 20, action, userId } = params;
     const skip = (page - 1) * limit;
 
-    const where: { action?: { contains: string }; userId?: string } = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (action) where.action = { contains: action };
     if (userId) where.userId = userId;
 

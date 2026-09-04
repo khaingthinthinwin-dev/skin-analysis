@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
@@ -10,7 +13,7 @@ import { RateLimitInterceptor } from './common/interceptors/rate-limit.intercept
 import { RedisService } from './shared/redis/redis.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   // Global prefix (includes version: api/v1)
@@ -22,6 +25,17 @@ async function bootstrap() {
     origin: configService.get<string>('app.corsOrigin'),
     credentials: true,
   });
+
+  // Static file serving for uploads
+  const uploadsPath = join(process.cwd(), 'uploads');
+  const productsPath = join(uploadsPath, 'products');
+  if (!existsSync(uploadsPath)) {
+    mkdirSync(uploadsPath, { recursive: true });
+  }
+  if (!existsSync(productsPath)) {
+    mkdirSync(productsPath, { recursive: true });
+  }
+  app.useStaticAssets(uploadsPath, { prefix: '/uploads' });
 
   // Global pipes
   app.useGlobalPipes(

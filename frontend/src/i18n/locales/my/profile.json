@@ -1,0 +1,62 @@
+{
+  "title": "ကျွန်ုပ်၏ Profile",
+  "description": "သင်၏ account settings နှင့် preferences များကို စီမံပါ",
+  "tabs": {
+    "info": "Profile Info",
+    "edit": "Profile ပြင်ဆင်ရန်",
+    "password": "စကားဝှက်ပြောင်းရန်"
+  },
+  "info": {
+    "title": "Profile အချက်အလက်",
+    "description": "သင်၏ account details နှင့် အချက်အလက်များ",
+    "contactInfo": "ဆက်သွယ်ရန် အချက်အလက်",
+    "email": "အီးမေးလ်",
+    "phone": "ဖုန်း",
+    "notProvided": "မထည့်ရသေးပါ",
+    "accountDetails": "Account Details",
+    "memberSince": "အဖွဲ့ဝင်ဖြစ်သည့် ရက်စွဲ",
+    "emailVerification": "အီးမေးလ် အတည်ပြုခြင်း",
+    "verified": "အတည်ပြုပြီး",
+    "notVerified": "အတည်မပြုရသေးပါ",
+    "licenseStatus": "License အခြေအနေ",
+    "licenseApproved": "အတည်ပြုပြီး",
+    "licenseRejected": "ပယ်ချပြီး",
+    "licensePending": "စောင့်ဆိုင်းဆဲ"
+  },
+  "form": {
+    "title": "Profile ပြင်ဆင်ရန်",
+    "description": "သင်၏ ကိုယ်ရေးအချက်အလက်များကို update လုပ်ပါ",
+    "name": "အမည်အပြည့်အစုံ",
+    "namePlaceholder": "သင်၏ အမည်ကို ထည့်သွင်းပါ",
+    "nameDescription": "သင်၏ account တွင် ပေါ်နေသည့် အမည်",
+    "phone": "ဖုန်းနံပါတ်",
+    "phonePlaceholder": "+95 9 XXX XXX XXX",
+    "phoneDescription": "Account recovery အတွက် ရွေးချယ်စရာ",
+    "avatarUrl": "Avatar URL",
+    "avatarUrlPlaceholder": "https://example.com/avatar.jpg",
+    "avatarUrlDescription": "သင်၏ profile picture URL",
+    "save": "ပြောင်းလဲမှုများ သိမ်းဆည်းရန်",
+    "saving": "သိမ်းဆည်းနေသည်...",
+    "success": "Profile အောင်မြင်စွာ update ပြီးပါပြီ",
+    "error": "Profile update လုပ်၍ မရပါ"
+  },
+  "password": {
+    "title": "စကားဝှက်ပြောင်းရန်",
+    "description": "သင်၏ account ကို လုံခြုံစေရန် စကားဝှက်ကို update လုပ်ပါ",
+    "current": "လက်ရှိ စကားဝှက်",
+    "currentPlaceholder": "သင်၏ လက်ရှိ စကားဝှက်ကို ထည့်သွင်းပါ",
+    "new": "စကားဝှက်အသစ်",
+    "newPlaceholder": "စကားဝှက်အသစ် ဖန်တီးပါ",
+    "newDescription": "အနည်းဆုံး စာလုံး ၈ လုံးနှင့် uppercase, lowercase, ဂဏန်းနှင့် special character ပါဝင်ရပါမည်",
+    "confirm": "စကားဝှက်အသစ် အတည်ပြုပါ",
+    "confirmPlaceholder": "သင်၏ စကားဝှက်အသစ်ကို အတည်ပြုပါ",
+    "save": "စကားဝှက်ပြောင်းရန်",
+    "saving": "ပြောင်းလဲနေသည်...",
+    "success": "စကားဝှက် အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ",
+    "error": "စကားဝှက်ပြောင်း၍ မရပါ"
+  },
+  "error": {
+    "title": "အမှား",
+    "loadFailed": "Profile အချက်အလက်များကို ဖွင့်၍ မရပါ။ ထပ်ကြိုးစားပါ။"
+  }
+}

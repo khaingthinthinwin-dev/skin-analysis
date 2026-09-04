@@ -175,11 +175,12 @@ export default function Register() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showPassword ? 'text' : 'password'}
                         placeholder={t('auth.register.passwordPlaceholder')}
                         autoComplete="new-password"
                         maxLength={128}
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
@@ -190,9 +191,9 @@ export default function Register() {
                         tabIndex={-1}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
                           <Eye className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="sr-only">
                           {showPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}
@@ -232,10 +233,11 @@ export default function Register() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        {...field}
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder={t('auth.register.confirmPasswordPlaceholder')}
                         autoComplete="new-password"
-                        {...field}
+                        className="pr-10"
                       />
                       <Button
                         type="button"
@@ -246,9 +248,9 @@ export default function Register() {
                         tabIndex={-1}
                       >
                         {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
                           <Eye className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="sr-only">
                           {showConfirmPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}

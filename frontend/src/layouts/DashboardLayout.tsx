@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { Outlet } from 'react-router'
-import { Menu, Bell, HelpCircle, Settings } from 'lucide-react'
+import { useState } from 'react'
+import { Menu, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -41,12 +41,7 @@ export function DashboardLayout() {
             <Button variant="ghost" size="icon" aria-label="Notifications">
               <Bell className="h-5 w-5 text-muted-foreground" />
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Help">
-              <HelpCircle className="h-5 w-5 text-muted-foreground" />
-            </Button>
-            <Button variant="ghost" size="icon" aria-label="Settings">
-              <Settings className="h-5 w-5 text-muted-foreground" />
-            </Button>
+
             <UserNav />
           </div>
         </header>
