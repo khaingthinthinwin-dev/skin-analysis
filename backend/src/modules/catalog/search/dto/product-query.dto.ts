@@ -32,7 +32,7 @@ export enum SkinType {
   NORMAL = 'normal',
 }
 
-export class SearchQueryDto {
+export class ProductQueryDto {
   @ApiPropertyOptional({
     description: 'Keyword for partial matching search',
     maxLength: 255,
