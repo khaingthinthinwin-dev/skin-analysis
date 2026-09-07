@@ -1,6 +1,6 @@
 import { useForm, type UseFormReturn } from 'react-hook-form'
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
-import { createProductSchema } from '@/schemas/product.schema'
+import { createProductSchema, updateProductSchema } from '@/schemas/product.schema'
 import type { CreateProductFormData, UpdateProductFormData, ProductFormData } from '@/schemas/product.schema'
 import type { Product } from '@/types/product.types'
 
@@ -31,13 +31,13 @@ export function useProductForm(options: {
 }): UseFormReturn<ProductFormData> {
   const { mode, product } = options
   return useForm<ProductFormData>({
-    resolver: standardSchemaResolver(createProductSchema),
+    resolver: standardSchemaResolver(mode === 'edit' ? updateProductSchema : createProductSchema),
     defaultValues:
       mode === 'edit' && product
         ? {
             name: product.name,
             shortDescription: product.shortDescription,
-            description: product.description,
+            description: product.description ?? '',
             categoryId: product.category?.id ?? '',
             sku: product.sku ?? '',
             price:

@@ -212,6 +212,10 @@ export class ProductsService {
   async create(userId: string, dto: CreateProductDto, images: string[]) {
     const merchantId = await this.getMerchantId(userId);
 
+    if (!images || images.length === 0) {
+      throw new BadRequestException('At least one product image is required');
+    }
+
     const category = await this.prisma.category.findUnique({
       where: { id: dto.categoryId },
     });
@@ -333,6 +337,10 @@ export class ProductsService {
 
     if (finalImages.length > 10) {
       throw new BadRequestException('A product can have at most 10 images');
+    }
+
+    if (finalImages.length === 0) {
+      throw new BadRequestException('At least one product image is required');
     }
 
     const product = await this.prisma.product.update({

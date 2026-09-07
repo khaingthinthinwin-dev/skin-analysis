@@ -377,7 +377,7 @@ describe('ProductsService', () => {
           compareAtPrice: 39.99,
           stockQuantity: 50,
         },
-        [],
+        ['/uploads/products/img1.jpg'],
       );
 
       expect(result.name).toBe('Hydrating Serum');
@@ -398,7 +398,7 @@ describe('ProductsService', () => {
             compareAtPrice: 15,
             stockQuantity: 5,
           },
-          [],
+          ['/uploads/products/img1.jpg'],
         ),
       ).rejects.toThrow(NotFoundException);
     });
@@ -418,7 +418,7 @@ describe('ProductsService', () => {
             compareAtPrice: 15,
             stockQuantity: 5,
           },
-          [],
+          ['/uploads/products/img1.jpg'],
         ),
       ).rejects.toThrow(ConflictException);
     });
@@ -444,7 +444,7 @@ describe('ProductsService', () => {
           compareAtPrice: 39.99,
           stockQuantity: 50,
         },
-        [],
+        ['/uploads/products/img1.jpg'],
       );
 
       expect(result.slug).toBe('hydrating-serum-1');
@@ -498,7 +498,7 @@ describe('ProductsService', () => {
           compareAtPrice: 39.99,
           stockQuantity: 5,
         },
-        [],
+        ['/uploads/products/img1.jpg'],
       );
 
       expect(prisma.product.create).toHaveBeenCalledWith(
@@ -531,7 +531,7 @@ describe('ProductsService', () => {
           compareAtPrice: 15,
           stockQuantity: 5,
         },
-        [],
+        ['/uploads/products/img1.jpg'],
       );
 
       expect(prisma.product.create).toHaveBeenCalledWith(
@@ -561,7 +561,10 @@ describe('ProductsService', () => {
       const result = await service.update(
         mockProductId,
         mockUserId,
-        { name: 'Updated Name' },
+        {
+          name: 'Updated Name',
+          retainedImageUrls: ['/uploads/products/img1.jpg'],
+        },
         [],
       );
       expect(result.name).toBe('Updated Name');
@@ -586,7 +589,12 @@ describe('ProductsService', () => {
         category: mockCategory,
       });
 
-      await service.update(mockProductId, mockUserId, { name: 'New Name' }, []);
+      await service.update(
+        mockProductId,
+        mockUserId,
+        { name: 'New Name', retainedImageUrls: ['/uploads/products/img1.jpg'] },
+        [],
+      );
 
       expect(prisma.product.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -601,7 +609,15 @@ describe('ProductsService', () => {
         .mockResolvedValueOnce(mockProduct)
         .mockResolvedValueOnce({ id: 'other' });
       await expect(
-        service.update(mockProductId, mockUserId, { sku: 'TAKEN-SKU' }, []),
+        service.update(
+          mockProductId,
+          mockUserId,
+          {
+            sku: 'TAKEN-SKU',
+            retainedImageUrls: ['/uploads/products/img1.jpg'],
+          },
+          [],
+        ),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -630,7 +646,10 @@ describe('ProductsService', () => {
       await service.update(
         mockProductId,
         mockUserId,
-        { sku: mockProduct.sku },
+        {
+          sku: mockProduct.sku,
+          retainedImageUrls: ['/uploads/products/img1.jpg'],
+        },
         [],
       );
     });
@@ -662,7 +681,11 @@ describe('ProductsService', () => {
         service.update(
           mockProductId,
           mockUserId,
-          { price: 30, compareAtPrice: 50 },
+          {
+            price: 30,
+            compareAtPrice: 50,
+            retainedImageUrls: ['/uploads/products/img1.jpg'],
+          },
           [],
         ),
       ).resolves.toBeDefined();
@@ -720,7 +743,11 @@ describe('ProductsService', () => {
       await service.update(
         mockProductId,
         mockUserId,
-        { price: null, compareAtPrice: 39.99 },
+        {
+          price: null,
+          compareAtPrice: 39.99,
+          retainedImageUrls: ['/uploads/products/img1.jpg'],
+        },
         [],
       );
 

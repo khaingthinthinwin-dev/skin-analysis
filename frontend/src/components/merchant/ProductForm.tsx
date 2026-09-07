@@ -160,6 +160,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 onFilesChange={(files) => setValue('images', files)}
                 maxFiles={10}
               />
+              {errors.images && (
+                <p className="text-sm text-destructive">{errors.images.message}</p>
+              )}
             </CardContent>
           </Card>
 

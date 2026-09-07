@@ -38,7 +38,16 @@ const productFieldsSchema = z.object({
     .string()
     .min(1, 'Short description is required')
     .max(500, 'Short description must not exceed 500 characters'),
-  description: z.string().min(1, 'Description is required'),
+  description: z
+    .string()
+    .min(1, 'Description is required')
+    .refine(
+      (val) => {
+        const stripped = val.replace(/<[^>]*>/g, '').trim()
+        return stripped.length > 0
+      },
+      'Description is required',
+    ),
   categoryId: z.string().min(1, 'Category is required'),
   sku: z.string().max(100, 'SKU must not exceed 100 characters').optional().or(z.literal('')),
   price: optionalNumber('Price must be a number'),
@@ -61,7 +70,7 @@ const productFieldsSchema = z.object({
   isActive: z.boolean(),
   isFeatured: z.boolean(),
   retainedImageUrls: z.array(z.string()),
-  images: z.array(imageFileSchema).max(10, 'Maximum 10 images allowed'),
+  images: z.array(imageFileSchema).min(1, 'At least one image is required').max(10, 'Maximum 10 images allowed'),
 })
 
 const pricesSchema = <T extends { price?: number | null; compareAtPrice?: number }>(schema: z.ZodType<T>) =>
@@ -96,7 +105,20 @@ export const createProductSchema = stockThresholdSchema(pricesSchema(productFiel
 export type CreateProductFormData = z.infer<typeof createProductSchema>
 export type ProductFormData = CreateProductFormData
 
-export const updateProductSchema = stockThresholdSchema(pricesSchema(productFieldsSchema.partial()))
+const imagesRequiredSchema = <T extends { retainedImageUrls?: string[]; images?: File[] }>(schema: z.ZodType<T>) =>
+  schema.refine(
+  (data) => {
+    const retainedCount = data.retainedImageUrls?.length ?? 0
+    const newImageCount = data.images?.length ?? 0
+    return retainedCount + newImageCount > 0
+  },
+  {
+    message: 'At least one image is required',
+    path: ['images'],
+  },
+)
+
+export const updateProductSchema = imagesRequiredSchema(stockThresholdSchema(pricesSchema(productFieldsSchema.partial())))
 
 export type UpdateProductFormData = z.infer<typeof updateProductSchema>
 
