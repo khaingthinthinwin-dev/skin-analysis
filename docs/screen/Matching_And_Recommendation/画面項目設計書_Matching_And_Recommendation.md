@@ -303,7 +303,7 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Processing Logic:**
   1. **Auth Check:** Verify JWT token and `buyer` role. If invalid → redirect to `/login`.
   2. **Analysis Check:** Call backend to determine whether the latest completed AI analysis is no more than 24 hours old.
-  3. **Source Assignment:** `source = "ai"` when the latest analysis is valid; otherwise `source = "generic"` (including stale analyses).
+  3. **Source Assignment:** `source = "ai"` when the latest analysis exists (including stale analyses > 24h old); `source = "generic"` only when no analysis is available.
   4. **API Call:** `GET /api/v1/recommendations/personalized` with default params.
   5. **Cache Check:** Backend checks Redis cache. HIT → return cached (≤200ms). MISS → query DB, compute scores, seed Redis.
   6. **Render:** Display recommendation cards based on source, show the profile prompt for generic results, and show history independently when completed sessions exist.
@@ -824,7 +824,8 @@ interface AdSlidePanelProps {
 ### 12.1 Page Load & Source Determination
 
 - [ ] Authenticated buyer with AI analysis → `source = "ai"`, green badge, match scores shown
-- [ ] Authenticated buyer without a valid analysis, including stale analysis → `source = "generic"`, amber badge, profile prompt shown
+- [ ] Authenticated buyer with stale analysis (> 24h) → `source = "ai"`, green badge, match scores shown, subtle "Want Fresh Results?" banner
+- [ ] Authenticated buyer without any analysis → `source = "generic"`, amber badge, profile prompt shown
 - [ ] Unauthenticated visitor → redirected to `/login`
 - [ ] Non-buyer role → redirected to `/unauthorized`
 - [ ] Page loads within 2 seconds (NFR-001)
