@@ -1,7 +1,7 @@
 ﻿# DD_CHECK-05 — Business Logic
 
 > **Doc ID:** SKM-DD-CHECK-05 | **Version:** 1.0 | **Status:** Draft
-> **Last Updated:** 2026-09-04
+> **Last Updated:** 2026-09-07
 
 ---
 
@@ -100,6 +100,7 @@ The coupon validation is a **short-circuit chain** — each step runs in sequenc
 | 5 | `used_count < max_uses` (when set) | `400 BAD_REQUEST` "Coupon usage limit reached" | BR-COUPON-004 |
 | 6 | Buyer has not used this coupon before (query `orders` by `buyer_id` + `coupon_code`) | `400 BAD_REQUEST` "Coupon already used" | BR-COUPON-005 |
 | 7 | Calculate discount (percentage vs fixed, capped at subtotal) | — | BR-COUPON-007 |
+| 7a | After calculating the discount: if `subtotal - discount <= 0` (a 100% percentage coupon or a fixed coupon ≥ subtotal reduces the total to $0) | `400 BAD_REQUEST` "Coupon discount cannot reduce the order total to zero or below." | BR-CHECK-010 |
 | 8 | One coupon per order — applying a new coupon replaces the previous one | — | BR-COUPON-008 |
 | 9 | On successful order placement: atomically increment `promotions.used_count` | — | BR-COUPON-009 |
 
@@ -115,9 +116,9 @@ This is the highest-risk operation in the module. All writes execute inside a **
 | 2 | Validation | — | Re-validate stock for every item: `products.stock_quantity >= cart_items.quantity`. If any item fails, throw `409 CONFLICT` `CHECK_002` "Some items are no longer available. Please review your cart." and roll back. | BR-CHECK-006, BR-CHECK-011 |
 | 3 | Group by `merchant_id` | — | Group cart items by `products.merchant_id`. One `orders` row is created per merchant group (機能設計書 §6.4.1-A step 3); a single-merchant cart produces one group. The request succeeds only if every group can be created — otherwise the complete transaction rolls back. | BR-CHECK-013 |
 | 4 | Calculation | — | For each merchant group, calculate subtotal: `SUM(cart_items.quantity * products.unit_price)` using the **re-fetched DB prices** from step 1. | BR-CHECK-008 |
-| 5 | SELECT + Validation | `promotions` | If `dto.couponCode` is provided, re-run the coupon validation chain (§3.1 steps 1–7) **inside** the transaction to prevent race-condition abuse. | BR-COUPON-001~007 |
+| 5 | SELECT + Validation | `promotions` | If `dto.couponCode` is provided, re-run the coupon validation chain (§3.1 steps 1–7a) **inside** the transaction to prevent race-condition abuse. | BR-COUPON-001~007 |
 | 6 | Calculation | — | For each merchant group, calculate discount per BR-COUPON-007 (§4.1). | BR-CHECK-009 |
-| 7 | Calculation | — | For each merchant group, calculate total: `subtotal - discount`. Total must be > 0 (BR-CHECK-010). | BR-CHECK-010 |
+| 7 | Calculation | — | For each merchant group, calculate total: `subtotal - discount`. Total must be strictly > 0 (BR-CHECK-010, confirmed) — if `total <= 0`, throw `400 BAD_REQUEST` and roll back the entire transaction. | BR-CHECK-010 |
 | 8 | INSERT | `orders` | For each merchant group, create order record with `status = 'placed'`, `buyer_id`, `merchant_id` (the group's merchant), `subtotal`, `discount_amount`, `total_amount`, `payment_method`, `shipping_address` (JSONB), `coupon_code`, `notes`, `created_at`. | BR-CHECK-013 |
 | 9 | INSERT | `order_items` | For each merchant group, create one `order_items` row per source `cart_items` row, copying `product_id`, `merchant_id`, `quantity`, the **current DB unit_price**, and `total_price` (`quantity * unit_price`) as an immutable snapshot (BR-CHECK-015). `cart_items` remain the mutable shopping intent; `order_items` are the immutable purchase snapshot — later changes to `cart_items` or `products` do not affect the order. | BR-CHECK-015 |
 | 10 | INSERT | `order_status_history` | For each created order, resolve the `placed` status to its `order_statuses` master row and insert exactly one history row with `order_id`, the `placed` status ID, `changed_by = buyer_id`, and note `'Order placed via checkout'` (機能設計書 §6.4.1-C). | BR-CHECK-013 |
@@ -191,7 +192,7 @@ const total = subtotal - discount;
 
 > **Deliberate v1.2 change (機能設計書 revision history v1.2):** The total formula is `subtotal - discount` only. There is **no shipping fee** and **no tax line**. This was a deliberate simplification in v1.2, not an omission. The `orders` table stores `subtotal`, `discount_amount`, and `total_amount` — no shipping or tax columns exist in the schema (DATABASE_SPEC §3.8).
 
-- Total must be **> 0** (BR-CHECK-010). If the discount equals the subtotal (e.g., a 100% coupon or a fixed coupon ≥ subtotal), the total is $0 — this is valid (a free order).
+- Total must be strictly greater than $0 (BR-CHECK-010, confirmed). If `total <= 0` after applying the discount, reject with `400 BAD_REQUEST` — 'Coupon discount cannot reduce the order total to zero or below.' A fixed coupon whose value equals or exceeds the subtotal, or a percentage coupon at 100%, must be rejected, not accepted as a free order.
 - The total is stored in `orders.total_amount` as a `DECIMAL(10,2)` immutable snapshot at order creation time (BR-CHECK-015).
 
 ---

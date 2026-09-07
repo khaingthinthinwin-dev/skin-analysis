@@ -1,7 +1,7 @@
 ﻿# DD_CHECK-04 — DTOs and Types
 
 > **Doc ID:** SKM-DD-CHECK-04 | **Version:** 1.0 | **Status:** Draft
-> **Last Updated:** 2026-09-04
+> **Last Updated:** 2026-09-07
 
 ---
 
@@ -482,6 +482,8 @@ export enum CheckoutErrorCode {
   CART_EMPTY = 'CART_EMPTY',
   INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK',
   INVALID_COUPON = 'INVALID_COUPON',
+  /** Coupon discount cannot reduce the order total to zero or below. */
+  TOTAL_MUST_BE_POSITIVE = 'TOTAL_MUST_BE_POSITIVE',
   NON_BUYER_ROLE = 'NON_BUYER_ROLE',
   AUTH_REQUIRED = 'AUTH_REQUIRED',
   SERVER_ERROR = 'SERVER_ERROR',

@@ -39,7 +39,8 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`, `AuditServi
 | **validateCoupon** | Coupon belongs to a different merchant than the cart items | Succeeds — merchant scope (BR-COUPON-006) is deferred for MVP, so any valid coupon applies |
 | **validateCoupon** | `discount_type = percentage` | Returns `discountAmount = subtotal × (discount_value / 100)` with `discountType`, `discountValue`, `newTotal` (BR-COUPON-007) |
 | **validateCoupon** | `discount_type = fixed` | Returns `discountAmount = min(discount_value, subtotal)` — never drives `newTotal` below $0 (BR-COUPON-007, BR-CHECK-010) |
-| **validateCoupon** | Fixed coupon ≥ subtotal | Returns `discountAmount = subtotal` and `newTotal = 0` (a free order is valid) (BR-CHECK-010) |
+| **validateCoupon** | Fixed coupon ≥ subtotal | Throws `BadRequestException` (400) "Coupon discount cannot reduce the order total to zero or below." (BR-CHECK-010) |
+| **validateCoupon** | Percentage coupon at exactly 100% | Throws `BadRequestException` (400) "Coupon discount cannot reduce the order total to zero or below." (BR-CHECK-010) |
 | **validateCoupon** | One coupon per order | Applying a second coupon while one is applied returns the new coupon's result — the previous one is replaced, never stacked (BR-COUPON-008) |
 | **validateCoupon** | Read-only validation | `promotions.used_count` is never incremented here — only a successful order placement increments it (BR-COUPON-009) |
 | **validateCoupon** | Audit | Logs `COUPON_VALIDATED` (userId, couponCode, discountAmount) |
@@ -69,7 +70,8 @@ Mock dependencies: `PrismaService` (transactional), `RedisService`, `ConfigServi
 | **placeOrder** | Atomic decrement guard fails | `UPDATE products SET stock_quantity = stock_quantity - :qty WHERE id = :id AND stock_quantity >= :qty` affects 0 rows → throws `409 CONFLICT` and rolls back the entire transaction (BR-CHECK-011) |
 | **placeOrder** | Concurrent orders, 1 unit in stock, both request qty 1 | Serialized on the `UPDATE`; the first commits, the second fails the `WHERE` guard with `409 CONFLICT` and rolls back — no oversell (BR-CHECK-011) |
 | **placeOrder** | Percentage coupon applied | `discount_amount = subtotal × (value/100)`, `total_amount = subtotal − discount_amount`, `coupon_code` stored on the order (BR-CHECK-009/010, BR-COUPON-007/008) |
-| **placeOrder** | Fixed coupon ≥ subtotal | `total_amount = 0` free order accepted; the `total > 0` guard rejects only negative totals (BR-CHECK-010) |
+| **placeOrder** | Fixed coupon ≥ subtotal | Throws `400 BAD_REQUEST` "Coupon discount cannot reduce the order total to zero or below."; full rollback — no `orders`, no `order_items`, no stock decrement, no coupon increment (BR-CHECK-010/014) |
+| **placeOrder** | Percentage coupon at exactly 100% | Throws `400 BAD_REQUEST`, full rollback — the total of $0 is rejected, not accepted (BR-CHECK-010/014) |
 | **placeOrder** | Coupon valid at validation but exhausted before submit | The chain is re-run **inside** the transaction and catches the failure → 400 rollback (BR-COUPON-001~007) |
 | **placeOrder** | Coupon success | `promotions.used_count += 1` atomically within the transaction (BR-COUPON-009) |
 | **placeOrder** | Failure after the coupon-increment step | `used_count` reverts on rollback — never incremented for a failed order (BR-COUPON-009, BR-CHECK-014) |
@@ -237,7 +239,6 @@ Using Vitest + React Testing Library. Components from `frontend/src/features/che
 |----------|------------------|
 | Success render | Shows the success icon, "Order Placed Successfully!", order ID (`#` + first 8 UUID chars), `placed` status badge, summary card with items/totals/shipping address (BR-CHECK-013, BR-DISP-001) |
 | 404 response | Renders the "Order not found" panel with no hints about another owner (BR-CHECK-013/015) |
-| Free order ($0 total) | Renders total $0.00 normally (BR-CHECK-010) |
 | Estimated delivery | Shown only for `shipped` / `out_for_delivery` orders (EL-86, BR-DISP-004) |
 | Continue Shopping | Navigates to `/products` (EL-90) |
 | View Order | Navigates to `/orders/:orderId` — the Order Insights module owns that screen (EL-91) |
@@ -262,6 +263,7 @@ Using Vitest + React Testing Library. Components from `frontend/src/features/che
 | **E2E-CHECK-12** | **Rate Limiting**<br>1. Login as buyer A.<br>2. Issue 6 rapid POST /api/v1/orders requests.<br>3. Verify the 6th returns 429, and the request succeeds again after the 60-second window (5/min) |
 | **E2E-CHECK-13** | **Language / Theme Toggle**<br>1. Navigate to /checkout.<br>2. Toggle language to Japanese; verify labels, toasts, and the guest modal text change.<br>3. Toggle to Myanmar; verify the change. Toggle back to English.<br>4. Toggle dark mode; verify the background and status-badge colors. |
 | **E2E-CHECK-14** | **Responsive Layout**<br>1. Open /checkout on desktop (1024px+); verify the side-by-side order summary + shipping layout.<br>2. Resize to tablet (768px); verify sections wrap.<br>3. Resize to mobile (< 768px); verify the stacked layout and the ad card stacking image above content (画面項目設計書 §6.2). |
+| **E2E-CHECK-15** | **Failure: 100%-Off Coupon Rejected at Validate-Coupon (BR-CHECK-010)**<br>1. Seed a percentage coupon with `discount_value = 100` and buyer A's cart (subtotal $59.98).<br>2. Login as buyer A on /checkout.<br>3. Apply the coupon.<br>4. Verify `POST /api/v1/checkout/validate-coupon` returns `400` and the toast "Coupon discount cannot reduce the order total to zero or below."<br>5. Verify the total stays at $59.98, no coupon is applied, and Place Order remains blocked for this coupon. |
 ---
 
 ## 5. Test Coverage Requirements

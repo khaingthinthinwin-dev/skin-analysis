@@ -1,7 +1,7 @@
 # DD_CHECK-03 — API Endpoints
 
 > **Doc ID:** SKM-DD-CHECK-03 | **Version:** 1.0 | **Status:** Draft
-> **Last Updated:** 2026-09-04
+> **Last Updated:** 2026-09-07
 
 This document specifies the REST API contracts for the **Checkout & Purchase module** — four endpoints (機能設計書 §6) serving the buyer checkout, coupon validation, order placement, and sponsored ad slot use cases. Three of the four endpoints require a valid JWT with the `buyer` role; the ad slot endpoint is publicly cacheable. The order placement endpoint (`POST /api/v1/orders`) executes all writes — `orders`, `order_items`, `order_status_history`, `inventory_transactions`, stock decrement, coupon increment, and cart clear — within a single atomic database transaction (BR-CHECK-014, §6.4.1). **Order History, Order Detail, and Order Tracking** are explicitly out of scope for this module — they belong to the Order Insights module (DD_CHECK-01 §1, 画面項目設計書 v1.0).
 
@@ -146,6 +146,7 @@ Validate a coupon code and return the discount calculation (機能設計書 §6.
   - `400 BAD_REQUEST` — Coupon usage limit reached (`BR-COUPON-004`: "This coupon has reached its usage limit" / "このクーポンは利用回数に達しました")
   - `400 BAD_REQUEST` — Buyer already used this coupon (`BR-COUPON-005`: "You have already used this coupon" / "このクーポンは既に使用されています")
   - `400 BAD_REQUEST` — Coupon is not active (`BR-COUPON-006`: "This coupon is not currently active" / "このクーポンは現在有効ではありません")
+  - `400 BAD_REQUEST` — Coupon discount would reduce the order total to zero or below (`TOTAL_MUST_BE_POSITIVE`: "Coupon discount cannot reduce the order total to zero or below" / "クーポン割引により注文合計がゼロ以下になるため使用できません")
   - `400 BAD_REQUEST` — Cart is empty (`CHECK_001`: "Your cart is empty" / "カートが空です")
   - `401 UNAUTHORIZED` — Missing or invalid JWT token (`AUTH_001`)
   - `403 FORBIDDEN` — Non-buyer role (`CHECK_004`)
@@ -212,6 +213,7 @@ Place one or more orders from the authenticated buyer's cart (機能設計書 §
 - **Error Responses:**
   - `400 BAD_REQUEST` — Validation failed: invalid shipping address, invalid payment method, or invalid coupon code (`CHECK_003`: "Invalid coupon code" / "無効なクーポンコードです")
   - `400 BAD_REQUEST` — Cart is empty (`CHECK_001`: "Your cart is empty" / "カートが空です")
+  - `400 BAD_REQUEST` — Coupon discount would reduce the order total to zero or below (`TOTAL_MUST_BE_POSITIVE`: "Coupon discount cannot reduce the order total to zero or below" / "クーポン割引により注文合計がゼロ以下になるため使用できません")
   - `401 UNAUTHORIZED` — Missing or invalid JWT token (`AUTH_001`)
   - `403 FORBIDDEN` — Non-buyer role (`CHECK_004`)
   - `409 CONFLICT` — Insufficient stock for one or more cart items during submission (`CHECK_002`: "Some items are no longer available. Please review your cart." / "一部の商品は利用できなくなりました。カートを確認してください。")
