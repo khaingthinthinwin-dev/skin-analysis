@@ -51,8 +51,11 @@ interface ProductTableProps {
   selectedIds: string[]
   onSelectionChange: (ids: string[]) => void
   onStockUpdate: (id: string, stock: number) => void
-  onDelete: (id: string) => void
+  onDelete: (id: string, isActive: boolean) => void
+  onToggleFeatured: (id: string) => void
   isDeleting?: boolean
+  isTogglingFeatured?: boolean
+  showActions?: boolean
 }
 
 export function ProductTable({
@@ -61,7 +64,10 @@ export function ProductTable({
   onSelectionChange,
   onStockUpdate,
   onDelete,
+  onToggleFeatured,
   isDeleting = false,
+  isTogglingFeatured = false,
+  showActions = true,
 }: ProductTableProps) {
   const navigate = useNavigate()
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
@@ -103,29 +109,33 @@ export function ProductTable({
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={
-                    products.length > 0 &&
-                    selectedIds.length === products.length
-                  }
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all"
-                />
-              </TableHead>
+              {showActions && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={
+                      products.length > 0 &&
+                      selectedIds.length === products.length
+                    }
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+              )}
               <TableHead>Image</TableHead>
               <TableHead>Product Name</TableHead>
               <TableHead>SKU</TableHead>
-              <TableHead>Price</TableHead>
+              <TableHead>Compare At Price</TableHead>
+              <TableHead>Price (Discount Price)</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>isFeatured</TableHead>
+              {showActions && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={showActions ? 10 : 8} className="text-center py-8 text-muted-foreground">
                   No products found
                 </TableCell>
               </TableRow>
@@ -135,13 +145,15 @@ export function ProductTable({
                   key={product.id}
                   className={selectedIds.includes(product.id) ? 'bg-muted/30' : ''}
                 >
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.includes(product.id)}
-                      onCheckedChange={() => toggleOne(product.id)}
-                      aria-label={`Select ${product.name}`}
-                    />
-                  </TableCell>
+                  {showActions && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.includes(product.id)}
+                        onCheckedChange={() => toggleOne(product.id)}
+                        aria-label={`Select ${product.name}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <ProductImage
                       url={product.images[0]}
@@ -151,50 +163,94 @@ export function ProductTable({
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <span className="font-semibold text-foreground">{product.name}</span>
-                      {product.isFeatured && (
-                        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300 text-[10px]">
-                          Featured
-                        </Badge>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {product.sku || '—'}
                   </TableCell>
-                  <TableCell className="font-semibold">
-                    {formatPrice(product.price)}
+                  <TableCell>
+                    {product.compareAtPrice != null ? (
+                      <span className="font-semibold line-through">
+                        {formatPrice(product.compareAtPrice)}
+                      </span>
+                    ) : (
+                      <span className="font-semibold">{formatPrice(product.price)}</span>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <InlineStockEditor
-                      value={product.stockQuantity}
-                      onSave={(stock) => onStockUpdate(product.id, stock)}
-                    />
+                    {product.compareAtPrice != null ? (
+                      <div className="space-y-0.5">
+                        <div className="font-semibold">{formatPrice(product.price)}</div>
+                        <div className="text-xs text-emerald-600 dark:text-emerald-400">
+                          Saved {formatPrice(product.compareAtPrice - product.price)}
+                        </div>
+                      </div>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {showActions ? (
+                      <InlineStockEditor
+                        value={product.stockQuantity}
+                        onSave={(stock) => onStockUpdate(product.id, stock)}
+                      />
+                    ) : (
+                      <span className="font-medium text-sm">{product.stockQuantity}</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(product)}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => navigate(`/merchant/products/${product.id}/edit`)}
-                        aria-label={`Edit ${product.name}`}
+                  <TableCell>
+                    {showActions ? (
+                      <button
+                        type="button"
+                        disabled={isTogglingFeatured}
+                        onClick={() => onToggleFeatured(product.id)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+                          product.isFeatured ? 'bg-primary' : 'bg-input'
+                        }`}
+                        aria-label={`Toggle featured for ${product.name}`}
                       >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteTarget(product)}
-                        aria-label={`Delete ${product.name}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                        <span
+                          className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
+                            product.isFeatured ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    ) : product.isFeatured ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        Featured
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
+                  {showActions && (
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => navigate(`/merchant/products/${product.id}/edit`)}
+                          aria-label={`Edit ${product.name}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(product)}
+                          aria-label={`Delete ${product.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
@@ -207,12 +263,16 @@ export function ProductTable({
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={() => {
           if (deleteTarget) {
-            onDelete(deleteTarget.id)
+            onDelete(deleteTarget.id, deleteTarget.isActive)
             setDeleteTarget(null)
           }
         }}
         title="Delete Product"
-        description={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        description={
+          deleteTarget?.isActive
+            ? `Are you sure you want to deactivate "${deleteTarget?.name}"? It can be reactivated later.`
+            : `"${deleteTarget?.name}" is already inactive. This will permanently remove it. This action cannot be undone.`
+        }
         isLoading={isDeleting}
       />
     </>

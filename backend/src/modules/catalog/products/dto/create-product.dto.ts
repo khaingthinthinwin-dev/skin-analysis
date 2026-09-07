@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ComparePriceGreaterThanPriceValidator } from './compare-price.validator';
+import { StockQuantityNotLessThanThresholdValidator } from './stock-threshold.validator';
 
 export class CreateProductDto {
   @IsString()
@@ -40,20 +41,21 @@ export class CreateProductDto {
   @MaxLength(100, { message: 'SKU must not exceed 100 characters' })
   sku?: string;
 
+  @IsOptional()
   @IsNumber({}, { message: 'Price must be a number' })
   @Min(0.01, { message: 'Price must be greater than 0' })
   @Type(() => Number)
-  price: number;
+  price?: number;
 
-  @IsOptional()
   @IsNumber({}, { message: 'Compare at price must be a number' })
   @Min(0, { message: 'Compare at price must be 0 or greater' })
   @Validate(ComparePriceGreaterThanPriceValidator)
   @Type(() => Number)
-  compareAtPrice?: number;
+  compareAtPrice: number;
 
   @IsInt({ message: 'Stock quantity must be a whole number' })
   @Min(0, { message: 'Stock quantity must be 0 or greater' })
+  @Validate(StockQuantityNotLessThanThresholdValidator)
   @Type(() => Number)
   stockQuantity: number = 0;
 

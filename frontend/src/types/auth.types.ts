@@ -12,6 +12,7 @@ export interface User {
   avatarUrl?: string
   licenseUrl?: string | null
   licenseStatus?: LicenseStatus
+  license_status?: LicenseStatus
   createdAt: string
 }
 

@@ -75,6 +75,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'products',
+        element: (
+          <SuspenseWrapper>
+            <BuyerSearchFilter />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'unauthorized',
         element: (
           <SuspenseWrapper>

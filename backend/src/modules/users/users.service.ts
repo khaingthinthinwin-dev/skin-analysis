@@ -33,6 +33,7 @@ export class UsersService {
       include: {
         merchantProfile: {
           select: {
+            id: true,
             licenseStatus: true,
             businessLicenseUrl: true,
           },
@@ -48,7 +49,9 @@ export class UsersService {
       ...user,
       role: user.roleCode,
       avatar: user.avatarUrl || undefined,
+      merchantId: user.merchantProfile?.id || null,
       licenseStatus: user.merchantProfile?.licenseStatus || null,
+      license_status: user.merchantProfile?.licenseStatus || null,
       licenseUrl: user.merchantProfile?.businessLicenseUrl || null,
     };
   }
@@ -56,6 +59,15 @@ export class UsersService {
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
+      include: {
+        merchantProfile: {
+          select: {
+            id: true,
+            licenseStatus: true,
+            businessLicenseUrl: true,
+          },
+        },
+      },
     });
   }
 
@@ -68,6 +80,7 @@ export class UsersService {
       include: {
         merchantProfile: {
           select: {
+            id: true,
             licenseStatus: true,
             businessLicenseUrl: true,
           },
@@ -79,7 +92,9 @@ export class UsersService {
       ...updatedUser,
       role: updatedUser.roleCode,
       avatar: updatedUser.avatarUrl || undefined,
+      merchantId: updatedUser.merchantProfile?.id || null,
       licenseStatus: updatedUser.merchantProfile?.licenseStatus || null,
+      license_status: updatedUser.merchantProfile?.licenseStatus || null,
       licenseUrl: updatedUser.merchantProfile?.businessLicenseUrl || null,
     };
   }
