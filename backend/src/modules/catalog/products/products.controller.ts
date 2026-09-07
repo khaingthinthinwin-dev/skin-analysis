@@ -1,11 +1,13 @@
 import {
+  Body,
   Controller,
+  DefaultValuePipe,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
   Patch,
   Delete,
-  Body,
-  Param,
   Query,
   UseGuards,
   UseInterceptors,
@@ -25,8 +27,8 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import {
-  CurrentUser,
   AuthUser,
+  CurrentUser,
 } from '../../../common/decorators/current-user.decorator';
 import { RequireApprovedMerchantGuard } from '../../auth/guards/require-approved-merchant.guard';
 import { ProductsService } from './products.service';
@@ -37,6 +39,8 @@ import { BulkActionDto } from './dto/bulk-action.dto';
 import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { DeleteAllProductsDto } from './dto/delete-all-products.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { ReviewQueryDto } from './dto/product-query.dto';
 import { createProductStorage } from './multer.config';
 
 const IMAGE_FILTER = (
@@ -61,6 +65,45 @@ const IMAGE_FILTER = (
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @Get('public/:idOrSlug')
+  @ApiOperation({ summary: 'Get product detail by id or slug (public)' })
+  getDetail(@Param('idOrSlug') idOrSlug: string) {
+    return this.productsService.getDetail(idOrSlug);
+  }
+
+  @Get('public/:idOrSlug/reviews')
+  @ApiOperation({ summary: 'List approved reviews for a product (public)' })
+  findReviews(
+    @Param('idOrSlug') idOrSlug: string,
+    @Query() query: ReviewQueryDto,
+  ) {
+    return this.productsService.findReviews(idOrSlug, query);
+  }
+
+  @Get('public/:idOrSlug/similar')
+  @ApiOperation({
+    summary: 'List similar products in the same category (public)',
+  })
+  findSimilar(
+    @Param('idOrSlug') idOrSlug: string,
+    @Query('limit', new DefaultValuePipe(4), ParseIntPipe) limit: number,
+  ) {
+    return this.productsService.findSimilar(idOrSlug, limit);
+  }
+
+  @Post('public/:idOrSlug/reviews')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a review (buyer only, one per product)' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('buyer')
+  createReview(
+    @Param('idOrSlug') idOrSlug: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateReviewDto,
+  ) {
+    return this.productsService.createReview(idOrSlug, user.id, dto);
+  }
 
   @Get()
   @ApiOperation({ summary: 'List products for the authenticated merchant' })

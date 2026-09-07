@@ -20,7 +20,7 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
 | **getPersonalized** | User with fresh analysis (≤ 24h), valid query | Returns `source = "ai"`, scored products, correct meta |
-| **getPersonalized** | User with stale analysis (> 24h) | Returns `source = "generic"`, no match scores |
+| **getPersonalized** | User with stale analysis (> 24h) | Returns `source = "ai"`, scored products (match scores shown, subtle prompt banner) |
 | **getPersonalized** | User with no analysis | Returns `source = "generic"`, featured products |
 | **getPersonalized** | Redis HIT | Returns cached result without DB query |
 | **getPersonalized** | Redis MISS | Queries DB, computes scores, seeds Redis |
@@ -98,6 +98,7 @@ Using Vitest + React Testing Library.
 | Scenario | Expected Outcome |
 |----------|------------------|
 | Authenticated buyer with AI analysis | Shows "🧬 AI Analysis" badge, match scores on cards |
+| Authenticated buyer with stale analysis (> 24h) | Shows "🧬 AI Analysis" badge, match scores on cards, "Want Fresh Results?" subtle banner |
 | Authenticated buyer without analysis | Shows "⬡ General Picks" badge, profile prompt banner |
 | Unauthenticated visitor | Redirects to `/login` |
 | Loading state | Shows skeleton shimmer grid |
@@ -110,6 +111,7 @@ Using Vitest + React Testing Library.
 | Scenario | Expected Outcome |
 |----------|------------------|
 | AI analysis source | Skin type checkboxes pre-selected from analysis |
+| AI analysis source (stale) | Skin type checkboxes pre-selected from analysis, "Want Fresh Results?" banner visible |
 | Generic source | All checkboxes unchecked |
 | Skin type checkbox change | Updates URL query param, resets page to 1 |
 | Min price input | Validates ≥ 0, shows inline error if negative |
@@ -190,7 +192,7 @@ Using Vitest + React Testing Library.
 | **E2E-MATCH-09** | **Load More (Mobile)**<br>1. Resize to mobile viewport.<br>2. Navigate to /buyer/recommendations.<br>3. Verify "Load More" button visible.<br>4. Click "Load More".<br>5. Verify new results appended to grid. |
 | **E2E-MATCH-10** | **Click Recommendation Card**<br>1. Navigate to /buyer/recommendations.<br>2. Click a recommendation card.<br>3. Verify navigation to /buyer/products/:slug. |
 | **E2E-MATCH-11** | **View Recommendation History**<br>1. Login as buyer with past analysis sessions.<br>2. Navigate to /buyer/recommendations.<br>3. Verify "Previously Recommended" section visible.<br>4. Expand a session.<br>5. Verify mini-cards displayed. |
-| **E2E-MATCH-12** | **Stale Analysis Retake Prompt**<br>1. Login as buyer with analysis > 24h old.<br>2. Navigate to /buyer/recommendations.<br>3. Verify "Want Fresh Results?" subtle banner.<br>4. Click "Retake Analysis →".<br>5. Verify navigation to /buyer/skin-analysis. |
+| **E2E-MATCH-12** | **Stale Analysis Retake Prompt**<br>1. Login as buyer with analysis > 24h old.<br>2. Navigate to /buyer/recommendations.<br>3. Verify "🧬 AI Analysis" badge displayed (source = "ai").<br>4. Verify match score badges on cards.<br>5. Verify "Want Fresh Results?" subtle banner.<br>6. Click "Retake Analysis →".<br>7. Verify navigation to /buyer/skin-analysis. |
 | **E2E-MATCH-13** | **Ad Panel Display**<br>1. Navigate to /buyer/recommendations.<br>2. Verify ad panel visible with slides.<br>3. Verify auto-slide advances every 5 seconds.<br>4. Verify disclosure footer visible.<br>5. Click CTA button.<br>6. Verify navigation to product page. |
 | **E2E-MATCH-14** | **Ad Panel Impression Tracking**<br>1. Navigate to /buyer/recommendations.<br>2. Scroll to ad panel.<br>3. Verify panel visible ≥ 50%.<br>4. Verify impression tracking fires (network request). |
 | **E2E-MATCH-15** | **Similar Products on Product Detail**<br>1. Navigate to /buyer/products/:id.<br>2. Scroll to "Similar Products" section.<br>3. Verify similar products displayed.<br>4. Verify products share same category.<br>5. Click a similar product.<br>6. Verify navigation to that product. |
