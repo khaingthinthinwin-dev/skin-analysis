@@ -193,7 +193,7 @@ export default function Products() {
       <div className="flex gap-6">
         {/* Left Sidebar - Filters */}
         <aside className="w-72 flex-shrink-0">
-          <div className="sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto border rounded-lg bg-card p-4">
+          <div className="lg:sticky lg:top-0 max-h-[calc(100vh-6rem)] overflow-y-auto border rounded-lg bg-card p-4">
             <FilterPanel
               params={params}
               onUpdate={handleFilterUpdate}
