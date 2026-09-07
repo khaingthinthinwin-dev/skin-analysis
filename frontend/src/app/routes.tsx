@@ -33,7 +33,7 @@ const CreateAdminAccount = lazy(() => import('@/pages/admin/CreateAdminAccount')
 const AdminAuditLog = lazy(() => import('@/pages/admin/AuditLog'))
 
 const BuyerDashboard = lazy(() => import('@/pages/buyer/Dashboard'))
-const BuyerSearchFilter = lazy(() => import('@/pages/buyer/SearchFilter'))
+const BuyerSearchFilter = lazy(() => import('@/pages/buyer/Products'))
 const BuyerProductDetail = lazy(() => import('@/pages/buyer/ProductDetail'))
 const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
 const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))

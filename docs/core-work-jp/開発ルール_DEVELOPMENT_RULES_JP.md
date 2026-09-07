@@ -806,14 +806,18 @@ AIエージェントは明示的な人間の承認なしに以下のファイル
 
 | ドキュメント | 場所 | 目的 |
 |----------|----------|---------|
-| 要件定義 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスルール、機能要件 |
-| データベース設計仕様 | `docs/core-work/データベース設計書.md` | スキーマ設計、データ辞書 |
-| 仕様ドキュメント | `docs/SPECIFICATION.md` | 完全なアーキテクチャ、技術スタック、API設計 |
-| このドキュメント | `DEVELOPMENT_RULES.md` | コーディングスタンダード、ガードレール、ガバナンス |
-| Prismaスキーマ | `backend/prisma/schema.prisma` | 現在のデータベーススキーマ（信頼できるソース） |
+| 要件定義（EN） | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | ビジネスルール、機能要件 |
+| 要件定義（JP） | `docs/core-work-jp/要件定義書_REQUIREMENT_SPEC_JP.md` | 日本語翻訳（参考用） |
+| データベース設計仕様（EN） | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | スキーマ設計、データ辞書 |
+| データベース設計仕様（JP） | `docs/core-work-jp/データベース設計書_DATABASE_SPEC_JP.md` | 日本語翻訳（参考用） |
+| 開発ルール（EN） | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | コーディングスタンダード、ガードレール、ガバナンス |
+| 開発ルール（JP） | `docs/core-work-jp/開発ルール_DEVELOPMENT_RULES_JP.md` | 日本語翻訳（参考用） |
+| Prismaスキーマ（アクティブ） | `backend/prisma/schema.prisma` | 現在のデータベーススキーマ（信頼できるソース） |
+| Prismaスキーマ（レガシー） | `backend/src/database/prisma/schema.prisma` | レガシースキーマ（v2.0、同期切れ） |
 | 既存コード | 各モジュールファイル | 既存パターンとの一貫性を維持 |
 
 **コンテキストルール:**
+- 常にEN（英語）バージョンをプライマリソースとして読み、JP（日本語）バージョンは参考用として参照すること。
 - データベース関連コードを書く前に常にPrismaスキーマを読む。
 - 新しいサービスを追加する前に常に同じモジュールの既存サービスを読む。
 - 命名/スタイルの一貫性のために常にモジュールの既存DTOを読む。

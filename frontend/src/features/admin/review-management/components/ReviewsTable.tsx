@@ -3,10 +3,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Trash2 } from 'lucide-react';
-import type { Review } from '@/features/admin/content-moderation/services/moderation.service';
+import type { AdminReview } from '@/features/admin/content-moderation/services/moderation.service';
 
 interface ReviewsTableProps {
-  reviews?: Review[];
+  reviews?: AdminReview[];
   onApprove?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
