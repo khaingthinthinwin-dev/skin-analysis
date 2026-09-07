@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router'
-import { Package, Plus, Search, Filter, Trash2 } from 'lucide-react'
+import { Package, Plus, Search, Filter, Trash2, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Select,
   SelectContent,
@@ -16,17 +17,31 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ProductTable } from '@/components/merchant/ProductTable'
 import { BulkActionsBar } from '@/components/merchant/BulkActionsBar'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
+import { useTranslation } from 'react-i18next'
 import {
   useProducts,
   useUpdateStock,
   useDeleteProduct,
+  useToggleFeatured,
   useBulkUpdateStatus,
   useBulkDelete,
   useDeleteAll,
 } from '@/hooks/useProducts'
+import { useAuth } from '@/hooks/useAuth'
+import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
 import type { ProductQueryParams } from '@/types/product.types'
 
 export default function ProductManagement() {
+  const { t } = useTranslation()
+  const { user } = useAuth()
+  const guard = useMerchantProductsGuard()
+  const status =
+    user?.licenseStatus ||
+    user?.license_status
+  const isPending = guard.isPending || status === 'pending'
+  const showPendingBanner = guard.showPendingBanner || isPending
+  const showCrudActions = guard.showCrudActions && !isPending
+
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -46,6 +61,7 @@ export default function ProductManagement() {
   const { data, isLoading, error } = useProducts(queryParams)
   const updateStock = useUpdateStock()
   const deleteProduct = useDeleteProduct()
+  const toggleFeatured = useToggleFeatured()
   const bulkUpdate = useBulkUpdateStatus()
   const bulkDelete = useBulkDelete()
   const deleteAll = useDeleteAll()
@@ -67,17 +83,31 @@ export default function ProductManagement() {
   )
 
   const handleDelete = useCallback(
-    (id: string) => {
-      deleteProduct.mutate(id, {
-        onSuccess: () => toast.success('Product deleted'),
-        onError: (err: unknown) => {
-          const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
-          const backendMessage = axiosErr?.response?.data?.message
-          toast.error(backendMessage ? String(backendMessage) : 'Failed to delete product')
+    (id: string, isActive: boolean) => {
+      deleteProduct.mutate(
+        { id, isActive },
+        {
+          onSuccess: () =>
+            toast.success(isActive ? 'Product deactivated' : 'Product permanently deleted'),
+          onError: (err: unknown) => {
+            const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
+            const backendMessage = axiosErr?.response?.data?.message
+            toast.error(backendMessage ? String(backendMessage) : 'Failed to delete product')
+          },
         },
-      })
+      )
     },
     [deleteProduct],
+  )
+
+  const handleToggleFeatured = useCallback(
+    (id: string) => {
+      toggleFeatured.mutate(id, {
+        onSuccess: () => toast.success('Featured status updated'),
+        onError: () => toast.error('Failed to update featured status'),
+      })
+    },
+    [toggleFeatured],
   )
 
   const handleBulkActivate = useCallback(
@@ -157,21 +187,6 @@ export default function ProductManagement() {
     )
   }, [deleteAll, search, statusFilter])
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-destructive">Failed to load products. Please try again.</p>
-            <Button className="mt-4" onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6 p-2 lg:p-4">
       {/* Header */}
@@ -184,14 +199,39 @@ export default function ProductManagement() {
             Manage inventory, prices, and product details
           </p>
         </div>
-        <Button
-          size="lg"
-          className="font-bold bg-primary shrink-0"
-          onClick={() => navigate('/merchant/products/new')}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add New Product
-        </Button>
+        {showCrudActions && (
+          <Button
+            size="lg"
+            className="font-bold bg-primary shrink-0"
+            onClick={() => navigate('/merchant/products/new')}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add New Product
+          </Button>
+        )}
       </div>
+
+      {showPendingBanner && (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-200">
+          <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertDescription>
+            {t(
+              'merchant.products.pendingBanner',
+              'Your merchant account is pending approval. Product management features are restricted until your license is approved.',
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {guard.showRejectionBanner && (
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle>Account Rejected</AlertTitle>
+          <AlertDescription>
+            Your merchant account has been rejected. Product management features are restricted.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Filter Bar */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -238,7 +278,7 @@ export default function ProductManagement() {
             <SelectItem value="name">Name</SelectItem>
           </SelectContent>
         </Select>
-        {products.length > 0 && (
+        {showCrudActions && products.length > 0 && (
           <Button
             variant="outline"
             size="sm"
@@ -251,17 +291,28 @@ export default function ProductManagement() {
       </div>
 
       {/* Bulk Actions */}
-      <BulkActionsBar
-        selectedIds={selectedIds}
-        onBulkActivate={handleBulkActivate}
-        onBulkDeactivate={handleBulkDeactivate}
-        onBulkDelete={handleBulkDelete}
-        onClearSelection={() => setSelectedIds([])}
-      />
+      {showCrudActions && (
+        <BulkActionsBar
+          selectedIds={selectedIds}
+          onBulkActivate={handleBulkActivate}
+          onBulkDeactivate={handleBulkDeactivate}
+          onBulkDelete={handleBulkDelete}
+          onClearSelection={() => setSelectedIds([])}
+        />
+      )}
 
       {/* Table */}
       {isLoading ? (
         <LoadingSpinner className="min-h-[400px]" />
+      ) : error ? (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="text-destructive">Failed to load products. Please try again.</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <ProductTable
           products={products}
@@ -269,7 +320,10 @@ export default function ProductManagement() {
           onSelectionChange={setSelectedIds}
           onStockUpdate={handleStockUpdate}
           onDelete={handleDelete}
+          onToggleFeatured={handleToggleFeatured}
           isDeleting={deleteProduct.isPending}
+          isTogglingFeatured={toggleFeatured.isPending}
+          showActions={showCrudActions}
         />
       )}
 

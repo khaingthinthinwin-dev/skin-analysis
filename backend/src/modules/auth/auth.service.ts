@@ -213,35 +213,20 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const result: Record<string, unknown> = {
+    // usersService.findById already fetches merchantProfile and maps licenseStatus
+    return {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.roleCode,
       avatar: user.avatarUrl || undefined,
       avatarUrl: user.avatarUrl,
-      merchantId: null,
-      licenseStatus: null,
-      licenseUrl: null,
+      merchantId: user.merchantId ?? null,
+      licenseStatus: user.licenseStatus ?? null,
+      license_status: user.license_status ?? null,
+      licenseUrl: user.licenseUrl ?? null,
+      createdAt: user.createdAt,
     };
-
-    if (user.roleCode === 'merchant') {
-      const merchant = await this.prisma.merchant.findFirst({
-        where: { userId: user.id },
-        select: {
-          id: true,
-          businessLicenseUrl: true,
-          licenseStatus: true,
-        },
-      });
-      if (merchant) {
-        result.merchantId = merchant.id;
-        result.licenseUrl = merchant.businessLicenseUrl;
-        result.licenseStatus = merchant.licenseStatus;
-      }
-    }
-
-    return result;
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {

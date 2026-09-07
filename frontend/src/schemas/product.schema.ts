@@ -11,7 +11,25 @@ const imageFileSchema = z
     'Only JPG, PNG, and WebP images are allowed',
   )
 
-export const createProductSchema = z.object({
+const optionalNumber = (message: string) =>
+  z.preprocess(
+    (value) =>
+      value === '' ||
+      value === undefined ||
+      value === null ||
+      (typeof value === 'number' && Number.isNaN(value))
+        ? null
+        : value,
+    z.number({ message }).min(0.01, 'Price must be greater than 0').nullable(),
+  )
+
+const requiredNumber = (message: string) =>
+  z.preprocess(
+    (value) => (value === '' || (typeof value === 'number' && Number.isNaN(value)) ? undefined : value),
+    z.number({ message }),
+  )
+
+const productFieldsSchema = z.object({
   name: z
     .string()
     .min(1, 'Product name is required')
@@ -20,16 +38,23 @@ export const createProductSchema = z.object({
     .string()
     .min(1, 'Short description is required')
     .max(500, 'Short description must not exceed 500 characters'),
-  description: z.string().min(1, 'Description is required'),
+  description: z
+    .string()
+    .min(1, 'Description is required')
+    .refine(
+      (val) => {
+        const stripped = val.replace(/<[^>]*>/g, '').trim()
+        return stripped.length > 0
+      },
+      'Description is required',
+    ),
   categoryId: z.string().min(1, 'Category is required'),
   sku: z.string().max(100, 'SKU must not exceed 100 characters').optional().or(z.literal('')),
-  price: z
-    .number({ message: 'Price must be a number' })
-    .min(0.01, 'Price must be greater than 0'),
-  compareAtPrice: z
-    .number({ message: 'Compare at price must be a number' })
-    .min(0, 'Compare at price must be 0 or greater')
-    .optional(),
+  price: optionalNumber('Price must be a number'),
+  compareAtPrice: requiredNumber('Compare at price must be a number').refine(
+    (value) => value >= 0,
+    'Compare at price must be 0 or greater',
+  ),
   stockQuantity: z
     .number({ message: 'Stock quantity must be a number' })
     .int('Stock quantity must be a whole number')
@@ -45,13 +70,55 @@ export const createProductSchema = z.object({
   isActive: z.boolean(),
   isFeatured: z.boolean(),
   retainedImageUrls: z.array(z.string()),
-  images: z.array(imageFileSchema).max(10, 'Maximum 10 images allowed'),
+  images: z.array(imageFileSchema).min(1, 'At least one image is required').max(10, 'Maximum 10 images allowed'),
 })
+
+const pricesSchema = <T extends { price?: number | null; compareAtPrice?: number }>(schema: z.ZodType<T>) =>
+  schema.refine(
+  (data) =>
+    data.price === undefined ||
+    data.price === null ||
+    data.compareAtPrice === undefined ||
+    data.compareAtPrice > data.price,
+  {
+    message: 'Compare at price must be greater than price',
+    path: ['compareAtPrice'],
+  },
+)
+
+const stockThresholdSchema = <T extends { stockQuantity?: number; lowStockThreshold?: number }>(schema: z.ZodType<T>) =>
+  schema.refine(
+  (data) =>
+    data.stockQuantity === undefined ||
+    data.stockQuantity === null ||
+    data.lowStockThreshold === undefined ||
+    data.lowStockThreshold === null ||
+    data.stockQuantity >= data.lowStockThreshold,
+  {
+    message: 'Stock quantity must not be less than low stock threshold',
+    path: ['stockQuantity'],
+  },
+)
+
+export const createProductSchema = stockThresholdSchema(pricesSchema(productFieldsSchema))
 
 export type CreateProductFormData = z.infer<typeof createProductSchema>
 export type ProductFormData = CreateProductFormData
 
-export const updateProductSchema = createProductSchema.partial()
+const imagesRequiredSchema = <T extends { retainedImageUrls?: string[]; images?: File[] }>(schema: z.ZodType<T>) =>
+  schema.refine(
+  (data) => {
+    const retainedCount = data.retainedImageUrls?.length ?? 0
+    const newImageCount = data.images?.length ?? 0
+    return retainedCount + newImageCount > 0
+  },
+  {
+    message: 'At least one image is required',
+    path: ['images'],
+  },
+)
+
+export const updateProductSchema = imagesRequiredSchema(stockThresholdSchema(pricesSchema(productFieldsSchema.partial())))
 
 export type UpdateProductFormData = z.infer<typeof updateProductSchema>
 
