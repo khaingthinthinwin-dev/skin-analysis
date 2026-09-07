@@ -59,7 +59,7 @@ Every method that touches buyer-scoped data enforces the caller's identity from 
 
 1. **Validation:** Handled by `PlaceOrderDto` (DD_CHECK-04 §2.2) with class-validator — `shippingAddress` (nested `ShippingAddressDto`), `paymentMethod` (enum), `couponCode` optional, `notes` optional. Full rule table in §7.3.
 2. **Logic:** Executes the full order placement transaction (§3.2) inside a **single Prisma transaction** (`prisma.$transaction`). Every write — `orders`, `order_items`, `order_status_history`, `inventory_transactions`, stock decrement, coupon increment, cart clear — commits or rolls back together (BR-CHECK-014).
-3. **Transaction Boundaries:** Single Prisma transaction with `Read Committed` isolation (DATABASE_SPEC §1.1). See §3.2 for the complete 14-step atomic sequence.
+3. **Transaction Boundaries:** Single Prisma transaction with `Read Committed` isolation (DATABASE_SPEC §1.1). See §3.2 for the complete 15-step atomic sequence.
 
 ### 2.4 getOrderConfirmation(currentUser, orderId)
 
@@ -89,7 +89,7 @@ Every method that touches buyer-scoped data enforces the caller's identity from 
 
 ### 3.1 Coupon Validation Chain (BR-COUPON-001~009)
 
-The coupon validation is a **short-circuit chain** — each step runs in sequence and returns immediately on failure. The chain is executed both at validation time (`validateCoupon`, §2.2) and again inside the order placement transaction (§3.2 step 7) to prevent race-condition abuse.
+The coupon validation is a **short-circuit chain** — each step runs in sequence and returns immediately on failure. The chain is executed both at validation time (`validateCoupon`, §2.2) and again inside the order placement transaction (§3.2 step 5) to prevent race-condition abuse.
 
 | Step | Check | On Failure | Rule |
 |------|-------|------------|------|
@@ -113,20 +113,21 @@ This is the highest-risk operation in the module. All writes execute inside a **
 |------|-----------|----------|-------------|------|
 | 1 | SELECT | `carts`, `cart_items`, `products` | Re-fetch the buyer's cart items with **current** product prices and stock. Never trust cart-cached prices (BR-CHECK-007). | BR-CHECK-007 |
 | 2 | Validation | — | Re-validate stock for every item: `products.stock_quantity >= cart_items.quantity`. If any item fails, throw `409 CONFLICT` `CHECK_002` "Some items are no longer available. Please review your cart." and roll back. | BR-CHECK-006, BR-CHECK-011 |
-| 3 | Calculation | — | Calculate subtotal: `SUM(cart_items.quantity * products.unit_price)` using the **re-fetched DB prices** from step 1. | BR-CHECK-008 |
-| 4 | SELECT + Validation | `promotions` | If `dto.couponCode` is provided, re-run the coupon validation chain (§3.1 steps 1–7) **inside** the transaction to prevent race-condition abuse. | BR-COUPON-001~007 |
-| 5 | Calculation | — | Calculate discount per BR-COUPON-007 (§4.1). | BR-CHECK-009 |
-| 6 | Calculation | — | Calculate total: `subtotal - discount`. Total must be > 0 (BR-CHECK-010). | BR-CHECK-010 |
-| 7 | INSERT | `orders` | Create order record with `status = 'placed'`, `buyer_id`, `merchant_id` (resolved from cart items' products), `subtotal`, `discount_amount`, `total_amount`, `payment_method`, `shipping_address` (JSONB), `coupon_code`, `notes`. | BR-CHECK-013 |
-| 8 | INSERT | `order_items` | Create one `order_items` row per cart item, copying `quantity` and the **current DB unit_price** as an immutable snapshot (BR-CHECK-015). Later changes to `cart_items` or `products` do not affect the order. | BR-CHECK-015 |
-| 9 | INSERT | `order_status_history` | Create initial status history row with `status = 'placed'`, `changed_at = now`. | BR-CHECK-013 |
-| 10 | UPDATE | `products` | Atomically decrement `stock_quantity` for each item using `WHERE stock_quantity >= quantity` guard. If the affected-row count is 0, the guard failed — throw `409 CONFLICT` and roll back the entire transaction. | BR-CHECK-011 |
-| 11 | INSERT | `inventory_transactions` | Create a stock-decrement record per item for audit trail. | BR-CHECK-011 |
-| 12 | UPDATE | `promotions` | If a coupon was applied, atomically increment `promotions.used_count` (BR-COUPON-009). | BR-COUPON-009 |
-| 13 | DELETE | `cart_items` | Delete only the `cart_items` rows successfully converted to order items. Retain the buyer's empty `carts` row for subsequent use. | BR-CHECK-012 |
-| 14 | COMMIT | — | Commit all writes together. | BR-CHECK-014 |
+| 3 | Group by `merchant_id` | — | Group cart items by `products.merchant_id`. One `orders` row is created per merchant group (機能設計書 §6.4.1-A step 3); a single-merchant cart produces one group. The request succeeds only if every group can be created — otherwise the complete transaction rolls back. | BR-CHECK-013 |
+| 4 | Calculation | — | For each merchant group, calculate subtotal: `SUM(cart_items.quantity * products.unit_price)` using the **re-fetched DB prices** from step 1. | BR-CHECK-008 |
+| 5 | SELECT + Validation | `promotions` | If `dto.couponCode` is provided, re-run the coupon validation chain (§3.1 steps 1–7) **inside** the transaction to prevent race-condition abuse. | BR-COUPON-001~007 |
+| 6 | Calculation | — | For each merchant group, calculate discount per BR-COUPON-007 (§4.1). | BR-CHECK-009 |
+| 7 | Calculation | — | For each merchant group, calculate total: `subtotal - discount`. Total must be > 0 (BR-CHECK-010). | BR-CHECK-010 |
+| 8 | INSERT | `orders` | For each merchant group, create order record with `status = 'placed'`, `buyer_id`, `merchant_id` (the group's merchant), `subtotal`, `discount_amount`, `total_amount`, `payment_method`, `shipping_address` (JSONB), `coupon_code`, `notes`, `created_at`. | BR-CHECK-013 |
+| 9 | INSERT | `order_items` | For each merchant group, create one `order_items` row per source `cart_items` row, copying `product_id`, `merchant_id`, `quantity`, the **current DB unit_price**, and `total_price` (`quantity * unit_price`) as an immutable snapshot (BR-CHECK-015). `cart_items` remain the mutable shopping intent; `order_items` are the immutable purchase snapshot — later changes to `cart_items` or `products` do not affect the order. | BR-CHECK-015 |
+| 10 | INSERT | `order_status_history` | For each created order, resolve the `placed` status to its `order_statuses` master row and insert exactly one history row with `order_id`, the `placed` status ID, `changed_by = buyer_id`, and note `'Order placed via checkout'` (機能設計書 §6.4.1-C). | BR-CHECK-013 |
+| 11 | UPDATE | `products` | Atomically decrement `stock_quantity` for each cart item using `WHERE stock_quantity >= quantity` guard. If the affected-row count is 0, the guard failed — throw `409 CONFLICT` and roll back the entire transaction. | BR-CHECK-011 |
+| 12 | INSERT | `inventory_transactions` | For each created `order_items` row, read the locked `products.stock_quantity` as `before_quantity`, verify `before_quantity >= order_items.quantity`, then insert `transaction_type = 'order_created'`, `quantity` = `-order_items.quantity`, `before_quantity`, `after_quantity` (`before_quantity - order_items.quantity`), `product_id`, `merchant_id`, `reference_type = 'order'`, `reference_id = orders.id`, `reason = 'Checkout order placed'`, `created_by = buyer_id` (機能設計書 §6.4.1-B). | BR-CHECK-011 |
+| 13 | UPDATE | `promotions` | If a coupon was applied, atomically increment `promotions.used_count` (BR-COUPON-009). | BR-COUPON-009 |
+| 14 | DELETE | `cart_items` | Delete only the `cart_items` rows successfully converted to order items. Retain the buyer's empty `carts` row for subsequent use. | BR-CHECK-012 |
+| 15 | COMMIT | — | Commit all writes together. | BR-CHECK-014 |
 
-**Concurrency note:** The atomic stock decrement (step 10) uses an optimistic concurrency guard — `UPDATE products SET stock_quantity = stock_quantity - :qty WHERE id = :id AND stock_quantity >= :qty`. Under `Read Committed` isolation, concurrent orders for the same product serialize on the `UPDATE`; the second transaction sees the decremented value and fails the `WHERE` guard if stock is insufficient, triggering a rollback (BR-CHECK-011).
+**Concurrency note:** The atomic stock decrement (step 11) uses an optimistic concurrency guard — `UPDATE products SET stock_quantity = stock_quantity - :qty WHERE id = :id AND stock_quantity >= :qty`. Under `Read Committed` isolation, concurrent orders for the same product serialize on the `UPDATE`; the second transaction sees the decremented value and fails the `WHERE` guard if stock is insufficient, triggering a rollback (BR-CHECK-011).
 
 ### 3.3 Sponsored Ad Selection (BR-AD-001~008)
 
@@ -167,7 +168,7 @@ function calculateDiscount(
 }
 ```
 
-- **Percentage:** `discount = subtotal × (discountValue / 100)` — e.g., 10% off a $59.98 subtotal = $5.998 discount.
+- **Percentage:** `discount = subtotal × (discountValue / 100)` — e.g., 10% off a $59.98 subtotal = $5.998, rounded to **$6.00** (2 decimals for consistency with `DECIMAL(10,2)`).
 - **Fixed:** `discount = min(discountValue, subtotal)` — the discount is capped at the subtotal so the total never goes below $0 (BR-CHECK-010).
 
 ### 4.2 Subtotal Formula (BR-CHECK-008)
@@ -180,7 +181,7 @@ const subtotal = cartItems.reduce(
 ```
 
 - `unitPrice` is the **live DB price** from `products.unit_price` — never the cart-cached value (BR-CHECK-007).
-- The subtotal is recalculated inside the order placement transaction (§3.2 step 3) from re-fetched prices.
+- The subtotal is recalculated inside the order placement transaction (§3.2 step 4) from re-fetched prices.
 
 ### 4.3 Total Formula (BR-CHECK-010)
 

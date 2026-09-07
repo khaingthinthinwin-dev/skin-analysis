@@ -119,7 +119,7 @@ Fetch sponsored ad slot for the Checkout Top placement (機能設計書 §6.2, �
 
 ### 2.3 POST /api/v1/checkout/validate-coupon
 
-Validate a coupon code and return the discount calculation (機能設計書 §6.3). Enforces all BR-COUPON-001~008 business rules.
+Validate a coupon code and return the discount calculation (機能設計書 §6.3). Enforces all BR-COUPON-001~008 business rules.––
 
 - **Auth Required:** Yes (Buyer)
 - **Headers:** `Authorization: Bearer <accessToken>`
