@@ -353,11 +353,10 @@ describe('AuthService', () => {
         name: 'Merchant',
         roleCode: 'merchant',
         avatarUrl: null,
-      });
-      mockPrisma.merchant.findFirst.mockResolvedValue({
-        id: 'merchant-1',
-        businessLicenseUrl: '/license.pdf',
+        merchantId: 'merchant-1',
         licenseStatus: 'approved',
+        license_status: 'approved',
+        licenseUrl: '/license.pdf',
       });
 
       const result = await service.verifyToken('user-1');
