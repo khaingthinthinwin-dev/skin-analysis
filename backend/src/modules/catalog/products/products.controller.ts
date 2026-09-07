@@ -6,17 +6,8 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-  Controller,
-  Get,
-  Post,
   Patch,
   Delete,
-  Body,
-  Param,
   Query,
   UseGuards,
   UseInterceptors,
@@ -39,14 +30,6 @@ import {
   AuthUser,
   CurrentUser,
 } from '../../../common/decorators/current-user.decorator';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { ReviewQueryDto } from './dto/product-query.dto';
-import { ProductsService } from './products.service';
-
-@ApiTags('Products')
-  CurrentUser,
-  AuthUser,
-} from '../../../common/decorators/current-user.decorator';
 import { RequireApprovedMerchantGuard } from '../../auth/guards/require-approved-merchant.guard';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -56,6 +39,8 @@ import { BulkActionDto } from './dto/bulk-action.dto';
 import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { DeleteAllProductsDto } from './dto/delete-all-products.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { ReviewQueryDto } from './dto/product-query.dto';
 import { createProductStorage } from './multer.config';
 
 const IMAGE_FILTER = (
@@ -81,13 +66,13 @@ const IMAGE_FILTER = (
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Get(':idOrSlug')
+  @Get('public/:idOrSlug')
   @ApiOperation({ summary: 'Get product detail by id or slug (public)' })
   getDetail(@Param('idOrSlug') idOrSlug: string) {
     return this.productsService.getDetail(idOrSlug);
   }
 
-  @Get(':idOrSlug/reviews')
+  @Get('public/:idOrSlug/reviews')
   @ApiOperation({ summary: 'List approved reviews for a product (public)' })
   findReviews(
     @Param('idOrSlug') idOrSlug: string,
@@ -96,7 +81,7 @@ export class ProductsController {
     return this.productsService.findReviews(idOrSlug, query);
   }
 
-  @Get(':idOrSlug/similar')
+  @Get('public/:idOrSlug/similar')
   @ApiOperation({
     summary: 'List similar products in the same category (public)',
   })
@@ -107,7 +92,7 @@ export class ProductsController {
     return this.productsService.findSimilar(idOrSlug, limit);
   }
 
-  @Post(':idOrSlug/reviews')
+  @Post('public/:idOrSlug/reviews')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a review (buyer only, one per product)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -118,6 +103,8 @@ export class ProductsController {
     @Body() dto: CreateReviewDto,
   ) {
     return this.productsService.createReview(idOrSlug, user.id, dto);
+  }
+
   @Get()
   @ApiOperation({ summary: 'List products for the authenticated merchant' })
   @ApiResponse({ status: 200, description: 'Products returned successfully' })

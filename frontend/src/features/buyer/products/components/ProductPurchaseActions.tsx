@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Heart, ShoppingCart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
-import { useAddToCart } from '@/features/buyer/cart/hooks/useCart';
-import { useAddToWishlist } from '@/features/buyer/wishlist/hooks/useWishlist';
+import { useCart } from '@/features/buyer/cart/hooks/useCart';
+import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist';
 import { ProductDetail } from '../services/product.service';
 import { QuantityStepper } from './QuantityStepper';
 
@@ -14,16 +14,15 @@ interface ProductPurchaseActionsProps {
 
 export function ProductPurchaseActions({ product, className }: ProductPurchaseActionsProps) {
   const { user, isAuthenticated } = useAuth();
-  const addToCart = useAddToCart();
-  const addToWishlist = useAddToWishlist();
+  const { addToCart, isAdding } = useCart();
+  const { addToWishlist, isAdding: isWishlisting } = useWishlist();
 
   const [quantity, setQuantity] = useState(1);
 
   const inStock = product.stockQuantity > 0;
   const isBuyer = user?.role === 'buyer';
-  const cartDisabled = !inStock || addToCart.isPending;
-  const wishlistDisabled =
-    !isAuthenticated || !isBuyer || addToWishlist.isPending;
+  const cartDisabled = !inStock || isAdding;
+  const wishlistDisabled = !isAuthenticated || !isBuyer || isWishlisting;
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
@@ -34,7 +33,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
       window.location.href = '/unauthorized';
       return;
     }
-    addToCart.mutate({ productId: product.id, quantity });
+    addToCart({ productId: product.id, quantity });
   };
 
   const handleAddToWishlist = () => {
@@ -46,7 +45,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
       window.location.href = '/unauthorized';
       return;
     }
-    addToWishlist.mutate(product.id);
+    addToWishlist(product.id);
   };
 
   return (
@@ -65,12 +64,12 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
           onClick={handleAddToCart}
           disabled={cartDisabled}
         >
-          {addToCart.isPending ? (
+          {isAdding ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <ShoppingCart className="h-5 w-5" />
           )}
-          {addToCart.isPending ? 'Adding...' : 'Add to Cart'}
+          {isAdding ? 'Adding...' : 'Add to Cart'}
         </Button>
         <Button
           variant="outline"
@@ -80,7 +79,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
           disabled={wishlistDisabled}
           aria-label="Add to wishlist"
         >
-          {addToWishlist.isPending ? (
+          {isWishlisting ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <Heart className="h-5 w-5" />

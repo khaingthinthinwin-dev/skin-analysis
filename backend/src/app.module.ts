@@ -11,7 +11,6 @@ import { AdminModule } from './modules/admin/review-management/admin.module';
 import { WishlistModule } from './modules/buyer/wishlist/wishlist.module';
 import { CartModule } from './modules/buyer/cart/cart.module';
 import { OrdersModule } from './modules/buyer/orders/orders.module';
-import { ProductsModule } from './modules/catalog/products/products.module';
 import { CategoriesModule } from './modules/catalog/categories/categories.module';
 import { SearchModule } from './modules/catalog/search/search.module';
 import { AppController } from './app.controller';

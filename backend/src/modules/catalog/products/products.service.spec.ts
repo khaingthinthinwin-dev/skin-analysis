@@ -8,27 +8,21 @@ const mockPrisma = {
     findFirst: jest.fn(),
     findUnique: jest.fn(),
     findMany: jest.fn(),
+    count: jest.fn(),
+    create: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+    updateMany: jest.fn(),
   },
   review: {
     findMany: jest.fn(),
     count: jest.fn(),
     findFirst: jest.fn(),
-    findUnique: jest.fn(),
     create: jest.fn(),
-    groupBy: jest.fn().mockResolvedValue([]),
   },
-  orderItem: {
-    findFirst: jest.fn(),
-  },
-  order: {
-    findFirst: jest.fn(),
-  },
-  promotion: {
-    findMany: jest.fn().mockResolvedValue([]),
-  },
-  auditLog: {
-    create: jest.fn(),
+  productImage: {
+    createMany: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -76,6 +70,7 @@ describe('ProductsService', () => {
         promotions: [],
         reviews: [],
       });
+      mockPrisma.product.findMany.mockResolvedValue([]);
 
       const result = await service.getDetail('product-1');
 
@@ -102,10 +97,23 @@ describe('ProductsService', () => {
           title: 'Great',
           body: 'Nice',
           createdAt: new Date(),
-          user: { id: 'u1', name: 'User', avatarUrl: null },
+          user: { id: 'u1', name: 'User' },
         },
       ]);
       mockPrisma.review.count.mockResolvedValue(1);
+      mockPrisma.$transaction.mockResolvedValue([
+        [
+          {
+            id: 'r1',
+            rating: 5,
+            title: 'Great',
+            body: 'Nice',
+            createdAt: new Date(),
+            user: { id: 'u1', name: 'User' },
+          },
+        ],
+        1,
+      ]);
 
       const result = await service.findReviews('product-1', {
         page: 1,
@@ -120,6 +128,7 @@ describe('ProductsService', () => {
       mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
       mockPrisma.review.findMany.mockResolvedValue([]);
       mockPrisma.review.count.mockResolvedValue(0);
+      mockPrisma.$transaction.mockResolvedValue([[], 0]);
 
       await service.findReviews('product-1', { page: 1, limit: 10, rating: 5 });
 
@@ -140,24 +149,8 @@ describe('ProductsService', () => {
   });
 
   describe('findSimilar', () => {
-    it('should return cached similar products', async () => {
+    it('should return similar products', async () => {
       mockPrisma.product.findFirst.mockResolvedValue({ id: 'product-uuid' });
-      const cached = [{ id: '2', name: 'Similar Product' }];
-      mockRedis.get.mockResolvedValue(JSON.stringify(cached));
-
-      const result = await service.findSimilar('product-1', 4);
-
-      expect(result).toEqual(cached);
-    });
-
-    it('should fetch from DB if not cached', async () => {
-      mockPrisma.product.findFirst.mockResolvedValue({ id: 'product-uuid' });
-      mockRedis.get.mockResolvedValue(null);
-      mockPrisma.product.findUnique.mockResolvedValue({
-        id: '1',
-        categoryId: 'cat-1',
-        merchant: { shopName: 'Shop' },
-      });
       mockPrisma.product.findMany.mockResolvedValue([
         {
           id: '2',
@@ -171,7 +164,6 @@ describe('ProductsService', () => {
       const result = await service.findSimilar('product-1', 4);
 
       expect(result).toHaveLength(1);
-      expect(mockRedis.set).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if product not found', async () => {
@@ -186,22 +178,16 @@ describe('ProductsService', () => {
   describe('createReview', () => {
     it('should create review successfully', async () => {
       mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
-      mockPrisma.review.findUnique.mockResolvedValue(null);
-      mockPrisma.order.findFirst.mockResolvedValue({ id: 'o1' });
-      mockPrisma.orderItem.findFirst.mockResolvedValue({ id: 'oi-1' });
-      mockPrisma.$transaction.mockResolvedValue({
+      mockPrisma.review.findFirst.mockResolvedValue(null);
+      mockPrisma.review.create.mockResolvedValue({
         id: 'r1',
         userId: 'user-1',
         productId: '1',
         rating: 5,
         title: 'Great',
         body: 'Love it',
-        images: [],
-        isVerifiedPurchase: true,
         createdAt: new Date(),
-        user: { id: 'user-1', name: 'User', avatarUrl: null },
       });
-      mockRedis.del.mockResolvedValue(undefined);
 
       const result = await service.createReview('product-1', 'user-1', {
         rating: 5,
@@ -227,7 +213,7 @@ describe('ProductsService', () => {
 
     it('should throw ConflictException if user already reviewed', async () => {
       mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
-      mockPrisma.review.findUnique.mockResolvedValue({ id: 'existing-review' });
+      mockPrisma.review.findFirst.mockResolvedValue({ id: 'existing-review' });
 
       await expect(
         service.createReview('product-1', 'user-1', {

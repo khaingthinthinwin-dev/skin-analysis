@@ -424,9 +424,12 @@ export class AdminService {
           });
           await this.redis.del(`cache:product:${product.id}`);
         }
-        const keys = await this.redis.getClient().keys('cache:products:list:*');
-        if (keys.length > 0) {
-          await this.redis.getClient().del(...keys);
+        const client = this.redis.getClient();
+        if (client) {
+          const keys = await client.keys('cache:products:list:*');
+          if (keys.length > 0) {
+            await client.del(...keys);
+          }
         }
       }
 
@@ -954,9 +957,12 @@ export class AdminService {
 
   private async invalidateProductCache(productId: string) {
     await this.redis.del(`cache:product:${productId}`);
-    const keys = await this.redis.getClient().keys('cache:products:list:*');
-    if (keys.length > 0) {
-      await this.redis.getClient().del(...keys);
+    const client = this.redis.getClient();
+    if (client) {
+      const keys = await client.keys('cache:products:list:*');
+      if (keys.length > 0) {
+        await client.del(...keys);
+      }
     }
   }
 

@@ -1,28 +1,33 @@
 import { AdminController } from './admin.controller';
+import {
+  ReviewAction,
+  MerchantStatus,
+  ReportAction,
+} from './dto/moderation.dto';
 
 const mockAdminService = {
   getDashboardStats: jest.fn(),
-  getUsers: jest.fn(),
-  toggleUserStatus: jest.fn(),
   getReviews: jest.fn(),
-  approveReview: jest.fn(),
+  getReviewById: jest.fn(),
+  moderateReview: jest.fn(),
+  reportReview: jest.fn(),
   deleteReview: jest.fn(),
-  getReviewReports: jest.fn(),
-  resolveReport: jest.fn(),
-  deactivateProduct: jest.fn(),
-  getflaggedContent: jest.fn(),
+  bulkModerateReviews: jest.fn(),
+  bulkDeleteReviews: jest.fn(),
   getMerchants: jest.fn(),
-  approveMerchant: jest.fn(),
-  rejectMerchant: jest.fn(),
-  getAdvertisements: jest.fn(),
-  approveAdvertisement: jest.fn(),
-  rejectAdvertisement: jest.fn(),
-  getAdFeeSettings: jest.fn(),
-  updateAdFeeSetting: jest.fn(),
-  getCommissionSettings: jest.fn(),
-  updateCommissionSettings: jest.fn(),
-  getPayouts: jest.fn(),
-  processPayout: jest.fn(),
+  getMerchantById: jest.fn(),
+  moderateMerchant: jest.fn(),
+  getProducts: jest.fn(),
+  getProductById: jest.fn(),
+  moderateProduct: jest.fn(),
+  bulkModerateProducts: jest.fn(),
+  getUsers: jest.fn(),
+  getUserById: jest.fn(),
+  moderateUser: jest.fn(),
+  getReports: jest.fn(),
+  getReportById: jest.fn(),
+  updateReportStatus: jest.fn(),
+  deleteReport: jest.fn(),
   getAuditLogs: jest.fn(),
 };
 
@@ -44,67 +49,34 @@ describe('AdminController', () => {
     expect(result.totalUsers).toBe(10);
   });
 
-  it('should get users', async () => {
-    mockAdminService.getUsers.mockResolvedValue({ items: [] });
-    const result = await controller.getUsers({});
-    expect(result.items).toBeDefined();
-  });
-
-  it('should toggle user status', async () => {
-    mockAdminService.toggleUserStatus.mockResolvedValue({});
-    await controller.toggleUserStatus('user-1', false);
-    expect(mockAdminService.toggleUserStatus).toHaveBeenCalledWith(
-      'user-1',
-      false,
-    );
-  });
-
   it('should get reviews', async () => {
     mockAdminService.getReviews.mockResolvedValue({ items: [] });
     const result = await controller.getReviews({});
     expect(result.items).toBeDefined();
   });
 
-  it('should approve review', async () => {
-    mockAdminService.approveReview.mockResolvedValue({});
-    await controller.approveReview('review-1');
-    expect(mockAdminService.approveReview).toHaveBeenCalledWith('review-1');
+  it('should get review by id', async () => {
+    mockAdminService.getReviewById.mockResolvedValue({ id: 'r1' });
+    const result = await controller.getReviewById('r1');
+    expect(result.id).toBe('r1');
+  });
+
+  it('should moderate review', async () => {
+    mockAdminService.moderateReview.mockResolvedValue({});
+    await controller.moderateReview('r1', { action: ReviewAction.APPROVE }, {
+      id: 'admin-1',
+    } as never);
+    expect(mockAdminService.moderateReview).toHaveBeenCalledWith(
+      'r1',
+      { action: ReviewAction.APPROVE },
+      'admin-1',
+    );
   });
 
   it('should delete review', async () => {
     mockAdminService.deleteReview.mockResolvedValue({});
-    await controller.deleteReview('review-1');
-    expect(mockAdminService.deleteReview).toHaveBeenCalledWith('review-1');
-  });
-
-  it('should get review reports', async () => {
-    mockAdminService.getReviewReports.mockResolvedValue({ items: [] });
-    const result = await controller.getReviewReports({});
-    expect(result.items).toBeDefined();
-  });
-
-  it('should resolve report', async () => {
-    mockAdminService.resolveReport.mockResolvedValue({});
-    await controller.resolveReport('report-1', { action: 'resolved' });
-    expect(mockAdminService.resolveReport).toHaveBeenCalledWith(
-      'report-1',
-      'resolved',
-      undefined,
-    );
-  });
-
-  it('should deactivate product', async () => {
-    mockAdminService.deactivateProduct.mockResolvedValue({});
-    await controller.deactivateProduct('product-1');
-    expect(mockAdminService.deactivateProduct).toHaveBeenCalledWith(
-      'product-1',
-    );
-  });
-
-  it('should get flagged content', async () => {
-    mockAdminService.getflaggedContent.mockResolvedValue({ items: [] });
-    const result = await controller.getFlaggedContent({});
-    expect(result.items).toBeDefined();
+    await controller.deleteReview('r1', { id: 'admin-1' } as never);
+    expect(mockAdminService.deleteReview).toHaveBeenCalledWith('r1', 'admin-1');
   });
 
   it('should get merchants', async () => {
@@ -113,92 +85,105 @@ describe('AdminController', () => {
     expect(result.items).toBeDefined();
   });
 
-  it('should approve merchant', async () => {
-    mockAdminService.approveMerchant.mockResolvedValue({});
-    await controller.approveMerchant('merchant-1', 'admin-1');
-    expect(mockAdminService.approveMerchant).toHaveBeenCalledWith(
-      'merchant-1',
+  it('should get merchant by id', async () => {
+    mockAdminService.getMerchantById.mockResolvedValue({ id: 'm1' });
+    const result = await controller.getMerchantById('m1');
+    expect(result.id).toBe('m1');
+  });
+
+  it('should moderate merchant', async () => {
+    mockAdminService.moderateMerchant.mockResolvedValue({});
+    await controller.moderateMerchant(
+      'm1',
+      { status: MerchantStatus.APPROVED },
+      { id: 'admin-1' } as never,
+    );
+    expect(mockAdminService.moderateMerchant).toHaveBeenCalledWith(
+      'm1',
+      { status: MerchantStatus.APPROVED },
       'admin-1',
     );
   });
 
-  it('should reject merchant', async () => {
-    mockAdminService.rejectMerchant.mockResolvedValue({});
-    await controller.rejectMerchant('merchant-1', {
-      reason: 'Bad license',
-      adminId: 'admin-1',
-    });
-    expect(mockAdminService.rejectMerchant).toHaveBeenCalledWith(
-      'merchant-1',
-      'Bad license',
-      'admin-1',
-    );
-  });
-
-  it('should get advertisements', async () => {
-    mockAdminService.getAdvertisements.mockResolvedValue({ items: [] });
-    const result = await controller.getAdvertisements({});
+  it('should get products', async () => {
+    mockAdminService.getProducts.mockResolvedValue({ items: [] });
+    const result = await controller.getProducts({});
     expect(result.items).toBeDefined();
   });
 
-  it('should approve advertisement', async () => {
-    mockAdminService.approveAdvertisement.mockResolvedValue({});
-    await controller.approveAdvertisement('ad-1');
-    expect(mockAdminService.approveAdvertisement).toHaveBeenCalledWith('ad-1');
+  it('should get product by id', async () => {
+    mockAdminService.getProductById.mockResolvedValue({ id: 'p1' });
+    const result = await controller.getProductById('p1');
+    expect(result.id).toBe('p1');
   });
 
-  it('should reject advertisement', async () => {
-    mockAdminService.rejectAdvertisement.mockResolvedValue({});
-    await controller.rejectAdvertisement('ad-1', 'Inappropriate');
-    expect(mockAdminService.rejectAdvertisement).toHaveBeenCalledWith(
-      'ad-1',
-      'Inappropriate',
-    );
-  });
-
-  it('should get ad fee settings', async () => {
-    mockAdminService.getAdFeeSettings.mockResolvedValue([]);
-    const result = await controller.getAdFeeSettings();
-    expect(result).toBeDefined();
-  });
-
-  it('should update ad fee setting', async () => {
-    mockAdminService.updateAdFeeSetting.mockResolvedValue({});
-    await controller.updateAdFeeSetting('setting-1', 20);
-    expect(mockAdminService.updateAdFeeSetting).toHaveBeenCalledWith(
-      'setting-1',
-      20,
-    );
-  });
-
-  it('should get commission settings', async () => {
-    mockAdminService.getCommissionSettings.mockResolvedValue({
-      commissionRate: 10,
-    });
-    const result = await controller.getCommissionSettings();
-    expect(result.commissionRate).toBe(10);
-  });
-
-  it('should update commission settings', async () => {
-    mockAdminService.updateCommissionSettings.mockResolvedValue({});
-    await controller.updateCommissionSettings(15, 'admin-1');
-    expect(mockAdminService.updateCommissionSettings).toHaveBeenCalledWith(
-      15,
+  it('should moderate product', async () => {
+    mockAdminService.moderateProduct.mockResolvedValue({});
+    await controller.moderateProduct('p1', { isActive: true }, {
+      id: 'admin-1',
+    } as never);
+    expect(mockAdminService.moderateProduct).toHaveBeenCalledWith(
+      'p1',
+      { isActive: true },
       'admin-1',
     );
   });
 
-  it('should get payouts', async () => {
-    mockAdminService.getPayouts.mockResolvedValue({ items: [] });
-    const result = await controller.getPayouts({});
+  it('should get users', async () => {
+    mockAdminService.getUsers.mockResolvedValue({ items: [] });
+    const result = await controller.getUsers({});
     expect(result.items).toBeDefined();
   });
 
-  it('should process payout', async () => {
-    mockAdminService.processPayout.mockResolvedValue({});
-    await controller.processPayout('payout-1', 'admin-1');
-    expect(mockAdminService.processPayout).toHaveBeenCalledWith(
-      'payout-1',
+  it('should get user by id', async () => {
+    mockAdminService.getUserById.mockResolvedValue({ id: 'u1' });
+    const result = await controller.getUserById('u1');
+    expect(result.id).toBe('u1');
+  });
+
+  it('should moderate user', async () => {
+    mockAdminService.moderateUser.mockResolvedValue({});
+    await controller.moderateUser('u1', { isActive: true }, {
+      id: 'admin-1',
+    } as never);
+    expect(mockAdminService.moderateUser).toHaveBeenCalledWith(
+      'u1',
+      { isActive: true },
+      'admin-1',
+    );
+  });
+
+  it('should get reports', async () => {
+    mockAdminService.getReports.mockResolvedValue({ items: [] });
+    const result = await controller.getReports({});
+    expect(result.items).toBeDefined();
+  });
+
+  it('should get report by id', async () => {
+    mockAdminService.getReportById.mockResolvedValue({ id: 'rp1' });
+    const result = await controller.getReportById('rp1');
+    expect(result.id).toBe('rp1');
+  });
+
+  it('should update report status', async () => {
+    mockAdminService.updateReportStatus.mockResolvedValue({});
+    await controller.updateReportStatus(
+      'rp1',
+      { status: ReportAction.RESOLVED },
+      { id: 'admin-1' } as never,
+    );
+    expect(mockAdminService.updateReportStatus).toHaveBeenCalledWith(
+      'rp1',
+      { status: ReportAction.RESOLVED },
+      'admin-1',
+    );
+  });
+
+  it('should delete report', async () => {
+    mockAdminService.deleteReport.mockResolvedValue({});
+    await controller.deleteReport('rp1', { id: 'admin-1' } as never);
+    expect(mockAdminService.deleteReport).toHaveBeenCalledWith(
+      'rp1',
       'admin-1',
     );
   });
