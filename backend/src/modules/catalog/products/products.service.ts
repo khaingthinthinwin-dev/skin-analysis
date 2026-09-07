@@ -11,7 +11,8 @@ import { UpdateStockDto } from './dto/update-stock.dto';
 import { BulkActionDto } from './dto/bulk-action.dto';
 import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { DeleteAllProductsDto } from './dto/delete-all-products.dto';
-import { ProductQueryDto } from './dto/product-query.dto';
+import { ProductQueryDto, ReviewQueryDto } from './dto/product-query.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 import { generateSlug } from '../../../common/utils/slug.util';
 import { Prisma } from '@prisma/client';
 
@@ -503,5 +504,213 @@ export class ProductsService {
       skipped: skippedIds.size,
       skippedProductIds: Array.from(skippedIds),
     };
+  }
+
+  private async resolveProduct(idOrSlug: string) {
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        idOrSlug,
+      );
+
+    const product = await this.prisma.product.findFirst({
+      where: isUuid
+        ? { id: idOrSlug, isActive: true }
+        : { slug: idOrSlug, isActive: true },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        merchant: { select: { id: true, shopName: true, licenseStatus: true } },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
+  }
+
+  async getDetail(idOrSlug: string) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    if (product.merchant?.licenseStatus !== 'approved') {
+      throw new NotFoundException('Product not found');
+    }
+
+    const now = new Date();
+
+    const [promotions, ratingBreakdown] = await Promise.all([
+      this.prisma.promotion.findMany({
+        where: {
+          merchantId: product.merchantId,
+          isActive: true,
+          startsAt: { lte: now },
+          expiresAt: { gte: now },
+        },
+        select: {
+          id: true,
+          code: true,
+          description: true,
+          discountTypeCode: true,
+          discountValue: true,
+          minOrderAmount: true,
+          startsAt: true,
+          expiresAt: true,
+          maxUses: true,
+          usedCount: true,
+        },
+      }),
+      this.prisma.review
+        .groupBy({
+          by: ['rating'],
+          where: { productId: product.id, isApproved: true },
+          _count: { rating: true },
+        })
+        .then((groups) =>
+          [5, 4, 3, 2, 1].map((star) => {
+            const found = groups.find((g) => g.rating === star);
+            return { star, count: found?._count.rating ?? 0 };
+          }),
+        ),
+    ]);
+
+    return {
+      ...product,
+      promotions,
+      ratingBreakdown,
+    };
+  }
+
+  async findReviews(idOrSlug: string, query: ReviewQueryDto) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const { page = 1, limit = 20, sortBy = 'newest' } = query;
+
+    const orderBy: Prisma.ReviewOrderByWithRelationInput = (() => {
+      switch (sortBy) {
+        case 'oldest':
+          return { createdAt: 'asc' };
+        case 'highest':
+          return { rating: 'desc' };
+        case 'lowest':
+          return { rating: 'asc' };
+        case 'newest':
+        default:
+          return { createdAt: 'desc' };
+      }
+    })();
+
+    const skip = (page - 1) * limit;
+
+    const [reviews, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { productId: product.id, isApproved: true },
+        orderBy,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          rating: true,
+          title: true,
+          body: true,
+          images: true,
+          isVerifiedPurchase: true,
+          createdAt: true,
+          user: {
+            select: { id: true, name: true },
+          },
+        },
+      }),
+      this.prisma.review.count({
+        where: { productId: product.id, isApproved: true },
+      }),
+    ]);
+
+    return {
+      items: reviews,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findSimilar(idOrSlug: string, limit: number) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const similar = await this.prisma.product.findMany({
+      where: {
+        id: { not: product.id },
+        isActive: true,
+        merchant: { licenseStatus: 'approved' },
+        categoryId: product.categoryId,
+        skinTypes: { hasSome: product.skinTypes },
+      },
+      take: limit,
+      orderBy: { avgRating: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        price: true,
+        compareAtPrice: true,
+        images: true,
+        skinTypes: true,
+        avgRating: true,
+        reviewCount: true,
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    return similar;
+  }
+
+  async createReview(idOrSlug: string, userId: string, dto: CreateReviewDto) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const existingReview = await this.prisma.review.findUnique({
+      where: { userId_productId: { userId, productId: product.id } },
+    });
+
+    if (existingReview) {
+      throw new ConflictException('You have already reviewed this product');
+    }
+
+    const review = await this.prisma.review.create({
+      data: {
+        userId,
+        productId: product.id,
+        rating: dto.rating,
+        title: dto.title,
+        body: dto.body,
+        images: dto.images || [],
+      },
+      select: {
+        id: true,
+        rating: true,
+        title: true,
+        body: true,
+        images: true,
+        isVerifiedPurchase: true,
+        createdAt: true,
+      },
+    });
+
+    const stats = await this.prisma.review.aggregate({
+      where: { productId: product.id, isApproved: true },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: {
+        avgRating: stats._avg.rating ?? 0,
+        reviewCount: stats._count.id,
+      },
+    });
+
+    return review;
   }
 }

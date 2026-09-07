@@ -18,8 +18,8 @@ This document specifies the core business logic for the Matching & Recommendatio
 ### 2.1 getPersonalized(userId, query)
 
 1. **Determine Source:** Check buyer's latest completed AI analysis.
-   - If analysis exists and `completed_at` ≤ 24h ago → `source = "ai"`
-   - Otherwise → `source = "generic"`
+   - If analysis exists (regardless of age) → `source = "ai"` (stale analysis > 24h still uses AI scores; UI shows subtle prompt banner)
+   - If no analysis exists → `source = "generic"`
 2. **Build Context:** Extract `skinTypes` and `skinConcerns` from analysis (or empty for generic).
 3. **Resolve Effective Skin Types:** If user explicitly sets `skinTypes` filter, override analysis-derived types (BR-MATCH-006).
 4. **Redis Lookup:** Check cache key `cache:recommendations:user:{userId}:{hashOfQuery}`.
@@ -159,6 +159,7 @@ async function determineSource(userId: string): Promise<PersonalizationContext> 
   const analysisAge = (Date.now() - latestAnalysis.completedAt.getTime()) / (1000 * 60 * 60);
 
   if (analysisAge <= 24) {
+    // Fresh analysis → source = "ai" with match scores (BR-MATCH-001)
     return {
       source: 'ai',
       skinTypes: [latestAnalysis.skinType],
@@ -168,15 +169,25 @@ async function determineSource(userId: string): Promise<PersonalizationContext> 
     };
   }
 
-  // Stale analysis → generic fallback (BR-MATCH-001)
-  return { source: 'generic', skinTypes: [], skinConcerns: [], ... };
+  // Stale analysis (> 24h) → source = "ai" with match scores (BR-MATCH-001)
+  // Stale analysis still uses AI-based recommendations with match scores.
+  // UI shows subtle "Want Fresh Results?" prompt banner (BR-MATCH-004).
+  return {
+    source: 'ai',
+    skinTypes: [latestAnalysis.skinType],
+    skinConcerns: latestAnalysis.conditions || [],
+    analysisId: latestAnalysis.id,
+    analysisAge,
+  };
 }
 ```
 
 ### 5.2 Stale Analysis Handling
 
-- Analysis > 24h old → treated as no analysis (`source = "generic"`)
-- UI shows subtle "Want Fresh Results?" banner (BR-MATCH-004)
+- Analysis > 24h old → still `source = "ai"` with match scores (BR-MATCH-001)
+- UI shows "🧬 AI Analysis" badge, match score badges on cards
+- UI shows subtle "Want Fresh Results?" prompt banner (BR-MATCH-004)
+- Skin type filters pre-selected from analysis
 - History section still shows stale sessions
 
 ---

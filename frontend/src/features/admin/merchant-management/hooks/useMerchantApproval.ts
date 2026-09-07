@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { merchantService } from '../services/merchant.service';
 
-export function useMerchantApproval(params?: { status?: string; page?: number; limit?: number }) {
+export function useMerchantApproval(params?: {
+  status?: 'pending' | 'approved' | 'rejected';
+  search?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
+}) {
   const queryClient = useQueryClient();
 
   const merchantsQuery = useQuery({
@@ -10,16 +17,15 @@ export function useMerchantApproval(params?: { status?: string; page?: number; l
   });
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, adminId }: { id: string; adminId?: string }) =>
-      merchantService.approveMerchant(id, adminId),
+    mutationFn: ({ id }: { id: string }) => merchantService.approveMerchant(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'merchants'] });
     },
   });
 
   const rejectMutation = useMutation({
-    mutationFn: ({ id, reason, adminId }: { id: string; reason: string; adminId?: string }) =>
-      merchantService.rejectMerchant(id, reason, adminId),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      merchantService.rejectMerchant(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'merchants'] });
     },

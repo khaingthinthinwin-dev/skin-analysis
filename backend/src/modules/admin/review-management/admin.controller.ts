@@ -7,194 +7,202 @@ import {
   Param,
   Query,
   Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import {
+  CurrentUser,
+  AuthUser,
+} from '../../../common/decorators/current-user.decorator';
+import {
+  ModerateReviewDto,
+  ModerateMerchantDto,
+  ModerateProductDto,
+  ModerateUserDto,
+  UpdateReportStatusDto,
+  ReportReviewDto,
+  BulkModerateReviewsDto,
+  BulkDeleteReviewsDto,
+  BulkModerateProductsDto,
+  ReviewsQueryDto,
+  MerchantsQueryDto,
+  ProductsQueryDto,
+  UsersQueryDto,
+  ReportsQueryDto,
+} from './dto/moderation.dto';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  // =========================================================================
-  // Dashboard
-  // =========================================================================
+  // ─── Dashboard ──────────────────────────────────────────────────────────
+
   @Get('dashboard-stats')
   async getDashboardStats() {
     return this.adminService.getDashboardStats();
   }
 
-  // =========================================================================
-  // User Management
-  // =========================================================================
-  @Get('users')
-  async getUsers(
-    @Query()
-    query: {
-      role?: string;
-      is_active?: boolean;
-      page?: number;
-      limit?: number;
-    },
-  ) {
-    return this.adminService.getUsers(query);
-  }
+  // ─── Review Moderation ──────────────────────────────────────────────────
 
-  @Patch('users/:userId/status')
-  async toggleUserStatus(
-    @Param('userId') userId: string,
-    @Body('is_active') isActive: boolean,
-  ) {
-    return this.adminService.toggleUserStatus(userId, isActive);
-  }
-
-  // =========================================================================
-  // Review Moderation
-  // =========================================================================
   @Get('reviews')
-  async getReviews(
-    @Query() query: { page?: number; limit?: number; is_approved?: boolean },
-  ) {
+  async getReviews(@Query() query: ReviewsQueryDto) {
     return this.adminService.getReviews(query);
   }
 
-  @Patch('reviews/:id/approve')
-  async approveReview(@Param('id') id: string) {
-    return this.adminService.approveReview(id);
+  @Get('reviews/:id')
+  async getReviewById(@Param('id') id: string) {
+    return this.adminService.getReviewById(id);
+  }
+
+  @Post('reviews/:id/moderate')
+  async moderateReview(
+    @Param('id') id: string,
+    @Body() dto: ModerateReviewDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.moderateReview(id, dto, user.id);
+  }
+
+  @Post('reviews/:id/report')
+  async reportReview(
+    @Param('id') id: string,
+    @Body() dto: ReportReviewDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.reportReview(id, user.id, dto);
   }
 
   @Delete('reviews/:id')
-  async deleteReview(@Param('id') id: string) {
-    return this.adminService.deleteReview(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteReview(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    await this.adminService.deleteReview(id, user.id);
   }
 
-  // =========================================================================
-  // Review Reports
-  // =========================================================================
-  @Get('review-reports')
-  async getReviewReports(
-    @Query() query: { status?: string; page?: number; limit?: number },
+  @Post('reviews/bulk/moderate')
+  async bulkModerateReviews(
+    @Body() dto: BulkModerateReviewsDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.adminService.getReviewReports(query);
+    return this.adminService.bulkModerateReviews(dto, user.id);
   }
 
-  @Patch('review-reports/:id/resolve')
-  async resolveReport(
-    @Param('id') id: string,
-    @Body() body: { action: 'resolved' | 'rejected'; note?: string },
+  @Delete('reviews/bulk')
+  bulkDeleteReviews(
+    @Body() dto: BulkDeleteReviewsDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.adminService.resolveReport(id, body.action, body.note);
+    return this.adminService.bulkDeleteReviews(dto, user.id);
   }
 
-  // =========================================================================
-  // Content Moderation
-  // =========================================================================
-  @Patch('products/:id/deactivate')
-  async deactivateProduct(@Param('id') id: string) {
-    return this.adminService.deactivateProduct(id);
-  }
+  // ─── Merchant Management ────────────────────────────────────────────────
 
-  @Get('products/flagged')
-  async getFlaggedContent(@Query() query: { page?: number; limit?: number }) {
-    return this.adminService.getflaggedContent(query);
-  }
-
-  // =========================================================================
-  // Merchant Management
-  // =========================================================================
   @Get('merchants')
-  async getMerchants(
-    @Query() query: { status?: string; page?: number; limit?: number },
-  ) {
+  getMerchants(@Query() query: MerchantsQueryDto) {
     return this.adminService.getMerchants(query);
   }
 
-  @Patch('merchants/:id/approve')
-  async approveMerchant(
+  @Get('merchants/:id')
+  getMerchantById(@Param('id') id: string) {
+    return this.adminService.getMerchantById(id);
+  }
+
+  @Patch('merchants/:id/status')
+  moderateMerchant(
     @Param('id') id: string,
-    @Body('adminId') adminId?: string,
+    @Body() dto: ModerateMerchantDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.adminService.approveMerchant(id, adminId);
+    return this.adminService.moderateMerchant(id, dto, user.id);
   }
 
-  @Patch('merchants/:id/reject')
-  async rejectMerchant(
+  // ─── Product Content Moderation ─────────────────────────────────────────
+
+  @Get('content')
+  getProducts(@Query() query: ProductsQueryDto) {
+    return this.adminService.getProducts(query);
+  }
+
+  @Get('content/:id')
+  getProductById(@Param('id') id: string) {
+    return this.adminService.getProductById(id);
+  }
+
+  @Patch('content/:id/status')
+  moderateProduct(
     @Param('id') id: string,
-    @Body() body: { reason: string; adminId?: string },
+    @Body() dto: ModerateProductDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.adminService.rejectMerchant(id, body.reason, body.adminId);
+    return this.adminService.moderateProduct(id, dto, user.id);
   }
 
-  // =========================================================================
-  // Advertisement Management
-  // =========================================================================
-  @Get('ads')
-  async getAdvertisements(
-    @Query() query: { status?: string; page?: number; limit?: number },
+  @Patch('content/bulk/status')
+  bulkModerateProducts(
+    @Body() dto: BulkModerateProductsDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.adminService.getAdvertisements(query);
+    return this.adminService.bulkModerateProducts(dto, user.id);
   }
 
-  @Patch('ads/:id/approve')
-  async approveAdvertisement(@Param('id') id: string) {
-    return this.adminService.approveAdvertisement(id);
+  // ─── User Management ───────────────────────────────────────────────────
+
+  @Get('users')
+  getUsers(@Query() query: UsersQueryDto) {
+    return this.adminService.getUsers(query);
   }
 
-  @Patch('ads/:id/reject')
-  async rejectAdvertisement(
+  @Get('users/:id')
+  getUserById(@Param('id') id: string) {
+    return this.adminService.getUserById(id);
+  }
+
+  @Patch('users/:id/status')
+  moderateUser(
     @Param('id') id: string,
-    @Body('reason') reason: string,
+    @Body() dto: ModerateUserDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.adminService.rejectAdvertisement(id, reason);
+    return this.adminService.moderateUser(id, dto, user.id);
   }
 
-  @Get('ad-fee-settings')
-  async getAdFeeSettings() {
-    return this.adminService.getAdFeeSettings();
+  // ─── Report Management ─────────────────────────────────────────────────
+
+  @Get('reports')
+  getReports(@Query() query: ReportsQueryDto) {
+    return this.adminService.getReports(query);
   }
 
-  @Patch('ad-fee-settings/:id')
-  async updateAdFeeSetting(
+  @Get('reports/:id')
+  getReportById(@Param('id') id: string) {
+    return this.adminService.getReportById(id);
+  }
+
+  @Patch('reports/:id/status')
+  updateReportStatus(
     @Param('id') id: string,
-    @Body('daily_rate') dailyRate: number,
+    @Body() dto: UpdateReportStatusDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.adminService.updateAdFeeSetting(id, dailyRate);
+    return this.adminService.updateReportStatus(id, dto, user.id);
   }
 
-  // =========================================================================
-  // Commission Management
-  // =========================================================================
-  @Get('commission/settings')
-  async getCommissionSettings() {
-    return this.adminService.getCommissionSettings();
+  @Delete('reports/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteReport(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    await this.adminService.deleteReport(id, user.id);
   }
 
-  @Patch('commission/settings')
-  async updateCommissionSettings(
-    @Body('commission_rate') rate: number,
-    @Body('adminId') adminId?: string,
-  ) {
-    return this.adminService.updateCommissionSettings(rate, adminId);
-  }
+  // ─── Audit Logs ────────────────────────────────────────────────────────
 
-  @Get('commission/payouts')
-  async getPayouts(
-    @Query() query: { status?: string; page?: number; limit?: number },
-  ) {
-    return this.adminService.getPayouts(query);
-  }
-
-  @Post('commission/payouts/:id/process')
-  async processPayout(
-    @Param('id') id: string,
-    @Body('adminId') adminId?: string,
-  ) {
-    return this.adminService.processPayout(id, adminId);
-  }
-
-  // =========================================================================
-  // Audit Logs
-  // =========================================================================
   @Get('audit-logs')
-  async getAuditLogs(
+  getAuditLogs(
     @Query()
     query: {
       page?: number;

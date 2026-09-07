@@ -806,14 +806,18 @@ Before generating or modifying code, AI agents MUST read and understand:
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business rules, functional requirements |
-| Database Design Spec | `docs/core-work/データベース設計書.md` | Schema design, data dictionary |
-| Specification Document | `docs/SPECIFICATION.md` | Full architecture, technology stack, API design |
-| This Document | `DEVELOPMENT_RULES.md` | Coding standards, guardrails, governance |
-| Prisma Schema | `backend/prisma/schema.prisma` | Current database schema (source of truth) |
+| Requirements Definition (EN) | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | Business rules, functional requirements |
+| Requirements Definition (JP) | `docs/core-work-jp/要件定義書_REQUIREMENT_SPEC_JP.md` | Japanese translation for reference |
+| Database Design Spec (EN) | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Schema design, data dictionary |
+| Database Design Spec (JP) | `docs/core-work-jp/データベース設計書_DATABASE_SPEC_JP.md` | Japanese translation for reference |
+| Development Rules (EN) | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Coding standards, guardrails, governance |
+| Development Rules (JP) | `docs/core-work-jp/開発ルール_DEVELOPMENT_RULES_JP.md` | Japanese translation for reference |
+| Prisma Schema (active) | `backend/prisma/schema.prisma` | Current database schema (source of truth) |
+| Prisma Schema (legacy) | `backend/src/database/prisma/schema.prisma` | Legacy schema (v2.0, out of sync) |
 | Existing Code | Respective module files | Maintain consistency with existing patterns |
 
 **Context Rules:**
+- Always read the EN (English) version as the primary source. JP (Japanese) versions are translations for reference.
 - Always read the Prisma schema before writing any database-related code.
 - Always read existing services in the same module before adding new ones.
 - Always read existing DTOs in the module for naming/style consistency.

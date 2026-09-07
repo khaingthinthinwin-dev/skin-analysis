@@ -170,9 +170,11 @@ export class SearchService {
   }
 
   async invalidateProductCache(): Promise<void> {
-    const keys = await this.redis.getClient().keys('cache:products:list:*');
+    const client = this.redis.getClient();
+    if (!client) return;
+    const keys = await client.keys('cache:products:list:*');
     if (keys.length) {
-      await this.redis.getClient().del(...keys);
+      await client.del(...keys);
     }
   }
 
