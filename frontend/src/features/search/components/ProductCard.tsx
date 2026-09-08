@@ -24,7 +24,7 @@ export function ProductCard({ product, view }: ProductCardProps) {
   if (view === 'list') {
     return (
       <Link
-        to={`/products/${product.slug}`}
+        to={`/buyer/products/${product.slug}`}
         className="block rounded-lg border bg-card transition-shadow hover:shadow-md"
       >
         <div className="flex gap-4 p-4">
@@ -85,7 +85,7 @@ export function ProductCard({ product, view }: ProductCardProps) {
 
   return (
     <Card className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
-      <Link to={`/products/${product.slug}`} className="block">
+      <Link to={`/buyer/products/${product.slug}`} className="block">
         <div className="relative aspect-square bg-muted">
           {imageUrl ? (
             <>

@@ -7,7 +7,7 @@ import { RequireApprovedMerchantGuard } from '../../auth/guards/require-approved
 
 @Module({
   imports: [PrismaModule],
-  controllers: [ProductsController, BuyerProductsController],
+  controllers: [BuyerProductsController, ProductsController],
   providers: [ProductsService, RequireApprovedMerchantGuard],
   exports: [ProductsService],
 })
