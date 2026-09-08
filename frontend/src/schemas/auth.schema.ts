@@ -85,6 +85,10 @@ export const forgotPasswordSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
 })
 
+export const verifyCodeSchema = z.object({
+  code: z.string().min(1, 'Verification code is required').length(6, 'Code must be exactly 6 digits'),
+})
+
 export const resetPasswordSchema = z
   .object({
     password: z
@@ -127,5 +131,6 @@ export const createAdminSchema = z
 export type LoginFormData = z.infer<typeof loginSchema>
 export type RegisterFormData = z.infer<typeof registerSchema>
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
+export type VerifyCodeFormData = z.infer<typeof verifyCodeSchema>
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
 export type CreateAdminFormData = z.infer<typeof createAdminSchema>

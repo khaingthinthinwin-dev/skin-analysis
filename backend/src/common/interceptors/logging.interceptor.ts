@@ -20,6 +20,6 @@ export class LoggingInterceptor implements NestInterceptor {
         const elapsed = Date.now() - now;
         console.log(`${method} ${url} ${elapsed}ms`);
       }),
-    );
+    ) as Observable<unknown>;
   }
 }

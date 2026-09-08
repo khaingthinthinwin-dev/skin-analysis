@@ -14,6 +14,7 @@ const About = lazy(() => import('@/pages/About'))
 const Login = lazy(() => import('@/pages/auth/Login'))
 const Register = lazy(() => import('@/pages/auth/Register'))
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'))
+const VerifyCode = lazy(() => import('@/pages/auth/VerifyCode'))
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const Profile = lazy(() => import('@/pages/shared/Profile'))
 const Notifications = lazy(() => import('@/pages/shared/Notifications'))
@@ -427,6 +428,16 @@ export const router = createBrowserRouter([
       <AuthLayout>
         <SuspenseWrapper>
           <ForgotPassword />
+        </SuspenseWrapper>
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/verify-code',
+    element: (
+      <AuthLayout>
+        <SuspenseWrapper>
+          <VerifyCode />
         </SuspenseWrapper>
       </AuthLayout>
     ),

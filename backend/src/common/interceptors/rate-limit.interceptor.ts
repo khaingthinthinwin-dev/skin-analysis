@@ -60,7 +60,7 @@ export class RateLimitInterceptor implements NestInterceptor {
           }
         },
       }),
-    );
+    ) as Observable<unknown>;
   }
 
   private getRateLimitConfig(path: string): RateLimitConfig {
