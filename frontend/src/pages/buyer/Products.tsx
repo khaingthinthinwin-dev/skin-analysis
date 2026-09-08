@@ -2,7 +2,7 @@ import { useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Search as SearchIcon, Loader2 } from 'lucide-react'
 import type { SearchParams } from '@/schemas/search.schema'
-import { PAGE_SIZE_OPTIONS } from '@/schemas/search.schema'
+import { Pagination } from '@/components/Pagination'
 import { categoryService } from '@/features/search/services/category.service'
 import { SearchBar } from '@/features/search/components/SearchBar'
 import { FilterPanel } from '@/features/search/components/FilterPanel'
@@ -14,14 +14,6 @@ import { ProductCard } from '@/features/search/components/ProductCard'
 import { useProductSearch } from '@/features/search/hooks/useProductSearch'
 import type { ViewMode } from '@/types/search.types'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { CategoryNode } from '@/types/search.types'
 
 const VIEW_MODE_KEY = 'search.viewMode'
@@ -64,7 +56,7 @@ export default function Products() {
     if (p.sort !== 'createdAt') entries.push(['sort', p.sort])
     if (p.order !== 'desc') entries.push(['order', p.order])
     if (p.page > 1) entries.push(['page', String(p.page)])
-    if (p.limit !== 20) entries.push(['limit', String(p.limit)])
+    if (p.limit !== 12) entries.push(['limit', String(p.limit)])
     setSearchParams(Object.fromEntries(entries), { replace: true })
   }
 
@@ -141,11 +133,6 @@ export default function Products() {
     })
   }
 
-  const handlePageChange = (page: number) => {
-    serializeToUrl({ ...params, page })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   const handleLimitChange = (limit: number) => {
     serializeToUrl({ ...params, limit, page: 1 })
   }
@@ -205,44 +192,14 @@ export default function Products() {
 
         {/* Right Content - Product Grid */}
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p className="text-sm text-muted-foreground">
-              {meta ? (
-                <>
-                  Showing{' '}
-                  <span className="font-medium text-foreground">
-                    {(meta.page - 1) * meta.limit + 1}-
-                    {Math.min(meta.page * meta.limit, meta.total)}
-                  </span>{' '}
-                  of <span className="font-medium text-foreground">{meta.total}</span> products
-                </>
-              ) : (
-                'Loading...'
-              )}
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Show</span>
-                <Select value={String(params.limit)} onValueChange={(v) => handleLimitChange(Number(v))}>
-                  <SelectTrigger className="w-[70px] h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <SelectItem key={size} value={String(size)}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <SortSelect
-                sort={params.sort}
-                order={params.order}
-                onChange={(sort, order) => handleFilterUpdate({ sort, order })}
-              />
-              <ViewToggle view={view} onChange={setView} />
-            </div>
+          {/* Toolbar above grid */}
+          <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
+            <SortSelect
+              sort={params.sort}
+              order={params.order}
+              onChange={(sort, order) => handleFilterUpdate({ sort, order })}
+            />
+            <ViewToggle view={view} onChange={setView} />
           </div>
 
           {isLoading ? (
@@ -277,48 +234,11 @@ export default function Products() {
                 ))}
               </div>
 
-              {/* Pagination - outside product cards, clearly separated */}
-              {meta && meta.totalPages > 1 && (
-                <div className="mt-8 flex items-center justify-center gap-2 pt-4 border-t border-border">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={meta.page <= 1}
-                    onClick={() => handlePageChange(meta.page - 1)}
-                  >
-                    Previous
-                  </Button>
-                  {Array.from({ length: Math.min(meta.totalPages, 5) }, (_, i) => {
-                    let pageNum: number
-                    if (meta.totalPages <= 5) {
-                      pageNum = i + 1
-                    } else if (meta.page <= 3) {
-                      pageNum = i + 1
-                    } else if (meta.page >= meta.totalPages - 2) {
-                      pageNum = meta.totalPages - 4 + i
-                    } else {
-                      pageNum = meta.page - 2 + i
-                    }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={meta.page === pageNum ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                      >
-                        {pageNum}
-                      </Button>
-                    )
-                  })}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={meta.page >= meta.totalPages}
-                    onClick={() => handlePageChange(meta.page + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
+              {meta && (
+                <Pagination
+                  meta={meta}
+                  onLimitChange={handleLimitChange}
+                />
               )}
             </>
           )}

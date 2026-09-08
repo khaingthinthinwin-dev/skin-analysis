@@ -44,6 +44,6 @@ function serializeParams(params: SearchParams): Record<string, string> {
   if (params.sort !== 'createdAt') entries.push(['sort', params.sort])
   if (params.order !== 'desc') entries.push(['order', params.order])
   if (params.page > 1) entries.push(['page', String(params.page)])
-  if (params.limit !== 20) entries.push(['limit', String(params.limit)])
+  if (params.limit !== 12) entries.push(['limit', String(params.limit)])
   return Object.fromEntries(entries)
 }
