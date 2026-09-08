@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router'
+import { Link, useNavigate, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,8 +31,10 @@ import { ROUTES } from '@/lib/constants'
 export default function ResetPassword() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
+  const location = useLocation()
+  const state = location.state as { email?: string; code?: string } | null
+  const email = state?.email
+  const code = state?.code
 
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -41,10 +43,10 @@ export default function ResetPassword() {
   const [isSuccess, setIsSuccess] = useState(false)
 
   useEffect(() => {
-    if (!token) {
-      navigate(ROUTES.LOGIN)
+    if (!email || !code) {
+      navigate(ROUTES.FORGOT_PASSWORD)
     }
-  }, [token, navigate])
+  }, [email, code, navigate])
 
   const form = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
@@ -58,7 +60,7 @@ export default function ResetPassword() {
   const password = form.watch('password')
 
   const onSubmit = async (data: ResetPasswordFormData) => {
-    if (!token) {
+    if (!email || !code) {
       setError(t('auth.resetPassword.invalidToken'))
       return
     }
@@ -66,11 +68,13 @@ export default function ResetPassword() {
     setIsLoading(true)
     setError(null)
     try {
-      await authService.resetPassword({ token, password: data.password })
+      await authService.resetPassword({ email, code, password: data.password })
       setIsSuccess(true)
       toast.success(t('auth.resetPassword.success'))
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reset password'
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err instanceof Error ? err.message : 'Failed to reset password')
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -103,7 +107,7 @@ export default function ResetPassword() {
     )
   }
 
-  if (!token) {
+  if (!email || !code) {
     return null
   }
 

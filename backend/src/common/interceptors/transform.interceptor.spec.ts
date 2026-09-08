@@ -37,7 +37,7 @@ describe('TransformInterceptor', () => {
   it('should handle array data', async () => {
     const context = {} as ExecutionContext;
     const callHandler: CallHandler = {
-      handle: () => of([1, 2, 3]),
+      handle: () => of([1, 2, 3] as unknown),
     };
 
     const result$ = interceptor.intercept(context, callHandler);

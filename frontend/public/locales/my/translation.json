@@ -78,6 +78,41 @@
       },
       "agreeToTerms": "ကျွန်ုပ်သည် ဝန်ဆောင်မှု စည်းမျဉ်းများကို သဘောတူပါသည်",
       "termsOfService": "ဝန်ဆောင်မှု စည်းမျဉ်းများ"
+    },
+    "forgotPassword": {
+      "title": "စကားဝှက်မေ့နေပါသလား?",
+      "description": "သင့်အီးမေးလ်ထည့်ပြီး verification code ပို့ပေးပါမည်။",
+      "email": "အီးမေးလ်",
+      "emailPlaceholder": "user@example.com",
+      "submit": "Verification Code ပို့ရန်",
+      "submitting": "ပို့နေသည်...",
+      "backToLogin": "အကောင့်ဝင်ရန် ပြန်သွားရန်"
+    },
+    "verifyCode": {
+      "title": "Verification Code ထည့်ပါ",
+      "description": "{{email}} သို့ ဂဏန်း ၆ လုံး code ပို့ပြီးပါပြီ",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "000000",
+      "submit": "Code စစ်ဆေးရန်",
+      "verifying": "စစ်ဆေးနေသည်...",
+      "resend": "Code ပြန်ပို့ရန်",
+      "resendCooldown": "ပြန်ပို့ရန် {{seconds}}s",
+      "resendSuccess": "verification code အသစ်ကို သင့်အီးမေးလ်သို့ ပို့ပြီးပါပြီ။",
+      "backToEmail": "အီးမေးလ် ပြန်သွားရန်"
+    },
+    "resetPassword": {
+      "title": "စကားဝှက် ပြန်လည်သတ်မှတ်ရန်",
+      "description": "သင့်စကားဝှက်အသစ်ကို ထည့်ပါ။",
+      "newPassword": "စကားဝှက်အသစ်",
+      "newPasswordPlaceholder": "စကားဝှက်အသစ်ဖန်တီးပါ",
+      "confirmPassword": "စကားဝှက်အတည်ပြုရန်",
+      "confirmPasswordPlaceholder": "စကားဝှက်အသစ်ပြန်ထည့်ပါ",
+      "submit": "စကားဝှက် ပြန်လည်သတ်မှတ်ရန်",
+      "submitting": "ပြန်လည်သတ်မှတ်နေသည်...",
+      "successTitle": "စကားဝှက် ပြန်လည်သတ်မှတ်ခြင်း အောင်မြင်ပါသည်",
+      "successMessage": "သင့်စကားဝှက်ကို အောင်မြင်စွာ ပြန်လည်သတ်မှတ်ပြီးပါပြီ။ အသစ်စကားဝှက်ဖြင့် အကောင့်ဝင်နိုင်ပါပြီ။",
+      "backToLogin": "အကောင့်ဝင်ရန် ပြန်သွားရန်",
+      "invalidToken": "Verification code မမှန်ကန်ပါ။ code အသစ် တောင်းဆိုပါ။"
     }
   },
   "home": {

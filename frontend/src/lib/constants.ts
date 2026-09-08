@@ -14,6 +14,7 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
+  VERIFY_CODE: '/verify-code',
   RESET_PASSWORD: '/reset-password',
   UNAUTHORIZED: '/unauthorized',
   ABOUT: '/about',

@@ -173,7 +173,8 @@ describe('AuthController', () => {
       });
 
       const result = await controller.resetPassword({
-        token: 'a'.repeat(64),
+        email: 'test@example.com',
+        code: '482916',
         password: 'NewPassword1!',
       });
       expect(result.message).toBe('reset');

@@ -38,8 +38,14 @@ export interface ForgotPasswordData {
   email: string
 }
 
+export interface VerifyCodeData {
+  email: string
+  code: string
+}
+
 export interface ResetPasswordData {
-  token: string
+  email: string
+  code: string
   password: string
 }
 
