@@ -319,7 +319,22 @@ On **any** transaction rollback: all writes are reverted, no partial order is cr
 
 ---
 
-## 8. Cross-References
+## 8. Audit Logging Logic
+
+The Checkout & Purchase service logs the following audit events. The event set is defined in DD_CHECK-01 §4.3, and the logged fields are taken from the inline `Log EVENT_NAME (fields)` definitions in §2.
+
+| Event | Logged Fields | Source | Retention |
+|-------|---------------|--------|-----------|
+| `CHECKOUT_LOADED` | `userId`, `cartId`, `itemCount`, `subtotal` | DD_CHECK-01 §4.3; DD_CHECK-05 §2.1 | 1 year |
+| `COUPON_VALIDATED` | `userId`, `couponCode`, `discountAmount` | DD_CHECK-01 §4.3; DD_CHECK-05 §2.2 | 1 year |
+| `ORDER_PLACED` | Specific logged fields are not enumerated in the current design documents. | DD_CHECK-01 §4.3 | 1 year |
+| `ORDER_CONFIRMATION_VIEWED` | `userId`, `orderId` | DD_CHECK-01 §4.3; DD_CHECK-05 §2.4 | 1 year |
+
+Retention is aligned with DD_CHECK-01 §4.3 and Development Rules §6.4 for buyer financial events.
+
+---
+
+## 9. Cross-References
 
 | Related Document | Purpose |
 |------------------|---------|

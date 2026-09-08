@@ -289,7 +289,57 @@ Only the ad slot endpoint (2.2) uses server-side caching. All other endpoints re
 
 ---
 
-## 6. Cross-References
+## 6. Error Response Structure
+
+All Checkout & Purchase errors follow one response envelope structure (DD_CHECK-05 §6):
+
+```json
+{
+  "statusCode": 409,
+  "message": ["<message defined in DD_CHECK-05>"],
+  "error": "Conflict",
+  "timestamp": "2026-09-08T12:00:00.000Z",
+  "path": "/api/v1/orders"
+}
+```
+
+The English and Japanese message text for each error is defined in DD_CHECK-05 §6 and is not duplicated here.
+
+| HTTP Status | Error Code | Condition | Message Source |
+|-------------|------------|-----------|----------------|
+| `400` | `CHECK_001` | Cart is empty during checkout load or order placement. Underlying validation rule: DD_CHECK-05 §7.1. | DD_CHECK-05 §6 |
+| `409` | `CHECK_002` | Stock is unavailable during order submission. | DD_CHECK-05 §6 |
+| `400` | `CHECK_003` | Coupon validation or coupon re-validation fails. Underlying validation rule: DD_CHECK-05 §7.2. | DD_CHECK-05 §6 |
+| `403` | `CHECK_004` | The caller does not have the buyer role. Underlying validation rule: DD_CHECK-05 §7.1. | DD_CHECK-05 §6 |
+| `404` | `CHECK_005` | The requested order confirmation does not exist or is outside the caller's ownership scope. | DD_CHECK-05 §6 |
+| `500` | `SYS_001` | An unexpected database or transaction error occurs. | DD_CHECK-05 §6 |
+
+### 6.1 Error Envelope Fields
+
+| Field | Description |
+|-------|-------------|
+| `statusCode` | HTTP status code for the failed request. |
+| `message` | Array containing the localized error message defined in DD_CHECK-05 §6. |
+| `error` | HTTP error category corresponding to `statusCode`. |
+| `timestamp` | ISO 8601 timestamp generated when the error response is created. |
+| `path` | Request path that produced the error. |
+
+---
+
+## 7. Audit Logging Events
+
+Checkout & Purchase audit events are retained for 1 year in accordance with DD_CHECK-01 §4.3 and Development Rules §6.4.
+
+| Event | Data Logged | Retention |
+|-------|-------------|-----------|
+| `CHECKOUT_LOADED` | `userId`, `cartId`, `itemCount`, `subtotal` (DD_CHECK-05 §2.1) | 1 year |
+| `COUPON_VALIDATED` | `userId`, `couponCode`, `discountAmount` (DD_CHECK-05 §2.2) | 1 year |
+| `ORDER_PLACED` | Event is defined in DD_CHECK-01 §4.3; DD_CHECK-05 does not enumerate additional event fields. | 1 year |
+| `ORDER_CONFIRMATION_VIEWED` | `userId`, `orderId` (DD_CHECK-05 §2.4) | 1 year |
+
+---
+
+## 8. Cross-References
 
 | Related Document | Purpose |
 |------------------|---------|

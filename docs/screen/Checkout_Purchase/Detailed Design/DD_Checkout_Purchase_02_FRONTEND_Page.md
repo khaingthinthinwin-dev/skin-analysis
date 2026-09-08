@@ -466,7 +466,7 @@ Each interactive button in the Checkout and Order Confirmation flows, with its h
 | 2 | Remove Coupon | EL-17 (`btnRemoveCoupon`) | `handleRemoveCoupon` | An applied coupon chip (EL-16) is currently displayed | Clears coupon state, resets `discount` to $0, recalculates `total = subtotal`, hides applied chip (EL-16). No API call. |
 | 3 | Place Order | EL-25 (`btnPlaceOrder`) | `handlePlaceOrder` | Shipping address form valid (`shippingAddressSchema`); `paymentMethod` selected; `currentUser` is not null (buyer authenticated) | 1. If `currentUser` is null → open `GuestLoginModal` (§3.8, EL-65). 2. Else → show loading overlay (§3.9, EL-68), call `POST /api/v1/orders`. On 201: navigate to `/checkout/confirmation/:orderId`. On 400/409/401/500: hide overlay, surface form-level error (§9). |
 | 4 | Continue Shopping | EL-90 (`btnContinueShopping`) | `handleContinueShopping` | Rendered on Order Confirmation page (§4.2 [K]) | Navigates to `/products`. |
-| 5 | View Order | EL-91 (`btnViewOrder`) | `handleViewOrder` | Rendered on Order Confirmation page (§4.2 [K]); `orderId` in route params | Navigates to `/orders/:orderId` (Order Insights module, DD_Checkout_Purchase_04). |
+| 5 | View Order | EL-91 (`btnViewOrder`) | `handleViewOrder` | Rendered on Order Confirmation page (§4.2 [K]); `orderId` in route params | Navigates to `/orders/:orderId` (Order Insights module, DD_Order_Insights_02). |
 
 > **Loading overlay note:** the overlay (§3.9, EL-68) is shown synchronously before the Place Order API call and hidden on both success and error paths. It blocks double-submission and mirrors the pattern in DD_Order_Insights_02 §5.
 
@@ -538,7 +538,91 @@ Surfaced as toast notifications (`alertError`) or modal, sourced from FDS §9 er
 
 ---
 
-## 10. Cross-References
+## 10. State Management
+
+### 10.1 Checkout Page State
+
+The Checkout page maintains the following client-side UI state:
+
+| State | Description |
+|---|---|
+| `orderSummaryVisible` | Order summary panel is visible when checkout data is available. |
+| `shippingFormVisible` | Shipping address form is visible for authenticated buyers. |
+| `paymentMethodVisible` | Payment method panel is visible when checkout is available. |
+| `orderNotesVisible` | Optional order notes panel is visible. |
+| `adPanelOpen` | Sponsored ad panel is open after a successful ad fetch. |
+| `adPanelClosed` | Sponsored ad panel was manually closed for the session. |
+| `loadingOverlayVisible` | Loading overlay is visible while the order submission is in progress. |
+| `guestModalVisible` | Guest login modal is visible when an unauthenticated user attempts to place an order. |
+
+### 10.2 Checkout Form State
+
+Checkout form values, validation, dirty/touched state, and schema behavior are defined in §5, **Form State & Validation (React Hook Form + Zod)**.
+
+### 10.3 Coupon State
+
+Coupon application follows this client-side runtime state machine:
+
+| State | Description | Transition |
+|---|---|---|
+| `idle` | No coupon validation is currently running and no coupon is applied. | User submits a coupon code → `validating` |
+| `validating` | Coupon validation request is in progress. | Successful validation → `applied`; failed validation → `error` |
+| `applied` | A coupon is applied and the discount and total are displayed. | User removes the coupon → `idle`; user applies another coupon → `validating` |
+| `error` | The latest coupon validation failed and no new coupon was applied. | User submits a new coupon code → `validating`; user clears the code → `idle` |
+
+Coupon error codes and their messages are defined in §8.2.
+
+### 10.4 Sponsored Ad Panel State
+
+The sponsored ad panel described in §2.1 `[D0]` maintains the following state:
+
+| State | Description |
+|---|---|
+| `slideIndex` | Zero-based index of the currently displayed ad, limited to the available ads. |
+| `autoSlideTimer` | Timer that advances the carousel every 5 seconds when auto-slide is active. |
+| `pausedOnInteraction` | Auto-slide is paused while the pointer hovers over the panel or keyboard focus remains within it, then resumes on pointer leave or blur (画面項目設計書 §5.2, WCAG 2.2.2). |
+| `closed` | The panel is hidden after the buyer selects the close button and remains closed for the session. |
+| `reducedMotion` | The entrance animation is skipped and the panel appears instantly when `prefers-reduced-motion: reduce` is enabled; carousel rotation continues unchanged (画面項目設計書 §4.2, §5.2). |
+
+### 10.5 Order Submission State
+
+Order submission uses the following state values:
+
+| State | Description |
+|---|---|
+| `idle` | No order submission is in progress. |
+| `submitting` | The order request is being processed and the loading overlay is visible. |
+| `success` | The order was created successfully and navigation to the confirmation page is initiated. |
+| `error` | The order request failed and the submission state has returned to an actionable error state. |
+
+Handler logic is defined in §7, **Action Buttons & Handlers**. API error responses are defined in §9.2, **Form-Level API Errors**.
+
+### 10.6 Order Confirmation Page State
+
+On load, the Order Confirmation page holds the following client-side state:
+
+| State | Description |
+|---|---|
+| `loading` | Confirmation data for the route `orderId` is being fetched. |
+| `loaded` | The owned order confirmation data is available and the success summary is rendered. |
+| `error` | Confirmation data could not be loaded, including an invalid, missing, or unauthorized order. |
+
+---
+
+## 11. Responsive Layout Breakpoints
+
+The Checkout and Order Confirmation pages use the following responsive layout behavior:
+
+| Breakpoint | Min Width | Layout Behavior |
+|---|---:|---|
+| Mobile (default) | 0px | Order summary, shipping form, and payment method render in a single stacked column. The sponsored ad panel uses a stacked layout with the full-width image above the title, description, and full-width CTA. The screen-item specification does not define responsive behavior for the Order Confirmation page in this breakpoint row. (画面項目設計書 §3.2; ad details: §4.2) |
+| Tablet (`md:`) | 768px | Order summary, shipping form, and payment method remain in a single stacked column. Only the sponsored ad panel changes to a horizontal layout with the image on the left and text content on the right, spanning the full container width. The screen-item specification does not define responsive behavior for the Order Confirmation page in this breakpoint row. (画面項目設計書 §3.2; ad details: §4.2) |
+| Desktop (`lg:`) | 1024px | The specification explicitly defines a two-column checkout layout with the order summary on the left and shipping address on the right. It does not explicitly define a separate responsive placement for the payment method or the Order Confirmation page. The sponsored ad panel uses a horizontal layout and spans the full container width above the columns. (画面項目設計書 §3.2; ad details: §4.2) |
+| Wide (`xl:`) | 1280px | The specification states that the layout is the same as `lg:` with enhanced spacing, and that the sponsored ad panel remains identical to `lg:` with enhanced spacing. It does not explicitly define additional responsive behavior for the payment method or the Order Confirmation page. (画面項目設計書 §3.2; ad details: §4.2) |
+
+---
+
+## 12. Cross-References
 
 | Related Document | Purpose |
 |---|---|

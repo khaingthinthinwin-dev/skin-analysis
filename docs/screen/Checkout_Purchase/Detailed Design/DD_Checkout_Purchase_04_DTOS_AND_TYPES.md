@@ -560,7 +560,91 @@ Maps every DTO field to its DATABASE_SPEC source column and native type.
 
 ---
 
-## 7. Cross-References
+## 7. Frontend Types
+
+The current frontend Checkout page does not declare additional checkout-specific TypeScript interfaces or enums in `Checkout.tsx`. The checkout feature hook and service files are also currently empty; the frontend contracts therefore reuse the existing DTO-aligned types documented in DD_CHECK-02 rather than introducing duplicate types.
+
+| Frontend Type | Source | Usage |
+|---------------|--------|-------|
+| `ShippingAddressInput` | DD_CHECK-02 §5.1 (`shippingAddressSchema`) | Shipping address form values submitted as the `shippingAddress` field of `PlaceOrderDto`. |
+| `CouponCodeInput` | DD_CHECK-02 §5.2 (`couponCodeSchema`) | Coupon form values submitted for coupon validation through `ValidateCouponDto`. |
+| `PaymentMethod` | This document §4.2 | Payment method value used by the order-placement request and confirmation response. |
+| `DiscountType` | This document §4.1 | Discount type returned by coupon validation. |
+| `OrderStatus` | This document §4.4 | Order status returned for order confirmation. |
+| `ErrorResponse` | This document §5.1 | Shared API error envelope consumed by frontend error handling. |
+| `CheckoutErrorCode` | This document §5.2 | Checkout error-code contract used when interpreting API failures. |
+
+The request and response field shapes consumed by the frontend are the DTOs defined in this document's §2 and §3; no additional frontend-only DTO type is defined here.
+
+## 8. Database Column Mapping Reference
+
+The following reference maps the request and response DTO fields in §2 and §3 to database columns named in DATABASE_SPEC. Derived values, JSONB members, and response fields without a direct persisted column are identified explicitly.
+
+### 8.1 Request DTO Fields
+
+| DTO | Field | Database Mapping | Mapping Type |
+|-----|-------|------------------|--------------|
+| `ValidateCouponDto` | `couponCode` | `promotions.code` | Direct column |
+| `ValidateCouponDto` | `cartSubtotal` | `cart_items.quantity` × `products.price` | Derived |
+| `PlaceOrderDto` | `shippingAddress.recipientName` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `shippingAddress.phone` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `shippingAddress.addressLine1` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `shippingAddress.addressLine2` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `shippingAddress.city` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `shippingAddress.state` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `shippingAddress.postalCode` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `shippingAddress.country` | `orders.shipping_address` JSONB member | JSONB member |
+| `PlaceOrderDto` | `paymentMethod` | `orders.payment_method` | Direct column |
+| `PlaceOrderDto` | `couponCode` | `orders.coupon_code` | Direct column |
+| `PlaceOrderDto` | `notes` | `orders.notes` | Direct column |
+| `AdSlotQueryDto` | `placement` | No direct column in the named `advertisements` schema; used by the ad-slot selection query. | Service/query parameter |
+
+### 8.2 Response DTO Fields
+
+| DTO | Field | Database Mapping | Mapping Type |
+|-----|-------|------------------|--------------|
+| `CheckoutLoadResponseDto` | `items` | `cart_items` joined with `products` | Joined response |
+| `CheckoutLoadResponseDto` | `subtotal` | `cart_items.quantity` × `products.price` | Derived |
+| `CheckoutLoadResponseDto` | `discountAmount` | `promotions.discount_value` and `promotions.discount_type` | Calculated from promotion |
+| `CheckoutLoadResponseDto` | `total` | `subtotal - discountAmount` | Derived |
+| `CheckoutLoadResponseDto` | `cartId` | `carts.id` | Direct column |
+| `CartItemDto` | `id` | `cart_items.id` | Direct column |
+| `CartItemDto` | `productId` | `cart_items.product_id` | Direct column |
+| `CartItemDto` | `productName` | `products.name` | Joined column |
+| `CartItemDto` | `productImage` | `products.images[0]` | Derived from array column |
+| `CartItemDto` | `unitPrice` | `products.price` | Joined column |
+| `CartItemDto` | `quantity` | `cart_items.quantity` | Direct column |
+| `CartItemDto` | `lineTotal` | `cart_items.quantity` × `products.price` | Derived |
+| `CartItemDto` | `stockQuantity` | `products.stock_quantity` | Joined column |
+| `CouponValidationResponseDto` | `discountType` | `promotions.discount_type` | Direct column |
+| `CouponValidationResponseDto` | `discountValue` | `promotions.discount_value` | Direct column |
+| `CouponValidationResponseDto` | `discountAmount` | Calculated from `promotions.discount_type`, `promotions.discount_value`, and subtotal | Derived |
+| `CouponValidationResponseDto` | `newTotal` | subtotal − calculated discount | Derived |
+| `OrderConfirmationResponseDto` | `orderId` | `orders.id` | Direct column |
+| `OrderConfirmationResponseDto` | `orderNumber` | First 8 characters of `orders.id` | Derived |
+| `OrderConfirmationResponseDto` | `status` | `orders.status` | Direct column |
+| `OrderConfirmationResponseDto` | `subtotal` | Sum of `order_items.total_price` for the order | Derived from order items; no `orders.subtotal` column is defined in DATABASE_SPEC |
+| `OrderConfirmationResponseDto` | `discountAmount` | `orders.discount_amount` | Direct column |
+| `OrderConfirmationResponseDto` | `total` | `orders.total_amount` | Direct column |
+| `OrderConfirmationResponseDto` | `paymentMethod` | `orders.payment_method` | Direct column |
+| `OrderConfirmationResponseDto` | `shippingAddress` | `orders.shipping_address` JSONB | JSONB object |
+| `OrderConfirmationResponseDto` | `createdAt` | `orders.created_at` | Direct column |
+| `OrderConfirmationResponseDto` | `estimatedDelivery` | No direct column in the named `orders` schema; calculated by application logic. | Derived |
+| `AdSlotResponseDto` | `id` | `advertisements.id` | Direct column |
+| `AdSlotResponseDto` | `imageUrl` | `advertisements.image_url` | Direct column |
+| `AdSlotResponseDto` | `title` | `advertisements.title` | Direct column |
+| `AdSlotResponseDto` | `description` | `advertisements.content` | Contract field mapped from database content |
+| `AdSlotResponseDto` | `ctaText` | No direct `cta_text` column is defined; the named advertisement schema contains `announcement_message`. | No direct column |
+| `AdSlotResponseDto` | `ctaUrl` | `advertisements.link_url` | Contract field mapped from database link URL |
+| `AdSlotResponseDto` | `priority` | No direct `priority` column is defined in the named `advertisements` schema; tier selection is handled by ad-package/business rules. | Service/business rule |
+| `AdSlotResponseDto` | `scheduleStart` | `advertisements.starts_at` | Contract field mapped from database start time |
+| `AdSlotResponseDto` | `scheduleEnd` | `advertisements.expires_at` | Contract field mapped from database end time |
+
+The physical column names and types in this section are sourced from DATABASE_SPEC §3.6, §3.9, §3.10, §3.12, §3.13, §3.24, and §3.25, together with the checkout mappings in DD_CHECK-05 §2 and §3.
+
+---
+
+## 9. Cross-References
 
 | Related Document | Purpose |
 |------------------|---------|
