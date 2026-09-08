@@ -89,15 +89,8 @@ export class WishlistService {
 
   async getWishlistItems(userId: string) {
     const normalizedUserId = String(userId ?? '').trim();
-    console.log(
-      '[wishlist.service] getWishlistItems userId:',
-      normalizedUserId,
-    );
 
     if (!normalizedUserId || normalizedUserId === 'undefined') {
-      console.error(
-        '[wishlist.service] Missing/invalid userId for wishlist query',
-      );
       return {
         items: [],
         totalCount: 0,
@@ -130,8 +123,6 @@ export class WishlistService {
       orderBy: { createdAt: 'desc' },
     });
 
-    console.log('[wishlist.service] raw wishlist rows:', items.length, items);
-
     const wishlistItems = items.map((item) => ({
       id: item.id,
       productId: item.product.id,
@@ -156,7 +147,6 @@ export class WishlistService {
       totalCount: wishlistItems.length,
     };
 
-    console.log('[wishlist.service] wishlist result:', result);
     return result;
   }
 

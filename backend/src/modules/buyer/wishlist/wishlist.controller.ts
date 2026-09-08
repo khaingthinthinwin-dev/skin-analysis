@@ -32,15 +32,8 @@ export class WishlistController {
   @Get()
   @ApiOperation({ summary: 'Get user wishlist items' })
   async getWishlist(@CurrentUser() user: AuthUser) {
-    console.log('[wishlist.controller] GET /wishlist user:', user);
-    try {
-      const result = await this.wishlistService.getWishlistItems(user.id);
-      console.log('[wishlist.controller] GET /wishlist result:', result);
-      return { data: result };
-    } catch (error) {
-      console.error('[wishlist.controller] GET /wishlist error:', error);
-      throw error;
-    }
+    const result = await this.wishlistService.getWishlistItems(user.id);
+    return { data: result };
   }
 
   @Delete()

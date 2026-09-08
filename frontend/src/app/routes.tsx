@@ -39,6 +39,11 @@ const BuyerProductDetail = lazy(() => import('@/pages/buyer/ProductDetail'))
 const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
 const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
+const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
+// TODO: Uncomment when pages are implemented
+// const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
+// const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
+// const BuyerOrderTracking = lazy(() => import('@/pages/buyer/OrderTracking'))
 const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysis'))
 const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRecommendations'))
 
@@ -272,6 +277,39 @@ export const router = createBrowserRouter([
                   </SuspenseWrapper>
                 ),
               },
+              {
+                path: 'checkout/confirmation/:orderId',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrderConfirmation />
+                  </SuspenseWrapper>
+                ),
+              },
+              // TODO: Uncomment when pages are implemented
+              // {
+              //   path: 'orders',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderHistory />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
+              // {
+              //   path: 'orders/:orderId',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderDetail />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
+              // {
+              //   path: 'orders/:orderId/tracking',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderTracking />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
               {
                 path: 'skin-analysis',
                 element: (
