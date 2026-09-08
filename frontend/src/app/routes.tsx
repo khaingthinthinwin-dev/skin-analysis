@@ -14,6 +14,7 @@ const About = lazy(() => import('@/pages/About'))
 const Login = lazy(() => import('@/pages/auth/Login'))
 const Register = lazy(() => import('@/pages/auth/Register'))
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'))
+const VerifyCode = lazy(() => import('@/pages/auth/VerifyCode'))
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const Profile = lazy(() => import('@/pages/shared/Profile'))
 const Notifications = lazy(() => import('@/pages/shared/Notifications'))
@@ -38,6 +39,11 @@ const BuyerProductDetail = lazy(() => import('@/pages/buyer/ProductDetail'))
 const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
 const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
+const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
+// TODO: Uncomment when pages are implemented
+// const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
+// const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
+// const BuyerOrderTracking = lazy(() => import('@/pages/buyer/OrderTracking'))
 const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysis'))
 const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRecommendations'))
 
@@ -71,6 +77,14 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <About />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'products',
+        element: (
+          <SuspenseWrapper>
+            <BuyerSearchFilter />
           </SuspenseWrapper>
         ),
       },
@@ -264,6 +278,39 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'checkout/confirmation/:orderId',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrderConfirmation />
+                  </SuspenseWrapper>
+                ),
+              },
+              // TODO: Uncomment when pages are implemented
+              // {
+              //   path: 'orders',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderHistory />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
+              // {
+              //   path: 'orders/:orderId',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderDetail />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
+              // {
+              //   path: 'orders/:orderId/tracking',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderTracking />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
+              {
                 path: 'skin-analysis',
                 element: (
                   <SuspenseWrapper>
@@ -419,6 +466,16 @@ export const router = createBrowserRouter([
       <AuthLayout>
         <SuspenseWrapper>
           <ForgotPassword />
+        </SuspenseWrapper>
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/verify-code',
+    element: (
+      <AuthLayout>
+        <SuspenseWrapper>
+          <VerifyCode />
         </SuspenseWrapper>
       </AuthLayout>
     ),

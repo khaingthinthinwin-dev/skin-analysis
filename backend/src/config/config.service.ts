@@ -21,3 +21,9 @@ export const jwtConfig = registerAs('jwt', () => ({
   accessExpiration: process.env.JWT_ACCESS_EXPIRATION || '15m',
   refreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
 }));
+
+export const mailConfig = registerAs('mail', () => ({
+  user: process.env.GMAIL_USER || '',
+  pass: process.env.GMAIL_PASS || '',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+}));

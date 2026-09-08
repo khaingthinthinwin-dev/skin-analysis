@@ -13,7 +13,7 @@ import {
 } from './dto';
 
 @ApiTags('search')
-@Controller()
+@Controller('search')
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 

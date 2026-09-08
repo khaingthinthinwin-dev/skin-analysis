@@ -11,7 +11,7 @@ import {
   MaxLength,
   ArrayMaxSize,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export enum SortField {
   PRICE = 'price',
@@ -55,12 +55,23 @@ export class ProductQueryDto {
     description: 'Skin type filter',
   })
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (Array.isArray(value)) return value as SkinType[];
+    if (typeof value === 'string')
+      return value.split(',').filter(Boolean) as SkinType[];
+    return undefined;
+  })
   @IsArray()
   @IsEnum(SkinType, { each: true, message: 'Invalid skin type' })
   skinTypes?: SkinType[];
 
   @ApiPropertyOptional({ type: [String], description: 'Ingredient filter' })
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (Array.isArray(value)) return value as string[];
+    if (typeof value === 'string') return value.split(',').filter(Boolean);
+    return undefined;
+  })
   @IsArray()
   @IsString({ each: true })
   @ArrayMaxSize(50)
@@ -68,6 +79,11 @@ export class ProductQueryDto {
 
   @ApiPropertyOptional({ type: [String], description: 'Product tag filter' })
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (Array.isArray(value)) return value as string[];
+    if (typeof value === 'string') return value.split(',').filter(Boolean);
+    return undefined;
+  })
   @IsArray()
   @IsString({ each: true })
   @ArrayMaxSize(20)

@@ -42,7 +42,7 @@ export interface CreateProductData {
   description: string
   categoryId: string
   sku?: string
-  price: number
+  price?: number | null
   compareAtPrice?: number
   stockQuantity: number
   lowStockThreshold?: number

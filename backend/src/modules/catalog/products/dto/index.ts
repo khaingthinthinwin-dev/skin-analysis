@@ -6,3 +6,4 @@ export * from './bulk-delete.dto';
 export * from './delete-all-products.dto';
 export * from './product-query.dto';
 export * from './compare-price.validator';
+export * from './stock-threshold.validator';

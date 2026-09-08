@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   User,
   ForgotPasswordData,
+  VerifyCodeData,
   ResetPasswordData,
   CreateAdminData,
   MessageResponse,
@@ -43,6 +44,11 @@ export const authService = {
 
   forgotPassword: async (data: ForgotPasswordData): Promise<MessageResponse> => {
     const response = await apiClient.post<{ data: MessageResponse }>('/auth/forgot-password', data)
+    return response.data.data
+  },
+
+  verifyCode: async (data: VerifyCodeData): Promise<MessageResponse> => {
+    const response = await apiClient.post<{ data: MessageResponse }>('/auth/verify-code', data)
     return response.data.data
   },
 

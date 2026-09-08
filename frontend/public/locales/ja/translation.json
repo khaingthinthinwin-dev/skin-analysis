@@ -78,6 +78,41 @@
       },
       "agreeToTerms": "利用規約に同意します",
       "termsOfService": "利用規約"
+    },
+    "forgotPassword": {
+      "title": "パスワードをお忘れですか？",
+      "description": "メールアドレスを入力すると、認証コードを送信します。",
+      "email": "メールアドレス",
+      "emailPlaceholder": "user@example.com",
+      "submit": "認証コードを送信",
+      "submitting": "送信中...",
+      "backToLogin": "ログインに戻る"
+    },
+    "verifyCode": {
+      "title": "認証コードを入力",
+      "description": "{{email}} に6桁のコードを送信しました",
+      "codeLabel": "認証コード",
+      "codePlaceholder": "000000",
+      "submit": "コードを確認",
+      "verifying": "確認中...",
+      "resend": "コードを再送信",
+      "resendCooldown": "再送信まで{{seconds}}秒",
+      "resendSuccess": "新しい認証コードがメールに送信されました。",
+      "backToEmail": "メールアドレスに戻る"
+    },
+    "resetPassword": {
+      "title": "パスワードをリセット",
+      "description": "新しいパスワードを入力してください。",
+      "newPassword": "新しいパスワード",
+      "newPasswordPlaceholder": "新しいパスワードを作成",
+      "confirmPassword": "パスワード確認",
+      "confirmPasswordPlaceholder": "新しいパスワードを再入力",
+      "submit": "パスワードをリセット",
+      "submitting": "リセット中...",
+      "successTitle": "パスワードリセット成功",
+      "successMessage": "パスワードが正常にリセットされました。新しいパスワードでログインできます。",
+      "backToLogin": "ログインに戻る",
+      "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。"
     }
   },
   "home": {

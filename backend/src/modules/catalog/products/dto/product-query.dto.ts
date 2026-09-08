@@ -66,3 +66,23 @@ export class ProductQueryDto {
   @IsString()
   isFeatured?: string;
 }
+
+export class ReviewQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  limit?: number = 20;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['newest', 'oldest', 'highest', 'lowest'])
+  sortBy?: string = 'newest';
+}
