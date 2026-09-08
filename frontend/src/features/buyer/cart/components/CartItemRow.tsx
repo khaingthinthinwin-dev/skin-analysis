@@ -5,6 +5,14 @@ import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { StockBadge } from '@/components/common/StockBadge';
 import type { CartItem } from '@/types/wishlist-cart.types';
 
+function getImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+  const base = raw.replace(/\/api\/v1\/?$/, '');
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
 interface CartItemRowProps {
   item: CartItem;
   onQuantityChange: (cartItemId: string, quantity: number) => void;
@@ -30,7 +38,7 @@ export function CartItemRow({
       {item.productImage ? (
         <Link to={`/buyer/products/${item.productSlug}`}>
           <img
-            src={item.productImage}
+            src={getImageUrl(item.productImage)}
             alt={item.productName}
             className="h-20 w-20 rounded-md object-cover"
           />

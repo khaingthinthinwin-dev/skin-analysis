@@ -1,8 +1,17 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
-import { ShoppingCart, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { ShoppingCart, Trash2, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { WishlistItem } from '@/types/wishlist-cart.types';
+
+function getImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+  const base = raw.replace(/\/api\/v1\/?$/, '');
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
 
 interface WishlistItemCardProps {
   item: WishlistItem;
@@ -19,32 +28,35 @@ export function WishlistItemCard({
   isMoving,
   isRemoving,
 }: WishlistItemCardProps) {
+  const [imgError, setImgError] = useState(false);
+  const imageUrl = getImageUrl(item.productImage);
+
   return (
     <Card className="group overflow-hidden border-border/80 shadow-xs transition-transform hover:-translate-y-1">
-      <div className="relative h-44 bg-gradient-to-tr from-purple-100/60 via-purple-50/30 to-pink-100/60 flex items-center justify-center p-4">
-        {item.productImage ? (
-          <Link to={`/buyer/products/${item.productSlug}`}>
-            <img
-              src={item.productImage}
-              alt={item.productName}
-              className="h-28 w-28 rounded-2xl object-cover shadow-md"
-            />
-          </Link>
+      <Link to={`/buyer/products/${item.productSlug}`} className="relative block aspect-square w-full bg-muted">
+        {imageUrl && !imgError ? (
+          <img
+            src={imageUrl}
+            alt={item.productName}
+            className="h-full w-full object-cover"
+            onError={() => setImgError(true)}
+          />
         ) : (
-          <Link
-            to={`/buyer/products/${item.productSlug}`}
-            className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/80 shadow-md"
-          >
-            <Sparkles className="h-10 w-10 text-purple-600" />
-          </Link>
+          <div className="flex h-full items-center justify-center">
+            <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
+          </div>
         )}
 
         <Button
           size="icon"
           variant="ghost"
           disabled={isRemoving}
-          className="absolute top-3 right-3 text-destructive hover:text-destructive/80 transition-colors"
-          onClick={() => onRemove(item.productId)}
+          className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm text-destructive hover:text-destructive/80 transition-colors"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRemove(item.productId);
+          }}
           aria-label={`Remove ${item.productName} from wishlist`}
         >
           {isRemoving ? (
@@ -53,7 +65,7 @@ export function WishlistItemCard({
             <Trash2 className="h-4 w-4" />
           )}
         </Button>
-      </div>
+      </Link>
 
       <CardContent className="p-4 space-y-3">
         <div>
@@ -68,7 +80,7 @@ export function WishlistItemCard({
           </Link>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+        <div className="flex items-center justify-between">
           <div className="flex items-end gap-2">
             <span className="text-base font-extrabold text-foreground">
               {item.productPrice}
@@ -83,7 +95,7 @@ export function WishlistItemCard({
           <Button
             size="sm"
             disabled={!item.isInStock || isMoving}
-            className="gap-1.5 bg-primary text-xs font-bold"
+            className="gap-1 text-xs"
             onClick={() => onMoveToCart(item.productId)}
           >
             {isMoving ? (
