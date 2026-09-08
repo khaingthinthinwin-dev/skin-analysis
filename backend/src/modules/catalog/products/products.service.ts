@@ -333,7 +333,10 @@ export class ProductsService {
       slug = await this.ensureSlugUnique(baseSlug, merchantId, id);
     }
 
-    const retainedUrls = dto.retainedImageUrls || [];
+    const retainedUrls =
+      dto.retainedImageUrls !== undefined
+        ? dto.retainedImageUrls
+        : existing.images || [];
     const finalImages = [...retainedUrls, ...newImages];
 
     if (finalImages.length > 10) {
