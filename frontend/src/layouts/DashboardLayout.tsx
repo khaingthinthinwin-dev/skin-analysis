@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
@@ -8,6 +8,12 @@ import { Sidebar } from '@/components/layout/Sidebar'
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">

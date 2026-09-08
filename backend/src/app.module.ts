@@ -13,6 +13,7 @@ import { OrdersModule } from './modules/buyer/orders/orders.module';
 import { ProductsModule } from './modules/catalog/products/products.module';
 import { CategoriesModule } from './modules/catalog/categories/categories.module';
 import { SearchModule } from './modules/catalog/search/search.module';
+import { AdvertisementsModule } from './modules/merchant/advertisements/advertisements.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -32,6 +33,7 @@ import { AppService } from './app.service';
     ProductsModule,
     CategoriesModule,
     SearchModule,
+    AdvertisementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

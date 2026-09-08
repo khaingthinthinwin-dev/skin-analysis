@@ -159,8 +159,8 @@ export class SearchService {
       linkUrl: ad.linkUrl,
       tier: 'standard',
       approvalStatus: ad.approvalStatus,
-      startsAt: ad.startsAt,
-      expiresAt: ad.expiresAt,
+      startsAt: ad.startsAt!,
+      expiresAt: ad.expiresAt!,
     }));
 
     const result = { data };
