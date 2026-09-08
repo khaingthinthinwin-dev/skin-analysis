@@ -15,6 +15,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useOrderDetail } from '@/features/buyer/checkout/hooks/useCheckout';
 
+function getImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+  const base = raw.replace(/\/api\/v1\/?$/, '');
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
 function formatCurrency(amount: string): string {
   return `$${parseFloat(amount).toFixed(2)}`;
 }
@@ -141,9 +149,17 @@ export default function OrderConfirmation() {
                   key={item.id}
                   className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/30 p-3"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-background border border-border/50">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                  </div>
+                  {item.productImage ? (
+                    <img
+                      src={getImageUrl(item.productImage)}
+                      alt={item.productName}
+                      className="h-10 w-10 shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-background border border-border/50">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
                       <Badge

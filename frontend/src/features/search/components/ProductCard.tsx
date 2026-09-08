@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Star, ShoppingCart, Heart } from 'lucide-react'
+import { Star, ShoppingCart, Heart, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { ProductSummary, ViewMode } from '@/types/search.types'
@@ -7,6 +7,11 @@ import type { ProductSummary, ViewMode } from '@/types/search.types'
 interface ProductCardProps {
   product: ProductSummary
   view: ViewMode
+  isInWishlist?: boolean
+  onWishlistToggle?: (product: ProductSummary) => void
+  onAddToCart?: (product: ProductSummary) => void
+  isWishlistLoading?: boolean
+  isCartLoading?: boolean
 }
 
 function getImageUrl(url: string | null | undefined): string {
@@ -18,7 +23,7 @@ function getImageUrl(url: string | null | undefined): string {
   return `${base}${url.startsWith('/') ? url : `/${url}`}`
 }
 
-export function ProductCard({ product, view }: ProductCardProps) {
+export function ProductCard({ product, view, isInWishlist = false, onWishlistToggle, onAddToCart, isWishlistLoading = false, isCartLoading = false }: ProductCardProps) {
   const imageUrl = getImageUrl(Array.isArray(product.images) ? product.images[0] : null)
 
   if (view === 'list') {
@@ -54,8 +59,23 @@ export function ProductCard({ product, view }: ProductCardProps) {
                 </span>
                 <h3 className="truncate text-sm font-semibold">{product.name}</h3>
               </div>
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Heart className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onWishlistToggle?.(product)
+                }}
+                disabled={isWishlistLoading}
+                aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+              >
+                {isWishlistLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+                )}
               </Button>
             </div>
             <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{product.shortDescription}</p>
@@ -127,9 +147,19 @@ export function ProductCard({ product, view }: ProductCardProps) {
             variant="ghost"
             size="icon"
             className="absolute top-2 right-2 h-8 w-8"
-            onClick={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onWishlistToggle?.(product)
+            }}
+            disabled={isWishlistLoading}
+            aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
           >
-            <Heart className="h-4 w-4 text-foreground/80 hover:text-foreground" />
+            {isWishlistLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-foreground/80 hover:text-foreground'}`} />
+            )}
           </Button>
         </div>
       </Link>
@@ -175,8 +205,21 @@ export function ProductCard({ product, view }: ProductCardProps) {
             )}
           </div>
           {product.isInStock && (
-            <Button size="sm" className="gap-1 text-xs">
-              <ShoppingCart className="h-3.5 w-3.5" /> Add
+            <Button
+              size="sm"
+              className="gap-1 text-xs"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onAddToCart?.(product)
+              }}
+              disabled={isCartLoading}
+            >
+              {isCartLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShoppingCart className="h-3.5 w-3.5" />
+              )} Add
             </Button>
           )}
         </div>
