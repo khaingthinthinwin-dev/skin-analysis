@@ -70,7 +70,7 @@ const productFieldsSchema = z.object({
   isActive: z.boolean(),
   isFeatured: z.boolean(),
   retainedImageUrls: z.array(z.string()),
-  images: z.array(imageFileSchema).min(1, 'At least one image is required').max(10, 'Maximum 10 images allowed'),
+  images: z.array(imageFileSchema).max(10, 'Maximum 10 images allowed'),
 })
 
 const pricesSchema = <T extends { price?: number | null; compareAtPrice?: number }>(schema: z.ZodType<T>) =>
@@ -100,7 +100,16 @@ const stockThresholdSchema = <T extends { stockQuantity?: number; lowStockThresh
   },
 )
 
-export const createProductSchema = stockThresholdSchema(pricesSchema(productFieldsSchema))
+const newImagesRequiredSchema = <T extends { images?: File[] }>(schema: z.ZodType<T>) =>
+  schema.refine(
+  (data) => (data.images?.length ?? 0) >= 1,
+  {
+    message: 'At least one image is required',
+    path: ['images'],
+  },
+)
+
+export const createProductSchema = newImagesRequiredSchema(stockThresholdSchema(pricesSchema(productFieldsSchema)))
 
 export type CreateProductFormData = z.infer<typeof createProductSchema>
 export type ProductFormData = CreateProductFormData
