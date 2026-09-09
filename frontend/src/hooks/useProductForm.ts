@@ -48,7 +48,12 @@ export function useProductForm(options: {
                 : toNumOrUndefined(product.price),
             stockQuantity: toNum(product.stockQuantity),
             lowStockThreshold: toNum(product.lowStockThreshold),
-            skinTypes: product.skinTypes ?? [],
+            skinTypes: (product.skinTypes ?? []).flatMap((s: string) => {
+              const lower = s.toLowerCase()
+              return lower === 'all'
+                ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+                : lower
+            }),
             ingredients: product.ingredients ?? [],
             tags: product.tags ?? [],
             isActive: product.isActive,
