@@ -47,7 +47,7 @@ export default function ProductDetail() {
       <div className="container mx-auto px-4 py-12 text-center">
         <p className="text-muted-foreground mb-4">Product not found.</p>
         <Button asChild>
-          <a href="/buyer/search">Browse products</a>
+          <a href="/products">Browse products</a>
         </Button>
       </div>
     );

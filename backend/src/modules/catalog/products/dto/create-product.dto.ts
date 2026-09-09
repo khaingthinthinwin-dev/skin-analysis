@@ -8,12 +8,12 @@ import {
   IsArray,
   MaxLength,
   Min,
-  IsIn,
   Validate,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ComparePriceGreaterThanPriceValidator } from './compare-price.validator';
 import { StockQuantityNotLessThanThresholdValidator } from './stock-threshold.validator';
+import { ValidSkinTypesValidator } from './skin-types.validator';
 
 export class CreateProductDto {
   @IsString()
@@ -70,16 +70,20 @@ export class CreateProductDto {
     if (typeof value === 'string') {
       try {
         const parsed: unknown = JSON.parse(value);
-        return Array.isArray(parsed) ? (parsed as string[]) : [];
+        return Array.isArray(parsed)
+          ? (parsed as string[]).map((v) => String(v).toLowerCase())
+          : [];
       } catch {
         return [];
       }
     }
-    return Array.isArray(value) ? (value as string[]) : [];
+    return Array.isArray(value)
+      ? (value as string[]).map((v) => String(v).toLowerCase())
+      : [];
   })
   @IsArray()
   @IsString({ each: true })
-  @IsIn(['dry', 'oily', 'combination', 'sensitive', 'normal'], { each: true })
+  @Validate(ValidSkinTypesValidator)
   skinTypes?: string[];
 
   @IsOptional()
