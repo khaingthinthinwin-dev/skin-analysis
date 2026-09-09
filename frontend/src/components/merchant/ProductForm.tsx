@@ -46,6 +46,12 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     try {
       const submittedData = {
         ...data,
+        skinTypes: (data.skinTypes || []).flatMap((s: string) => {
+          const lower = s.toLowerCase()
+          return lower === 'all'
+            ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+            : lower
+        }),
         isFeatured: data.isFeatured === true,
       }
       if (mode === 'create') {
@@ -63,7 +69,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
       const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
       const backendMessage = axiosErr?.response?.data?.message
       const message = backendMessage
-        ? String(backendMessage)
+        ? Array.isArray(backendMessage)
+          ? backendMessage.join(', ')
+          : backendMessage
         : axiosErr?.message || 'Something went wrong. Please try again.'
       toast.error(message)
     }
@@ -184,7 +192,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 <Label>Skin Types</Label>
                 <div className="flex flex-wrap gap-2">
                   {SKIN_TYPES.map((st) => {
-                    const selected = (watch('skinTypes') || []).includes(st.value)
+                    const selected = (watch('skinTypes') || []).some(
+                      (s: string) => s.toLowerCase() === st.value,
+                    )
                     return (
                       <Button
                         key={st.value}
@@ -193,13 +203,14 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                         size="sm"
                         onClick={() => {
                           const current = watch('skinTypes') || []
+                          const normalized = current.map((s: string) => s.toLowerCase())
                           if (selected) {
                             setValue(
                               'skinTypes',
-                              current.filter((s: string) => s !== st.value),
+                              normalized.filter((s: string) => s !== st.value),
                             )
                           } else {
-                            setValue('skinTypes', [...current, st.value])
+                            setValue('skinTypes', [...normalized, st.value])
                           }
                         }}
                       >
@@ -208,6 +219,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                     )
                   })}
                 </div>
+                {errors.skinTypes && (
+                  <p className="text-sm text-destructive">{errors.skinTypes.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">

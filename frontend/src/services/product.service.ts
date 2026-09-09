@@ -26,6 +26,15 @@ export function normalizeProductUpdatePayload(data: UpdateProductData): UpdatePr
         : normalized.isFeatured === true
   }
 
+  if (normalized.skinTypes) {
+    normalized.skinTypes = normalized.skinTypes.flatMap((s) => {
+      const lower = s.toLowerCase()
+      return lower === 'all'
+        ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+        : lower
+    })
+  }
+
   return normalized
 }
 
@@ -74,7 +83,14 @@ export const productService = {
       formData.append('lowStockThreshold', String(data.lowStockThreshold))
     }
     if (data.skinTypes && data.skinTypes.length > 0) {
-      formData.append('skinTypes', JSON.stringify(data.skinTypes))
+      formData.append('skinTypes', JSON.stringify(
+        data.skinTypes.flatMap((s) => {
+          const lower = s.toLowerCase()
+          return lower === 'all'
+            ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+            : lower
+        }),
+      ))
     }
     if (data.ingredients && data.ingredients.length > 0) {
       formData.append('ingredients', JSON.stringify(data.ingredients))
