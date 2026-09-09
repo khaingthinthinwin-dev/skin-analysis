@@ -69,12 +69,12 @@ export function Header() {
         <div className="hidden md:flex items-center gap-2">
           <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
             <Link to="/buyer/wishlist" onClick={(e) => handleIconClick('wishlist', e)}>
-              <Heart className="h-5 w-5 text-muted-foreground transition-colors hover:text-primary" />
+              <Heart className="h-5 w-5" />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild aria-label="Cart">
             <Link to="/buyer/cart" onClick={(e) => handleIconClick('cart', e)}>
-              <ShoppingCart className="h-5 w-5 text-muted-foreground transition-colors hover:text-primary" />
+              <ShoppingCart className="h-5 w-5" />
             </Link>
           </Button>
           <LanguageToggle />
