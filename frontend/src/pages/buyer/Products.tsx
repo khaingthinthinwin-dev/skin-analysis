@@ -45,6 +45,7 @@ export default function Products() {
   const { items: cartItems, addToCart, isAdding: isCartLoading } = useCart()
 
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
+  const [loginRequiredModal, setLoginRequiredModal] = useState<'wishlist' | 'cart' | null>(null)
 
   useEffect(() => {
     localStorage.setItem(VIEW_MODE_KEY, view)
@@ -69,9 +70,7 @@ export default function Products() {
   const handleWishlistToggle = useCallback(
     async (product: ProductSummary) => {
       if (!isAuthenticated) {
-        toast.info('Please log in to add items to your wishlist.', {
-          action: { label: 'Log In', onClick: () => navigate('/login') },
-        })
+        setLoginRequiredModal('wishlist')
         return
       }
       if (!isBuyer) {
@@ -97,15 +96,13 @@ export default function Products() {
         }
       }
     },
-    [isAuthenticated, isBuyer, wishlistProductIds, addToWishlist, removeFromWishlist, navigate],
+    [isAuthenticated, isBuyer, wishlistProductIds, addToWishlist, removeFromWishlist],
   )
 
   const handleAddToCart = useCallback(
     async (product: ProductSummary) => {
       if (!isAuthenticated) {
-        toast.info('Please log in to add items to your cart.', {
-          action: { label: 'Log In', onClick: () => navigate('/login') },
-        })
+        setLoginRequiredModal('cart')
         return
       }
       if (!isBuyer) {
@@ -129,7 +126,7 @@ export default function Products() {
         }
       }
     },
-    [isAuthenticated, isBuyer, cartProductIds, addToCart, navigate],
+    [isAuthenticated, isBuyer, cartProductIds, addToCart],
   )
 
   const serializeToUrl = (p: SearchParams) => {
@@ -425,6 +422,23 @@ export default function Products() {
           </p>
           <DialogFooter>
             <Button onClick={() => setCartDuplicateOpen(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={loginRequiredModal !== null} onOpenChange={() => setLoginRequiredModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Log In Required</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {loginRequiredModal === 'wishlist'
+              ? 'Please log in to add items to your wishlist.'
+              : 'Please log in to add items to your cart.'}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLoginRequiredModal(null)}>Cancel</Button>
+            <Button onClick={() => { setLoginRequiredModal(null); navigate('/login?redirect=/buyer/search') }}>Log In</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
