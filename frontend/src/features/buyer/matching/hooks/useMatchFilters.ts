@@ -11,7 +11,7 @@ export function useMatchFilters() {
   );
 
   const updateFilters = useCallback((updates: Partial<MatchQueryParams>) => {
-    setSearchParams((prev) => {
+    setSearchParams((prev: URLSearchParams) => {
       const next = new URLSearchParams(prev);
 
       Object.entries(updates).forEach(([key, value]) => {
