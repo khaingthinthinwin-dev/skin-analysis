@@ -57,12 +57,11 @@ export default function ProductDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <SidebarAdvertisements idOrSlug={product.id} />
+
+      <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
         <ProductGallery images={product.images} name={product.name} />
-        <div className="space-y-4">
-          <ProductInfo product={product} />
-          <SidebarAdvertisements idOrSlug={product.id} />
-        </div>
+        <ProductInfo product={product} />
       </div>
 
       <ProductTabs product={product} />

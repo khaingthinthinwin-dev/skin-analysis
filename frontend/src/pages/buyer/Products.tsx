@@ -355,6 +355,7 @@ export default function Products() {
                     key={product.id}
                     product={product}
                     view={view}
+                    productLink={isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`}
                     isInWishlist={wishlistProductIds.has(product.id)}
                     onWishlistToggle={handleWishlistToggle}
                     onAddToCart={handleAddToCart}
@@ -438,7 +439,7 @@ export default function Products() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLoginRequiredModal(null)}>Cancel</Button>
-            <Button onClick={() => { setLoginRequiredModal(null); navigate('/login?redirect=/buyer/search') }}>Log In</Button>
+            <Button onClick={() => { setLoginRequiredModal(null); navigate('/login?redirect=/buyer/products') }}>Log In</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

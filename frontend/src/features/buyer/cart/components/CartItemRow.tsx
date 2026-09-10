@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { StockBadge } from '@/components/common/StockBadge';
+import { useAuth } from '@/hooks/useAuth';
 import type { CartItem } from '@/types/wishlist-cart.types';
 
 function getImageUrl(url: string | null | undefined): string {
@@ -28,6 +29,9 @@ export function CartItemRow({
   isUpdating,
   isRemoving,
 }: CartItemRowProps) {
+  const { isAuthenticated } = useAuth();
+  const productLink = isAuthenticated ? `/buyer/products/${item.productSlug}` : `/products/${item.productSlug}`;
+
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
     return `$${num.toFixed(2)}`;
@@ -36,7 +40,7 @@ export function CartItemRow({
   return (
     <div className="flex items-center gap-4 p-4 border-b border-border/50 last:border-0">
       {item.productImage ? (
-        <Link to={`/buyer/products/${item.productSlug}`}>
+        <Link to={productLink}>
           <img
             src={getImageUrl(item.productImage)}
             alt={item.productName}
@@ -45,14 +49,14 @@ export function CartItemRow({
         </Link>
       ) : (
         <Link
-          to={`/buyer/products/${item.productSlug}`}
+          to={productLink}
           className="block h-20 w-20 rounded-md bg-muted"
         />
       )}
 
       <div className="flex-1 min-w-0">
         <Link
-          to={`/buyer/products/${item.productSlug}`}
+          to={productLink}
           className="text-sm font-medium text-foreground hover:underline line-clamp-1"
         >
           {item.productName}

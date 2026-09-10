@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { ShoppingCart, Trash2, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
 import type { WishlistItem } from '@/types/wishlist-cart.types';
 
 function getImageUrl(url: string | null | undefined): string {
@@ -28,12 +29,14 @@ export function WishlistItemCard({
   isMoving,
   isRemoving,
 }: WishlistItemCardProps) {
+  const { isAuthenticated } = useAuth();
   const [imgError, setImgError] = useState(false);
   const imageUrl = getImageUrl(item.productImage);
+  const productLink = isAuthenticated ? `/buyer/products/${item.productSlug}` : `/products/${item.productSlug}`;
 
   return (
     <Card className="group overflow-hidden border-border/80 shadow-xs transition-transform hover:-translate-y-1">
-      <Link to={`/buyer/products/${item.productSlug}`} className="relative block aspect-square w-full bg-muted">
+      <Link to={productLink} className="relative block aspect-square w-full bg-muted">
         {imageUrl && !imgError ? (
           <img
             src={imageUrl}
@@ -73,7 +76,7 @@ export function WishlistItemCard({
             {item.category || 'Uncategorized'}
           </span>
           <Link
-            to={`/buyer/products/${item.productSlug}`}
+            to={productLink}
             className="block text-sm font-bold text-foreground line-clamp-1 mt-0.5 hover:text-primary hover:underline"
           >
             {item.productName}

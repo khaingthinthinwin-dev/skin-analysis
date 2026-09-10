@@ -1,22 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useSidebarAds } from '../hooks/useProductDetail';
 import { SidebarAdvertisement } from '../services/product.service';
+
+function getImageUrl(url: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+  const base = raw.replace(/\/api\/v1\/?$/, '');
+  return base + url;
+}
 
 interface SidebarAdvertisementsProps {
   idOrSlug: string;
 }
 
+const sampleAds = [
+  { shop: 'Aura & Essence', title: 'Hydrating Jade Set & Facial Gua Sha', desc: 'Handcrafted natural jade stone set designed to soothe skin and boost serum absorption.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
+  { shop: 'Glow Essentials', title: 'Summer Glow Collection', desc: 'Discover our bestselling serums and moisturizers — 20% off this week only.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
+  { shop: 'Dermaluxe Lab', title: 'Retinol Night Repair', desc: 'Clinically proven anti-aging serum. Free shipping on orders over $50.', image: '/uploads/products/347496ad-6e35-48f5-97c1-1b8e68545715.png' },
+  { shop: 'PureSkin Co.', title: 'Vitamin C Brightening Set', desc: 'Complete 3-step routine for radiant skin. Bundle & save 15%.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
+  { shop: 'Botanica Beauty', title: 'Organic Rose Mist', desc: 'Hydrating facial toner with real rose petals. Limited batch available.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
+];
+
 export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) {
   const { data: ads = [], isLoading, isError } = useSidebarAds(idOrSlug);
   const [current, setCurrent] = useState(0);
   const pausedRef = useRef(false);
-  const [paused, setPaused] = useState(false);
 
-  const total = ads.length > 0 ? ads.length : 5;
+  const total = ads.length > 0 ? ads.length : sampleAds.length;
 
   useEffect(() => {
     if (total <= 1) {
@@ -34,95 +47,28 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
 
   const handlePause = () => {
     pausedRef.current = true;
-    setPaused(true);
   };
   const handleResume = () => {
     if (total <= 1) return;
     pausedRef.current = false;
-    setPaused(false);
   };
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <Skeleton className="h-40 w-full rounded-lg" />
+        <Skeleton className="h-32 w-full rounded-lg" />
       </div>
     );
   }
 
-  if (isError || ads.length === 0) {
-    const sampleAds = [
-      { shop: 'Glow Essentials', title: 'Summer Glow Collection', desc: 'Discover our bestselling serums and moisturizers — 20% off this week only.' },
-      { shop: 'Dermaluxe Lab', title: 'Retinol Night Repair', desc: 'Clinically proven anti-aging serum. Free shipping on orders over $50.' },
-      { shop: 'PureSkin Co.', title: 'Vitamin C Brightening Set', desc: 'Complete 3-step routine for radiant skin. Bundle & save 15%.' },
-      { shop: 'Botanica Beauty', title: 'Organic Rose Mist', desc: 'Hydrating facial toner with real rose petals. Limited batch available.' },
-      { shop: 'AquaDerma', title: 'Hyaluronic Acid Boost', desc: 'Deep hydration for dry skin. Dermatologist recommended. Try it today.' },
-    ];
-    const ad = sampleAds[current];
+  const useFallback = isError || ads.length === 0;
+  const sampleAd = sampleAds[current % sampleAds.length];
+  const realAd = useFallback ? null : (ads[current % ads.length] as SidebarAdvertisement | undefined);
 
-    return (
-      <div
-        className="relative"
-        onMouseEnter={handlePause}
-        onMouseLeave={handleResume}
-        onFocus={handlePause}
-        onBlur={handleResume}
-      >
-        <Badge variant="secondary" className="mb-2">
-          Sponsored
-        </Badge>
-        <Card className="overflow-hidden">
-          <div className="h-36 w-full bg-gradient-to-br from-purple-100 via-pink-50 to-amber-50 dark:from-purple-950/40 dark:via-pink-950/30 dark:to-amber-950/30 flex items-center justify-center">
-            <div className="text-center px-4">
-              <p className="text-sm font-bold text-foreground">{ad.shop}</p>
-              <p className="text-xs text-muted-foreground mt-1">Premium skincare for radiant skin</p>
-            </div>
-          </div>
-          <div className="p-3">
-            <p className="font-medium">{ad.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{ad.desc}</p>
-          </div>
-        </Card>
-        <p className="text-xs text-muted-foreground">
-          Sponsored · {ad.shop}
-        </p>
-
-        <div className="mt-2 flex items-center justify-between">
-          <button
-            type="button"
-            aria-label="Previous advertisement"
-            onClick={() => setCurrent((c) => (c - 1 + sampleAds.length) % sampleAds.length)}
-            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <div className="flex items-center gap-1">
-            {sampleAds.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 w-1.5 rounded-full ${
-                  i === current ? 'bg-primary' : 'bg-muted-foreground/30'
-                }`}
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            aria-label="Next advertisement"
-            onClick={() => setCurrent((c) => (c + 1) % sampleAds.length)}
-            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="mt-1 text-center text-[10px] text-muted-foreground">
-          {paused ? 'Paused' : 'Auto-rotating'} · {current + 1}/{sampleAds.length}
-        </p>
-      </div>
-    );
-  }
-
-  const ad: SidebarAdvertisement = ads[current];
+  const title = useFallback ? sampleAd.title : (realAd?.title ?? '');
+  const description = useFallback ? sampleAd.desc : (realAd?.announcementMessage ?? null);
+  const imageUrl = useFallback ? sampleAd.image : (realAd?.imageUrl ?? null);
+  const linkUrl = useFallback ? '' : (realAd?.linkUrl ?? '');
 
   return (
     <div
@@ -132,100 +78,80 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
       onFocus={handlePause}
       onBlur={handleResume}
     >
-      <Badge variant="secondary" className="mb-2">
-        Sponsored
-      </Badge>
-      {ad.linkUrl ? (
-        <a
-          href={ad.linkUrl}
-          target="_blank"
-          rel="noopener noreferrer nofollow sponsored"
-          className="block"
-        >
-          <Card className="overflow-hidden">
-            {ad.imageUrl && (
-              <div className="h-36 w-full bg-muted">
+      <div className="relative overflow-hidden rounded-xl bg-[#f3f0ff] dark:bg-zinc-800">
+        {total > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous advertisement"
+              onClick={() => setCurrent((c) => (c - 1 + total) % total)}
+              className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next advertisement"
+              onClick={() => setCurrent((c) => (c + 1) % total)}
+              className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#e91e63] text-white shadow-sm transition-colors hover:bg-[#c2185b]"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+
+        <div className="px-12 py-4">
+          <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-[#7c3aed]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#7c3aed]">
+            Sponsored
+          </span>
+
+          <div className="flex gap-4">
+            {imageUrl && (
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-zinc-700">
                 <img
-                  src={ad.imageUrl}
-                  alt={ad.title}
+                  src={getImageUrl(imageUrl)}
+                  alt={title}
                   loading="lazy"
                   className="h-full w-full object-cover"
                 />
               </div>
             )}
-            <div className="p-3">
-              <p className="font-medium">{ad.title}</p>
-              {ad.announcementMessage && (
-                <p className="mt-1 text-sm text-muted-foreground">{ad.announcementMessage}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold leading-snug text-foreground">{title}</p>
+              {description && (
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{description}</p>
+              )}
+              {linkUrl && (
+                <a
+                  href={linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow sponsored"
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#7c3aed] hover:underline"
+                >
+                  Learn more <ExternalLink className="h-3 w-3" />
+                </a>
               )}
             </div>
-          </Card>
-        </a>
-      ) : (
-        <Card className="overflow-hidden">
-          {ad.imageUrl && (
-            <div className="h-36 w-full bg-muted">
-              <img
-                src={ad.imageUrl}
-                alt={ad.title}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
-          <div className="p-3">
-            <p className="font-medium">{ad.title}</p>
-            {ad.announcementMessage && (
-              <p className="mt-1 text-sm text-muted-foreground">{ad.announcementMessage}</p>
-            )}
           </div>
-        </Card>
-      )}
-      <p className="text-xs text-muted-foreground">
-        Sponsored · {ad.shopName}
-        {ad.shopSlug && (
-          <a href={`/shops/${ad.shopSlug}`} className="ml-1 text-blue-600 hover:underline">
-            Visit shop
-          </a>
-        )}
-      </p>
+        </div>
 
-      {total > 1 && (
-        <div className="mt-2 flex items-center justify-between">
-          <button
-            type="button"
-            aria-label="Previous advertisement"
-            onClick={() => setCurrent((c) => (c - 1 + total) % total)}
-            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <div className="flex items-center gap-1">
-            {ads.map((_, i) => (
-              <span
+        {total > 1 && (
+          <div className="flex items-center justify-center gap-1.5 pb-3">
+            {Array.from({ length: total }).map((_, i) => (
+              <button
                 key={i}
-                className={`h-1.5 w-1.5 rounded-full ${
-                  i === current ? 'bg-primary' : 'bg-muted-foreground/30'
+                type="button"
+                aria-label={`Go to advertisement ${i + 1}`}
+                aria-current={i === current ? 'true' : undefined}
+                onClick={() => setCurrent(i)}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === current ? 'w-4 bg-[#7c3aed]' : 'w-1.5 bg-muted-foreground/30'
                 }`}
               />
             ))}
           </div>
-          <button
-            type="button"
-            aria-label="Next advertisement"
-            onClick={() => setCurrent((c) => (c + 1) % total)}
-            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {total > 1 && (
-        <p className="mt-1 text-center text-[10px] text-muted-foreground">
-          {paused ? 'Paused' : 'Auto-rotating'} · {current + 1}/{total}
-        </p>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import type { ProductSummary, ViewMode } from '@/types/search.types'
 interface ProductCardProps {
   product: ProductSummary
   view: ViewMode
+  productLink: string
   isInWishlist?: boolean
   onWishlistToggle?: (product: ProductSummary) => void
   onAddToCart?: (product: ProductSummary) => void
@@ -23,13 +24,13 @@ function getImageUrl(url: string | null | undefined): string {
   return `${base}${url.startsWith('/') ? url : `/${url}`}`
 }
 
-export function ProductCard({ product, view, isInWishlist = false, onWishlistToggle, onAddToCart, isWishlistLoading = false, isCartLoading = false }: ProductCardProps) {
+export function ProductCard({ product, view, productLink, isInWishlist = false, onWishlistToggle, onAddToCart, isWishlistLoading = false, isCartLoading = false }: ProductCardProps) {
   const imageUrl = getImageUrl(Array.isArray(product.images) ? product.images[0] : null)
 
   if (view === 'list') {
     return (
       <Link
-        to={`/buyer/products/${product.slug}`}
+        to={productLink}
         className="block rounded-lg border bg-card transition-shadow hover:shadow-md"
       >
         <div className="flex gap-4 p-4">
@@ -105,7 +106,7 @@ export function ProductCard({ product, view, isInWishlist = false, onWishlistTog
 
   return (
     <Card className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
-      <Link to={`/buyer/products/${product.slug}`} className="block">
+      <Link to={productLink} className="block">
         <div className="relative aspect-square bg-muted">
           {imageUrl ? (
             <>

@@ -254,6 +254,14 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'products',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerSearchFilter />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'products/:id',
                 element: (
                   <SuspenseWrapper>
