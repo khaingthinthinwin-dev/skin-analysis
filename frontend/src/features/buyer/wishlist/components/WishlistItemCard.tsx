@@ -32,7 +32,7 @@ export function WishlistItemCard({
   const { isAuthenticated } = useAuth();
   const [imgError, setImgError] = useState(false);
   const imageUrl = getImageUrl(item.productImage);
-  const productLink = isAuthenticated ? `/buyer/products/${item.productSlug}` : `/products/${item.productSlug}`;
+  const productLink = isAuthenticated ? `/buyer/wishlist/products/${item.productSlug}` : `/products/${item.productSlug}`;
 
   return (
     <Card className="group overflow-hidden border-border/80 shadow-xs transition-transform hover:-translate-y-1">

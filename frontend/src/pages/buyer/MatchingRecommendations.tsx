@@ -302,7 +302,7 @@ export default function MatchingRecommendations() {
 
                         <Link
                           to={`/buyer/products/${product.slug}`}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
                           className="hidden sm:flex w-9 h-9 rounded-full bg-purple-100 items-center justify-center hover:bg-purple-200 transition-colors"
                         >
                           <ShoppingCart className="h-4 w-4 text-purple-700" />

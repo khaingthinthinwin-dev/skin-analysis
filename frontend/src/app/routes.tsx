@@ -278,6 +278,14 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'wishlist/products/:id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerProductDetail />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'cart',
                 element: (
                   <SuspenseWrapper>
