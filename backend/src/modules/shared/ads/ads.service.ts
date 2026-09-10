@@ -7,7 +7,7 @@ export class AdsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAdsByPlacement(placement: string) {
+  async getAdsByPlacement(placement: string, _sessionId?: string) {
     const now = new Date();
 
     try {
@@ -15,7 +15,9 @@ export class AdsService {
         where: {
           isActive: true,
           approvalStatus: 'approved',
-          expiresAt: { gte: now },
+          paymentStatus: 'completed',
+          startsAt: { lte: now },
+          expiresAt: { gt: now },
         },
         include: {
           shop: {
@@ -25,36 +27,47 @@ export class AdsService {
             },
           },
         },
-        take: 10,
-        orderBy: { createdAt: 'desc' },
+        take: 5,
+        orderBy: [{ paymentAmount: 'desc' }, { createdAt: 'desc' }],
       });
 
-      return ads.map((ad) => ({
-        id: ad.id,
-        title: ad.title,
-        description: ad.content,
-        imageUrl: ad.imageUrl || '',
-        ctaText: ad.announcementMessage,
-        ctaUrl: ad.linkUrl,
+      return {
+        data: ads.map((ad) => ({
+          adId: ad.id,
+          title: ad.title,
+          description: ad.content,
+          imageUrl: ad.imageUrl || '',
+          linkUrl: ad.linkUrl || null,
+          ctaText: ad.announcementMessage || 'Shop Now',
+          priorityAmount: ad.paymentAmount?.toString() || null,
+          shopName: ad.shop.name,
+        })),
         placement,
-        shopName: ad.shop.name,
-      }));
+        meta: {
+          total: ads.length,
+          maxAds: 5,
+        },
+      };
     } catch (error) {
       this.logger.error(
         `Failed to fetch ads for placement "${placement}"`,
         error,
       );
-      return [];
+      return {
+        data: [],
+        placement,
+        meta: { total: 0, maxAds: 5 },
+      };
     }
   }
 
   trackClick(adId: string, placement?: string) {
     this.logger.log(`Ad click tracked: ${adId} at ${placement ?? 'unknown'}`);
-    return { success: true, adId };
+    return { data: { recorded: true } };
   }
 
   trackImpression(adIds: string[]) {
     this.logger.log(`Ad impressions tracked: ${adIds.length} ads`);
-    return { success: true, count: adIds.length };
+    return { data: { recorded: adIds.length } };
   }
 }

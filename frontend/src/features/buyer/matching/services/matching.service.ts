@@ -3,36 +3,36 @@ import type { MatchQueryParams, RecommendationResponse, AdPanelResponse, History
 
 export const matchingService = {
   async getPersonalized(params: MatchQueryParams): Promise<RecommendationResponse> {
-    // TODO: Implement API call
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) searchParams.set(key, String(value))
     })
-    return apiClient.get(`/recommendations/personalized?${searchParams.toString()}`)
+    const response = await apiClient.get<{ data: RecommendationResponse }>(`/recommendations/personalized?${searchParams.toString()}`)
+    return response.data.data
   },
 
   async getSimilar(productId: string): Promise<RecommendationResponse> {
-    // TODO: Implement API call
-    return apiClient.get(`/recommendations/similar/${productId}`)
+    const response = await apiClient.get<{ data: RecommendationResponse }>(`/recommendations/similar/${productId}`)
+    return response.data.data
   },
 
   async getHistory(page = 1, limit = 20): Promise<HistoryResponse> {
-    // TODO: Implement API call
-    return apiClient.get(`/recommendations/history?page=${page}&limit=${limit}`)
+    const response = await apiClient.get<{ data: HistoryResponse }>(`/recommendations/history?page=${page}&limit=${limit}`)
+    return response.data.data
   },
 
-  async getAdPanel(): Promise<AdPanelResponse> {
-    // TODO: Implement API call
-    return apiClient.get('/ads/panel?placement=category_banner')
+  async getAdPanel(placement: string, sessionId?: string): Promise<AdPanelResponse> {
+    const params = new URLSearchParams({ placement })
+    if (sessionId) params.set('sessionId', sessionId)
+    const response = await apiClient.get<{ data: AdPanelResponse }>(`/ads/panel?${params.toString()}`)
+    return response.data.data
   },
 
   async trackImpression(adIds: string[]): Promise<void> {
-    // TODO: Implement API call
     await apiClient.post('/ads/track/impression', { adIds })
   },
 
   async trackClick(adId: string): Promise<void> {
-    // TODO: Implement API call
     await apiClient.post('/ads/track/click', { adId })
   },
 }

@@ -14,6 +14,7 @@ import { OrdersModule } from './modules/buyer/orders/orders.module';
 import { CategoriesModule } from './modules/catalog/categories/categories.module';
 import { SearchModule } from './modules/catalog/search/search.module';
 import { AdsModule } from './modules/shared/ads/ads.module';
+import { MatchingModule } from './modules/buyer/matching/matching.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -35,6 +36,7 @@ import { AppService } from './app.service';
     CategoriesModule,
     SearchModule,
     AdsModule,
+    MatchingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
