@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Link } from 'react-router'
+import { useAuth } from '@/hooks/useAuth'
 import type { RecommendationProduct } from '@/schemas/matching.schema'
 
 interface RecommendationCardProps {
@@ -9,9 +10,11 @@ interface RecommendationCardProps {
 }
 
 export function RecommendationCard({ product, source }: RecommendationCardProps) {
-  // TODO: Implement recommendation card
+  const { isAuthenticated } = useAuth()
+  const productLink = isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`
+
   return (
-    <Link to={`/buyer/products/${product.slug}`}>
+    <Link to={productLink}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
         <div className="aspect-square bg-muted relative">
           {source === 'ai' && product.matchScore !== null && (

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -30,7 +30,6 @@ import { getDashboardRoute, ROUTES } from '@/lib/constants'
 export default function Login() {
   const { t } = useTranslation()
   const { login, isAuthenticated, isLoading: authLoading, user } = useAuth()
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectTo = searchParams.get('redirect')
   const [isLoading, setIsLoading] = useState(false)
@@ -53,9 +52,8 @@ export default function Login() {
     setIsLoading(true)
     setError(null)
     try {
-      const user = await login(data)
+      await login(data)
       toast.success(t('auth.login.success'))
-      navigate(redirectTo || getDashboardRoute(user.role))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed'
       setError(errorMessage)

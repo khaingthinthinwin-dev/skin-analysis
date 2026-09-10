@@ -144,7 +144,7 @@ export default function SearchFilter() {
             const isInWishlist = wishlistProductIds.has(product.id)
             return (
               <Card key={product.id} className="group overflow-hidden border-border/80 shadow-xs transition-transform hover:-translate-y-1">
-                <Link to={`/buyer/products/${product.slug}`} className="relative block aspect-square w-full bg-muted">
+                <Link to={isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`} className="relative block aspect-square w-full bg-muted">
                   <ProductImage product={product} />
                   <Button
                     variant="ghost"
@@ -168,7 +168,7 @@ export default function SearchFilter() {
                 <CardContent className="p-4 space-y-3">
                   <div>
                     <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">{product.category?.name || 'Skincare'}</span>
-                    <Link to={`/buyer/products/${product.slug}`}>
+                    <Link to={isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`}>
                       <h3 className="text-sm font-bold text-foreground line-clamp-1 mt-0.5">{product.name}</h3>
                     </Link>
                   </div>

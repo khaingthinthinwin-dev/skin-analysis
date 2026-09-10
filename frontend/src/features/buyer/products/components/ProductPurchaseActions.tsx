@@ -38,7 +38,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      window.location.href = '/login?redirect=/buyer/products';
       return;
     }
     if (!isBuyer) {
@@ -58,7 +58,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
 
   const handleAddToWishlist = async () => {
     if (!isAuthenticated) {
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      window.location.href = '/login?redirect=/buyer/products';
       return;
     }
     if (!isBuyer) {

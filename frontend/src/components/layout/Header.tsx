@@ -9,6 +9,8 @@ import { LanguageToggle } from '@/components/common/LanguageToggle'
 import { UserNav } from '@/components/common/UserNav'
 import { GuestLoginModal } from '@/components/common/GuestLoginModal'
 import { useAuth } from '@/hooks/useAuth'
+import { useCart } from '@/features/buyer/cart/hooks/useCart'
+import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
 const navItems = [
@@ -23,6 +25,11 @@ export function Header() {
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const [guestModal, setGuestModal] = useState<'wishlist' | 'cart' | null>(null)
+  const { summary } = useCart()
+  const { totalCount: wishlistCount } = useWishlist()
+
+  const cartCount = summary.totalItems
+  const wishlistTotal = wishlistCount
 
   const handleIconClick = (type: 'wishlist' | 'cart', e: React.MouseEvent) => {
     if (!isAuthenticated) {
@@ -68,13 +75,23 @@ export function Header() {
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-2">
           <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
-            <Link to="/buyer/wishlist" onClick={(e) => handleIconClick('wishlist', e)}>
+            <Link to="/buyer/wishlist" onClick={(e) => handleIconClick('wishlist', e)} className="relative">
               <Heart className="h-5 w-5" />
+              {wishlistTotal > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                  {wishlistTotal > 99 ? '99+' : wishlistTotal}
+                </span>
+              )}
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild aria-label="Cart">
-            <Link to="/buyer/cart" onClick={(e) => handleIconClick('cart', e)}>
+            <Link to="/buyer/cart" onClick={(e) => handleIconClick('cart', e)} className="relative">
               <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
             </Link>
           </Button>
           <LanguageToggle />
@@ -128,13 +145,23 @@ export function Header() {
               <div className="my-4 h-px bg-border" />
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
-                  <Link to="/buyer/wishlist" onClick={(e) => { handleIconClick('wishlist', e); setOpen(false) }}>
+                  <Link to="/buyer/wishlist" onClick={(e) => { handleIconClick('wishlist', e); setOpen(false) }} className="relative">
                     <Heart className="h-5 w-5" />
+                    {wishlistTotal > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                        {wishlistTotal > 99 ? '99+' : wishlistTotal}
+                      </span>
+                    )}
                   </Link>
                 </Button>
                 <Button variant="ghost" size="icon" asChild aria-label="Cart">
-                  <Link to="/buyer/cart" onClick={(e) => { handleIconClick('cart', e); setOpen(false) }}>
+                  <Link to="/buyer/cart" onClick={(e) => { handleIconClick('cart', e); setOpen(false) }} className="relative">
                     <ShoppingCart className="h-5 w-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                        {cartCount > 99 ? '99+' : cartCount}
+                      </span>
+                    )}
                   </Link>
                 </Button>
                 <LanguageToggle />
@@ -168,7 +195,7 @@ export function Header() {
         open={guestModal !== null}
         onClose={() => setGuestModal(null)}
         messageKey={guestModal ?? 'wishlist'}
-        returnUrl={guestModal === 'wishlist' ? '/buyer/wishlist' : '/buyer/cart'}
+        returnUrl={guestModal === 'wishlist' ? '/buyer/wishlist' : '/buyer/search'}
       />
     </header>
   )
