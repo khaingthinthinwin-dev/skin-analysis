@@ -1,5 +1,5 @@
 import { useState, type ImgHTMLAttributes } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, Star, ChevronLeft, ChevronRight, Sparkles, FlaskConical, Heart, Plus, Check, RefreshCw } from 'lucide-react'

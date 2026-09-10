@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { ChevronDown } from 'lucide-react'
 import type { HistorySession } from '@/schemas/matching.schema'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { cn } from '@/lib/utils'
 
 function formatDate(dateStr: string): string {
