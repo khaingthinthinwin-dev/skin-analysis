@@ -35,7 +35,7 @@ export function RecommendationCard({ product, source }: RecommendationCardProps)
             ))}
           </div>
           <div className="flex items-center justify-between">
-            <span className="font-bold">${product.price}</span>
+            <span className="font-bold">Ks {product.price}</span>
             {!product.isInStock && (
               <Badge variant="destructive">Out of Stock</Badge>
             )}
