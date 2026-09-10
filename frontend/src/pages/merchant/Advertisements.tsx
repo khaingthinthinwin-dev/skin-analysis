@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -157,7 +157,7 @@ export default function Advertisements() {
   const approvedMerchant = user?.licenseStatus === 'approved'
   const params = {
     page,
-    limit: 20,
+    limit: 3,
     status: status ? (status as 'active' | 'inactive' | 'expired') : undefined,
     approvalStatus: approvalStatus ? (approvalStatus as 'pending' | 'approved' | 'rejected') : undefined,
     search: debouncedSearch || undefined,
@@ -211,8 +211,8 @@ export default function Advertisements() {
       label: 'Pending Approval',
       value: stats.pending,
       icon: Hourglass,
-      cardClass: 'bg-amber-100/50 dark:bg-amber-950/30',
-      iconClass: 'bg-amber-200 text-amber-700 dark:bg-amber-900 dark:text-amber-400',
+      cardClass: 'bg-secondary/50',
+      iconClass: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
       onView: () => {
         setStatus('')
         setApprovalStatus('pending')
@@ -226,7 +226,7 @@ export default function Advertisements() {
       label: 'Expired',
       value: stats.expired,
       icon: History,
-      cardClass: 'bg-muted/50',
+      cardClass: 'bg-secondary/50',
       iconClass: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
       onView: () => {
         setStatus('expired')
@@ -335,8 +335,17 @@ export default function Advertisements() {
       </div>
 
       {/* Pending Merchant Banner (§4.3) */}
-      {!approvedMerchant && (
-        <Alert className="border-blue-500/50 text-blue-700">
+      {user?.licenseStatus === 'pending' && (
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
+            shop is approved.
+          </AlertDescription>
+        </Alert>
+      )}
+      {user?.licenseStatus === 'rejected' && (
+        <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
@@ -348,7 +357,11 @@ export default function Advertisements() {
       {/* Statistics Cards (§4.4) */}
       <div className="grid gap-4 md:grid-cols-3">
         {statCards.map((stat) => (
-          <Card key={stat.label} className={stat.cardClass}>
+          <Card
+            key={stat.label}
+            className={`${stat.cardClass} cursor-pointer rounded-xl border border-transparent transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md`}
+            onClick={stat.onView}
+          >
             <CardContent className="flex flex-col gap-3 p-5">
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1">
@@ -362,15 +375,6 @@ export default function Advertisements() {
                 <div className={`flex h-11 w-11 items-center justify-center rounded-full ${stat.iconClass}`}>
                   <stat.icon className="h-5 w-5" />
                 </div>
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  onClick={stat.onView}
-                  className="rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm hover:from-indigo-600 hover:to-violet-600"
-                >
-                  View
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -504,7 +508,7 @@ export default function Advertisements() {
         </div>
 
         {adsQuery.isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             {[1, 2, 3].map((item) => (
               <Skeleton className="h-80" key={item} />
             ))}
@@ -518,7 +522,7 @@ export default function Advertisements() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             {ads.map((ad) => (
               <AdCard
                 key={ad.id}
@@ -649,7 +653,6 @@ interface PaginationProps {
 }
 
 function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
-  if (totalPages <= 1) return null
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1)
   return (
     <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
@@ -691,8 +694,22 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
   const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'inactive'
-  const canToggle = ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
+  const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const packageInfo = ad.package
+  const expiresTomorrow =
+    ad.expiresAt && (() => {
+      const t = new Date(ad.expiresAt).getTime()
+      const now = new Date()
+      const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime()
+      return t >= tomorrowStart && t < tomorrowStart + 24 * 60 * 60 * 1000
+    })()
+  const expiresToday =
+    ad.expiresAt && (() => {
+      const t = new Date(ad.expiresAt).getTime()
+      const now = new Date()
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+      return t >= todayStart && t < todayStart + 24 * 60 * 60 * 1000 && t > now.getTime()
+    })()
 
   return (
     <Card className="flex flex-col overflow-hidden">
@@ -731,9 +748,42 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
           </p>
         )}
         {ad.startsAt && ad.expiresAt && (
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
-            <CalendarDays className="h-4 w-4" /> {formatDate(ad.startsAt)} → {formatDate(ad.expiresAt)}
-          </p>
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-4 w-4" />
+              <span>Start date:</span>
+              <span className="font-medium text-foreground">{ad.startsAt.slice(0, 10)}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-4 w-4" />
+              <span>End date:</span>
+              <span className="font-medium text-foreground">{ad.expiresAt.slice(0, 10)}</span>
+            </span>
+          </div>
+        )}
+        {expiresTomorrow && ad.expiresAt && (
+          <div className="rounded-md border-2 border-amber-500 bg-amber-100 p-3 text-sm font-medium text-amber-800 dark:border-amber-500 dark:bg-amber-900/60 dark:text-amber-200">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Your Advertisement will expire tomorrow.</span>
+            </div>
+          </div>
+        )}
+        {expiresToday && ad.expiresAt && (
+          <div className="rounded-md border-2 border-amber-500 bg-amber-100 p-3 text-sm font-medium text-amber-800 dark:border-amber-500 dark:bg-amber-900/60 dark:text-amber-200">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Your Advertisement will expire today.</span>
+            </div>
+          </div>
+        )}
+        {state === 'expired' && (
+          <div className="rounded-md border-2 border-red-500 bg-red-100 p-3 text-sm font-medium text-red-800 dark:border-red-500 dark:bg-red-950/60 dark:text-red-300">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Your advertisement has expired.</span>
+            </div>
+          </div>
         )}
         {isRejected && ad.rejectionReason && (
           <div className="rounded-md border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
@@ -758,6 +808,8 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
                 <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
                 <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
               </div>
+            ) : state === 'expired' ? (
+              <span className="text-sm text-muted-foreground">Inactive</span>
             ) : (
               <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
             )}
