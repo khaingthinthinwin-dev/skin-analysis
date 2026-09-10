@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { matchQuerySchema, type MatchQueryParams } from '@/schemas/matching.schema';
 
 export function useMatchFilters() {
@@ -11,7 +11,7 @@ export function useMatchFilters() {
   );
 
   const updateFilters = useCallback((updates: Partial<MatchQueryParams>) => {
-    setSearchParams((prev) => {
+    setSearchParams((prev: URLSearchParams) => {
       const next = new URLSearchParams(prev);
 
       Object.entries(updates).forEach(([key, value]) => {
