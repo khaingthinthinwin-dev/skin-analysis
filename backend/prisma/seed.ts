@@ -276,6 +276,59 @@ async function main() {
   console.log(`Seeded ${shops.length} shops`);
 
   // ============================================
+  // ADVERTISEMENTS
+  // ============================================
+  const now = new Date();
+  const ads = [];
+  const adData = [
+    {
+      shopIndex: 0,
+      title: 'Summer Skincare Sale - 30% Off!',
+      content: 'Get 30% off on all cleansers and toners this summer. Limited time offer!',
+      announcementMessage: 'Summer Sale: 30% off cleansers & toners',
+      imageUrl: 'https://example.com/ad-summer-sale.jpg',
+      linkUrl: '/products?category=cleansers',
+    },
+    {
+      shopIndex: 1,
+      title: 'New arrivals: Organic Serums',
+      content: 'Discover our new line of organic serums crafted with natural ingredients for radiant skin.',
+      announcementMessage: 'Just In: Organic serum collection',
+      imageUrl: 'https://example.com/ad-organic-serums.jpg',
+      linkUrl: '/products?category=serums',
+    },
+    {
+      shopIndex: 2,
+      title: 'Free Shipping on Orders Over 50,000 MMK',
+      content: 'Enjoy free nationwide shipping on all orders above 50,000 MMK. Shop now!',
+      announcementMessage: 'Free shipping on orders over 50K',
+      imageUrl: null,
+      linkUrl: null,
+    },
+  ];
+
+  for (const ad of adData) {
+    const advertisement = await prisma.advertisement.create({
+      data: {
+        shopId: shops[ad.shopIndex].id,
+        title: ad.title,
+        content: ad.content,
+        announcementMessage: ad.announcementMessage,
+        imageUrl: ad.imageUrl,
+        linkUrl: ad.linkUrl,
+        isActive: true,
+        approvalStatus: 'approved',
+        paymentStatus: 'completed',
+        weekNumber: 1,
+        startsAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+    ads.push(advertisement);
+  }
+  console.log(`Seeded ${ads.length} advertisements`);
+
+  // ============================================
   // CATEGORIES
   // ============================================
   const categories = [];
@@ -786,6 +839,7 @@ async function main() {
   console.log(`Categories: ${categories.length}`);
   console.log(`Products:   ${products.length}`);
   console.log(`Shops:      ${shops.length}`);
+  console.log(`Ads:        ${ads.length}`);
   console.log(`Reviews:    ${reviewData.length}`);
   console.log(`Orders:     ${orders.length}`);
   console.log(`Promotions: ${promotions.length}`);

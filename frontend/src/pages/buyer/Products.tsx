@@ -159,15 +159,15 @@ export default function Products() {
         </p>
       </div>
 
-      {/* Advertisement panel */}
-      <SponsoredAdSlider />
-
       {/* Search bar - full width */}
       <SearchBar
         value={params.q}
         onChange={(q) => handleFilterUpdate({ q })}
         onSubmit={handleSearchBarSubmit}
       />
+
+      {/* Advertisement panel */}
+      <SponsoredAdSlider />
 
       <FilterChips
         params={params}
