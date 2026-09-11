@@ -18,6 +18,27 @@ vi.mock('@tanstack/react-query', () => ({
   }),
 }))
 
+// Mock localStorage
+const localStorageMock = {
+  length: 0,
+  clear: vi.fn(),
+  getItem: vi.fn((key: string) => {
+    if (key === 'accessToken' || key === 'refreshToken') {
+      return storedItems[key] ?? null
+    }
+    return null
+  }),
+  setItem: vi.fn((key: string, value: string) => {
+    storedItems[key] = value
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete storedItems[key]
+  }),
+  key: vi.fn(),
+}
+const storedItems: Record<string, string> = {}
+global.localStorage = localStorageMock
+
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
 )

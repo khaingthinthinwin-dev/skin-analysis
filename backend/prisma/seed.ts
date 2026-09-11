@@ -30,6 +30,7 @@ async function main() {
   await prisma.adPayment.deleteMany();
   await prisma.adFeeHistory.deleteMany();
   await prisma.advertisement.deleteMany();
+  await prisma.payout.deleteMany();
   await prisma.shop.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
@@ -38,8 +39,8 @@ async function main() {
   await prisma.merchant.deleteMany();
   await prisma.user.deleteMany();
   await prisma.commissionSetting.deleteMany();
+  await prisma.commissionRateHistory.deleteMany();
   await prisma.revenueTarget.deleteMany();
-  await prisma.payout.deleteMany();
   await prisma.adFeeSetting.deleteMany();
   await prisma.orderStatus.deleteMany();
   await prisma.discountType.deleteMany();
@@ -126,8 +127,16 @@ async function main() {
   console.log('Seeded ad_fee_settings');
 
   // Commission Settings
-  await prisma.commissionSetting.create({
+  const seededCommission = await prisma.commissionSetting.create({
     data: { commissionRate: 12.00 },
+  });
+  // Record the initial rate in history so time-based commission calculations
+  // always resolve a rate for orders placed before any admin rate change.
+  await prisma.commissionRateHistory.create({
+    data: {
+      commissionRate: 12.00,
+      effectiveFrom: seededCommission.createdAt,
+    },
   });
   console.log('Seeded commission_settings');
 
@@ -630,6 +639,42 @@ async function main() {
   console.log(`Seeded ${orders.length} orders`);
 
   // ============================================
+  // PAYOUTS
+  // ============================================
+  // Each payout is linked to a single order via orderId. Only orders with a
+  // completed payment get a payout. Commission is computed at the seeded rate
+  // (12%) and ad fees are platform revenue (never deducted from merchant
+  // payouts per BR-REV-016).
+  const payouts: any[] = [];
+  const COMMISSION_RATE = 12; // matches the seeded commission_setting / rate history
+  const payoutData = [
+    { order: order1, status: 'completed', processed: true },
+    { order: order2, status: 'pending', processed: false },
+    { order: order3, status: 'processing', processed: false },
+  ];
+
+  for (const p of payoutData) {
+    const totalAmount = Number(p.order.totalAmount);
+    const commissionAmount = Math.round((totalAmount * COMMISSION_RATE) / 100);
+    const netPayout = totalAmount - commissionAmount;
+    const payout = await prisma.payout.create({
+      data: {
+        merchantId: p.order.merchantId,
+        orderId: p.order.id,
+        totalAmount,
+        commissionAmount,
+        netPayout,
+        status: p.status,
+        processedBy: p.processed ? admins[0].id : null,
+        processedAt: p.processed ? new Date() : null,
+        idempotencyKey: p.processed ? `seed-payout-${p.order.orderNumber}` : null,
+      },
+    });
+    payouts.push(payout);
+  }
+  console.log(`Seeded ${payouts.length} payouts`);
+
+  // ============================================
   // WISHLISTS
   // ============================================
   const wishlistData = [
@@ -788,6 +833,7 @@ async function main() {
   console.log(`Shops:      ${shops.length}`);
   console.log(`Reviews:    ${reviewData.length}`);
   console.log(`Orders:     ${orders.length}`);
+  console.log(`Payouts:    ${payouts.length}`);
   console.log(`Promotions: ${promotions.length}`);
   console.log(`Wishlists:  ${wishlistData.length}`);
   console.log(`Carts:      2`);

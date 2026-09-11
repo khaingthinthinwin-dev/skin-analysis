@@ -71,27 +71,28 @@ model User {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  role                  UserRole               @relation(fields: [roleCode], references: [roleCode], onDelete: Restrict, onUpdate: Cascade)
-  merchantProfile       Merchant?              @relation("UserMerchantProfile")
-  merchantRef           Merchant?              @relation("UserMerchantRef", fields: [merchantId], references: [id], onDelete: SetNull)
+  role                  UserRole                @relation(fields: [roleCode], references: [roleCode], onDelete: Restrict, onUpdate: Cascade)
+  merchantProfile       Merchant?               @relation("UserMerchantProfile")
+  merchantRef           Merchant?               @relation("UserMerchantRef", fields: [merchantId], references: [id], onDelete: SetNull)
   refreshTokens         RefreshToken[]
   passwordResetTokens   PasswordResetToken[]
   reviews               Review[]
   wishlists             Wishlist[]
   orders                Order[]
   shop                  Shop?
-  adApprovals           Advertisement[]        @relation("AdminAdApprovals")
-  adFeeHistories        AdFeeHistory[]         @relation("AdminAdFeeHistory")
-  reviewedMerchants     Merchant[]             @relation("AdminMerchantReviews")
+  adApprovals           Advertisement[]         @relation("AdminAdApprovals")
+  adFeeHistories        AdFeeHistory[]          @relation("AdminAdFeeHistory")
+  reviewedMerchants     Merchant[]              @relation("AdminMerchantReviews")
   commissionSettings    CommissionSetting[]
+  commissionRateHistory CommissionRateHistory[]
   revenueTargets        RevenueTarget[]
   processedPayouts      Payout[]
   skinAnalyses          SkinAnalysis[]
   cart                  Cart?
-  orderStatusHistory    OrderStatusHistory[]   @relation("OrderStatusHistoryChangedBy")
-  inventoryTransactions InventoryTransaction[] @relation("InventoryTransactionCreator")
-  reviewReportsReported ReviewReport[]         @relation("ReportedBy")
-  reviewReportsResolved ReviewReport[]         @relation("ResolvedBy")
+  orderStatusHistory    OrderStatusHistory[]    @relation("OrderStatusHistoryChangedBy")
+  inventoryTransactions InventoryTransaction[]  @relation("InventoryTransactionCreator")
+  reviewReportsReported ReviewReport[]          @relation("ReportedBy")
+  reviewReportsResolved ReviewReport[]          @relation("ResolvedBy")
   auditLogs             AuditLog[]
   notifications         Notification[]
 
@@ -292,6 +293,7 @@ model Wishlist {
 
 model Order {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber     String   @unique @default(dbgenerated("'ORD-' || lpad(nextval('orders_order_number_seq')::text, 7, '0')")) @map("order_number") @db.VarChar(14)
   buyerId         String   @map("buyer_id") @db.Uuid
   merchantId      String   @map("merchant_id") @db.Uuid
   statusCode      String   @default("placed") @map("status")
@@ -311,6 +313,7 @@ model Order {
   status        OrderStatus          @relation(fields: [statusCode], references: [statusCode], onDelete: Restrict)
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
+  payouts       Payout[]
 
   @@index([buyerId])
   @@index([merchantId])
@@ -521,6 +524,24 @@ model CommissionSetting {
   @@map("commission_settings")
 }
 
+// Tracks every commission rate change with the timestamp it became effective.
+// Commission for an order is calculated with the rate that was effective at the
+// order's creation time (rate changes never retroactively alter past orders).
+model CommissionRateHistory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commissionRate Decimal  @map("commission_rate") @db.Decimal(5, 2)
+  effectiveFrom  DateTime @default(now()) @map("effective_from")
+  createdBy      String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  createdByAdmin User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([effectiveFrom])
+  @@index([createdAt])
+  @@map("commission_rate_history")
+}
+
 model RevenueTarget {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   targetAmount Decimal  @map("target_amount") @db.Decimal(12, 2)
@@ -542,6 +563,7 @@ model RevenueTarget {
 model Payout {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   merchantId       String    @map("merchant_id") @db.Uuid
+  orderId          String    @map("order_id") @db.Uuid
   totalAmount      Decimal   @map("total_amount") @db.Decimal(12, 2)
   commissionAmount Decimal   @default(0) @map("commission_amount") @db.Decimal(12, 2)
   netPayout        Decimal   @map("net_payout") @db.Decimal(12, 2)
@@ -555,9 +577,11 @@ model Payout {
 
   // Relations
   merchant         Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
   processedByAdmin User?    @relation(fields: [processedBy], references: [id], onDelete: SetNull)
 
   @@index([merchantId])
+  @@index([orderId])
   @@index([status])
   @@index([createdAt])
   @@map("payouts")
