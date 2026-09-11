@@ -43,6 +43,23 @@ interface MockOrderItemModel {
 
 interface MockInventoryTransactionModel {
   findFirst: MockFn;
+  findMany: MockFn;
+}
+
+interface MockReviewModel {
+  findMany: MockFn;
+}
+
+interface MockCartItemModel {
+  deleteMany: MockFn;
+}
+
+interface MockWishlistModel {
+  deleteMany: MockFn;
+}
+
+interface MockSkinAnalysisRecommendationModel {
+  deleteMany: MockFn;
 }
 
 interface MockPrismaClient {
@@ -51,6 +68,10 @@ interface MockPrismaClient {
   category: MockCategoryModel;
   orderItem: MockOrderItemModel;
   inventoryTransaction: MockInventoryTransactionModel;
+  review: MockReviewModel;
+  cartItem: MockCartItemModel;
+  wishlist: MockWishlistModel;
+  skinAnalysisRecommendation: MockSkinAnalysisRecommendationModel;
 }
 
 interface MockRedisClient {
@@ -147,7 +168,11 @@ describe('ProductsService', () => {
       },
       category: { findUnique: jest.fn() },
       orderItem: { findFirst: jest.fn(), findMany: jest.fn() },
-      inventoryTransaction: { findFirst: jest.fn() },
+      inventoryTransaction: { findFirst: jest.fn(), findMany: jest.fn() },
+      review: { findMany: jest.fn() },
+      cartItem: { deleteMany: jest.fn() },
+      wishlist: { deleteMany: jest.fn() },
+      skinAnalysisRecommendation: { deleteMany: jest.fn() },
     };
 
     redis = { del: jest.fn() };
@@ -421,43 +446,116 @@ describe('ProductsService', () => {
       prisma.merchant.findUnique.mockResolvedValue({ id: mockMerchantId });
     });
 
-    it('deletes all products with no active orders', async () => {
+    it('deactivates active products with no active orders', async () => {
       prisma.product.findMany.mockResolvedValueOnce([
-        { id: 'p1' },
-        { id: 'p2' },
+        { id: 'p1', isActive: true, images: [], slug: 'p1' },
+        { id: 'p2', isActive: true, images: [], slug: 'p2' },
       ]);
       prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.inventoryTransaction.findMany.mockResolvedValueOnce([]);
+      prisma.review.findMany.mockResolvedValueOnce([]);
       prisma.product.updateMany.mockResolvedValue({ count: 2 });
 
       const result = await service.deleteAll(mockUserId, {});
-      expect(result.deleted).toBe(2);
+      expect(result.deactivated).toBe(2);
+      expect(result.deleted).toBe(0);
+      expect(result.skipped).toBe(0);
     });
 
-    it('returns deleted=0 when no products match', async () => {
+    it('returns zeros when no products match', async () => {
       prisma.product.findMany.mockResolvedValue([]);
 
       const result = await service.deleteAll(mockUserId, {});
+      expect(result.deactivated).toBe(0);
       expect(result.deleted).toBe(0);
       expect(result.skipped).toBe(0);
     });
 
     it('skips products with active orders', async () => {
       prisma.product.findMany.mockResolvedValueOnce([
-        { id: 'p1' },
-        { id: 'p2' },
+        { id: 'p1', isActive: true, images: [], slug: 'p1' },
+        { id: 'p2', isActive: true, images: [], slug: 'p2' },
       ]);
       prisma.orderItem.findMany.mockResolvedValueOnce([{ productId: 'p1' }]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.inventoryTransaction.findMany.mockResolvedValueOnce([]);
+      prisma.review.findMany.mockResolvedValueOnce([]);
       prisma.product.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.deleteAll(mockUserId, {});
-      expect(result.deleted).toBe(1);
+      expect(result.deactivated).toBe(1);
+      expect(result.deleted).toBe(0);
       expect(result.skipped).toBe(1);
-      expect(result.skippedProductIds).toContain('p1');
+    });
+
+    it('permanently deletes already soft-deleted products with no blockers', async () => {
+      prisma.product.findMany.mockResolvedValueOnce([
+        { id: 'p1', isActive: false, images: [], slug: 'p1' },
+        { id: 'p2', isActive: false, images: [], slug: 'p2' },
+      ]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.inventoryTransaction.findMany.mockResolvedValueOnce([]);
+      prisma.review.findMany.mockResolvedValueOnce([]);
+      prisma.cartItem.deleteMany.mockResolvedValue({});
+      prisma.wishlist.deleteMany.mockResolvedValue({});
+      prisma.skinAnalysisRecommendation.deleteMany.mockResolvedValue({});
+      prisma.product.delete.mockResolvedValue({});
+      redis.del.mockResolvedValue({});
+
+      const result = await service.deleteAll(mockUserId, {});
+      expect(result.deactivated).toBe(0);
+      expect(result.deleted).toBe(2);
+      expect(result.skipped).toBe(0);
+      expect(prisma.product.delete).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips soft-deleted products with order history', async () => {
+      prisma.product.findMany.mockResolvedValueOnce([
+        { id: 'p1', isActive: false, images: [], slug: 'p1' },
+      ]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([{ productId: 'p1' }]);
+      prisma.inventoryTransaction.findMany.mockResolvedValueOnce([]);
+      prisma.review.findMany.mockResolvedValueOnce([]);
+
+      const result = await service.deleteAll(mockUserId, {});
+      expect(result.deactivated).toBe(0);
+      expect(result.deleted).toBe(0);
+      expect(result.skipped).toBe(1);
+    });
+
+    it('handles mixed active and soft-deleted products', async () => {
+      prisma.product.findMany.mockResolvedValueOnce([
+        { id: 'p1', isActive: true, images: [], slug: 'p1' },
+        { id: 'p2', isActive: false, images: [], slug: 'p2' },
+      ]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.inventoryTransaction.findMany.mockResolvedValueOnce([]);
+      prisma.review.findMany.mockResolvedValueOnce([]);
+      prisma.product.updateMany.mockResolvedValue({ count: 1 });
+      prisma.cartItem.deleteMany.mockResolvedValue({});
+      prisma.wishlist.deleteMany.mockResolvedValue({});
+      prisma.skinAnalysisRecommendation.deleteMany.mockResolvedValue({});
+      prisma.product.delete.mockResolvedValue({});
+      redis.del.mockResolvedValue({});
+
+      const result = await service.deleteAll(mockUserId, {});
+      expect(result.deactivated).toBe(1);
+      expect(result.deleted).toBe(1);
+      expect(result.skipped).toBe(0);
     });
 
     it('applies isActive filter', async () => {
-      prisma.product.findMany.mockResolvedValueOnce([{ id: 'p1' }]);
+      prisma.product.findMany.mockResolvedValueOnce([
+        { id: 'p1', isActive: true, images: [], slug: 'p1' },
+      ]);
       prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([]);
+      prisma.inventoryTransaction.findMany.mockResolvedValueOnce([]);
+      prisma.review.findMany.mockResolvedValueOnce([]);
       prisma.product.updateMany.mockResolvedValue({ count: 1 });
 
       await service.deleteAll(mockUserId, { isActive: 'true' });

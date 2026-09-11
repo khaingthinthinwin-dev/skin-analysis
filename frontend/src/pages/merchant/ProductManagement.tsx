@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 import { Package, Plus, Search, Filter, Trash2, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ProductTable } from '@/components/merchant/ProductTable'
-import { BulkActionsBar } from '@/components/merchant/BulkActionsBar'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
 import { useTranslation } from 'react-i18next'
 import {
@@ -49,6 +48,7 @@ export default function ProductManagement() {
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [deleteAllOpen, setDeleteAllOpen] = useState(false)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   const queryParams: ProductQueryParams = {
     search: search || undefined,
@@ -66,7 +66,7 @@ export default function ProductManagement() {
   const bulkDelete = useBulkDelete()
   const deleteAll = useDeleteAll()
 
-  const products = data?.items || []
+  const products = useMemo(() => data?.items || [], [data?.items])
   const meta = data?.meta
 
   const handleStockUpdate = useCallback(
@@ -110,36 +110,21 @@ export default function ProductManagement() {
     [toggleFeatured],
   )
 
-  const handleBulkActivate = useCallback(
-    (ids: string[]) => {
-      bulkUpdate.mutate(
-        { ids, action: 'activate' },
-        {
-          onSuccess: () => {
-            toast.success(`${ids.length} product(s) activated`)
-            setSelectedIds([])
-          },
-          onError: () => toast.error('Failed to activate products'),
-        },
-      )
-    },
-    [bulkUpdate],
-  )
+  const handleToggleActive = useCallback(
+    (id: string) => {
+      const product = products.find((p) => p.id === id)
+      if (!product) return
 
-  const handleBulkDeactivate = useCallback(
-    (ids: string[]) => {
+      const action = product.isActive ? 'deactivate' : 'activate'
       bulkUpdate.mutate(
-        { ids, action: 'deactivate' },
+        { ids: [id], action },
         {
-          onSuccess: () => {
-            toast.success(`${ids.length} product(s) deactivated`)
-            setSelectedIds([])
-          },
-          onError: () => toast.error('Failed to deactivate products'),
+          onSuccess: () => toast.success(`Product ${action === 'activate' ? 'activated' : 'deactivated'}`),
+          onError: () => toast.error(`Failed to ${action} product`),
         },
       )
     },
-    [bulkUpdate],
+    [bulkUpdate, products],
   )
 
   const handleBulkDelete = useCallback(
@@ -148,7 +133,7 @@ export default function ProductManagement() {
         { ids },
         {
           onSuccess: () => {
-            toast.success(`${ids.length} product(s) deleted`)
+            toast.success(`${ids.length} product(s) deactivated.`)
             setSelectedIds([])
           },
           onError: (err: unknown) => {
@@ -170,12 +155,20 @@ export default function ProductManagement() {
       },
       {
         onSuccess: (result) => {
-          if (result.skipped > 0) {
-            toast.warning(
-              `Successfully deleted ${result.deleted} product(s). ${result.skipped} product(s) could not be deleted because they have active orders.`,
+          if (result.deactivated > 0 && result.deleted > 0) {
+            toast.success(
+              `${result.deactivated} product(s) deactivated, ${result.deleted} product(s) permanently deleted. ${result.skipped} skipped due to active orders.`,
+            )
+          } else if (result.deactivated > 0) {
+            toast.success(
+              `${result.deactivated} product(s) deactivated. ${result.skipped} skipped due to active orders.`,
+            )
+          } else if (result.deleted > 0) {
+            toast.success(
+              `${result.deleted} product(s) permanently deleted. ${result.skipped} skipped due to active orders.`,
             )
           } else {
-            toast.success(`${result.deleted} product(s) deleted successfully`)
+            toast.warning('Cannot delete products with active orders.')
           }
           setDeleteAllOpen(false)
         },
@@ -290,17 +283,6 @@ export default function ProductManagement() {
         )}
       </div>
 
-      {/* Bulk Actions */}
-      {showCrudActions && (
-        <BulkActionsBar
-          selectedIds={selectedIds}
-          onBulkActivate={handleBulkActivate}
-          onBulkDeactivate={handleBulkDeactivate}
-          onBulkDelete={handleBulkDelete}
-          onClearSelection={() => setSelectedIds([])}
-        />
-      )}
-
       {/* Table */}
       {isLoading ? (
         <LoadingSpinner className="min-h-[400px]" />
@@ -321,8 +303,10 @@ export default function ProductManagement() {
           onStockUpdate={handleStockUpdate}
           onDelete={handleDelete}
           onToggleFeatured={handleToggleFeatured}
+          onToggleActive={handleToggleActive}
           isDeleting={deleteProduct.isPending}
           isTogglingFeatured={toggleFeatured.isPending}
+          isTogglingActive={bulkUpdate.isPending}
           showActions={showCrudActions}
         />
       )}
@@ -375,7 +359,19 @@ export default function ProductManagement() {
         onOpenChange={setDeleteAllOpen}
         onConfirm={handleDeleteAll}
         title="Delete All Products"
-        description={`Are you sure you want to delete all ${meta?.total ?? 0} products? Products with active orders will be skipped. This action cannot be undone.`}
+        description="Active products will be deactivated. Already inactive products will be permanently deleted. Products with active orders will be skipped."
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        onConfirm={() => {
+          handleBulkDelete(selectedIds)
+          setBulkDeleteOpen(false)
+        }}
+        title="Delete Selected Products"
+        description={`Are you sure you want to delete ${selectedIds.length} product(s)? Products with active orders will be skipped. This action cannot be undone.`}
       />
     </div>
   )

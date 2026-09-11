@@ -49,7 +49,6 @@ export class ProductsService {
       const existing = await this.prisma.product.findFirst({
         where: {
           slug: candidate,
-          merchantId,
           ...(excludeId ? { id: { not: excludeId } } : {}),
         },
       });
@@ -608,11 +607,11 @@ export class ProductsService {
 
     const products = await this.prisma.product.findMany({
       where,
-      select: { id: true },
+      select: { id: true, isActive: true, images: true, slug: true },
     });
 
     if (products.length === 0) {
-      return { deleted: 0, skipped: 0, skippedProductIds: [] as string[] };
+      return { deactivated: 0, deleted: 0, skipped: 0 };
     }
 
     const productIds = products.map((p) => p.id);
@@ -630,19 +629,88 @@ export class ProductsService {
     });
 
     const skippedIds = new Set(activeOrderItems.map((item) => item.productId));
-    const idsToDelete = productIds.filter((id) => !skippedIds.has(id));
 
-    if (idsToDelete.length > 0) {
-      await this.prisma.product.updateMany({
-        where: { id: { in: idsToDelete } },
+    const activeProducts = products.filter(
+      (p) => p.isActive && !skippedIds.has(p.id),
+    );
+    const softDeletedProducts = products.filter(
+      (p) => !p.isActive && !skippedIds.has(p.id),
+    );
+
+    let deactivatedCount = 0;
+    if (activeProducts.length > 0) {
+      const result = await this.prisma.product.updateMany({
+        where: { id: { in: activeProducts.map((p) => p.id) } },
         data: { isActive: false },
       });
+      deactivatedCount = result.count;
+    }
+
+    let deletedCount = 0;
+    if (softDeletedProducts.length > 0) {
+      const softDeletedIds = softDeletedProducts.map((p) => p.id);
+
+      const [
+        existingOrderItems,
+        existingInventoryTransactions,
+        existingReviews,
+      ] = await Promise.all([
+        this.prisma.orderItem.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+        this.prisma.inventoryTransaction.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+        this.prisma.review.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+      ]);
+
+      const hasOrderItems = new Set(
+        existingOrderItems.map((item) => item.productId),
+      );
+      const hasInventoryTransactions = new Set(
+        existingInventoryTransactions.map((item) => item.productId),
+      );
+      const hasReviews = new Set(existingReviews.map((r) => r.productId));
+
+      for (const product of softDeletedProducts) {
+        if (
+          hasOrderItems.has(product.id) ||
+          hasInventoryTransactions.has(product.id) ||
+          hasReviews.has(product.id)
+        ) {
+          skippedIds.add(product.id);
+          continue;
+        }
+
+        await this.prisma.cartItem.deleteMany({
+          where: { productId: product.id },
+        });
+        await this.prisma.wishlist.deleteMany({
+          where: { productId: product.id },
+        });
+        await this.prisma.skinAnalysisRecommendation.deleteMany({
+          where: { productId: product.id },
+        });
+
+        await this.deleteImageFiles(product.images);
+
+        await this.prisma.product.delete({ where: { id: product.id } });
+
+        await this.redis.del(`cache:product:${product.slug}`);
+
+        deletedCount++;
+      }
     }
 
     return {
-      deleted: idsToDelete.length,
+      deactivated: deactivatedCount,
+      deleted: deletedCount,
       skipped: skippedIds.size,
-      skippedProductIds: Array.from(skippedIds),
     };
   }
 

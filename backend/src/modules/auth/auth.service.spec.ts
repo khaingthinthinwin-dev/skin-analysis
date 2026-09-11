@@ -27,6 +27,7 @@ jest.mock('crypto', () => ({
 }));
 
 jest.mock('fs', () => ({
+  ...jest.requireActual<typeof import('fs')>('fs'),
   existsSync: jest.fn().mockReturnValue(true),
   writeFileSync: jest.fn(),
   mkdirSync: jest.fn(),
