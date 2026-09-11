@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router'
-import { Save, ArrowLeft, Loader2, FileDown } from 'lucide-react'
+import { Save, ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ImageUploadZone } from './ImageUploadZone'
 import { ImagePreviewGrid } from './ImagePreviewGrid'
@@ -45,13 +44,23 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
   const onSubmit = async (data: ProductFormData) => {
     try {
+      const submittedData = {
+        ...data,
+        skinTypes: (data.skinTypes || []).flatMap((s: string) => {
+          const lower = s.toLowerCase()
+          return lower === 'all'
+            ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+            : lower
+        }),
+        isFeatured: data.isFeatured === true,
+      }
       if (mode === 'create') {
-        await createProduct.mutateAsync(data)
+        await createProduct.mutateAsync(submittedData)
         toast.success('Product created successfully')
       } else if (product) {
         await updateProduct.mutateAsync({
           id: product.id,
-          data,
+          data: submittedData,
         })
         toast.success('Product updated successfully')
       }
@@ -60,32 +69,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
       const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
       const backendMessage = axiosErr?.response?.data?.message
       const message = backendMessage
-        ? String(backendMessage)
-        : axiosErr?.message || 'Something went wrong. Please try again.'
-      toast.error(message)
-    }
-  }
-
-  const onSaveAsDraft = async () => {
-    try {
-      const data = form.getValues()
-      const draftData = { ...data, isActive: false }
-      if (mode === 'create') {
-        await createProduct.mutateAsync(draftData)
-        toast.success('Product saved as draft')
-      } else if (product) {
-        await updateProduct.mutateAsync({
-          id: product.id,
-          data: draftData,
-        })
-        toast.success('Product saved as draft')
-      }
-      navigate('/merchant/products')
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
-      const backendMessage = axiosErr?.response?.data?.message
-      const message = backendMessage
-        ? String(backendMessage)
+        ? Array.isArray(backendMessage)
+          ? backendMessage.join(', ')
+          : backendMessage
         : axiosErr?.message || 'Something went wrong. Please try again.'
       toast.error(message)
     }
@@ -95,6 +81,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <input type="hidden" {...register('isActive')} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button
@@ -110,19 +97,6 @@ export function ProductForm({ product, mode }: ProductFormProps) {
           </h2>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onSaveAsDraft}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="mr-2 h-4 w-4" />
-            )}
-            Save as Draft
-          </Button>
           <Button type="submit" disabled={isPending}>
             {isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -194,6 +168,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 onFilesChange={(files) => setValue('images', files)}
                 maxFiles={10}
               />
+              {errors.images && (
+                <p className="text-sm text-destructive">{errors.images.message}</p>
+              )}
             </CardContent>
           </Card>
 
@@ -215,7 +192,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 <Label>Skin Types</Label>
                 <div className="flex flex-wrap gap-2">
                   {SKIN_TYPES.map((st) => {
-                    const selected = (watch('skinTypes') || []).includes(st.value)
+                    const selected = (watch('skinTypes') || []).some(
+                      (s: string) => s.toLowerCase() === st.value,
+                    )
                     return (
                       <Button
                         key={st.value}
@@ -224,13 +203,14 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                         size="sm"
                         onClick={() => {
                           const current = watch('skinTypes') || []
+                          const normalized = current.map((s: string) => s.toLowerCase())
                           if (selected) {
                             setValue(
                               'skinTypes',
-                              current.filter((s: string) => s !== st.value),
+                              normalized.filter((s: string) => s !== st.value),
                             )
                           } else {
-                            setValue('skinTypes', [...current, st.value])
+                            setValue('skinTypes', [...normalized, st.value])
                           }
                         }}
                       >
@@ -239,6 +219,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                     )
                   })}
                 </div>
+                {errors.skinTypes && (
+                  <p className="text-sm text-destructive">{errors.skinTypes.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -273,30 +256,10 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="sku">SKU</Label>
-                <Input id="sku" {...register('sku')} placeholder="e.g., VCS-001" />
+                <Input id="sku" {...register('sku')} placeholder="e.g., VCS-001" disabled className="disabled:opacity-50 disabled:cursor-not-allowed" />
                 {errors.sku && (
                   <p className="text-sm text-destructive">{errors.sku.message}</p>
                 )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="isActive">Active</Label>
-                <Switch
-                  id="isActive"
-                  checked={watch('isActive')}
-                  onCheckedChange={(checked) =>
-                    setValue('isActive', checked, { shouldDirty: true, shouldValidate: true })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="isFeatured">Featured</Label>
-                <Switch
-                  id="isFeatured"
-                  checked={watch('isFeatured')}
-                  onCheckedChange={(checked) => setValue('isFeatured', checked)}
-                />
               </div>
             </CardContent>
           </Card>
@@ -307,13 +270,15 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price *</Label>
+                <Label htmlFor="price">Price (Discount Price)</Label>
                 <Input
                   id="price"
                   type="number"
                   step="0.01"
                   min="0"
-                  {...register('price', { valueAsNumber: true })}
+                  {...register('price', {
+                    setValueAs: (value) => (value === '' ? null : Number(value)),
+                  })}
                 />
                 {errors.price && (
                   <p className="text-sm text-destructive">{errors.price.message}</p>
@@ -321,13 +286,15 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="compareAtPrice">Compare at Price</Label>
+                <Label htmlFor="compareAtPrice">Compare at Price *</Label>
                 <Input
                   id="compareAtPrice"
                   type="number"
                   step="0.01"
                   min="0"
-                  {...register('compareAtPrice', { valueAsNumber: true })}
+                  {...register('compareAtPrice', {
+                    setValueAs: (value) => (value === '' ? undefined : Number(value)),
+                  })}
                 />
                 {errors.compareAtPrice && (
                   <p className="text-sm text-destructive">{errors.compareAtPrice.message}</p>

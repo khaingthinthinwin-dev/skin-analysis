@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 
 interface BulkActionsBarProps {
   selectedIds: string[]
@@ -19,46 +21,60 @@ export function BulkActionsBar({
   onClearSelection,
   className,
 }: BulkActionsBarProps) {
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   if (selectedIds.length === 0) return null
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2.5',
-        className,
-      )}
-    >
-      <Package className="h-4 w-4 text-primary" />
-      <span className="text-sm font-medium">
-        {selectedIds.length} product{selectedIds.length > 1 ? 's' : ''} selected
-      </span>
-      <div className="flex items-center gap-2 ml-auto">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onBulkActivate(selectedIds)}
-        >
-          Activate
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onBulkDeactivate(selectedIds)}
-        >
-          Deactivate
-        </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => onBulkDelete(selectedIds)}
-        >
-          Delete
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onClearSelection}>
-          Clear
-        </Button>
+    <>
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2.5',
+          className,
+        )}
+      >
+        <Package className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium">
+          {selectedIds.length} product{selectedIds.length > 1 ? 's' : ''} selected
+        </span>
+        <div className="flex items-center gap-2 ml-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onBulkActivate(selectedIds)}
+          >
+            Activate
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onBulkDeactivate(selectedIds)}
+          >
+            Deactivate
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkDeleteOpen(true)}
+          >
+            Delete
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClearSelection}>
+            Clear
+          </Button>
+        </div>
       </div>
-    </div>
+
+      <DeleteConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        onConfirm={() => {
+          onBulkDelete(selectedIds)
+          setBulkDeleteOpen(false)
+        }}
+        title="Delete Products"
+        description={`Are you sure you want to delete ${selectedIds.length} product(s)? Products with active orders will be skipped. This action cannot be undone.`}
+      />
+    </>
   )
 }

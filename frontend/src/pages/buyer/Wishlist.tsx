@@ -8,7 +8,6 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DuplicateCartAlertDialog } from '@/components/common/DuplicateCartAlertDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { useCart } from '@/features/buyer/cart/hooks/useCart';
 import { toast } from 'sonner';
 
 export default function Wishlist() {
@@ -30,8 +29,6 @@ export default function Wishlist() {
     isMoving,
     isClearing,
   } = useWishlist();
-  const { items: cartItems } = useCart();
-
   const handleRemove = async (productId: string) => {
     try {
       await removeFromWishlist(productId);
@@ -42,10 +39,6 @@ export default function Wishlist() {
   };
 
   const handleMoveToCart = async (productId: string) => {
-    if (cartItems.some((item) => item.productId === productId)) {
-      setIsDuplicateCartAlertOpen(true);
-      return;
-    }
     try {
       await moveToCart(productId);
       toast.success(t('wishlist.movedToCart', 'Moved to cart'));

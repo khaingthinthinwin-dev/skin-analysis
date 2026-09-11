@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
-import { Package, Tag, Megaphone, TrendingUp, Plus, Sparkles, ArrowRight } from 'lucide-react'
+import { Package, Tag, Megaphone, TrendingUp, Plus, Sparkles, ArrowRight, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function MerchantDashboard() {
@@ -36,6 +37,17 @@ export default function MerchantDashboard() {
           </Link>
         </Button>
       </div>
+
+      {/* Pending Approval Warning */}
+      {user?.licenseStatus === 'pending' && (
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertDescription>
+            Your merchant account is currently pending approval. Some features may be restricted until an admin approves your request.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Overview Stat Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

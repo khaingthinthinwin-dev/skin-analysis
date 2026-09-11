@@ -1,13 +1,19 @@
 import { Outlet } from 'react-router'
 import { useEffect, useState } from 'react'
 import { Menu, Bell } from 'lucide-react'
+import { Outlet, Link } from 'react-router'
+import { useState } from 'react'
+import { Menu, Bell, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { useCart } from '@/features/buyer/cart/hooks/useCart'
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const { summary } = useCart()
+  const cartCount = summary.totalItems
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -47,7 +53,16 @@ export function DashboardLayout() {
             <Button variant="ghost" size="icon" aria-label="Notifications">
               <Bell className="h-5 w-5 text-muted-foreground" />
             </Button>
-
+            <Button variant="ghost" size="icon" asChild aria-label="Cart">
+              <Link to="/buyer/cart" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
             <UserNav />
           </div>
         </header>

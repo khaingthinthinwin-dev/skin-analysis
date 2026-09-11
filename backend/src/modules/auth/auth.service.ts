@@ -4,9 +4,11 @@ import {
   ConflictException,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { MailerService } from '@nestjs-modules/mailer';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -16,6 +18,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyCodeDto } from './dto/verify-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -24,12 +27,15 @@ import { RedisService } from '../../shared/redis/redis.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
     private prisma: PrismaService,
     private redis: RedisService,
+    private mailerService: MailerService,
   ) {}
 
   async register(registerDto: RegisterDto, license?: Express.Multer.File) {
@@ -255,61 +261,30 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const result: Record<string, unknown> = {
+    // usersService.findById already fetches merchantProfile and maps licenseStatus
+    return {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.roleCode,
       avatar: user.avatarUrl || undefined,
       avatarUrl: user.avatarUrl,
-      merchantId: null,
-      licenseStatus: null,
-      licenseUrl: null,
+      merchantId: user.merchantId ?? null,
+      licenseStatus: user.licenseStatus ?? null,
+      license_status: user.license_status ?? null,
+      licenseUrl: user.licenseUrl ?? null,
+      createdAt: user.createdAt,
     };
-
-    if (user.roleCode === 'merchant') {
-      const merchant = await this.prisma.merchant.findFirst({
-        where: { userId: user.id },
-        select: {
-          id: true,
-          businessLicenseUrl: true,
-          licenseStatus: true,
-        },
-      });
-      if (merchant) {
-        result.merchantId = merchant.id;
-        result.licenseUrl = merchant.businessLicenseUrl;
-        result.licenseStatus = merchant.licenseStatus;
-      }
-    }
-
-    return result;
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const { email } = forgotPasswordDto;
 
-    // Check rate limit
-    const rateLimitKey = `rate:auth:forgot-password:${email}`;
-    const isAllowed = await this.redis.checkRateLimit(rateLimitKey, 3, 3600);
-    if (!isAllowed) {
-      throw new UnauthorizedException(
-        'Too many requests. Please try again later.',
-      );
-    }
-
     // Find user by email
     const user = await this.usersService.findByEmail(email);
 
-    // Always return same response regardless of email existence (prevent email enumeration)
-    const successMessage = {
-      message:
-        "If an account exists with that email, you'll receive a password reset link shortly.",
-    };
-
     if (!user) {
-      // Return same response even if user doesn't exist
-      return successMessage;
+      throw new NotFoundException('No account found with this email address');
     }
 
     // Invalidate all previous unused tokens for this user
@@ -318,18 +293,15 @@ export class AuthService {
       data: { used: true },
     });
 
-    // Generate secure random token
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHash = crypto.createHash('sha256').update(code).digest('hex');
 
-    // Set 24-hour expiry
+    // Set 10-minute expiry
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-    // Store hashed token
+    // Store hashed code
     await this.prisma.passwordResetToken.create({
       data: {
         userId: user.id,
@@ -339,30 +311,52 @@ export class AuthService {
       },
     });
 
-    // In production, send email with reset link containing rawToken
-    // For now, just log it (TODO: integrate with email service)
-    console.log(`Password reset token for ${email}: ${rawToken}`);
-    console.log(
-      `Reset link: ${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token=${rawToken}`,
-    );
-
-    return successMessage;
-  }
-
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const { token, password } = resetPasswordDto;
-
-    // Validate token format
-    if (!token || token.length < 32) {
-      throw new BadRequestException('Invalid reset token');
+    // Send email with verification code
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Password Reset Verification Code - Cosmetics Finder',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #333;">Verification Code</h2>
+            <p>Hello,</p>
+            <p>We received a request to reset your password. Use the verification code below:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="display: inline-block; background-color: #f3f4f6; border-radius: 8px; padding: 16px 32px; letter-spacing: 8px; font-size: 32px; font-weight: bold; color: #4F46E5;">${code}</div>
+            </div>
+            <p style="color: #666; font-size: 14px;">This code expires in <strong>10 minutes</strong>.</p>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+            <p style="color: #999; font-size: 12px;">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+      this.logger.log(`Verification code sent to ${email}`);
+    } catch (error) {
+      this.logger.error(`Failed to send verification code to ${email}`, error);
     }
 
-    // Hash the received token
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    return {
+      message:
+        'If an account exists with that email, you will receive a verification code shortly.',
+    };
+  }
 
-    // Find token record by token hash
+  async verifyCode(verifyCodeDto: VerifyCodeDto) {
+    const { email, code } = verifyCodeDto;
+
+    // Find user by email
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    // Hash the received code
+    const tokenHash = crypto.createHash('sha256').update(code).digest('hex');
+
+    // Find token record
     const resetToken = await this.prisma.passwordResetToken.findFirst({
       where: {
+        userId: user.id,
         tokenHash,
         used: false,
         expiresAt: { gt: new Date() },
@@ -370,13 +364,36 @@ export class AuthService {
     });
 
     if (!resetToken) {
-      throw new BadRequestException('Invalid or expired reset token');
+      throw new BadRequestException('Invalid or expired verification code');
     }
 
-    // Find user by user_id from token
-    const user = await this.usersService.findById(resetToken.userId);
+    return { message: 'Verification code is valid.' };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const { email, code, password } = resetPasswordDto;
+
+    // Find user by email
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new BadRequestException('Invalid or expired reset token');
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    // Hash the received code
+    const tokenHash = crypto.createHash('sha256').update(code).digest('hex');
+
+    // Find token record
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        userId: user.id,
+        tokenHash,
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Invalid or expired verification code');
     }
 
     // Hash new password with Argon2

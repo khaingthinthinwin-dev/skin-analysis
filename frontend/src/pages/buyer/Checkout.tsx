@@ -1,51 +1,173 @@
-import { CreditCard, CheckCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { CreditCard, Loader2 } from 'lucide-react';
+import { Link } from 'react-router';
+import { toast } from 'sonner';
+import { useAuth } from '@/providers/AuthProvider';
+import { useCart } from '@/features/buyer/cart/hooks/useCart';
+import {
+  useCheckoutData,
+  useValidateCoupon,
+  usePlaceOrder,
+  useSponsoredAds,
+} from '@/features/buyer/checkout/hooks/useCheckout';
+import { OrderSummary } from '@/features/buyer/checkout/components/OrderSummary';
+import { CheckoutForm } from '@/features/buyer/checkout/components/CheckoutForm';
+import type {
+  CouponValidation,
+  ShippingAddress,
+  PaymentMethod,
+} from '@/types/checkout.types';
+import { SponsoredAdSlider } from '@/features/buyer/checkout/components/SponsoredAdSlider';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export default function Checkout() {
-  return (
-    <div className="space-y-6 p-2 lg:p-4 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-          <CreditCard className="h-6 w-6 text-purple-600" /> Checkout & Payment
-        </h1>
-        <p className="text-sm text-muted-foreground">Complete your order details securely</p>
-      </div>
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { summary } = useCart();
+  const {
+    data: checkoutData,
+    isLoading: isCheckoutLoading,
+    isError: isCheckoutError,
+  } = useCheckoutData();
+  const validateCouponMutation = useValidateCoupon();
+  const placeOrderMutation = usePlaceOrder();
+  const { data: sponsoredAds = [] } = useSponsoredAds();
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-border/80 shadow-xs">
-          <CardHeader>
-            <CardTitle className="text-base">Shipping Address</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Input placeholder="Full Name" defaultValue="John Doe" />
-            <Input placeholder="Street Address" defaultValue="123 Beauty Lane" />
-            <div className="grid grid-cols-2 gap-2">
-              <Input placeholder="City" defaultValue="Yangon" />
-              <Input placeholder="Postal Code" defaultValue="11011" />
-            </div>
-          </CardContent>
-        </Card>
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(
+    null,
+  );
+  const [couponCode, setCouponCode] = useState<string | null>(null);
 
-        <Card className="border-border/80 shadow-xs">
-          <CardHeader>
-            <CardTitle className="text-base">Payment Method</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 rounded-xl border border-purple-300 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 flex items-center gap-3">
-              <CreditCard className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-xs font-bold text-foreground">Credit / Debit Card</p>
-                <p className="text-[10px] text-muted-foreground">Encrypted SSL transaction</p>
-              </div>
-            </div>
-            <Button size="lg" className="w-full font-bold bg-primary">
-              <CheckCircle2 className="mr-2 h-4 w-4" /> Place Order ($117.00)
+  const handleApplyCoupon = async (code: string) => {
+    const subtotal = parseFloat(
+      (checkoutData?.subtotal || summary.subtotal) as string,
+    );
+    try {
+      const result = await validateCouponMutation.mutateAsync({
+        couponCode: code,
+        subtotal,
+      });
+      setAppliedCoupon(result);
+      setCouponCode(code);
+      toast.success('Coupon applied successfully');
+    } catch {
+      toast.error('Invalid coupon code');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode(null);
+    toast.success('Coupon removed');
+  };
+
+  const handlePlaceOrder = async (data: {
+    shippingAddress: ShippingAddress;
+    paymentMethod: PaymentMethod;
+    notes: string;
+  }) => {
+    try {
+      const result = await placeOrderMutation.mutateAsync({
+        shippingAddress: data.shippingAddress,
+        paymentMethod: data.paymentMethod,
+        couponCode: couponCode || undefined,
+        notes: data.notes || undefined,
+      });
+      toast.success('Order placed successfully!');
+      navigate(`/buyer/checkout/confirmation/${result.orderId}`);
+    } catch {
+      toast.error('Failed to place order. Please try again.');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <Dialog open onOpenChange={() => navigate('/buyer/cart')}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Log in to checkout</DialogTitle>
+            <DialogDescription className="text-center">
+              Please log in to complete your purchase.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button className="w-full" onClick={() => navigate('/login?redirect=%2Fcheckout')}>
+              Log in
             </Button>
-          </CardContent>
-        </Card>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (isCheckoutLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+
+  if (isCheckoutError || !checkoutData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <h2 className="text-xl font-bold">Unable to load checkout</h2>
+        <p className="text-muted-foreground">
+          Your cart may be empty or an error occurred.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6 p-2 lg:p-4">
+      <header className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+          <CreditCard className="h-6 w-6 text-primary" /> Checkout
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Complete your order details securely
+        </p>
+        </div>
+        <Link to="/buyer/cart" className="text-sm text-muted-foreground hover:text-primary">
+          ← Back to Cart
+        </Link>
+      </header>
+
+      <SponsoredAdSlider ads={sponsoredAds} />
+
+      <CheckoutForm
+        summary={
+          <OrderSummary
+            items={checkoutData.items}
+            subtotal={checkoutData.subtotal}
+            appliedCoupon={appliedCoupon}
+            onApplyCoupon={handleApplyCoupon}
+            onRemoveCoupon={handleRemoveCoupon}
+            isCouponLoading={validateCouponMutation.isPending}
+          />
+        }
+        onSubmit={handlePlaceOrder}
+        isSubmitting={placeOrderMutation.isPending}
+      />
+      {placeOrderMutation.isPending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80" role="status" aria-live="polite">
+          <div className="flex items-center gap-3 rounded-lg border bg-background px-5 py-4 shadow-lg">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span>Processing your order...</span>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }

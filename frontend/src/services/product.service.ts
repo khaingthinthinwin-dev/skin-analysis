@@ -20,7 +20,19 @@ export function normalizeProductUpdatePayload(data: UpdateProductData): UpdatePr
   }
 
   if (Object.prototype.hasOwnProperty.call(normalized, 'isFeatured')) {
-    normalized.isFeatured = normalized.isFeatured === undefined ? undefined : Boolean(normalized.isFeatured)
+    normalized.isFeatured =
+      normalized.isFeatured === undefined
+        ? undefined
+        : normalized.isFeatured === true
+  }
+
+  if (normalized.skinTypes) {
+    normalized.skinTypes = normalized.skinTypes.flatMap((s) => {
+      const lower = s.toLowerCase()
+      return lower === 'all'
+        ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+        : lower
+    })
   }
 
   return normalized
@@ -58,9 +70,11 @@ export const productService = {
     formData.append('shortDescription', data.shortDescription)
     formData.append('description', data.description)
     formData.append('categoryId', data.categoryId)
-    formData.append('price', String(data.price))
     formData.append('stockQuantity', String(data.stockQuantity))
 
+    if (data.price != null && !Number.isNaN(data.price)) {
+      formData.append('price', String(data.price))
+    }
     if (data.sku) formData.append('sku', data.sku)
     if (data.compareAtPrice != null && !Number.isNaN(data.compareAtPrice)) {
       formData.append('compareAtPrice', String(data.compareAtPrice))
@@ -69,7 +83,14 @@ export const productService = {
       formData.append('lowStockThreshold', String(data.lowStockThreshold))
     }
     if (data.skinTypes && data.skinTypes.length > 0) {
-      formData.append('skinTypes', JSON.stringify(data.skinTypes))
+      formData.append('skinTypes', JSON.stringify(
+        data.skinTypes.flatMap((s) => {
+          const lower = s.toLowerCase()
+          return lower === 'all'
+            ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+            : lower
+        }),
+      ))
     }
     if (data.ingredients && data.ingredients.length > 0) {
       formData.append('ingredients', JSON.stringify(data.ingredients))
@@ -95,15 +116,23 @@ export const productService = {
     if (normalizedData.shortDescription) formData.append('shortDescription', normalizedData.shortDescription)
     if (normalizedData.description) formData.append('description', normalizedData.description)
     if (normalizedData.categoryId) formData.append('categoryId', normalizedData.categoryId)
-    if (normalizedData.price !== undefined && !Number.isNaN(normalizedData.price)) {
-      formData.append('price', String(normalizedData.price))
+    if (Object.prototype.hasOwnProperty.call(normalizedData, 'price')) {
+      if (normalizedData.price == null) {
+        formData.append('price', 'null')
+      } else if (!Number.isNaN(normalizedData.price)) {
+        formData.append('price', String(normalizedData.price))
+      }
     }
     if (normalizedData.stockQuantity !== undefined && !Number.isNaN(normalizedData.stockQuantity)) {
       formData.append('stockQuantity', String(normalizedData.stockQuantity))
     }
     if (normalizedData.sku) formData.append('sku', normalizedData.sku)
-    if (normalizedData.compareAtPrice != null && !Number.isNaN(normalizedData.compareAtPrice)) {
-      formData.append('compareAtPrice', String(normalizedData.compareAtPrice))
+    if (Object.prototype.hasOwnProperty.call(normalizedData, 'compareAtPrice')) {
+      if (normalizedData.compareAtPrice == null) {
+        formData.append('compareAtPrice', '')
+      } else if (!Number.isNaN(normalizedData.compareAtPrice)) {
+        formData.append('compareAtPrice', String(normalizedData.compareAtPrice))
+      }
     }
     if (normalizedData.lowStockThreshold != null && !Number.isNaN(normalizedData.lowStockThreshold)) {
       formData.append('lowStockThreshold', String(normalizedData.lowStockThreshold))
@@ -120,10 +149,10 @@ export const productService = {
     if (normalizedData.isActive !== undefined) {
       formData.append('isActive', String(normalizedData.isActive))
     }
-    if (normalizedData.isFeatured !== undefined) {
-      formData.append('isFeatured', String(normalizedData.isFeatured))
+    if (Object.prototype.hasOwnProperty.call(normalizedData, 'isFeatured')) {
+      formData.append('isFeatured', normalizedData.isFeatured === true ? 'true' : 'false')
     }
-    if (normalizedData.retainedImageUrls && normalizedData.retainedImageUrls.length > 0) {
+    if (normalizedData.retainedImageUrls !== undefined) {
       formData.append('retainedImageUrls', JSON.stringify(normalizedData.retainedImageUrls))
     }
     if (normalizedData.images && normalizedData.images.length > 0) {
@@ -139,8 +168,21 @@ export const productService = {
     return response.data.data
   },
 
-  deleteProduct: async (id: string): Promise<void> => {
+  deleteProduct: async (id: string): Promise<{ message: string }> => {
     await apiClient.delete(`/products/${id}`)
+    return { message: 'Product deactivated' }
+  },
+
+  hardDeleteProduct: async (id: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ data: { message: string } }>(`/products/${id}/hard`)
+    return response.data.data
+  },
+
+  toggleFeatured: async (id: string): Promise<{ id: string; isFeatured: boolean }> => {
+    const response = await apiClient.patch<{ data: { id: string; isFeatured: boolean } }>(
+      `/products/${id}/toggle-featured`,
+    )
+    return response.data.data
   },
 
   bulkUpdateStatus: async (data: BulkActionData): Promise<{ updated: number }> => {
