@@ -148,8 +148,8 @@
 
 ### 4.2 Form Validation
 
-- [ ] Empty form submission — all required field errors shown
-- [ ] Invalid email format — inline error displayed
+- [x] Empty form submission — all required field errors shown
+- [x] Invalid email format — inline error displayed
 - [ ] Weak password — password requirements not met indicator
 - [ ] Password mismatch — confirm password error shown
 - [ ] Short name (< 2 chars) — inline error displayed
@@ -166,7 +166,7 @@
 - [ ] Buyer selected by default — license upload hidden
 - [ ] Select Merchant — shopName + license upload appear
 - [ ] Switch back to Buyer — shopName + license upload disappear
-- [ ] Show/Hide password toggle works for all password fields
+- [x] Show/Hide password toggle works for all password fields
 - [ ] Create Account button disabled until form is valid
 - [ ] Loading spinner shown during submission
 - [ ] Navigation links: "Already have an account? Sign in" → `/login`
@@ -179,20 +179,20 @@
 
 ### 5.1 Happy Path
 
-- [ ] Navigate to `/login` — email input auto-focused
-- [ ] Login with valid buyer credentials → redirects to `/buyer` dashboard
+- [x] Navigate to `/login` — email input auto-focused
+- [x] Login with valid buyer credentials → redirects to `/buyer` dashboard
 - [ ] Login with valid merchant credentials → redirects to `/merchant` dashboard
-- [ ] Access token stored after login
+- [x] Access token stored after login
 
 ### 5.2 Form Validation
 
-- [ ] Empty form submission — errors shown
+- [x] Empty form submission — errors shown
 - [ ] Invalid email format — inline error
-- [ ] Short password (< 8 chars) — inline error
+- [x] Short password (< 8 chars) — inline error
 
 ### 5.3 Error Handling
 
-- [ ] Wrong password — "Invalid email or password" alert shown
+- [x] Wrong password — "Invalid email or password" alert shown
 - [ ] Non-existent email — same generic error (no email enumeration)
 - [ ] Network error — toast displayed
 
@@ -201,8 +201,8 @@
 - [ ] Show/Hide password toggle works
 - [ ] Log In button disabled until form valid
 - [ ] Loading spinner during submission
-- [ ] "Don't have an account? Create one" → `/register`
-- [ ] "Forgot password?" → `/forgot-password`
+- [x] "Don't have an account? Create one" → `/register`
+- [x] "Forgot password?" → `/forgot-password`
 
 ---
 

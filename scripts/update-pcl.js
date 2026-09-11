@@ -1,10 +1,45 @@
-import * as fs from 'fs';
-import * as path from 'path';
+const fs = require('fs');
+const path = require('path');
 
-const TEST_RESULTS_DIR = path.resolve(__dirname, 'test-results');
-const PCL_PATH = path.resolve(__dirname, '../docs/screen/SignUp_LogIn/SignUp_Login_PCL.md');
+const PCL_PATH = path.join(__dirname, '../docs/screen/SignUp_LogIn/SignUp_Login_PCL.md');
+const RESULTS_PATH = path.join(__dirname, '../e2e/test-results/results.json');
 
-const TITLE_MAP: Record<string, string> = {
+function loadJsonReport() {
+  if (!fs.existsSync(RESULTS_PATH)) {
+    console.error('❌ results.json not found. Run tests first.');
+    process.exit(1);
+  }
+
+  const data = JSON.parse(fs.readFileSync(RESULTS_PATH, 'utf-8'));
+  const results = [];
+
+  function extractTests(suite, parentTitle = '') {
+    if (suite.specs) {
+      for (const spec of suite.specs) {
+        for (const test of spec.tests) {
+          for (const result of test.results) {
+            results.push({
+              status: result.status,
+              title: spec.title,
+              suite: parentTitle,
+            });
+          }
+        }
+      }
+    }
+    if (suite.suites) {
+      for (const child of suite.suites) {
+        extractTests(child, suite.title || parentTitle);
+      }
+    }
+  }
+
+  extractTests(data.suites?.[0] || data);
+  return results;
+}
+
+const TITLE_MAP = {
+  // Register tests
   'should display register form with all fields': 'Navigate to `/register` — form displays all fields',
   'should have buyer selected by default': 'Buyer selected by default — license upload hidden',
   'should hide license upload for buyer role': 'Buyer selected by default — license upload hidden',
@@ -28,6 +63,8 @@ const TITLE_MAP: Record<string, string> = {
   'should toggle password visibility': 'Show/Hide password toggle works',
   'should toggle confirm password visibility': 'Show/Hide password toggle works',
   'should redirect to dashboard if already logged in': 'Access token stored after login',
+
+  // Login tests
   'should display login form with all fields': 'Navigate to `/login`',
   'should have correct page title': 'Navigate to `/login`',
   'should login as buyer and redirect to buyer dashboard': 'Login with valid buyer credentials',
@@ -42,38 +79,7 @@ const TITLE_MAP: Record<string, string> = {
   'should navigate to forgot password page': 'Forgot password',
 };
 
-function removeDir(dirPath: string) {
-  if (fs.existsSync(dirPath)) {
-    fs.rmSync(dirPath, { recursive: true, force: true });
-  }
-}
-
-function updatePCL() {
-  const resultsPath = path.join(TEST_RESULTS_DIR, 'results.json');
-  if (!fs.existsSync(resultsPath)) return;
-
-  const data = JSON.parse(fs.readFileSync(resultsPath, 'utf-8'));
-  const results: { status: string; title: string }[] = [];
-
-  function extractTests(suite: any) {
-    if (suite.specs) {
-      for (const spec of suite.specs) {
-        for (const test of spec.tests) {
-          for (const result of test.results) {
-            results.push({ status: result.status, title: spec.title });
-          }
-        }
-      }
-    }
-    if (suite.suites) {
-      for (const child of suite.suites) {
-        extractTests(child);
-      }
-    }
-  }
-
-  extractTests(data.suites?.[0] || data);
-
+function updatePCL(results) {
   let content = fs.readFileSync(PCL_PATH, 'utf-8');
   let updatedCount = 0;
 
@@ -95,10 +101,16 @@ function updatePCL() {
   }
 
   fs.writeFileSync(PCL_PATH, content);
-  console.log(`📋 PCL updated: ${updatedCount} tests marked as passed`);
+  console.log(`✅ PCL updated: ${updatedCount} tests marked as passed`);
 }
 
-export default function globalTeardown() {
-  // Auto-update PCL checklist
-  updatePCL();
-}
+// Main
+const results = loadJsonReport();
+console.log(`📊 Found ${results.length} test results`);
+
+const passed = results.filter(r => r.status === 'passed').length;
+const failed = results.filter(r => r.status === 'failed').length;
+console.log(`   ✅ Passed: ${passed}`);
+console.log(`   ❌ Failed: ${failed}`);
+
+updatePCL(results);
