@@ -407,6 +407,7 @@ model Promotion {
 model Advertisement {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   shopId              String    @map("shop_id") @db.Uuid
+  feeSettingId        String?   @map("fee_setting_id") @db.Uuid
   title               String
   content             String?
   announcementMessage String    @map("announcement_message")
@@ -420,17 +421,19 @@ model Advertisement {
   approvedBy          String?   @map("approved_by") @db.Uuid
   approvedAt          DateTime? @map("approved_at")
   rejectionReason     String?   @map("rejection_reason")
-  weekNumber          Int       @map("week_number")
-  startsAt            DateTime  @map("starts_at")
-  expiresAt           DateTime  @map("expires_at")
+  weekNumber          Int?      @map("week_number")
+  startsAt            DateTime? @map("starts_at")
+  expiresAt           DateTime? @map("expires_at")
   createdAt           DateTime  @default(now()) @map("created_at")
 
   // Relations
   shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  feeSetting AdFeeSetting? @relation(fields: [feeSettingId], references: [id], onDelete: Restrict)
   approver   User?       @relation("AdminAdApprovals", fields: [approvedBy], references: [id], onDelete: SetNull)
   adPayments AdPayment[]
 
   @@index([shopId])
+  @@index([feeSettingId])
   @@index([isActive])
   @@index([expiresAt])
   @@index([approvalStatus])
@@ -452,6 +455,7 @@ model AdFeeSetting {
 
   // Relations
   history AdFeeHistory[]
+  advertisements Advertisement[]
 
   @@unique([placement, tier])
   @@index([placement, tier])
