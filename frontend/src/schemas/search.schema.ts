@@ -32,7 +32,7 @@ export const searchParamsSchema = z.object({
   sort: sortFieldEnum.optional().default('createdAt'),
   order: sortOrderEnum.optional().default('desc'),
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(12),
 }).refine(
   (data) =>
     data.minPrice === undefined ||
@@ -50,4 +50,4 @@ export const SORT_OPTIONS = [
   { value: 'rating:desc', label: 'Highest Rated' }, 
 ] as const
 
-export const PAGE_SIZE_OPTIONS = [10, 20, 50] as const
+export const PAGE_SIZE_OPTIONS = [12, 24, 48] as const

@@ -166,7 +166,7 @@ describe('ProductsController', () => {
             price: 10,
             compareAtPrice: 15,
             stockQuantity: 5,
-          } as any,
+          },
           [],
         ),
       ).rejects.toThrow(ConflictException);
@@ -188,7 +188,7 @@ describe('ProductsController', () => {
     it('throws NotFoundException for non-existent product', async () => {
       service.update.mockRejectedValue(new NotFoundException());
       await expect(
-        controller.update('bad-id', mockUser, { name: 'Test' } as any, []),
+        controller.update('bad-id', mockUser, { name: 'Test' }, []),
       ).rejects.toThrow(NotFoundException);
     });
   });
