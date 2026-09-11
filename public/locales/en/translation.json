@@ -42,7 +42,6 @@
       "payment": "Payment",
       "status": "Status",
       "track": "Track"
-
     },
     "track": "Track",
     "empty": {
