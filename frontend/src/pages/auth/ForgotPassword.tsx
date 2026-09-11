@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, CheckCircle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -28,9 +28,9 @@ import { ROUTES } from '@/lib/constants'
 
 export default function ForgotPassword() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = useState(false)
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -45,39 +45,15 @@ export default function ForgotPassword() {
     setError(null)
     try {
       await authService.forgotPassword(data)
-      setIsSuccess(true)
+      navigate(ROUTES.VERIFY_CODE, { state: { email: data.email } })
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send reset link'
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err instanceof Error ? err.message : 'Failed to send verification code')
       setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  if (isSuccess) {
-    return (
-      <Card className="w-full">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-            <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-          </div>
-          <CardTitle className="text-2xl">{t('auth.forgotPassword.successTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-          <p className="text-muted-foreground">
-            {t('auth.forgotPassword.successMessage')}
-          </p>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <Link
-            to={ROUTES.LOGIN}
-            className="text-sm text-primary hover:underline"
-          >
-            {t('auth.forgotPassword.backToLogin')}
-          </Link>
-        </CardFooter>
-      </Card>
-    )
   }
 
   return (

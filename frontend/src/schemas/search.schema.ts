@@ -8,9 +8,13 @@ export const searchParamsSchema = z.object({
   q: z.string().max(255).optional().default(''),
   categoryId: z.string().uuid().optional().default(''),
   skinTypes: z
-    .union([skinTypeEnum, z.array(skinTypeEnum)])
+    .union([z.string(), z.array(skinTypeEnum)])
     .optional()
-    .transform((v) => (Array.isArray(v) ? v : v ? [v] : []))
+    .transform((v) => {
+      if (Array.isArray(v)) return v
+      if (!v) return []
+      return v.split(',').filter(Boolean) as z.infer<typeof skinTypeEnum>[]
+    })
     .default([]),
   ingredients: z
     .union([z.string(), z.array(z.string())])
