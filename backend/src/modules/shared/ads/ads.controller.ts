@@ -25,8 +25,15 @@ export class AdsController {
   @Get('panel')
   @ApiOperation({ summary: 'Get ad panel by placement' })
   @ApiQuery({ name: 'placement', required: false, type: String })
-  async getAdPanel(@Query('placement') placement?: string) {
-    return this.adsService.getAdsByPlacement(placement || 'general');
+  @ApiQuery({ name: 'sessionId', required: false, type: String })
+  async getAdPanel(
+    @Query('placement') placement?: string,
+    @Query('sessionId') sessionId?: string,
+  ) {
+    return this.adsService.getAdsByPlacement(
+      placement || 'category_banner',
+      sessionId,
+    );
   }
 
   @Post('track/click')

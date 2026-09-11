@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ImageIcon } from 'lucide-react';
 import type { CheckoutItem, CouponValidation } from '@/types/checkout.types';
 
 interface OrderSummaryProps {
@@ -11,6 +12,14 @@ interface OrderSummaryProps {
 	onApplyCoupon: (code: string) => void;
 	onRemoveCoupon: () => void;
 	isCouponLoading: boolean;
+}
+
+function getImageUrl(url: string | null | undefined): string {
+	if (!url) return '';
+	if (url.startsWith('http')) return url;
+	const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+	const base = raw.replace(/\/api\/v1\/?$/, '');
+	return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
 function formatPrice(value: string | number) {
@@ -43,15 +52,17 @@ export function OrderSummary({
 				<div className="space-y-3">
 					{items.map((item) => (
 						<div key={item.id} className="flex items-center gap-3 border-b border-border/60 pb-3">
-							{item.productImage ? (
-								<img
-									src={item.productImage}
-									alt={item.productName}
-									className="h-16 w-16 rounded-md object-cover"
-								/>
-							) : (
-								<div className="h-16 w-16 rounded-md bg-muted" aria-hidden="true" />
-							)}
+						{item.productImage ? (
+							<img
+								src={getImageUrl(item.productImage)}
+								alt={item.productName}
+								className="h-16 w-16 rounded-md object-cover"
+							/>
+						) : (
+							<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-muted">
+								<ImageIcon className="h-6 w-6 text-muted-foreground/40" />
+							</div>
+						)}
 							<div className="min-w-0 flex-1">
 								<p className="truncate text-sm font-medium">{item.productName}</p>
 								<p className="text-xs text-muted-foreground">
