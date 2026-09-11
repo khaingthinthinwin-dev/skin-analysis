@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Menu, Sparkles } from 'lucide-react'
+import { Menu, Sparkles, Heart, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
 import { UserNav } from '@/components/common/UserNav'
+import { GuestLoginModal } from '@/components/common/GuestLoginModal'
 import { useAuth } from '@/hooks/useAuth'
+import { useCart } from '@/features/buyer/cart/hooks/useCart'
+import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
 const navItems = [
@@ -21,6 +24,19 @@ export function Header() {
   const { isAuthenticated, user } = useAuth()
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const [guestModal, setGuestModal] = useState<'wishlist' | 'cart' | null>(null)
+  const { summary } = useCart()
+  const { totalCount: wishlistCount } = useWishlist()
+
+  const cartCount = summary.totalItems
+  const wishlistTotal = wishlistCount
+
+  const handleIconClick = (type: 'wishlist' | 'cart', e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault()
+      setGuestModal(type)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -58,6 +74,26 @@ export function Header() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
+            <Link to="/buyer/wishlist" onClick={(e) => handleIconClick('wishlist', e)} className="relative">
+              <Heart className="h-5 w-5" />
+              {wishlistTotal > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                  {wishlistTotal > 99 ? '99+' : wishlistTotal}
+                </span>
+              )}
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon" asChild aria-label="Cart">
+            <Link to="/buyer/cart" onClick={(e) => handleIconClick('cart', e)} className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
+          </Button>
           <LanguageToggle />
           <ThemeToggle />
           {isAuthenticated ? (
@@ -97,8 +133,37 @@ export function Header() {
                   {t(`nav.${item.key}`)}
                 </Link>
               ))}
+              {isAuthenticated && user && (
+                <Link
+                  to={getDashboardRoute(user.role)}
+                  onClick={() => setOpen(false)}
+                  className="text-sm font-semibold text-primary hover:underline"
+                >
+                  Dashboard
+                </Link>
+              )}
               <div className="my-4 h-px bg-border" />
               <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
+                  <Link to="/buyer/wishlist" onClick={(e) => { handleIconClick('wishlist', e); setOpen(false) }} className="relative">
+                    <Heart className="h-5 w-5" />
+                    {wishlistTotal > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                        {wishlistTotal > 99 ? '99+' : wishlistTotal}
+                      </span>
+                    )}
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="icon" asChild aria-label="Cart">
+                  <Link to="/buyer/cart" onClick={(e) => { handleIconClick('cart', e); setOpen(false) }} className="relative">
+                    <ShoppingCart className="h-5 w-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                        {cartCount > 99 ? '99+' : cartCount}
+                      </span>
+                    )}
+                  </Link>
+                </Button>
                 <LanguageToggle />
                 <ThemeToggle />
               </div>
@@ -125,6 +190,13 @@ export function Header() {
           </SheetContent>
         </Sheet>
       </div>
+
+      <GuestLoginModal
+        open={guestModal !== null}
+        onClose={() => setGuestModal(null)}
+        messageKey={guestModal ?? 'wishlist'}
+        returnUrl={guestModal === 'wishlist' ? '/buyer/wishlist' : '/buyer/search'}
+      />
     </header>
   )
 }

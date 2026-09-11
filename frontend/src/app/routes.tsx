@@ -14,6 +14,7 @@ const About = lazy(() => import('@/pages/About'))
 const Login = lazy(() => import('@/pages/auth/Login'))
 const Register = lazy(() => import('@/pages/auth/Register'))
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'))
+const VerifyCode = lazy(() => import('@/pages/auth/VerifyCode'))
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const Profile = lazy(() => import('@/pages/shared/Profile'))
 const Notifications = lazy(() => import('@/pages/shared/Notifications'))
@@ -33,18 +34,26 @@ const CreateAdminAccount = lazy(() => import('@/pages/admin/CreateAdminAccount')
 const AdminAuditLog = lazy(() => import('@/pages/admin/AuditLog'))
 
 const BuyerDashboard = lazy(() => import('@/pages/buyer/Dashboard'))
-const BuyerSearchFilter = lazy(() => import('@/pages/buyer/SearchFilter'))
+const BuyerSearchFilter = lazy(() => import('@/pages/buyer/Products'))
 const BuyerProductDetail = lazy(() => import('@/pages/buyer/ProductDetail'))
 const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
 const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
+const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
+// TODO: Uncomment when pages are implemented
+// const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
+// const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
+// const BuyerOrderTracking = lazy(() => import('@/pages/buyer/OrderTracking'))
 const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysis'))
 const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRecommendations'))
 
 const MerchantDashboard = lazy(() => import('@/pages/merchant/Dashboard'))
 const MerchantProductManagement = lazy(() => import('@/pages/merchant/ProductManagement'))
+const MerchantProductCreate = lazy(() => import('@/pages/merchant/ProductCreate'))
+const MerchantProductEdit = lazy(() => import('@/pages/merchant/ProductEdit'))
 const MerchantAdvertisements = lazy(() => import('@/pages/merchant/Advertisements'))
 const MerchantPromotions = lazy(() => import('@/pages/merchant/Promotions'))
+import { MerchantErrorBoundary } from '@/components/merchant/MerchantErrorBoundary'
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<LoadingSpinner className="min-h-screen" />}>{children}</Suspense>
@@ -68,6 +77,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrapper>
             <About />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'products',
+        element: (
+          <SuspenseWrapper>
+            <BuyerSearchFilter />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'products/:id',
+        element: (
+          <SuspenseWrapper>
+            <BuyerProductDetail />
           </SuspenseWrapper>
         ),
       },
@@ -229,6 +254,14 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'products',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerSearchFilter />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'products/:id',
                 element: (
                   <SuspenseWrapper>
@@ -241,6 +274,14 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <BuyerWishlist />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'wishlist/products/:id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerProductDetail />
                   </SuspenseWrapper>
                 ),
               },
@@ -260,6 +301,39 @@ export const router = createBrowserRouter([
                   </SuspenseWrapper>
                 ),
               },
+              {
+                path: 'checkout/confirmation/:orderId',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrderConfirmation />
+                  </SuspenseWrapper>
+                ),
+              },
+              // TODO: Uncomment when pages are implemented
+              // {
+              //   path: 'orders',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderHistory />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
+              // {
+              //   path: 'orders/:orderId',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderDetail />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
+              // {
+              //   path: 'orders/:orderId/tracking',
+              //   element: (
+              //     <SuspenseWrapper>
+              //       <BuyerOrderTracking />
+              //     </SuspenseWrapper>
+              //   ),
+              // },
               {
                 path: 'skin-analysis',
                 element: (
@@ -307,6 +381,7 @@ export const router = createBrowserRouter([
       {
         path: 'merchant',
         element: <ProtectedRoute roles={['merchant']} />,
+        errorElement: <MerchantErrorBoundary />,
         children: [
           {
             element: <MerchantLayout />,
@@ -324,6 +399,22 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <MerchantProductManagement />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'products/new',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantProductCreate />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'products/:id/edit',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantProductEdit />
                   </SuspenseWrapper>
                 ),
               },
@@ -399,6 +490,16 @@ export const router = createBrowserRouter([
       <AuthLayout>
         <SuspenseWrapper>
           <ForgotPassword />
+        </SuspenseWrapper>
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/verify-code',
+    element: (
+      <AuthLayout>
+        <SuspenseWrapper>
+          <VerifyCode />
         </SuspenseWrapper>
       </AuthLayout>
     ),

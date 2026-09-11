@@ -78,6 +78,41 @@
       },
       "agreeToTerms": "I agree to the",
       "termsOfService": "Terms of Service"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password?",
+      "description": "Enter your email and we'll send you a verification code.",
+      "email": "Email",
+      "emailPlaceholder": "user@example.com",
+      "submit": "Send Verification Code",
+      "submitting": "Sending...",
+      "backToLogin": "Back to Login"
+    },
+    "verifyCode": {
+      "title": "Enter Verification Code",
+      "description": "We sent a 6-digit code to {{email}}",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "000000",
+      "submit": "Verify Code",
+      "verifying": "Verifying...",
+      "resend": "Resend Code",
+      "resendCooldown": "Resend in {{seconds}}s",
+      "resendSuccess": "A new verification code has been sent to your email.",
+      "backToEmail": "Back to Email"
+    },
+    "resetPassword": {
+      "title": "Reset Your Password",
+      "description": "Enter your new password below.",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Create a new password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your new password",
+      "submit": "Reset Password",
+      "submitting": "Resetting...",
+      "successTitle": "Password reset successful",
+      "successMessage": "Your password has been reset successfully. You can now sign in with your new password.",
+      "backToLogin": "Back to Login",
+      "invalidToken": "Invalid or expired verification code. Please request a new one."
     }
   },
   "home": {
@@ -85,6 +120,48 @@
       "title": "Your Cosmetics Finder Journey",
       "subtitle": "Discover personalized skincare products powered by advanced AI analysis",
       "cta": "Get Started"
+    }
+  },
+  "wishlist": {
+    "title": "My Wishlist",
+    "itemCount": "{{count}} items saved",
+    "moveToCart": "Add to Cart",
+    "remove": "Remove",
+    "emptyTitle": "No items saved yet",
+    "emptyMessage": "Browse products to add favorites.",
+    "continueShopping": "Continue Shopping",
+    "unavailable": "This product is currently unavailable.",
+    "inStock": "In Stock",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock",
+    "guestLoginAlert": {
+      "title": "Log In Required",
+      "message": "Please log in to add items to your wishlist.",
+      "loginButton": "Log In",
+      "closeButton": "Cancel"
+    }
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "itemCount": "{{count}} items in cart",
+    "subtotal": "Subtotal",
+    "totalItems": "Total Items",
+    "checkout": "Proceed to Checkout",
+    "continueShopping": "Continue Shopping",
+    "browseProducts": "Browse Products",
+    "remove": "Remove",
+    "emptyTitle": "Your cart is empty",
+    "emptyMessage": "Start shopping!",
+    "inStock": "In Stock",
+    "lowStock": "Only {{n}} left in stock",
+    "outOfStock": "Out of Stock",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "guestLoginAlert": {
+      "title": "Log In Required",
+      "message": "Please log in to add items to your cart.",
+      "loginButton": "Log In",
+      "closeButton": "Cancel"
     }
   },
   "footer": {

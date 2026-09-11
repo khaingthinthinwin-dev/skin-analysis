@@ -31,8 +31,6 @@ This document specifies the core business logic, state transitions, validation r
    ```typescript
    const where: Prisma.advertisementWhereInput = {};
    if (query.status) where.approval_status = query.status;
-   if (query.placement) where.ad_fee_settings = { placement: query.placement };
-   if (query.tier) where.ad_fee_settings = { tier: query.tier };
    if (query.shop) where.shop = { name: { contains: query.shop, mode: 'insensitive' } };
    if (query.dateFrom || query.dateTo) {
      where.created_at = {};
@@ -40,10 +38,11 @@ This document specifies the core business logic, state transitions, validation r
      if (query.dateTo) where.created_at.lte = new Date(query.dateTo);
    }
    ```
-3. **Include Relations:** Join `shops` (name), `ad_fee_settings` (placement, tier, daily_rate, duration_days), `ad_payments` (payment_status, amount).
-4. **Apply Pagination:** `skip = (page - 1) * limit`, `take = limit`. Order by `created_at DESC`.
-5. **Count Total:** Separate `COUNT(*)` query for meta.total.
-6. **Return:** `PaginatedResponseDto<AdminAdvertisementResponseDto>`.
+3. **Fee Package Resolution:** The `advertisements` table does not contain a direct foreign key to `ad_fee_settings`. Fee package details are derived from the advertisement’s saved package snapshot (for example: `placement`, `tier`, `daily_rate`, `duration_days`, `total_fee`) or from a non-FK runtime lookup against the current fee catalog only when needed for display logic. The admin list endpoint therefore filters based on the advertisement’s own stored values and never performs a direct join to `ad_fee_settings`.
+4. **Include Relations:** Join `shops` (name), `ad_payments` (payment_status, amount). Fee package data is treated as locked snapshot data on the advertisement itself and is not loaded through a direct `ad_fee_settings` relation.
+5. **Apply Pagination:** `skip = (page - 1) * limit`, `take = limit`. Order by `created_at DESC`.
+6. **Count Total:** Separate `COUNT(*)` query for meta.total.
+7. **Return:** `PaginatedResponseDto<AdminAdvertisementResponseDto>`.
 
 ### 2.2 viewAdDetail(id)
 
@@ -51,9 +50,9 @@ This document specifies the core business logic, state transitions, validation r
 
 1. **Validate Auth:** Admin role required.
 2. **Validate UUID:** `id` must be valid UUID format.
-3. **Find Advertisement:** `prisma.advertisement.findUnique({ where: { id }, include: { shop: true, ad_fee_settings: true, ad_payments: true } })`. If not found, throw `NotFoundException`.
+3. **Find Advertisement:** `prisma.advertisement.findUnique({ where: { id }, include: { shop: true, ad_payments: true } })`. If not found, throw `NotFoundException`.
 4. **Compute Analytics:** Query impression/click tracking data (if available) for the ad. Compute `ctr = (clicks / impressions) * 100`.
-5. **Compute Fee Info:** `dailyRate` from fee setting (locked at purchase), `durationDays` from fee setting, `totalFee = dailyRate * durationDays`.
+5. **Compute Fee Info:** Fee values are locked at purchase time and represented as snapshot values on the advertisement record (`placement`, `tier`, `daily_rate`, `duration_days`, `total_fee`). The advertisement does not hold a direct FK to `ad_fee_settings`, and later updates to the catalog do not retroactively change historical ads. `totalFee = dailyRate * durationDays`.
 6. **Return:** `AdminAdDetailResponseDto`.
 
 ### 2.3 approveAd(id, adminId)

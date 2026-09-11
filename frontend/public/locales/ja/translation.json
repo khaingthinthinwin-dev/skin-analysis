@@ -78,6 +78,41 @@
       },
       "agreeToTerms": "利用規約に同意します",
       "termsOfService": "利用規約"
+    },
+    "forgotPassword": {
+      "title": "パスワードをお忘れですか？",
+      "description": "メールアドレスを入力すると、認証コードを送信します。",
+      "email": "メールアドレス",
+      "emailPlaceholder": "user@example.com",
+      "submit": "認証コードを送信",
+      "submitting": "送信中...",
+      "backToLogin": "ログインに戻る"
+    },
+    "verifyCode": {
+      "title": "認証コードを入力",
+      "description": "{{email}} に6桁のコードを送信しました",
+      "codeLabel": "認証コード",
+      "codePlaceholder": "000000",
+      "submit": "コードを確認",
+      "verifying": "確認中...",
+      "resend": "コードを再送信",
+      "resendCooldown": "再送信まで{{seconds}}秒",
+      "resendSuccess": "新しい認証コードがメールに送信されました。",
+      "backToEmail": "メールアドレスに戻る"
+    },
+    "resetPassword": {
+      "title": "パスワードをリセット",
+      "description": "新しいパスワードを入力してください。",
+      "newPassword": "新しいパスワード",
+      "newPasswordPlaceholder": "新しいパスワードを作成",
+      "confirmPassword": "パスワード確認",
+      "confirmPasswordPlaceholder": "新しいパスワードを再入力",
+      "submit": "パスワードをリセット",
+      "submitting": "リセット中...",
+      "successTitle": "パスワードリセット成功",
+      "successMessage": "パスワードが正常にリセットされました。新しいパスワードでログインできます。",
+      "backToLogin": "ログインに戻る",
+      "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。"
     }
   },
   "home": {
@@ -85,6 +120,48 @@
       "title": "Cosmetics Finder 体験",
       "subtitle": "高度なAI分析によるパーソナライズされたスキンケア製品を発見",
       "cta": "始める"
+    }
+  },
+  "wishlist": {
+    "title": "お気に入り",
+    "itemCount": "{{count}}件の商品が保存されています",
+    "moveToCart": "カートに追加",
+    "remove": "削除",
+    "emptyTitle": "まだお気に入りに追加された商品がありません",
+    "emptyMessage": "商品を閲覧してお気に入りを追加しましょう。",
+    "continueShopping": "買い物を続ける",
+    "unavailable": "この商品は現在在庫切れです。",
+    "inStock": "在庫あり",
+    "lowStock": "残りわずか",
+    "outOfStock": "在庫切れ",
+    "guestLoginAlert": {
+      "title": "ログインが必要です",
+      "message": "お気に入りに商品を追加するにはログインしてください。",
+      "loginButton": "ログイン",
+      "closeButton": "キャンセル"
+    }
+  },
+  "cart": {
+    "title": "カート",
+    "itemCount": "{{count}}件の商品がカートに入っています",
+    "subtotal": "小計",
+    "totalItems": "合計点数",
+    "checkout": "購入手続きへ",
+    "continueShopping": "買い物を続ける",
+    "browseProducts": "商品を見る",
+    "remove": "削除",
+    "emptyTitle": "カートは空です",
+    "emptyMessage": "お買い物を始めましょう！",
+    "inStock": "在庫あり",
+    "lowStock": "残り{{n}}個",
+    "outOfStock": "在庫切れ",
+    "decreaseQuantity": "数量を減らす",
+    "increaseQuantity": "数量を増やす",
+    "guestLoginAlert": {
+      "title": "ログインが必要です",
+      "message": "カートに商品を追加するにはログインしてください。",
+      "loginButton": "ログイン",
+      "closeButton": "キャンセル"
     }
   },
   "footer": {

@@ -149,7 +149,7 @@ View full ad detail including shop info, fee info, payment info, and analytics.
   }
 }
 ```
-- **Logic:** Validate admin role → find ad by ID (`404` if not found) → JOIN `shops` (name), `ad_fee_settings` (placement, tier, daily_rate, duration_days), `ad_payments` (payment info) → compute analytics (impressions, clicks, CTR) → return full ad detail DTO.
+- **Logic:** Validate admin role → find ad by ID (`404` if not found) → load `shops` and `ad_payments`, then read the ad’s stored fee snapshot fields (`placement`, `tier`, `daily_rate`, `duration_days`, `total_fee`) instead of joining directly to `ad_fee_settings` → compute analytics (impressions, clicks, CTR) → return full ad detail DTO.
 - **Error Responses:** `404 NOT_FOUND` — ad not found.
 
 ### 2.3 POST /admin/ads/:id/approve
@@ -502,7 +502,7 @@ Revenue breakdown analytics with summary metrics, by-placement, by-tier, and tre
   }
 }
 ```
-- **Logic:** Validate admin role → validate date range (dateFrom < dateTo, max 365 days) (`400`) → query `ad_payments` joined with `advertisements` and `ad_fee_settings` where `payment_status = 'completed'` AND `advertisements.approval_status = 'approved'` AND `paid_at` within date range → apply placement/tier filters if provided → **Summary Metrics:** calculate `totalRevenue`, `totalAdsApproved`, `totalFeesCollected`, `avgRevenuePerAd`, `totalRefunds` → **By Placement:** `GROUP BY placement`, compute revenue per placement → **By Tier:** `GROUP BY tier`, compute revenue per tier → **Trend:** `GROUP BY payment date` (or week/month based on range), compute daily revenue → return analytics DTO.
+- **Logic:** Validate admin role → validate date range (dateFrom < dateTo, max 365 days) (`400`) → query `ad_payments` joined with `advertisements` where `payment_status = 'completed'` AND `advertisements.approval_status = 'approved'` AND `paid_at` within date range; use the advertisement’s stored placement/tier snapshot values instead of joining directly to `ad_fee_settings` → apply placement/tier filters if provided → **Summary Metrics:** calculate `totalRevenue`, `totalAdsApproved`, `totalFeesCollected`, `avgRevenuePerAd`, `totalRefunds` → **By Placement:** `GROUP BY advertisement placement`, compute revenue per placement → **By Tier:** `GROUP BY advertisement tier`, compute revenue per tier → **Trend:** `GROUP BY payment date` (or week/month based on range), compute daily revenue → return analytics DTO.
 - **Error Responses:**
   - `400 BAD_REQUEST` — missing dateFrom/dateTo / dateTo before dateFrom / range exceeds 365 days
   - `403 FORBIDDEN` — non-admin

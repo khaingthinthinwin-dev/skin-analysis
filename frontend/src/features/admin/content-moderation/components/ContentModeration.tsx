@@ -15,6 +15,13 @@ interface ContentModerationProps {
   onRemoveItem?: (id: string) => void;
 }
 
+interface FlaggedItem {
+  id: string;
+  name?: string;
+  title?: string;
+  flagReason?: string;
+}
+
 export const ContentModeration: React.FC<ContentModerationProps> = ({
   flaggedItems = [],
   onRemoveItem,

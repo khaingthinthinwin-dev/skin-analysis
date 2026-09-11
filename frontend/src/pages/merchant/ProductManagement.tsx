@@ -1,21 +1,184 @@
-import { useState } from 'react'
-import { Package, Plus, Search, Edit, Trash2, Eye } from 'lucide-react'
+import { useState, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router'
+import { Package, Plus, Search, Filter, Trash2, ShieldAlert } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { ProductTable } from '@/components/merchant/ProductTable'
+import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
+import { useTranslation } from 'react-i18next'
+import {
+  useProducts,
+  useUpdateStock,
+  useDeleteProduct,
+  useToggleFeatured,
+  useBulkUpdateStatus,
+  useBulkDelete,
+  useDeleteAll,
+} from '@/hooks/useProducts'
+import { useAuth } from '@/hooks/useAuth'
+import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
+import type { ProductQueryParams } from '@/types/product.types'
 
 export default function ProductManagement() {
-  const [query, setQuery] = useState('')
+  const { t } = useTranslation()
+  const { user } = useAuth()
+  const guard = useMerchantProductsGuard()
+  const status =
+    user?.licenseStatus ||
+    user?.license_status
+  const isPending = guard.isPending || status === 'pending'
+  const showPendingBanner = guard.showPendingBanner || isPending
+  const showCrudActions = guard.showCrudActions && !isPending
 
-  const products = [
-    { id: 'PRD-001', name: 'Gentle Foaming Cleanser', price: '$24.99', stock: 150, status: 'Active', category: 'Cleansers' },
-    { id: 'PRD-002', name: 'Vitamin C Radiant Serum', price: '$42.00', stock: 85, status: 'Active', category: 'Serums' },
-    { id: 'PRD-003', name: 'Deep Moisture Barrier Cream', price: '$36.50', stock: 12, status: 'Low Stock', category: 'Moisturizers' },
-    { id: 'PRD-004', name: 'Soothing Centella Gel', price: '$28.00', stock: 0, status: 'Out of Stock', category: 'Gel' },
-  ]
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<ProductQueryParams['sortBy']>('newest')
+  const [page, setPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
-  const filtered = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+  const queryParams: ProductQueryParams = {
+    search: search || undefined,
+    isActive: statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined,
+    sortBy,
+    page,
+    limit: 10,
+  }
+
+  const { data, isLoading, error } = useProducts(queryParams)
+  const updateStock = useUpdateStock()
+  const deleteProduct = useDeleteProduct()
+  const toggleFeatured = useToggleFeatured()
+  const bulkUpdate = useBulkUpdateStatus()
+  const bulkDelete = useBulkDelete()
+  const deleteAll = useDeleteAll()
+
+  const products = useMemo(() => data?.items || [], [data?.items])
+  const meta = data?.meta
+
+  const handleStockUpdate = useCallback(
+    (id: string, stock: number) => {
+      updateStock.mutate(
+        { id, data: { stockQuantity: stock } },
+        {
+          onSuccess: () => toast.success('Stock updated'),
+          onError: () => toast.error('Failed to update stock'),
+        },
+      )
+    },
+    [updateStock],
+  )
+
+  const handleDelete = useCallback(
+    (id: string, isActive: boolean) => {
+      deleteProduct.mutate(
+        { id, isActive },
+        {
+          onSuccess: () =>
+            toast.success(isActive ? 'Product deactivated' : 'Product permanently deleted'),
+          onError: (err: unknown) => {
+            const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
+            const backendMessage = axiosErr?.response?.data?.message
+            toast.error(backendMessage ? String(backendMessage) : 'Failed to delete product')
+          },
+        },
+      )
+    },
+    [deleteProduct],
+  )
+
+  const handleToggleFeatured = useCallback(
+    (id: string) => {
+      toggleFeatured.mutate(id, {
+        onSuccess: () => toast.success('Featured status updated'),
+        onError: () => toast.error('Failed to update featured status'),
+      })
+    },
+    [toggleFeatured],
+  )
+
+  const handleToggleActive = useCallback(
+    (id: string) => {
+      const product = products.find((p) => p.id === id)
+      if (!product) return
+
+      const action = product.isActive ? 'deactivate' : 'activate'
+      bulkUpdate.mutate(
+        { ids: [id], action },
+        {
+          onSuccess: () => toast.success(`Product ${action === 'activate' ? 'activated' : 'deactivated'}`),
+          onError: () => toast.error(`Failed to ${action} product`),
+        },
+      )
+    },
+    [bulkUpdate, products],
+  )
+
+  const handleBulkDelete = useCallback(
+    (ids: string[]) => {
+      bulkDelete.mutate(
+        { ids },
+        {
+          onSuccess: () => {
+            toast.success(`${ids.length} product(s) deactivated.`)
+            setSelectedIds([])
+          },
+          onError: (err: unknown) => {
+            const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
+            const backendMessage = axiosErr?.response?.data?.message
+            toast.error(backendMessage ? String(backendMessage) : 'Failed to delete products')
+          },
+        },
+      )
+    },
+    [bulkDelete],
+  )
+
+  const handleDeleteAll = useCallback(() => {
+    deleteAll.mutate(
+      {
+        search: search || undefined,
+        isActive: statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined,
+      },
+      {
+        onSuccess: (result) => {
+          if (result.deactivated > 0 && result.deleted > 0) {
+            toast.success(
+              `${result.deactivated} product(s) deactivated, ${result.deleted} product(s) permanently deleted. ${result.skipped} skipped due to active orders.`,
+            )
+          } else if (result.deactivated > 0) {
+            toast.success(
+              `${result.deactivated} product(s) deactivated. ${result.skipped} skipped due to active orders.`,
+            )
+          } else if (result.deleted > 0) {
+            toast.success(
+              `${result.deleted} product(s) permanently deleted. ${result.skipped} skipped due to active orders.`,
+            )
+          } else {
+            toast.warning('Cannot delete products with active orders.')
+          }
+          setDeleteAllOpen(false)
+        },
+        onError: () => {
+          toast.error('Delete all failed. Please try again.')
+          setDeleteAllOpen(false)
+        },
+      },
+    )
+  }, [deleteAll, search, statusFilter])
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
@@ -23,83 +186,193 @@ export default function ProductManagement() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <Package className="h-6 w-6 text-purple-600" /> Merchant Product Catalog
+            <Package className="h-6 w-6 text-purple-600" /> Product Management
           </h1>
-          <p className="text-sm text-muted-foreground">Manage inventory, prices, and product details</p>
+          <p className="text-sm text-muted-foreground">
+            Manage inventory, prices, and product details
+          </p>
         </div>
-        <Button size="lg" className="font-bold bg-primary shrink-0">
-          <Plus className="mr-2 h-4 w-4" /> Add New Product
-        </Button>
+        {showCrudActions && (
+          <Button
+            size="lg"
+            className="font-bold bg-primary shrink-0"
+            onClick={() => navigate('/merchant/products/new')}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add New Product
+          </Button>
+        )}
       </div>
 
+      {showPendingBanner && (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-200">
+          <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertDescription>
+            {t(
+              'merchant.products.pendingBanner',
+              'Your merchant account is pending approval. Product management features are restricted until your license is approved.',
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {guard.showRejectionBanner && (
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle>Account Rejected</AlertTitle>
+          <AlertDescription>
+            Your merchant account has been rejected. Product management features are restricted.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Filter Bar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search products by name or SKU..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
             className="pl-9"
           />
         </div>
+        <Select
+          value={statusFilter}
+          onValueChange={(val) => {
+            setStatusFilter(val)
+            setPage(1)
+          }}
+        >
+          <SelectTrigger className="w-[140px]">
+            <Filter className="mr-2 h-3 w-3" />
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={sortBy}
+          onValueChange={(val) => setSortBy(val as ProductQueryParams['sortBy'])}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest</SelectItem>
+            <SelectItem value="price">Price</SelectItem>
+            <SelectItem value="rating">Rating</SelectItem>
+            <SelectItem value="name">Name</SelectItem>
+          </SelectContent>
+        </Select>
+        {showCrudActions && products.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            onClick={() => setDeleteAllOpen(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" /> Delete All
+          </Button>
+        )}
       </div>
 
-      {/* Products Table */}
-      <Card className="border-border/80 shadow-xs">
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-purple-50/50 dark:bg-purple-950/20">
-              <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Product Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Stock Level</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-mono text-xs font-semibold">{item.id}</TableCell>
-                  <TableCell className="font-bold text-foreground">{item.name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{item.category}</TableCell>
-                  <TableCell className="font-extrabold text-foreground">{item.price}</TableCell>
-                  <TableCell className="text-xs font-semibold">{item.stock} units</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        item.status === 'Active'
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                          : item.status === 'Low Stock'
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-purple-600">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Table */}
+      {isLoading ? (
+        <LoadingSpinner className="min-h-[400px]" />
+      ) : error ? (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="text-destructive">Failed to load products. Please try again.</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <ProductTable
+          products={products}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          onStockUpdate={handleStockUpdate}
+          onDelete={handleDelete}
+          onToggleFeatured={handleToggleFeatured}
+          onToggleActive={handleToggleActive}
+          isDeleting={deleteProduct.isPending}
+          isTogglingFeatured={toggleFeatured.isPending}
+          isTogglingActive={bulkUpdate.isPending}
+          showActions={showCrudActions}
+        />
+      )}
+
+      {/* Pagination */}
+      {meta && meta.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Page {page} of {meta.totalPages} ({meta.total} products)
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
+              const startPage = Math.max(1, Math.min(page - 2, meta.totalPages - 4))
+              const pageNum = startPage + i
+              if (pageNum > meta.totalPages) return null
+              return (
+                <Button
+                  key={pageNum}
+                  variant={page === pageNum ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPage(pageNum)}
+                >
+                  {pageNum}
+                </Button>
+              )
+            })}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
+              disabled={page === meta.totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteAllOpen}
+        onOpenChange={setDeleteAllOpen}
+        onConfirm={handleDeleteAll}
+        title="Delete All Products"
+        description="Active products will be deactivated. Already inactive products will be permanently deleted. Products with active orders will be skipped."
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        onConfirm={() => {
+          handleBulkDelete(selectedIds)
+          setBulkDeleteOpen(false)
+        }}
+        title="Delete Selected Products"
+        description={`Are you sure you want to delete ${selectedIds.length} product(s)? Products with active orders will be skipped. This action cannot be undone.`}
+      />
     </div>
   )
 }

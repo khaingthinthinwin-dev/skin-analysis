@@ -1,0 +1,33 @@
+{
+  "title": "My Wishlist",
+  "itemCount": "{{count}} items saved",
+  "moveToCart": "Add to Cart",
+  "remove": "Remove",
+  "clearAll": "All Data Clear",
+  "clearing": "Clearing...",
+  "clearAllTitle": "Clear Wishlist",
+  "clearAllConfirm": "Are you sure you want to clear all items from your wishlist? This action cannot be undone.",
+  "clearAllConfirmButton": "Yes",
+  "clearAllCancelButton": "Cancel",
+  "cleared": "Wishlist cleared",
+  "failedToClear": "Failed to clear wishlist",
+  "emptyTitle": "No items saved yet",
+  "emptyMessage": "Browse products to add favorites.",
+  "continueShopping": "Continue Shopping",
+  "unavailable": "This product is currently unavailable.",
+  "inStock": "In Stock",
+  "lowStock": "Low Stock",
+  "outOfStock": "Out of Stock",
+  "addedToWishlist": "Added to wishlist",
+  "removedFromWishlist": "Removed from wishlist",
+  "movedToCart": "Moved to cart",
+  "failedToAdd": "Failed to add to wishlist",
+  "failedToRemove": "Failed to remove from wishlist",
+  "failedToMove": "Failed to move to cart",
+  "guestLoginAlert": {
+    "title": "Log In Required",
+    "message": "Please log in to add items to your wishlist.",
+    "loginButton": "Log In",
+    "closeButton": "Cancel"
+  }
+}

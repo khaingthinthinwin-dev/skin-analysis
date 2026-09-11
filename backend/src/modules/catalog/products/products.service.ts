@@ -1,0 +1,924 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { RedisService } from '../../../shared/redis/redis.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateStockDto } from './dto/update-stock.dto';
+import { BulkActionDto } from './dto/bulk-action.dto';
+import { BulkDeleteDto } from './dto/bulk-delete.dto';
+import { DeleteAllProductsDto } from './dto/delete-all-products.dto';
+import { ProductQueryDto, ReviewQueryDto } from './dto/product-query.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { generateSlug } from '../../../common/utils/slug.util';
+import { generateSku } from '../../../common/utils/sku.util';
+import type { Prisma } from '@prisma/client';
+
+@Injectable()
+export class ProductsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
+
+  private async getMerchantId(userId: string): Promise<string> {
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!merchant) {
+      throw new NotFoundException('Merchant profile not found');
+    }
+    return merchant.id;
+  }
+
+  private async ensureSlugUnique(
+    slug: string,
+    merchantId: string,
+    excludeId?: string,
+  ): Promise<string> {
+    let candidate = slug;
+    let counter = 1;
+    while (true) {
+      const existing = await this.prisma.product.findFirst({
+        where: {
+          slug: candidate,
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
+      });
+      if (!existing) return candidate;
+      candidate = `${slug}-${counter}`;
+      counter++;
+    }
+  }
+
+  async findAll(userId: string, query: ProductQueryDto) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const {
+      search,
+      categoryId,
+      skinType,
+      minPrice,
+      maxPrice,
+      sortBy = 'newest',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 20,
+      isActive: rawIsActive,
+      isFeatured: rawIsFeatured,
+    } = query;
+
+    const isActive =
+      rawIsActive === 'true'
+        ? true
+        : rawIsActive === 'false'
+          ? false
+          : undefined;
+    const isFeatured =
+      rawIsFeatured === 'true'
+        ? true
+        : rawIsFeatured === 'false'
+          ? false
+          : undefined;
+
+    const where: Prisma.ProductWhereInput = {
+      merchantId,
+      ...(categoryId && { categoryId }),
+      ...(isActive !== undefined && { isActive }),
+      ...(isFeatured !== undefined && { isFeatured }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { sku: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { tags: { has: search } },
+        ],
+      }),
+      ...(skinType && { skinTypes: { has: skinType } }),
+      ...(minPrice !== undefined &&
+        maxPrice !== undefined && {
+          price: { gte: minPrice, lte: maxPrice },
+        }),
+      ...(minPrice !== undefined &&
+        maxPrice === undefined && {
+          price: { gte: minPrice },
+        }),
+      ...(maxPrice !== undefined &&
+        minPrice === undefined && {
+          price: { lte: maxPrice },
+        }),
+    };
+
+    const orderBy: Prisma.ProductOrderByWithRelationInput = (() => {
+      switch (sortBy) {
+        case 'price':
+          return { price: sortOrder as Prisma.SortOrder };
+        case 'rating':
+          return { avgRating: sortOrder as Prisma.SortOrder };
+        case 'name':
+          return { name: sortOrder as Prisma.SortOrder };
+        case 'newest':
+        default:
+          return { createdAt: sortOrder as Prisma.SortOrder };
+      }
+    })();
+
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          shortDescription: true,
+          price: true,
+          compareAtPrice: true,
+          sku: true,
+          stockQuantity: true,
+          images: true,
+          tags: true,
+          skinTypes: true,
+          isActive: true,
+          isFeatured: true,
+          avgRating: true,
+          reviewCount: true,
+          createdAt: true,
+          updatedAt: true,
+          category: {
+            select: { id: true, name: true, slug: true },
+          },
+        },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      items: products,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findById(id: string, userId: string) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const product = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
+  }
+
+  async findBySlug(slug: string, userId: string) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const product = await this.prisma.product.findFirst({
+      where: { slug, merchantId },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
+  }
+
+  async create(userId: string, dto: CreateProductDto, images: string[]) {
+    const merchantId = await this.getMerchantId(userId);
+
+    if (!images || images.length === 0) {
+      throw new BadRequestException('At least one product image is required');
+    }
+
+    const category = await this.prisma.category.findUnique({
+      where: { id: dto.categoryId },
+    });
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    let sku = dto.sku;
+
+    if (sku) {
+      const existingSku = await this.prisma.product.findUnique({
+        where: { sku },
+      });
+      if (existingSku) {
+        throw new ConflictException('A product with this SKU already exists');
+      }
+    } else {
+      sku = await generateSku(this.prisma, dto.name);
+    }
+
+    const baseSlug = generateSlug(dto.name);
+    const slug = await this.ensureSlugUnique(baseSlug, merchantId);
+
+    const price = dto.price ?? dto.compareAtPrice;
+    if (price === undefined) {
+      throw new BadRequestException('Price or compare at price is required');
+    }
+
+    const product = await this.prisma.product.create({
+      data: {
+        merchantId,
+        name: dto.name,
+        slug,
+        description: dto.description,
+        shortDescription: dto.shortDescription,
+        price,
+        compareAtPrice:
+          dto.price !== undefined ? dto.compareAtPrice : undefined,
+        sku,
+        stockQuantity: dto.stockQuantity,
+        lowStockThreshold: dto.lowStockThreshold,
+        images,
+        tags: dto.tags || [],
+        skinTypes: dto.skinTypes || [],
+        ingredients: dto.ingredients || [],
+        isActive: dto.isActive ?? true,
+        isFeatured: dto.isFeatured ?? false,
+        avgRating: 0,
+        reviewCount: 0,
+        categoryId: dto.categoryId,
+      },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    return product;
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    dto: UpdateProductDto,
+    newImages: string[],
+  ) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const existing = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({
+        where: { id: dto.categoryId },
+      });
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+    }
+
+    if (dto.sku && dto.sku !== existing.sku) {
+      const existingSku = await this.prisma.product.findFirst({
+        where: { sku: dto.sku, id: { not: id } },
+      });
+      if (existingSku) {
+        throw new ConflictException('A product with this SKU already exists');
+      }
+    }
+
+    const effectivePrice =
+      dto.price === null
+        ? (dto.compareAtPrice ??
+          Number(existing.compareAtPrice ?? existing.price))
+        : dto.price !== undefined
+          ? dto.price
+          : Number(existing.price);
+    if (
+      dto.price !== null &&
+      dto.compareAtPrice !== undefined &&
+      dto.compareAtPrice !== null &&
+      dto.compareAtPrice <= effectivePrice
+    ) {
+      throw new BadRequestException(
+        'Compare price must be greater than selling price',
+      );
+    }
+
+    let slug = existing.slug;
+    if (dto.name && dto.name !== existing.name) {
+      const baseSlug = generateSlug(dto.name);
+      slug = await this.ensureSlugUnique(baseSlug, merchantId, id);
+    }
+
+    const retainedUrls =
+      dto.retainedImageUrls !== undefined
+        ? dto.retainedImageUrls
+        : existing.images || [];
+    const finalImages = [...retainedUrls, ...newImages];
+
+    if (finalImages.length > 10) {
+      throw new BadRequestException('A product can have at most 10 images');
+    }
+
+    if (finalImages.length === 0) {
+      throw new BadRequestException('At least one product image is required');
+    }
+
+    const product = await this.prisma.product.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(slug !== existing.slug && { slug }),
+        ...(dto.shortDescription !== undefined && {
+          shortDescription: dto.shortDescription,
+        }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
+        ...(dto.price === null
+          ? { price: effectivePrice, compareAtPrice: null }
+          : dto.price !== undefined && { price: dto.price }),
+        ...(dto.price !== null &&
+          dto.compareAtPrice !== undefined && {
+            compareAtPrice: dto.compareAtPrice,
+          }),
+        ...(dto.sku !== undefined && { sku: dto.sku }),
+        ...(dto.stockQuantity !== undefined && {
+          stockQuantity: dto.stockQuantity,
+        }),
+        ...(dto.lowStockThreshold !== undefined && {
+          lowStockThreshold: dto.lowStockThreshold,
+        }),
+        ...(dto.tags !== undefined && { tags: dto.tags }),
+        ...(dto.skinTypes !== undefined && { skinTypes: dto.skinTypes }),
+        ...(dto.ingredients !== undefined && { ingredients: dto.ingredients }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
+        ...(dto.retainedImageUrls !== undefined && { images: finalImages }),
+      },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    return product;
+  }
+
+  async updateStock(id: string, userId: string, dto: UpdateStockDto) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const existing = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const product = await this.prisma.product.update({
+      where: { id },
+      data: { stockQuantity: dto.stockQuantity },
+    });
+
+    return product;
+  }
+
+  async toggleStatus(id: string, userId: string) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const product = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+      include: { category: { select: { id: true, name: true, slug: true } } },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const updated = await this.prisma.product.update({
+      where: { id },
+      data: { isActive: !product.isActive },
+      include: { category: { select: { id: true, name: true, slug: true } } },
+    });
+    return updated;
+  }
+
+  async toggleFeatured(id: string, userId: string) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const product = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+      select: { id: true, isFeatured: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const updated = await this.prisma.product.update({
+      where: { id },
+      data: { isFeatured: !product.isFeatured },
+      select: { id: true, isFeatured: true },
+    });
+    return updated;
+  }
+
+  async remove(id: string, userId: string) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const existing = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const activeOrders = await this.prisma.orderItem.findFirst({
+      where: {
+        productId: id,
+        order: {
+          status: {
+            isTerminalState: false,
+          },
+        },
+      },
+    });
+
+    if (activeOrders) {
+      throw new ConflictException(
+        'Cannot delete product with active orders. All orders must be completed first.',
+      );
+    }
+
+    await this.prisma.product.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  async hardDelete(id: string, userId: string) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const existing = await this.prisma.product.findFirst({
+      where: { id, merchantId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const hasOrderItems = await this.prisma.orderItem.findFirst({
+      where: { productId: id },
+      select: { id: true },
+    });
+    if (hasOrderItems) {
+      throw new ConflictException(
+        'Cannot permanently delete product with order history. Use soft delete instead.',
+      );
+    }
+
+    const hasInventoryTransactions =
+      await this.prisma.inventoryTransaction.findFirst({
+        where: { productId: id },
+        select: { id: true },
+      });
+    if (hasInventoryTransactions) {
+      throw new ConflictException(
+        'Cannot permanently delete product with inventory transaction history.',
+      );
+    }
+
+    await this.deleteImageFiles(existing.images);
+
+    await this.prisma.product.delete({
+      where: { id },
+    });
+
+    await this.redis.del(`cache:product:${existing.slug}`);
+
+    return { message: 'Product permanently deleted' };
+  }
+
+  private async deleteImageFiles(images: string[]): Promise<void> {
+    const uploadsDir = join(process.cwd(), 'uploads', 'products');
+    for (const imageUrl of images) {
+      const filename = imageUrl.replace('/uploads/products/', '');
+      const filePath = join(uploadsDir, filename);
+      try {
+        await unlink(filePath);
+      } catch {
+        // Ignore if file does not exist
+      }
+    }
+  }
+
+  async bulkUpdateStatus(userId: string, dto: BulkActionDto) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: dto.ids }, merchantId },
+    });
+
+    if (products.length !== dto.ids.length) {
+      throw new NotFoundException('Some products were not found');
+    }
+
+    const updated = await this.prisma.product.updateMany({
+      where: { id: { in: dto.ids }, merchantId },
+      data: { isActive: dto.action === 'activate' },
+    });
+
+    return { updated: updated.count };
+  }
+
+  async bulkDelete(userId: string, dto: BulkDeleteDto) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: dto.ids }, merchantId },
+    });
+
+    if (products.length !== dto.ids.length) {
+      throw new NotFoundException('Some products were not found');
+    }
+
+    const activeOrders = await this.prisma.orderItem.findFirst({
+      where: {
+        productId: { in: dto.ids },
+        order: {
+          status: {
+            isTerminalState: false,
+          },
+        },
+      },
+    });
+
+    if (activeOrders) {
+      throw new ConflictException('Cannot delete products with active orders.');
+    }
+
+    const deleted = await this.prisma.product.updateMany({
+      where: { id: { in: dto.ids }, merchantId },
+      data: { isActive: false },
+    });
+
+    return { deleted: deleted.count };
+  }
+
+  async deleteAll(userId: string, dto: DeleteAllProductsDto) {
+    const merchantId = await this.getMerchantId(userId);
+
+    const isActive =
+      dto.isActive === 'true'
+        ? true
+        : dto.isActive === 'false'
+          ? false
+          : undefined;
+
+    const where: Prisma.ProductWhereInput = {
+      merchantId,
+      ...(isActive !== undefined && { isActive }),
+      ...(dto.search && {
+        OR: [
+          { name: { contains: dto.search, mode: 'insensitive' } },
+          { sku: { contains: dto.search, mode: 'insensitive' } },
+          { description: { contains: dto.search, mode: 'insensitive' } },
+          { tags: { has: dto.search } },
+        ],
+      }),
+    };
+
+    const products = await this.prisma.product.findMany({
+      where,
+      select: { id: true, isActive: true, images: true, slug: true },
+    });
+
+    if (products.length === 0) {
+      return { deactivated: 0, deleted: 0, skipped: 0 };
+    }
+
+    const productIds = products.map((p) => p.id);
+
+    const activeOrderItems = await this.prisma.orderItem.findMany({
+      where: {
+        productId: { in: productIds },
+        order: {
+          status: {
+            isTerminalState: false,
+          },
+        },
+      },
+      select: { productId: true },
+    });
+
+    const skippedIds = new Set(activeOrderItems.map((item) => item.productId));
+
+    const activeProducts = products.filter(
+      (p) => p.isActive && !skippedIds.has(p.id),
+    );
+    const softDeletedProducts = products.filter(
+      (p) => !p.isActive && !skippedIds.has(p.id),
+    );
+
+    let deactivatedCount = 0;
+    if (activeProducts.length > 0) {
+      const result = await this.prisma.product.updateMany({
+        where: { id: { in: activeProducts.map((p) => p.id) } },
+        data: { isActive: false },
+      });
+      deactivatedCount = result.count;
+    }
+
+    let deletedCount = 0;
+    if (softDeletedProducts.length > 0) {
+      const softDeletedIds = softDeletedProducts.map((p) => p.id);
+
+      const [
+        existingOrderItems,
+        existingInventoryTransactions,
+        existingReviews,
+      ] = await Promise.all([
+        this.prisma.orderItem.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+        this.prisma.inventoryTransaction.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+        this.prisma.review.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+      ]);
+
+      const hasOrderItems = new Set(
+        existingOrderItems.map((item) => item.productId),
+      );
+      const hasInventoryTransactions = new Set(
+        existingInventoryTransactions.map((item) => item.productId),
+      );
+      const hasReviews = new Set(existingReviews.map((r) => r.productId));
+
+      for (const product of softDeletedProducts) {
+        if (
+          hasOrderItems.has(product.id) ||
+          hasInventoryTransactions.has(product.id) ||
+          hasReviews.has(product.id)
+        ) {
+          skippedIds.add(product.id);
+          continue;
+        }
+
+        await this.prisma.cartItem.deleteMany({
+          where: { productId: product.id },
+        });
+        await this.prisma.wishlist.deleteMany({
+          where: { productId: product.id },
+        });
+        await this.prisma.skinAnalysisRecommendation.deleteMany({
+          where: { productId: product.id },
+        });
+
+        await this.deleteImageFiles(product.images);
+
+        await this.prisma.product.delete({ where: { id: product.id } });
+
+        await this.redis.del(`cache:product:${product.slug}`);
+
+        deletedCount++;
+      }
+    }
+
+    return {
+      deactivated: deactivatedCount,
+      deleted: deletedCount,
+      skipped: skippedIds.size,
+    };
+  }
+
+  private async resolveProduct(idOrSlug: string) {
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        idOrSlug,
+      );
+
+    const product = await this.prisma.product.findFirst({
+      where: isUuid
+        ? { id: idOrSlug, isActive: true }
+        : { slug: idOrSlug, isActive: true },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        merchant: { select: { id: true, shopName: true, licenseStatus: true } },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
+  }
+
+  async getDetail(idOrSlug: string) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    if (product.merchant?.licenseStatus !== 'approved') {
+      throw new NotFoundException('Product not found');
+    }
+
+    const now = new Date();
+
+    const [promotions, ratingBreakdown] = await Promise.all([
+      this.prisma.promotion.findMany({
+        where: {
+          merchantId: product.merchantId,
+          isActive: true,
+          startsAt: { lte: now },
+          expiresAt: { gte: now },
+        },
+        select: {
+          id: true,
+          code: true,
+          description: true,
+          discountTypeCode: true,
+          discountValue: true,
+          minOrderAmount: true,
+          startsAt: true,
+          expiresAt: true,
+          maxUses: true,
+          usedCount: true,
+        },
+      }),
+      this.prisma.review
+        .groupBy({
+          by: ['rating'],
+          where: { productId: product.id, isApproved: true },
+          _count: { rating: true },
+        })
+        .then((groups) =>
+          [5, 4, 3, 2, 1].map((star) => {
+            const found = groups.find((g) => g.rating === star);
+            return { star, count: found?._count.rating ?? 0 };
+          }),
+        ),
+    ]);
+
+    return {
+      ...product,
+      promotions,
+      ratingBreakdown,
+    };
+  }
+
+  async findReviews(idOrSlug: string, query: ReviewQueryDto) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const { page = 1, limit = 20, sortBy = 'newest' } = query;
+
+    const orderBy: Prisma.ReviewOrderByWithRelationInput = (() => {
+      switch (sortBy) {
+        case 'oldest':
+          return { createdAt: 'asc' };
+        case 'highest':
+          return { rating: 'desc' };
+        case 'lowest':
+          return { rating: 'asc' };
+        case 'newest':
+        default:
+          return { createdAt: 'desc' };
+      }
+    })();
+
+    const skip = (page - 1) * limit;
+
+    const [reviews, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { productId: product.id, isApproved: true },
+        orderBy,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          rating: true,
+          title: true,
+          body: true,
+          images: true,
+          isVerifiedPurchase: true,
+          createdAt: true,
+          user: {
+            select: { id: true, name: true },
+          },
+        },
+      }),
+      this.prisma.review.count({
+        where: { productId: product.id, isApproved: true },
+      }),
+    ]);
+
+    return {
+      items: reviews,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findSimilar(idOrSlug: string, limit: number) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const similar = await this.prisma.product.findMany({
+      where: {
+        id: { not: product.id },
+        isActive: true,
+        merchant: { licenseStatus: 'approved' },
+        categoryId: product.categoryId,
+        skinTypes: { hasSome: product.skinTypes },
+      },
+      take: limit,
+      orderBy: { avgRating: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        price: true,
+        compareAtPrice: true,
+        images: true,
+        skinTypes: true,
+        avgRating: true,
+        reviewCount: true,
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    return similar;
+  }
+
+  async createReview(idOrSlug: string, userId: string, dto: CreateReviewDto) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const existingReview = await this.prisma.review.findUnique({
+      where: { userId_productId: { userId, productId: product.id } },
+    });
+
+    if (existingReview) {
+      throw new ConflictException('You have already reviewed this product');
+    }
+
+    const review = await this.prisma.review.create({
+      data: {
+        userId,
+        productId: product.id,
+        rating: dto.rating,
+        title: dto.title,
+        body: dto.body,
+        images: dto.images || [],
+      },
+      select: {
+        id: true,
+        rating: true,
+        title: true,
+        body: true,
+        images: true,
+        isVerifiedPurchase: true,
+        createdAt: true,
+      },
+    });
+
+    const stats = await this.prisma.review.aggregate({
+      where: { productId: product.id, isApproved: true },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: {
+        avgRating: stats._avg.rating ?? 0,
+        reviewCount: stats._count.id,
+      },
+    });
+
+    return review;
+  }
+}
