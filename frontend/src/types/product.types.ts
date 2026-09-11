@@ -77,9 +77,9 @@ export interface DeleteAllData {
 }
 
 export interface DeleteAllResponse {
+  deactivated: number
   deleted: number
   skipped: number
-  skippedProductIds: string[]
 }
 
 export interface ProductQueryParams {

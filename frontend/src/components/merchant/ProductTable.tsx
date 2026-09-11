@@ -53,8 +53,10 @@ interface ProductTableProps {
   onStockUpdate: (id: string, stock: number) => void
   onDelete: (id: string, isActive: boolean) => void
   onToggleFeatured: (id: string) => void
+  onToggleActive: (id: string) => void
   isDeleting?: boolean
   isTogglingFeatured?: boolean
+  isTogglingActive?: boolean
   showActions?: boolean
 }
 
@@ -65,8 +67,10 @@ export function ProductTable({
   onStockUpdate,
   onDelete,
   onToggleFeatured,
+  onToggleActive,
   isDeleting = false,
   isTogglingFeatured = false,
+  isTogglingActive = false,
   showActions = true,
 }: ProductTableProps) {
   const navigate = useNavigate()
@@ -200,7 +204,25 @@ export function ProductTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    {getStatusBadge(product)}
+                    {showActions ? (
+                      <button
+                        type="button"
+                        disabled={isTogglingActive}
+                        onClick={() => onToggleActive(product.id)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+                          product.isActive ? 'bg-green-500' : 'bg-input'
+                        }`}
+                        aria-label={`Toggle status for ${product.name}`}
+                      >
+                        <span
+                          className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
+                            product.isActive ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      getStatusBadge(product)
+                    )}
                   </TableCell>
                   <TableCell>
                     {showActions ? (
@@ -267,11 +289,11 @@ export function ProductTable({
             setDeleteTarget(null)
           }
         }}
-        title="Delete Product"
+        title={deleteTarget?.isActive ? 'Deactivate Product' : 'Delete Product'}
         description={
           deleteTarget?.isActive
-            ? `Are you sure you want to deactivate "${deleteTarget?.name}"? It can be reactivated later.`
-            : `"${deleteTarget?.name}" is already inactive. This will permanently remove it. This action cannot be undone.`
+            ? `Are you sure you want to deactivate '${deleteTarget?.name}'? It will be hidden from the store but can be reactivated later.`
+            : `Are you sure you want to permanently delete '${deleteTarget?.name}'? All related data will be lost and cannot be recovered.`
         }
         isLoading={isDeleting}
       />

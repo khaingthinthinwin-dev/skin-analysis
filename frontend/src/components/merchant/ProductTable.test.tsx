@@ -78,6 +78,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -101,6 +102,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -121,6 +123,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -128,7 +131,7 @@ describe('ProductTable', () => {
       expect(screen.getByText('No products found')).toBeInTheDocument()
     })
 
-    it('displays Active badge for active products', () => {
+    it('renders toggle status button for active products', () => {
       render(
         <MemoryRouter>
           <ProductTable
@@ -138,29 +141,13 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
       )
-      const activeBadges = screen.getAllByText('Active')
-      expect(activeBadges.length).toBeGreaterThanOrEqual(1)
-    })
-
-    it('displays Inactive badge for inactive products', () => {
-      render(
-        <MemoryRouter>
-          <ProductTable
-            products={mockProducts}
-            selectedIds={[]}
-            onSelectionChange={vi.fn()}
-            onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
-            onToggleFeatured={vi.fn()}
-            showActions={true}
-          />
-        </MemoryRouter>,
-      )
-      expect(screen.getByText('Inactive')).toBeInTheDocument()
+      expect(screen.getByLabelText('Toggle status for Hydrating Serum')).toBeInTheDocument()
+      expect(screen.getByLabelText('Toggle status for Night Cream')).toBeInTheDocument()
     })
   })
 
@@ -175,6 +162,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -192,6 +180,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -211,6 +200,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -230,6 +220,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -249,6 +240,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -268,6 +260,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -288,6 +281,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -306,6 +300,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -324,6 +319,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -343,6 +339,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={onToggleFeatured}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -363,6 +360,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={false}
           />
         </MemoryRouter>,
@@ -380,6 +378,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={false}
           />
         </MemoryRouter>,
@@ -397,6 +396,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={false}
           />
         </MemoryRouter>,
@@ -416,6 +416,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={false}
           />
         </MemoryRouter>,
@@ -433,6 +434,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={false}
           />
         </MemoryRouter>,
@@ -454,6 +456,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,
@@ -471,6 +474,7 @@ describe('ProductTable', () => {
             onStockUpdate={vi.fn()}
             onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
             showActions={true}
           />
         </MemoryRouter>,

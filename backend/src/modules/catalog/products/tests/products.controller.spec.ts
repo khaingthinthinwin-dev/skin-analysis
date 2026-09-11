@@ -330,12 +330,13 @@ describe('ProductsController', () => {
   describe('DELETE /products/all', () => {
     it('calls deleteAll', async () => {
       service.deleteAll.mockResolvedValue({
-        deleted: 5,
+        deactivated: 3,
+        deleted: 2,
         skipped: 0,
-        skippedProductIds: [],
       });
       const result = await controller.deleteAll(mockUser, {});
-      expect(result.deleted).toBe(5);
+      expect(result.deactivated).toBe(3);
+      expect(result.deleted).toBe(2);
     });
   });
 });
