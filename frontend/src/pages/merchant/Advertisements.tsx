@@ -60,9 +60,9 @@ type DisplayState =
   | 'draft'
 
 function displayState(ad: Advertisement): DisplayState {
+  if (ad.expiresAt && new Date(ad.expiresAt) < new Date()) return 'expired'
   if (ad.approvalStatus === 'rejected') return 'rejected'
   if (!ad.isActive) return 'inactive'
-  if (ad.expiresAt && new Date(ad.expiresAt) < new Date()) return 'expired'
   if (ad.approvalStatus === 'pending' && ad.paymentStatus === 'completed') return 'pending_approval'
   if (ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed') {
     return ad.startsAt && new Date(ad.startsAt) > new Date() ? 'scheduled' : 'active'

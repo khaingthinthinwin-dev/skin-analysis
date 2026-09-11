@@ -194,7 +194,9 @@ export class AdvertisementsService {
         expiresAt: { gte: now },
       });
     } else if (query.status === 'inactive') {
+      // Mutually exclusive with "expired": truly inactive only (not expired).
       where.isActive = false;
+      where.OR = [{ expiresAt: { gte: now } }, { expiresAt: null }];
     } else if (query.status === 'expired') {
       where.expiresAt = { lt: now };
     } else {
