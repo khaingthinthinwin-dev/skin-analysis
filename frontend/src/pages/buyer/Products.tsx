@@ -230,7 +230,7 @@ export default function Products() {
                 }
               >
                 {Array.isArray(products) && products.map((product) => (
-                  <ProductCard key={product.id} product={product} view={view} />
+                  <ProductCard key={product.id} product={product} view={view} productLink={`/buyer/products/${product.slug}`} />
                 ))}
               </div>
 
