@@ -42,7 +42,7 @@ export interface CreateProductData {
   description: string
   categoryId: string
   sku?: string
-  price: number
+  price?: number | null
   compareAtPrice?: number
   stockQuantity: number
   lowStockThreshold?: number
@@ -77,9 +77,9 @@ export interface DeleteAllData {
 }
 
 export interface DeleteAllResponse {
+  deactivated: number
   deleted: number
   skipped: number
-  skippedProductIds: string[]
 }
 
 export interface ProductQueryParams {

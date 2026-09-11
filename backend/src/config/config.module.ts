@@ -4,13 +4,14 @@ import appConfig, {
   databaseConfig,
   redisConfig,
   jwtConfig,
+  mailConfig,
 } from './config.service';
 
 @Module({
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig, jwtConfig],
+      load: [appConfig, databaseConfig, redisConfig, jwtConfig, mailConfig],
       envFilePath: '.env',
     }),
   ],

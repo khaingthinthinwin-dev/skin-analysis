@@ -8,11 +8,12 @@ import {
   IsArray,
   MaxLength,
   Min,
-  IsIn,
   Validate,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ComparePriceGreaterThanPriceValidator } from './compare-price.validator';
+import { StockQuantityNotLessThanThresholdValidator } from './stock-threshold.validator';
+import { ValidSkinTypesValidator } from './skin-types.validator';
 
 export class CreateProductDto {
   @IsString()
@@ -40,20 +41,21 @@ export class CreateProductDto {
   @MaxLength(100, { message: 'SKU must not exceed 100 characters' })
   sku?: string;
 
+  @IsOptional()
   @IsNumber({}, { message: 'Price must be a number' })
   @Min(0.01, { message: 'Price must be greater than 0' })
   @Type(() => Number)
-  price: number;
+  price?: number;
 
-  @IsOptional()
   @IsNumber({}, { message: 'Compare at price must be a number' })
   @Min(0, { message: 'Compare at price must be 0 or greater' })
   @Validate(ComparePriceGreaterThanPriceValidator)
   @Type(() => Number)
-  compareAtPrice?: number;
+  compareAtPrice: number;
 
   @IsInt({ message: 'Stock quantity must be a whole number' })
   @Min(0, { message: 'Stock quantity must be 0 or greater' })
+  @Validate(StockQuantityNotLessThanThresholdValidator)
   @Type(() => Number)
   stockQuantity: number = 0;
 
@@ -68,16 +70,20 @@ export class CreateProductDto {
     if (typeof value === 'string') {
       try {
         const parsed: unknown = JSON.parse(value);
-        return Array.isArray(parsed) ? (parsed as string[]) : [];
+        return Array.isArray(parsed)
+          ? (parsed as string[]).map((v) => String(v).toLowerCase())
+          : [];
       } catch {
         return [];
       }
     }
-    return Array.isArray(value) ? (value as string[]) : [];
+    return Array.isArray(value)
+      ? (value as string[]).map((v) => String(v).toLowerCase())
+      : [];
   })
   @IsArray()
   @IsString({ each: true })
-  @IsIn(['dry', 'oily', 'combination', 'sensitive', 'normal'], { each: true })
+  @Validate(ValidSkinTypesValidator)
   skinTypes?: string[];
 
   @IsOptional()

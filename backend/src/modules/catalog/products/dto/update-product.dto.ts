@@ -7,11 +7,12 @@ import {
   IsArray,
   MaxLength,
   Min,
-  IsIn,
   Validate,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ComparePriceGreaterThanPriceValidator } from './compare-price.validator';
+import { StockQuantityNotLessThanThresholdValidator } from './stock-threshold.validator';
+import { ValidSkinTypesValidator } from './skin-types.validator';
 
 export class UpdateProductDto {
   @IsOptional()
@@ -42,19 +43,23 @@ export class UpdateProductDto {
   @IsOptional()
   @IsNumber({}, { message: 'Price must be a number' })
   @Min(0.01, { message: 'Price must be greater than 0' })
-  @Type(() => Number)
-  price?: number;
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' || value === 'null' ? null : Number(value),
+  )
+  price?: number | null;
 
   @IsOptional()
   @IsNumber({}, { message: 'Compare at price must be a number' })
   @Min(0, { message: 'Compare at price must be 0 or greater' })
   @Validate(ComparePriceGreaterThanPriceValidator)
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
   @Type(() => Number)
   compareAtPrice?: number;
 
   @IsOptional()
   @IsInt({ message: 'Stock quantity must be a whole number' })
   @Min(0, { message: 'Stock quantity must be 0 or greater' })
+  @Validate(StockQuantityNotLessThanThresholdValidator)
   @Type(() => Number)
   stockQuantity?: number;
 
@@ -69,16 +74,20 @@ export class UpdateProductDto {
     if (typeof value === 'string') {
       try {
         const parsed: unknown = JSON.parse(value);
-        return Array.isArray(parsed) ? (parsed as string[]) : [];
+        return Array.isArray(parsed)
+          ? (parsed as string[]).map((v) => String(v).toLowerCase())
+          : [];
       } catch {
         return [];
       }
     }
-    return Array.isArray(value) ? (value as string[]) : [];
+    return Array.isArray(value)
+      ? (value as string[]).map((v) => String(v).toLowerCase())
+      : [];
   })
   @IsArray()
   @IsString({ each: true })
-  @IsIn(['dry', 'oily', 'combination', 'sensitive', 'normal'], { each: true })
+  @Validate(ValidSkinTypesValidator)
   skinTypes?: string[];
 
   @IsOptional()
@@ -117,7 +126,7 @@ export class UpdateProductDto {
   @IsBoolean()
   @Transform(({ value }: { value: unknown }): boolean => {
     if (typeof value === 'string') {
-      return value.toLowerCase() === 'true';
+      return value.toLowerCase().trim() === 'true';
     }
     return Boolean(value);
   })
@@ -126,10 +135,7 @@ export class UpdateProductDto {
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }: { value: unknown }): boolean => {
-    if (typeof value === 'string') {
-      return value.toLowerCase() === 'true';
-    }
-    return Boolean(value);
+    return value === 'true' || value === true;
   })
   isFeatured?: boolean;
 

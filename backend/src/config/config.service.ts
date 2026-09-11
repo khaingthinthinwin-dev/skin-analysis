@@ -4,7 +4,9 @@ export default registerAs('app', () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '8080', 10),
   apiPrefix: process.env.API_PREFIX || 'api/v1',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:5173')
+    .split(',')
+    .map((s) => s.trim()),
 }));
 
 export const databaseConfig = registerAs('database', () => ({
@@ -20,4 +22,10 @@ export const jwtConfig = registerAs('jwt', () => ({
   refreshSecret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
   accessExpiration: process.env.JWT_ACCESS_EXPIRATION || '15m',
   refreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
+}));
+
+export const mailConfig = registerAs('mail', () => ({
+  user: process.env.GMAIL_USER || '',
+  pass: process.env.GMAIL_PASS || '',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
 }));

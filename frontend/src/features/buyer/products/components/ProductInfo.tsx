@@ -7,8 +7,8 @@ interface ProductInfoProps {
   product: ProductDetail;
 }
 
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('en-US').format(price);
+function formatPrice(price: number | string) {
+  return new Intl.NumberFormat('en-US').format(Number(price));
 }
 
 function getStockStatus(product: ProductDetail): {
@@ -41,7 +41,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
       {/* [C2] Rating Summary */}
       <div className="flex items-center gap-2">
         <StarRating rating={product.avgRating} />
-        <span className="text-sm font-medium">{product.avgRating.toFixed(1)}</span>
+        <span className="text-sm font-medium">{Number(product.avgRating).toFixed(1)}</span>
         <button
           type="button"
           onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })}
@@ -62,7 +62,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
               {formatPrice(product.compareAtPrice)} MMK
             </span>
             <Badge variant="destructive">
-              Save {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}%
+              Save {Math.round(((Number(product.compareAtPrice) - Number(product.price)) / Number(product.compareAtPrice)) * 100)}%
             </Badge>
           </>
         )}

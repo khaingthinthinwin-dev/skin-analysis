@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { MailerService } from '@nestjs-modules/mailer';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../../shared/prisma/prisma.service';
@@ -26,6 +27,7 @@ jest.mock('crypto', () => ({
 }));
 
 jest.mock('fs', () => ({
+  ...jest.requireActual<typeof import('fs')>('fs'),
   existsSync: jest.fn().mockReturnValue(true),
   writeFileSync: jest.fn(),
   mkdirSync: jest.fn(),
@@ -70,6 +72,10 @@ const mockRedis = {
   checkRateLimit: jest.fn(),
 };
 
+const mockMailerService = {
+  sendMail: jest.fn().mockResolvedValue({}),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -82,6 +88,7 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: PrismaService, useValue: mockPrisma },
         { provide: RedisService, useValue: mockRedis },
+        { provide: MailerService, useValue: mockMailerService },
       ],
     }).compile();
 
@@ -353,11 +360,10 @@ describe('AuthService', () => {
         name: 'Merchant',
         roleCode: 'merchant',
         avatarUrl: null,
-      });
-      mockPrisma.merchant.findFirst.mockResolvedValue({
-        id: 'merchant-1',
-        businessLicenseUrl: '/license.pdf',
+        merchantId: 'merchant-1',
         licenseStatus: 'approved',
+        license_status: 'approved',
+        licenseUrl: '/license.pdf',
       });
 
       const result = await service.verifyToken('user-1');
@@ -392,7 +398,6 @@ describe('AuthService', () => {
 
   describe('forgotPassword', () => {
     it('should return success message for existing user', async () => {
-      mockRedis.checkRateLimit.mockResolvedValue(true);
       mockUsersService.findByEmail.mockResolvedValue({
         id: 'user-1',
         email: 'test@test.com',
@@ -402,77 +407,82 @@ describe('AuthService', () => {
 
       const result = await service.forgotPassword({ email: 'test@test.com' });
 
-      expect(result.message).toContain('password reset link');
+      expect(result.message).toContain('verification code');
     });
 
-    it('should return same message for non-existing user', async () => {
-      mockRedis.checkRateLimit.mockResolvedValue(true);
+    it('should throw NotFoundException for non-existing user', async () => {
       mockUsersService.findByEmail.mockResolvedValue(null);
 
-      const result = await service.forgotPassword({
-        email: 'nonexistent@test.com',
-      });
-
-      expect(result.message).toContain('password reset link');
-    });
-
-    it('should throw if rate limit exceeded', async () => {
-      mockRedis.checkRateLimit.mockResolvedValue(false);
-
       await expect(
-        service.forgotPassword({ email: 'test@test.com' }),
-      ).rejects.toThrow(UnauthorizedException);
+        service.forgotPassword({ email: 'nonexistent@test.com' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('resetPassword', () => {
     it('should reset password successfully', async () => {
+      mockUsersService.findByEmail.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+      });
       mockPrisma.passwordResetToken.findFirst.mockResolvedValue({
         id: 'token-1',
         userId: 'user-1',
-      });
-      mockUsersService.findById.mockResolvedValue({
-        id: 'user-1',
-        email: 'test@test.com',
       });
       mockUsersService.updatePassword.mockResolvedValue({});
       mockPrisma.passwordResetToken.update.mockResolvedValue({});
       mockPrisma.passwordResetToken.updateMany.mockResolvedValue({});
 
-      const token = 'a'.repeat(64);
       const result = await service.resetPassword({
-        token,
+        email: 'test@example.com',
+        code: '482916',
         password: 'NewPassword1!',
       });
 
       expect(result.message).toContain('reset successfully');
     });
 
-    it('should throw BadRequestException for short token', async () => {
+    it('should throw BadRequestException for invalid code', async () => {
+      mockUsersService.findByEmail.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+      });
+      mockPrisma.passwordResetToken.findFirst.mockResolvedValue(null);
+
       await expect(
-        service.resetPassword({ token: 'short', password: 'NewPassword1!' }),
+        service.resetPassword({
+          email: 'test@example.com',
+          code: '000000',
+          password: 'NewPassword1!',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException for invalid token', async () => {
+      mockUsersService.findByEmail.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+      });
       mockPrisma.passwordResetToken.findFirst.mockResolvedValue(null);
 
-      const token = 'a'.repeat(64);
       await expect(
-        service.resetPassword({ token, password: 'NewPassword1!' }),
+        service.resetPassword({
+          email: 'test@example.com',
+          code: '482916',
+          password: 'NewPassword1!',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if user not found for valid token', async () => {
-      mockPrisma.passwordResetToken.findFirst.mockResolvedValue({
-        id: 'token-1',
-        userId: 'user-1',
-      });
-      mockUsersService.findById.mockResolvedValue(null);
+    it('should throw BadRequestException if user not found for valid code', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
 
-      const token = 'a'.repeat(64);
       await expect(
-        service.resetPassword({ token, password: 'NewPassword1!' }),
+        service.resetPassword({
+          email: 'test@example.com',
+          code: '482916',
+          password: 'NewPassword1!',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
