@@ -42,21 +42,21 @@ npx playwright show-report
 
 | Screen | Command |
 |--------|---------|
-| Auth (Login/Register) | `npx playwright test tests/auth/` |
-| Admin Ads | `npx playwright test tests/admin/ads/` |
-| Admin Audit Log | `npx playwright test tests/admin/audit-log/` |
-| Admin Commission | `npx playwright test tests/admin/commission/` |
-| Admin Moderation | `npx playwright test tests/admin/moderation/` |
-| Merchant Ads | `npx playwright test tests/merchant/ads/` |
-| Merchant Products | `npx playwright test tests/merchant/products/` |
-| Merchant Promotions | `npx playwright test tests/merchant/promotions/` |
-| Buyer Skin Analysis | `npx playwright test tests/buyer/skin-analysis/` |
-| Buyer Checkout | `npx playwright test tests/buyer/checkout/` |
-| Buyer Matching | `npx playwright test tests/buyer/matching/` |
-| Buyer Product Detail | `npx playwright test tests/buyer/product-detail/` |
-| Buyer Wishlist/Cart | `npx playwright test tests/buyer/wishlist-cart/` |
-| Orders (All Roles) | `npx playwright test tests/shared/orders/` |
-| Search & Filter | `npx playwright test tests/shared/search/` |
+| Sign Up / Log In | `npx playwright test tests/SignUp_LogIn/` |
+| Search & Filter | `npx playwright test tests/SearchAndFilter/` |
+| Product Detail | `npx playwright test tests/ProductDetail/` |
+| Matching & Recommendation | `npx playwright test tests/Matching_And_Recommendation/` |
+| AI Skin Analysis | `npx playwright test tests/AI_Skin_Analysis/` |
+| Wishlist & Cart | `npx playwright test tests/Wishlist_Cart/` |
+| Checkout & Purchase | `npx playwright test tests/Checkout_Purchase/` |
+| Product Management | `npx playwright test tests/Product_Management/` |
+| Advertisement Management (Merchant) | `npx playwright test tests/Advertisement_Management/` |
+| Promotion Pages | `npx playwright test tests/Promotion_Pages/` |
+| Ad Management Screen (Admin) | `npx playwright test tests/Ad_Management_Screen/` |
+| Review & Content Moderation | `npx playwright test tests/Review_ContentModeration/` |
+| Commission & Revenue | `npx playwright test tests/Commission_Revenue/` |
+| Order Insights | `npx playwright test tests/Order_Insights/` |
+| Audit Log | `npx playwright test tests/Audit_Log/` |
 
 ---
 
@@ -64,7 +64,7 @@ npx playwright show-report
 
 ```bash
 # Run single test file
-npx playwright test tests/auth/login.spec.ts
+npx playwright test tests/SignUp_LogIn/login.spec.ts
 
 # Run single test by name
 npx playwright test -g "should login as buyer"
@@ -85,23 +85,39 @@ npx playwright test --headed
 
 ```
 e2e/
-├── tests/                  # Test files
-│   ├── auth/               # Login, Register
-│   ├── admin/              # Admin screens
-│   ├── merchant/           # Merchant screens
-│   ├── buyer/              # Buyer screens
-│   └── shared/             # Multi-role screens
-├── pages/                  # Page Objects
-├── fixtures/               # Test fixtures
-├── utils/                  # Helpers
-└── test-results/           # Screenshots & reports
+├── tests/                          # Test files (organized by screen)
+│   ├── SignUp_LogIn/               # Login, Register
+│   ├── SearchAndFilter/            # Search & filter tests
+│   ├── ProductDetail/              # Product detail tests
+│   ├── Matching_And_Recommendation/# Matching & recommendation tests
+│   ├── AI_Skin_Analysis/           # Skin analysis tests
+│   ├── Wishlist_Cart/              # Wishlist & cart tests
+│   ├── Checkout_Purchase/          # Checkout & purchase tests
+│   ├── Product_Management/         # Merchant product management
+│   ├── Advertisement_Management/   # Merchant ad management
+│   ├── Promotion_Pages/            # Merchant promotions
+│   ├── Ad_Management_Screen/       # Admin ad management
+│   ├── Review_ContentModeration/   # Admin content moderation
+│   ├── Commission_Revenue/         # Admin commission & revenue
+│   ├── Order_Insights/             # Order insights (all roles)
+│   └── Audit_Log/                  # Admin audit log
+├── pages/                          # Page Objects (mirrors tests/ structure)
+├── fixtures/                       # Test fixtures
+├── utils/                          # Helpers (screenshot, constants)
+├── global-teardown.ts              # Organizes test-results into screen folders
+└── test-results/                   # Output (organized by screen)
+    ├── SignUp_LogIn/               # Test result artifacts
+    ├── SignUp_LogIn_Screenshots/   # Screenshots for SignUp_LogIn tests
+    └── ...
 ```
 
 ---
 
 ## Screenshots
 
-Every test captures screenshots in `test-results/screenshots/`.
+Screenshots are saved automatically into screen-specific folders:
+- `test-results/{ScreenName}_Screenshots/` — captured during tests
+- `test-results/{ScreenName}/` — Playwright auto-screenshots (on failure/retry)
 
 ---
 
