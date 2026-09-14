@@ -7,8 +7,10 @@ import type {
   UpdateStockData,
   BulkActionData,
   BulkDeleteData,
+  BulkDeleteResponse,
   DeleteAllData,
   DeleteAllResponse,
+  CheckActiveOrdersResponse,
   ProductQueryParams,
 } from '@/types/product.types'
 
@@ -55,7 +57,7 @@ export const productService = {
   },
 
   getProductById: async (id: string): Promise<Product> => {
-    const response = await apiClient.get<{ data: Product }>(`/products/${id}`)
+    const response = await apiClient.get<{ data: Product }>(`/products/detail/${id}`)
     return response.data.data
   },
 
@@ -190,13 +192,18 @@ export const productService = {
     return response.data.data
   },
 
-  bulkDelete: async (data: BulkDeleteData): Promise<{ deleted: number }> => {
-    const response = await apiClient.post<{ data: { deleted: number } }>('/products/bulk-delete', data)
+  bulkDelete: async (data: BulkDeleteData): Promise<BulkDeleteResponse> => {
+    const response = await apiClient.post<{ data: BulkDeleteResponse }>('/products/bulk-delete', data)
     return response.data.data
   },
 
   deleteAll: async (data: DeleteAllData): Promise<DeleteAllResponse> => {
     const response = await apiClient.delete<{ data: DeleteAllResponse }>('/products/all', { data })
+    return response.data.data
+  },
+
+  checkActiveOrders: async (ids: string[]): Promise<CheckActiveOrdersResponse> => {
+    const response = await apiClient.post<{ data: CheckActiveOrdersResponse }>('/products/check-active-orders', { ids })
     return response.data.data
   },
 }

@@ -553,13 +553,14 @@ export class ProductsService {
 
     const products = await this.prisma.product.findMany({
       where: { id: { in: dto.ids }, merchantId },
+      select: { id: true, isActive: true, images: true, slug: true },
     });
 
     if (products.length !== dto.ids.length) {
       throw new NotFoundException('Some products were not found');
     }
 
-    const activeOrders = await this.prisma.orderItem.findFirst({
+    const activeOrderItems = await this.prisma.orderItem.findMany({
       where: {
         productId: { in: dto.ids },
         order: {
@@ -568,18 +569,105 @@ export class ProductsService {
           },
         },
       },
+      select: { productId: true },
     });
 
-    if (activeOrders) {
-      throw new ConflictException('Cannot delete products with active orders.');
+    const skippedIds = new Set(activeOrderItems.map((item) => item.productId));
+
+    const activeProducts = products.filter(
+      (p) => p.isActive && !skippedIds.has(p.id),
+    );
+    const softDeletedProducts = products.filter(
+      (p) => !p.isActive && !skippedIds.has(p.id),
+    );
+
+    let deactivatedCount = 0;
+    if (activeProducts.length > 0) {
+      const result = await this.prisma.product.updateMany({
+        where: { id: { in: activeProducts.map((p) => p.id) } },
+        data: { isActive: false },
+      });
+      deactivatedCount = result.count;
     }
 
-    const deleted = await this.prisma.product.updateMany({
-      where: { id: { in: dto.ids }, merchantId },
-      data: { isActive: false },
-    });
+    let permanentlyDeletedCount = 0;
+    if (softDeletedProducts.length > 0) {
+      const softDeletedIds = softDeletedProducts.map((p) => p.id);
 
-    return { deleted: deleted.count };
+      const [
+        existingOrderItems,
+        existingInventoryTransactions,
+        existingReviews,
+      ] = await Promise.all([
+        this.prisma.orderItem.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+        this.prisma.inventoryTransaction.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+        this.prisma.review.findMany({
+          where: { productId: { in: softDeletedIds } },
+          select: { productId: true },
+        }),
+      ]);
+
+      const hasOrderItems = new Set(
+        existingOrderItems.map((item) => item.productId),
+      );
+      const hasInventoryTransactions = new Set(
+        existingInventoryTransactions.map((item) => item.productId),
+      );
+      const hasReviews = new Set(existingReviews.map((r) => r.productId));
+
+      for (const product of softDeletedProducts) {
+        if (
+          hasOrderItems.has(product.id) ||
+          hasInventoryTransactions.has(product.id) ||
+          hasReviews.has(product.id)
+        ) {
+          skippedIds.add(product.id);
+          continue;
+        }
+
+        try {
+          await this.prisma.cartItem.deleteMany({
+            where: { productId: product.id },
+          });
+          await this.prisma.wishlist.deleteMany({
+            where: { productId: product.id },
+          });
+          await this.prisma.skinAnalysisRecommendation.deleteMany({
+            where: { productId: product.id },
+          });
+
+          await this.deleteImageFiles(product.images);
+          await this.prisma.product.delete({ where: { id: product.id } });
+          await this.redis.del(`cache:product:${product.slug}`);
+
+          permanentlyDeletedCount++;
+        } catch (error: unknown) {
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 'P2003'
+          ) {
+            skippedIds.add(product.id);
+            continue;
+          }
+
+          throw error;
+        }
+      }
+    }
+
+    return {
+      deactivated: deactivatedCount,
+      permanentlyDeleted: permanentlyDeletedCount,
+      skippedIds: Array.from(skippedIds),
+    };
   }
 
   async deleteAll(userId: string, dto: DeleteAllProductsDto) {
@@ -611,7 +699,11 @@ export class ProductsService {
     });
 
     if (products.length === 0) {
-      return { deactivated: 0, deleted: 0, skipped: 0 };
+      return {
+        deactivated: 0,
+        permanentlyDeleted: 0,
+        skippedActiveOrders: 0,
+      };
     }
 
     const productIds = products.map((p) => p.id);
@@ -687,30 +779,45 @@ export class ProductsService {
           continue;
         }
 
-        await this.prisma.cartItem.deleteMany({
-          where: { productId: product.id },
-        });
-        await this.prisma.wishlist.deleteMany({
-          where: { productId: product.id },
-        });
-        await this.prisma.skinAnalysisRecommendation.deleteMany({
-          where: { productId: product.id },
-        });
+        try {
+          await this.prisma.cartItem.deleteMany({
+            where: { productId: product.id },
+          });
+          await this.prisma.wishlist.deleteMany({
+            where: { productId: product.id },
+          });
+          await this.prisma.skinAnalysisRecommendation.deleteMany({
+            where: { productId: product.id },
+          });
 
-        await this.deleteImageFiles(product.images);
+          await this.deleteImageFiles(product.images);
+          await this.prisma.product.delete({ where: { id: product.id } });
+          await this.redis.del(`cache:product:${product.slug}`);
 
-        await this.prisma.product.delete({ where: { id: product.id } });
+          deletedCount++;
+        } catch (error: unknown) {
+          // A new order item may be created after the preflight check. Treat the
+          // resulting foreign-key constraint as a skipped product, not a failed
+          // bulk operation, so remaining products can still be processed.
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 'P2003'
+          ) {
+            skippedIds.add(product.id);
+            continue;
+          }
 
-        await this.redis.del(`cache:product:${product.slug}`);
-
-        deletedCount++;
+          throw error;
+        }
       }
     }
 
     return {
       deactivated: deactivatedCount,
-      deleted: deletedCount,
-      skipped: skippedIds.size,
+      permanentlyDeleted: deletedCount,
+      skippedActiveOrders: skippedIds.size,
     };
   }
 
@@ -920,5 +1027,39 @@ export class ProductsService {
     });
 
     return review;
+  }
+
+  async checkActiveOrders(
+    userId: string,
+    ids: string[],
+  ): Promise<{ skippedIds: string[] }> {
+    const merchantId = await this.getMerchantId(userId);
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids }, merchantId },
+      select: { id: true },
+    });
+
+    if (products.length !== ids.length) {
+      throw new NotFoundException('Some products were not found');
+    }
+
+    const activeOrderItems = await this.prisma.orderItem.findMany({
+      where: {
+        productId: { in: ids },
+        order: {
+          status: {
+            isTerminalState: false,
+          },
+        },
+      },
+      select: { productId: true },
+    });
+
+    const skippedIds = [
+      ...new Set(activeOrderItems.map((item) => item.productId)),
+    ];
+
+    return { skippedIds };
   }
 }
