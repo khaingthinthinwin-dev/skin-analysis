@@ -438,12 +438,17 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute roles={['buyer']} />,
         children: [
           {
-            index: true,
-            element: (
-              <SuspenseWrapper>
-                <BuyerOrdersPage />
-              </SuspenseWrapper>
-            ),
+            element: <BuyerLayout />,
+            children: [
+              {
+                index: true,
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrdersPage />
+                  </SuspenseWrapper>
+                ),
+              },
+            ],
           },
         ],
       },

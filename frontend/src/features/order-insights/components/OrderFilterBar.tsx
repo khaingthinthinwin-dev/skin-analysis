@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { Calendar, Search } from 'lucide-react';
 import { type OrderListFilterFormData } from '../schemas/orderFilters.schema';
 
 interface OrderFilterBarProps {
@@ -68,6 +68,12 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
                   type="date"
                   value={field.value ? field.value.split('T')[0] : ''}
                   onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      methods.handleSubmit(handleSubmit)();
+                    }
+                  }}
                   className="pl-10"
                   placeholder={t('orders.filter.dateRange.from')}
                 />
@@ -94,6 +100,12 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
                   type="date"
                   value={field.value ? field.value.split('T')[0] : ''}
                   onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      methods.handleSubmit(handleSubmit)();
+                    }
+                  }}
                   className="pl-10"
                   placeholder={t('orders.filter.dateRange.to')}
                 />
@@ -107,10 +119,10 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
       </div>
 
       <div className="flex items-end gap-2">
-        <Button type="submit" className="w-full sm:w-auto">
-          {t('common.filters.apply')}
+        <Button type="submit" size="icon" aria-label="Apply filters" className="h-10 w-11 shrink-0">
+          <Search className="h-5 w-5" />
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onReset} className="w-full sm:w-auto">
+        <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full sm:w-auto">
           {t('common.filters.clear')}
         </Button>
       </div>
