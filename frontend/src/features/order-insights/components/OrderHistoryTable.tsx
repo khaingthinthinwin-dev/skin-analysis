@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronRight, ChevronUp, ChevronDown, Truck } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from './StatusBadge';
@@ -83,7 +83,8 @@ export function OrderHistoryTable({
   };
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      <div className="hidden sm:block overflow-x-auto">
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
@@ -161,5 +162,55 @@ export function OrderHistoryTable({
         </TableBody>
       </Table>
     </div>
+      <div className="space-y-3 sm:hidden">
+      {rows.map((row) => (
+        <div key={row.id} className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-mono text-xs font-medium">
+              #{row.id.slice(0, 8).toUpperCase()}
+            </span>
+            <StatusBadge status={row.status} />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">{t('orders.table.date')}</p>
+              <p className="mt-1">
+                {new Date(row.createdAt).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{t('orders.table.total')}</p>
+              <p className="mt-1 font-semibold">${parseFloat(row.totalAmount).toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t('orders.table.items')}</p>
+              <p className="mt-1">
+                {row.itemCount} {row.itemCount === 1 ? t('orders.table.item') : t('orders.table.items')}
+              </p>
+            </div>
+            <div>
+              <p className="text-right text-xs text-muted-foreground">{t('orders.table.payment')}</p>
+              <div className="mt-1 flex justify-end">
+                <PaymentBadge status={row.paymentStatus} />
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4 w-full"
+            onClick={() => onTrack(row.id)}
+          >
+            <Truck className="h-4 w-4" aria-hidden="true" />
+            {t('orders.track')}
+          </Button>
+        </div>
+      ))}
+      </div>
+    </>
   );
 }

@@ -24,7 +24,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
 
   return (
     <form onSubmit={methods.handleSubmit(handleSubmit)} className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/30 rounded-lg border">
-      <div className="flex-1 sm:w-64">
+      <div className="flex-1 sm:flex-none sm:w-[140px]">
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground mb-1">
           {t('orders.filter.status')}
         </label>
@@ -33,7 +33,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
           control={control}
           render={({ field }) => (
             <Select value={field.value ?? 'all'} onValueChange={field.onChange}>
-              <SelectTrigger id="filter-status">
+              <SelectTrigger id="filter-status" className="w-full sm:w-[140px]">
                 <SelectValue placeholder={t('orders.filter.status')} />
               </SelectTrigger>
               <SelectContent>
@@ -52,8 +52,8 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
         )}
       </div>
 
-      <div className="flex-1 sm:w-96 flex items-end gap-2">
-        <div className="flex-1">
+      <div className="w-full sm:flex-1 sm:w-96 flex flex-col sm:flex-row items-end gap-2">
+        <div className="w-full sm:flex-1">
           <label htmlFor="filter-from" className="block text-sm font-medium text-muted-foreground mb-1">
             {t('orders.filter.dateRange.from')}
           </label>
@@ -85,7 +85,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
           )}
         </div>
 
-        <div className="flex-1">
+        <div className="w-full sm:flex-1">
           <label htmlFor="filter-to" className="block text-sm font-medium text-muted-foreground mb-1">
             {t('orders.filter.dateRange.to')}
           </label>
@@ -118,8 +118,8 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
         </div>
       </div>
 
-      <div className="flex items-end gap-2">
-        <Button type="submit" size="icon" aria-label="Apply filters" className="h-10 w-11 shrink-0">
+      <div className="flex flex-col sm:flex-row items-end gap-2">
+        <Button type="submit" size="icon" aria-label="Apply filters" className="h-10 w-full sm:w-11 shrink-0">
           <Search className="h-5 w-5" />
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full sm:w-auto">
