@@ -10,20 +10,18 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html', { open: 'never' }],
     ['list'],
-    ['json', { outputFile: 'test-results/results.json' }],
+    ['./utils/modular-reporter.ts'],
   ],
 
-  outputDir: './test-results',
+  outputDir: './test-results/.artifacts',
   globalSetup: './global-setup.ts',
-  globalTeardown: './global-teardown.ts',
-  preserveOutput: 'always',
+  preserveOutput: 'failures-only',
 
   use: {
     baseURL: FRONTEND_URL,
     trace: 'on-first-retry',
-    screenshot: 'on',
+    screenshot: 'only-on-failure',
     video: 'on-first-retry',
     actionTimeout: 10_000,
     navigationTimeout: 15_000,
@@ -37,7 +35,4 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-
-  // webServer: Start backend/frontend manually before running tests
-  // npm run start:dev (in backend/) and npm run dev (in frontend/)
 });
