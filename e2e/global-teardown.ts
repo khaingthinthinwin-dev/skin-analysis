@@ -1,46 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { SCREEN_FOLDERS, getScreenFromFilePath } from './utils/screenshot';
 
 const TEST_RESULTS_DIR = path.resolve(__dirname, 'test-results');
-const PCL_PATH = path.resolve(__dirname, '../docs/screen/SignUp_LogIn/SignUp_Login_PCL.md');
-
-const TITLE_MAP: Record<string, string> = {
-  'should display register form with all fields': 'Navigate to `/register` — form displays all fields',
-  'should have buyer selected by default': 'Buyer selected by default — license upload hidden',
-  'should hide license upload for buyer role': 'Buyer selected by default — license upload hidden',
-  'should register as buyer successfully': 'Buyer registration — fill all fields',
-  'should show success message after registration': 'Buyer registration — fill all fields',
-  'should show errors for empty form submission': 'Empty form submission — all required field errors shown',
-  'should show error for invalid email format': 'Invalid email format — inline error displayed',
-  'should show error for short password': 'Weak password — password requirements not met indicator',
-  'should show error for password missing uppercase': 'Weak password — password requirements not met indicator',
-  'should show error for password missing lowercase': 'Weak password — password requirements not met indicator',
-  'should show error for password missing number': 'Weak password — password requirements not met indicator',
-  'should show error for password missing special character': 'Weak password — password requirements not met indicator',
-  'should show error for password mismatch': 'Password mismatch — confirm password error shown',
-  'should show error when terms not checked': 'Create Account button disabled until form is valid',
-  'should show error for duplicate email': 'Duplicate email',
-  'should show license upload when merchant role selected': 'Select Merchant — shopName + license upload appear',
-  'should show error for merchant without license': 'Merchant without license file — error shown',
-  'should navigate to login page when clicking Already have an account': 'Navigation links',
-  'should show weak indicator for short password': 'Weak password — password requirements not met indicator',
-  'should show strong indicator for complex password': 'Weak password — password requirements not met indicator',
-  'should toggle password visibility': 'Show/Hide password toggle works',
-  'should toggle confirm password visibility': 'Show/Hide password toggle works',
-  'should redirect to dashboard if already logged in': 'Access token stored after login',
-  'should display login form with all fields': 'Navigate to `/login`',
-  'should have correct page title': 'Navigate to `/login`',
-  'should login as buyer and redirect to buyer dashboard': 'Login with valid buyer credentials',
-  'should show toast notification on successful login': 'Login with valid buyer credentials',
-  'should show error with invalid email': 'Wrong password',
-  'should show error with invalid password': 'Wrong password',
-  'should show validation error for empty email': 'Empty form submission',
-  'should show validation error for empty password': 'Empty form submission',
-  'should show validation error for invalid email format': 'Invalid email format',
-  'should show validation error for short password': 'Short password',
-  'should navigate to register page when clicking Create Account': 'Create one',
-  'should navigate to forgot password page': 'Forgot password',
-};
+const PLAYWRIGHT_REPORT_DIR = path.resolve(__dirname, 'playwright-report');
 
 function removeDir(dirPath: string) {
   if (fs.existsSync(dirPath)) {
@@ -48,57 +11,102 @@ function removeDir(dirPath: string) {
   }
 }
 
-function updatePCL() {
-  const resultsPath = path.join(TEST_RESULTS_DIR, 'results.json');
-  if (!fs.existsSync(resultsPath)) return;
+function ensureDir(dirPath: string) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+}
 
-  const data = JSON.parse(fs.readFileSync(resultsPath, 'utf-8'));
-  const results: { status: string; title: string }[] = [];
+interface TestItem {
+  title: string;
+  file: string;
+  status: string;
+  duration: number;
+  errors?: any[];
+}
 
-  function extractTests(suite: any) {
-    if (suite.specs) {
-      for (const spec of suite.specs) {
-        for (const test of spec.tests) {
-          for (const result of test.results) {
-            results.push({ status: result.status, title: spec.title });
+function processTestResults() {
+  const globalResultsFile = path.join(TEST_RESULTS_DIR, 'results.json');
+  if (!fs.existsSync(globalResultsFile)) return;
+
+  try {
+    const rawData = JSON.parse(fs.readFileSync(globalResultsFile, 'utf-8'));
+    const moduleTestsMap: Record<string, TestItem[]> = {};
+
+    function collectTests(suite: any, currentFile: string = '') {
+      const file = suite.file || currentFile;
+      if (suite.specs) {
+        for (const spec of suite.specs) {
+          const specFile = spec.file || file;
+          for (const test of spec.tests) {
+            for (const result of test.results) {
+              const moduleName = getScreenFromFilePath(specFile);
+              if (!moduleTestsMap[moduleName]) {
+                moduleTestsMap[moduleName] = [];
+              }
+              moduleTestsMap[moduleName].push({
+                title: spec.title,
+                file: specFile,
+                status: result.status,
+                duration: result.duration,
+                errors: result.errors,
+              });
+            }
           }
         }
       }
-    }
-    if (suite.suites) {
-      for (const child of suite.suites) {
-        extractTests(child);
+
+      if (suite.suites) {
+        for (const childSuite of suite.suites) {
+          collectTests(childSuite, file);
+        }
       }
     }
-  }
 
-  extractTests(data.suites?.[0] || data);
-
-  let content = fs.readFileSync(PCL_PATH, 'utf-8');
-  let updatedCount = 0;
-
-  for (const result of results) {
-    if (result.status !== 'passed') continue;
-
-    const pclText = TITLE_MAP[result.title];
-    if (!pclText) continue;
-
-    const lines = content.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(pclText) && lines[i].includes('- [ ]')) {
-        lines[i] = lines[i].replace('- [ ]', '- [x]');
-        updatedCount++;
-        break;
+    if (rawData.suites) {
+      for (const rootSuite of rawData.suites) {
+        collectTests(rootSuite);
       }
     }
-    content = lines.join('\n');
-  }
 
-  fs.writeFileSync(PCL_PATH, content);
-  console.log(`📋 PCL updated: ${updatedCount} tests marked as passed`);
+    // Write module results into test-results/<ModuleName>/results.json
+    for (const [moduleName, tests] of Object.entries(moduleTestsMap)) {
+      if (moduleName === 'Other') continue;
+
+      const moduleDir = path.join(TEST_RESULTS_DIR, moduleName);
+      ensureDir(moduleDir);
+
+      const passed = tests.filter(t => t.status === 'passed').length;
+      const failed = tests.filter(t => t.status === 'failed' || t.status === 'timedOut').length;
+      const skipped = tests.filter(t => t.status === 'skipped').length;
+      const totalDuration = tests.reduce((acc, t) => acc + (t.duration || 0), 0);
+
+      const summary = {
+        module: moduleName,
+        timestamp: new Date().toISOString(),
+        total: tests.length,
+        passed,
+        failed,
+        skipped,
+        durationMs: totalDuration,
+        tests,
+      };
+
+      fs.writeFileSync(
+        path.join(moduleDir, 'results.json'),
+        JSON.stringify(summary, null, 2),
+        'utf-8'
+      );
+    }
+  } catch (err) {
+    console.error('Error processing test results in globalTeardown:', err);
+  }
 }
 
 export default function globalTeardown() {
-  // Auto-update PCL checklist
-  updatePCL();
+  // 1. Process and organize results per module
+  processTestResults();
+
+  // 2. Prevent playwright-report directory from existing
+  removeDir(PLAYWRIGHT_REPORT_DIR);
 }

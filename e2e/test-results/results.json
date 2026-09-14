@@ -1,0 +1,803 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\work\\AI\\skin-analysis\\e2e\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/SignUp_LogIn/auth.spec.ts"
+    ],
+    "configFile": "C:\\work\\AI\\skin-analysis\\e2e\\playwright.config.ts",
+    "rootDir": "C:/work/AI/skin-analysis/e2e/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "C:\\work\\AI\\skin-analysis\\e2e\\global-setup.ts",
+    "globalTeardown": "C:\\work\\AI\\skin-analysis\\e2e\\global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "failures-only",
+    "projects": [
+      {
+        "outputDir": "C:/work/AI/skin-analysis/e2e/test-results/.artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/work/AI/skin-analysis/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 7,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "SignUp_LogIn\\auth.spec.ts",
+      "file": "SignUp_LogIn/auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "E2E-AUTH-01: Buyer Registration",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 18,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should register a new buyer and redirect to login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8089,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:41:49.175Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-33488c9c696c96476227",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 19,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-02: Merchant Registration",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 48,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should register as merchant with license file upload",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5723,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:41:57.809Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-a4d7d76f7ca476cc84dd",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 49,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-03: Registration Validation",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 81,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should show validation errors on empty submission",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4431,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:03.554Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-3a54b0c48089be088016",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 82,
+              "column": 7
+            },
+            {
+              "title": "should show error for duplicate email registration",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9700,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:08.002Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-cd2cdbde2a55661b6edf",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 92,
+              "column": 7
+            },
+            {
+              "title": "should show error for password mismatch",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5036,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:17.727Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-879c16894eed61f2393d",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 118,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-04: Buyer Login & Redirect",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 136,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should log in as buyer and navigate to buyer dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5699,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:22.784Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-2bc6c8d3a9adaf279245",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 137,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-05: Merchant Login & Redirect",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 160,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should log in as merchant and navigate to merchant dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5400,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:28.502Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-2b029e80997bf7cf51b9",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 161,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-06: Login Validation & Error Feedback",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 173,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should show generic error for wrong credentials without leaking account existence",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4677,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:33.928Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-5e35bd9b393ffa3d0bc1",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 174,
+              "column": 7
+            },
+            {
+              "title": "should validate invalid email format inline",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4638,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:38.625Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-e88343cd70c11ae4385f",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 181,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-07: Password Visibility Toggle",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 196,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should toggle password visibility on login page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5122,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:43.292Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-53a77a077f3d37fdcda5",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 197,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-08: Forgot Password Flow",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 217,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should navigate to forgot password and submit email",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10166,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:48.455Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-82ef48eeba3a18749da5",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 218,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-09: Reset Password Flow",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 252,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display reset password form and validate match",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4896,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:42:58.663Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-677619385b4edf51c553",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 253,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-10: Logout & Session Invalidation",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 271,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should log out buyer and clear session",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7181,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:43:03.590Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-d8b1b2f150f86e658811",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 272,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-11: Multi-language Toggle",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 293,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should switch language on auth pages",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6414,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:43:10.803Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-825c322330eb2a09cf58",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 294,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-12: Theme Switching",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 322,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should toggle light and dark theme on auth pages",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6040,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:43:17.254Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-1d89e1180e1370ae804e",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 323,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E2E-AUTH-13: Responsive Layouts",
+          "file": "SignUp_LogIn/auth.spec.ts",
+          "line": 343,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display correctly on desktop viewport",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4494,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:43:23.328Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-fd3cc32ab9de0b18d360",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 344,
+              "column": 7
+            },
+            {
+              "title": "should display correctly on mobile viewport",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4326,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:43:27.849Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-5e63525830bf22e291fd",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 351,
+              "column": 7
+            },
+            {
+              "title": "should display correctly on tablet viewport",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4193,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-11T08:43:32.207Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5bf08f8dae754c0284ef-da33139f93616a200782",
+              "file": "SignUp_LogIn/auth.spec.ts",
+              "line": 358,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-11T08:41:47.881Z",
+    "duration": 109062.05,
+    "expected": 18,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
