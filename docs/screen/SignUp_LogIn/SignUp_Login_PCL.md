@@ -1,350 +1,385 @@
-# Program Checklist — E2E Testing: SignUp / LogIn
-
-**Document ID:** SKM-PCL-AUTH-001
-**Target Screen:** Sign-up / Login / Forgot Password / Reset Password
-**Version:** 1.0
-**Created:** 2026-09-08
+# Sign-Up & Log-In Checklist (PCL)
 
 ---
 
-## 1. Test Infrastructure Setup
+## Document Control
 
-### 1.1 Playwright (Frontend E2E)
-
-- [ ] Install Playwright: `npm init playwright@latest` (in `frontend/`)
-- [ ] Configure `playwright.config.ts`
-  - [ ] Base URL: `http://localhost:5173` (Vite dev server)
-  - [ ] API URL: `http://localhost:8080/api/v1` (NestJS backend)
-  - [ ] Browsers: Chromium, Firefox, WebKit
-  - [ ] Web server: auto-start `npm run dev` before tests
-  - [ ] Retries: 1 (CI), 0 (local)
-  - [ ] Screenshots on failure
-  - [ ] HTML reporter
-- [ ] Create `frontend/e2e/` directory structure:
-  ```
-  e2e/
-  ├── fixtures/
-  │   ├── test-users.ts       # Seed data
-  │   └── auth.fixture.ts     # Custom fixtures (login-as, etc.)
-  ├── auth/
-  │   ├── register.spec.ts
-  │   ├── login.spec.ts
-  │   ├── forgot-password.spec.ts
-  │   └── reset-password.spec.ts
-  └── global-setup.ts         # DB seed before all tests
-  ```
-- [ ] Add npm scripts to `frontend/package.json`:
-  - [ ] `"test:e2e": "npx playwright test"`
-  - [ ] `"test:e2e:ui": "npx playwright test --ui"`
-  - [ ] `"test:e2e:report": "npx playwright show-report"`
-
-### 1.2 Backend API E2E (Jest + Supertest)
-
-- [ ] Verify `backend/test/jest-e2e.json` exists and is configured
-- [ ] Create `backend/test/auth.e2e-spec.ts`
-- [ ] Ensure test database is configured (separate from dev)
-- [ ] Add npm script: `"test:e2e": "jest --config ./test/jest-e2e.json"`
-
-### 1.3 Test Database
-
-- [ ] Create test database: `cosmetics_finder_test`
-- [ ] Add `DATABASE_URL` for test env in `.env.test`
-- [ ] Seed test data before test suite runs
-- [ ] Clean up (truncate) after each test suite
+| Attribute | Value |
+|-----------|-------|
+| **Document ID** | SKM-PCL-AUTH-001 |
+| **Target Screen** | Sign-Up / Log-In / Forgot Password / Reset Password (新規登録 / ログイン / パスワード再設定) |
+| **Subsystem** | Authentication & User Management |
+| **Version** | 1.0 |
+| **Created** | 2026-09-11 |
+| **Status** | Active |
 
 ---
 
-## 2. Test Data & Fixtures
+## 1. Database & Schema
 
-### 2.1 Pre-seeded Test Users
-
-| User | Email | Password | Role | Purpose |
-|------|-------|----------|------|---------|
-| buyer1 | `test-buyer@example.com` | `Test1234!` | buyer | Login tests |
-| merchant1 | `test-merchant@example.com` | `Test1234!` | merchant | Merchant login |
-| existing | `existing@example.com` | `Test1234!` | buyer | Duplicate email test |
-
-### 2.2 Test Data for Registration
-
-| Scenario | Name | Email | Password | Role | License |
-|----------|------|-------|----------|------|---------|
-| New buyer | `New Buyer` | `new-buyer-{timestamp}@test.com` | `Secure123!` | buyer | — |
-| New merchant | `New Merchant` | `new-merchant-{timestamp}@test.com` | `Secure123!` | merchant | `license.pdf` |
-
-### 2.3 Playwright Custom Fixtures
-
-```typescript
-// fixtures/auth.fixture.ts
-// - loginAs(email, password): Logs in and returns page with auth state
-// - authenticatedPage: Page already logged in as buyer
-// - merchantPage: Page already logged in as merchant
-```
+- [ ] `users` table exists with all required columns (`id`, `email`, `password_hash`, `name`, `role`, `avatar_url`, `is_active`, `email_verified`, `created_at`, `updated_at`, `merchant_id`)
+- [ ] `merchants` table exists with `id`, `shop_name`, `license_url`, `license_status`, `is_active`, `created_at`, `updated_at`
+- [ ] `refresh_tokens` table exists with `id`, `user_id`, `token_hash`, `family_id`, `is_revoked`, `expires_at`, `created_at`
+- [ ] `password_reset_tokens` table exists with `id`, `user_id`, `token_hash`, `expires_at`, `used`, `created_at`
+- [ ] Foreign key: `users.merchant_id` → `merchants.id` (SET NULL)
+- [ ] Foreign key: `refresh_tokens.user_id` → `users.id` (CASCADE)
+- [ ] Foreign key: `password_reset_tokens.user_id` → `users.id` (CASCADE)
+- [ ] Unique constraint on `users.email`
+- [ ] Unique constraint on `merchants.shop_name`
+- [ ] Default values: `users.is_active = true`, `users.email_verified = false`, `merchants.license_status = 'pending'`, `refresh_tokens.is_revoked = false`, `password_reset_tokens.used = false`
+- [ ] Indexes on `users.email`, `users.merchant_id`, `merchants.license_status`, `refresh_tokens.family_id`, `password_reset_tokens.token_hash`
+- [ ] Prisma schema matches database schema
 
 ---
 
-## 3. Backend API E2E Tests
+## 2. Seed Data
 
-**File:** `backend/test/auth.e2e-spec.ts`
-
-### 3.1 Register Endpoint
-
-- [ ] `POST /api/v1/auth/register` — Should create buyer (201)
-- [ ] `POST /api/v1/auth/register` — Should create merchant with license (201)
-- [ ] `POST /api/v1/auth/register` — Should return 409 for duplicate email
-- [ ] `POST /api/v1/auth/register` — Should return 400 for invalid email
-- [ ] `POST /api/v1/auth/register` — Should return 400 for weak password
-- [ ] `POST /api/v1/auth/register` — Should return 400 for merchant without license
-- [ ] `POST /api/v1/auth/register` — Should return 400 for merchant without shopName
-
-### 3.2 Login Endpoint
-
-- [ ] `POST /api/v1/auth/login` — Should return 200 with tokens
-- [ ] `POST /api/v1/auth/login` — Should return 401 for wrong password
-- [ ] `POST /api/v1/auth/login` — Should return 401 for non-existent email
-- [ ] `POST /api/v1/auth/login` — Should return 400 for invalid email format
-
-### 3.3 Token Refresh
-
-- [ ] `POST /api/v1/auth/refresh` — Should return 200 with new access token
-- [ ] `POST /api/v1/auth/refresh` — Should return 401 for expired refresh token
-- [ ] `POST /api/v1/auth/refresh` — Should return 401 for revoked token
-
-### 3.4 Logout
-
-- [ ] `POST /api/v1/auth/logout` — Should return 204
-- [ ] `POST /api/v1/auth/logout` — Should blacklist access token
-
-### 3.5 Forgot Password
-
-- [ ] `POST /api/v1/auth/forgot-password` — Should return 200 for existing email
-- [ ] `POST /api/v1/auth/forgot-password` — Should return 200 for non-existent email (no leak)
-- [ ] `POST /api/v1/auth/forgot-password` — Should create password_reset_token record
-
-### 3.6 Verify Code
-
-- [ ] `POST /api/v1/auth/verify-code` — Should return 200 for valid code
-- [ ] `POST /api/v1/auth/verify-code` — Should return 400 for invalid code
-- [ ] `POST /api/v1/auth/verify-code` — Should return 400 for expired code
-
-### 3.7 Reset Password
-
-- [ ] `POST /api/v1/auth/reset-password` — Should return 200 for valid code
-- [ ] `POST /api/v1/auth/reset-password` — Should return 400 for invalid code
-- [ ] `POST /api/v1/auth/reset-password` — Should return 400 for weak password
-- [ ] `POST /api/v1/auth/reset-password` — Should mark token as used
+- [ ] Super Admin user pre-seeded (`superadmin@example.com`, role `super_admin`)
+- [ ] Admin user pre-seeded (`admin@example.com`, role `admin`)
+- [ ] Approved Merchant users pre-seeded with approved license status
+- [ ] Pending Merchant users pre-seeded with pending license status (`license_status = 'pending'`)
+- [ ] Active Buyer users pre-seeded (`test-buyer@example.com`, role `buyer`)
+- [ ] Inactive/Banned user pre-seeded (`inactive@example.com`, `is_active = false`)
+- [ ] All pre-seeded passwords hashed using Argon2id
+- [ ] Mock sample `license.pdf` file available for testing uploads
 
 ---
 
-## 4. Frontend E2E Tests — Registration
+## 3. Backend — Module Structure
 
-**File:** `frontend/e2e/auth/register.spec.ts`
-
-### 4.1 Happy Path
-
-- [ ] Navigate to `/register` — form displays all fields
-- [ ] Buyer registration — fill all fields → click Create Account → redirects to `/login`
-- [ ] Merchant registration — select Merchant → fill fields + upload license → redirects to `/login`
-- [ ] After registration — new user can login with the same credentials
-
-### 4.2 Form Validation
-
-- [x] Empty form submission — all required field errors shown
-- [x] Invalid email format — inline error displayed
-- [ ] Weak password — password requirements not met indicator
-- [ ] Password mismatch — confirm password error shown
-- [ ] Short name (< 2 chars) — inline error displayed
-- [ ] Merchant without shopName — error shown
-- [ ] Merchant without license file — error shown
-
-### 4.3 Error Handling
-
-- [ ] Duplicate email — "Email already registered" error shown
-- [ ] Network error — "Network error" toast displayed
-
-### 4.4 UI Behavior
-
-- [ ] Buyer selected by default — license upload hidden
-- [ ] Select Merchant — shopName + license upload appear
-- [ ] Switch back to Buyer — shopName + license upload disappear
-- [x] Show/Hide password toggle works for all password fields
-- [ ] Create Account button disabled until form is valid
-- [ ] Loading spinner shown during submission
-- [ ] Navigation links: "Already have an account? Sign in" → `/login`
+- [ ] `AuthModule` created and registered in `AppModule`
+- [ ] `AuthController` with all authentication & password recovery endpoints
+- [ ] `AuthService` with credential validation, user registration, token generation, and password hashing
+- [ ] `JwtStrategy` and `JwtRefreshStrategy` implemented using Passport
+- [ ] DTOs: `RegisterDto`, `LoginDto`, `RefreshTokenDto`, `ForgotPasswordDto`, `ResetPasswordDto`, `VerifyCodeDto`
+- [ ] Guards: `JwtAuthGuard`, `JwtRefreshGuard`, `RolesGuard`, `LicenseStatusGuard`
+- [ ] NestJS Mailer service configured for password reset email delivery
+- [ ] Proper error handling with consistent error response structures and HTTP status codes
 
 ---
 
-## 5. Frontend E2E Tests — Login
+## 4. Backend — API Endpoints
 
-**File:** `frontend/e2e/auth/login.spec.ts`
+### 4.1 Authentication & Password Recovery
 
-### 5.1 Happy Path
+- [ ] `POST /api/v1/auth/register` — Register a new buyer or merchant (with license file)
+- [ ] `POST /api/v1/auth/login` — Authenticate user and issue access/refresh tokens
+- [ ] `POST /api/v1/auth/refresh` — Issue a new access token via refresh token rotation
+- [ ] `POST /api/v1/auth/logout` — Revoke refresh token and blacklist access token in Redis
+- [ ] `POST /api/v1/auth/forgot-password` — Send password reset link/token to user email
+- [ ] `POST /api/v1/auth/verify-code` — Verify validity of reset code/token
+- [ ] `POST /api/v1/auth/reset-password` — Reset password using valid reset token
 
-- [x] Navigate to `/login` — email input auto-focused
-- [x] Login with valid buyer credentials → redirects to `/buyer` dashboard
-- [ ] Login with valid merchant credentials → redirects to `/merchant` dashboard
-- [x] Access token stored after login
+### 4.2 Response Format
 
-### 5.2 Form Validation
-
-- [x] Empty form submission — errors shown
-- [ ] Invalid email format — inline error
-- [x] Short password (< 8 chars) — inline error
-
-### 5.3 Error Handling
-
-- [x] Wrong password — "Invalid email or password" alert shown
-- [ ] Non-existent email — same generic error (no email enumeration)
-- [ ] Network error — toast displayed
-
-### 5.4 UI Behavior
-
-- [ ] Show/Hide password toggle works
-- [ ] Log In button disabled until form valid
-- [ ] Loading spinner during submission
-- [x] "Don't have an account? Create one" → `/register`
-- [x] "Forgot password?" → `/forgot-password`
+- [ ] Consistent response structure with `data` payload or message
+- [ ] Proper HTTP status codes (200, 201, 204, 400, 401, 403, 404, 409, 413, 415, 429, 500)
+- [ ] Standardized error response includes `statusCode`, `errorCode`, `message`, `timestamp`, `path`
 
 ---
 
-## 6. Frontend E2E Tests — Forgot Password
+## 5. Backend — Business Rules
 
-**File:** `frontend/e2e/auth/forgot-password.spec.ts`
+### 5.1 Registration Rules
 
-### 6.1 Happy Path
+- [ ] **BR-AUTH-001**: Email must be unique across all users (case-insensitive check)
+- [ ] **BR-AUTH-002**: Password minimum 8 characters, requiring uppercase, lowercase, number, and special character
+- [ ] **BR-AUTH-003**: Role selection during registration limited strictly to `buyer` or `merchant`
+- [ ] **BR-AUTH-004**: If role is omitted, default to `buyer`
+- [ ] **BR-AUTH-005**: New users have `email_verified = false` by default
+- [ ] **BR-AUTH-020**: When role = `merchant`, license PDF file upload is mandatory
+- [ ] **BR-AUTH-021**: License file must be PDF format only (`application/pdf`)
+- [ ] **BR-AUTH-022**: License file must be named `license.pdf` (case-insensitive)
+- [ ] **BR-AUTH-023**: License file must not exceed 10MB
+- [ ] **BR-AUTH-024**: Merchant registration initializes `merchants.license_status = 'pending'`; merchant operations restricted until admin approval
+- [ ] **BR-AUTH-025**: Admin and Super Admin accounts cannot be created via public registration
+- [ ] **BR-AUTH-026**: When role = `merchant`, shop name (`shopName`) is mandatory (1–255 characters)
 
-- [ ] Navigate to `/forgot-password` — email input auto-focused
-- [ ] Submit valid email → success message displayed
-- [ ] Form replaced with "If an account exists..." message
-- [ ] "Back to Login" link → `/login`
+### 5.2 Login & Authentication Rules
 
-### 6.2 Form Validation
+- [ ] **BR-AUTH-006**: Credentials verified against email and Argon2id password hash
+- [ ] **BR-AUTH-007**: Login rejected for inactive users (`is_active = false`) with 401/403
+- [ ] **BR-AUTH-008**: Rate limiting enforced: max 5 login attempts per IP per 300 seconds
+- [ ] **BR-AUTH-009**: Anti-enumeration: Generic error message ("Invalid email or password") returned for both invalid email and wrong password
 
-- [ ] Empty email — error shown
-- [ ] Invalid email format — inline error
+### 5.3 Token & Session Management Rules
 
-### 6.3 Error Handling
+- [ ] **BR-AUTH-010**: JWT Access Token expires after 15 minutes
+- [ ] **BR-AUTH-011**: JWT Refresh Token expires after 7 days
+- [ ] **BR-AUTH-012**: Absolute maximum session limit of 90 days
+- [ ] **BR-AUTH-013**: Refresh token rotation: new refresh token issued on every refresh invocation
+- [ ] **BR-AUTH-014**: Family tracking: each login creates a unique family ID for session lineage
+- [ ] **BR-AUTH-015**: Reuse detection: if a revoked refresh token is presented, revoke all active tokens in that user's session family immediately
 
-- [ ] Network error — toast displayed
+### 5.4 Password Reset Rules
 
----
-
-## 7. Frontend E2E Tests — Reset Password
-
-**File:** `frontend/e2e/auth/reset-password.spec.ts`
-
-### 7.1 Happy Path
-
-- [ ] Navigate to `/reset-password` with valid token → form displays
-- [ ] Submit matching strong passwords → success message shown
-- [ ] "Back to Login" link → `/login`
-- [ ] Login with new password → succeeds
-- [ ] Login with old password → fails
-
-### 7.2 Form Validation
-
-- [ ] Empty passwords — errors shown
-- [ ] Weak password — requirements not met
-- [ ] Password mismatch — error shown
-
-### 7.3 Error Handling
-
-- [ ] Navigate without token → redirected to `/forgot-password`
-- [ ] Submit with expired token → "Invalid or expired" error
-- [ ] Submit with already-used token → error shown
+- [ ] **BR-AUTH-030**: Password reset tokens expire after 24 hours
+- [ ] **BR-AUTH-031**: Single-use tokens: tokens marked `used = true` immediately upon password change
+- [ ] **BR-AUTH-032**: Reset rate limiting: max 3 password reset requests per email per hour
+- [ ] **BR-AUTH-033**: Invalidate previous tokens: generating a new reset request invalidates prior unused tokens for that user
+- [ ] **BR-AUTH-034**: Anti-enumeration on forgot password: same generic success message displayed regardless of whether email exists
+- [ ] **BR-AUTH-035**: Updated password re-hashed with Argon2id before database storage
 
 ---
 
-## 8. Full Integration Flow Tests
+## 6. Backend — Validation
 
-**File:** `frontend/e2e/auth/full-flow.spec.ts`
-
-### 8.1 Complete Registration → Login Flow
-
-- [ ] Register as buyer → login → see buyer dashboard → logout → back to `/login`
-
-### 8.2 Complete Password Reset Flow
-
-- [ ] Login → logout → forgot password → (mock email) → verify code → reset password → login with new password
-
-### 8.3 Session Persistence
-
-- [ ] Login → refresh page → still authenticated (token refresh works)
-
-### 8.4 Concurrent Sessions
-
-- [ ] Login in Tab A → Login in Tab B → both tabs work independently
+- [ ] All DTOs decorated with `class-validator` decorators
+- [ ] `@IsEmail()`, `@IsNotEmpty()`, `@MaxLength(255)` on email fields
+- [ ] `@MinLength(8)`, `@Matches()` for password complexity requirements
+- [ ] `@IsIn(['buyer', 'merchant'])` on registration role field
+- [ ] `@ValidateIf(o => o.role === 'merchant')` for conditional `shopName` and license file requirements
+- [ ] File upload interceptor validating MIME type (`application/pdf`) and size (≤10MB)
+- [ ] Global `ValidationPipe` with `{ whitelist: true, forbidNonWhitelisted: true }` enabled
 
 ---
 
-## 9. Cross-Cutting Concerns
+## 7. Frontend — Module & Routing
 
-### 9.1 Responsive Design
-
-- [ ] Mobile viewport (375px) — form fills width, readable
-- [ ] Tablet viewport (768px) — centered card, max-width 400px
-- [ ] Desktop viewport (1280px) — centered card, comfortable spacing
-
-### 9.2 Accessibility
-
-- [ ] All form fields have associated labels (`htmlFor`/`id`)
-- [ ] Error messages announced to screen readers (`aria-live`)
-- [ ] Tab order follows visual flow
-- [ ] Enter key submits forms
-- [ ] Focus management on error
-
-### 9.3 Internationalization
-
-- [ ] Toggle EN → all labels in English
-- [ ] Toggle JA → all labels in Japanese
-- [ ] Toggle MY → all labels in Myanmar
+- [ ] Login route: `/login`
+- [ ] Register route: `/register`
+- [ ] Forgot Password route: `/forgot-password`
+- [ ] Reset Password route: `/reset-password`
+- [ ] Public-only guard: Authenticated users navigating to `/login` or `/register` redirected to their role dashboard
+- [ ] Role-based redirect: Buyers redirected to `/buyer`, Merchants redirected to `/merchant`, Admins redirected to `/admin`
 
 ---
 
-## 10. Execution & CI
+## 8. Frontend — Screen Layout & UI Elements
 
-### 10.1 Local Execution
+### 8.1 Login Page (`/login`)
 
-```bash
-# Backend API E2E
-cd backend && npm run test:e2e
+- [ ] Application logo and title ("Cosmetics Finder")
+- [ ] Email input (auto-focused on load)
+- [ ] Password input with Show/Hide toggle button
+- [ ] "Log In" primary button (disabled while invalid, spinner while submitting)
+- [ ] "Don't have an account? Sign Up" navigation link → `/register`
+- [ ] "Forgot password?" navigation link → `/forgot-password`
+- [ ] Language toggle dropdown/buttons (EN / JA / MY)
+- [ ] Theme toggle switch (Light / Dark mode)
 
-# Frontend E2E
-cd frontend && npm run test:e2e
+### 8.2 Registration Page (`/register`)
 
-# Frontend E2E with UI
-cd frontend && npm run test:e2e:ui
-```
+- [ ] Name input (required, 2–100 characters)
+- [ ] Email input (required, valid email)
+- [ ] Password input with Show/Hide toggle & real-time strength meter
+- [ ] Confirm Password input with match validation
+- [ ] Role selector tabs/radio: Buyer (default) vs. Merchant
+- [ ] Conditional Merchant Fields (appear when Merchant selected):
+  - [ ] Shop Name input (required)
+  - [ ] Business License upload zone (`license.pdf`, drag & drop + file picker)
+- [ ] "Create Account" primary button (disabled while invalid, spinner while submitting)
+- [ ] "Already have an account? Log In" navigation link → `/login`
 
-### 10.2 CI Pipeline Steps
+### 8.3 Forgot Password Page (`/forgot-password`)
 
-- [ ] Start test database
-- [ ] Run Prisma migrations on test DB
-- [ ] Seed test data
-- [ ] Start backend (`npm run start:dev`)
-- [ ] Start frontend (`npm run dev`)
-- [ ] Wait for both servers ready
-- [ ] Run Playwright tests
-- [ ] Run Jest API E2E tests
-- [ ] Upload Playwright report as artifact
-- [ ] Cleanup test database
+- [ ] Header title & instructions
+- [ ] Email input field
+- [ ] "Send Reset Link" button
+- [ ] Success state banner ("If an account exists, a reset link has been sent")
+- [ ] "Back to Login" navigation link
+
+### 8.4 Reset Password Page (`/reset-password`)
+
+- [ ] New Password input with Show/Hide toggle & strength meter
+- [ ] Confirm New Password input
+- [ ] "Reset Password" button
+- [ ] Invalid / expired token warning state with redirect to `/forgot-password`
+- [ ] Success confirmation banner with "Back to Login" button
 
 ---
 
-## 11. Coverage Summary
+## 9. Frontend — Form Handling & Validation
 
-| Area | Test Cases | Status |
-|------|-----------|--------|
-| Backend API — Register | 7 | Pending |
-| Backend API — Login | 4 | Pending |
-| Backend API — Token Refresh | 3 | Pending |
-| Backend API — Logout | 2 | Pending |
-| Backend API — Forgot Password | 3 | Pending |
-| Backend API — Verify Code | 3 | Pending |
-| Backend API — Reset Password | 4 | Pending |
-| Frontend — Register | 12 | Pending |
-| Frontend — Login | 10 | Pending |
-| Frontend — Forgot Password | 4 | Pending |
-| Frontend — Reset Password | 7 | Pending |
-| Frontend — Full Integration | 4 | Pending |
-| Cross-Cutting | 8 | Pending |
-| **TOTAL** | **71** | **0%** |
+- [ ] Forms powered by React Hook Form + Zod schema validation
+- [ ] Real-time field validation on blur / change
+- [ ] Dynamic password strength meter indicating length, upper, lower, number, and special character
+- [ ] Confirm password matching validation
+- [ ] Drag-and-drop license file dropzone with file type check (`application/pdf`) and size check (≤10MB)
+- [ ] File removal / re-select button in license upload zone
+- [ ] Submit buttons disabled during form submission to prevent duplicate requests
+
+---
+
+## 10. Frontend — Error Handling
+
+- [ ] 400: Inline field-level error messages displayed beneath respective inputs
+- [ ] 401: Generic alert banner "Invalid email or password" (no credential leaking)
+- [ ] 403 (Account Inactive): Banner "Your account is inactive. Please contact support"
+- [ ] 409: "An account with this email already exists" message
+- [ ] 413: "File size exceeds 10MB limit"
+- [ ] 415: "Only PDF files are supported for business license"
+- [ ] 429: "Too many attempts. Please try again in 5 minutes" rate limit alert
+- [ ] Network Error: Toast notification "Network error. Please check your internet connection"
+
+---
+
+## 11. Frontend — State Management & Auth Context
+
+- [ ] `AuthContext` provides `user`, `role`, `isAuthenticated`, `login()`, `logout()`, and `refresh()`
+- [ ] Access token kept in-memory (never in `localStorage` or `sessionStorage`)
+- [ ] Silent token refresh timer / Axios interceptor on 401 response
+- [ ] Logout clears memory state and invokes backend revocation
+- [ ] Role and session state correctly restored on browser reload
+
+---
+
+## 12. Frontend — Internationalization (i18n)
+
+- [ ] Full translation keys configured for EN, JA, MY
+- [ ] Form labels (`auth.email`, `auth.password`, `auth.name`, `auth.shopName`)
+- [ ] Placeholder text (`auth.emailPlaceholder`, `auth.passwordPlaceholder`)
+- [ ] Validation messages (`auth.errors.*`)
+- [ ] Success / toast messages translated
+- [ ] Language switcher seamlessly switches UI text across all auth views
+
+---
+
+## 13. Frontend — Responsive Design
+
+- [ ] Mobile viewport (< 768px): Full-width form, comfortable touch targets (min 44px), readable text
+- [ ] Tablet viewport (768px – 1023px): Centered card container (max-width 480px)
+- [ ] Desktop viewport (≥ 1024px): Centered aesthetic card with balanced whitespace
+- [ ] Virtual keyboard friendly on mobile devices without layout distortion
+
+---
+
+## 14. Frontend — Accessibility
+
+- [ ] Semantic HTML form elements (`<form>`, `<label>`, `<input>`, `<button>`)
+- [ ] `htmlFor` and `id` associations on all input labels
+- [ ] `aria-invalid` and `aria-describedby` set when validation errors occur
+- [ ] `aria-live="polite"` on error alerts and notifications
+- [ ] Full keyboard navigation (Tab order through fields, Enter to submit, Space/Enter to toggle password visibility)
+- [ ] WCAG AA color contrast ratio (minimum 4.5:1 for text)
+
+---
+
+## 15. Frontend — Dialogs & Feedback
+
+- [ ] Password visibility toggle button with accessible labels ("Show password" / "Hide password")
+- [ ] Loading spinners inside action buttons during submission
+- [ ] Toast notification on successful registration, password reset email sent, and password updated
+- [ ] Clear visual indicators for drag-over state on license file upload
+
+---
+
+## 16. Testing — Unit Tests
+
+### 16.1 Backend Unit Tests
+
+- [ ] `AuthService.register()` — successful buyer creation
+- [ ] `AuthService.register()` — successful merchant creation with license
+- [ ] `AuthService.register()` — duplicate email rejection
+- [ ] `AuthService.register()` — admin role registration rejection
+- [ ] `AuthService.login()` — valid credentials returns tokens
+- [ ] `AuthService.login()` — wrong password returns 401
+- [ ] `AuthService.login()` — inactive user returns 403
+- [ ] `AuthService.refreshToken()` — valid rotation returns new token pair
+- [ ] `AuthService.refreshToken()` — revoked token triggers family revocation
+- [ ] `AuthService.forgotPassword()` — valid email generates reset token
+- [ ] `AuthService.resetPassword()` — valid token updates password hash
+- [ ] Password hashing & Argon2id verification helper tests
+
+### 16.2 Frontend Unit Tests
+
+- [ ] Login form renders all fields and submits valid payload
+- [ ] Registration form shows/hides merchant fields dynamically on role switch
+- [ ] Client-side Zod validation triggers on invalid email, weak password, password mismatch
+- [ ] Password strength meter reacts correctly to input complexity
+- [ ] Forgot password form handles submission and success display
+- [ ] Reset password form validates matching passwords
+
+---
+
+## 17. Testing — Integration Tests
+
+- [ ] `POST /api/v1/auth/register` — full buyer registration flow
+- [ ] `POST /api/v1/auth/register` — full merchant registration flow with multipart PDF upload
+- [ ] `POST /api/v1/auth/login` — full login flow with JWT cookie issuance
+- [ ] `POST /api/v1/auth/refresh` — token rotation cycle
+- [ ] `POST /api/v1/auth/logout` — token revocation & Redis blacklisting
+- [ ] `POST /api/v1/auth/forgot-password` — email generation & database record creation
+- [ ] `POST /api/v1/auth/verify-code` — token validation logic
+- [ ] `POST /api/v1/auth/reset-password` — single-use enforcement and subsequent login with new password
+
+---
+
+## 18. Testing — E2E Tests (Playwright)
+
+- [ ] **E2E-AUTH-01**: Buyer Registration (Valid form → redirect to login → login succeeds)
+- [ ] **E2E-AUTH-02**: Merchant Registration (Role select → upload `license.pdf` → redirect to login)
+- [ ] **E2E-AUTH-03**: Registration Validation (Empty fields, duplicate email, weak password, invalid PDF)
+- [ ] **E2E-AUTH-04**: Buyer Login & Redirect (Redirects to `/buyer` dashboard)
+- [ ] **E2E-AUTH-05**: Merchant Login & Redirect (Redirects to `/merchant` dashboard)
+- [ ] **E2E-AUTH-06**: Login Validation & Error Feedback (Wrong password, non-existent email generic alert)
+- [ ] **E2E-AUTH-07**: Password Visibility Toggle (Toggles plaintext/password mask)
+- [ ] **E2E-AUTH-08**: Forgot Password Flow (Submit email → success banner)
+- [ ] **E2E-AUTH-09**: Reset Password Flow (Open token link → fill new password → login with new password succeeds)
+- [ ] **E2E-AUTH-10**: Logout & Session Invalidation (Logout → protected routes inaccessible)
+- [ ] **E2E-AUTH-11**: Multi-language Toggle (EN / JA / MY switching across screens)
+- [ ] **E2E-AUTH-12**: Theme Switching (Light / Dark mode persistence)
+- [ ] **E2E-AUTH-13**: Responsive Layouts (Mobile 375px, Tablet 768px, Desktop 1280px)
+
+---
+
+## 19. Performance
+
+- [ ] Login API response time ≤ 500ms (including Argon2id verification)
+- [ ] Registration API response time ≤ 1s (including file upload handling)
+- [ ] Refresh token API response time ≤ 200ms
+- [ ] Rate limiting configured in Redis to prevent brute-force attacks
+- [ ] Minimal frontend bundle size for auth pages (lazy-loaded routes)
+
+---
+
+## 20. Security
+
+- [ ] Passwords hashed with Argon2id (64MB memory, 3 iterations, 4 parallelism)
+- [ ] Access tokens kept strictly in memory; refresh tokens stored in `httpOnly`, `Secure`, `SameSite=Strict` cookies
+- [ ] Redis token blacklist for immediate revocation upon logout
+- [ ] Rate limiter protecting `/login` (5/300s) and `/forgot-password` (3/hour)
+- [ ] Anti-user enumeration: generic error messages on both login and password recovery
+- [ ] Single-use password reset tokens with strict 24-hour expiration
+- [ ] CORS policies restricted strictly to configured frontend origins
+- [ ] Input sanitization on all string fields to prevent XSS and SQL/NoSQL injection
+
+---
+
+## 21. File Upload (Merchant License)
+
+- [ ] Dedicated upload handler for merchant license documents
+- [ ] MIME type validation strictly verifying `application/pdf`
+- [ ] File size limit enforced (max 10MB)
+- [ ] Secure storage path with UUID-based filenames to prevent path traversal
+- [ ] License file linked to `merchants` record for admin verification
+
+---
+
+## 22. Redis & Session Management
+
+- [ ] Redis client connection configured with reconnect strategy
+- [ ] Token blacklist key format: `blacklist:token:{jwt_id}`
+- [ ] Rate limiting key formats: `ratelimit:login:{ip}`, `ratelimit:reset:{email}`
+- [ ] TTL automatically set on blacklisted tokens matching access token remaining lifetime
+- [ ] Session family tracking maintained in DB/Redis for breach detection
+
+---
+
+## 23. Documentation
+
+- [ ] Swagger / OpenAPI documentation complete for all `/api/v1/auth/*` endpoints
+- [ ] Request and response schemas fully documented with examples
+- [ ] Error status codes (400, 401, 403, 409, 413, 415, 429) documented
+- [ ] Functional Specification (機能設計書) and Screen Items Specification (画面項目設計書) up to date
+
+---
+
+## Sign-Off
+
+| Role | Name | Date | Status |
+|------|------|------|--------|
+| Developer | | | |
+| QA Engineer | | | |
+| Tech Lead | | | |
+| Product Owner | | | |
