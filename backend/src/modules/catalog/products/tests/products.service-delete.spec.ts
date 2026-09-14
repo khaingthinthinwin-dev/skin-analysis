@@ -403,41 +403,66 @@ describe('ProductsService', () => {
       prisma.merchant.findUnique.mockResolvedValue({ id: mockMerchantId });
     });
 
-    it('soft deletes multiple products', async () => {
-      prisma.product.findMany.mockResolvedValue([{ id: 'p1' }, { id: 'p2' }]);
-      prisma.orderItem.findFirst.mockResolvedValue(null);
+    it('soft deletes active products', async () => {
+      prisma.product.findMany.mockResolvedValue([
+        { id: 'p1', isActive: true, images: [], slug: 'p1' },
+        { id: 'p2', isActive: true, images: [], slug: 'p2' },
+      ]);
+      prisma.orderItem.findMany.mockResolvedValue([]);
       prisma.product.updateMany.mockResolvedValue({ count: 2 });
 
       const result = await service.bulkDelete(mockUserId, {
         ids: ['p1', 'p2'],
       });
-      expect(result.deleted).toBe(2);
+      expect(result.deactivated).toBe(2);
+      expect(result.permanentlyDeleted).toBe(0);
+      expect(result.skippedIds).toEqual([]);
     });
 
     it('throws NotFoundException when some products not found', async () => {
-      prisma.product.findMany.mockResolvedValue([{ id: 'p1' }]);
+      prisma.product.findMany.mockResolvedValue([
+        { id: 'p1', isActive: true, images: [], slug: 'p1' },
+      ]);
 
       await expect(
         service.bulkDelete(mockUserId, { ids: ['p1', 'p2'] }),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('throws ConflictException for products with active orders', async () => {
-      prisma.product.findMany.mockResolvedValue([{ id: 'p1' }, { id: 'p2' }]);
-      prisma.orderItem.findFirst.mockResolvedValue({ id: 'oi-1' });
-
-      await expect(
-        service.bulkDelete(mockUserId, { ids: ['p1', 'p2'] }),
-      ).rejects.toThrow(ConflictException);
-    });
-
-    it('soft deletes products with no active orders', async () => {
-      prisma.product.findMany.mockResolvedValue([{ id: 'p1' }]);
-      prisma.orderItem.findFirst.mockResolvedValue(null);
+    it('skips products with active orders and processes eligible ones', async () => {
+      prisma.product.findMany.mockResolvedValue([
+        { id: 'p1', isActive: true, images: [], slug: 'p1' },
+        { id: 'p2', isActive: true, images: [], slug: 'p2' },
+      ]);
+      prisma.orderItem.findMany.mockResolvedValue([{ productId: 'p1' }]);
       prisma.product.updateMany.mockResolvedValue({ count: 1 });
 
+      const result = await service.bulkDelete(mockUserId, {
+        ids: ['p1', 'p2'],
+      });
+      expect(result.deactivated).toBe(1);
+      expect(result.permanentlyDeleted).toBe(0);
+      expect(result.skippedIds).toEqual(['p1']);
+    });
+
+    it('permanently deletes already-inactive products', async () => {
+      prisma.product.findMany.mockResolvedValue([
+        { id: 'p1', isActive: false, images: [], slug: 'p1' },
+      ]);
+      prisma.orderItem.findMany.mockResolvedValue([]);
+      prisma.inventoryTransaction.findMany.mockResolvedValue([]);
+      prisma.review.findMany.mockResolvedValue([]);
+      prisma.cartItem.deleteMany.mockResolvedValue({ count: 0 });
+      prisma.wishlist.deleteMany.mockResolvedValue({ count: 0 });
+      prisma.skinAnalysisRecommendation.deleteMany.mockResolvedValue({
+        count: 0,
+      });
+      prisma.product.delete.mockResolvedValue({});
+
       const result = await service.bulkDelete(mockUserId, { ids: ['p1'] });
-      expect(result.deleted).toBe(1);
+      expect(result.deactivated).toBe(0);
+      expect(result.permanentlyDeleted).toBe(1);
+      expect(result.skippedIds).toEqual([]);
     });
   });
 
@@ -459,8 +484,8 @@ describe('ProductsService', () => {
 
       const result = await service.deleteAll(mockUserId, {});
       expect(result.deactivated).toBe(2);
-      expect(result.deleted).toBe(0);
-      expect(result.skipped).toBe(0);
+      expect(result.permanentlyDeleted).toBe(0);
+      expect(result.skippedActiveOrders).toBe(0);
     });
 
     it('returns zeros when no products match', async () => {
@@ -468,8 +493,8 @@ describe('ProductsService', () => {
 
       const result = await service.deleteAll(mockUserId, {});
       expect(result.deactivated).toBe(0);
-      expect(result.deleted).toBe(0);
-      expect(result.skipped).toBe(0);
+      expect(result.permanentlyDeleted).toBe(0);
+      expect(result.skippedActiveOrders).toBe(0);
     });
 
     it('skips products with active orders', async () => {
@@ -485,8 +510,48 @@ describe('ProductsService', () => {
 
       const result = await service.deleteAll(mockUserId, {});
       expect(result.deactivated).toBe(1);
-      expect(result.deleted).toBe(0);
-      expect(result.skipped).toBe(1);
+      expect(result.permanentlyDeleted).toBe(0);
+      expect(result.skippedActiveOrders).toBe(1);
+    });
+
+    it('skips inactive products with active orders without attempting a hard delete', async () => {
+      prisma.product.findMany.mockResolvedValueOnce([
+        { id: 'p1', isActive: false, images: [], slug: 'p1' },
+      ]);
+      prisma.orderItem.findMany.mockResolvedValueOnce([{ productId: 'p1' }]);
+
+      const result = await service.deleteAll(mockUserId, {});
+
+      expect(result).toEqual({
+        deactivated: 0,
+        permanentlyDeleted: 0,
+        skippedActiveOrders: 1,
+      });
+      expect(prisma.product.delete).not.toHaveBeenCalled();
+    });
+
+    it('continues when an order is created after the preflight check', async () => {
+      prisma.product.findMany.mockResolvedValueOnce([
+        { id: 'p1', isActive: false, images: [], slug: 'p1' },
+        { id: 'p2', isActive: false, images: [], slug: 'p2' },
+      ]);
+      prisma.orderItem.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+      prisma.inventoryTransaction.findMany.mockResolvedValueOnce([]);
+      prisma.review.findMany.mockResolvedValueOnce([]);
+      prisma.product.delete
+        .mockRejectedValueOnce({ code: 'P2003' })
+        .mockResolvedValueOnce({});
+
+      const result = await service.deleteAll(mockUserId, {});
+
+      expect(result).toEqual({
+        deactivated: 0,
+        permanentlyDeleted: 1,
+        skippedActiveOrders: 1,
+      });
+      expect(prisma.product.delete).toHaveBeenCalledTimes(2);
     });
 
     it('permanently deletes already soft-deleted products with no blockers', async () => {
@@ -506,8 +571,8 @@ describe('ProductsService', () => {
 
       const result = await service.deleteAll(mockUserId, {});
       expect(result.deactivated).toBe(0);
-      expect(result.deleted).toBe(2);
-      expect(result.skipped).toBe(0);
+      expect(result.permanentlyDeleted).toBe(2);
+      expect(result.skippedActiveOrders).toBe(0);
       expect(prisma.product.delete).toHaveBeenCalledTimes(2);
     });
 
@@ -522,8 +587,8 @@ describe('ProductsService', () => {
 
       const result = await service.deleteAll(mockUserId, {});
       expect(result.deactivated).toBe(0);
-      expect(result.deleted).toBe(0);
-      expect(result.skipped).toBe(1);
+      expect(result.permanentlyDeleted).toBe(0);
+      expect(result.skippedActiveOrders).toBe(1);
     });
 
     it('handles mixed active and soft-deleted products', async () => {
@@ -544,8 +609,8 @@ describe('ProductsService', () => {
 
       const result = await service.deleteAll(mockUserId, {});
       expect(result.deactivated).toBe(1);
-      expect(result.deleted).toBe(1);
-      expect(result.skipped).toBe(0);
+      expect(result.permanentlyDeleted).toBe(1);
+      expect(result.skippedActiveOrders).toBe(0);
     });
 
     it('applies isActive filter', async () => {

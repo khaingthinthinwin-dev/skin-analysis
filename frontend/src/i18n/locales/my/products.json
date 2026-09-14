@@ -62,5 +62,11 @@
   "merchant.products.deleteAllPartialSuccess": "ထုတ်ကုန် {deleted} ခုကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။ အော်ဒါများ လုပ်ဆောင်နေသည့်အတွက် ထုတ်ကုန် {skipped} ခုကို ဖျက်၍ မရပါ။",
   "merchant.products.deleteAllFailed": "အားလုံးဖျက်ခြင်း မအောင်မြင်ပါ။ ထပ်ကြိုးစားပါ။",
   "merchant.products.pendingBanner": "သင့် merchant အကောင့်ကို အတည်ပြုခြင်း စောင့်ဆိုင်းနေပါသည်။ License အတည်ပြုခြင်းမရှိသည့်အထိ ထုတ်ကုန်စီမံခန့်ခွဲမှု လုပ်ဆောင်ချက်များကို ကန့်သတ်ထားပါသည်။",
-  "merchant.products.pendingBannerHint": "သင့်ထုတ်ကုန်များကို ကြည့်ရှုနိုင်သော်လည်း license အတည်ပြုခြင်းမရှိသည့်အထိ ဖန်တီးခြင်း၊ ပြင်ဆင်ခြင်း၊ ဖျက်ခြင်း မပြုလုပ်နိုင်ပါ။"
+  "merchant.products.pendingBannerHint": "သင့်ထုတ်ကုန်များကို ကြည့်ရှုနိုင်သော်လည်း license အတည်ပြုခြင်းမရှိသည့်အထိ ဖန်တီးခြင်း၊ ပြင်ဆင်ခြင်း၊ ဖျက်ခြင်း မပြုလုပ်နိုင်ပါ။",
+  "merchant.products.bulkDeleteTitleSingle": "ရွေးထားသည့် ထုတ်ကုန်ကို ဖျက်ပါ",
+  "merchant.products.bulkDeleteTitleMultiple": "ရွေးထားသည့် ထုတ်ကုန်များကို ဖျက်ပါ",
+  "merchant.products.bulkDeleteDescProcess": "ဒီထုတ်ကုန် {count, plural, one {# ခုကို ဆောင်ရွက်မည်လား} other {# ခုကို ဆောင်ရွက်မည်လား}}?",
+  "merchant.products.bulkDeleteDescDeactivate": "{count, plural, one {# ခုကို ပိတ်ပါမည်} other {# ခုကို ပိတ်ပါမည်}}",
+  "merchant.products.bulkDeleteDescPermanent": "{count, plural, one {# ခု ဖျက်ပြီးသားထုတ်ကုန်ကို အပြီးအပိုင် ဖျက်ပါမည်} other {# ခု ဖျက်ပြီးသားထုတ်ကုန်များကို အပြီးအပိုင် ဖျက်ပါမည်}}",
+  "merchant.products.bulkDeleteDescSkipped": "{count, plural, one {# ခုထုတ်ကုန်သည် အော်ဒါများ လုပ်ဆောင်နေသည့်အတွက် ကျော်သွားပါမည်} other {# ခုထုတ်ကုန်များသည် အော်ဒါများ လုပ်ဆောင်နေသည့်အတွက် ကျော်သွားပါမည်}}"
 }
