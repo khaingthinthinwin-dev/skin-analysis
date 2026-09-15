@@ -1,5 +1,14 @@
-import { IsOptional, IsDateString, IsInt, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsDateString,
+  IsInt,
+  Min,
+  Max,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
+
+export type GroupByType = 'merchant' | 'day' | 'order';
 
 export class CommissionReportQueryDto {
   @IsOptional()
@@ -22,4 +31,10 @@ export class CommissionReportQueryDto {
   @Min(1)
   @Max(100)
   limit?: number;
+
+  @IsOptional()
+  @IsIn(['merchant', 'day', 'order'], {
+    message: 'groupBy must be merchant, day, or order',
+  })
+  groupBy?: GroupByType;
 }

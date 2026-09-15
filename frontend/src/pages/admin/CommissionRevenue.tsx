@@ -13,6 +13,7 @@ import { ExportDialog } from "@/features/admin/commission-revenue/components/Exp
 import { RevenueTab } from "@/features/admin/commission-revenue/components/RevenueTab";
 import {
   CommissionReportFilter,
+  CommissionGroupBy,
   ExportReportType,
 } from "@/features/admin/commission-revenue/services/commission.service";
 
@@ -24,6 +25,7 @@ export default function CommissionAndRevenue() {
   const [reportPage, setReportPage] = useState(1);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportType, setExportType] = useState<ExportReportType>("commission");
+  const groupBy: CommissionGroupBy = reportFilters.groupBy ?? "merchant";
 
   // Commission side only (settings, rate edit, reports). Payouts are fetched on
   // the Revenue tab and are skipped here to avoid duplicate requests.
@@ -103,6 +105,7 @@ export default function CommissionAndRevenue() {
 
             {/* [E] Report filter panel */}
             <ReportFilterPanel
+              groupBy={groupBy}
               onApply={handleApplyReportFilters}
               onReset={handleResetReportFilters}
             />
@@ -111,7 +114,7 @@ export default function CommissionAndRevenue() {
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-card-foreground text-[15px] font-bold">
-                  Commission Report
+                  Commission Report ({groupBy === "day" ? "daily" : groupBy === "order" ? "by order" : "by merchant"})
                 </span>
                 <Button
                   size="sm"
@@ -126,7 +129,7 @@ export default function CommissionAndRevenue() {
                   Export
                 </Button>
               </div>
-              <CommissionReportsTable reports={reportsQuery.data?.reports} />
+              <CommissionReportsTable reports={reportsQuery.data?.reports} groupBy={groupBy} />
               {reportsQuery.data?.pagination && (
                 <PaginationControls
                   page={reportsQuery.data.pagination.page}
@@ -144,9 +147,15 @@ export default function CommissionAndRevenue() {
 
         {/* [S] Shared export modal */}
         <ExportDialog
+          key={`${exportType}-${reportFilters.from ?? ""}-${reportFilters.to ?? ""}-${groupBy}-${exportOpen}`}
           open={exportOpen}
           onOpenChange={setExportOpen}
           reportType={exportType}
+          initialValues={
+            exportType === "commission"
+              ? { dateFrom: reportFilters.from, dateTo: reportFilters.to, groupBy }
+              : undefined
+          }
         />
       </div>
     </div>

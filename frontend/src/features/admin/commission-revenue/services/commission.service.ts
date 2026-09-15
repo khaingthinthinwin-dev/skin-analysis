@@ -2,17 +2,20 @@ import { api } from "@/lib/api";
 
 // Commission settings response (GET/PATCH /admin/commission)
 export interface CommissionSettings {
-  rate: string; // Decimal string, e.g. "12.00"
+  rate?: string;
 }
 
 // Merchant commission report row (GET /admin/commission/reports)
 export interface CommissionReport {
-  merchantId: string;
+  merchantId?: string;
   merchantName: string;
   commissionRate: string; // Decimal string – the rate applied to these orders
-  orders: number;
+  orders?: number;
   revenue: string; // Decimal string
   commission: string; // Decimal string
+  date?: string; // For 'day' grouping
+  orderId?: string; // For 'order' grouping
+  orderNumber?: string; // For 'order' grouping
 }
 
 export interface PaginationMeta {
@@ -32,14 +35,19 @@ export interface CommissionReportFilter {
   to?: string;
   page?: number;
   limit?: number;
+  groupBy?: CommissionGroupBy;
 }
+
+export type CommissionGroupBy = "merchant" | "day" | "order";
 
 // Merchant payout row (GET /admin/revenue/payouts)
 export interface Payout {
   id: string; // order id (payouts are flattened to one row per order)
   payoutId: string;
+  payoutIds?: string[];
   merchantId: string;
   merchantName: string;
+  period: string;
   orderId: string | null;
   commissionRate: string; // Decimal string – effective rate at payout creation
   totalAmount: string; // Decimal string
@@ -51,6 +59,12 @@ export interface Payout {
   createdAt: string;
   processedAt?: string | null;
   canDelete: boolean;
+  completedCount: number;
+  completedTotal: string;
+  completedCommission: string;
+  pendingCount: number;
+  pendingTotal: string;
+  pendingCommission: string;
 }
 
 export interface PayoutsResponse {
@@ -77,6 +91,7 @@ export interface PayoutFilter {
   merchantId?: string;
   from?: string;
   to?: string;
+  period?: string;
   page?: number;
   limit?: number;
 }
@@ -176,6 +191,8 @@ export interface ExportRequestBody {
   dateFrom: string; // YYYY-MM-DD
   dateTo: string; // YYYY-MM-DD
   format: ExportFormat;
+  groupBy?: CommissionGroupBy;
+  merchantId?: string;
 }
 
 export interface PayoutMerchant {
@@ -301,6 +318,7 @@ export const commissionService = {
   exportReport: async (
     type: ExportReportType,
     body: ExportRequestBody,
+    merchantName?: string,
   ): Promise<void> => {
     const url =
       type === "commission"
@@ -312,7 +330,7 @@ export const commissionService = {
     const disposition =
       (response.headers?.["content-disposition"] as string) || "";
     const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match?.[1] ?? buildExportFilename(type, body);
+    const filename = match?.[1] ?? buildExportFilename(type, body, merchantName);
     const blob = new Blob([response.data as BlobPart]);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -335,8 +353,20 @@ function toDateString(date: string | Date): string {
 // Build the fallback filename in the same format as the backend:
 // "{label} report {YYYYMMDD}-{YYYYMMDD}({YYYYMMDD}).{ext}"
 // Used when the browser blocks reading the Content-Disposition header (CORS).
-function buildExportFilename(type: ExportReportType, body: ExportRequestBody) {
+function buildExportFilename(type: ExportReportType, body: ExportRequestBody, merchantName?: string) {
   const dateRange = `${toDateString(body.dateFrom)}-${toDateString(body.dateTo)}`;
   const generationDate = toDateString(new Date());
-  return `${type} report ${dateRange}(${generationDate}).${body.format}`;
+  const commissionGroupLabel = body.groupBy === "day"
+    ? "by date"
+    : body.groupBy === "order"
+      ? "by order"
+      : "by merchant";
+  if (type === "payout") {
+    const merchantLabel = body.merchantId ? merchantName ?? "merchant" : "all";
+    return `payout report(for ${merchantLabel})${dateRange}(${generationDate}).${body.format}`;
+  }
+  const label = type === "commission"
+    ? `commission report(${commissionGroupLabel})`
+    : `${type} report`;
+  return `${label} ${dateRange}(${generationDate}).${body.format}`;
 }
