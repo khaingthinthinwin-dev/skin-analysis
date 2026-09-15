@@ -1,0 +1,33 @@
+{
+  "title": "お気に入り",
+  "itemCount": "{{count}}件の商品が保存されています",
+  "moveToCart": "カートに追加",
+  "remove": "削除",
+  "clearAll": "All Data Clear",
+  "clearing": "削除中...",
+  "clearAllTitle": "お気に入りをクリア",
+  "clearAllConfirm": "お気に入りのすべての商品を削除しますか？この操作は取り消せません。",
+  "clearAllConfirmButton": "Yes",
+  "clearAllCancelButton": "キャンセル",
+  "cleared": "お気に入りをクリアしました",
+  "failedToClear": "お気に入りのクリアに失敗しました",
+  "emptyTitle": "まだお気に入りに追加された商品がありません",
+  "emptyMessage": "商品を閲覧してお気に入りを追加しましょう。",
+  "continueShopping": "買い物を続ける",
+  "unavailable": "この商品は現在在庫切れです。",
+  "inStock": "在庫あり",
+  "lowStock": "残りわずか",
+  "outOfStock": "在庫切れ",
+  "addedToWishlist": "お気に入りに追加しました",
+  "removedFromWishlist": "お気に入りから削除しました",
+  "movedToCart": "カートに移動しました",
+  "failedToAdd": "お気に入りへの追加に失敗しました",
+  "failedToRemove": "お気に入りからの削除に失敗しました",
+  "failedToMove": "カートへの移動に失敗しました",
+  "guestLoginAlert": {
+    "title": "ログインが必要です",
+    "message": "お気に入りに商品を追加するにはログインしてください。",
+    "loginButton": "ログイン",
+    "closeButton": "キャンセル"
+  }
+}
