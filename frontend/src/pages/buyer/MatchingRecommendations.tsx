@@ -1,8 +1,7 @@
 import { useState, type ImgHTMLAttributes } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ShoppingCart, Star, ChevronLeft, ChevronRight, Sparkles, FlaskConical, Heart, Plus, Check, RefreshCw } from 'lucide-react'
+import { ShoppingCart, Star, ChevronLeft, ChevronRight, Sparkles, FlaskConical, Heart, Plus, Check } from 'lucide-react'
 import { useMatchFilters } from '@/features/buyer/matching/hooks/useMatchFilters'
 import { usePersonalizedRecommendations, useRecommendationHistory, useAdPanel } from '@/features/buyer/matching/hooks/useMatching'
 import { matchingService } from '@/features/buyer/matching/services/matching.service'
@@ -12,6 +11,7 @@ import { ErrorBanner } from '@/features/buyer/matching/components/ErrorBanner'
 import { SkeletonGrid } from '@/features/buyer/matching/components/SkeletonGrid'
 import { HistoryAccordion } from '@/features/buyer/matching/components/HistoryAccordion'
 import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
+import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
 import { cn } from '@/lib/utils'
 
 function getImageUrl(url: string): string {
@@ -44,8 +44,6 @@ const BADGE_LABELS: Record<string, string> = {
   new: '✨ New',
 }
 
-const STALE_THRESHOLD_HOURS = 30 * 24
-
 export default function MatchingRecommendations() {
   const navigate = useNavigate()
   const { filters, updateFilters, resetFilters } = useMatchFilters()
@@ -60,8 +58,6 @@ export default function MatchingRecommendations() {
   const skinTypes = recData?.skinTypes ?? []
   const meta = recData?.meta ?? { page: 1, limit: 12, total: 0, totalPages: 0 }
   const history = historyData?.data ?? []
-
-  const isStale = source === 'ai' && analysisAge !== null && analysisAge >= STALE_THRESHOLD_HOURS
 
   const handlePageChange = (newPage: number) => {
     updateFilters({ page: newPage })
@@ -109,39 +105,8 @@ export default function MatchingRecommendations() {
         </p>
       </div>
 
-      {/* Stale Analysis Banner */}
-      {isStale && (
-        <div className="rounded-xl p-4 flex items-center justify-between bg-amber-50 border border-amber-200">
-          <div className="flex items-center gap-3">
-            <span className="text-lg">💡</span>
-            <div>
-              <p className="text-sm font-semibold text-amber-700">Want Fresh Results?</p>
-              <p className="text-xs text-amber-600">Retake your skin analysis for updated recommendations</p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100" asChild>
-            <Link to="/buyer/skin-analysis">
-              <RefreshCw className="h-4 w-4 mr-1.5" /> Retake Analysis
-            </Link>
-          </Button>
-        </div>
-      )}
-
-      {/* Prominent Profile Prompt Banner - Generic (no analysis) */}
-      {source === 'generic' && (
-        <div className="rounded-xl p-6 flex items-center gap-6 bg-gradient-to-r from-pink-50 to-purple-50 border border-purple-100">
-          <div className="text-5xl flex-shrink-0">🧑‍🔬</div>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold text-foreground">Get Personalized Recommendations</h2>
-            <p className="text-sm text-muted-foreground mt-1">Run an AI skin analysis to receive products matched to your skin type and concerns</p>
-          </div>
-          <Button className="flex-shrink-0 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold px-6" asChild>
-            <Link to="/buyer/skin-analysis">
-              <Sparkles className="h-4 w-4 mr-2" /> Start Skin Analysis
-            </Link>
-          </Button>
-        </div>
-      )}
+      {/* Analysis Status Banner */}
+      <ProfilePromptBanner source={source} analysisAge={analysisAge} />
 
       {recError && <ErrorBanner message={recError.message || 'Failed to load recommendations.'} onRetry={() => refetch()} />}
 
