@@ -40,12 +40,11 @@ export function useProductForm(options: {
             description: product.description ?? '',
             categoryId: product.category?.id ?? '',
             sku: product.sku ?? '',
-            price:
-              product.compareAtPrice != null ? toNumOrUndefined(product.price) : undefined,
+            price: toNumOrUndefined(product.price),
             compareAtPrice:
               product.compareAtPrice != null
                 ? toNumOrUndefined(product.compareAtPrice)
-                : toNumOrUndefined(product.price),
+                : undefined,
             stockQuantity: toNum(product.stockQuantity),
             lowStockThreshold: toNum(product.lowStockThreshold),
             skinTypes: (product.skinTypes ?? []).flatMap((s: string) => {

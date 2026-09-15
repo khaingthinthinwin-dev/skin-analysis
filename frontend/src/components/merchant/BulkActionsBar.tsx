@@ -73,7 +73,7 @@ export function BulkActionsBar({
           setBulkDeleteOpen(false)
         }}
         title="Delete Products"
-        description={`Are you sure you want to delete ${selectedIds.length} product(s)? Products with active orders will be skipped. This action cannot be undone.`}
+        description={`Are you sure you want to permanently delete these ${selectedIds.length} product(s)? All related data will be lost and cannot be recovered. Products with active orders will be skipped.`}
       />
     </>
   )
