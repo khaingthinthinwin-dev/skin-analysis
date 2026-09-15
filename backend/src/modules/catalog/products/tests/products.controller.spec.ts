@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { ProductsController } from '../products.controller';
 import { ProductsService } from '../products.service';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 import { RequireApprovedMerchantGuard } from '../../../auth/guards/require-approved-merchant.guard';
 import { AuthUser } from '../../../../common/decorators/current-user.decorator';
 
@@ -154,22 +156,20 @@ describe('ProductsController', () => {
 
     it('throws ConflictException for SKU conflict', async () => {
       service.create.mockRejectedValue(new ConflictException());
-      await expect(
-        controller.create(
-          mockUser,
-          {
-            name: 'Test',
-            shortDescription: 'Test',
-            description: 'Test',
-            categoryId: 'cat-1',
-            sku: 'TAKEN',
-            price: 10,
-            compareAtPrice: 15,
-            stockQuantity: 5,
-          } as any,
-          [],
-        ),
-      ).rejects.toThrow(ConflictException);
+      const dto: CreateProductDto = {
+        name: 'Test',
+        shortDescription: 'Test',
+        description: 'Test',
+        categoryId: 'cat-1',
+        sku: 'TAKEN',
+        price: 10,
+        compareAtPrice: 15,
+        stockQuantity: 5,
+      };
+
+      await expect(controller.create(mockUser, dto, [])).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -187,8 +187,10 @@ describe('ProductsController', () => {
 
     it('throws NotFoundException for non-existent product', async () => {
       service.update.mockRejectedValue(new NotFoundException());
+      const dto: UpdateProductDto = { name: 'Test' };
+
       await expect(
-        controller.update('bad-id', mockUser, { name: 'Test' } as any, []),
+        controller.update('bad-id', mockUser, dto, []),
       ).rejects.toThrow(NotFoundException);
     });
   });

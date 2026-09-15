@@ -21,8 +21,10 @@ import {
 type RevenuePayoutRow = {
   id: string;
   payoutId: string;
+  payoutIds: string[];
   merchantId: string;
   merchantName: string;
+  period: string;
   orderId: string | null;
   commissionRate: string;
   totalAmount: string;
@@ -34,6 +36,12 @@ type RevenuePayoutRow = {
   createdAt: Date;
   processedAt: Date | null;
   canDelete: boolean;
+  completedCount: number;
+  completedTotal: string;
+  completedCommission: string;
+  pendingCount: number;
+  pendingTotal: string;
+  pendingCommission: string;
 };
 
 type RevenuePayout = Prisma.PayoutGetPayload<{
@@ -352,10 +360,40 @@ export class RevenueService {
     const where: Prisma.PayoutWhereInput = {};
     if (query.status) where.status = query.status;
     if (query.merchantId) where.merchantId = query.merchantId;
-    if (query.from || query.to) {
-      where.createdAt = {
-        ...(query.from ? { gte: new Date(query.from) } : {}),
-        ...(query.to ? { lte: new Date(`${query.to}T23:59:59.999Z`) } : {}),
+    const now = new Date();
+    const periodStart = query.period
+      ? new Date(`${query.period}-01T00:00:00.000Z`)
+      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
+    const periodEnd = query.period
+      ? new Date(
+          Date.UTC(
+            periodStart.getUTCFullYear(),
+            periodStart.getUTCMonth() + 1,
+            0,
+            23,
+            59,
+            59,
+            999,
+          ),
+        )
+      : new Date(
+          Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth() + 1,
+            0,
+            23,
+            59,
+            59,
+            999,
+          ),
+        );
+
+    if (query.from || query.to || query.period) {
+      where.order = {
+        createdAt: {
+          gte: query.from ? new Date(query.from) : periodStart,
+          lte: query.to ? new Date(`${query.to}T23:59:59.999Z`) : periodEnd,
+        },
       };
     }
 
@@ -384,17 +422,70 @@ export class RevenueService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const rows: RevenuePayoutRow[] = [];
+    const grouped = new Map<string, RevenuePayoutRow>();
     for (const p of allPayouts) {
       const rate = await this.getEffectiveRate(p.createdAt);
       const orderAmount = toNumber(p.order?.totalAmount ?? p.totalAmount);
       const commission = (orderAmount * rate) / 100;
-      rows.push({
-        id: p.order?.id ?? p.id,
+      const orderDate = p.order?.createdAt ?? p.createdAt;
+      const period = orderDate.toISOString().slice(0, 7);
+      const key = `${p.merchantId}:${period}`;
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.payoutIds.push(p.id);
+        existing.totalAmount = fmtDecimal(
+          toNumber(existing.totalAmount) + orderAmount,
+        );
+        existing.commissionAmount = fmtDecimal(
+          toNumber(existing.commissionAmount) + commission,
+        );
+        existing.netAmount = fmtDecimal(
+          toNumber(existing.totalAmount) - toNumber(existing.commissionAmount),
+        );
+        existing.commissionRate = fmtDecimal(
+          toNumber(existing.totalAmount) > 0
+            ? (toNumber(existing.commissionAmount) /
+                toNumber(existing.totalAmount)) *
+                100
+            : 0,
+        );
+        if (p.status !== 'completed') existing.status = p.status;
+        if (
+          p.processedAt &&
+          (!existing.processedAt || p.processedAt > existing.processedAt)
+        ) {
+          existing.processedAt = p.processedAt;
+        }
+        existing.canDelete =
+          existing.canDelete && this.isPayoutDeletable(p.status, p.createdAt);
+        if (p.status === 'completed') {
+          existing.completedCount += 1;
+          existing.completedTotal = fmtDecimal(
+            toNumber(existing.completedTotal) + orderAmount,
+          );
+          existing.completedCommission = fmtDecimal(
+            toNumber(existing.completedCommission) + commission,
+          );
+        } else {
+          existing.pendingCount += 1;
+          existing.pendingTotal = fmtDecimal(
+            toNumber(existing.pendingTotal) + orderAmount,
+          );
+          existing.pendingCommission = fmtDecimal(
+            toNumber(existing.pendingCommission) + commission,
+          );
+        }
+        continue;
+      }
+      const isCompleted = p.status === 'completed';
+      grouped.set(key, {
+        id: key,
         payoutId: p.id,
+        payoutIds: [p.id],
         merchantId: p.merchantId,
         merchantName: p.merchant?.shopName ?? 'Unknown',
-        orderId: p.order?.orderNumber ?? null,
+        period,
+        orderId: null,
         commissionRate: fmtDecimal(rate),
         totalAmount: fmtDecimal(orderAmount),
         commissionAmount: fmtDecimal(commission),
@@ -402,19 +493,24 @@ export class RevenueService {
         netAmount: fmtDecimal(orderAmount - commission),
         status: p.status,
         failureReason: p.failureReason,
-        createdAt: p.createdAt,
+        createdAt: orderDate,
         processedAt: p.processedAt,
         canDelete: this.isPayoutDeletable(p.status, p.createdAt),
+        completedCount: isCompleted ? 1 : 0,
+        completedTotal: isCompleted ? fmtDecimal(orderAmount) : '0.00',
+        completedCommission: isCompleted ? fmtDecimal(commission) : '0.00',
+        pendingCount: isCompleted ? 0 : 1,
+        pendingTotal: isCompleted ? '0.00' : fmtDecimal(orderAmount),
+        pendingCommission: isCompleted ? '0.00' : fmtDecimal(commission),
       });
     }
 
-    // Sort by order number descending, then by order time descending
+    const rows = [...grouped.values()];
+
+    // Sort by month descending, then merchant name.
     rows.sort((a, b) => {
-      if (a.orderId && b.orderId) {
-        const cmp = b.orderId.localeCompare(a.orderId);
-        if (cmp !== 0) return cmp;
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      const periodCompare = b.period.localeCompare(a.period);
+      return periodCompare || a.merchantName.localeCompare(b.merchantName);
     });
 
     const total = rows.length;
@@ -436,12 +532,24 @@ export class RevenueService {
       where: { id: payoutId },
     });
     if (!payout) throw new NotFoundException('Payout not found');
-    if (payout.status !== 'pending') {
-      throw new ConflictException('Payout has already been processed');
+    if (payout.status === 'completed') {
+      return {
+        payoutId: payout.id,
+        merchantId: payout.merchantId,
+        totalAmount: fmtDecimal(payout.totalAmount),
+        commissionAmount: fmtDecimal(payout.commissionAmount),
+        adFeeAmount: '0.00',
+        netAmount: fmtDecimal(
+          toNumber(payout.totalAmount) - toNumber(payout.commissionAmount),
+        ),
+        status: payout.status,
+        processedAt: payout.processedAt,
+        idempotencyKey: payout.idempotencyKey,
+      };
     }
 
     const now = new Date();
-    const idempotencyKey = `payout-${now.toISOString().slice(0, 10)}-${payout.merchantId}`;
+    const idempotencyKey = `payout-${payout.id}`;
 
     const updated = await this.prisma.payout.update({
       where: { id: payoutId },
@@ -492,7 +600,10 @@ export class RevenueService {
   async deletePayouts(payoutIds: string[], adminId: string, ip?: string) {
     const payouts = await this.prisma.payout.findMany({
       where: { id: { in: payoutIds } },
-      include: { order: { select: { orderNumber: true } } },
+      include: {
+        order: { select: { orderNumber: true, createdAt: true } },
+        merchant: { select: { shopName: true } },
+      },
     });
     const foundIds = new Set(payouts.map((payout) => payout.id));
     const missingIds = payoutIds.filter((payoutId) => !foundIds.has(payoutId));
@@ -504,11 +615,16 @@ export class RevenueService {
       (payout) => !this.isPayoutDeletable(payout.status, payout.createdAt),
     );
     if (ineligible.length > 0) {
-      const orderNumbers = ineligible.map(
-        (payout) => payout.order?.orderNumber ?? payout.id,
-      );
+      const merchantPeriods = ineligible.map((payout) => {
+        const merchantName = payout.merchant?.shopName ?? 'Unknown';
+        const period = (payout.order?.createdAt ?? payout.createdAt)
+          .toISOString()
+          .slice(0, 7);
+        return `${merchantName} (${period})`;
+      });
+      const uniqueMerchantPeriods = [...new Set(merchantPeriods)];
       throw new ConflictException(
-        `These orders cannot be deleted: ${orderNumbers.join(', ')}. ` +
+        `These payouts cannot be deleted: ${uniqueMerchantPeriods.join(', ')}. ` +
           'Each payout must be completed and at least three months old.',
       );
     }

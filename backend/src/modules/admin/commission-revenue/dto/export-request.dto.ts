@@ -1,9 +1,18 @@
-import { IsEnum, IsDateString, IsNotEmpty } from 'class-validator';
+import {
+  IsEnum,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsIn,
+  IsString,
+} from 'class-validator';
 
 export enum ExportFormat {
   CSV = 'csv',
   XLSX = 'xlsx',
 }
+
+export type GroupByType = 'merchant' | 'day' | 'order';
 
 export class ExportRequestDto {
   @IsDateString({}, { message: 'Invalid start date' })
@@ -16,4 +25,14 @@ export class ExportRequestDto {
 
   @IsEnum(ExportFormat, { message: 'Invalid export format. Use CSV or Excel.' })
   format: ExportFormat;
+
+  @IsOptional()
+  @IsIn(['merchant', 'day', 'order'], {
+    message: 'groupBy must be merchant, day, or order',
+  })
+  groupBy?: GroupByType;
+
+  @IsOptional()
+  @IsString()
+  merchantId?: string;
 }
