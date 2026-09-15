@@ -81,6 +81,15 @@ export function useSidebarAds(idOrSlug: string) {
   });
 }
 
+export function useCanReview(idOrSlug: string) {
+  return useQuery<{ canReview: boolean }>({
+    queryKey: ['product', idOrSlug, 'can-review'],
+    queryFn: () => productService.canReview(idOrSlug),
+    enabled: !!idOrSlug,
+    staleTime: 60_000,
+  });
+}
+
 export function useReportReview(reviewId: string) {
   return useMutation<ReportReviewResult, Error, ReportReviewData>({
     mutationFn: (data) => productService.reportReview(reviewId, data),

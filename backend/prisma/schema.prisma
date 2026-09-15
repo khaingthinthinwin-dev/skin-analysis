@@ -1,4 +1,4 @@
-// Prisma Schema for Cosmetics Finder (Aligned with DATABASE_SPEC v2.3)
+// Prisma Schema for Cosmetics Finder (Aligned with DATABASE_SPEC v2.5)
 
 generator client {
   provider = "prisma-client-js"
@@ -71,27 +71,28 @@ model User {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  role                  UserRole               @relation(fields: [roleCode], references: [roleCode], onDelete: Restrict, onUpdate: Cascade)
-  merchantProfile       Merchant?              @relation("UserMerchantProfile")
-  merchantRef           Merchant?              @relation("UserMerchantRef", fields: [merchantId], references: [id], onDelete: SetNull)
+  role                  UserRole                @relation(fields: [roleCode], references: [roleCode], onDelete: Restrict, onUpdate: Cascade)
+  merchantProfile       Merchant?               @relation("UserMerchantProfile")
+  merchantRef           Merchant?               @relation("UserMerchantRef", fields: [merchantId], references: [id], onDelete: SetNull)
   refreshTokens         RefreshToken[]
   passwordResetTokens   PasswordResetToken[]
   reviews               Review[]
   wishlists             Wishlist[]
   orders                Order[]
   shop                  Shop?
-  adApprovals           Advertisement[]        @relation("AdminAdApprovals")
-  adFeeHistories        AdFeeHistory[]         @relation("AdminAdFeeHistory")
-  reviewedMerchants     Merchant[]             @relation("AdminMerchantReviews")
+  adApprovals           Advertisement[]         @relation("AdminAdApprovals")
+  adFeeHistories        AdFeeHistory[]          @relation("AdminAdFeeHistory")
+  reviewedMerchants     Merchant[]              @relation("AdminMerchantReviews")
   commissionSettings    CommissionSetting[]
+  commissionRateHistory CommissionRateHistory[]
   revenueTargets        RevenueTarget[]
   processedPayouts      Payout[]
   skinAnalyses          SkinAnalysis[]
   cart                  Cart?
-  orderStatusHistory    OrderStatusHistory[]   @relation("OrderStatusHistoryChangedBy")
-  inventoryTransactions InventoryTransaction[] @relation("InventoryTransactionCreator")
-  reviewReportsReported ReviewReport[]         @relation("ReportedBy")
-  reviewReportsResolved ReviewReport[]         @relation("ResolvedBy")
+  orderStatusHistory    OrderStatusHistory[]    @relation("OrderStatusHistoryChangedBy")
+  inventoryTransactions InventoryTransaction[]  @relation("InventoryTransactionCreator")
+  reviewReportsReported ReviewReport[]          @relation("ReportedBy")
+  reviewReportsResolved ReviewReport[]          @relation("ResolvedBy")
   auditLogs             AuditLog[]
   notifications         Notification[]
 
@@ -115,7 +116,7 @@ model RefreshToken {
   createdAt       DateTime @default(now()) @map("created_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([userId])
   @@index([family])
@@ -132,7 +133,7 @@ model PasswordResetToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([userId])
   @@index([tokenHash])
@@ -157,9 +158,9 @@ model Merchant {
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  user                  User                   @relation("UserMerchantProfile", fields: [userId], references: [id], onDelete: Cascade)
+  user                  User                   @relation("UserMerchantProfile", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userRefs              User[]                 @relation("UserMerchantRef")
-  reviewer              User?                  @relation("AdminMerchantReviews", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  reviewer              User?                  @relation("AdminMerchantReviews", fields: [reviewedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
   products              Product[]
   promotions            Promotion[]
   orders                Order[]
@@ -187,7 +188,7 @@ model Category {
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   children Category[] @relation("CategoryTree")
   products Product[]
 
@@ -221,8 +222,8 @@ model Product {
   updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relations
-  merchant                    Merchant                     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  category                    Category                     @relation(fields: [categoryId], references: [id])
+  merchant                    Merchant                     @relation(fields: [merchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category                    Category                     @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   reviews                     Review[]
   wishlists                   Wishlist[]
   orderItems                  OrderItem[]
@@ -257,8 +258,8 @@ model Review {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   reports ReviewReport[]
 
   @@unique([userId, productId])
@@ -278,8 +279,8 @@ model Wishlist {
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([userId, productId])
   @@index([userId])
@@ -292,6 +293,7 @@ model Wishlist {
 
 model Order {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber     String   @unique @default(dbgenerated("'ORD-' || lpad(nextval('orders_order_number_seq')::text, 7, '0')")) @map("order_number") @db.VarChar(14)
   buyerId         String   @map("buyer_id") @db.Uuid
   merchantId      String   @map("merchant_id") @db.Uuid
   statusCode      String   @default("placed") @map("status")
@@ -306,11 +308,12 @@ model Order {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  buyer         User                 @relation(fields: [buyerId], references: [id], onDelete: Restrict)
-  merchant      Merchant             @relation(fields: [merchantId], references: [id], onDelete: Restrict)
-  status        OrderStatus          @relation(fields: [statusCode], references: [statusCode], onDelete: Restrict)
+  buyer         User                 @relation(fields: [buyerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  merchant      Merchant             @relation(fields: [merchantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  status        OrderStatus          @relation(fields: [statusCode], references: [statusCode], onDelete: Restrict, onUpdate: Cascade)
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
+  payouts       Payout[]
 
   @@index([buyerId])
   @@index([merchantId])
@@ -329,9 +332,9 @@ model OrderItem {
   totalPrice Decimal @map("total_price") @db.Decimal(10, 2)
 
   // Relations
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([productId])
@@ -361,7 +364,7 @@ model Shop {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   advertisements Advertisement[]
 
   @@index([userId])
@@ -390,8 +393,8 @@ model Promotion {
   createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
-  merchant     Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  discountType DiscountType @relation(fields: [discountTypeCode], references: [typeCode], onDelete: Restrict)
+  merchant     Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  discountType DiscountType @relation(fields: [discountTypeCode], references: [typeCode], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([merchantId])
   @@index([code])
@@ -407,6 +410,7 @@ model Promotion {
 model Advertisement {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   shopId              String    @map("shop_id") @db.Uuid
+  feeSettingId        String?   @map("fee_setting_id") @db.Uuid
   title               String
   content             String?
   announcementMessage String    @map("announcement_message")
@@ -420,17 +424,19 @@ model Advertisement {
   approvedBy          String?   @map("approved_by") @db.Uuid
   approvedAt          DateTime? @map("approved_at")
   rejectionReason     String?   @map("rejection_reason")
-  weekNumber          Int       @map("week_number")
-  startsAt            DateTime  @map("starts_at")
-  expiresAt           DateTime  @map("expires_at")
+  weekNumber          Int?      @map("week_number")
+  startsAt            DateTime? @map("starts_at")
+  expiresAt           DateTime? @map("expires_at")
   createdAt           DateTime  @default(now()) @map("created_at")
 
   // Relations
-  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  feeSetting AdFeeSetting? @relation(fields: [feeSettingId], references: [id], onDelete: Restrict)
   approver   User?       @relation("AdminAdApprovals", fields: [approvedBy], references: [id], onDelete: SetNull)
   adPayments AdPayment[]
 
   @@index([shopId])
+  @@index([feeSettingId])
   @@index([isActive])
   @@index([expiresAt])
   @@index([approvalStatus])
@@ -451,7 +457,8 @@ model AdFeeSetting {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  history AdFeeHistory[]
+  history        AdFeeHistory[]
+  advertisements Advertisement[]
 
   @@unique([placement, tier])
   @@index([placement, tier])
@@ -474,8 +481,8 @@ model AdPayment {
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  advertisement Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
-  merchant      Merchant      @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  advertisement Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  merchant      Merchant      @relation(fields: [merchantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([adId])
   @@index([merchantId])
@@ -497,8 +504,8 @@ model AdFeeHistory {
   createdAt       DateTime @default(now()) @map("created_at")
 
   // Relations
-  setting        AdFeeSetting @relation(fields: [adFeeSettingId], references: [id], onDelete: Cascade)
-  changedByAdmin User         @relation("AdminAdFeeHistory", fields: [changedBy], references: [id], onDelete: Restrict)
+  setting        AdFeeSetting @relation(fields: [adFeeSettingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  changedByAdmin User         @relation("AdminAdFeeHistory", fields: [changedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([adFeeSettingId])
   @@map("ad_fee_history")
@@ -516,9 +523,24 @@ model CommissionSetting {
   createdAt      DateTime @default(now()) @map("created_at")
 
   // Relations
-  updatedByAdmin User? @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+  updatedByAdmin User? @relation(fields: [updatedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@map("commission_settings")
+}
+
+model CommissionRateHistory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commissionRate Decimal  @map("commission_rate") @db.Decimal(5, 2)
+  effectiveFrom  DateTime @default(now()) @map("effective_from")
+  createdBy      String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  createdByAdmin User? @relation(fields: [createdBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([effectiveFrom])
+  @@index([createdAt])
+  @@map("commission_rate_history")
 }
 
 model RevenueTarget {
@@ -531,7 +553,7 @@ model RevenueTarget {
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
-  createdByAdmin User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  createdByAdmin User? @relation(fields: [createdBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@unique([period, isActive])
   @@index([period])
@@ -542,6 +564,7 @@ model RevenueTarget {
 model Payout {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   merchantId       String    @map("merchant_id") @db.Uuid
+  orderId          String?   @map("order_id") @db.Uuid
   totalAmount      Decimal   @map("total_amount") @db.Decimal(12, 2)
   commissionAmount Decimal   @default(0) @map("commission_amount") @db.Decimal(12, 2)
   netPayout        Decimal   @map("net_payout") @db.Decimal(12, 2)
@@ -554,10 +577,12 @@ model Payout {
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  merchant         Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
-  processedByAdmin User?    @relation(fields: [processedBy], references: [id], onDelete: SetNull)
+  merchant         Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  order            Order?   @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  processedByAdmin User?    @relation(fields: [processedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([merchantId])
+  @@index([orderId])
   @@index([status])
   @@index([createdAt])
   @@map("payouts")
@@ -581,7 +606,7 @@ model SkinAnalysis {
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  user            User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User                         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   conditions      SkinAnalysisCondition[]
   recommendations SkinAnalysisRecommendation[]
 
@@ -599,7 +624,7 @@ model SkinAnalysisCondition {
   createdAt     DateTime @default(now()) @map("created_at")
 
   // Relations
-  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([analysisId])
   @@map("skin_analysis_conditions")
@@ -615,8 +640,8 @@ model SkinAnalysisRecommendation {
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
-  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
-  product  Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product  Product      @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([analysisId])
   @@index([productId])
@@ -634,7 +659,7 @@ model Cart {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   items CartItem[]
 
   @@index([userId])
@@ -650,8 +675,8 @@ model CartItem {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([cartId, productId])
   @@index([cartId])
@@ -672,9 +697,9 @@ model OrderStatusHistory {
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status        OrderStatus @relation(fields: [statusId], references: [id], onDelete: Restrict)
-  changedByUser User?       @relation("OrderStatusHistoryChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  status        OrderStatus @relation(fields: [statusId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  changedByUser User?       @relation("OrderStatusHistoryChangedBy", fields: [changedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([orderId])
   @@map("order_status_history")
@@ -699,9 +724,9 @@ model InventoryTransaction {
   createdAt       DateTime @default(now()) @map("created_at")
 
   // Relations
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
-  creator  User?    @relation("InventoryTransactionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  creator  User?    @relation("InventoryTransactionCreator", fields: [createdBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([productId])
   @@index([merchantId])
@@ -727,9 +752,9 @@ model ReviewReport {
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  reporter User   @relation("ReportedBy", fields: [reportedBy], references: [id], onDelete: Cascade)
-  resolver User?  @relation("ResolvedBy", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reporter User   @relation("ReportedBy", fields: [reportedBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resolver User?  @relation("ResolvedBy", fields: [resolvedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([reviewId])
   @@index([status])
@@ -753,7 +778,7 @@ model AuditLog {
   createdAt  DateTime @default(now()) @map("created_at")
 
   // Relations
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([userId])
   @@index([action])
@@ -775,7 +800,7 @@ model Notification {
   createdAt  DateTime  @default(now()) @map("created_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([userId])
   @@index([isRead])

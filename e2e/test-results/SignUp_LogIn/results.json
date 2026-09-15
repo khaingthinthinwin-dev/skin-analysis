@@ -1,0 +1,119 @@
+{
+  "module": "SignUp_LogIn",
+  "timestamp": "2026-09-11T08:55:33.277Z",
+  "total": 18,
+  "passed": 18,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 116899,
+  "tests": [
+    {
+      "title": "should register a new buyer and redirect to login",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 9123
+    },
+    {
+      "title": "should register as merchant with license file upload",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 7155
+    },
+    {
+      "title": "should show validation errors on empty submission",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 5409
+    },
+    {
+      "title": "should show error for duplicate email registration",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 7688
+    },
+    {
+      "title": "should show error for password mismatch",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 5990
+    },
+    {
+      "title": "should log in as buyer and navigate to buyer dashboard",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 7297
+    },
+    {
+      "title": "should log in as merchant and navigate to merchant dashboard",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 6302
+    },
+    {
+      "title": "should show generic error for wrong credentials without leaking account existence",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 5644
+    },
+    {
+      "title": "should validate invalid email format inline",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 5673
+    },
+    {
+      "title": "should toggle password visibility on login page",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 5366
+    },
+    {
+      "title": "should navigate to forgot password and submit email",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 12459
+    },
+    {
+      "title": "should display reset password form and validate match",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 5191
+    },
+    {
+      "title": "should log out buyer and clear session",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 7795
+    },
+    {
+      "title": "should switch language on auth pages",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 6539
+    },
+    {
+      "title": "should toggle light and dark theme on auth pages",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 6107
+    },
+    {
+      "title": "should display correctly on desktop viewport",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 4097
+    },
+    {
+      "title": "should display correctly on mobile viewport",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 4454
+    },
+    {
+      "title": "should display correctly on tablet viewport",
+      "file": "C:\\work\\AI\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 4610
+    }
+  ]
+}

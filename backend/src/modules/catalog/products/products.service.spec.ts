@@ -31,11 +31,17 @@ const mockPrisma = {
   $transaction: jest.fn(),
 };
 
+const mockRedis = {
+  del: jest.fn(),
+  get: jest.fn(),
+  set: jest.fn(),
+};
+
 describe('ProductsService', () => {
   let service: ProductsService;
 
   beforeEach(() => {
-    service = new ProductsService(mockPrisma as never);
+    service = new ProductsService(mockPrisma as never, mockRedis as never);
     jest.clearAllMocks();
   });
 

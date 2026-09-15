@@ -91,6 +91,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'products/:id',
+        element: (
+          <SuspenseWrapper>
+            <BuyerProductDetail />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'unauthorized',
         element: (
           <SuspenseWrapper>
@@ -248,6 +256,14 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'products',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerSearchFilter />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'products/:id',
                 element: (
                   <SuspenseWrapper>
@@ -260,6 +276,14 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <BuyerWishlist />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'wishlist/products/:id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerProductDetail />
                   </SuspenseWrapper>
                 ),
               },

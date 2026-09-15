@@ -35,7 +35,7 @@ describe('Config', () => {
       expect(result.nodeEnv).toBe('production');
       expect(result.port).toBe(3000);
       expect(result.apiPrefix).toBe('api/v2');
-      expect(result.corsOrigin).toBe('https://example.com');
+      expect(result.corsOrigin).toEqual(['https://example.com']);
     });
   });
 

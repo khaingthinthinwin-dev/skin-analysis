@@ -123,8 +123,8 @@ export class ProductsController {
     return this.productsService.findBySlug(slug, user.id);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a product by ID' })
+  @Get('detail/:id')
+  @ApiOperation({ summary: 'Get a product by ID (merchant)' })
   @ApiResponse({ status: 200, description: 'Product returned successfully' })
   @ApiResponse({ status: 404, description: 'Product not found' })
   async findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
@@ -199,6 +199,21 @@ export class ProductsController {
   })
   async bulkDelete(@CurrentUser() user: AuthUser, @Body() dto: BulkDeleteDto) {
     return this.productsService.bulkDelete(user.id, dto);
+  }
+
+  @Post('check-active-orders')
+  @UseGuards(RequireApprovedMerchantGuard)
+  @ApiOperation({ summary: 'Check which products have active orders' })
+  @ApiResponse({
+    status: 200,
+    description: 'Active orders checked successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Some products not found' })
+  async checkActiveOrders(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: BulkDeleteDto,
+  ) {
+    return this.productsService.checkActiveOrders(user.id, dto.ids);
   }
 
   @Patch('bulk')

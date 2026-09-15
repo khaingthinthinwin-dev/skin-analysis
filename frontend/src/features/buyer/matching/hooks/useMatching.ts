@@ -28,11 +28,11 @@ export function useRecommendationHistory(page = 1, limit = 20) {
   })
 }
 
-export function useAdPanel() {
+export function useAdPanel(placement = 'category_banner') {
   // TODO: Implement TanStack Query hook
   return useQuery({
-    queryKey: ['ads', 'panel'],
-    queryFn: () => matchingService.getAdPanel(),
+    queryKey: ['ads', 'panel', placement],
+    queryFn: () => matchingService.getAdPanel(placement),
     staleTime: 60 * 1000, // 1 minute
   })
 }

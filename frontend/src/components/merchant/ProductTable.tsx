@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,7 +13,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { InlineStockEditor } from './InlineStockEditor'
-import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/product.types'
 
@@ -51,10 +50,10 @@ interface ProductTableProps {
   selectedIds: string[]
   onSelectionChange: (ids: string[]) => void
   onStockUpdate: (id: string, stock: number) => void
-  onDelete: (id: string, isActive: boolean) => void
   onToggleFeatured: (id: string) => void
-  isDeleting?: boolean
+  onToggleActive: (id: string) => void
   isTogglingFeatured?: boolean
+  isTogglingActive?: boolean
   showActions?: boolean
 }
 
@@ -63,14 +62,13 @@ export function ProductTable({
   selectedIds,
   onSelectionChange,
   onStockUpdate,
-  onDelete,
   onToggleFeatured,
-  isDeleting = false,
+  onToggleActive,
   isTogglingFeatured = false,
+  isTogglingActive = false,
   showActions = true,
 }: ProductTableProps) {
   const navigate = useNavigate()
-  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
 
   const toggleAll = () => {
     if (selectedIds.length === products.length) {
@@ -200,7 +198,25 @@ export function ProductTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    {getStatusBadge(product)}
+                    {showActions ? (
+                      <button
+                        type="button"
+                        disabled={isTogglingActive}
+                        onClick={() => onToggleActive(product.id)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+                          product.isActive ? 'bg-green-500' : 'bg-input'
+                        }`}
+                        aria-label={`Toggle status for ${product.name}`}
+                      >
+                        <span
+                          className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
+                            product.isActive ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      getStatusBadge(product)
+                    )}
                   </TableCell>
                   <TableCell>
                     {showActions ? (
@@ -239,15 +255,7 @@ export function ProductTable({
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(product)}
-                          aria-label={`Delete ${product.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+
                       </div>
                     </TableCell>
                   )}
@@ -258,23 +266,7 @@ export function ProductTable({
         </Table>
       </div>
 
-      <DeleteConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        onConfirm={() => {
-          if (deleteTarget) {
-            onDelete(deleteTarget.id, deleteTarget.isActive)
-            setDeleteTarget(null)
-          }
-        }}
-        title="Delete Product"
-        description={
-          deleteTarget?.isActive
-            ? `Are you sure you want to deactivate "${deleteTarget?.name}"? It can be reactivated later.`
-            : `"${deleteTarget?.name}" is already inactive. This will permanently remove it. This action cannot be undone.`
-        }
-        isLoading={isDeleting}
-      />
+
     </>
   )
 }

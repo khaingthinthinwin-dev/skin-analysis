@@ -3,6 +3,14 @@ import { Card } from '@/components/ui/card'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { HistorySession } from '@/schemas/matching.schema'
 
+function getImageUrl(url: string): string {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+  const base = raw.replace(/\/api\/v1\/?$/, '')
+  return base + url
+}
+
 interface RecommendationHistoryProps {
   sessions: HistorySession[]
   isLoading?: boolean
@@ -33,35 +41,42 @@ export function RecommendationHistory({ sessions, isLoading }: RecommendationHis
   return (
     <div className="space-y-2">
       {sessions.map((session) => (
-        <Card key={session.analysisId} className="overflow-hidden">
+        <Card key={session.sessionId} className="overflow-hidden">
           <button
             className="w-full p-4 flex items-center justify-between hover:bg-muted/50"
-            onClick={() => setExpandedId(expandedId === session.analysisId ? null : session.analysisId)}
+            onClick={() => setExpandedId(expandedId === session.sessionId ? null : session.sessionId)}
           >
             <div className="text-left">
-              <p className="font-medium">{session.skinType} analysis</p>
+              <p className="font-medium">
+                {session.skinTypesUsed.length > 0
+                  ? `${session.skinTypesUsed.join(', ')} analysis`
+                  : 'Analysis'}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {new Date(session.completedAt).toLocaleDateString()}
+                {new Date(session.sessionDate).toLocaleDateString()}
               </p>
             </div>
-            {expandedId === session.analysisId ? (
+            {expandedId === session.sessionId ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
               <ChevronDown className="h-4 w-4" />
             )}
           </button>
 
-          {expandedId === session.analysisId && (
+          {expandedId === session.sessionId && (
             <div className="border-t p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {session.recommendations.map((rec) => (
-                <div key={rec.productId} className="text-center">
+              {session.products.map((rec) => (
+                <div key={rec.id} className="text-center">
                   <img
-                    src={rec.imageUrl}
+                    src={getImageUrl(rec.images[0])}
                     alt={rec.name}
                     className="w-full aspect-square object-cover rounded"
+                    onError={(e) => { e.currentTarget.style.display = 'none' }}
                   />
                   <p className="text-xs mt-1 line-clamp-1">{rec.name}</p>
-                  <p className="text-xs font-bold">{rec.matchScore}%</p>
+                  {rec.matchScore !== null && (
+                    <p className="text-xs font-bold">{rec.matchScore}%</p>
+                  )}
                 </div>
               ))}
             </div>

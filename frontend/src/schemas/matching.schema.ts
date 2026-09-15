@@ -18,6 +18,8 @@ export interface RecommendationProduct {
   id: string
   name: string
   slug: string
+  brandName: string
+  shortDescription: string | null
   price: string
   compareAtPrice: string | null
   avgRating: string
@@ -39,6 +41,8 @@ export interface RecommendationResponse {
     totalPages: number
   }
   source: 'ai' | 'generic'
+  analysisAge: number | null
+  skinTypes: string[]
 }
 
 export interface AdSlide {
@@ -61,18 +65,19 @@ export interface AdPanelResponse {
 }
 
 export interface HistorySession {
-  analysisId: string
-  completedAt: string
-  skinType: string
-  recommendations: HistoryRecommendation[]
+  sessionId: string
+  sessionDate: string
+  skinTypesUsed: string[]
+  products: HistoryRecommendation[]
 }
 
 export interface HistoryRecommendation {
-  productId: string
+  id: string
   name: string
-  imageUrl: string
+  slug: string
   price: string
-  matchScore: number
+  images: string[]
+  matchScore: number | null
 }
 
 export interface HistoryResponse {

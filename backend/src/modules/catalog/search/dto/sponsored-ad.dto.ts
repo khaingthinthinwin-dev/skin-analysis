@@ -9,8 +9,8 @@ export class SponsoredAdDto {
   @ApiProperty({ nullable: true }) linkUrl: string | null;
   @ApiProperty() tier: string;
   @ApiProperty() approvalStatus: string;
-  @ApiProperty() startsAt: Date;
-  @ApiProperty() expiresAt: Date;
+  @ApiProperty({ nullable: true }) startsAt: Date | null;
+  @ApiProperty({ nullable: true }) expiresAt: Date | null;
 }
 
 export class AdsResponseDto {

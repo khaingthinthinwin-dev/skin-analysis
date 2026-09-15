@@ -151,4 +151,7 @@ export const productService = {
   reportReview(reviewId: string, data: ReportReviewData): Promise<ReportReviewResult> {
     return unwrap(apiClient.post(`/reviews/${reviewId}/report`, data));
   },
+  canReview(idOrSlug: string): Promise<{ canReview: boolean }> {
+    return unwrap(apiClient.get(`/products/${idOrSlug}/can-review`));
+  },
 };

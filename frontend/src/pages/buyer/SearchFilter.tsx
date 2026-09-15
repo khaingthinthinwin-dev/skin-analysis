@@ -50,6 +50,7 @@ export default function SearchFilter() {
   const { items: cartItems, addToCart, isAdding: isCartLoading } = useCart()
 
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
+  const [loginRequiredModal, setLoginRequiredModal] = useState<'wishlist' | 'cart' | null>(null)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['buyer', 'featured-products'],
@@ -64,9 +65,7 @@ export default function SearchFilter() {
   const handleWishlistToggle = useCallback(
     async (product: Product) => {
       if (!isAuthenticated) {
-        toast.info('Please log in to add items to your wishlist.', {
-          action: { label: 'Log In', onClick: () => navigate('/login') },
-        })
+        setLoginRequiredModal('wishlist')
         return
       }
       if (!isBuyer) {
@@ -92,15 +91,13 @@ export default function SearchFilter() {
         }
       }
     },
-    [isAuthenticated, isBuyer, wishlistProductIds, addToWishlist, removeFromWishlist, navigate],
+    [isAuthenticated, isBuyer, wishlistProductIds, addToWishlist, removeFromWishlist],
   )
 
   const handleAddToCart = useCallback(
     async (product: Product) => {
       if (!isAuthenticated) {
-        toast.info('Please log in to add items to your cart.', {
-          action: { label: 'Log In', onClick: () => navigate('/login') },
-        })
+        setLoginRequiredModal('cart')
         return
       }
       if (!isBuyer) {
@@ -124,7 +121,7 @@ export default function SearchFilter() {
         }
       }
     },
-    [isAuthenticated, isBuyer, cartProductIds, addToCart, navigate],
+    [isAuthenticated, isBuyer, cartProductIds, addToCart],
   )
 
   return (
@@ -147,7 +144,7 @@ export default function SearchFilter() {
             const isInWishlist = wishlistProductIds.has(product.id)
             return (
               <Card key={product.id} className="group overflow-hidden border-border/80 shadow-xs transition-transform hover:-translate-y-1">
-                <Link to={`/buyer/products/${product.slug}`} className="relative block aspect-square w-full bg-muted">
+                <Link to={isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`} className="relative block aspect-square w-full bg-muted">
                   <ProductImage product={product} />
                   <Button
                     variant="ghost"
@@ -171,7 +168,7 @@ export default function SearchFilter() {
                 <CardContent className="p-4 space-y-3">
                   <div>
                     <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">{product.category?.name || 'Skincare'}</span>
-                    <Link to={`/buyer/products/${product.slug}`}>
+                    <Link to={isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`}>
                       <h3 className="text-sm font-bold text-foreground line-clamp-1 mt-0.5">{product.name}</h3>
                     </Link>
                   </div>
@@ -213,6 +210,23 @@ export default function SearchFilter() {
           </p>
           <DialogFooter>
             <Button onClick={() => setCartDuplicateOpen(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={loginRequiredModal !== null} onOpenChange={() => setLoginRequiredModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Log In Required</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {loginRequiredModal === 'wishlist'
+              ? 'Please log in to add items to your wishlist.'
+              : 'Please log in to add items to your cart.'}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLoginRequiredModal(null)}>Cancel</Button>
+            <Button onClick={() => { setLoginRequiredModal(null); navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`) }}>Log In</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

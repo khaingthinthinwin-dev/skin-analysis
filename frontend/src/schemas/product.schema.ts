@@ -64,7 +64,15 @@ const productFieldsSchema = z.object({
     .int('Low stock threshold must be a whole number')
     .min(0, 'Low stock threshold must be 0 or greater')
     .optional(),
-  skinTypes: z.array(z.string()),
+  skinTypes: z
+    .array(z.string())
+    .transform((arr) =>
+      arr.flatMap((s) =>
+        s.toLowerCase() === 'all'
+          ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+          : s.toLowerCase(),
+      ),
+    ),
   ingredients: z.array(z.string()),
   tags: z.array(z.string()),
   isActive: z.boolean(),
