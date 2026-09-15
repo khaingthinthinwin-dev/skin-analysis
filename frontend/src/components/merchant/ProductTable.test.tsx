@@ -76,7 +76,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -100,7 +99,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -121,7 +119,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -139,7 +136,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -160,7 +156,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -178,7 +173,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -198,7 +192,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={onSelectionChange}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -218,7 +211,6 @@ describe('ProductTable', () => {
             selectedIds={['prod-1', 'prod-2']}
             onSelectionChange={onSelectionChange}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -238,7 +230,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={onSelectionChange}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -258,7 +249,6 @@ describe('ProductTable', () => {
             selectedIds={['prod-1', 'prod-2']}
             onSelectionChange={onSelectionChange}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -279,7 +269,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -290,25 +279,6 @@ describe('ProductTable', () => {
       expect(screen.getByLabelText('Edit Night Cream')).toBeInTheDocument()
     })
 
-    it('renders delete button for each product', () => {
-      render(
-        <MemoryRouter>
-          <ProductTable
-            products={mockProducts}
-            selectedIds={[]}
-            onSelectionChange={vi.fn()}
-            onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
-            onToggleFeatured={vi.fn()}
-            onToggleActive={vi.fn()}
-            showActions={true}
-          />
-        </MemoryRouter>,
-      )
-      expect(screen.getByLabelText('Delete Hydrating Serum')).toBeInTheDocument()
-      expect(screen.getByLabelText('Delete Night Cream')).toBeInTheDocument()
-    })
-
     it('renders toggle featured button for each product', () => {
       render(
         <MemoryRouter>
@@ -317,7 +287,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -337,7 +306,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={onToggleFeatured}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -358,7 +326,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={false}
@@ -376,7 +343,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={false}
@@ -394,7 +360,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={false}
@@ -402,7 +367,6 @@ describe('ProductTable', () => {
         </MemoryRouter>,
       )
       expect(screen.queryByLabelText('Edit Hydrating Serum')).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('Delete Hydrating Serum')).not.toBeInTheDocument()
       expect(screen.queryByLabelText('Toggle featured for Hydrating Serum')).not.toBeInTheDocument()
     })
 
@@ -414,7 +378,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={false}
@@ -432,7 +395,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={false}
@@ -454,7 +416,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}
@@ -472,7 +433,6 @@ describe('ProductTable', () => {
             selectedIds={[]}
             onSelectionChange={vi.fn()}
             onStockUpdate={vi.fn()}
-            onDelete={vi.fn()}
             onToggleFeatured={vi.fn()}
             onToggleActive={vi.fn()}
             showActions={true}

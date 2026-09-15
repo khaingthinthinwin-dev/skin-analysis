@@ -78,8 +78,18 @@ export interface DeleteAllData {
 
 export interface DeleteAllResponse {
   deactivated: number
-  deleted: number
-  skipped: number
+  permanentlyDeleted: number
+  skippedActiveOrders: number
+}
+
+export interface BulkDeleteResponse {
+  deactivated: number
+  permanentlyDeleted: number
+  skippedIds: string[]
+}
+
+export interface CheckActiveOrdersResponse {
+  skippedIds: string[]
 }
 
 export interface ProductQueryParams {

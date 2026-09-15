@@ -62,5 +62,11 @@
   "merchant.products.deleteAllPartialSuccess": "{deleted}件の商品が正常に削除されました。注文が進行中のため{skipped}件の商品は削除できませんでした。",
   "merchant.products.deleteAllFailed": "一括削除に失敗しました。もう一度お試しください。",
   "merchant.products.pendingBanner": " merchantsアカウントは承認待ちです。ライセンスが承認されるまで商品管理機能は制限されます。",
-  "merchant.products.pendingBannerHint": "商品は閲覧できますが、ライセンスが承認されるまで作成・編集・削除はできません。"
+  "merchant.products.pendingBannerHint": "商品は閲覧できますが、ライセンスが承認されるまで作成・編集・削除はできません。",
+  "merchant.products.bulkDeleteTitleSingle": "選択した商品を削除",
+  "merchant.products.bulkDeleteTitleMultiple": "選択した商品を削除",
+  "merchant.products.bulkDeleteDescProcess": "{count, plural, one {この1件の商品を処理しますか} other {これらの#件の商品を処理しますか}}？",
+  "merchant.products.bulkDeleteDescDeactivate": "{count, plural, one {#件が無効化されます} other {#件が無効化されます}}",
+  "merchant.products.bulkDeleteDescPermanent": "{count, plural, one {#件の削除済み商品が完全に削除されます} other {#件の削除済み商品が完全に削除されます}}",
+  "merchant.products.bulkDeleteDescSkipped": "{count, plural, one {#件の商品は注文が進行中のためスキップされます} other {#件の商品は注文が進行中のためスキップされます}}"
 }
