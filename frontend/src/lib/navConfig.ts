@@ -62,7 +62,7 @@ const adminNavConfig: RoleNavConfig = {
       items: [
         { label: 'Users', href: '/admin/users', icon: Users },
         { label: 'Merchants', href: '/admin/merchants', icon: UserCheck },
-        { label: 'Advertisements', href: '/admin/advertisements', icon: Megaphone },
+        { label: 'Advertisements', href: '/admin/ads', icon: Megaphone },
         { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
         { label: 'Content', href: '/admin/content', icon: FileText },
       ],
