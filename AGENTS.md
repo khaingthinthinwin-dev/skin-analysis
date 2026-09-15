@@ -3,8 +3,8 @@
 ## Scope restriction (group project — read carefully)
 I only own the Order Insights module. NEVER read, edit, or create files
 outside these paths without asking me first:
-- frontend/src/pages/shared/OrderInsights.tsx
-- frontend/src/features/shared/order-insights/**
+frontend/src/pages/order-insights/BuyerOrdersPage.tsx
+frontend/src/features/order-insights/**
 
 If a task seems to require touching anything else, STOP and ask me instead
 of doing it.

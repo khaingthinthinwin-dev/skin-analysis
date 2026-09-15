@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { mockOrderService } from '../services/mockOrderService';
+import { orderService } from '../services/orderService';
 import { OrderListFilterFormData } from '../schemas/orderFilters.schema';
 import { OrderListResponseDto } from '../types/orderInsights.types';
 
@@ -18,7 +18,7 @@ export function useBuyerOrders(filters: Partial<OrderListFilterFormData> = {}) {
 
   return useQuery<OrderListResponseDto, Error>({
     queryKey: ['buyerOrders', mergedFilters],
-    queryFn: () => mockOrderService.getBuyerOrders(mergedFilters),
+    queryFn: () => orderService.getBuyerOrders(mergedFilters),
     placeholderData: (previousData) => previousData,
   });
 }
