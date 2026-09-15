@@ -192,6 +192,7 @@ export class SearchService {
     const where: Prisma.ProductWhereInput = {
       isActive: true,
       merchant: { licenseStatus: 'approved' },
+      ...(query.isFeatured !== undefined && { isFeatured: query.isFeatured }),
     };
 
     if (query.q) {

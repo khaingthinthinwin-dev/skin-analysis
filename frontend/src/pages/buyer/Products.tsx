@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router'
+import { useLocation, useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Search as SearchIcon, Loader2 } from 'lucide-react'
 import type { SearchParams } from '@/schemas/search.schema'
@@ -24,6 +24,7 @@ function readInitialViewMode(): ViewMode {
 }
 
 export default function Products() {
+  const location = useLocation()
   const [, setSearchParams] = useSearchParams()
   const [view, setView] = useState<ViewMode>(readInitialViewMode)
 
@@ -31,7 +32,9 @@ export default function Products() {
     localStorage.setItem(VIEW_MODE_KEY, view)
   }, [view])
 
-  const { data, isLoading, isError, params, updateParams } = useProductSearch()
+  const { data, isLoading, isError, params, updateParams } = useProductSearch({
+    featuredOnly: location.pathname === '/products',
+  })
 
   const { data: categoryData } = useQuery({
     queryKey: ['categories'] as const,
@@ -148,7 +151,7 @@ export default function Products() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
       {/* A. Page header */}
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
