@@ -43,7 +43,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { contentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
+import { contentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
 import { useAdvertisements } from '@/features/merchant/advertisements/hooks/useAdvertisements'
 import type { AdPackage, Advertisement } from '@/features/merchant/advertisements/types'
 
@@ -125,7 +125,9 @@ function getImageUrl(url: string): string {
 }
 
 function scrollToAdvertisements() {
-  document.getElementById('merchant-advertisements')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  window.setTimeout(() => {
+    document.getElementById('merchant-advertisements')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, 60)
 }
 
 function toFormData(values: ContentForm, includeSchedule: boolean) {
@@ -808,7 +810,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
                 <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
                 <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
               </div>
-            ) : state === 'expired' ? (
+            ) : state === 'expired' || state === 'pending_approval' ? (
               <span className="text-sm text-muted-foreground">Inactive</span>
             ) : (
               <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
@@ -863,8 +865,9 @@ function ContentDialog({
   showSaveAndPay,
   isPending,
 }: ContentDialogProps) {
+  const isNewUpload = !target?.title
   const form = useForm<ContentForm>({
-    resolver: zodResolver(contentSchema),
+    resolver: zodResolver(isNewUpload ? uploadContentSchema : contentSchema),
     defaultValues: {
       title: '',
       content: '',
@@ -901,8 +904,6 @@ function ContentDialog({
   }, [target, form])
 
   if (!target) return null
-
-  const isNewUpload = !target.title
   const canSetSchedule = !target.startsAt
   const durationDays = adPackage?.durationDays ?? 7
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
@@ -952,7 +953,7 @@ function ContentDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ad-image">Advertisement image</Label>
+            <Label htmlFor="ad-image">Advertisement image{isNewUpload && ' (Required)'}</Label>
             <Input
               id="ad-image"
               type="file"

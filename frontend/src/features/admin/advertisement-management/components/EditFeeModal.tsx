@@ -27,20 +27,22 @@ import { TierBadge } from './badges'
 import { PLACEMENT_LABELS, todayIso } from '../utils/labels'
 
 const editFeeFormSchema = z.object({
-  daily_rate: z.string({ message: 'VAL-ADM-022' }).refine((v) => Number(v) > 0, 'VAL-ADM-022'),
+  daily_rate: z
+    .string({ message: 'Daily rate must be greater than 0' })
+    .refine((v) => Number(v) > 0, 'Daily rate must be greater than 0'),
   duration_days: z
-    .string({ message: 'VAL-ADM-023' })
-    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, 'VAL-ADM-023'),
+    .string({ message: 'Duration must be at least 1 day' })
+    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, 'Duration must be at least 1 day'),
   max_ads: z
-    .string({ message: 'VAL-ADM-024' })
-    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, 'VAL-ADM-024'),
+    .string({ message: 'Max ads must be at least 1' })
+    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, 'Max ads must be at least 1'),
   effective_from: z
-    .string({ message: 'VAL-ADM-025' })
-    .refine((v) => !isNaN(Date.parse(v)), 'VAL-ADM-025'),
+    .string({ message: 'Effective date is required' })
+    .refine((v) => !isNaN(Date.parse(v)), 'Effective date is required'),
   change_reason: z
-    .string({ message: 'VAL-ADM-026' })
-    .min(1, 'VAL-ADM-026')
-    .max(1000, 'VAL-ADM-027'),
+    .string({ message: 'Change reason is required' })
+    .min(1, 'Change reason is required')
+    .max(1000, 'Change reason must not exceed 1000 characters'),
 })
 
 type EditFeeFormValues = z.infer<typeof editFeeFormSchema>

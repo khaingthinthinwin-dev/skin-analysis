@@ -99,7 +99,10 @@ export class AdvertisementsService {
     if (ad.paymentStatus !== 'pending' || ad.approvalStatus !== 'pending') {
       throw new BadRequestException('Advertisement cannot accept content');
     }
-    const imageUrl = file ? await this.saveImage(file) : ad.imageUrl;
+    if (!file) {
+      throw new BadRequestException('Advertisement image is required');
+    }
+    const imageUrl = await this.saveImage(file);
     const schedule = this.getSchedule(dto.startsAt, ad.feeSetting.durationDays);
     const updated = await this.prisma.advertisement.update({
       where: { id },
@@ -195,10 +198,14 @@ export class AdvertisementsService {
       });
     } else if (query.status === 'inactive') {
       // Mutually exclusive with "expired": truly inactive only (not expired).
+      // Soft-deleted ads (isActive=false while not approved) never appear,
+      // so "Inactive" shows only merchant-controlled approved ads toggled off.
       where.isActive = false;
+      where.NOT = { isActive: false, approvalStatus: { not: 'approved' } };
       where.OR = [{ expiresAt: { gte: now } }, { expiresAt: null }];
     } else if (query.status === 'expired') {
       where.expiresAt = { lt: now };
+      where.NOT = { isActive: false, approvalStatus: { not: 'approved' } };
     } else {
       // Default "All statuses" view hides soft-deleted advertisements.
       // deleteAd sets isActive = false for non-approved ads, while only
