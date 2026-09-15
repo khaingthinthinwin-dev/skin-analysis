@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, Bell, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
@@ -11,6 +11,12 @@ export function DashboardLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { summary } = useCart()
   const cartCount = summary.totalItems
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">

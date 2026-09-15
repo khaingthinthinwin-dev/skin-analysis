@@ -9,9 +9,9 @@
 | **Document ID** | SKM-DBS-001 |
 | **System** | Cosmetics Finder |
 | **Phase** | Technical Design |
-| **Version** | 2.5 |
+| **Version** | 2.6 |
 | **Created** | 2026-08-03 |
-| **Last Updated** | 2026-08-24 |
+| **Last Updated** | 2026-09-14 |
 | **Author** | Lead Database Engineer |
 | **Status** | Released (承認済み) |
 
@@ -24,6 +24,7 @@
 | 2.0 | 2026-08-14 | Lead Database Engineer | Aligned with REQUIREMENT_SPEC v1.5: UUID primary keys, merchants table, restructured orders, ad fee tables, updated FK relationships |
 | 2.4 | 2026-08-20 | Lead Database Engineer | Commission rate admin-configurable, merchant payout simplified (no ad fees), added password_reset_tokens table |
 | 2.5 | 2026-08-24 | Lead Database Engineer | Changed `reviews.is_approved` DEFAULT from TRUE to FALSE to align with admin-moderated review approach (all reviews require admin approval before being shown to buyers). |
+| 2.6 | 2026-09-14 | Lead Database Engineer | Added `order_id` column (nullable UUID FK) to `payouts` table to link payouts to specific orders. Added corresponding index `idx_payouts_order_id`. |
 
 ---
 
@@ -686,29 +687,31 @@ Manages shop advertisements with approval workflow, payment tracking, and weekly
 |---|---|---|---|---|---|---|---|---|
 | 1 | 広告ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
 | 2 | 店舗ID | `shop_id` | UUID | - | Y | N | - | Foreign key (`fk_advertisements_shop`). References `shops(id)`. ON DELETE CASCADE ON UPDATE CASCADE. |
-| 3 | タイトル | `title` | VARCHAR(255) | - | - | N | - | Advertisement title. |
-| 4 | 内容 | `content` | TEXT | - | - | Y | NULL | Advertisement content/description. |
-| 5 | 告知メッセージ | `announcement_message` | VARCHAR(500) | - | - | N | - | Banner announcement message. |
-| 6 | 画像URL | `image_url` | TEXT | - | - | Y | NULL | Advertisement image URL. |
-| 7 | リンクURL | `link_url` | TEXT | - | - | Y | NULL | Click-through link URL. |
-| 8 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Advertisement active status. |
-| 9 | 承認状態 | `approval_status` | VARCHAR(20) | - | - | N | 'pending' | Approval status: pending/approved/rejected. |
-| 10 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded. |
-| 11 | 支払い金額 | `payment_amount` | DECIMAL(10,2) | - | - | Y | NULL | Advertising fee amount. |
-| 12 | 支払い参照番号 | `payment_reference` | VARCHAR(255) | - | - | Y | NULL | Payment transaction reference. |
-| 13 | 承認者ID | `approved_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_advertisements_approved_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
-| 14 | 承認日時 | `approved_at` | TIMESTAMPTZ | - | - | Y | NULL | Approval/rejection timestamp. |
-| 15 | 却下理由 | `rejection_reason` | TEXT | - | - | Y | NULL | Reason for rejection. |
-| 16 | 週番号 | `week_number` | INTEGER | - | - | N | - | ISO week number for limit tracking. |
-| 17 | 開始日時 | `starts_at` | TIMESTAMPTZ | - | - | N | - | Advertisement start timestamp. |
-| 18 | 終了日時 | `expires_at` | TIMESTAMPTZ | - | - | N | - | Advertisement end timestamp. |
-| 19 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 3 | 料金設定ID | `fee_setting_id` | UUID | - | Y | Y | NULL | Foreign key (`fk_advertisements_fee_setting`). References `ad_fee_settings(id)`. ON DELETE RESTRICT. |
+| 4 | タイトル | `title` | VARCHAR(255) | - | - | N | - | Advertisement title. |
+| 5 | 内容 | `content` | TEXT | - | - | Y | NULL | Advertisement content/description. |
+| 6 | 告知メッセージ | `announcement_message` | VARCHAR(500) | - | - | N | - | Banner announcement message. |
+| 7 | 画像URL | `image_url` | TEXT | - | - | Y | NULL | Advertisement image URL. |
+| 8 | リンクURL | `link_url` | TEXT | - | - | Y | NULL | Click-through link URL. |
+| 9 | 有効フラグ | `is_active` | BOOLEAN | - | - | N | TRUE | Advertisement active status. |
+| 10 | 承認状態 | `approval_status` | VARCHAR(20) | - | - | N | 'pending' | Approval status: pending/approved/rejected. |
+| 11 | 支払い状態 | `payment_status` | VARCHAR(20) | - | - | N | 'pending' | Payment status: pending/completed/refunded. |
+| 12 | 支払い金額 | `payment_amount` | DECIMAL(10,2) | - | - | Y | NULL | Advertising fee amount. |
+| 13 | 支払い参照番号 | `payment_reference` | VARCHAR(255) | - | - | Y | NULL | Payment transaction reference. |
+| 14 | 承認者ID | `approved_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_advertisements_approved_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 15 | 承認日時 | `approved_at` | TIMESTAMPTZ | - | - | Y | NULL | Approval/rejection timestamp. |
+| 16 | 却下理由 | `rejection_reason` | TEXT | - | - | Y | NULL | Reason for rejection. |
+| 17 | 週番号 | `week_number` | INTEGER | - | - | Y | NULL | ISO week number for limit tracking. |
+| 18 | 開始日時 | `starts_at` | TIMESTAMPTZ | - | - | Y | NULL | Advertisement start timestamp. |
+| 19 | 終了日時 | `expires_at` | TIMESTAMPTZ | - | - | Y | NULL | Advertisement end timestamp. |
+| 20 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
 
 #### Reference SQL DDL
 ```sql
 CREATE TABLE advertisements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     shop_id UUID NOT NULL,
+    fee_setting_id UUID,
     title VARCHAR(255) NOT NULL,
     content TEXT,
     announcement_message VARCHAR(500) NOT NULL,
@@ -722,15 +725,16 @@ CREATE TABLE advertisements (
     approved_by UUID,
     approved_at TIMESTAMP WITH TIME ZONE,
     rejection_reason TEXT,
-    week_number INTEGER NOT NULL,
-    starts_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    week_number INTEGER,
+    starts_at TIMESTAMP WITH TIME ZONE,
+    expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_advertisements_dates CHECK (expires_at > starts_at),
     CONSTRAINT chk_advertisements_approval_status CHECK (approval_status IN ('pending', 'approved', 'rejected')),
     CONSTRAINT chk_advertisements_payment_status CHECK (payment_status IN ('pending', 'completed', 'refunded')),
     CONSTRAINT fk_advertisements_shop FOREIGN KEY (shop_id)
         REFERENCES shops(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_advertisements_fee_setting FOREIGN KEY (fee_setting_id)
+        REFERENCES ad_fee_settings(id) ON DELETE RESTRICT,
     CONSTRAINT fk_advertisements_approved_by FOREIGN KEY (approved_by)
         REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -959,22 +963,24 @@ Manages merchant payout transactions with commission deduction.
 |---|---|---|---|---|---|---|---|---|
 | 1 | 出金ID | `id` | UUID | Y | - | N | gen_random_uuid() | Primary key. UUID format. |
 | 2 | 出品者ID | `merchant_id` | UUID | - | Y | N | - | Foreign key (`fk_payouts_merchant`). References `merchants(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
-| 3 | 合計金額 | `total_amount` | DECIMAL(12,2) | - | - | N | - | Total sales amount before deductions. |
-| 4 | 手数料額 | `commission_amount` | DECIMAL(12,2) | - | - | N | 0 | Platform commission amount deducted. |
-| 5 | 出金金額 | `net_payout` | DECIMAL(12,2) | - | - | N | - | Final payout amount (total_amount - commission_amount). |
-| 6 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | Payout status: pending/processing/completed/failed. |
-| 7 | 処理者ID | `processed_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_payouts_processed_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
-| 8 | 処理日時 | `processed_at` | TIMESTAMPTZ | - | - | Y | NULL | Payout processing timestamp. |
-| 9 | 失敗理由 | `failure_reason` | TEXT | - | - | Y | NULL | Reason for payout failure. |
-| 10 | 幂等性キー | `idempotency_key` | VARCHAR(255) | - | - | Y | NULL | Unique key for idempotent operations. |
-| 11 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
-| 12 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
+| 3 | 注文ID | `order_id` | UUID | - | Y | Y | NULL | Foreign key (`fk_payouts_order`). References `orders(id)`. ON DELETE RESTRICT ON UPDATE CASCADE. |
+| 4 | 合計金額 | `total_amount` | DECIMAL(12,2) | - | - | N | - | Total sales amount before deductions. |
+| 5 | 手数料額 | `commission_amount` | DECIMAL(12,2) | - | - | N | 0 | Platform commission amount deducted. |
+| 6 | 出金金額 | `net_payout` | DECIMAL(12,2) | - | - | N | - | Final payout amount (total_amount - commission_amount). |
+| 7 | 状態 | `status` | VARCHAR(20) | - | - | N | 'pending' | Payout status: pending/processing/completed/failed. |
+| 8 | 処理者ID | `processed_by` | UUID | - | Y | Y | NULL | Foreign key (`fk_payouts_processed_by`). References `users(id)`. ON DELETE SET NULL ON UPDATE CASCADE. |
+| 9 | 処理日時 | `processed_at` | TIMESTAMPTZ | - | - | Y | NULL | Payout processing timestamp. |
+| 10 | 失敗理由 | `failure_reason` | TEXT | - | - | Y | NULL | Reason for payout failure. |
+| 11 | 幂等性キー | `idempotency_key` | VARCHAR(255) | - | - | Y | NULL | Unique key for idempotent operations. |
+| 12 | 作成日時 | `created_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record creation timestamp. |
+| 13 | 更新日時 | `updated_at` | TIMESTAMPTZ | - | - | N | CURRENT_TIMESTAMP | Record last modification timestamp. |
 
 #### Reference SQL DDL
 ```sql
 CREATE TABLE payouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     merchant_id UUID NOT NULL,
+    order_id UUID,
     total_amount DECIMAL(12,2) NOT NULL,
     commission_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     net_payout DECIMAL(12,2) NOT NULL,
@@ -990,6 +996,8 @@ CREATE TABLE payouts (
     CONSTRAINT uq_payouts_idempotency_key UNIQUE (idempotency_key),
     CONSTRAINT fk_payouts_merchant FOREIGN KEY (merchant_id)
         REFERENCES merchants(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_payouts_order FOREIGN KEY (order_id)
+        REFERENCES orders(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_payouts_processed_by FOREIGN KEY (processed_by)
         REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -1421,6 +1429,7 @@ To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds)
 | 38 | `idx_advertisements_approval_status` | `advertisements` | `approval_status` | Speeds up approval status filtering. |
 | 39 | `idx_advertisements_payment_status` | `advertisements` | `payment_status` | Optimizes payment status filtering. |
 | 40 | `idx_advertisements_week_number` | `advertisements` | `week_number` | Speeds up weekly ad limit checks. |
+| 41 | `idx_advertisements_fee_setting_id` | `advertisements` | `fee_setting_id` | Optimizes fee setting lookups. |
 | 41 | `idx_ad_payments_ad_id` | `ad_payments` | `ad_id` | Optimizes ad payment lookups. |
 | 42 | `idx_ad_payments_merchant_id` | `ad_payments` | `merchant_id` | Speeds up merchant payment history. |
 | 43 | `idx_ad_fee_settings_placement_tier` | `ad_fee_settings` | `placement, tier` | Optimizes fee lookups by placement and tier. |
@@ -1431,6 +1440,7 @@ To satisfy non-functional requirement **NFR-001** (page load time ≤ 2 seconds)
 | 48 | `idx_payouts_merchant_id` | `payouts` | `merchant_id` | Speeds up merchant payout history lookups. |
 | 49 | `idx_payouts_status` | `payouts` | `status` | Optimizes payout status filtering. |
 | 50 | `idx_payouts_created_at` | `payouts` | `created_at` | Speeds up payout date sorting and filtering. |
+| 51 | `idx_payouts_order_id` | `payouts` | `order_id` | Optimizes order-based payout lookups. |
 | 51 | `idx_skin_analyses_user_id` | `skin_analyses` | `user_id` | Optimizes user analysis history lookups. |
 | 52 | `idx_skin_analyses_status` | `skin_analyses` | `analysis_status` | Speeds up analysis status filtering. |
 | 53 | `idx_skin_analysis_conditions_analysis_id` | `skin_analysis_conditions` | `analysis_id` | Optimizes condition lookups by analysis. |
@@ -1519,6 +1529,7 @@ CREATE INDEX idx_advertisements_expires_at ON advertisements (expires_at);
 CREATE INDEX idx_advertisements_approval_status ON advertisements (approval_status);
 CREATE INDEX idx_advertisements_payment_status ON advertisements (payment_status);
 CREATE INDEX idx_advertisements_week_number ON advertisements (week_number);
+CREATE INDEX idx_advertisements_fee_setting_id ON advertisements (fee_setting_id);
 
 -- Indexes for Ad Payments Table
 CREATE INDEX idx_ad_payments_ad_id ON ad_payments (ad_id);
@@ -1541,6 +1552,7 @@ CREATE INDEX idx_revenue_targets_is_active ON revenue_targets (is_active);
 CREATE INDEX idx_payouts_merchant_id ON payouts (merchant_id);
 CREATE INDEX idx_payouts_status ON payouts (status);
 CREATE INDEX idx_payouts_created_at ON payouts (created_at DESC);
+CREATE INDEX idx_payouts_order_id ON payouts (order_id);
 
 -- Indexes for Skin Analyses Table
 CREATE INDEX idx_skin_analyses_user_id ON skin_analyses (user_id);

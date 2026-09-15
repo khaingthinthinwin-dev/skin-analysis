@@ -1,5 +1,6 @@
 import type { ProductFilters } from '@/types'
 import type { ProductQueryParams } from '@/types/product.types'
+import type { PromotionQueryParams } from '@/types/promotion.types'
 
 export const queryKeys = {
   auth: {
@@ -23,6 +24,11 @@ export const queryKeys = {
     all: ['merchantProducts'] as const,
     list: (filters?: ProductQueryParams) => [...queryKeys.merchantProducts.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.merchantProducts.all, id] as const,
+  },
+  merchantPromotions: {
+    all: ['merchantPromotions'] as const,
+    list: (filters?: PromotionQueryParams) => [...queryKeys.merchantPromotions.all, 'list', filters] as const,
+    detail: (id: string) => [...queryKeys.merchantPromotions.all, id] as const,
   },
   wishlist: {
     all: ['wishlist'] as const,

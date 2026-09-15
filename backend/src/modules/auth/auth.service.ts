@@ -83,15 +83,36 @@ export class AuthService {
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
+    const userData: Record<string, unknown> = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.roleCode,
+      avatar: user.avatarUrl || undefined,
+      avatarUrl: user.avatarUrl,
+      merchantId: null,
+      licenseStatus: null,
+      licenseUrl: null,
+    };
+
+    if (role === 'merchant') {
+      const merchant = await this.prisma.merchant.findFirst({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          businessLicenseUrl: true,
+          licenseStatus: true,
+        },
+      });
+      if (merchant) {
+        userData.merchantId = merchant.id;
+        userData.licenseUrl = merchant.businessLicenseUrl;
+        userData.licenseStatus = merchant.licenseStatus;
+      }
+    }
+
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.roleCode,
-        avatar: user.avatarUrl || undefined,
-        avatarUrl: user.avatarUrl,
-      },
+      user: userData,
       ...tokens,
     };
   }
@@ -121,15 +142,36 @@ export class AuthService {
     // Store refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
+    const userData: Record<string, unknown> = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.roleCode,
+      avatar: user.avatarUrl || undefined,
+      avatarUrl: user.avatarUrl,
+      merchantId: null,
+      licenseStatus: null,
+      licenseUrl: null,
+    };
+
+    if (user.roleCode === 'merchant') {
+      const merchant = await this.prisma.merchant.findFirst({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          businessLicenseUrl: true,
+          licenseStatus: true,
+        },
+      });
+      if (merchant) {
+        userData.merchantId = merchant.id;
+        userData.licenseUrl = merchant.businessLicenseUrl;
+        userData.licenseStatus = merchant.licenseStatus;
+      }
+    }
+
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.roleCode,
-        avatar: user.avatarUrl || undefined,
-        avatarUrl: user.avatarUrl,
-      },
+      user: userData,
       ...tokens,
     };
   }
