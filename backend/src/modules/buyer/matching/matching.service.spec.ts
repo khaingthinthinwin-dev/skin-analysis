@@ -155,7 +155,7 @@ describe('MatchingService', () => {
       expect(where.price).toEqual({ gte: 1000, lte: 5000 });
     });
 
-    it('should apply ingredients filter', async () => {
+    it('should apply ingredients filter with mapping', async () => {
       mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
       mockRedis.get.mockResolvedValue(null);
       mockPrisma.product.findMany.mockResolvedValue([]);
@@ -167,7 +167,7 @@ describe('MatchingService', () => {
 
       const where = getMockWhere(mockPrisma.product.findMany);
       expect(where.ingredients).toEqual({
-        hasSome: ['vitamin_c', 'hyaluronic_acid'],
+        hasSome: ['Vitamin C', 'Hyaluronic Acid'],
       });
     });
 
