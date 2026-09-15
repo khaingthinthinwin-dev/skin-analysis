@@ -1,65 +1,192 @@
 {
   "common": {
-    "filters": {
-      "all": "All",
-      "clear": "Clear",
-      "apply": "Apply"
-    },
-    "status": {
-      "placed": "Placed",
-      "confirmed": "Confirmed",
-      "packed": "Packed",
-      "shipped": "Shipped",
-      "out_for_delivery": "Out for Delivery",
-      "delivered": "Delivered"
-    },
-    "paymentStatus": {
-      "pending": "Pending",
-      "completed": "Completed"
-    },
-    "actions": {
-      "track": "Track",
-      "previous": "Previous",
-      "next": "Next",
-      "retry": "Retry"
-    },
-    "pageInfo": "Page {{page}} of {{totalPages}} · {{total}} orders"
+    "home": "Home",
+    "profile": "Profile",
+    "settings": "Settings",
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next"
   },
-  "orders": {
-    "filter": {
-      "status": "Status",
-      "dateRange": {
-        "from": "From",
-        "to": "To"
-      }
-    },
-    "table": {
-      "orderId": "Order #",
-      "date": "Date",
-      "items": "Items",
-      "item": "Item",
-      "total": "Total",
-      "payment": "Payment",
-      "status": "Status",
-      "track": "Track"
-
-    },
-    "track": "Track",
-    "empty": {
-      "title": "You haven't placed any orders yet.",
-      "description": "When you place an order, it will appear here.",
-      "cta": "Browse Products"
-    },
-    "pageInfo": "Page {{page}} of {{totalPages}} · {{total}} orders"
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "products": "Products",
+    "contact": "Contact",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings"
   },
-  "buyer": {
-    "orders": {
-      "title": "My Orders",
-      "subtitle": "Track order status, delivery stages, and past receipts",
-      "recentOrders": "Recent Orders",
-      "error": {
-        "loadFailed": "Failed to load orders. Please try again."
-      }
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "email": "Email",
+      "emailPlaceholder": "user@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "submit": "Sign In",
+      "submitting": "Signing in...",
+      "success": "Logged in successfully",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create one",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "register": {
+      "title": "Create Account",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "John Doe",
+      "email": "Email",
+      "emailPlaceholder": "user@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "submit": "Create Account",
+      "submitting": "Creating account...",
+      "success": "Account created successfully",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "iAm": "I am a:",
+      "buyer": "Buyer - Browse and purchase products",
+      "merchant": "Merchant - Sell skincare products",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "passwordRequirement": {
+        "length": "At least 8 characters",
+        "uppercase": "One uppercase letter (A-Z)",
+        "lowercase": "One lowercase letter (a-z)",
+        "number": "One number (0-9)",
+        "special": "One special character (@$!%*?&)"
+      },
+      "license": "Business License (PDF)",
+      "licensePlaceholder": "Drag & drop or click to upload",
+      "licenseHelper": "Upload your business license as PDF (max 10MB). File must be named license.pdf.",
+      "licenseRemove": "Remove file",
+      "licenseError": {
+        "type": "File type not supported. Only PDF files are accepted.",
+        "size": "File exceeds maximum size of 10 MB",
+        "name": "File must be named license.pdf",
+        "required": "Business license is required for merchant registration"
+      },
+      "agreeToTerms": "I agree to the",
+      "termsOfService": "Terms of Service"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password?",
+      "description": "Enter your email and we'll send you a verification code.",
+      "email": "Email",
+      "emailPlaceholder": "user@example.com",
+      "submit": "Send Verification Code",
+      "submitting": "Sending...",
+      "backToLogin": "Back to Login"
+    },
+    "verifyCode": {
+      "title": "Enter Verification Code",
+      "description": "We sent a 6-digit code to {{email}}",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "000000",
+      "submit": "Verify Code",
+      "verifying": "Verifying...",
+      "resend": "Resend Code",
+      "resendCooldown": "Resend in {{seconds}}s",
+      "resendSuccess": "A new verification code has been sent to your email.",
+      "backToEmail": "Back to Email"
+    },
+    "resetPassword": {
+      "title": "Reset Your Password",
+      "description": "Enter your new password below.",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Create a new password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your new password",
+      "submit": "Reset Password",
+      "submitting": "Resetting...",
+      "successTitle": "Password reset successful",
+      "successMessage": "Your password has been reset successfully. You can now sign in with your new password.",
+      "backToLogin": "Back to Login",
+      "invalidToken": "Invalid or expired verification code. Please request a new one."
     }
+  },
+  "home": {
+    "hero": {
+      "title": "Your Cosmetics Finder Journey",
+      "subtitle": "Discover personalized skincare products powered by advanced AI analysis",
+      "cta": "Get Started"
+    }
+  },
+  "wishlist": {
+    "title": "My Wishlist",
+    "itemCount": "{{count}} items saved",
+    "moveToCart": "Add to Cart",
+    "remove": "Remove",
+    "emptyTitle": "No items saved yet",
+    "emptyMessage": "Browse products to add favorites.",
+    "continueShopping": "Continue Shopping",
+    "unavailable": "This product is currently unavailable.",
+    "inStock": "In Stock",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock",
+    "guestLoginAlert": {
+      "title": "Log In Required",
+      "message": "Please log in to add items to your wishlist.",
+      "loginButton": "Log In",
+      "closeButton": "Cancel"
+    }
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "itemCount": "{{count}} items in cart",
+    "subtotal": "Subtotal",
+    "totalItems": "Total Items",
+    "checkout": "Proceed to Checkout",
+    "continueShopping": "Continue Shopping",
+    "browseProducts": "Browse Products",
+    "remove": "Remove",
+    "emptyTitle": "Your cart is empty",
+    "emptyMessage": "Start shopping!",
+    "inStock": "In Stock",
+    "lowStock": "Only {{n}} left in stock",
+    "outOfStock": "Out of Stock",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "guestLoginAlert": {
+      "title": "Log In Required",
+      "message": "Please log in to add items to your cart.",
+      "loginButton": "Log In",
+      "closeButton": "Cancel"
+    }
+  },
+  "footer": {
+    "brand": "Cosmetics Finder",
+    "tagline": "Your beauty journey starts here.",
+    "quickLinks": "Quick Links",
+    "customerCare": "Customer Care",
+    "stayConnected": "Stay Connected",
+    "newsletter": "Subscribe to our newsletter",
+    "newsletterPlaceholder": "Enter your email",
+    "subscribe": "Subscribe",
+    "products": "Products",
+    "about": "About",
+    "contact": "Contact",
+    "skincareTips": "Skincare Tips",
+    "faq": "FAQ",
+    "aboutUs": "About Us",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copyright": "© 2026 Cosmetics Finder. All rights reserved."
+  },
+  "roles": {
+    "buyer": "Buyer",
+    "merchant": "Merchant",
+    "admin": "Admin",
+    "super_admin": "Super Admin"
   }
 }
