@@ -20,7 +20,10 @@ export function ProductTabs({ product }: ProductTabsProps) {
 
       <TabsContent value="description" className="py-4">
         {product.description ? (
-          <p className="whitespace-pre-line text-muted-foreground">{product.description}</p>
+          <div
+            className="space-y-3 text-sm text-muted-foreground [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:py-0.5 [&_strong]:font-semibold [&_strong]:text-foreground [&_em]:italic [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a]:hover:text-primary/80"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
         ) : (
           <p className="text-muted-foreground">No description available.</p>
         )}

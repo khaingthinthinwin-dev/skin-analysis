@@ -207,7 +207,6 @@ describe('ProductsController', () => {
 
       await expect(
         controller.update('bad-id', mockUser, dto, []),
-        controller.update('bad-id', mockUser, { name: 'Test' }, []),
       ).rejects.toThrow(NotFoundException);
     });
   });

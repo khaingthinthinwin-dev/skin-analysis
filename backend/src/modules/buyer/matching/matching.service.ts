@@ -35,6 +35,15 @@ type ProductWithMerchant = Product & {
 const CACHE_TTL = 5 * 60;
 const SIMILAR_LIMIT_DEFAULT = 8;
 
+const INGREDIENT_KEY_MAP: Record<string, string> = {
+  hyaluronic_acid: 'Hyaluronic Acid',
+  niacinamide: 'Niacinamide',
+  salicylic_acid: 'Salicylic Acid',
+  vitamin_c: 'Vitamin C',
+  retinol: 'Retinol',
+  centella_asiatica: 'Centella Asiatica',
+};
+
 @Injectable()
 export class MatchingService {
   private readonly logger = new Logger(MatchingService.name);
@@ -80,7 +89,10 @@ export class MatchingService {
     }
 
     if (ingredientsFilter) {
-      const ingredients = ingredientsFilter.split(',').filter(Boolean);
+      const ingredients = ingredientsFilter
+        .split(',')
+        .filter(Boolean)
+        .map((key) => INGREDIENT_KEY_MAP[key.trim()] ?? key.trim());
       if (ingredients.length > 0) {
         where.ingredients = { hasSome: ingredients };
       }
@@ -394,6 +406,7 @@ export class MatchingService {
     if (sort === 'price') return { price: direction };
     if (sort === 'createdAt') return { createdAt: direction };
 
+    // Default for AI source: matchScore descending (will be sorted in-memory after scoring)
     return [{ isFeatured: 'desc' as const }, { avgRating: 'desc' as const }];
   }
 
@@ -429,5 +442,20 @@ export class MatchingService {
     data: RecommendationResponseDto,
   ): Promise<void> {
     await this.redis.set(key, JSON.stringify(data), CACHE_TTL);
+  }
+
+  /**
+   * Invalidate all recommendation cache entries for a user.
+   * Called when a new AI analysis is completed.
+   */
+  async invalidateUserCache(userId: string): Promise<void> {
+    const pattern = `cache:recommendations:user:${userId}:*`;
+    const keys = await this.redis.keys(pattern);
+    if (keys.length > 0) {
+      await this.redis.del(...keys);
+      this.logger.log(
+        `Invalidated ${keys.length} recommendation cache entries for user ${userId}`,
+      );
+    }
   }
 }
