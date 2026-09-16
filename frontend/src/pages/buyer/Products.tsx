@@ -1,8 +1,8 @@
-import { useSearchParams, useNavigate } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Search as SearchIcon, Loader2 } from 'lucide-react'
 import type { SearchParams } from '@/schemas/search.schema'
-import { PAGE_SIZE_OPTIONS } from '@/schemas/search.schema'
+import { Pagination } from '@/components/Pagination'
 import { categoryService } from '@/features/search/services/category.service'
 import { SearchBar } from '@/features/search/components/SearchBar'
 import { FilterPanel } from '@/features/search/components/FilterPanel'
@@ -12,22 +12,9 @@ import { SortSelect } from '@/features/search/components/SortSelect'
 import { SponsoredAdSlider } from '@/features/search/components/SponsoredAdSlider'
 import { ProductCard } from '@/features/search/components/ProductCard'
 import { useProductSearch } from '@/features/search/hooks/useProductSearch'
-import type { ViewMode, ProductSummary } from '@/types/search.types'
-import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import type { ViewMode } from '@/types/search.types'
+import { useEffect, useState } from 'react'
 import type { CategoryNode } from '@/types/search.types'
-import { toast } from 'sonner'
-import { useAuth } from '@/providers/AuthProvider'
-import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
-import { useCart } from '@/features/buyer/cart/hooks/useCart'
 
 const VIEW_MODE_KEY = 'search.viewMode'
 
@@ -38,14 +25,7 @@ function readInitialViewMode(): ViewMode {
 
 export default function Products() {
   const [, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
   const [view, setView] = useState<ViewMode>(readInitialViewMode)
-  const { isAuthenticated, user } = useAuth()
-  const { items: wishlistItems, addToWishlist, removeFromWishlist, isAdding: isWishlistLoading } = useWishlist()
-  const { items: cartItems, addToCart, isAdding: isCartLoading } = useCart()
-
-  const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
-  const [loginRequiredModal, setLoginRequiredModal] = useState<'wishlist' | 'cart' | null>(null)
 
   useEffect(() => {
     localStorage.setItem(VIEW_MODE_KEY, view)
@@ -63,72 +43,6 @@ export default function Products() {
   const products = data?.data ?? []
   const meta = data?.meta
 
-  const wishlistProductIds = useMemo(() => new Set(wishlistItems.map((item) => item.productId)), [wishlistItems])
-  const cartProductIds = useMemo(() => new Set(cartItems.map((item) => item.productId)), [cartItems])
-  const isBuyer = user?.role === 'buyer'
-
-  const handleWishlistToggle = useCallback(
-    async (product: ProductSummary) => {
-      if (!isAuthenticated) {
-        setLoginRequiredModal('wishlist')
-        return
-      }
-      if (!isBuyer) {
-        toast.error('Shopping features are only available to buyers.')
-        return
-      }
-
-      const inWishlist = wishlistProductIds.has(product.id)
-      try {
-        if (inWishlist) {
-          await removeFromWishlist(product.id)
-          toast.success('Removed from wishlist')
-        } else {
-          await addToWishlist(product.id)
-          toast.success('Added to wishlist')
-        }
-      } catch (err: unknown) {
-        const axiosErr = err as { response?: { status?: number } }
-        if (axiosErr?.response?.status === 409) {
-          toast.info('Already in your wishlist')
-        } else {
-          toast.error('Something went wrong. Please try again.')
-        }
-      }
-    },
-    [isAuthenticated, isBuyer, wishlistProductIds, addToWishlist, removeFromWishlist],
-  )
-
-  const handleAddToCart = useCallback(
-    async (product: ProductSummary) => {
-      if (!isAuthenticated) {
-        setLoginRequiredModal('cart')
-        return
-      }
-      if (!isBuyer) {
-        toast.error('Shopping features are only available to buyers.')
-        return
-      }
-      if (cartProductIds.has(product.id)) {
-        setCartDuplicateOpen(true)
-        return
-      }
-
-      try {
-        await addToCart({ productId: product.id, quantity: 1 })
-        toast.success('Added to cart')
-      } catch (err: unknown) {
-        const axiosErr = err as { response?: { status?: number } }
-        if (axiosErr?.response?.status === 409) {
-          setCartDuplicateOpen(true)
-        } else {
-          toast.error('Something went wrong. Please try again.')
-        }
-      }
-    },
-    [isAuthenticated, isBuyer, cartProductIds, addToCart],
-  )
-
   const serializeToUrl = (p: SearchParams) => {
     const entries: [string, string][] = []
     if (p.q) entries.push(['q', p.q])
@@ -142,7 +56,7 @@ export default function Products() {
     if (p.sort !== 'createdAt') entries.push(['sort', p.sort])
     if (p.order !== 'desc') entries.push(['order', p.order])
     if (p.page > 1) entries.push(['page', String(p.page)])
-    if (p.limit !== 20) entries.push(['limit', String(p.limit)])
+    if (p.limit !== 12) entries.push(['limit', String(p.limit)])
     setSearchParams(Object.fromEntries(entries), { replace: true })
   }
 
@@ -219,11 +133,6 @@ export default function Products() {
     })
   }
 
-  const handlePageChange = (page: number) => {
-    serializeToUrl({ ...params, page })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   const handleLimitChange = (limit: number) => {
     serializeToUrl({ ...params, limit, page: 1 })
   }
@@ -250,15 +159,15 @@ export default function Products() {
         </p>
       </div>
 
-      {/* Advertisement panel */}
-      <SponsoredAdSlider />
-
       {/* Search bar - full width */}
       <SearchBar
         value={params.q}
         onChange={(q) => handleFilterUpdate({ q })}
         onSubmit={handleSearchBarSubmit}
       />
+
+      {/* Advertisement panel */}
+      <SponsoredAdSlider />
 
       <FilterChips
         params={params}
@@ -283,44 +192,14 @@ export default function Products() {
 
         {/* Right Content - Product Grid */}
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p className="text-sm text-muted-foreground">
-              {meta ? (
-                <>
-                  Showing{' '}
-                  <span className="font-medium text-foreground">
-                    {(meta.page - 1) * meta.limit + 1}-
-                    {Math.min(meta.page * meta.limit, meta.total)}
-                  </span>{' '}
-                  of <span className="font-medium text-foreground">{meta.total}</span> products
-                </>
-              ) : (
-                'Loading...'
-              )}
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Show</span>
-                <Select value={String(params.limit)} onValueChange={(v) => handleLimitChange(Number(v))}>
-                  <SelectTrigger className="w-[70px] h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <SelectItem key={size} value={String(size)}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <SortSelect
-                sort={params.sort}
-                order={params.order}
-                onChange={(sort, order) => handleFilterUpdate({ sort, order })}
-              />
-              <ViewToggle view={view} onChange={setView} />
-            </div>
+          {/* Toolbar above grid */}
+          <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
+            <SortSelect
+              sort={params.sort}
+              order={params.order}
+              onChange={(sort, order) => handleFilterUpdate({ sort, order })}
+            />
+            <ViewToggle view={view} onChange={setView} />
           </div>
 
           {isLoading ? (
@@ -351,98 +230,20 @@ export default function Products() {
                 }
               >
                 {Array.isArray(products) && products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    view={view}
-                    productLink={isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`}
-                    isInWishlist={wishlistProductIds.has(product.id)}
-                    onWishlistToggle={handleWishlistToggle}
-                    onAddToCart={handleAddToCart}
-                    isWishlistLoading={isWishlistLoading}
-                    isCartLoading={isCartLoading}
-                  />
+                  <ProductCard key={product.id} product={product} view={view} productLink={`/buyer/products/${product.slug}`} />
                 ))}
               </div>
 
-              {/* Pagination - outside product cards, clearly separated */}
-              {meta && meta.totalPages > 1 && (
-                <div className="mt-8 flex items-center justify-center gap-2 pt-4 border-t border-border">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={meta.page <= 1}
-                    onClick={() => handlePageChange(meta.page - 1)}
-                  >
-                    Previous
-                  </Button>
-                  {Array.from({ length: Math.min(meta.totalPages, 5) }, (_, i) => {
-                    let pageNum: number
-                    if (meta.totalPages <= 5) {
-                      pageNum = i + 1
-                    } else if (meta.page <= 3) {
-                      pageNum = i + 1
-                    } else if (meta.page >= meta.totalPages - 2) {
-                      pageNum = meta.totalPages - 4 + i
-                    } else {
-                      pageNum = meta.page - 2 + i
-                    }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={meta.page === pageNum ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                      >
-                        {pageNum}
-                      </Button>
-                    )
-                  })}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={meta.page >= meta.totalPages}
-                    onClick={() => handlePageChange(meta.page + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
+              {meta && (
+                <Pagination
+                  meta={meta}
+                  onLimitChange={handleLimitChange}
+                />
               )}
             </>
           )}
         </div>
       </div>
-
-      <Dialog open={cartDuplicateOpen} onOpenChange={setCartDuplicateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Already in Cart</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This product is already in cart.
-          </p>
-          <DialogFooter>
-            <Button onClick={() => setCartDuplicateOpen(false)}>OK</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={loginRequiredModal !== null} onOpenChange={() => setLoginRequiredModal(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Log In Required</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {loginRequiredModal === 'wishlist'
-              ? 'Please log in to add items to your wishlist.'
-              : 'Please log in to add items to your cart.'}
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLoginRequiredModal(null)}>Cancel</Button>
-            <Button onClick={() => { setLoginRequiredModal(null); navigate('/login?redirect=/buyer/products') }}>Log In</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
