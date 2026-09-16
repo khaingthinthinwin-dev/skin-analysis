@@ -242,10 +242,11 @@ skin-analysis/
 │
 └── docs/
     ├── SPECIFICATION.md                   # Full architecture & API spec
+    ├── PCL_TEMPLATE_GUIDE.md              # Master 23-section PCL template & guide
     ├── guides/                            # Setup & environment guides
     └── screen/                            # Per-screen design docs & PCL checklists
         ├── SignUp_LogIn/
-        │   ├── SignUp_Login_PCL.md         # Process Check List (auto-updated by E2E tests)
+        │   ├── SignUp_LogIn_PCL.md        # Pre-condition Checklist (auto-updated by E2E tests)
         │   └── ...
         ├── SearchAndFilter/
         │   ├── Search_And_Filter_PCL.md
@@ -263,7 +264,10 @@ The project uses **Playwright** for end-to-end testing with a **Page Object Mode
 e2e/
 ├── playwright.config.ts          # Playwright config (Chromium, retries, reporters)
 ├── global-setup.ts               # Cleans test-result folders before run
-├── pcl-map.json                  # Test title → PCL text mapping config
+├── pcl-map/                      # Per-module test title → PCL text mapping configs
+│   ├── SignUp_LogIn.json
+│   ├── SearchAndFilter.json
+│   └── ... (15 module mapping files)
 ├── fixtures/
 │   └── auth.fixture.ts           # Pre-authenticated buyer/merchant page fixtures
 ├── pages/                        # Page Object classes per screen module
@@ -340,13 +344,13 @@ test('should access dashboard', async ({ buyerPage }) => {
 
 ## Process Check List (PCL)
 
-Each screen module has a **PCL (Process Check List)** document — a comprehensive verification checklist covering database, backend, frontend, testing, security, and more.
+Each screen module has a **PCL (Pre-condition Checklist)** document — a comprehensive verification checklist covering database, backend, frontend, testing, security, and more. Refer to `docs/PCL_TEMPLATE_GUIDE.md` for the standard 23-section structure.
 
 ### PCL Files
 
 | Screen Module | PCL File |
 |---------------|----------|
-| SignUp_LogIn | `docs/screen/SignUp_LogIn/SignUp_Login_PCL.md` |
+| SignUp_LogIn | `docs/screen/SignUp_LogIn/SignUp_LogIn_PCL.md` |
 | SearchAndFilter | `docs/screen/SearchAndFilter/Search_And_Filter_PCL.md` |
 | ProductDetail | `docs/screen/ProductDetail/ProductDetail_PCL.md` |
 | Matching_And_Recommendation | `docs/screen/Matching_And_Recommendation/Matching_And_Recommendation_PCL.md` |
@@ -364,7 +368,7 @@ Each screen module has a **PCL (Process Check List)** document — a comprehensi
 
 ### Auto-Update from E2E Tests
 
-The `update-pcl` script automatically marks PCL checkboxes as passed when E2E tests pass:
+The `scripts/update-pcl.cjs` script automatically marks PCL checkboxes as passed (`- [ ]` → `- [x]`) when E2E tests pass:
 
 ```bash
 # 1. Run E2E tests (produces per-module results.json)
@@ -372,26 +376,30 @@ cd e2e && npm test
 
 # 2. Update all 15 PCL checklists
 npm run update-pcl
+
+# Or update only a specific module (e.g. SignUp_LogIn)
+npm run update-pcl:SignUp_LogIn
+# or: node ../scripts/update-pcl.cjs SearchAndFilter
 ```
 
 **How it works:**
 1. E2E tests run → `modular-reporter.ts` writes `test-results/{Module}/results.json`
-2. `update-pcl.ts` reads results and `pcl-map.json` (test title → PCL text mappings)
+2. `scripts/update-pcl.cjs` reads test results and the corresponding `e2e/pcl-map/{ModuleName}.json` mapping file
 3. For each passed test, finds matching PCL line and replaces `- [ ]` → `- [x]`
-4. Reports summary across all 15 modules
+4. Reports summary across all processed modules
 
 ### Adding New Tests to PCL
 
 To map a new E2E test to a PCL item:
 
-1. Add the PCL checklist item in the screen's `*_PCL.md` file
-2. Add the mapping in `e2e/pcl-map.json`:
+1. Refer to `docs/PCL_TEMPLATE_GUIDE.md` and add the checklist item under Section 20 in the screen's `*_PCL.md` file
+2. Add the mapping in `e2e/pcl-map/{ModuleName}.json`:
    ```json
    {
-     "ModuleName": {
-       "mappings": {
-         "should do something cool": "PCL text that appears in the checklist"
-       }
+     "pclFile": "docs/screen/ModuleName/Module_PCL.md",
+     "specFiles": ["e2e/tests/ModuleName/module.spec.ts"],
+     "mappings": {
+       "should do something cool": "E2E-MOD-01: PCL text that appears in the checklist"
      }
    }
    ```
