@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -695,7 +695,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
-  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'inactive'
+  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded'
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const packageInfo = ad.package
   const expiresTomorrow =
@@ -880,6 +880,9 @@ function ContentDialog({
   const startsAt = form.watch('startsAt')
   const imageFile = form.watch('image')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // Preserves unsaved typed content per ad across cancel/reopen so edits are
+  // not lost before a successful save.
+  const draftCache = useRef<Record<string, ContentForm>>({})
 
   useEffect(() => {
     if (imageFile instanceof File) {
@@ -892,18 +895,25 @@ function ContentDialog({
 
   useEffect(() => {
     if (target) {
-      form.reset({
-        title: target.title,
-        content: target.content ?? '',
-        linkUrl: target.linkUrl ?? '',
-        announcementMessage: target.announcementMessage,
-        startsAt: target.startsAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
-        image: null,
-      })
+      const cached = draftCache.current[target.id]
+      form.reset(
+        cached ?? {
+          title: target.title,
+          content: target.content ?? '',
+          linkUrl: target.linkUrl ?? '',
+          announcementMessage: target.announcementMessage,
+          startsAt: target.startsAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+          image: null,
+        },
+      )
     }
   }, [target, form])
 
   if (!target) return null
+  const handleClose = () => {
+    draftCache.current[target.id] = form.getValues()
+    onClose()
+  }
   const canSetSchedule = !target.startsAt
   const durationDays = adPackage?.durationDays ?? 7
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
@@ -914,7 +924,7 @@ function ContentDialog({
   const currentPreview = imageFile instanceof File ? previewUrl : target.imageUrl ? getImageUrl(target.imageUrl) : null
 
   return (
-    <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
+    <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isNewUpload ? 'Upload Advertisement Content' : 'Edit Advertisement Content'}</DialogTitle>
@@ -931,7 +941,13 @@ function ContentDialog({
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          className="space-y-4"
+          onSubmit={form.handleSubmit(async (values) => {
+            await onSubmit(values)
+            draftCache.current = {}
+          })}
+        >
           <div className="space-y-1.5">
             <Label htmlFor="ad-title">Title</Label>
             <Input id="ad-title" maxLength={200} placeholder="Enter advertisement title" {...form.register('title')} />
@@ -1039,11 +1055,20 @@ function ContentDialog({
           {feeSummary && <p className="rounded-lg bg-primary/10 p-3 text-sm font-semibold text-primary">{feeSummary}</p>}
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isPending}>
               Cancel
             </Button>
             {showSaveAndPay && onSaveAndPay && (
-              <Button type="button" disabled={isPending} onClick={() => form.handleSubmit(onSaveAndPay)()}>
+              <Button
+                type="button"
+                disabled={isPending}
+                onClick={() =>
+                  form.handleSubmit(async (values) => {
+                    await onSaveAndPay(values)
+                    draftCache.current = {}
+                  })()
+                }
+              >
                 {isPending ? 'Saving...' : 'Save & Pay'}
               </Button>
             )}

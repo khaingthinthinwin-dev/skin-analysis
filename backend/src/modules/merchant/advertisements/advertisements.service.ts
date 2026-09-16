@@ -197,12 +197,16 @@ export class AdvertisementsService {
         expiresAt: { gte: now },
       });
     } else if (query.status === 'inactive') {
-      // Mutually exclusive with "expired": truly inactive only (not expired).
-      // Soft-deleted ads (isActive=false while not approved) never appear,
-      // so "Inactive" shows only merchant-controlled approved ads toggled off.
-      where.isActive = false;
+      // "Inactive" shows every ad that is not currently on air and not gone:
+      // pending submissions (draft / content uploaded / pending approval) and
+      // merchant-toggled-off approved ads. Soft-deleted ads (isActive=false
+      // while not approved) and expired ads stay excluded.
+      where.OR = [
+        { approvalStatus: 'pending' },
+        { isActive: false, approvalStatus: 'approved' },
+      ];
+      where.AND = [{ OR: [{ expiresAt: { gte: now } }, { expiresAt: null }] }];
       where.NOT = { isActive: false, approvalStatus: { not: 'approved' } };
-      where.OR = [{ expiresAt: { gte: now } }, { expiresAt: null }];
     } else if (query.status === 'expired') {
       where.expiresAt = { lt: now };
       where.NOT = { isActive: false, approvalStatus: { not: 'approved' } };
