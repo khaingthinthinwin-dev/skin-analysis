@@ -55,19 +55,20 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
               />
             </TableHead>
             <TableHead>Merchant</TableHead>
-            <TableHead>Order Number</TableHead>
+            <TableHead>Period</TableHead>
             <TableHead>Commission Rate</TableHead>
             <TableHead>Total Amount</TableHead>
-            <TableHead>Commission Fee</TableHead>
+            <TableHead>Commission</TableHead>
             <TableHead>Net Payout</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>Payment Date</TableHead>
+            <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {payouts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={10} className="text-center py-6 text-muted-foreground">
                 No merchant payouts found.
               </TableCell>
             </TableRow>
@@ -83,15 +84,7 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                   />
                 </TableCell>
                 <TableCell className="font-medium">{p.merchantName}</TableCell>
-                <TableCell className="max-w-[220px]">
-                  {p.orderId ? (
-                    <span className="block truncate font-mono text-xs" title={p.orderId}>
-                      {p.orderId}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
+                <TableCell>{formatPeriod(p.period)}</TableCell>
                 <TableCell>{p.commissionRate}%</TableCell>
                 <TableCell>${p.totalAmount}</TableCell>
                 <TableCell className="text-destructive">-${p.commissionAmount}</TableCell>
@@ -109,6 +102,7 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                     {p.status}
                   </Badge>
                 </TableCell>
+                <TableCell>{p.processedAt ? formatDate(p.processedAt) : '-'}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <Button
@@ -139,4 +133,16 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
     </div>
   );
 };
+
+const formatPeriod = (period: string): string => {
+  const date = new Date(`${period}-01T00:00:00`);
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+};
+
+const formatDate = (date: string): string =>
+  new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 

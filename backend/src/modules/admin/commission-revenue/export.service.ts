@@ -1,6 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { ExportRequestDto, ExportFormat } from './dto/export-request.dto';
+import {
+  ExportRequestDto,
+  ExportFormat,
+  GroupByType,
+} from './dto/export-request.dto';
 import { fmtDecimal, toNumber } from './commission-revenue.util';
 import { buildCsv, buildXlsx } from './file-builder';
 import type { Response } from 'express';
@@ -120,6 +124,7 @@ export class ExportService {
     ip?: string,
   ): Promise<ExportFile> {
     this.validateRange(dto);
+    const groupBy: GroupByType = dto.groupBy ?? 'merchant';
 
     const orders = await this.prisma.order.findMany({
       where: {
@@ -130,54 +135,140 @@ export class ExportService {
         },
       },
       select: {
+        id: true,
+        orderNumber: true,
         merchantId: true,
         totalAmount: true,
         createdAt: true,
         merchant: { select: { shopName: true } },
       },
+      orderBy: { createdAt: 'asc' },
     });
 
-    const grouped = new Map<
-      string,
-      {
-        name: string;
-        rate: number;
-        orders: number;
-        revenue: number;
-        commission: number;
-      }
-    >();
-    for (const o of orders) {
-      const rate = await this.getEffectiveRate(o.createdAt);
-      const key = `${o.merchantId}_${rate}`;
-      const g = grouped.get(key) ?? {
-        name: o.merchant?.shopName ?? 'Unknown',
-        rate,
-        orders: 0,
-        revenue: 0,
-        commission: 0,
-      };
-      const amount = toNumber(o.totalAmount);
-      g.orders += 1;
-      g.revenue += amount;
-      g.commission += (amount * rate) / 100;
-      grouped.set(key, g);
-    }
+    let header: string[];
+    let rows: (string | number)[][];
 
-    const header = [
-      'Merchant',
-      'Commission Rate',
-      'Orders',
-      'Revenue',
-      'Commission',
-    ];
-    const rows = Array.from(grouped.values()).map((g) => [
-      g.name,
-      `${fmtDecimal(g.rate)}%`,
-      g.orders,
-      fmtDecimal(g.revenue),
-      fmtDecimal(g.commission),
-    ]);
+    if (groupBy === 'order') {
+      header = [
+        'Order Number',
+        'Date',
+        'Merchant',
+        'Commission Rate',
+        'Revenue',
+        'Commission',
+      ];
+      rows = [];
+      for (const o of orders) {
+        const rate = await this.getEffectiveRate(o.createdAt);
+        const amount = toNumber(o.totalAmount);
+        const commission = (amount * rate) / 100;
+        const dateStr = o.createdAt
+          .toISOString()
+          .replace('T', ' ')
+          .substring(0, 19);
+        rows.push([
+          o.orderNumber,
+          dateStr,
+          o.merchant?.shopName ?? 'Unknown',
+          `${fmtDecimal(rate)}%`,
+          fmtDecimal(amount),
+          fmtDecimal(commission),
+        ]);
+      }
+    } else if (groupBy === 'day') {
+      header = [
+        'Date',
+        'Merchant',
+        'Commission Rate',
+        'Orders',
+        'Revenue',
+        'Commission',
+      ];
+      const grouped = new Map<
+        string,
+        {
+          date: string;
+          name: string;
+          rate: number;
+          orders: number;
+          revenue: number;
+          commission: number;
+        }
+      >();
+      for (const o of orders) {
+        const rate = await this.getEffectiveRate(o.createdAt);
+        const dateStr = o.createdAt.toISOString().split('T')[0];
+        const key = `${dateStr}_${o.merchantId}_${rate}`;
+        const g = grouped.get(key) ?? {
+          date: dateStr,
+          name: o.merchant?.shopName ?? 'Unknown',
+          rate,
+          orders: 0,
+          revenue: 0,
+          commission: 0,
+        };
+        const amount = toNumber(o.totalAmount);
+        g.orders += 1;
+        g.revenue += amount;
+        g.commission += (amount * rate) / 100;
+        grouped.set(key, g);
+      }
+      rows = Array.from(grouped.values())
+        .sort(
+          (a, b) =>
+            a.date.localeCompare(b.date) || a.name.localeCompare(b.name),
+        )
+        .map((g) => [
+          g.date,
+          g.name,
+          `${fmtDecimal(g.rate)}%`,
+          g.orders,
+          fmtDecimal(g.revenue),
+          fmtDecimal(g.commission),
+        ]);
+    } else {
+      // By Merchant (default)
+      header = [
+        'Merchant',
+        'Commission Rate',
+        'Orders',
+        'Revenue',
+        'Commission',
+      ];
+      const grouped = new Map<
+        string,
+        {
+          name: string;
+          rate: number;
+          orders: number;
+          revenue: number;
+          commission: number;
+        }
+      >();
+      for (const o of orders) {
+        const rate = await this.getEffectiveRate(o.createdAt);
+        const key = `${o.merchantId}_${rate}`;
+        const g = grouped.get(key) ?? {
+          name: o.merchant?.shopName ?? 'Unknown',
+          rate,
+          orders: 0,
+          revenue: 0,
+          commission: 0,
+        };
+        const amount = toNumber(o.totalAmount);
+        g.orders += 1;
+        g.revenue += amount;
+        g.commission += (amount * rate) / 100;
+        grouped.set(key, g);
+      }
+      rows = Array.from(grouped.values()).map((g) => [
+        g.name,
+        `${fmtDecimal(g.rate)}%`,
+        g.orders,
+        fmtDecimal(g.revenue),
+        fmtDecimal(g.commission),
+      ]);
+    }
 
     const buffer = this.encode(header, rows, dto.format);
     await this.audit(adminId, 'commission', dto, rows.length, ip);
@@ -188,7 +279,7 @@ export class ExportService {
       dto.format,
       rows.length,
       buffer,
-      'commission',
+      `commission report(${dto.groupBy === 'day' ? 'by date' : dto.groupBy === 'order' ? 'by order' : 'by merchant'})`,
     );
   }
 
@@ -294,87 +385,167 @@ export class ExportService {
     ip?: string,
   ): Promise<ExportFile> {
     this.validateRange(dto);
-    const payouts = await this.prisma.payout.findMany({
-      where: {
+    const where: {
+      merchantId?: string;
+      order: {
+        createdAt: {
+          gte: Date;
+          lte: Date;
+        };
+      };
+    } = {
+      order: {
         createdAt: {
           gte: new Date(dto.dateFrom),
           lte: new Date(`${dto.dateTo}T23:59:59.999Z`),
         },
       },
+    };
+    if (dto.merchantId) {
+      where.merchantId = dto.merchantId;
+    }
+    const payouts = await this.prisma.payout.findMany({
+      where,
       include: {
         merchant: { select: { shopName: true } },
+        order: { select: { orderNumber: true, createdAt: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
+    let merchantName = 'all';
+    if (dto.merchantId && payouts.length > 0) {
+      merchantName = payouts[0].merchant?.shopName ?? 'Unknown';
+    } else if (dto.merchantId && payouts.length === 0) {
+      const merchant = await this.prisma.merchant.findUnique({
+        where: { id: dto.merchantId },
+        select: { shopName: true },
+      });
+      merchantName = merchant?.shopName ?? 'Unknown';
+    }
+
+    if (dto.merchantId) {
+      const header = [
+        'Merchant',
+        'Order Number',
+        'Commission Rate',
+        'Total',
+        'Commission',
+        'Net',
+        'Status',
+        'Payment Date',
+      ];
+      const rows: (string | number)[][] = payouts.map((p) => {
+        const total = toNumber(p.totalAmount);
+        const commission = toNumber(p.commissionAmount);
+        const rate = total > 0 ? (commission / total) * 100 : 0;
+        return [
+          p.merchant?.shopName ?? 'Unknown',
+          p.order?.orderNumber ?? '-',
+          `${fmtDecimal(rate)}%`,
+          fmtDecimal(total),
+          fmtDecimal(commission),
+          fmtDecimal(total - commission),
+          p.status,
+          p.processedAt?.toISOString().slice(0, 10) ?? '-',
+        ];
+      });
+      const buffer = this.encode(header, rows, dto.format);
+      await this.audit(adminId, 'payout', dto, rows.length, ip);
+      const dateRange = `${this.getDateString(dto.dateFrom)}-${this.getDateString(dto.dateTo)}`;
+      const generationDate = this.getDateString(new Date());
+      const filename = `payout report(for ${merchantName})${dateRange}(${generationDate})`;
+      return {
+        filename,
+        mimeType:
+          dto.format === ExportFormat.XLSX
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'text/csv',
+        content: buffer.toString('base64'),
+      };
+    }
+
     const header = [
       'Merchant',
-      'Order Number',
+      'Order Numbers',
       'Commission Rate',
       'Total',
       'Commission',
       'Net',
       'Status',
-      'Date',
+      'Payment Date',
     ];
 
-    const rows: (string | number)[][] = [];
-    for (const p of payouts) {
-      const rate =
-        toNumber(p.totalAmount) > 0
-          ? (toNumber(p.commissionAmount) / toNumber(p.totalAmount)) * 100
-          : 0;
-      const orders = await this.prisma.order.findMany({
-        where: {
-          merchantId: p.merchantId,
-          paymentStatus: 'completed',
-          totalAmount: p.totalAmount,
-        },
-        select: { id: true, orderNumber: true },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      if (orders.length === 0) {
-        rows.push([
-          p.merchant?.shopName ?? 'Unknown',
-          '-',
-          fmtDecimal(rate),
-          fmtDecimal(p.totalAmount),
-          fmtDecimal(p.commissionAmount),
-          fmtDecimal(toNumber(p.totalAmount) - toNumber(p.commissionAmount)),
-          p.status,
-          p.createdAt.toISOString(),
-        ]);
-        continue;
+    const grouped = new Map<
+      string,
+      {
+        merchant: string;
+        orderNumbers: string[];
+        total: number;
+        commission: number;
+        status: string;
+        processedAt: Date | null;
+        period: string;
       }
-
-      for (const o of orders) {
-        const orderAmount = toNumber(p.totalAmount);
-        const commission = (orderAmount * rate) / 100;
-        rows.push([
-          p.merchant?.shopName ?? 'Unknown',
-          o.orderNumber,
-          fmtDecimal(rate),
-          fmtDecimal(orderAmount),
-          fmtDecimal(commission),
-          fmtDecimal(orderAmount - commission),
-          p.status,
-          p.createdAt.toISOString(),
-        ]);
+    >();
+    for (const p of payouts) {
+      const period = (p.order?.createdAt ?? p.createdAt)
+        .toISOString()
+        .slice(0, 7);
+      const key = `${p.merchantId}:${period}`;
+      const existing = grouped.get(key);
+      if (existing) {
+        if (p.order?.orderNumber)
+          existing.orderNumbers.push(p.order.orderNumber);
+        existing.total += toNumber(p.totalAmount);
+        existing.commission += toNumber(p.commissionAmount);
+        if (p.status !== 'completed') existing.status = p.status;
+        if (
+          p.processedAt &&
+          (!existing.processedAt || p.processedAt > existing.processedAt)
+        ) {
+          existing.processedAt = p.processedAt;
+        }
+      } else {
+        grouped.set(key, {
+          merchant: p.merchant?.shopName ?? 'Unknown',
+          orderNumbers: p.order?.orderNumber ? [p.order.orderNumber] : [],
+          total: toNumber(p.totalAmount),
+          commission: toNumber(p.commissionAmount),
+          status: p.status,
+          processedAt: p.processedAt,
+          period,
+        });
       }
     }
+
+    const rows: (string | number)[][] = [...grouped.values()].map((group) => [
+      group.merchant,
+      group.orderNumbers.join(','),
+      group.total > 0
+        ? fmtDecimal((group.commission / group.total) * 100)
+        : '0.00',
+      fmtDecimal(group.total),
+      fmtDecimal(group.commission),
+      fmtDecimal(group.total - group.commission),
+      group.status,
+      group.processedAt?.toISOString().slice(0, 10) ?? '-',
+    ]);
 
     const buffer = this.encode(header, rows, dto.format);
     await this.audit(adminId, 'payout', dto, rows.length, ip);
 
-    return this.payload(
-      dto.dateFrom,
-      dto.dateTo,
-      dto.format,
-      rows.length,
-      buffer,
-      'payout',
-    );
+    const dateRange = `${this.getDateString(dto.dateFrom)}-${this.getDateString(dto.dateTo)}`;
+    const generationDate = this.getDateString(new Date());
+    const filename = `payout report(for all)${dateRange}(${generationDate})`;
+    return {
+      filename,
+      mimeType:
+        dto.format === ExportFormat.XLSX
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          : 'text/csv',
+      content: buffer.toString('base64'),
+    };
   }
 
   /**

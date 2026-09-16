@@ -15,6 +15,8 @@ import {
   ExportReportType,
   ExportFormat,
   ExportRequestBody,
+  CommissionGroupBy,
+  PayoutMerchant,
 } from '../services/commission.service';
 
 export interface ExportRecord {
@@ -30,6 +32,12 @@ interface ExportDialogProps {
   onOpenChange: (open: boolean) => void;
   reportType: ExportReportType;
   onGenerated?: (rec: ExportRecord) => void;
+  initialValues?: {
+    dateFrom?: string;
+    dateTo?: string;
+    groupBy?: CommissionGroupBy;
+  };
+  merchants?: PayoutMerchant[];
 }
 
 const REPORT_LABELS: Record<ExportReportType, string> = {
@@ -45,15 +53,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   onOpenChange,
   reportType,
   onGenerated,
+  initialValues,
+  merchants = [],
 }) => {
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(initialValues?.dateFrom ?? '');
+  const [dateTo, setDateTo] = useState(initialValues?.dateTo ?? '');
   const [format, setFormat] = useState<ExportFormat>('csv');
+  const [groupBy] = useState<CommissionGroupBy>(initialValues?.groupBy ?? 'merchant');
+  const [merchantId, setMerchantId] = useState<string>('');
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState(false);
-
-  
-
   const validate = (): ExportRequestBody | null => {
     if (!dateFrom || !dateTo) {
       setError('Please select a start and end date.');
@@ -69,7 +78,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       return null;
     }
     setError('');
-    return { dateFrom, dateTo, format };
+    return {
+      dateFrom,
+      dateTo,
+      format,
+      ...(reportType === 'commission' ? { groupBy } : {}),
+      ...(reportType === 'payout' && merchantId ? { merchantId } : {}),
+    };
   };
 
   const handleGenerate = async () => {
@@ -77,7 +92,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     if (!body) return;
     setGenerating(true);
     try {
-      await commissionService.exportReport(reportType, body);
+      const selectedMerchantName = merchants.find((merchant) => merchant.id === merchantId)?.name;
+      await commissionService.exportReport(reportType, body, selectedMerchantName);
       toast({
         title: 'Export generated',
         description: `${REPORT_LABELS[reportType]} report is downloading.`,
@@ -111,6 +127,29 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             <span className="text-xs text-muted-foreground">Report Type</span>
             <span className="font-medium">{REPORT_LABELS[reportType]}</span>
           </div>
+          {reportType === 'commission' && (
+            <div className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Group By</span>
+              <span className="font-medium capitalize">{groupBy === 'day' ? 'Day' : groupBy === 'order' ? 'Order' : 'Merchant'}</span>
+            </div>
+          )}
+          {reportType === 'payout' && merchants.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Merchant</span>
+              <select
+                className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                value={merchantId}
+                onChange={(e) => setMerchantId(e.target.value)}
+              >
+                <option value="">All Merchants</option>
+                {merchants.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground">Start Date</span>
             <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />

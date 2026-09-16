@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsInt,
   IsDateString,
+  Matches,
   Min,
   Max,
 } from 'class-validator';
@@ -30,6 +31,10 @@ export class PayoutQueryDto {
 
   @IsOptional()
   merchantId?: string;
+
+  @IsOptional()
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'Invalid period' })
+  period?: string;
 
   @IsOptional()
   @Type(() => Number)

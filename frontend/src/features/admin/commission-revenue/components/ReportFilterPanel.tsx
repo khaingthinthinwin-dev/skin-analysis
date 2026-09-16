@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { CommissionReportFilter } from '../services/commission.service';
+import { CommissionGroupBy, CommissionReportFilter } from '../services/commission.service';
 
 interface ReportFilterPanelProps {
   onApply: (filters: CommissionReportFilter) => void;
   onReset: () => void;
+  groupBy?: CommissionGroupBy;
 }
 
 // [E] Report filter panel (DD_02). From/To date inputs with Apply/Reset.
@@ -11,9 +12,11 @@ interface ReportFilterPanelProps {
 export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
   onApply,
   onReset,
+  groupBy: initialGroupBy = 'merchant',
 }) => {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [groupBy, setGroupBy] = useState<CommissionGroupBy>(initialGroupBy);
   const [error, setError] = useState('');
 
   const handleApply = () => {
@@ -22,14 +25,20 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
       setError('From date must be earlier than or equal to To date.');
       return;
     }
-    onApply({ from: from || undefined, to: to || undefined });
+    onApply({ from: from || undefined, to: to || undefined, groupBy });
   };
 
   const handleReset = () => {
     setFrom('');
     setTo('');
+    setGroupBy('merchant');
     setError('');
     onReset();
+  };
+
+  const handleGroupByChange = (value: CommissionGroupBy) => {
+    setGroupBy(value);
+    onApply({ from: from || undefined, to: to || undefined, groupBy: value });
   };
 
   return (
@@ -39,7 +48,27 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
           Commission Report
         </span>
       </div>
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
+        {([ 
+          ['merchant', 'By Merchant'],
+          ['day', 'By Day'],
+          ['order', 'By Order'],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={groupBy === value}
+            onClick={() => handleGroupByChange(value)}
+            className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+              groupBy === value
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-transparent text-muted-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
         <span className="text-sm text-muted-foreground font-medium">From</span>
         <input
           type="date"

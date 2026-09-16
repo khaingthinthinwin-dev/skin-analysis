@@ -2,7 +2,10 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { Prisma } from '@prisma/client';
 import { UpdateCommissionRateDto } from './dto/update-commission-rate.dto';
-import { CommissionReportQueryDto } from './dto/commission-report-query.dto';
+import {
+  CommissionReportQueryDto,
+  GroupByType,
+} from './dto/commission-report-query.dto';
 import { fmtDecimal, toNumber } from './commission-revenue.util';
 
 @Injectable()
@@ -123,6 +126,7 @@ export class CommissionService {
   async getCommissionReports(query: CommissionReportQueryDto = {}) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
+    const groupBy: GroupByType = query.groupBy ?? 'merchant';
 
     if (query.from && query.to && query.from > query.to) {
       throw new BadRequestException(
@@ -147,15 +151,109 @@ export class CommissionService {
     const completedOrders = await this.prisma.order.findMany({
       where,
       select: {
+        id: true,
+        orderNumber: true,
         merchantId: true,
         totalAmount: true,
         createdAt: true,
         merchant: { select: { id: true, shopName: true } },
       },
+      orderBy: { createdAt: 'asc' },
     });
 
-    // Group orders by merchant AND effective commission rate so that each
-    // unique rate gets its own row in the report.
+    if (groupBy === 'order') {
+      // By Order: show individual orders
+      const orderReports = [];
+      for (const order of completedOrders) {
+        const effectiveRate = await this.getEffectiveRate(order.createdAt);
+        const orderAmount = toNumber(order.totalAmount);
+        const commission = (orderAmount * effectiveRate) / 100;
+        orderReports.push({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          date: order.createdAt.toISOString(),
+          merchantId: order.merchantId,
+          merchantName: order.merchant?.shopName ?? 'Unknown',
+          commissionRate: fmtDecimal(effectiveRate),
+          revenue: fmtDecimal(orderAmount),
+          commission: fmtDecimal(commission),
+        });
+      }
+
+      const total = orderReports.length;
+      const totalPages = Math.ceil(total / limit);
+      const start = (page - 1) * limit;
+      const reports = orderReports.slice(start, start + limit);
+
+      return {
+        reports,
+        pagination: { page, limit, total, totalPages },
+      };
+    }
+
+    if (groupBy === 'day') {
+      // By Day: group by date + merchant + rate
+      const grouped = new Map<
+        string,
+        {
+          date: string;
+          merchantId: string;
+          name: string;
+          rate: number;
+          orders: number;
+          revenue: number;
+          commission: number;
+        }
+      >();
+
+      for (const order of completedOrders) {
+        const effectiveRate = await this.getEffectiveRate(order.createdAt);
+        const dateStr = order.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD
+        const key = `${dateStr}_${order.merchantId}_${effectiveRate}`;
+        const entry = grouped.get(key) ?? {
+          date: dateStr,
+          merchantId: order.merchantId,
+          name: order.merchant?.shopName ?? 'Unknown',
+          rate: effectiveRate,
+          orders: 0,
+          revenue: 0,
+          commission: 0,
+        };
+        const orderAmount = toNumber(order.totalAmount);
+        entry.orders += 1;
+        entry.revenue += orderAmount;
+        entry.commission += (orderAmount * effectiveRate) / 100;
+        grouped.set(key, entry);
+      }
+
+      const allReports = Array.from(grouped.values()).map((g) => ({
+        date: g.date,
+        merchantId: g.merchantId,
+        merchantName: g.name,
+        commissionRate: fmtDecimal(g.rate),
+        orders: g.orders,
+        revenue: fmtDecimal(g.revenue),
+        commission: fmtDecimal(g.commission),
+      }));
+
+      allReports.sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) ||
+          a.merchantName.localeCompare(b.merchantName),
+      );
+
+      const total = allReports.length;
+      const totalPages = Math.ceil(total / limit);
+      const start = (page - 1) * limit;
+      const reports = allReports.slice(start, start + limit);
+
+      return {
+        reports,
+        pagination: { page, limit, total, totalPages },
+      };
+    }
+
+    // By Merchant (default): group by merchant + rate
     const grouped = new Map<
       string,
       {
