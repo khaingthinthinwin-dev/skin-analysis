@@ -18,7 +18,10 @@ export function useProductDetail(idOrSlug: string) {
     queryKey: ['product', idOrSlug],
     queryFn: () => productService.getDetail(idOrSlug),
     enabled: !!idOrSlug,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   });
 }
 

@@ -1,0 +1,15 @@
+{
+  "pclFile": "docs/screen/AI_Skin_Analysis/AI_Skin_Analysis_PCL.md",
+  "specFiles": [
+    "e2e/tests/AI_Skin_Analysis/skin-analysis.spec.ts"
+  ],
+  "mappings": {
+    "should display skin analysis upload page": "E2E-SKIN-01: Skin analysis upload page loads",
+    "should upload a skin image for analysis": "E2E-SKIN-02: Skin image upload works",
+    "should show error for invalid file type": "E2E-SKIN-03: Invalid file type error shown",
+    "should display skin analysis results": "E2E-SKIN-04: Analysis results display correctly",
+    "should display product recommendations": "E2E-SKIN-05: Product recommendations display",
+    "should display analysis history": "E2E-SKIN-06: Analysis history displays",
+    "should export analysis report": "E2E-SKIN-07: PDF export works"
+  }
+}

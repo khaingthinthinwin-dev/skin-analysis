@@ -275,6 +275,7 @@ model Wishlist {
 
 model Order {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber     String   @unique @default(dbgenerated("'ORD-' || lpad(nextval('orders_order_number_seq')::text, 7, '0')")) @map("order_number") @db.VarChar(14)
   buyerId         String   @map("buyer_id") @db.Uuid
   merchantId      String   @map("merchant_id") @db.Uuid
   statusCode      String   @default("placed") @map("status")

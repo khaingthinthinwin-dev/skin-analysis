@@ -114,7 +114,15 @@ npm run dev
 ```
 
 Backend runs on `http://localhost:8080`, Swagger docs at `http://localhost:8080/api/docs`.
-Frontend runs on `http://localhost:5173`.
+Frontend runs on `http://localhost:3000`.
+
+### 5. Install E2E dependencies (optional)
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+```
 
 ## Development Workflow
 
@@ -134,6 +142,14 @@ Frontend runs on `http://localhost:5173`.
 | Lint | `cd frontend && npm run lint` |
 | Build | `cd frontend && npm run build` |
 | Unit tests | `cd frontend && npm run test` |
+| **E2E Tests (Playwright)** | |
+| Install Playwright | `cd e2e && npm install && npx playwright install chromium` |
+| Run all E2E tests | `cd e2e && npm test` |
+| Run tests with UI | `cd e2e && npm run test:ui` |
+| Debug tests | `cd e2e && npm run test:debug` |
+| View test report | `cd e2e && npm run test:report` |
+| Run specific module | `cd e2e && npx playwright test tests/SignUp_LogIn/` |
+| Update PCL checklists | `cd e2e && npm run update-pcl` |
 
 ## Git Hooks
 
@@ -226,8 +242,167 @@ skin-analysis/
 │
 └── docs/
     ├── SPECIFICATION.md                   # Full architecture & API spec
-    └── guides/                            # Setup & environment guides
+    ├── PCL_TEMPLATE_GUIDE.md              # Master 23-section PCL template & guide
+    ├── guides/                            # Setup & environment guides
+    └── screen/                            # Per-screen design docs & PCL checklists
+        ├── SignUp_LogIn/
+        │   ├── SignUp_LogIn_PCL.md        # Pre-condition Checklist (auto-updated by E2E tests)
+        │   └── ...
+        ├── SearchAndFilter/
+        │   ├── Search_And_Filter_PCL.md
+        │   └── ...
+        └── ... (15 screen modules total)
 ```
+
+## E2E Testing (Playwright)
+
+The project uses **Playwright** for end-to-end testing with a **Page Object Model** pattern.
+
+### Structure
+
+```
+e2e/
+├── playwright.config.ts          # Playwright config (Chromium, retries, reporters)
+├── global-setup.ts               # Cleans test-result folders before run
+├── pcl-map/                      # Per-module test title → PCL text mapping configs
+│   ├── SignUp_LogIn.json
+│   ├── SearchAndFilter.json
+│   └── ... (15 module mapping files)
+├── fixtures/
+│   └── auth.fixture.ts           # Pre-authenticated buyer/merchant page fixtures
+├── pages/                        # Page Object classes per screen module
+│   ├── SignUp_LogIn/
+│   │   ├── LoginPage.ts
+│   │   └── RegisterPage.ts
+│   ├── SearchAndFilter/
+│   │   └── SearchPage.ts
+│   └── ... (15 screen modules, 16 page objects)
+├── tests/                        # Test specs per screen module
+│   ├── SignUp_LogIn/
+│   │   ├── auth.spec.ts          # 13 integrated auth E2E scenarios
+│   │   ├── register.spec.ts      # 21 register page tests
+│   │   └── login.spec.ts         # 14 login page tests
+│   ├── SearchAndFilter/
+│   │   └── search-filter.spec.ts
+│   └── ... (17 spec files total, ~99 tests)
+└── utils/
+    ├── constants.ts              # Routes, API URLs, test users
+    ├── screenshot.ts             # Screenshot capture + evidence collector
+    └── modular-reporter.ts       # Custom reporter → per-module results.json
+```
+
+### Running Tests
+
+```bash
+# Run all E2E tests
+cd e2e && npm test
+
+# Run a specific screen module
+npx playwright test tests/SignUp_LogIn/
+
+# Run with interactive UI mode
+npm run test:ui
+
+# Debug mode (step through)
+npm run test:debug
+```
+
+### Test Configuration
+
+| Setting | Value |
+|---------|-------|
+| Browser | Chromium only |
+| Base URL | `http://localhost:3000` (frontend) |
+| API URL | `http://localhost:8080/api/v1` (backend) |
+| Timeout | 30s per test, 10s per action, 15s navigation |
+| Retries | 2 on CI, 0 locally |
+| Parallel | Disabled (sequential) |
+| Reporter | list + custom modular reporter |
+
+### Page Object Model
+
+Each screen has a Page Object class encapsulating locators and actions:
+
+```typescript
+// Example: LoginPage
+const loginPage = new LoginPage(page);
+await loginPage.goto();
+await loginPage.login('user@test.com', 'password123');
+await loginPage.expectRedirectTo('/buyer');
+```
+
+### Fixtures
+
+Pre-authenticated pages for tests that require a logged-in user:
+
+```typescript
+test('should access dashboard', async ({ buyerPage }) => {
+  // buyerPage is already logged in as a buyer
+  await buyerPage.goto('/buyer');
+});
+```
+
+## Process Check List (PCL)
+
+Each screen module has a **PCL (Pre-condition Checklist)** document — a comprehensive verification checklist covering database, backend, frontend, testing, security, and more. Refer to `docs/PCL_TEMPLATE_GUIDE.md` for the standard 23-section structure.
+
+### PCL Files
+
+| Screen Module | PCL File |
+|---------------|----------|
+| SignUp_LogIn | `docs/screen/SignUp_LogIn/SignUp_LogIn_PCL.md` |
+| SearchAndFilter | `docs/screen/SearchAndFilter/Search_And_Filter_PCL.md` |
+| ProductDetail | `docs/screen/ProductDetail/ProductDetail_PCL.md` |
+| Matching_And_Recommendation | `docs/screen/Matching_And_Recommendation/Matching_And_Recommendation_PCL.md` |
+| AI_Skin_Analysis | `docs/screen/AI_Skin_Analysis/AI_Skin_Analysis_PCL.md` |
+| Wishlist_Cart | `docs/screen/Wishlist_Cart/Wishlist_Cart_PCL.md` |
+| Checkout_Purchase | `docs/screen/Checkout_Purchase/Checkout_Purchase_PCL.md` |
+| Product_Management | `docs/screen/Product_Management/Product_Management_PCL.md` |
+| Advertisement_Management | `docs/screen/Advertisement_Management/Merchant_Advertisement_PCL.md` |
+| Ad_Management_Screen | `docs/screen/Ad_Management_Screen/Admin_AdManagement_PCL.md` |
+| Promotion_Pages | `docs/screen/Promotion_Pages/Promotion_PCL.md` |
+| Review_ContentModeration | `docs/screen/Review_ContentModeration/Review_Content_Moderation_PCL.md` |
+| Commission_Revenue | `docs/screen/Commission_Revenue/Commission_Revenue_PCL.md` |
+| Order_Insights | `docs/screen/Order_Insights/Order_Insights_PCL.md` |
+| Audit_Log | `docs/screen/Audit Log Screen/Admin_Audit_Log_PCL.md` |
+
+### Auto-Update from E2E Tests
+
+The `scripts/update-pcl.cjs` script automatically marks PCL checkboxes as passed (`- [ ]` → `- [x]`) when E2E tests pass:
+
+```bash
+# 1. Run E2E tests (produces per-module results.json)
+cd e2e && npm test
+
+# 2. Update all 15 PCL checklists
+npm run update-pcl
+
+# Or update only a specific module (e.g. SignUp_LogIn)
+npm run update-pcl:SignUp_LogIn
+# or: node ../scripts/update-pcl.cjs SearchAndFilter
+```
+
+**How it works:**
+1. E2E tests run → `modular-reporter.ts` writes `test-results/{Module}/results.json`
+2. `scripts/update-pcl.cjs` reads test results and the corresponding `e2e/pcl-map/{ModuleName}.json` mapping file
+3. For each passed test, finds matching PCL line and replaces `- [ ]` → `- [x]`
+4. Reports summary across all processed modules
+
+### Adding New Tests to PCL
+
+To map a new E2E test to a PCL item:
+
+1. Refer to `docs/PCL_TEMPLATE_GUIDE.md` and add the checklist item under Section 20 in the screen's `*_PCL.md` file
+2. Add the mapping in `e2e/pcl-map/{ModuleName}.json`:
+   ```json
+   {
+     "pclFile": "docs/screen/ModuleName/Module_PCL.md",
+     "specFiles": ["e2e/tests/ModuleName/module.spec.ts"],
+     "mappings": {
+       "should do something cool": "E2E-MOD-01: PCL text that appears in the checklist"
+     }
+   }
+   ```
 
 ## Key Design Decisions
 

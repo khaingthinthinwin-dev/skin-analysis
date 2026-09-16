@@ -1,29 +1,35 @@
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { RefreshCw, Sparkles } from 'lucide-react'
 
 interface ProfilePromptBannerProps {
   source: 'ai' | 'generic'
-  analysisAge?: number // hours since analysis
+  analysisAge?: number | null // hours since analysis
 }
 
 export function ProfilePromptBanner({ source, analysisAge }: ProfilePromptBannerProps) {
-  // TODO: Implement 3-state banner with i18n
+  const age = analysisAge ?? 0
 
   // Fresh analysis (≤ 24h) - no banner
-  if (source === 'ai' && analysisAge !== undefined && analysisAge <= 24) {
+  if (source === 'ai' && age <= 24) {
     return null
   }
 
   // Stale analysis (> 24h) - subtle banner
-  if (source === 'ai' && analysisAge !== undefined && analysisAge > 24) {
+  if (source === 'ai' && age > 24) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
-        <div>
-          <h3 className="font-medium text-amber-900">Want Fresh Results?</h3>
-          <p className="text-sm text-amber-700">Retake your skin analysis for updated recommendations</p>
+      <div className="rounded-xl p-4 flex items-center justify-between bg-amber-50 border border-amber-200">
+        <div className="flex items-center gap-3">
+          <span className="text-lg">💡</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-700">Want Fresh Results?</p>
+            <p className="text-xs text-amber-600">Retake your skin analysis for updated recommendations</p>
+          </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link to="/buyer/skin-analysis">Retake Analysis →</Link>
+        <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100" asChild>
+          <Link to="/buyer/skin-analysis">
+            <RefreshCw className="h-4 w-4 mr-1.5" /> Retake Analysis
+          </Link>
         </Button>
       </div>
     )
@@ -31,13 +37,16 @@ export function ProfilePromptBanner({ source, analysisAge }: ProfilePromptBanner
 
   // No analysis - prominent banner
   return (
-    <div className="bg-gradient-to-r from-rose-50 to-purple-50 border border-rose-200 rounded-lg p-6 flex items-center gap-6">
+    <div className="rounded-xl p-6 flex items-center gap-6 bg-gradient-to-r from-pink-50 to-purple-50 border border-purple-100">
+      <div className="text-5xl flex-shrink-0">🧑‍🔬</div>
       <div className="flex-1">
-        <h3 className="text-lg font-bold text-foreground">Get Personalized Recommendations</h3>
-        <p className="text-muted-foreground">Run an AI skin analysis to receive products matched to your skin type and concerns</p>
+        <h2 className="text-lg font-bold text-foreground">Get Personalized Recommendations</h2>
+        <p className="text-sm text-muted-foreground mt-1">Run an AI skin analysis to receive products matched to your skin type and concerns</p>
       </div>
-      <Button asChild className="bg-gradient-to-r from-rose-400 to-purple-500">
-        <Link to="/buyer/skin-analysis">✦ Start Skin Analysis →</Link>
+      <Button className="flex-shrink-0 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold px-6" asChild>
+        <Link to="/buyer/skin-analysis">
+          <Sparkles className="h-4 w-4 mr-2" /> Start Skin Analysis
+        </Link>
       </Button>
     </div>
   )

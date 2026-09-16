@@ -36,7 +36,7 @@ export function ReviewReportDialog({ reviewId, open, onOpenChange }: ReviewRepor
   const handleSubmit = () => {
     if (!reason) return;
     report.mutate(
-      { reason: reason as 'spam' | 'inappropriate' | 'fake' | 'other', description },
+      { reason: reason as 'spam' | 'inappropriate' | 'fake' | 'other', detail: description },
       {
         onSettled: () => {
           onOpenChange(false);

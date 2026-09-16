@@ -62,5 +62,11 @@
   "merchant.products.deleteAllPartialSuccess": "Successfully deleted {deleted} products. {skipped} products could not be deleted because they have active orders.",
   "merchant.products.deleteAllFailed": "Delete all failed. Please try again.",
   "merchant.products.pendingBanner": "Your merchant account is pending approval. Product management features are restricted until your license is approved.",
-  "merchant.products.pendingBannerHint": "You can view your products but cannot create, edit, or delete until your license is approved."
+  "merchant.products.pendingBannerHint": "You can view your products but cannot create, edit, or delete until your license is approved.",
+  "merchant.products.bulkDeleteTitleSingle": "Delete Selected Product",
+  "merchant.products.bulkDeleteTitleMultiple": "Delete Selected Products",
+  "merchant.products.bulkDeleteDescProcess": "Are you sure you want to process {count, plural, one {this 1 product} other {these # products}}?",
+  "merchant.products.bulkDeleteDescDeactivate": "{count, plural, one {# will be deactivated} other {# will be deactivated}}",
+  "merchant.products.bulkDeleteDescPermanent": "{count, plural, one {# soft-deleted product will be permanently deleted} other {# soft-deleted products will be permanently deleted}}",
+  "merchant.products.bulkDeleteDescSkipped": "{count, plural, one {# product with active orders will be skipped} other {# products with active orders will be skipped}}"
 }
