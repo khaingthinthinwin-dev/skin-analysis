@@ -26,7 +26,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
     <form onSubmit={methods.handleSubmit(handleSubmit)} className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/30 rounded-lg border">
       <div className="flex-1 sm:flex-none sm:w-[140px]">
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground mb-1">
-          {t('orders.filter.status')}
+          {t('orders.filter.status', 'Status')}
         </label>
 <Controller
           name="status"
@@ -34,13 +34,13 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
           render={({ field }) => (
             <Select value={field.value ?? 'all'} onValueChange={field.onChange}>
               <SelectTrigger id="filter-status" className="w-full sm:w-[140px]">
-                <SelectValue placeholder={t('orders.filter.status')} />
+                <SelectValue placeholder={t('orders.filter.status', 'Status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.filters.all')}</SelectItem>
+                <SelectItem value="all">{t('common.filters.all', 'All')}</SelectItem>
                 {['placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered'].map((status) => (
                   <SelectItem key={status} value={status}>
-                    {t(`common.status.${status}`)}
+                    {t(`common.status.${status}`, status.replaceAll('_', ' '))}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -55,7 +55,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
       <div className="w-full sm:flex-1 sm:w-96 flex flex-col sm:flex-row items-end gap-2">
         <div className="w-full sm:flex-1">
           <label htmlFor="filter-from" className="block text-sm font-medium text-muted-foreground mb-1">
-            {t('orders.filter.dateRange.from')}
+            {t('orders.filter.dateRange.from', 'From')}
           </label>
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -75,7 +75,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
                     }
                   }}
                   className="pl-10"
-                  placeholder={t('orders.filter.dateRange.from')}
+                  placeholder={t('orders.filter.dateRange.from', 'From')}
                 />
               )}
             />
@@ -87,7 +87,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
 
         <div className="w-full sm:flex-1">
           <label htmlFor="filter-to" className="block text-sm font-medium text-muted-foreground mb-1">
-            {t('orders.filter.dateRange.to')}
+            {t('orders.filter.dateRange.to', 'To')}
           </label>
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -107,7 +107,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
                     }
                   }}
                   className="pl-10"
-                  placeholder={t('orders.filter.dateRange.to')}
+                  placeholder={t('orders.filter.dateRange.to', 'To')}
                 />
               )}
             />
@@ -123,7 +123,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
           <Search className="h-5 w-5" />
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full sm:w-auto">
-          {t('common.filters.clear')}
+          {t('common.filters.clear', 'Clear')}
         </Button>
       </div>
     </form>

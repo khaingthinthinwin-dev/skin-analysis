@@ -24,7 +24,7 @@ export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
     <span
       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${STATUS_STYLES[status]} ${className}`}
     >
-      {t(`common.status.${status}`)}
+      {t(`common.status.${status}`, status.replaceAll('_', ' '))}
     </span>
   );
 }

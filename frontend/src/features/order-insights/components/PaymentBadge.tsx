@@ -20,7 +20,7 @@ export function PaymentBadge({ status, className = '' }: PaymentBadgeProps) {
     <span
       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${PAYMENT_STYLES[status]} ${className}`}
     >
-      {t(`common.paymentStatus.${status}`)}
+      {t(`common.paymentStatus.${status}`, status)}
     </span>
   );
 }

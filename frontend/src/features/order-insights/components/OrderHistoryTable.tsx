@@ -91,34 +91,34 @@ export function OrderHistoryTable({
             <TableHead className="w-[180px] cursor-pointer hover:bg-muted/50"
               onClick={() => handleHeaderClick('createdAt')}>
               <div className="flex items-center gap-1">
-                {t('orders.table.orderId')}
+                {t('orders.table.orderId', 'Order #')}
                 {renderSortIcon('createdAt')}
               </div>
             </TableHead>
             <TableHead className="w-[140px] cursor-pointer hover:bg-muted/50"
               onClick={() => handleHeaderClick('createdAt')}>
               <div className="flex items-center gap-1">
-                {t('orders.table.date')}
+                {t('orders.table.date', 'Date')}
                 {renderSortIcon('createdAt')}
               </div>
             </TableHead>
-            <TableHead className="w-[80px] text-center">{t('orders.table.items')}</TableHead>
+            <TableHead className="w-[80px] text-center">{t('orders.table.items', 'Items')}</TableHead>
             <TableHead className="w-[120px] text-right cursor-pointer hover:bg-muted/50"
               onClick={() => handleHeaderClick('totalAmount')}>
               <div className="flex items-center justify-end gap-1">
-                {t('orders.table.total')}
+                {t('orders.table.total', 'Total')}
                 {renderSortIcon('totalAmount')}
               </div>
             </TableHead>
-            <TableHead className="w-[120px]">{t('orders.table.payment')}</TableHead>
+            <TableHead className="w-[120px]">{t('orders.table.payment', 'Payment')}</TableHead>
             <TableHead className="w-[120px] cursor-pointer hover:bg-muted/50"
               onClick={() => handleHeaderClick('status')}>
               <div className="flex items-center gap-1">
-                {t('orders.table.status')}
+                {t('orders.table.status', 'Status')}
                 {renderSortIcon('status')}
               </div>
             </TableHead>
-            <TableHead className="w-[80px] text-right">{t('orders.table.track')}</TableHead>
+            <TableHead className="w-[80px] text-right">{t('orders.table.track', 'Track')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -135,7 +135,7 @@ export function OrderHistoryTable({
                 })}
               </TableCell>
               <TableCell className="text-center text-sm font-medium">
-                {row.itemCount} {row.itemCount === 1 ? t('orders.table.item') : t('orders.table.items')}
+                {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
               </TableCell>
               <TableCell className="text-right font-semibold text-foreground">
                 ${parseFloat(row.totalAmount).toFixed(2)}
@@ -154,7 +154,7 @@ export function OrderHistoryTable({
                   onClick={() => onTrack(row.id)}
                 >
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">{t('orders.track')}</span>
+                  <span className="hidden sm:inline">{t('orders.track', 'Track')}</span>
                 </Button>
               </TableCell>
             </TableRow>
@@ -173,7 +173,7 @@ export function OrderHistoryTable({
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-xs text-muted-foreground">{t('orders.table.date')}</p>
+              <p className="text-xs text-muted-foreground">{t('orders.table.date', 'Date')}</p>
               <p className="mt-1">
                 {new Date(row.createdAt).toLocaleDateString(undefined, {
                   year: 'numeric',
@@ -183,17 +183,17 @@ export function OrderHistoryTable({
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">{t('orders.table.total')}</p>
+              <p className="text-xs text-muted-foreground">{t('orders.table.total', 'Total')}</p>
               <p className="mt-1 font-semibold">${parseFloat(row.totalAmount).toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">{t('orders.table.items')}</p>
+              <p className="text-xs text-muted-foreground">{t('orders.table.items', 'Items')}</p>
               <p className="mt-1">
-                {row.itemCount} {row.itemCount === 1 ? t('orders.table.item') : t('orders.table.items')}
+                {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
               </p>
             </div>
             <div>
-              <p className="text-right text-xs text-muted-foreground">{t('orders.table.payment')}</p>
+              <p className="text-right text-xs text-muted-foreground">{t('orders.table.payment', 'Payment')}</p>
               <div className="mt-1 flex justify-end">
                 <PaymentBadge status={row.paymentStatus} />
               </div>
@@ -206,7 +206,7 @@ export function OrderHistoryTable({
             onClick={() => onTrack(row.id)}
           >
             <Truck className="h-4 w-4" aria-hidden="true" />
-            {t('orders.track')}
+            {t('orders.track', 'Track')}
           </Button>
         </div>
       ))}

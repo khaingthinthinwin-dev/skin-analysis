@@ -68,12 +68,12 @@ function BuyerOrdersPageContent() {
     return (
       <div className="space-y-6 p-2 lg:p-4">
         <div className="text-center py-12">
-          <p className="text-destructive">{t('buyer.orders.error.loadFailed')}</p>
+          <p className="text-destructive">{t('buyer.orders.error.loadFailed', 'Unable to load orders.')}</p>
           <button
             className="mt-4 text-sm text-primary underline"
             onClick={() => refetch()}
           >
-            {t('common.actions.retry')}
+            {t('common.actions.retry', 'Retry')}
           </button>
         </div>
       </div>
@@ -85,16 +85,16 @@ function BuyerOrdersPageContent() {
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
           <PackageCheck className="h-6 w-6 text-purple-600" aria-hidden="true" />
-          {t('buyer.orders.title')}
+          {t('buyer.orders.title', 'My Orders')}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {t('buyer.orders.subtitle')}
+          {t('buyer.orders.subtitle', 'Track order status, delivery stages, and past receipts')}
         </p>
       </div>
 
       <Card className="border-border/80 shadow-xs">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">{t('buyer.orders.recentOrders')}</CardTitle>
+          <CardTitle className="text-base">{t('buyer.orders.recentOrders', 'Recent Orders')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
           <OrderFilterBar

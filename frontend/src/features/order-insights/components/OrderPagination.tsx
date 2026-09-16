@@ -25,6 +25,7 @@ export function OrderPagination({ meta, onPageChange }: OrderPaginationProps) {
           page: meta.page,
           totalPages,
           total: meta.total,
+          defaultValue: 'Page {{page}} of {{totalPages}} · {{total}} orders',
         })}
       </div>
       <div className="flex items-center gap-2">
@@ -33,19 +34,19 @@ export function OrderPagination({ meta, onPageChange }: OrderPaginationProps) {
           size="sm"
           disabled={meta.page <= 1}
           onClick={() => onPageChange(meta.page - 1)}
-          aria-label={t('common.actions.previous')}
+          aria-label={t('common.actions.previous', 'Previous')}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          <span className="hidden sm:inline">{t('common.actions.previous')}</span>
+          <span className="hidden sm:inline">{t('common.actions.previous', 'Previous')}</span>
         </Button>
         <Button
           variant="outline"
           size="sm"
           disabled={meta.page >= totalPages}
           onClick={() => onPageChange(meta.page + 1)}
-          aria-label={t('common.actions.next')}
+          aria-label={t('common.actions.next', 'Next')}
         >
-          <span className="hidden sm:inline">{t('common.actions.next')}</span>
+          <span className="hidden sm:inline">{t('common.actions.next', 'Next')}</span>
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
