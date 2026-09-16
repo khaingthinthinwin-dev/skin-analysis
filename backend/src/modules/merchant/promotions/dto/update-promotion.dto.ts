@@ -7,20 +7,19 @@ import {
   Min,
 } from 'class-validator';
 
-export class CreatePromotionDto {
-  @IsString()
-  code!: string;
-
+export class UpdatePromotionDto {
   @IsString()
   @IsOptional()
   description?: string;
 
   @IsString()
-  discountTypeCode!: string;
+  @IsOptional()
+  discountTypeCode?: string;
 
   @IsNumber()
+  @IsOptional()
   @Min(0.01)
-  discountValue!: number;
+  discountValue?: number;
 
   @IsNumber()
   @IsOptional()
@@ -33,10 +32,12 @@ export class CreatePromotionDto {
   maxUses?: number;
 
   @IsDateString()
-  startsAt!: string;
+  @IsOptional()
+  startsAt?: string;
 
   @IsDateString()
-  expiresAt!: string;
+  @IsOptional()
+  expiresAt?: string;
 
   @IsBoolean()
   @IsOptional()
