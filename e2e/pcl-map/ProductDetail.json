@@ -1,0 +1,14 @@
+{
+  "pclFile": "docs/screen/ProductDetail/ProductDetail_PCL.md",
+  "specFiles": [
+    "e2e/tests/ProductDetail/product-detail.spec.ts"
+  ],
+  "mappings": {
+    "should display product detail page with all sections": "E2E-PD-01: Product detail page loads with all sections",
+    "should add product to cart": "E2E-PD-02: Add to cart functionality works",
+    "should toggle product in wishlist": "E2E-PD-03: Wishlist toggle works",
+    "should display product image gallery": "E2E-PD-04: Image gallery displays correctly",
+    "should display product reviews section": "E2E-PD-05: Reviews section displays",
+    "should display related products": "E2E-PD-06: Related products section displays"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "pclFile": "docs/screen/Promotion_Pages/Promotion_PCL.md",
+  "specFiles": [
+    "e2e/tests/Promotion_Pages/promotion-management.spec.ts"
+  ],
+  "mappings": {
+    "should display promotion management page": "E2E-PROMO-01: Promotion management page loads",
+    "should create a new promotion": "E2E-PROMO-02: Promotion creation works",
+    "should edit an existing promotion": "E2E-PROMO-03: Promotion editing works",
+    "should delete a promotion": "E2E-PROMO-04: Promotion deletion works",
+    "should validate coupon code format": "E2E-PROMO-05: Coupon format validation works",
+    "should enforce one-coupon-per-order rule": "E2E-PROMO-06: One-coupon-per-order enforced"
+  }
+}

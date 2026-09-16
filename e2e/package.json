@@ -7,7 +7,22 @@
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
     "test:report": "npx playwright show-report",
-    "update-pcl": "node ../scripts/update-pcl.js"
+    "update-pcl": "node ../scripts/update-pcl.cjs",
+    "update-pcl:SignUp_LogIn": "node ../scripts/update-pcl.cjs SignUp_LogIn",
+    "update-pcl:SearchAndFilter": "node ../scripts/update-pcl.cjs SearchAndFilter",
+    "update-pcl:ProductDetail": "node ../scripts/update-pcl.cjs ProductDetail",
+    "update-pcl:Matching": "node ../scripts/update-pcl.cjs Matching_And_Recommendation",
+    "update-pcl:SkinAnalysis": "node ../scripts/update-pcl.cjs AI_Skin_Analysis",
+    "update-pcl:WishlistCart": "node ../scripts/update-pcl.cjs Wishlist_Cart",
+    "update-pcl:Checkout": "node ../scripts/update-pcl.cjs Checkout_Purchase",
+    "update-pcl:ProductManagement": "node ../scripts/update-pcl.cjs Product_Management",
+    "update-pcl:AdsManagement": "node ../scripts/update-pcl.cjs Advertisement_Management",
+    "update-pcl:AdManagement": "node ../scripts/update-pcl.cjs Ad_Management_Screen",
+    "update-pcl:Promotions": "node ../scripts/update-pcl.cjs Promotion_Pages",
+    "update-pcl:Moderation": "node ../scripts/update-pcl.cjs Review_ContentModeration",
+    "update-pcl:Commission": "node ../scripts/update-pcl.cjs Commission_Revenue",
+    "update-pcl:OrderInsights": "node ../scripts/update-pcl.cjs Order_Insights",
+    "update-pcl:AuditLog": "node ../scripts/update-pcl.cjs Audit_Log"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0"
