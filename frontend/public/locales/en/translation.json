@@ -25,17 +25,17 @@
   },
   "auth": {
     "login": {
-      "title": "Sign In",
+      "title": "Login",
       "email": "Email",
       "emailPlaceholder": "user@example.com",
       "password": "Password",
       "passwordPlaceholder": "Enter your password",
-      "submit": "Sign In",
-      "submitting": "Signing in...",
-      "success": "Logged in successfully",
+      "submit": "Login",
+      "submitting": "Logging in...",
+      "success": "Login successful",
       "forgotPassword": "Forgot password?",
       "noAccount": "Don't have an account?",
-      "createAccount": "Create one",
+      "createAccount": "Create account",
       "showPassword": "Show password",
       "hidePassword": "Hide password"
     },
@@ -48,45 +48,45 @@
       "password": "Password",
       "passwordPlaceholder": "Create a password",
       "confirmPassword": "Confirm Password",
-      "confirmPasswordPlaceholder": "Confirm your password",
+      "confirmPasswordPlaceholder": "Re-enter password",
       "submit": "Create Account",
       "submitting": "Creating account...",
       "success": "Account created successfully",
       "hasAccount": "Already have an account?",
       "signIn": "Sign in",
-      "iAm": "I am a:",
-      "buyer": "Buyer - Browse and purchase products",
+      "iAm": "I am:",
+      "buyer": "Buyer - View and purchase products",
       "merchant": "Merchant - Sell skincare products",
       "showPassword": "Show password",
       "hidePassword": "Hide password",
       "passwordRequirement": {
         "length": "At least 8 characters",
-        "uppercase": "One uppercase letter (A-Z)",
-        "lowercase": "One lowercase letter (a-z)",
-        "number": "One number (0-9)",
-        "special": "One special character (@$!%*?&)"
+        "uppercase": "1 uppercase letter (A-Z)",
+        "lowercase": "1 lowercase letter (a-z)",
+        "number": "1 number (0-9)",
+        "special": "1 special character (@$!%*?&)"
       },
       "license": "Business License (PDF)",
       "licensePlaceholder": "Drag & drop or click to upload",
-      "licenseHelper": "Upload your business license as PDF (max 10MB). File must be named license.pdf.",
+      "licenseHelper": "Upload your business license as a PDF (max 10MB). The file name must be license.pdf.",
       "licenseRemove": "Remove file",
       "licenseError": {
-        "type": "File type not supported. Only PDF files are accepted.",
-        "size": "File exceeds maximum size of 10 MB",
-        "name": "File must be named license.pdf",
-        "required": "Business license is required for merchant registration"
+        "type": "Unsupported file type. Only PDF files are allowed.",
+        "size": "File size exceeds 10MB",
+        "name": "The file name must be license.pdf",
+        "required": "A business license is required for merchant registration"
       },
-      "agreeToTerms": "I agree to the",
+      "agreeToTerms": "I agree to the Terms of Service",
       "termsOfService": "Terms of Service"
     },
     "forgotPassword": {
-      "title": "Forgot Password?",
+      "title": "Forgot Password",
       "description": "Enter your email and we'll send you a verification code.",
       "email": "Email",
       "emailPlaceholder": "user@example.com",
       "submit": "Send Verification Code",
       "submitting": "Sending...",
-      "backToLogin": "Back to Login"
+      "backToLogin": "Back to login"
     },
     "verifyCode": {
       "title": "Enter Verification Code",
@@ -98,51 +98,51 @@
       "resend": "Resend Code",
       "resendCooldown": "Resend in {{seconds}}s",
       "resendSuccess": "A new verification code has been sent to your email.",
-      "backToEmail": "Back to Email"
+      "backToEmail": "Back to email"
     },
     "resetPassword": {
-      "title": "Reset Your Password",
-      "description": "Enter your new password below.",
+      "title": "Reset Password",
+      "description": "Enter your new password.",
       "newPassword": "New Password",
       "newPasswordPlaceholder": "Create a new password",
       "confirmPassword": "Confirm Password",
-      "confirmPasswordPlaceholder": "Confirm your new password",
+      "confirmPasswordPlaceholder": "Re-enter new password",
       "submit": "Reset Password",
       "submitting": "Resetting...",
-      "successTitle": "Password reset successful",
-      "successMessage": "Your password has been reset successfully. You can now sign in with your new password.",
-      "backToLogin": "Back to Login",
-      "invalidToken": "Invalid or expired verification code. Please request a new one."
+      "successTitle": "Password Reset Successful",
+      "successMessage": "Your password has been reset successfully. You can now log in with your new password.",
+      "backToLogin": "Back to login",
+      "invalidToken": "The verification code is invalid or expired. Please request a new one."
     }
   },
   "home": {
     "hero": {
-      "title": "Your Cosmetics Finder Journey",
-      "subtitle": "Discover personalized skincare products powered by advanced AI analysis",
+      "title": "Cosmetics Finder Experience",
+      "subtitle": "Discover personalized skincare products with advanced AI analysis",
       "cta": "Get Started"
     }
   },
   "wishlist": {
-    "title": "My Wishlist",
+    "title": "Wishlist",
     "itemCount": "{{count}} items saved",
-    "moveToCart": "Add to Cart",
+    "moveToCart": "Move to Cart",
     "remove": "Remove",
-    "emptyTitle": "No items saved yet",
-    "emptyMessage": "Browse products to add favorites.",
+    "emptyTitle": "No items in your wishlist yet",
+    "emptyMessage": "Browse products and add them to your wishlist.",
     "continueShopping": "Continue Shopping",
-    "unavailable": "This product is currently unavailable.",
+    "unavailable": "This item is currently out of stock.",
     "inStock": "In Stock",
-    "lowStock": "Low Stock",
+    "lowStock": "Only a few left",
     "outOfStock": "Out of Stock",
     "guestLoginAlert": {
-      "title": "Log In Required",
-      "message": "Please log in to add items to your wishlist.",
-      "loginButton": "Log In",
+      "title": "Login required",
+      "message": "Please login to add items to your wishlist.",
+      "loginButton": "Login",
       "closeButton": "Cancel"
     }
   },
   "cart": {
-    "title": "Shopping Cart",
+    "title": "Cart",
     "itemCount": "{{count}} items in cart",
     "subtotal": "Subtotal",
     "totalItems": "Total Items",
@@ -151,16 +151,16 @@
     "browseProducts": "Browse Products",
     "remove": "Remove",
     "emptyTitle": "Your cart is empty",
-    "emptyMessage": "Start shopping!",
+    "emptyMessage": "Let's start shopping!",
     "inStock": "In Stock",
-    "lowStock": "Only {{n}} left in stock",
+    "lowStock": "Only {{n}} left",
     "outOfStock": "Out of Stock",
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
     "guestLoginAlert": {
-      "title": "Log In Required",
-      "message": "Please log in to add items to your cart.",
-      "loginButton": "Log In",
+      "title": "Login required",
+      "message": "Please login to add items to your cart.",
+      "loginButton": "Login",
       "closeButton": "Cancel"
     }
   },
@@ -188,5 +188,30 @@
     "merchant": "Merchant",
     "admin": "Admin",
     "super_admin": "Super Admin"
+  },
+  "admin": {
+    "ads": {
+      "title": "Advertisement Moderation",
+      "weeklyLimit": "{{count}} of 5 active ads this week",
+      "pendingQueue": "Pending Approval Queue",
+      "shopName": "Shop",
+      "feeInfo": "Fee Info",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectReason": "Rejection reason",
+      "all": "All Advertisements",
+      "feeSettings": "Advertisement Packages",
+      "newPackage": "New Package",
+      "createPkgTitle": "Create Advertisement Package",
+      "placement": "Placement",
+      "tier": "Tier",
+      "dailyRate": "Daily Rate",
+      "durationDays": "Duration (days)",
+      "maxAds": "Max Ads",
+      "saveRate": "Save Rate",
+      "feeHistory": "History",
+      "deactivate": "Deactivate",
+      "createPkg": "Create Package"
+    }
   }
 }

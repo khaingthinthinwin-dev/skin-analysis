@@ -2,10 +2,10 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Advertisement } from '../services/advertisement.service';
+import type { AdminAdvertisement } from '@/types/admin-ad-management';
 
 interface AdvertisementsTableProps {
-  ads?: Advertisement[];
+  ads?: AdminAdvertisement[];
   onApprove?: (id: string) => void;
   onReject?: (id: string, reason: string) => void;
 }
