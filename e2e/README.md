@@ -135,7 +135,7 @@ Screenshots are saved automatically into screen-specific folders:
 
 ---
 
-## PCL (Process Check List) Auto-Update
+## PCL (Program Checklist) Auto-Update
 
 E2E test results automatically update PCL checklist documents for all 15 screen modules.
 

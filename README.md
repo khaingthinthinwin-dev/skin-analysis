@@ -242,11 +242,11 @@ skin-analysis/
 │
 └── docs/
     ├── SPECIFICATION.md                   # Full architecture & API spec
-    ├── PCL_TEMPLATE_GUIDE.md              # Master 23-section PCL template & guide
+    ├── PCL_TEMPLATE_GUIDE.md              # Master test-focused PCL template & guide
     ├── guides/                            # Setup & environment guides
     └── screen/                            # Per-screen design docs & PCL checklists
         ├── SignUp_LogIn/
-        │   ├── SignUp_LogIn_PCL.md        # Pre-condition Checklist (auto-updated by E2E tests)
+        │   ├── SignUp_LogIn_PCL.md        # Program Checklist (auto-updated by E2E tests)
         │   └── ...
         ├── SearchAndFilter/
         │   ├── Search_And_Filter_PCL.md
@@ -342,9 +342,9 @@ test('should access dashboard', async ({ buyerPage }) => {
 });
 ```
 
-## Process Check List (PCL)
+## Program Checklist (PCL)
 
-Each screen module has a **PCL (Pre-condition Checklist)** document — a comprehensive verification checklist covering database, backend, frontend, testing, security, and more. Refer to `docs/PCL_TEMPLATE_GUIDE.md` for the standard 23-section structure.
+Each screen module has a **PCL (Program Checklist)** document — a comprehensive verification checklist covering Normal (N), Abnormal (A), Boundary (B), and Interface (I) test cases. Refer to `docs/PCL_TEMPLATE_GUIDE.md` for the standard template.
 
 ### PCL Files
 

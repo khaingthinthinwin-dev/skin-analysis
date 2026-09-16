@@ -1,4 +1,4 @@
-# PCL (Pre-condition Checklist) Template Guide
+# PCL (Program Checklist) Template Guide
 
 ---
 
@@ -7,8 +7,8 @@
 | Attribute | Value |
 |-----------|-------|
 | **Document ID** | SKM-GUIDE-PCL-001 |
-| **Purpose** | Standard template for creating Pre-condition Checklists per screen/module |
-| **Version** | 2.0 |
+| **Purpose** | Standard template for creating Test-Focused Program Checklists per screen/module |
+| **Version** | 3.0 (Test-Driven Architecture) |
 | **Created** | 2026-09-16 |
 | **Last Updated** | 2026-09-16 |
 | **Status** | Active |
@@ -17,764 +17,318 @@
 
 ## 1. What is a PCL?
 
-A **Pre-condition Checklist (PCL)** is a comprehensive checklist that tracks whether all pre-conditions for a screen/module are met before development begins. It covers database, backend, frontend, testing, security, and documentation.
+A **Program Checklist (PCL)** is a quality-assurance and verification document for each screen module.
 
-**Purpose:**
-- Ensure all dependencies are identified before coding starts
-- Provide a single source of truth for implementation readiness
-- Enable parallel work across team members
-- Serve as a verification checklist after implementation
+In this architecture, the PCL is **strictly test-focused**. Detailed architectural designs (DB schemas, backend modules, DTO decorators, responsive layout tables) are maintained in `docs/screen/{Screen}/Detailed Design/`. 
 
----
+The PCL focuses exclusively on **test verification scenarios** that directly integrate with Playwright E2E automated tests and the `update-pcl` pipeline.
 
-## 2. Naming Convention
-
-| Item | Convention | Example |
-|------|-----------|---------|
-| **File Name** | `{ScreenName}_PCL.md` | `Product_Management_PCL.md` |
-| **File Location** | `docs/screen/{ScreenFolder}/` | `docs/screen/Product_Management/` |
-| **Document ID** | `SKM-PCL-{MODULE}-{NNN}` | `SKM-PCL-PROD-001` |
+### Purpose
+- Define all verification criteria before coding begins.
+- Act as the single source of truth for screen delivery readiness.
+- Automatically track test passage via E2E test execution (`- [ ]` → `- [x]`).
+- Enable multiple developers to work independently without merge conflicts.
 
 ---
 
-## 3. Test Case Classification Guide
+## 2. The 4 Test Categories (N / A / B / I)
 
-Every PCL must classify test cases into 4 categories:
+Every screen PCL is organized into **4 standardized test categories**:
 
-| Category | Symbol | Description |
-|----------|--------|-------------|
-| **Normal** | N | Standard happy-path operations — correct inputs, valid states, expected outcomes |
-| **Abnormal** | A | Error scenarios — invalid inputs, permission denied, conflict states, server errors |
-| **Boundary** | B | Edge conditions — min/max values, empty states, limit thresholds, exact boundaries |
-| **Interface** | I | API-level testing — request/response contracts, status codes, payload validation |
-
-### How to Read Each Test Case
-
-Each test case follows this structure:
-
-```
-- [ ] **ID**: Title
-  - **Precondition**: What must be true before test runs
-  - **Steps**: Step-by-step actions to perform
-  - **Expected Result**: What should happen
-  - **Business Rules**: Which BR-XXX rules apply
-  - **API**: Which endpoint is involved (if applicable)
-```
+| Category | Symbol | Focus | Description | Examples |
+|----------|:------:|-------|-------------|----------|
+| **Normal** | **N** | Happy Path | Standard user journeys where correct inputs are provided and operations succeed. | User registers successfully, logs in, filters items, checks out. |
+| **Abnormal** | **A** | Negative Path | Validation errors, permission denials, unauthorized attempts, duplicate constraints, server errors. | Submitting empty form, duplicate email, expired token, accessing route without login. |
+| **Boundary** | **B** | Edge Conditions | Field length limits, min/max numbers, zero states, file size limits, threshold conditions. | Name at min (2 chars) vs max (200 chars), file size at 10MB limit, empty search list. |
+| **Interface** | **I** | API Contracts | Direct API request/response contracts, HTTP status codes, payload structures, cookie flags. | `POST /api/v1/...` returns 201 with `data` payload, Set-Cookie flags (`HttpOnly; Secure`). |
 
 ---
 
-## 3. Standard 23-Section Template
+## 3. Standard Test Case Format
 
-Every PCL must follow this structure:
-
-```
- 1. Database & Schema
- 2. Seed Data
- 3. Backend — Module Structure
- 4. Backend — API Endpoints
- 5. Backend — Business Rules
- 6. Backend — Validation
- 7. Frontend — Module & Routing
- 8. Frontend — Screen Layout
- 9. Frontend — UI Elements
-10. Frontend — Form Handling
-11. Frontend — Error Handling
-12. Frontend — State Management
-13. Frontend — i18n
-14. Frontend — Responsive Design
-15. Frontend — Accessibility
-16. Frontend — Loading States
-17. Caching
-18. Testing — Unit Tests
-19. Testing — Integration Tests
-20. Testing — E2E Tests
-21. Performance
-22. Security
-23. Documentation
-```
-
----
-
-## 4. Section-by-Section Guide
-
-### Section 1: Database & Schema
-
-**What goes here:** All database tables, foreign keys, constraints, and indexes your screen depends on.
-
-**Where to find it:** `docs/core-work/データベース設計書_DATABASE_SPEC.md`
-
-**How to fill:**
-1. Find your screen's tables in the DATABASE_SPEC
-2. List each table with its required columns
-3. List foreign key relationships
-4. List unique/check constraints
-5. List indexes
-
-**Example:**
-```markdown
-- [ ] `products` table exists with all required columns (`id`, `name`, `slug`, `price`, ...)
-- [ ] `reviews` table exists with `id`, `user_id`, `product_id`, `rating`, `body`, `is_approved`
-- [ ] Foreign key: `reviews.product_id` → `products.id` (CASCADE)
-- [ ] Unique constraint on `reviews` (`user_id`, `product_id`) — `uq_reviews_user_product`
-- [ ] Check constraint: `reviews.rating` between 1 and 5 — `chk_reviews_rating`
-- [ ] Indexes on `reviews.product_id`, `reviews.user_id`
-- [ ] Prisma schema matches database schema
-```
-
----
-
-### Section 2: Seed Data
-
-**What goes here:** Test data required for development and testing.
-
-**Where to find it:** Check existing seed scripts or create new requirements.
-
-**How to fill:**
-1. List users/roles needed
-2. List master data (categories, statuses, etc.)
-3. List sample records for testing
-4. Note any special conditions (active/inactive, approved/pending)
-
-**Example:**
-```markdown
-- [ ] At least 4 merchants with approved license status
-- [ ] At least 20 products across merchants and categories
-- [ ] Products have realistic names, descriptions, prices
-- [ ] Mix of `isActive: true` and `isActive: false`
-- [ ] Stock quantities vary (in stock, low stock, out of stock)
-- [ ] Buyer user pre-seeded for authenticated tests
-```
-
----
-
-### Section 3: Backend — Module Structure
-
-**What goes here:** NestJS modules, controllers, services, guards, DTOs.
-
-**Where to find it:** `docs/screen/{Screen}/Detailed Design/DD_*_01_MODULE_OVERVIEW.md`
-
-**How to fill:**
-1. List all NestJS modules
-2. List controllers with their endpoints
-3. List services with business logic
-4. List guards (JwtAuthGuard, RolesGuard, etc.)
-5. List DTOs for validation
-
-**Example:**
-```markdown
-- [ ] `ProductsModule` created and registered in `AppModule`
-- [ ] `ProductsController` with CRUD endpoints
-- [ ] `ProductsService` with business logic
-- [ ] DTOs: `CreateProductDto`, `UpdateProductDto`
-- [ ] Guards: `JwtAuthGuard`, `RolesGuard`, `LicenseStatusGuard`
-- [ ] Proper error handling with consistent error responses
-```
-
----
-
-### Section 4: Backend — API Endpoints
-
-**What goes here:** All API endpoints with HTTP methods, paths, and auth requirements.
-
-**Where to find it:** `docs/screen/{Screen}/Detailed Design/DD_*_03_API_ENDPOINTS.md`
-
-**How to fill:**
-1. List each endpoint with HTTP method
-2. Specify path and path parameters
-3. Note authentication requirements
-4. Note request/response format
-
-**Example:**
-```markdown
-### Product CRUD
-- [ ] `GET /api/v1/products` — List products (public)
-- [ ] `GET /api/v1/products/:id` — Get product (public)
-- [ ] `POST /api/v1/products` — Create product (merchant/admin)
-- [ ] `PATCH /api/v1/products/:id` — Update product (merchant/admin)
-- [ ] `DELETE /api/v1/products/:id` — Soft delete (merchant/admin)
-
-### Response Format
-- [ ] Consistent response structure with `data` payload
-- [ ] Proper HTTP status codes (200, 201, 400, 401, 403, 404, 409, 500)
-```
-
----
-
-### Section 5: Backend — Business Rules
-
-**What goes here:** All business rules with rule IDs, descriptions, and enforcement layer.
-
-**Where to find it:** `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` and `docs/screen/{Screen}/機能設計書*.md`
-
-**How to fill:**
-1. Extract all business rules from the functional spec
-2. Assign rule IDs (BR-{MODULE}-{NNN})
-3. Describe each rule clearly
-4. Note enforcement layer (Backend/Frontend/Both)
-
-**Example:**
-```markdown
-### Product Rules
-- [ ] **BR-PROD-001**: Only `is_active = true` products returned publicly
-- [ ] **BR-PROD-002**: Price must be > 0
-- [ ] **BR-PROD-003**: SKU uniqueness enforced
-- [ ] **BR-PROD-004**: Slug auto-generated from name, unique
-
-### Review Rules
-- [ ] **BR-PROD-005**: Only verified purchasers can review
-- [ ] **BR-PROD-006**: One review per user per product
-- [ ] **BR-PROD-007**: Rating must be between 1 and 5
-```
-
----
-
-### Section 6: Backend — Validation
-
-**What goes here:** DTO validation rules using class-validator decorators.
-
-**Where to find it:** `docs/screen/{Screen}/Detailed Design/DD_*_04_DTOS_AND_TYPES.md`
-
-**How to fill:**
-1. List all DTOs
-2. List validation decorators for each field
-3. Note file upload validation rules
-
-**Example:**
-```markdown
-- [ ] All DTOs use `class-validator` decorators
-- [ ] `@IsString()`, `@IsNotEmpty()`, `@MaxLength(255)` on name
-- [ ] `@IsNumber()`, `@Min(0.01)` on price
-- [ ] `@IsOptional()` on optional fields
-- [ ] `@IsArray()`, `@IsIn()` on enum fields
-- [ ] ValidationPipe applied globally with `{ whitelist: true }`
-```
-
----
-
-### Section 7: Frontend — Module & Routing
-
-**What goes here:** Frontend routes, guards, lazy loading.
-
-**Where to find it:** `frontend/src/app/routes.tsx` and `docs/screen/{Screen}/Detailed Design/DD_*_02_FRONTEND_Page.md`
-
-**How to fill:**
-1. List all routes with paths
-2. Note authentication guards
-3. Note role-based access
-4. Note lazy loading setup
-
-**Example:**
-```markdown
-- [ ] Product list route: `/merchant/products`
-- [ ] Product create route: `/merchant/products/new`
-- [ ] Product edit route: `/merchant/products/:id/edit`
-- [ ] Routes protected with authentication guard
-- [ ] Routes protected with role guard (merchant/admin)
-- [ ] Lazy-loaded routes for code splitting
-```
-
----
-
-### Section 8: Frontend — Screen Layout
-
-**What goes here:** Overall page structure for desktop, tablet, mobile.
-
-**Where to find it:** `docs/screen/{Screen}/画面項目設計書*.md` (Section 3: Layout)
-
-**How to fill:**
-1. Describe desktop layout (columns, sections)
-2. Describe tablet layout
-3. Describe mobile layout
-4. Note any sticky/fixed elements
-
-**Example:**
-```markdown
-### Desktop Layout (>= 1024px)
-- [ ] Two-column layout: sidebar + main content
-- [ ] Table with sortable columns
-- [ ] Pagination at bottom
-
-### Mobile Layout (< 768px)
-- [ ] Single-column stacked layout
-- [ ] Cards instead of table rows
-- [ ] Sticky action bar at bottom
-```
-
----
-
-### Section 9: Frontend — UI Elements
-
-**What goes here:** All UI elements with IDs, component types, and i18n keys.
-
-**Where to find it:** `docs/screen/{Screen}/画面項目設計書*.md` (Section 4: Item Definitions)
-
-**How to fill:**
-1. List each UI element
-2. Specify component type (Button, Input, Badge, etc.)
-3. Note i18n key
-4. Note required/optional status
-
-**Example:**
-```markdown
-| Element ID | Element Name | Component | i18n Key | Required |
-|------------|--------------|-----------|----------|:--------:|
-| `btnSearch` | Search Button | Button | `common.search` | Yes |
-| `inputSearch` | Search Input | Input | `products.searchPlaceholder` | Yes |
-| `tableProducts` | Product Table | Table | — | Yes |
-| `badgeStatus` | Status Badge | Badge | `common.status` | Yes |
-```
-
----
-
-### Section 10: Frontend — Form Handling
-
-**What goes here:** Zod schemas, React Hook Form setup, validation rules.
-
-**Where to find it:** `frontend/src/schemas/` or `frontend/src/features/{module}/schemas/`
-
-**How to fill:**
-1. List all forms in the screen
-2. List Zod schema fields
-3. Note validation rules
-4. Note form submission behavior
-
-**Example:**
-```markdown
-### Product Create/Edit Form
-- [ ] React Hook Form + Zod schema validation
-- [ ] Product Name: required, max 255 chars
-- [ ] Price: required, min 0.01
-- [ ] Category: required, select dropdown
-- [ ] Images: optional, max 10 files, JPG/PNG/WebP only
-- [ ] Submit button disabled during submission
-- [ ] Form-level error summary banner
-```
-
----
-
-### Section 11: Frontend — Error Handling
-
-**What goes here:** HTTP status codes mapped to UI behaviors.
-
-**Where to find it:** `docs/screen/{Screen}/機能設計書*.md` (Error Handling section)
-
-**How to fill:**
-1. List all HTTP error codes your screen handles
-2. Describe UI behavior for each
-
-**Example:**
-```markdown
-- [ ] 400: Inline field-level errors + top banner
-- [ ] 401: Redirect to `/login`
-- [ ] 403: "You don't have permission" message
-- [ ] 404: "Product not found" with back link
-- [ ] 409: "A product with this name already exists"
-- [ ] 413: "File size exceeds limit"
-- [ ] 429: "Too many attempts. Try again later"
-- [ ] 500: "Something went wrong" + retry button
-- [ ] Network error: Toast "Network error. Check connection"
-```
-
----
-
-### Section 12: Frontend — State Management
-
-**What goes here:** React Query setup, cache keys, optimistic updates.
-
-**Where to find it:** `frontend/src/features/{module}/hooks/`
-
-**How to fill:**
-1. List React Query hooks
-2. List cache keys
-3. Note cache invalidation strategy
-4. Note optimistic updates
-
-**Example:**
-```markdown
-- [ ] Product list fetched via `useProducts()` hook
-- [ ] Product detail fetched via `useProductDetail()` hook
-- [ ] Cache key: `products`, `product-{id}`
-- [ ] Cache invalidation on mutation
-- [ ] Optimistic update for toggle actions (active/featured)
-- [ ] Loading states managed per query
-```
-
----
-
-### Section 13: Frontend — i18n
-
-**What goes here:** Translation key structure for EN, JA, MY.
-
-**Where to find it:** `frontend/src/i18n/locales/{lang}/`
-
-**How to fill:**
-1. List translation namespaces
-2. List key categories
-3. Note any special translation requirements
-
-**Example:**
-```markdown
-- [ ] Translation file: `frontend/src/i18n/locales/{lang}/products.json`
-- [ ] Labels: `products.name`, `products.price`, `products.stock`
-- [ ] Errors: `products.errors.nameRequired`, `products.errors.priceInvalid`
-- [ ] Placeholders: `products.searchPlaceholder`
-- [ ] Toast messages: `products.created`, `products.updated`, `products.deleted`
-- [ ] Language toggle works on all pages
-```
-
----
-
-### Section 14: Frontend — Responsive Design
-
-**What goes here:** Breakpoint behaviors and responsive adjustments.
-
-**Where to find it:** `docs/screen/{Screen}/画面項目設計書*.md` (Section 3.2)
-
-**How to fill:**
-1. List all breakpoints
-2. Describe layout at each breakpoint
-3. Note any show/hide behavior
-
-**Example:**
-```markdown
-| Breakpoint | Width | Layout |
-|------------|-------|--------|
-| Mobile | < 768px | Single column, stacked cards, sticky CTA |
-| Tablet | 768px - 1023px | Two columns, condensed table |
-| Desktop | >= 1024px | Full layout, sidebar, full table |
-| Wide | >= 1280px | Enhanced spacing, max-width container |
-```
-
----
-
-### Section 15: Frontend — Accessibility
-
-**What goes here:** ARIA, keyboard navigation, color contrast.
-
-**Where to find it:** `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` (Accessibility section)
-
-**How to fill:**
-1. List ARIA requirements
-2. List keyboard navigation
-3. Note color contrast requirements
-
-**Example:**
-```markdown
-- [ ] Semantic HTML throughout (`<table>`, `<form>`, `<button>`)
-- [ ] `aria-label` on all icon buttons
-- [ ] `aria-live="polite"` on error alerts
-- [ ] Full keyboard navigation (Tab, Enter, Escape)
-- [ ] WCAG AA color contrast (4.5:1 minimum)
-- [ ] Focus indicators visible on all interactive elements
-```
-
----
-
-### Section 16: Frontend — Loading States
-
-**What goes here:** Skeletons, spinners, disabled states.
-
-**Where to find it:** `docs/screen/{Screen}/画面項目設計書*.md`
-
-**How to fill:**
-1. List all loading states
-2. Specify component (skeleton, spinner, etc.)
-
-**Example:**
-```markdown
-- [ ] Skeleton loader for product table rows
-- [ ] Skeleton loader for product detail page
-- [ ] Spinner on save button during submission
-- [ ] Disabled state on buttons during API calls
-- [ ] Loading overlay for image uploads
-```
-
----
-
-### Section 17: Caching
-
-**What goes here:** Redis cache keys, TTL, invalidation rules.
-
-**Where to find it:** `docs/screen/{Screen}/機能設計書*.md` (Non-Functional section)
-
-**How to fill:**
-1. List cache key patterns
-2. List TTL values
-3. List invalidation triggers
-
-**Example:**
-```markdown
-- [ ] Product list cache key: `cache:products:list:{hash}`
-- [ ] Product detail cache key: `cache:product:{id}`
-- [ ] TTL: 2 minutes (list), 5 minutes (detail)
-- [ ] Cache invalidation on create/update/delete
-- [ ] Cache invalidation on stock update
-```
-
----
-
-### Section 18: Testing — Unit Tests
-
-**What goes here:** Backend and frontend unit test cases.
-
-**Where to find it:** `docs/screen/{Screen}/Detailed Design/DD_*_06_TEST_SPEC.md`
-
-**How to fill:**
-1. List backend service test cases
-2. List frontend component test cases
-3. Note coverage targets
-
-**Example:**
-```markdown
-### Backend Unit Tests
-- [ ] `ProductsService.create()` — success case
-- [ ] `ProductsService.create()` — validation failure
-- [ ] `ProductsService.update()` — success case
-- [ ] `ProductsService.update()` — ownership check
-- [ ] `ProductsService.delete()` — success case
-- [ ] `ProductsService.delete()` — active orders blocked
-
-### Frontend Unit Tests
-- [ ] Product list renders correctly
-- [ ] Search filters products
-- [ ] Form validation displays errors
-- [ ] Toggle active/featured updates UI
-```
-
----
-
-### Section 19: Testing — Integration Tests
-
-**What goes here:** API flow tests.
-
-**Where to find it:** `docs/screen/{Screen}/Detailed Design/DD_*_06_TEST_SPEC.md`
-
-**How to fill:**
-1. List API integration test scenarios
-2. Note expected results
-
-**Example:**
-```markdown
-- [ ] Create product via API — full flow
-- [ ] Update product via API — full flow
-- [ ] Delete product via API — soft delete
-- [ ] Delete product with active orders — blocked
-- [ ] Upload images — validation and storage
-- [ ] Pagination — correct results
-- [ ] Search — correct filtering
-- [ ] Unauthorized access — 401
-- [ ] Forbidden access — 403
-```
-
----
-
-### Section 20: Testing — E2E Tests
-
-**What goes here:** Playwright E2E test scenarios with full test case format.
-
-**Where to find it:** `e2e/tests/{Screen}/`
-
-**How to fill:**
-1. List E2E test scenarios grouped by classification (N/A/B/I)
-2. Each test case must include: precondition, steps, expected result, business rules, API endpoint
-3. Use the classification symbols: N (Normal), A (Abnormal), B (Boundary), I (Interface)
-
-**Example (detailed format):**
-```markdown
-### N-01: Product list loads with data
-- **Precondition**: At least 5 active products exist in the database; user is authenticated as merchant
-- **Steps**:
-  1. Navigate to `/merchant/products`
-  2. Wait for page load
-  3. Verify product table is visible
-  4. Verify at least 5 rows are displayed
-- **Expected Result**: Product table shows product name, price, stock, status, and action buttons
-- **Business Rules**: BR-PROD-001
-- **API**: `GET /api/v1/products`
-
-### A-01: Create product without required fields
-- **Precondition**: User is authenticated as merchant
-- **Steps**:
-  1. Navigate to `/merchant/products/new`
-  2. Leave all fields empty
-  3. Click submit button
-- **Expected Result**: Validation errors displayed for all required fields; form not submitted
-- **Business Rules**: BR-PROD-002, BR-PROD-003
-- **API**: `POST /api/v1/products`
-
-### B-01: Product name at maximum length
-- **Precondition**: User is authenticated as merchant
-- **Steps**:
-  1. Navigate to `/merchant/products/new`
-  2. Enter product name with exactly 255 characters
-  3. Fill all other required fields
-  4. Click submit button
-- **Expected Result**: Product created successfully
-- **Business Rules**: BR-PROD-004
-- **API**: `POST /api/v1/products`
-
-### I-01: Product API returns correct response format
-- **Precondition**: Valid JWT token provided
-- **Steps**:
-  1. Call `GET /api/v1/products` with valid auth header
-  2. Verify response status code is 200
-  3. Verify response body contains `data` array
-  4. Verify each item has required fields
-- **Expected Response**: `{ data: Product[], meta: { total, page, limit } }`
-- **Business Rules**: BR-PROD-001
-- **API**: `GET /api/v1/products`
-```
-
----
-
-### Section 21: Performance
-
-**What goes here:** Response time targets and performance requirements.
-
-**Where to find it:** `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` (Non-Functional section)
-
-**How to fill:**
-1. List API response time targets
-2. List page load targets
-3. Note caching strategy
-
-**Example:**
-```markdown
-- [ ] Product list API <= 500ms response time
-- [ ] Product create API <= 1s response time
-- [ ] Product update API <= 500ms response time
-- [ ] Image upload <= 3s for 5MB file
-- [ ] Redis cache implemented for product list
-- [ ] Cache TTL: 2 minutes for list, 5 minutes for detail
-```
-
----
-
-### Section 22: Security
-
-**What goes here:** Authentication, authorization, security measures.
-
-**Where to find it:** `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` (Security section)
-
-**How to fill:**
-1. List authentication requirements
-2. List authorization rules
-3. List security measures
-
-**Example:**
-```markdown
-- [ ] JWT authentication on all product endpoints
-- [ ] Role-based access control (merchant/admin)
-- [ ] Ownership verification (merchant can only manage own products)
-- [ ] License status verification (pending merchants restricted)
-- [ ] Input sanitization (XSS prevention)
-- [ ] File upload security (MIME type, size limits)
-- [ ] Rate limiting on product endpoints
-- [ ] Audit logging for product CRUD operations
-```
-
----
-
-### Section 23: Documentation
-
-**What goes here:** Swagger, API docs, spec completeness.
-
-**Where to find it:** `docs/screen/{Screen}/` folder
-
-**How to fill:**
-1. List documentation deliverables
-2. Note completeness status
-
-**Example:**
-```markdown
-- [ ] API documentation via Swagger/OpenAPI
-- [ ] All endpoints documented with request/response examples
-- [ ] Error codes documented
-- [ ] Business rules documented
-- [ ] Screen items specification complete
-- [ ] Functional specification complete
-- [ ] Detailed design documents complete
-```
-
----
-
-## 24. Sign-Off
-
-At the end of every PCL, include a sign-off table:
+Each test case item in the checklist must strictly follow this structure:
 
 ```markdown
+- [ ] **{CAT}-{NN}**: Title of the test scenario
+  - **Precondition**: What state or data must exist before running
+  - **Steps**: Step-by-step user or API actions
+    1. First action
+    2. Second action
+  - **Expected Result**: What should happen visually or logically
+  - **Business Rules**: Rule IDs enforced (e.g. BR-AUTH-001)
+  - **API**: Relevant endpoint (if applicable)
+```
+
+> [!IMPORTANT]
+> The line must start with `- [ ] **{CAT}-{NN}**: {Title}`.
+> The auto-update script (`scripts/update-pcl.cjs`) looks for this exact format to replace `- [ ]` with `- [x]`.
+
+---
+
+## 4. Standard PCL File Template
+
+Developers creating a PCL for any screen can copy this template directly into:  
+`docs/screen/{ScreenName}/{ScreenName}_PCL.md`
+
+```markdown
+# Program Checklist (PCL) — {Screen Name}
+
+---
+
+## Document Control
+
+| Attribute | Value |
+|-----------|-------|
+| **Document ID** | SKM-PCL-{MODULE}-001 |
+| **Target Screen** | {Screen Name} |
+| **Subsystem** | {Subsystem Name} |
+| **Version** | 1.0 |
+| **Status** | Active |
+
+---
+
+## 1. Normal Scenarios (N) — Happy Path
+
+- [ ] **N-01**: {Primary action success}
+  - **Precondition**: {Precondition}
+  - **Steps**:
+    1. Navigate to {URL}
+    2. Fill valid form data
+    3. Click submit
+  - **Expected Result**: Success toast displayed, redirects to {destination}
+  - **Business Rules**: BR-{MODULE}-001
+  - **API**: `POST /api/v1/{endpoint}`
+
+- [ ] **N-02**: {Secondary action success}
+  - **Precondition**: {Precondition}
+  - **Steps**:
+    1. Action steps...
+  - **Expected Result**: {Result}
+  - **Business Rules**: BR-{MODULE}-002
+
+- [ ] **N-03**: Language toggle works on screen
+  - **Precondition**: User is on {screen}
+  - **Steps**:
+    1. Toggle language to Japanese / Myanmar
+  - **Expected Result**: All UI labels update to selected language
+  - **Business Rules**: None (i18n)
+
+- [ ] **N-04**: Theme toggle works on screen
+  - **Precondition**: User is on {screen}
+  - **Steps**:
+    1. Toggle theme to dark / light
+  - **Expected Result**: Styling switches between dark and light modes
+  - **Business Rules**: None (UI)
+
+- [ ] **N-05**: Responsive layout on desktop viewport
+  - **Precondition**: Viewport >= 1024px
+  - **Steps**:
+    1. Set viewport to 1280x720
+  - **Expected Result**: Desktop layout displays correctly
+  - **Business Rules**: None (Responsive)
+
+- [ ] **N-06**: Responsive layout on mobile viewport
+  - **Precondition**: Viewport < 768px
+  - **Steps**:
+    1. Set viewport to 375x667
+  - **Expected Result**: Mobile layout stacks and scrolls correctly
+  - **Business Rules**: None (Responsive)
+
+---
+
+## 2. Abnormal Scenarios (A) — Error & Negative Paths
+
+- [ ] **A-01**: Submit form with empty required fields
+  - **Precondition**: User is on {screen}
+  - **Steps**:
+    1. Leave required fields blank
+    2. Click submit
+  - **Expected Result**: Inline validation error messages displayed; submit blocked
+  - **Business Rules**: BR-{MODULE}-001
+  - **API**: `POST /api/v1/{endpoint}`
+
+- [ ] **A-02**: Submit with invalid format / conflict
+  - **Precondition**: {Precondition}
+  - **Steps**:
+    1. Enter invalid data
+    2. Click submit
+  - **Expected Result**: Error notification or field error shown
+  - **Business Rules**: BR-{MODULE}-002
+  - **API**: `POST /api/v1/{endpoint}`
+
+- [ ] **A-03**: Access without required permissions
+  - **Precondition**: User not authenticated or lacks role
+  - **Steps**:
+    1. Navigate directly to {protected URL}
+  - **Expected Result**: Redirect to `/login` or 403 Forbidden page
+  - **Business Rules**: BR-{MODULE}-003
+
+---
+
+## 3. Boundary Scenarios (B) — Edge Cases & Limits
+
+- [ ] **B-01**: Field input at minimum allowable length
+  - **Precondition**: User is on {screen}
+  - **Steps**:
+    1. Enter input with exact minimum character count
+    2. Submit form
+  - **Expected Result**: Input accepted successfully
+  - **Business Rules**: BR-{MODULE}-004
+
+- [ ] **B-02**: Field input at maximum allowable length
+  - **Precondition**: User is on {screen}
+  - **Steps**:
+    1. Enter input with exact maximum character count
+    2. Submit form
+  - **Expected Result**: Input accepted successfully
+  - **Business Rules**: BR-{MODULE}-004
+
+- [ ] **B-03**: Field input exceeding maximum allowable length
+  - **Precondition**: User is on {screen}
+  - **Steps**:
+    1. Enter input with (max + 1) characters
+  - **Expected Result**: Validation error for length displayed or input truncated
+  - **Business Rules**: BR-{MODULE}-004
+
+- [ ] **B-04**: Empty state handling
+  - **Precondition**: Database has 0 records for this view
+  - **Steps**:
+    1. Navigate to screen
+  - **Expected Result**: Friendly "No items found" empty state component displayed
+  - **Business Rules**: None (UI)
+
+---
+
+## 4. Interface Scenarios (I) — API Contracts & Payloads
+
+- [ ] **I-01**: `POST /api/v1/{endpoint}` — returns 201 with created entity
+  - **Precondition**: Valid payload provided
+  - **Steps**:
+    1. Call API with valid request body
+  - **Expected Response**: Status code 201, JSON `{ data: { id, ... } }`
+  - **Business Rules**: BR-{MODULE}-001
+  - **API**: `POST /api/v1/{endpoint}`
+
+- [ ] **I-02**: `GET /api/v1/{endpoint}` — returns 200 with list and pagination
+  - **Precondition**: Records exist
+  - **Steps**:
+    1. Call API with valid query parameters
+  - **Expected Response**: Status code 200, JSON `{ data: [...], meta: { total, page, limit } }`
+  - **Business Rules**: None
+  - **API**: `GET /api/v1/{endpoint}`
+
+- [ ] **I-03**: `GET /api/v1/{endpoint}/:id` — returns 404 for non-existent ID
+  - **Precondition**: Non-existent UUID
+  - **Steps**:
+    1. Call API with fake ID
+  - **Expected Response**: Status code 404, JSON `{ statusCode: 404, error: "NOT_FOUND" }`
+  - **Business Rules**: None
+  - **API**: `GET /api/v1/{endpoint}/:id`
+
+- [ ] **I-04**: Error response follows standard API format
+  - **Precondition**: Any error scenario
+  - **Steps**:
+    1. Trigger error
+  - **Expected Response**: JSON contains `{ statusCode, message, error, timestamp, path }`
+  - **Business Rules**: None
+  - **API**: Any endpoint
+
+---
+
+## Sign-Off
+
 | Item | Status |
 |------|--------|
-| All sections reviewed | ☑️ |
-| Accuracy verified | ☑️ |
-| Completeness confirmed | ☑️ |
-| Next review date | (Date) |
+| Test scenarios defined (N, A, B, I) | ☑️ |
+| E2E tests implemented | ☑️ |
+| PCL auto-update verified | ☑️ |
 ```
 
 ---
 
-## 5. Checkbox Format
+## 5. How PCL Connects to E2E (Automation Flow)
 
-| Checkbox | Meaning |
-|----------|---------|
-| `- [ ]` | Not implemented / Not verified |
-| `- [x]` | Implemented and verified |
+```mermaid
+sequenceDiagram
+    participant Spec as Playwright Spec (e2e/tests/{Module}/*.spec.ts)
+    participant Reporter as Modular Reporter (modular-reporter.ts)
+    participant Results as test-results/{Module}/results.json
+    participant Map as e2e/pcl-map/{Module}.json
+    participant Script as scripts/update-pcl.cjs
+    participant PCL as docs/screen/{Module}/{Module}_PCL.md
 
----
+    Spec->>Reporter: Test "should login successfully" passed
+    Reporter->>Results: Records status: "passed"
+    Script->>Results: Reads passed test titles
+    Script->>Map: Matches title → "N-01: Login with valid credentials"
+    Script->>PCL: Changes "- [ ] **N-01**..." to "- [x] **N-01**..."
+```
 
-## 6. How to Create a PCL (Step-by-Step)
+### The Mapping File (`e2e/pcl-map/{ModuleName}.json`)
 
-### Step 1: Read the Functional Spec
-Read `docs/screen/{Screen}/機能設計書*.md` to understand:
-- Use cases and workflows
-- Business rules
-- API endpoints
-- Error handling
+Each screen has a dedicated JSON mapping file:
 
-### Step 2: Read the Screen Items Spec
-Read `docs/screen/{Screen}/画面項目設計書*.md` to understand:
-- UI elements and layouts
-- Responsive breakpoints
-- i18n keys
-- Accessibility requirements
-
-### Step 3: Read the Detailed Design
-Read `docs/screen/{Screen}/Detailed Design/DD_*` files to understand:
-- Module structure
-- API endpoint details
-- DTO definitions
-- Business logic details
-- Test specifications
-
-### Step 4: Read the Database Spec
-Read `docs/core-work/データベース設計書_DATABASE_SPEC.md` to find:
-- Table structures
-- Foreign keys
-- Constraints
-- Indexes
-
-### Step 5: Fill Each Section
-Go through each of the 23 sections and fill in the checklist items based on what you learned from the specs.
-
-### Step 6: Review with Team
-Review your PCL with the team to ensure completeness and accuracy.
+```json
+{
+  "pclFile": "docs/screen/ModuleName/ModuleName_PCL.md",
+  "specFiles": [
+    "e2e/tests/ModuleName/module.spec.ts"
+  ],
+  "mappings": {
+    "Playwright test title": "CAT-NN: PCL checklist text"
+  }
+}
+```
 
 ---
 
-## 7. Reference PCLs
+## 6. Step-by-Step Developer Workflow
 
-| Screen | PCL File | Location | Document ID |
-|--------|----------|----------|-------------|
-| SignUp_LogIn | `SignUp_Login_PCL.md` | `docs/screen/SignUp_LogIn/` | SKM-PCL-SIGNUP-001 |
-| Product Management | `Product_Management_PCL.md` | `docs/screen/Product_Management/` | SKM-PCL-PROD-001 |
-| Product Detail | `Product_Detail_PCL.md` | `docs/screen/ProductDetail/` | SKM-PCL-PROD-002 |
+When starting on a screen, each developer follows these 6 steps:
+
+### Step 1: Read Detailed Design
+Review design files in `docs/screen/{Screen}/Detailed Design/`:
+- `DD_*_01_MODULE_OVERVIEW.md`
+- `DD_*_02_FRONTEND_Page.md`
+- `DD_*_03_API_ENDPOINTS.md`
+- `DD_*_05_BUSINESS_LOGIC.md`
+- `DD_*_06_TEST_SPEC.md`
+
+### Step 2: Create `{ScreenName}_PCL.md`
+Create `docs/screen/{ScreenName}/{ScreenName}_PCL.md` using the **N / A / B / I template** from Section 4 above.
+
+### Step 3: Create Page Object Model (POM)
+Create `e2e/pages/{ScreenName}/{ScreenName}Page.ts` with locators and action helpers.
+
+### Step 4: Write Playwright E2E Tests
+Create `e2e/tests/{ScreenName}/{screen}.spec.ts` covering the scenarios defined in your PCL.
+
+### Step 5: Configure PCL Map
+Add mappings in `e2e/pcl-map/{ScreenName}.json` linking each `test('...')` description to its corresponding PCL item.
+
+### Step 6: Run Tests and Update PCL
+```bash
+cd e2e
+
+# 1. Run this screen's tests
+npx playwright test tests/{ScreenName}/
+
+# 2. Update this screen's PCL
+npm run update-pcl:{ScreenName}
+# or: node ../scripts/update-pcl.cjs {ScreenName}
+```
+
+Verify that passed tests turned from `- [ ]` to `- [x]` in your PCL markdown file!
 
 ---
 
-## 8. Questions?
+## 7. Reference Implementations
 
-Contact the Project Leader or Tech Lead for questions about PCL creation.
+| Screen Module | PCL File | Page Object | Spec File | PCL Map |
+|---------------|----------|-------------|-----------|---------|
+| **SignUp_LogIn** | `docs/screen/SignUp_LogIn/SignUp_LogIn_PCL.md` | `e2e/pages/SignUp_LogIn/LoginPage.ts` | `e2e/tests/SignUp_LogIn/*.spec.ts` | `e2e/pcl-map/SignUp_LogIn.json` |
+| **SearchAndFilter** | `docs/screen/SearchAndFilter/Search_And_Filter_PCL.md` | `e2e/pages/SearchAndFilter/SearchPage.ts` | `e2e/tests/SearchAndFilter/search-filter.spec.ts` | `e2e/pcl-map/SearchAndFilter.json` |
 
 ---
 
-*Document maintained by the Engineering Division. Last updated: 2026-09-16.*
+*Document maintained by the Engineering Division. Version 3.0.*
