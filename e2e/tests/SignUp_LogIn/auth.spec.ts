@@ -357,7 +357,9 @@ test.describe('E2E-AUTH-13: Responsive Layouts', () => {
 
   test('should display correctly on tablet viewport', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await loginPage.goto();
+    await page.goto('/login');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
     await loginPage.capture('13_responsive_tablet');
     await expect(loginPage.submitButton).toBeVisible();
   });
