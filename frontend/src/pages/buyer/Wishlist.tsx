@@ -74,12 +74,12 @@ export default function Wishlist() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-2 lg:p-4">
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
         <div>
           <Skeleton className="h-9 w-56 mb-2" />
           <Skeleton className="h-4 w-52" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-80 animate-pulse rounded-2xl border bg-muted" />
           ))}
@@ -90,10 +90,10 @@ export default function Wishlist() {
 
   if (isError) {
     return (
-      <div className="space-y-6 p-2 lg:p-4">
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
         <div>
-          <h1 className="flex items-center gap-2 text-3xl font-black tracking-tight text-foreground">
-            <Heart className="h-7 w-7 text-pink-500 fill-pink-500" />
+          <h1 className="flex items-center gap-2 text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-foreground">
+            <Heart className="h-6 w-6 sm:h-7 sm:w-7 text-pink-500 fill-pink-500 shrink-0" />
             {t('wishlist.title', 'My Saved Wishlist')}
           </h1>
         </div>
@@ -118,18 +118,18 @@ export default function Wishlist() {
   }
 
   return (
-    <div className="space-y-6 p-2 lg:p-4">
+    <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
       <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <h1 className="flex items-center gap-2 text-3xl font-black tracking-tight text-foreground">
-            <Heart className="h-7 w-7 text-pink-500 fill-pink-500" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="flex items-center gap-2 text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-foreground">
+            <Heart className="h-6 w-6 sm:h-7 sm:w-7 text-pink-500 fill-pink-500 shrink-0" />
             {t('wishlist.title', 'My Saved Wishlist')}
           </h1>
           {hasWishlistItems && (
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive h-9 text-xs sm:text-sm"
               onClick={handleClearAll}
               disabled={isClearing}
             >
@@ -140,13 +140,13 @@ export default function Wishlist() {
             </Button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">{countText}</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">{countText}</p>
       </div>
 
       {!hasWishlistItems ? (
         <EmptyState variant="wishlist" />
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {items.map((item) => (
             <WishlistItemCard
               key={item.id}
