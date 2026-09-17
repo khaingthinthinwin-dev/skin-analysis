@@ -1,6 +1,7 @@
-import { useSearchParams } from 'react-router'
+import { useSearchParams, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Search as SearchIcon, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
 import { Pagination } from '@/components/Pagination'
 import { categoryService } from '@/features/search/services/category.service'
@@ -12,8 +13,22 @@ import { SortSelect } from '@/features/search/components/SortSelect'
 import { SponsoredAdSlider } from '@/features/search/components/SponsoredAdSlider'
 import { ProductCard } from '@/features/search/components/ProductCard'
 import { useProductSearch } from '@/features/search/hooks/useProductSearch'
+import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
+import { useCart } from '@/features/buyer/cart/hooks/useCart'
+import { useAuth } from '@/providers/AuthProvider'
+import { DuplicateCartAlertDialog } from '@/components/common/DuplicateCartAlertDialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import type { ViewMode } from '@/types/search.types'
-import { useEffect, useState } from 'react'
+import type { ProductSummary } from '@/types/search.types'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CategoryNode } from '@/types/search.types'
 
 const VIEW_MODE_KEY = 'search.viewMode'
@@ -25,7 +40,87 @@ function readInitialViewMode(): ViewMode {
 
 export default function Products() {
   const [, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [view, setView] = useState<ViewMode>(readInitialViewMode)
+  const { isAuthenticated } = useAuth()
+  const { items: wishlistItems, addToWishlist, removeFromWishlist } = useWishlist()
+  const { items: cartItems, addToCart } = useCart()
+
+  const wishlistProductIds = useMemo(
+    () => new Set(wishlistItems.map((item) => item.productId)),
+    [wishlistItems],
+  )
+
+  const cartProductIds = useMemo(
+    () => new Set(cartItems.map((item) => item.productId)),
+    [cartItems],
+  )
+
+  const [wishlistLoadingId, setWishlistLoadingId] = useState<string | null>(null)
+  const [cartLoadingId, setCartLoadingId] = useState<string | null>(null)
+  const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
+  const [guestLoginOpen, setGuestLoginOpen] = useState(false)
+  const [guestLoginMessage, setGuestLoginMessage] = useState('')
+
+  const handleWishlistToggle = useCallback(
+    async (product: ProductSummary) => {
+      if (!isAuthenticated) {
+        setGuestLoginMessage('Please log in to use the wishlist')
+        setGuestLoginOpen(true)
+        return
+      }
+      const isInWishlist = wishlistProductIds.has(product.id)
+      setWishlistLoadingId(product.id)
+      try {
+        if (isInWishlist) {
+          await removeFromWishlist(product.id)
+          toast.success('Removed from wishlist')
+        } else {
+          await addToWishlist(product.id)
+          toast.success('Added to wishlist')
+        }
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { status?: number } }
+        if (axiosErr?.response?.status === 409) {
+          toast.info('Already in your wishlist')
+        } else {
+          toast.error('Something went wrong. Please try again.')
+        }
+      } finally {
+        setWishlistLoadingId(null)
+      }
+    },
+    [isAuthenticated, wishlistProductIds, addToWishlist, removeFromWishlist],
+  )
+
+  const handleAddToCart = useCallback(
+    async (product: ProductSummary) => {
+      if (!isAuthenticated) {
+        setGuestLoginMessage('Please log in to add items to your cart')
+        setGuestLoginOpen(true)
+        return
+      }
+      if (cartProductIds.has(product.id)) {
+        setCartDuplicateOpen(true)
+        return
+      }
+      setCartLoadingId(product.id)
+      try {
+        await addToCart({ productId: product.id, quantity: 1 })
+        toast.success('Added to cart')
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { status?: number } }
+        if (axiosErr?.response?.status === 409) {
+          setCartDuplicateOpen(true)
+        } else {
+          toast.error('Something went wrong. Please try again.')
+        }
+      } finally {
+        setCartLoadingId(null)
+      }
+    },
+    [isAuthenticated, cartProductIds, addToCart],
+  )
 
   useEffect(() => {
     localStorage.setItem(VIEW_MODE_KEY, view)
@@ -230,7 +325,17 @@ export default function Products() {
                 }
               >
                 {Array.isArray(products) && products.map((product) => (
-                  <ProductCard key={product.id} product={product} view={view} productLink={`/buyer/products/${product.slug}`} />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    view={view}
+                    productLink={`/buyer/products/${product.slug}`}
+                    isInWishlist={wishlistProductIds.has(product.id)}
+                    onWishlistToggle={handleWishlistToggle}
+                    onAddToCart={handleAddToCart}
+                    isWishlistLoading={wishlistLoadingId === product.id}
+                    isCartLoading={cartLoadingId === product.id}
+                  />
                 ))}
               </div>
 
@@ -244,6 +349,30 @@ export default function Products() {
           )}
         </div>
       </div>
+
+      {/* Guest Login Modal */}
+      <Dialog open={guestLoginOpen} onOpenChange={setGuestLoginOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Login Required</DialogTitle>
+            <DialogDescription>{guestLoginMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGuestLoginOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => navigate('/login')}>
+              Login
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cart Duplicate Modal */}
+      <DuplicateCartAlertDialog
+        open={cartDuplicateOpen}
+        onClose={() => setCartDuplicateOpen(false)}
+      />
     </div>
   )
 }

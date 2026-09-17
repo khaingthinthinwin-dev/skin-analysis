@@ -1,4 +1,3 @@
-import { CircleAlert } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,18 +21,16 @@ export function DuplicateCartAlertDialog({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
-            <CircleAlert className="h-6 w-6 text-amber-600" />
-          </div>
-          <DialogTitle className="text-center">Product already in cart</DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle>Already in Cart</DialogTitle>
+          <DialogDescription>
             This product is already in cart.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={onClose} className="w-full sm:w-auto">
-            OK
+          <Button variant="outline" onClick={onClose}>
+            Cancel
           </Button>
+          <Button onClick={onClose}>OK</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
