@@ -41,6 +41,7 @@ const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
 const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
 const BuyerOrdersPage = lazy(() => import('@/pages/order-insights/BuyerOrdersPage'))
+const BuyerOrderDetailPage = lazy(() => import('@/pages/order-insights/BuyerOrderDetailPage'))
 
 // TODO: Uncomment when pages are implemented
 // const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
@@ -469,6 +470,14 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <BuyerOrdersPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: ':id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrderDetailPage />
                   </SuspenseWrapper>
                 ),
               },

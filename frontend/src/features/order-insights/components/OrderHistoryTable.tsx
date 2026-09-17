@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, ChevronUp, ChevronDown, Truck } from 'lucide-react';
+import { ChevronUp, ChevronDown, Truck } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from './StatusBadge';
@@ -32,7 +32,8 @@ export function OrderHistoryTable({
   currentSort = 'createdAt',
   currentOrder = 'desc',
 }: OrderHistoryTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.resolvedLanguage || i18n.language || 'en-US';
 
   if (loading) {
     return (
@@ -40,11 +41,11 @@ export function OrderHistoryTable({
         <TableHeader className="bg-muted/50">
           <TableRow>
             <TableHead className="w-[180px]"><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead className="w-[140px]"><Skeleton className="h-4 w-20" /></TableHead>
-            <TableHead className="w-[80px]"><Skeleton className="h-4 w-16" /></TableHead>
-            <TableHead className="w-[120px]"><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead className="w-[120px]"><Skeleton className="h-4 w-24" /></TableHead>
-            <TableHead className="w-[120px]"><Skeleton className="h-4 w-24" /></TableHead>
+            <TableHead className="w-[150px]"><Skeleton className="h-4 w-20" /></TableHead>
+            <TableHead className="w-[100px]"><Skeleton className="h-4 w-16" /></TableHead>
+            <TableHead className="w-[150px]"><Skeleton className="h-4 w-24" /></TableHead>
+            <TableHead className="w-[160px]"><Skeleton className="h-4 w-24" /></TableHead>
+            <TableHead className="w-[160px]"><Skeleton className="h-4 w-24" /></TableHead>
             <TableHead className="w-[80px]"><Skeleton className="h-4 w-16" /></TableHead>
           </TableRow>
         </TableHeader>
@@ -53,11 +54,11 @@ export function OrderHistoryTable({
             <TableRow key={i}>
               <TableCell className="font-mono text-xs"><Skeleton className="h-4 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+              <TableCell className="text-center"><Skeleton className="h-4 w-12" /></TableCell>
+              <TableCell className="text-right pr-4"><Skeleton className="h-4 w-20" /></TableCell>
+              <TableCell className="text-center"><Skeleton className="h-4 w-20" /></TableCell>
+              <TableCell className="text-center"><Skeleton className="h-4 w-20" /></TableCell>
+              <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -66,11 +67,7 @@ export function OrderHistoryTable({
   }
 
   const renderSortIcon = (field: OrderSortField) => {
-    if (currentSort !== field) return (
-      <span className="flex items-center gap-1 text-muted-foreground/50">
-        <ChevronUp className="h-3 w-3" /><ChevronDown className="h-3 w-3" />
-      </span>
-    );
+    if (currentSort !== field) return null;
     return currentOrder === 'asc' ? (
       <ChevronUp className="h-4 w-4 text-foreground" />
     ) : (
@@ -78,46 +75,31 @@ export function OrderHistoryTable({
     );
   };
 
-  const handleHeaderClick = (field: OrderSortField) => {
-    onSort(field);
-  };
+  const renderSortableHeader = (label: string, field: OrderSortField, className = '') => (
+    <TableHead className={className} aria-sort={currentSort === field ? `${currentOrder === 'asc' ? 'ascending' : 'descending'}` : 'none'}>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 rounded-sm text-left hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={() => onSort(field)}
+      >
+        {label}
+        {renderSortIcon(field)}
+      </button>
+    </TableHead>
+  );
 
   return (
     <>
-      <div className="hidden sm:block overflow-x-auto">
-      <Table>
-        <TableHeader className="bg-muted/50">
+      <div className="hidden min-h-0 max-w-full flex-1 self-stretch overflow-x-auto overflow-y-auto overscroll-contain sm:block [&>div]:overflow-visible">
+      <Table className="min-w-[980px]">
+        <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
           <TableRow>
-            <TableHead className="w-[180px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleHeaderClick('createdAt')}>
-              <div className="flex items-center gap-1">
-                {t('orders.table.orderId', 'Order #')}
-                {renderSortIcon('createdAt')}
-              </div>
-            </TableHead>
-            <TableHead className="w-[140px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleHeaderClick('createdAt')}>
-              <div className="flex items-center gap-1">
-                {t('orders.table.date', 'Date')}
-                {renderSortIcon('createdAt')}
-              </div>
-            </TableHead>
-            <TableHead className="w-[80px] text-center">{t('orders.table.items', 'Items')}</TableHead>
-            <TableHead className="w-[120px] text-right cursor-pointer hover:bg-muted/50"
-              onClick={() => handleHeaderClick('totalAmount')}>
-              <div className="flex items-center justify-end gap-1">
-                {t('orders.table.total', 'Total')}
-                {renderSortIcon('totalAmount')}
-              </div>
-            </TableHead>
-            <TableHead className="w-[120px]">{t('orders.table.payment', 'Payment')}</TableHead>
-            <TableHead className="w-[120px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleHeaderClick('status')}>
-              <div className="flex items-center gap-1">
-                {t('orders.table.status', 'Status')}
-                {renderSortIcon('status')}
-              </div>
-            </TableHead>
+            <TableHead className="w-[180px]">{t('orders.table.orderId', 'Order #')}</TableHead>
+            {renderSortableHeader(t('orders.table.date', 'Date'), 'createdAt', 'w-[150px]')}
+            <TableHead className="w-[100px] text-center">{t('orders.table.items', 'Items')}</TableHead>
+            {renderSortableHeader(t('orders.table.total', 'Total'), 'totalAmount', 'w-[150px] text-right pr-4 [&_button]:ml-auto')}
+            <TableHead className="w-[160px] text-center">{t('orders.table.payment', 'Payment')}</TableHead>
+            <TableHead className="w-[160px] text-center">{t('orders.table.status', 'Status')}</TableHead>
             <TableHead className="w-[80px] text-right">{t('orders.table.track', 'Track')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -128,7 +110,7 @@ export function OrderHistoryTable({
                 #{row.id.slice(0, 8).toUpperCase()}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {new Date(row.createdAt).toLocaleDateString(undefined, {
+                {new Date(row.createdAt).toLocaleDateString(dateLocale, {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
@@ -137,24 +119,25 @@ export function OrderHistoryTable({
               <TableCell className="text-center text-sm font-medium">
                 {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
               </TableCell>
-              <TableCell className="text-right font-semibold text-foreground">
+              <TableCell className="text-right font-semibold text-foreground pr-4">
                 ${parseFloat(row.totalAmount).toFixed(2)}
               </TableCell>
-              <TableCell className="text-sm">
+              <TableCell className="text-center text-sm">
                 <PaymentBadge status={row.paymentStatus} />
               </TableCell>
-              <TableCell>
+              <TableCell className="text-center">
                 <StatusBadge status={row.status} />
               </TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-1 h-7 px-2"
+                  className="h-7 w-7 px-0"
+                  title={t('orders.track', 'Track')}
+                  aria-label={t('orders.track', 'Track')}
                   onClick={() => onTrack(row.id)}
                 >
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">{t('orders.track', 'Track')}</span>
+                  <Truck className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </TableCell>
             </TableRow>
@@ -175,7 +158,7 @@ export function OrderHistoryTable({
             <div>
               <p className="text-xs text-muted-foreground">{t('orders.table.date', 'Date')}</p>
               <p className="mt-1">
-                {new Date(row.createdAt).toLocaleDateString(undefined, {
+                {new Date(row.createdAt).toLocaleDateString(dateLocale, {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',

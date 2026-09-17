@@ -43,3 +43,47 @@ export type SortDirection = 'asc' | 'desc';
 
 export const ORDER_SORT_FIELD_VALUES: OrderSortField[] = ['createdAt', 'totalAmount', 'status'];
 export const SORT_DIRECTION_VALUES: SortDirection[] = ['asc', 'desc'];
+
+export interface OrderShippingAddress {
+  recipientName?: string;
+  phone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+}
+
+export interface OrderItemDto {
+  id: string;
+  productId: string;
+  productName: string;
+  productSlug?: string;
+  productImage?: string | null;
+  quantity: number;
+  unitPrice: string;
+  totalPrice: string;
+}
+
+export interface ShopInfoDto {
+  name: string;
+  merchantId?: string;
+}
+
+export interface OrderDetailResponseDto {
+  id: string;
+  orderNumber?: string;
+  createdAt: string;
+  status: OrderStatus;
+  statusName?: string;
+  items: OrderItemDto[];
+  discountAmount: string;
+  couponCode: string | null;
+  totalAmount: string;
+  paymentMethod: string;
+  paymentStatus: PaymentStatus;
+  shippingAddress: OrderShippingAddress;
+  notes: string | null;
+  shop?: ShopInfoDto;
+}

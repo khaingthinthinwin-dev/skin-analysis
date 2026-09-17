@@ -45,6 +45,7 @@ function BuyerOrdersPageContent() {
   };
 
   const handleSort = (field: 'createdAt' | 'totalAmount' | 'status') => {
+    if (field === 'status') return;
     const currentSort = methods.watch('sort');
     const currentOrder = methods.watch('order');
     const newOrder = currentSort === field && currentOrder === 'desc' ? 'asc' : 'desc';
@@ -59,9 +60,10 @@ function BuyerOrdersPageContent() {
     patch({ page });
   };
 
-  const handleView = (orderId: string) => {
-    // No-op for now - no detail page route yet
-    console.log('View order:', orderId);
+  const handleLimitChange = (limit: number) => {
+    methods.setValue('limit', limit, { shouldValidate: false, shouldDirty: false });
+    methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+    patch({ limit, page: 1 });
   };
 
   if (error) {
@@ -81,7 +83,7 @@ function BuyerOrdersPageContent() {
   }
 
   return (
-    <div className="space-y-6 p-2 lg:p-4">
+    <div className="flex h-full flex-col space-y-6 p-2 lg:p-4">
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
           <PackageCheck className="h-6 w-6 text-purple-600" aria-hidden="true" />
@@ -92,11 +94,11 @@ function BuyerOrdersPageContent() {
         </p>
       </div>
 
-      <Card className="border-border/80 shadow-xs">
-        <CardHeader className="pb-2">
+      <Card className="flex min-h-0 flex-1 flex-col border-border/80 shadow-xs">
+        <CardHeader className="pb-1">
           <CardTitle className="text-base">{t('buyer.orders.recentOrders', 'Recent Orders')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 pt-0">
+        <CardContent className="flex min-h-0 flex-1 flex-col space-y-2 pt-0 pb-1">
           <OrderFilterBar
             methods={methods}
             onApply={handleApply}
@@ -106,12 +108,11 @@ function BuyerOrdersPageContent() {
           {data && data.orders.length === 0 ? (
             <EmptyOrderState />
           ) : (
-            <>
+            <div className="flex min-h-0 flex-1 flex-col">
               <OrderHistoryTable
                 rows={data?.orders || []}
                 loading={isLoading}
-                onView={handleView}
-                onTrack={(id) => window.location.href = `/orders/${id}/tracking`}
+                onTrack={(id) => window.location.href = `/orders/${id}`}
                 onSort={handleSort}
                 pagination={data?.meta ?? { page: 1, limit: 20, total: 0 }}
                 onPageChange={handlePageChange}
@@ -119,9 +120,13 @@ function BuyerOrdersPageContent() {
                 currentOrder={methods.watch('order')}
               />
               {data && (
-                <OrderPagination meta={data.meta} onPageChange={handlePageChange} />
+                <OrderPagination
+                  meta={data.meta}
+                  onPageChange={handlePageChange}
+                  onLimitChange={handleLimitChange}
+                />
               )}
-            </>
+            </div>
           )}
         </CardContent>
       </Card>

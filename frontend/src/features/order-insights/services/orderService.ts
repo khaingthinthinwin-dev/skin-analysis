@@ -1,6 +1,6 @@
 import apiClient from '@/lib/api-client';
 import { type OrderListFilterFormData } from '../schemas/orderFilters.schema';
-import { type OrderListResponseDto } from '../types/orderInsights.types';
+import { type OrderDetailResponseDto, type OrderListResponseDto } from '../types/orderInsights.types';
 
 export const orderService = {
   getBuyerOrders: async (
@@ -21,5 +21,11 @@ export const orderService = {
     });
 
     return response.data.data;
+  },
+
+  getBuyerOrderDetail: async (orderId: string): Promise<OrderDetailResponseDto> => {
+    const { data } = await apiClient.get(`/orders/${orderId}`);
+    const payload = data?.data?.data ?? data?.data ?? data;
+    return payload as OrderDetailResponseDto;
   },
 };

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Calendar, Search } from 'lucide-react';
+import { Calendar, RotateCcw, Search } from 'lucide-react';
 import { type OrderListFilterFormData } from '../schemas/orderFilters.schema';
 
 interface OrderFilterBarProps {
@@ -23,8 +23,8 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
   };
 
   return (
-    <form onSubmit={methods.handleSubmit(handleSubmit)} className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/30 rounded-lg border">
-      <div className="flex-1 sm:flex-none sm:w-[140px]">
+    <form onSubmit={methods.handleSubmit(handleSubmit)} className="flex w-full flex-col gap-4 rounded-lg border bg-muted/30 p-4 sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto]">
+      <div className="flex-1 min-w-0 sm:w-[130px]">
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground mb-1">
           {t('orders.filter.status', 'Status')}
         </label>
@@ -33,7 +33,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
           control={control}
           render={({ field }) => (
             <Select value={field.value ?? 'all'} onValueChange={field.onChange}>
-              <SelectTrigger id="filter-status" className="w-full sm:w-[140px]">
+              <SelectTrigger id="filter-status" className="w-full">
                 <SelectValue placeholder={t('orders.filter.status', 'Status')} />
               </SelectTrigger>
               <SelectContent>
@@ -52,9 +52,12 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
         )}
       </div>
 
-      <div className="w-full sm:flex-1 sm:w-96 flex flex-col sm:flex-row items-end gap-2">
-        <div className="w-full sm:flex-1">
-          <label htmlFor="filter-from" className="block text-sm font-medium text-muted-foreground mb-1">
+      <div className="flex w-full flex-col items-end gap-2 sm:contents">
+        <div className="w-full sm:min-w-0">
+          <span className="mb-1 block text-sm font-medium text-muted-foreground">
+            {t('orders.filter.dateRange.label', 'Order date')}
+          </span>
+          <label htmlFor="filter-from" className="sr-only">
             {t('orders.filter.dateRange.from', 'From')}
           </label>
           <div className="relative">
@@ -85,8 +88,8 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
           )}
         </div>
 
-        <div className="w-full sm:flex-1">
-          <label htmlFor="filter-to" className="block text-sm font-medium text-muted-foreground mb-1">
+        <div className="w-full sm:min-w-0">
+          <label htmlFor="filter-to" className="sr-only">
             {t('orders.filter.dateRange.to', 'To')}
           </label>
           <div className="relative">
@@ -118,11 +121,16 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-end gap-2">
-        <Button type="submit" size="icon" aria-label="Apply filters" className="h-10 w-full sm:w-11 shrink-0">
-          <Search className="h-5 w-5" />
+      {/* Spacer: absorbs leftover width at md+ so From/To never stretch and Search/Clear stay pinned to the right */}
+      <div className="hidden md:block" aria-hidden="true" />
+
+      <div className="flex flex-col items-end gap-1 sm:contents">
+        <Button type="submit" aria-label={t('common.filters.search', 'Search')} className="h-10 w-full shrink-0 gap-2 sm:w-auto">
+          <Search className="h-4 w-4" aria-hidden="true" />
+          {t('common.filters.search', 'Search')}
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full sm:w-auto">
+        <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full gap-2 sm:w-auto">
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
           {t('common.filters.clear', 'Clear')}
         </Button>
       </div>

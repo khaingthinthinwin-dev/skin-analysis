@@ -689,6 +689,33 @@ async function main() {
   });
   orders.push(order4);
 
+  // Additional orders for Htail Ay Mi Lin to exercise buyer pagination.
+  for (let orderIndex = 1; orderIndex <= 29; orderIndex++) {
+    const paginationOrder = await prisma.order.create({
+      data: {
+        buyerId: buyers[2].id,
+        merchantId: merchants[2].id,
+        statusCode: 'confirmed',
+        totalAmount: 22000,
+        shippingAddress: { street: '789 Nay Pyi Taw', city: 'Nay Pyi Taw', country: 'Myanmar', zip: '05555' },
+        paymentMethod: 'e_wallet',
+        paymentStatus: 'completed',
+        createdAt: new Date(Date.now() - orderIndex * 24 * 60 * 60 * 1000),
+      },
+    });
+    await prisma.orderItem.create({
+      data: {
+        orderId: paginationOrder.id,
+        productId: products[6].id,
+        merchantId: merchants[2].id,
+        quantity: 1,
+        unitPrice: 22000,
+        totalPrice: 22000,
+      },
+    });
+    orders.push(paginationOrder);
+  }
+
   console.log(`Seeded ${orders.length} orders`);
 
   // ============================================
