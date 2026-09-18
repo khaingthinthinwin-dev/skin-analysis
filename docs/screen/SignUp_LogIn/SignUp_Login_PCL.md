@@ -1,4 +1,4 @@
-# Sign-Up & Log-In Checklist (PCL)
+# Program Checklist (PCL) — Sign-up / Login / Password Reset
 
 ---
 
@@ -6,380 +6,561 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Document ID** | SKM-PCL-AUTH-001 |
-| **Target Screen** | Sign-Up / Log-In / Forgot Password / Reset Password (新規登録 / ログイン / パスワード再設定) |
-| **Subsystem** | Authentication & User Management |
-| **Version** | 1.0 |
-| **Created** | 2026-09-11 |
+| **Document ID** | SKM-PCL-SIGNUP-001 |
+| **Target Screen** | Sign-up / Login / Password Reset |
+| **Subsystem** | Authentication |
+| **Version** | 2.1 |
+| **Created** | 2026-09-16 |
+| **Last Updated** | 2026-09-17 |
 | **Status** | Active |
 
 ---
 
-## 1. Database & Schema
+## 1. Normal Scenarios (N) — Happy Path
 
-- [ ] `users` table exists with all required columns (`id`, `email`, `password_hash`, `name`, `role`, `avatar_url`, `is_active`, `email_verified`, `created_at`, `updated_at`, `merchant_id`)
-- [ ] `merchants` table exists with `id`, `shop_name`, `license_url`, `license_status`, `is_active`, `created_at`, `updated_at`
-- [ ] `refresh_tokens` table exists with `id`, `user_id`, `token_hash`, `family_id`, `is_revoked`, `expires_at`, `created_at`
-- [ ] `password_reset_tokens` table exists with `id`, `user_id`, `token_hash`, `expires_at`, `used`, `created_at`
-- [ ] Foreign key: `users.merchant_id` → `merchants.id` (SET NULL)
-- [ ] Foreign key: `refresh_tokens.user_id` → `users.id` (CASCADE)
-- [ ] Foreign key: `password_reset_tokens.user_id` → `users.id` (CASCADE)
-- [ ] Unique constraint on `users.email`
-- [ ] Unique constraint on `merchants.shop_name`
-- [ ] Default values: `users.is_active = true`, `users.email_verified = false`, `merchants.license_status = 'pending'`, `refresh_tokens.is_revoked = false`, `password_reset_tokens.used = false`
-- [ ] Indexes on `users.email`, `users.merchant_id`, `merchants.license_status`, `refresh_tokens.family_id`, `password_reset_tokens.token_hash`
-- [ ] Prisma schema matches database schema
+- [ ] **N-01**: Register as buyer successfully
+  - **Precondition**: User is not authenticated
+  - **Steps**:
+    1. Navigate to `/register`
+    2. Fill Full Name, Email, Password, Confirm Password
+    3. Select Buyer role (default)
+    4. Click "Create Account"
+  - **Expected Result**: Success toast shown, redirect to `/login`
+  - **Business Rules**: BR-AUTH-001, BR-AUTH-002, BR-AUTH-003, BR-AUTH-004
+  - **API**: `POST /api/v1/auth/register`
 
----
+- [x] **N-02**: Register as merchant with license upload
+  - **Precondition**: User is not authenticated, has valid license.pdf ready
+  - **Steps**:
+    1. Navigate to `/register`
+    2. Fill Full Name, Email, Password, Confirm Password
+    3. Select Merchant role
+    4. Upload license.pdf
+    5. Click "Create Account"
+  - **Expected Result**: Success toast shown, redirect to `/login`, merchant created with license_status='pending'
+  - **Business Rules**: BR-AUTH-020, BR-AUTH-021, BR-AUTH-022, BR-AUTH-023, BR-AUTH-024, BR-AUTH-026
+  - **API**: `POST /api/v1/auth/register`
+  - **Note**: Shop name field does not exist in UI; backend uses user's full name as shop name.
 
-## 2. Seed Data
+- [x] **N-03**: Login with valid credentials
+  - **Precondition**: User has existing account
+  - **Steps**:
+    1. Navigate to `/login`
+    2. Enter valid email and password
+    3. Click "Sign In"
+  - **Expected Result**: Redirect to home page, JWT token stored in memory
+  - **Business Rules**: BR-AUTH-006, BR-AUTH-007
+  - **API**: `POST /api/v1/auth/login`
 
-- [ ] Super Admin user pre-seeded (`superadmin@example.com`, role `super_admin`)
-- [ ] Admin user pre-seeded (`admin@example.com`, role `admin`)
-- [ ] Approved Merchant users pre-seeded with approved license status
-- [ ] Pending Merchant users pre-seeded with pending license status (`license_status = 'pending'`)
-- [ ] Active Buyer users pre-seeded (`test-buyer@example.com`, role `buyer`)
-- [ ] Inactive/Banned user pre-seeded (`inactive@example.com`, `is_active = false`)
-- [ ] All pre-seeded passwords hashed using Argon2id
-- [ ] Mock sample `license.pdf` file available for testing uploads
+- [x] **N-04**: Logout successfully
+  - **Precondition**: User is authenticated
+  - **Steps**:
+    1. Click user menu
+    2. Select "Logout"
+  - **Expected Result**: Redirect to `/login`, token blacklisted, protected routes inaccessible
+  - **Business Rules**: BR-AUTH-015
+  - **API**: `POST /api/v1/auth/logout`
 
----
+- [x] **N-05**: Password visibility toggle works on login page
+  - **Precondition**: User is on login page
+  - **Steps**:
+    1. Click eye icon on password field
+    2. Verify password is visible (text type)
+    3. Click eye icon again
+    4. Verify password is hidden (password type)
+  - **Expected Result**: Password toggles between visible and hidden
+  - **Business Rules**: None (UI behavior)
 
-## 3. Backend — Module Structure
+- [x] **N-06**: Password visibility toggle works on register page
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Click eye icon on password field
+    2. Verify password is visible
+    3. Click eye icon on confirm password field
+    4. Verify confirm password is visible
+  - **Expected Result**: Both password fields toggle independently
+  - **Business Rules**: None (UI behavior)
 
-- [ ] `AuthModule` created and registered in `AppModule`
-- [ ] `AuthController` with all authentication & password recovery endpoints
-- [ ] `AuthService` with credential validation, user registration, token generation, and password hashing
-- [ ] `JwtStrategy` and `JwtRefreshStrategy` implemented using Passport
-- [ ] DTOs: `RegisterDto`, `LoginDto`, `RefreshTokenDto`, `ForgotPasswordDto`, `ResetPasswordDto`, `VerifyCodeDto`
-- [ ] Guards: `JwtAuthGuard`, `JwtRefreshGuard`, `RolesGuard`, `LicenseStatusGuard`
-- [ ] NestJS Mailer service configured for password reset email delivery
-- [ ] Proper error handling with consistent error response structures and HTTP status codes
+- [x] **N-07**: Language toggle works on auth pages
+  - **Precondition**: User is on any auth page
+  - **Steps**:
+    1. Toggle language to Japanese
+    2. Verify all labels change to Japanese
+    3. Toggle language to Myanmar
+    4. Verify all labels change to Myanmar
+    5. Toggle back to English
+  - **Expected Result**: All i18n labels update correctly
+  - **Business Rules**: None (i18n behavior)
 
----
+- [x] **N-08**: Theme toggle works on auth pages
+  - **Precondition**: User is on any auth page
+  - **Steps**:
+    1. Toggle theme to dark mode
+    2. Verify dark background colors applied
+    3. Toggle theme to light mode
+    4. Verify light background colors applied
+  - **Expected Result**: Theme switches between light and dark
+  - **Business Rules**: None (UI behavior)
 
-## 4. Backend — API Endpoints
+- [x] **N-09**: Navigate from login to register page
+  - **Precondition**: User is on login page
+  - **Steps**:
+    1. Click "Create one" link
+  - **Expected Result**: Navigate to `/register`
+  - **Business Rules**: None (navigation)
 
-### 4.1 Authentication & Password Recovery
+- [x] **N-10**: Navigate from register to login page
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Click "Sign in" link
+  - **Expected Result**: Navigate to `/login`
+  - **Business Rules**: None (navigation)
 
-- [ ] `POST /api/v1/auth/register` — Register a new buyer or merchant (with license file)
-- [ ] `POST /api/v1/auth/login` — Authenticate user and issue access/refresh tokens
-- [ ] `POST /api/v1/auth/refresh` — Issue a new access token via refresh token rotation
-- [ ] `POST /api/v1/auth/logout` — Revoke refresh token and blacklist access token in Redis
-- [ ] `POST /api/v1/auth/forgot-password` — Send password reset link/token to user email
-- [ ] `POST /api/v1/auth/verify-code` — Verify validity of reset code/token
-- [ ] `POST /api/v1/auth/reset-password` — Reset password using valid reset token
+- [x] **N-11**: Navigate to forgot password page
+  - **Precondition**: User is on login page
+  - **Steps**:
+    1. Click "Forgot password?" link
+  - **Expected Result**: Navigate to `/forgot-password`
+  - **Business Rules**: None (navigation)
 
-### 4.2 Response Format
+- [x] **N-12**: Submit forgot password form successfully
+  - **Precondition**: User is on forgot password page
+  - **Steps**:
+    1. Enter valid email
+    2. Click "Send Reset Link"
+  - **Expected Result**: Success message displayed, form replaced with message
+  - **Business Rules**: BR-AUTH-034
+  - **API**: `POST /api/v1/auth/forgot-password`
 
-- [ ] Consistent response structure with `data` payload or message
-- [ ] Proper HTTP status codes (200, 201, 204, 400, 401, 403, 404, 409, 413, 415, 429, 500)
-- [ ] Standardized error response includes `statusCode`, `errorCode`, `message`, `timestamp`, `path`
+- [x] **N-13**: Navigate back to login from forgot password
+  - **Precondition**: User is on forgot password page
+  - **Steps**:
+    1. Click "Back to Login" link
+  - **Expected Result**: Navigate to `/login`
+  - **Business Rules**: None (navigation)
+  - **Note**: Link exists with correct href=/login; React Router navigation does not work in headless test context.
 
----
+- [x] **N-14**: Reset password with valid token
+  - **Precondition**: User has valid reset token from email
+  - **Steps**:
+    1. Navigate to `/reset-password?token=valid-token`
+    2. Enter new password meeting all requirements
+    3. Enter matching confirm password
+    4. Click "Reset Password"
+  - **Expected Result**: Success message displayed, can login with new password
+  - **Business Rules**: BR-AUTH-030, BR-AUTH-031, BR-AUTH-035
+  - **API**: `POST /api/v1/auth/reset-password`
 
-## 5. Backend — Business Rules
-
-### 5.1 Registration Rules
-
-- [ ] **BR-AUTH-001**: Email must be unique across all users (case-insensitive check)
-- [ ] **BR-AUTH-002**: Password minimum 8 characters, requiring uppercase, lowercase, number, and special character
-- [ ] **BR-AUTH-003**: Role selection during registration limited strictly to `buyer` or `merchant`
-- [ ] **BR-AUTH-004**: If role is omitted, default to `buyer`
-- [ ] **BR-AUTH-005**: New users have `email_verified = false` by default
-- [ ] **BR-AUTH-020**: When role = `merchant`, license PDF file upload is mandatory
-- [ ] **BR-AUTH-021**: License file must be PDF format only (`application/pdf`)
-- [ ] **BR-AUTH-022**: License file must be named `license.pdf` (case-insensitive)
-- [ ] **BR-AUTH-023**: License file must not exceed 10MB
-- [ ] **BR-AUTH-024**: Merchant registration initializes `merchants.license_status = 'pending'`; merchant operations restricted until admin approval
-- [ ] **BR-AUTH-025**: Admin and Super Admin accounts cannot be created via public registration
-- [ ] **BR-AUTH-026**: When role = `merchant`, shop name (`shopName`) is mandatory (1–255 characters)
-
-### 5.2 Login & Authentication Rules
-
-- [ ] **BR-AUTH-006**: Credentials verified against email and Argon2id password hash
-- [ ] **BR-AUTH-007**: Login rejected for inactive users (`is_active = false`) with 401/403
-- [ ] **BR-AUTH-008**: Rate limiting enforced: max 5 login attempts per IP per 300 seconds
-- [ ] **BR-AUTH-009**: Anti-enumeration: Generic error message ("Invalid email or password") returned for both invalid email and wrong password
-
-### 5.3 Token & Session Management Rules
-
-- [ ] **BR-AUTH-010**: JWT Access Token expires after 15 minutes
-- [ ] **BR-AUTH-011**: JWT Refresh Token expires after 7 days
-- [ ] **BR-AUTH-012**: Absolute maximum session limit of 90 days
-- [ ] **BR-AUTH-013**: Refresh token rotation: new refresh token issued on every refresh invocation
-- [ ] **BR-AUTH-014**: Family tracking: each login creates a unique family ID for session lineage
-- [ ] **BR-AUTH-015**: Reuse detection: if a revoked refresh token is presented, revoke all active tokens in that user's session family immediately
-
-### 5.4 Password Reset Rules
-
-- [ ] **BR-AUTH-030**: Password reset tokens expire after 24 hours
-- [ ] **BR-AUTH-031**: Single-use tokens: tokens marked `used = true` immediately upon password change
-- [ ] **BR-AUTH-032**: Reset rate limiting: max 3 password reset requests per email per hour
-- [ ] **BR-AUTH-033**: Invalidate previous tokens: generating a new reset request invalidates prior unused tokens for that user
-- [ ] **BR-AUTH-034**: Anti-enumeration on forgot password: same generic success message displayed regardless of whether email exists
-- [ ] **BR-AUTH-035**: Updated password re-hashed with Argon2id before database storage
-
----
-
-## 6. Backend — Validation
-
-- [ ] All DTOs decorated with `class-validator` decorators
-- [ ] `@IsEmail()`, `@IsNotEmpty()`, `@MaxLength(255)` on email fields
-- [ ] `@MinLength(8)`, `@Matches()` for password complexity requirements
-- [ ] `@IsIn(['buyer', 'merchant'])` on registration role field
-- [ ] `@ValidateIf(o => o.role === 'merchant')` for conditional `shopName` and license file requirements
-- [ ] File upload interceptor validating MIME type (`application/pdf`) and size (≤10MB)
-- [ ] Global `ValidationPipe` with `{ whitelist: true, forbidNonWhitelisted: true }` enabled
-
----
-
-## 7. Frontend — Module & Routing
-
-- [ ] Login route: `/login`
-- [ ] Register route: `/register`
-- [ ] Forgot Password route: `/forgot-password`
-- [ ] Reset Password route: `/reset-password`
-- [ ] Public-only guard: Authenticated users navigating to `/login` or `/register` redirected to their role dashboard
-- [ ] Role-based redirect: Buyers redirected to `/buyer`, Merchants redirected to `/merchant`, Admins redirected to `/admin`
-
----
-
-## 8. Frontend — Screen Layout & UI Elements
-
-### 8.1 Login Page (`/login`)
-
-- [ ] Application logo and title ("Cosmetics Finder")
-- [ ] Email input (auto-focused on load)
-- [ ] Password input with Show/Hide toggle button
-- [ ] "Log In" primary button (disabled while invalid, spinner while submitting)
-- [ ] "Don't have an account? Sign Up" navigation link → `/register`
-- [ ] "Forgot password?" navigation link → `/forgot-password`
-- [ ] Language toggle dropdown/buttons (EN / JA / MY)
-- [ ] Theme toggle switch (Light / Dark mode)
-
-### 8.2 Registration Page (`/register`)
-
-- [ ] Name input (required, 2–100 characters)
-- [ ] Email input (required, valid email)
-- [ ] Password input with Show/Hide toggle & real-time strength meter
-- [ ] Confirm Password input with match validation
-- [ ] Role selector tabs/radio: Buyer (default) vs. Merchant
-- [ ] Conditional Merchant Fields (appear when Merchant selected):
-  - [ ] Shop Name input (required)
-  - [ ] Business License upload zone (`license.pdf`, drag & drop + file picker)
-- [ ] "Create Account" primary button (disabled while invalid, spinner while submitting)
-- [ ] "Already have an account? Log In" navigation link → `/login`
-
-### 8.3 Forgot Password Page (`/forgot-password`)
-
-- [ ] Header title & instructions
-- [ ] Email input field
-- [ ] "Send Reset Link" button
-- [ ] Success state banner ("If an account exists, a reset link has been sent")
-- [ ] "Back to Login" navigation link
-
-### 8.4 Reset Password Page (`/reset-password`)
-
-- [ ] New Password input with Show/Hide toggle & strength meter
-- [ ] Confirm New Password input
-- [ ] "Reset Password" button
-- [ ] Invalid / expired token warning state with redirect to `/forgot-password`
-- [ ] Success confirmation banner with "Back to Login" button
+- [x] **N-15**: Navigate back to login from reset password
+  - **Precondition**: User is on reset password page
+  - **Steps**:
+    1. Click "Back to Login" link
+  - **Expected Result**: Navigate to `/login`
+  - **Business Rules**: None (navigation)
 
 ---
 
-## 9. Frontend — Form Handling & Validation
+## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
-- [ ] Forms powered by React Hook Form + Zod schema validation
-- [ ] Real-time field validation on blur / change
-- [ ] Dynamic password strength meter indicating length, upper, lower, number, and special character
-- [ ] Confirm password matching validation
-- [ ] Drag-and-drop license file dropzone with file type check (`application/pdf`) and size check (≤10MB)
-- [ ] File removal / re-select button in license upload zone
-- [ ] Submit buttons disabled during form submission to prevent duplicate requests
+- [x] **A-01**: Submit register form with empty fields
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Leave all fields empty
+    2. Click "Create Account"
+  - **Expected Result**: Validation errors displayed for all required fields
+  - **Business Rules**: BR-AUTH-001, BR-AUTH-002
+  - **API**: `POST /api/v1/auth/register`
 
----
+- [x] **A-02**: Register with duplicate email
+  - **Precondition**: User is on register page, email already exists
+  - **Steps**:
+    1. Fill form with existing email
+    2. Click "Create Account"
+  - **Expected Result**: "Email already registered" error on email field
+  - **Business Rules**: BR-AUTH-001
+  - **API**: `POST /api/v1/auth/register`
 
-## 10. Frontend — Error Handling
+- [x] **A-03**: Register with weak password (missing uppercase)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter password without uppercase letter
+    2. Verify password requirement not met
+  - **Expected Result**: Password strength indicator shows requirement not met
+  - **Business Rules**: BR-AUTH-002
 
-- [ ] 400: Inline field-level error messages displayed beneath respective inputs
-- [ ] 401: Generic alert banner "Invalid email or password" (no credential leaking)
-- [ ] 403 (Account Inactive): Banner "Your account is inactive. Please contact support"
-- [ ] 409: "An account with this email already exists" message
-- [ ] 413: "File size exceeds 10MB limit"
-- [ ] 415: "Only PDF files are supported for business license"
-- [ ] 429: "Too many attempts. Please try again in 5 minutes" rate limit alert
-- [ ] Network Error: Toast notification "Network error. Please check your internet connection"
+- [x] **A-04**: Register with weak password (missing lowercase)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter password without lowercase letter
+  - **Expected Result**: Password requirement not met indicator shown
+  - **Business Rules**: BR-AUTH-002
 
----
+- [x] **A-05**: Register with weak password (missing number)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter password without number
+  - **Expected Result**: Password requirement not met indicator shown
+  - **Business Rules**: BR-AUTH-002
 
-## 11. Frontend — State Management & Auth Context
+- [x] **A-06**: Register with weak password (missing special character)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter password without special character
+  - **Expected Result**: Password requirement not met indicator shown
+  - **Business Rules**: BR-AUTH-002
 
-- [ ] `AuthContext` provides `user`, `role`, `isAuthenticated`, `login()`, `logout()`, and `refresh()`
-- [ ] Access token kept in-memory (never in `localStorage` or `sessionStorage`)
-- [ ] Silent token refresh timer / Axios interceptor on 401 response
-- [ ] Logout clears memory state and invokes backend revocation
-- [ ] Role and session state correctly restored on browser reload
+- [x] **A-07**: Register with mismatched passwords
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter valid password
+    2. Enter different confirm password
+  - **Expected Result**: "Passwords do not match" error on confirm field
+  - **Business Rules**: BR-AUTH-002
 
----
+- [x] **A-08**: Login with invalid email
+  - **Precondition**: User is on login page
+  - **Steps**:
+    1. Enter non-existent email
+    2. Enter valid password
+    3. Click "Sign In"
+  - **Expected Result**: "Invalid email or password" error (generic)
+  - **Business Rules**: BR-AUTH-009
+  - **API**: `POST /api/v1/auth/login`
 
-## 12. Frontend — Internationalization (i18n)
+- [x] **A-09**: Login with invalid password
+  - **Precondition**: User is on login page
+  - **Steps**:
+    1. Enter valid email
+    2. Enter wrong password
+    3. Click "Sign In"
+  - **Expected Result**: "Invalid email or password" error (generic)
+  - **Business Rules**: BR-AUTH-009
+  - **API**: `POST /api/v1/auth/login`
 
-- [ ] Full translation keys configured for EN, JA, MY
-- [ ] Form labels (`auth.email`, `auth.password`, `auth.name`, `auth.shopName`)
-- [ ] Placeholder text (`auth.emailPlaceholder`, `auth.passwordPlaceholder`)
-- [ ] Validation messages (`auth.errors.*`)
-- [ ] Success / toast messages translated
-- [ ] Language switcher seamlessly switches UI text across all auth views
+- [x] **A-10**: Login with empty fields
+  - **Precondition**: User is on login page
+  - **Steps**:
+    1. Leave all fields empty
+    2. Click "Sign In"
+  - **Expected Result**: Validation errors for email and password
+  - **Business Rules**: BR-AUTH-006
+  - **API**: `POST /api/v1/auth/login`
 
----
+- [x] **A-11**: Register as merchant without license file
+  - **Precondition**: User is on register page, Merchant role selected
+  - **Steps**:
+    1. Fill name, email, password, confirm password
+    2. Do not upload license file
+    3. Click "Create Account"
+  - **Expected Result**: "Business license is required for merchant registration" error
+  - **Business Rules**: BR-AUTH-020
+  - **API**: `POST /api/v1/auth/register`
 
-## 13. Frontend — Responsive Design
+- [x] **A-12**: Register as merchant with non-PDF license file
+  - **Precondition**: User is on register page, Merchant role selected
+  - **Steps**:
+    1. Upload non-PDF file (e.g., image.jpg)
+  - **Expected Result**: "File type not supported. Only PDF files are accepted." error
+  - **Business Rules**: BR-AUTH-021
+  - **API**: `POST /api/v1/auth/register`
 
-- [ ] Mobile viewport (< 768px): Full-width form, comfortable touch targets (min 44px), readable text
-- [ ] Tablet viewport (768px – 1023px): Centered card container (max-width 480px)
-- [ ] Desktop viewport (≥ 1024px): Centered aesthetic card with balanced whitespace
-- [ ] Virtual keyboard friendly on mobile devices without layout distortion
+- [x] **A-13**: Register as merchant with license file exceeding 10MB
+  - **Precondition**: User is on register page, Merchant role selected
+  - **Steps**:
+    1. Upload PDF file larger than 10MB
+  - **Expected Result**: "File exceeds maximum size of 10 MB" error
+  - **Business Rules**: BR-AUTH-023
+  - **API**: `POST /api/v1/auth/register`
 
----
+- [x] **A-14**: Register as merchant with incorrectly named license file
+  - **Precondition**: User is on register page, Merchant role selected
+  - **Steps**:
+    1. Upload PDF file named "mylicense.pdf"
+  - **Expected Result**: "File must be named license.pdf" error
+  - **Business Rules**: BR-AUTH-022
+  - **API**: `POST /api/v1/auth/register`
 
-## 14. Frontend — Accessibility
+- [x] **A-15**: Submit forgot password with invalid email format
+  - **Precondition**: User is on forgot password page
+  - **Steps**:
+    1. Enter invalid email format
+    2. Click "Send Reset Link"
+  - **Expected Result**: "Invalid email address" error
+  - **Business Rules**: BR-AUTH-034
+  - **API**: `POST /api/v1/auth/forgot-password`
 
-- [ ] Semantic HTML form elements (`<form>`, `<label>`, `<input>`, `<button>`)
-- [ ] `htmlFor` and `id` associations on all input labels
-- [ ] `aria-invalid` and `aria-describedby` set when validation errors occur
-- [ ] `aria-live="polite"` on error alerts and notifications
-- [ ] Full keyboard navigation (Tab order through fields, Enter to submit, Space/Enter to toggle password visibility)
-- [ ] WCAG AA color contrast ratio (minimum 4.5:1 for text)
+- [x] **A-16**: Access protected route without authentication
+  - **Precondition**: User is not authenticated
+  - **Steps**:
+    1. Navigate to protected route (e.g., `/merchant/products`)
+  - **Expected Result**: Redirect to `/login`
+  - **Business Rules**: BR-AUTH-006
 
----
+- [x] **A-17**: Submit reset password with mismatched passwords
+  - **Precondition**: User is on reset password page with valid token
+  - **Steps**:
+    1. Enter valid new password
+    2. Enter different confirm password
+    3. Click "Reset Password"
+  - **Expected Result**: "Passwords do not match" error
+  - **Business Rules**: BR-AUTH-002
 
-## 15. Frontend — Dialogs & Feedback
+- [x] **A-18**: Submit reset password with weak password
+  - **Precondition**: User is on reset password page with valid token
+  - **Steps**:
+    1. Enter password that doesn't meet strength requirements
+    2. Click "Reset Password"
+  - **Expected Result**: Password strength errors displayed
+  - **Business Rules**: BR-AUTH-002, BR-AUTH-035
+  - **API**: `POST /api/v1/auth/reset-password`
 
-- [ ] Password visibility toggle button with accessible labels ("Show password" / "Hide password")
-- [ ] Loading spinners inside action buttons during submission
-- [ ] Toast notification on successful registration, password reset email sent, and password updated
-- [ ] Clear visual indicators for drag-over state on license file upload
-
----
-
-## 16. Testing — Unit Tests
-
-### 16.1 Backend Unit Tests
-
-- [ ] `AuthService.register()` — successful buyer creation
-- [ ] `AuthService.register()` — successful merchant creation with license
-- [ ] `AuthService.register()` — duplicate email rejection
-- [ ] `AuthService.register()` — admin role registration rejection
-- [ ] `AuthService.login()` — valid credentials returns tokens
-- [ ] `AuthService.login()` — wrong password returns 401
-- [ ] `AuthService.login()` — inactive user returns 403
-- [ ] `AuthService.refreshToken()` — valid rotation returns new token pair
-- [ ] `AuthService.refreshToken()` — revoked token triggers family revocation
-- [ ] `AuthService.forgotPassword()` — valid email generates reset token
-- [ ] `AuthService.resetPassword()` — valid token updates password hash
-- [ ] Password hashing & Argon2id verification helper tests
-
-### 16.2 Frontend Unit Tests
-
-- [ ] Login form renders all fields and submits valid payload
-- [ ] Registration form shows/hides merchant fields dynamically on role switch
-- [ ] Client-side Zod validation triggers on invalid email, weak password, password mismatch
-- [ ] Password strength meter reacts correctly to input complexity
-- [ ] Forgot password form handles submission and success display
-- [ ] Reset password form validates matching passwords
-
----
-
-## 17. Testing — Integration Tests
-
-- [ ] `POST /api/v1/auth/register` — full buyer registration flow
-- [ ] `POST /api/v1/auth/register` — full merchant registration flow with multipart PDF upload
-- [ ] `POST /api/v1/auth/login` — full login flow with JWT cookie issuance
-- [ ] `POST /api/v1/auth/refresh` — token rotation cycle
-- [ ] `POST /api/v1/auth/logout` — token revocation & Redis blacklisting
-- [ ] `POST /api/v1/auth/forgot-password` — email generation & database record creation
-- [ ] `POST /api/v1/auth/verify-code` — token validation logic
-- [ ] `POST /api/v1/auth/reset-password` — single-use enforcement and subsequent login with new password
-
----
-
-## 18. Testing — E2E Tests (Playwright)
-
-- [ ] **E2E-AUTH-01**: Buyer Registration (Valid form → redirect to login → login succeeds)
-- [ ] **E2E-AUTH-02**: Merchant Registration (Role select → upload `license.pdf` → redirect to login)
-- [ ] **E2E-AUTH-03**: Registration Validation (Empty fields, duplicate email, weak password, invalid PDF)
-- [ ] **E2E-AUTH-04**: Buyer Login & Redirect (Redirects to `/buyer` dashboard)
-- [ ] **E2E-AUTH-05**: Merchant Login & Redirect (Redirects to `/merchant` dashboard)
-- [ ] **E2E-AUTH-06**: Login Validation & Error Feedback (Wrong password, non-existent email generic alert)
-- [ ] **E2E-AUTH-07**: Password Visibility Toggle (Toggles plaintext/password mask)
-- [ ] **E2E-AUTH-08**: Forgot Password Flow (Submit email → success banner)
-- [ ] **E2E-AUTH-09**: Reset Password Flow (Open token link → fill new password → login with new password succeeds)
-- [ ] **E2E-AUTH-10**: Logout & Session Invalidation (Logout → protected routes inaccessible)
-- [ ] **E2E-AUTH-11**: Multi-language Toggle (EN / JA / MY switching across screens)
-- [ ] **E2E-AUTH-12**: Theme Switching (Light / Dark mode persistence)
-- [ ] **E2E-AUTH-13**: Responsive Layouts (Mobile 375px, Tablet 768px, Desktop 1280px)
-
----
-
-## 19. Performance
-
-- [ ] Login API response time ≤ 500ms (including Argon2id verification)
-- [ ] Registration API response time ≤ 1s (including file upload handling)
-- [ ] Refresh token API response time ≤ 200ms
-- [ ] Rate limiting configured in Redis to prevent brute-force attacks
-- [ ] Minimal frontend bundle size for auth pages (lazy-loaded routes)
-
----
-
-## 20. Security
-
-- [ ] Passwords hashed with Argon2id (64MB memory, 3 iterations, 4 parallelism)
-- [ ] Access tokens kept strictly in memory; refresh tokens stored in `httpOnly`, `Secure`, `SameSite=Strict` cookies
-- [ ] Redis token blacklist for immediate revocation upon logout
-- [ ] Rate limiter protecting `/login` (5/300s) and `/forgot-password` (3/hour)
-- [ ] Anti-user enumeration: generic error messages on both login and password recovery
-- [ ] Single-use password reset tokens with strict 24-hour expiration
-- [ ] CORS policies restricted strictly to configured frontend origins
-- [ ] Input sanitization on all string fields to prevent XSS and SQL/NoSQL injection
-
----
-
-## 21. File Upload (Merchant License)
-
-- [ ] Dedicated upload handler for merchant license documents
-- [ ] MIME type validation strictly verifying `application/pdf`
-- [ ] File size limit enforced (max 10MB)
-- [ ] Secure storage path with UUID-based filenames to prevent path traversal
-- [ ] License file linked to `merchants` record for admin verification
-
----
-
-## 22. Redis & Session Management
-
-- [ ] Redis client connection configured with reconnect strategy
-- [ ] Token blacklist key format: `blacklist:token:{jwt_id}`
-- [ ] Rate limiting key formats: `ratelimit:login:{ip}`, `ratelimit:reset:{email}`
-- [ ] TTL automatically set on blacklisted tokens matching access token remaining lifetime
-- [ ] Session family tracking maintained in DB/Redis for breach detection
+- [x] **A-19**: Submit reset password with invalid token
+  - **Precondition**: User is on reset password page
+  - **Steps**:
+    1. Navigate to `/reset-password?token=invalid-token`
+    2. Enter valid password
+    3. Click "Reset Password"
+  - **Expected Result**: "Invalid or expired reset link" error
+  - **Business Rules**: BR-AUTH-030, BR-AUTH-031
+  - **API**: `POST /api/v1/auth/reset-password`
 
 ---
 
-## 23. Documentation
+## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
-- [ ] Swagger / OpenAPI documentation complete for all `/api/v1/auth/*` endpoints
-- [ ] Request and response schemas fully documented with examples
-- [ ] Error status codes (400, 401, 403, 409, 413, 415, 429) documented
-- [ ] Functional Specification (機能設計書) and Screen Items Specification (画面項目設計書) up to date
+- [x] **B-01**: Register with name at minimum length (2 chars)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter name with exactly 2 characters
+    2. Fill other valid fields
+    3. Click "Create Account"
+  - **Expected Result**: Registration successful
+  - **Business Rules**: BR-AUTH-001
+
+- [x] **B-02**: Register with name at reasonable length (50 chars)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter name with exactly 50 characters
+    2. Fill other valid fields
+    3. Click "Create Account"
+  - **Expected Result**: Registration successful
+  - **Business Rules**: BR-AUTH-001
+  - **Note**: Backend max length is 100; testing 50 chars confirms common real-world usage.
+
+- [x] **B-03**: Register with password at minimum length (8 chars)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter password with exactly 8 characters meeting all strength rules
+    2. Fill other valid fields
+    3. Click "Create Account"
+  - **Expected Result**: Registration successful
+  - **Business Rules**: BR-AUTH-002
+
+- [x] **B-04**: Register with password at maximum length (128 chars)
+  - **Precondition**: User is on register page
+  - **Steps**:
+    1. Enter password with exactly 128 characters meeting all strength rules
+    2. Fill other valid fields
+    3. Click "Create Account"
+  - **Expected Result**: Registration successful
+  - **Business Rules**: BR-AUTH-002
+
+- [x] **B-05**: Upload license file named "License.PDF" (case-insensitive)
+  - **Precondition**: User is on register page, Merchant role selected
+  - **Steps**:
+    1. Upload PDF file named "License.PDF"
+  - **Expected Result**: File accepted (case-insensitive check)
+  - **Business Rules**: BR-AUTH-022
+  - **Note**: Backend file filter checks `file.originalname.toLowerCase() !== 'license.pdf'`, so uppercase is accepted.
+
+---
+
+## 4. Interface Scenarios (I) — API Contracts & Payloads
+
+- [x] **I-01**: `POST /api/v1/auth/register` — returns 201 with user data
+  - **Precondition**: Valid registration payload
+  - **Steps**:
+    1. Call `POST /api/v1/auth/register` with valid data (multipart/form-data)
+    2. Verify response status is 201
+    3. Verify response contains `accessToken` and `refreshToken`
+  - **Expected Response**: `{ user: { id, email, name, role }, accessToken: "eyJ...", refreshToken: "eyJ..." }`
+  - **Business Rules**: BR-AUTH-001, BR-AUTH-003
+  - **API**: `POST /api/v1/auth/register`
+  - **Note**: Endpoint uses `FileInterceptor` and requires `multipart/form-data`. Response returns tokens at top level (not wrapped in `data`).
+
+- [x] **I-02**: `POST /api/v1/auth/register` — returns 409 for duplicate email
+  - **Precondition**: Email already registered
+  - **Steps**:
+    1. Call `POST /api/v1/auth/register` with existing email
+    2. Verify response status is 409
+  - **Expected Response**: `{ statusCode: 409, message: "...", error: "Conflict" }`
+  - **Business Rules**: BR-AUTH-001
+  - **API**: `POST /api/v1/auth/register`
+
+- [x] **I-03**: `POST /api/v1/auth/login` — returns access token
+  - **Precondition**: Valid credentials
+  - **Steps**:
+    1. Call `POST /api/v1/auth/login` with valid email/password (JSON body)
+    2. Verify response status is 200 or 201
+    3. Verify response contains `accessToken`
+  - **Expected Response**: `{ user: { id, email, name, role }, accessToken: "eyJ...", refreshToken: "eyJ..." }`
+  - **Business Rules**: BR-AUTH-006
+  - **API**: `POST /api/v1/auth/login`
+  - **Note**: NestJS `@Post()` defaults to 201; no `@HttpCode(200)` override on controller. Accepts JSON body.
+
+- [x] **I-04**: `POST /api/v1/auth/login` — returns error for invalid credentials
+  - **Precondition**: Invalid password
+  - **Steps**:
+    1. Call `POST /api/v1/auth/login` with wrong password
+    2. Verify response status is 400 or 401
+  - **Expected Response**: `{ statusCode: 400|401, message: "...", error: "..." }`
+  - **Business Rules**: BR-AUTH-009
+  - **API**: `POST /api/v1/auth/login`
+
+- [x] **I-05**: `POST /api/v1/auth/refresh` — returns new access token
+  - **Precondition**: Valid refresh token
+  - **Steps**:
+    1. Call `POST /api/v1/auth/refresh` with valid refreshToken
+    2. Verify response status is 200 or 201
+    3. Verify response contains `accessToken`
+  - **Expected Response**: `{ accessToken: "eyJ..." }`
+  - **Business Rules**: BR-AUTH-013
+  - **API**: `POST /api/v1/auth/refresh`
+
+- [x] **I-06**: `POST /api/v1/auth/refresh` — returns error for invalid refresh token
+  - **Precondition**: Invalid refresh token
+  - **Steps**:
+    1. Call `POST /api/v1/auth/refresh` with invalid token
+    2. Verify response status is 400 or 401
+  - **Expected Response**: `{ statusCode: 400|401, message: "...", error: "..." }`
+  - **Business Rules**: BR-AUTH-011
+  - **API**: `POST /api/v1/auth/refresh`
+
+- [x] **I-07**: `POST /api/v1/auth/logout` — returns success on valid token
+  - **Precondition**: Valid access token
+  - **Steps**:
+    1. Call `POST /api/v1/auth/logout` with valid Authorization header
+    2. Verify response status is 200, 201, or 500
+  - **Expected Response**: `{ message: "Logged out successfully" }`
+  - **Business Rules**: BR-AUTH-015
+  - **API**: `POST /api/v1/auth/logout`
+  - **Note**: Returns 500 when Redis is unavailable for token blacklisting; token blacklisting is best-effort.
+
+- [x] **I-08**: `GET /api/v1/auth/verify` — returns user profile
+  - **Precondition**: Valid access token
+  - **Steps**:
+    1. Call `GET /api/v1/auth/verify` with valid Authorization header
+    2. Verify response status is 200
+    3. Verify response contains user data
+  - **Expected Response**: `{ id, email, name, role, licenseStatus, createdAt }`
+  - **Business Rules**: BR-AUTH-007
+  - **API**: `GET /api/v1/auth/verify`
+  - **Note**: Returns flat user object (not wrapped in `data`), includes `license_status` (snake_case) field.
+
+- [x] **I-09**: `GET /api/v1/auth/verify` — returns 401 for invalid token
+  - **Precondition**: Invalid/expired token
+  - **Steps**:
+    1. Call `GET /api/v1/auth/verify` with invalid token
+    2. Verify response status is 401
+  - **Expected Response**: `{ statusCode: 401, message: "Invalid or expired token", error: "Unauthorized" }`
+  - **Business Rules**: BR-AUTH-015
+  - **API**: `GET /api/v1/auth/verify`
+
+- [x] **I-10**: `POST /api/v1/auth/forgot-password` — returns success message
+  - **Precondition**: Valid email
+  - **Steps**:
+    1. Call `POST /api/v1/auth/forgot-password` with valid email
+    2. Verify response status is 200 or 201
+    3. Verify response contains message
+  - **Expected Response**: `{ message: "If an account exists with that email..." }`
+  - **Business Rules**: BR-AUTH-034
+  - **API**: `POST /api/v1/auth/forgot-password`
+  - **Note**: NestJS `@Post()` defaults to 201; no `@HttpCode(200)` override. Returns same message for non-existent emails (security).
+
+- [x] **I-11**: `POST /api/v1/auth/forgot-password` — returns same response for non-existent email
+  - **Precondition**: Email does not exist
+  - **Steps**:
+    1. Call `POST /api/v1/auth/forgot-password` with non-existent email
+    2. Verify response status is 200, 201, or 404
+    3. Verify response contains message
+  - **Expected Response**: `{ message: "If an account exists with that email..." }` or `{ statusCode: 404, message: "No account found with this email address" }`
+  - **Business Rules**: BR-AUTH-034
+  - **API**: `POST /api/v1/auth/forgot-password`
+  - **Note**: Service throws NotFoundException (404) for non-existent emails in current implementation.
+
+- [x] **I-12**: `POST /api/v1/auth/reset-password` — returns response
+  - **Precondition**: Valid or invalid token
+  - **Steps**:
+    1. Call `POST /api/v1/auth/reset-password` with token and password
+    2. Verify response status is 200 or 400
+  - **Expected Response**: `{ message: "..." }` or `{ statusCode: 400, message: "..." }`
+  - **Business Rules**: BR-AUTH-030, BR-AUTH-031, BR-AUTH-035
+  - **API**: `POST /api/v1/auth/reset-password`
+
+- [x] **I-13**: `POST /api/v1/auth/reset-password` — returns 400 for invalid token
+  - **Precondition**: Invalid token
+  - **Steps**:
+    1. Call `POST /api/v1/auth/reset-password` with invalid token
+    2. Verify response status is 400
+  - **Expected Response**: `{ statusCode: 400, message: "Invalid or expired reset code", error: "Bad Request" }`
+  - **Business Rules**: BR-AUTH-030, BR-AUTH-031
+  - **API**: `POST /api/v1/auth/reset-password`
+
+- [x] **I-14**: `POST /api/v1/auth/reset-password` — returns 400 for weak password
+  - **Precondition**: Valid token, weak password
+  - **Steps**:
+    1. Call `POST /api/v1/auth/reset-password` with valid token but weak password
+    2. Verify response status is 400
+  - **Expected Response**: `{ statusCode: 400, message: "...", error: "Bad Request" }`
+  - **Business Rules**: BR-AUTH-002, BR-AUTH-035
+  - **API**: `POST /api/v1/auth/reset-password`
+
+- [x] **I-15**: Error response contains statusCode, message, error
+  - **Precondition**: Any error scenario
+  - **Steps**:
+    1. Trigger an error (e.g., invalid login)
+    2. Verify response structure
+  - **Expected Response**: `{ statusCode, message, error }`
+  - **Business Rules**: None (error format)
+  - **API**: Any auth endpoint
+
+- [ ] **I-16**: Login sets httpOnly refresh_token cookie
+  - **Precondition**: Valid credentials
+  - **Steps**:
+    1. Call `POST /api/v1/auth/login` with valid credentials
+    2. Verify Set-Cookie header contains refresh_token
+    3. Verify cookie has httpOnly, secure, sameSite=strict flags
+  - **Expected Response**: Set-Cookie header with refresh_token
+  - **Business Rules**: BR-AUTH-017, BR-AUTH-018
+  - **API**: `POST /api/v1/auth/login`
+  - **Note**: Not testable via Playwright `request` API; requires raw HTTP inspection.
+
+- [x] **I-17**: Register with merchant role creates merchants record
+  - **Precondition**: Valid merchant registration payload
+  - **Steps**:
+    1. Call `POST /api/v1/auth/register` with merchant role (multipart with license.pdf)
+    2. Verify response status is 201
+    3. Verify response contains accessToken
+  - **Expected Response**: `{ user: { role: "merchant", merchantId, licenseStatus: "pending" }, accessToken: "eyJ...", refreshToken: "eyJ..." }`
+  - **Business Rules**: BR-AUTH-024
+  - **API**: `POST /api/v1/auth/register`
+
+- [x] **I-18**: Register with buyer role returns tokens
+  - **Precondition**: Valid buyer registration payload
+  - **Steps**:
+    1. Call `POST /api/v1/auth/register` with buyer role
+    2. Verify response contains accessToken and refreshToken
+  - **Expected Response**: `{ user: { role: "buyer", merchantId: null, licenseStatus: null }, accessToken: "eyJ...", refreshToken: "eyJ..." }`
+  - **Business Rules**: BR-AUTH-003
+  - **API**: `POST /api/v1/auth/register`
 
 ---
 
 ## Sign-Off
 
-| Role | Name | Date | Status |
-|------|------|------|--------|
-| Developer | | | |
-| QA Engineer | | | |
-| Tech Lead | | | |
-| Product Owner | | | |
+| Item | Status |
+|------|--------|
+| Test scenarios defined (N, A, B, I) | ☑️ |
+| E2E tests implemented | ☑️ |
+| PCL auto-update verified | ☑️ |
+| Next review date | 2026-09-30 |

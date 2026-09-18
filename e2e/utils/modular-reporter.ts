@@ -11,13 +11,6 @@ import * as path from 'path';
 import { SCREEN_FOLDERS, getScreenFromFilePath } from './screenshot';
 
 const TEST_RESULTS_DIR = path.resolve(__dirname, '../test-results');
-const PLAYWRIGHT_REPORT_DIR = path.resolve(__dirname, '../playwright-report');
-
-function removeDir(dirPath: string) {
-  if (fs.existsSync(dirPath)) {
-    fs.rmSync(dirPath, { recursive: true, force: true });
-  }
-}
 
 function ensureDir(dirPath: string) {
   if (!fs.existsSync(dirPath)) {
@@ -86,8 +79,5 @@ export default class ModularReporter implements Reporter {
         'utf-8'
       );
     }
-
-    // 2. Ensure playwright-report folder does not exist
-    removeDir(PLAYWRIGHT_REPORT_DIR);
   }
 }

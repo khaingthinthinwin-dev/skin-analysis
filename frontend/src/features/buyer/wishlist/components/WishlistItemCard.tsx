@@ -70,27 +70,27 @@ export function WishlistItemCard({
         </Button>
       </Link>
 
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-2.5 sm:p-4 space-y-2 sm:space-y-3">
         <div>
-          <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">
+          <span className="text-[10px] sm:text-[11px] font-bold text-purple-600 uppercase tracking-wider block truncate">
             {item.category || 'Uncategorized'}
           </span>
           <Link
             to={productLink}
-            className="block text-sm font-bold text-foreground line-clamp-1 mt-0.5 hover:text-primary hover:underline"
+            className="block text-xs sm:text-sm font-bold text-foreground line-clamp-2 sm:line-clamp-1 mt-0.5 hover:text-primary hover:underline leading-snug"
           >
             {item.productName}
           </Link>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-end gap-2">
-            <span className="text-base font-extrabold text-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-0.5">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-sm sm:text-base font-extrabold text-foreground">
               {item.productPrice}
             </span>
             {item.compareAtPrice &&
               parseFloat(item.compareAtPrice) > parseFloat(item.productPrice) && (
-                <span className="pb-0.5 text-xs text-muted-foreground line-through">
+                <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
                   {item.compareAtPrice}
                 </span>
               )}
@@ -98,7 +98,7 @@ export function WishlistItemCard({
           <Button
             size="sm"
             disabled={!item.isInStock || isMoving}
-            className="gap-1 text-xs"
+            className="gap-1 text-xs w-full sm:w-auto h-8 px-2 sm:px-3 shrink-0"
             onClick={() => onMoveToCart(item.productId)}
           >
             {isMoving ? (

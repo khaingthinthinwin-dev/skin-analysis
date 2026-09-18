@@ -1,0 +1,17 @@
+{
+  "pclFile": "docs/screen/Order_Insights/Order_Insights_PCL.md",
+  "specFiles": [
+    "e2e/tests/Order_Insights/order-insights.spec.ts"
+  ],
+  "mappings": {
+    "should display buyer order history": "E2E-OI-01: Buyer order history displays",
+    "should view order detail": "E2E-OI-02: Order detail view works",
+    "should view order tracking": "E2E-OI-03: Order tracking displays",
+    "should display merchant order list": "E2E-OI-04: Merchant order list displays",
+    "should display sales summary": "E2E-OI-05: Sales summary displays",
+    "should view order detail with customer info": "E2E-OI-06: Merchant order detail with customer info",
+    "should display all orders with filters": "E2E-OI-07: Admin all orders with filters",
+    "should filter orders by status": "E2E-OI-08: Status filter works",
+    "should export order report": "E2E-OI-09: Order report export works"
+  }
+}

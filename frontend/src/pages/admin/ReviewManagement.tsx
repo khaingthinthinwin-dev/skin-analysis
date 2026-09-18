@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router';
 import {
   useAdminReviews,
   useAdminReports,
@@ -24,12 +25,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -43,7 +38,6 @@ import {
   Trash2,
   Search,
   Eye,
-  X,
   Flag,
   ChevronLeft,
   ChevronRight,
@@ -52,7 +46,6 @@ import {
   CheckCircle,
   XCircle,
   SlidersHorizontal,
-  MoreHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -149,22 +142,29 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-function ReviewStatusBadge({ isApproved }: { isApproved: boolean }) {
+function ReviewStatusBadge({ status }: { status: string }) {
+  const variants: Record<string, { badge: string; icon: React.ReactNode; label: string }> = {
+    pending: {
+      badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      icon: <Clock className="h-3 w-3 mr-1" />,
+      label: 'Pending',
+    },
+    approved: {
+      badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      icon: <CheckCircle className="h-3 w-3 mr-1" />,
+      label: 'Approved',
+    },
+    rejected: {
+      badge: 'bg-red-500/10 text-red-400 border-red-500/20',
+      icon: <XCircle className="h-3 w-3 mr-1" />,
+      label: 'Rejected',
+    },
+  };
+  const v = variants[status] || variants.pending;
   return (
-    <Badge
-      variant={isApproved ? 'default' : 'outline'}
-      className={
-        isApproved
-          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-      }
-    >
-      {isApproved ? (
-        <CheckCircle className="h-3 w-3 mr-1" />
-      ) : (
-        <Clock className="h-3 w-3 mr-1" />
-      )}
-      {isApproved ? 'Approved' : 'Pending'}
+    <Badge variant="outline" className={v.badge}>
+      {v.icon}
+      {v.label}
     </Badge>
   );
 }
@@ -202,7 +202,7 @@ function ReasonBadge({ reason }: { reason: string }) {
 export default function ReviewManagement() {
   // ── Reviews State ────────────────────────────────────────────────────────
   const [reviewPage, setReviewPage] = useState(1);
-  const [reviewLimit, setReviewLimit] = useState(4);
+  const [reviewLimit, setReviewLimit] = useState(10);
   const [reviewStatus, setReviewStatus] = useState<string>('');
   const [reviewSearch, setReviewSearch] = useState('');
   const debouncedSearch = useDebounced(reviewSearch, 300);
@@ -220,6 +220,7 @@ export default function ReviewManagement() {
   const [rejectReason, setRejectReason] = useState('');
   const [detailReview, setDetailReview] = useState<AdminReview | null>(null);
   const [detailReport, setDetailReport] = useState<AdminReport | null>(null);
+  const [reportAdminNote, setReportAdminNote] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
 
@@ -294,15 +295,11 @@ export default function ReviewManagement() {
     );
   };
 
-  const openRejectDialog = (id: string) => {
-    setRejectTarget(id);
-    setRejectReason('');
-  };
-
   const handleReject = () => {
-    if (!rejectTarget || !rejectReason.trim()) return;
+    const targetId = rejectTarget || detailReview?.id;
+    if (!targetId || !rejectReason.trim()) return;
     moderateMutation.mutate(
-      { id: rejectTarget, data: { action: 'reject', reason: rejectReason } },
+      { id: targetId, data: { action: 'reject', reason: rejectReason } },
       {
         onSuccess: () => {
           toast.success('Review rejected');
@@ -379,16 +376,6 @@ export default function ReviewManagement() {
   };
 
   // ── Report Actions ───────────────────────────────────────────────────────
-  const handleResolveReport = (id: string, status: 'resolved' | 'rejected') => {
-    updateStatusMutation.mutate(
-      { id, data: { status } },
-      {
-        onSuccess: () => toast.success(`Report ${status}`),
-        onError: () => toast.error('Failed to update report'),
-      },
-    );
-  };
-
   const handleDeleteReport = (id: string) => {
     deleteReportMutation.mutate(id, {
       onSuccess: () => toast.success('Report deleted'),
@@ -503,6 +490,7 @@ export default function ReviewManagement() {
                 icon: FileText,
                 color: 'text-blue-400',
                 bg: 'bg-blue-500/10',
+                filter: '',
               },
               {
                 label: 'Pending',
@@ -510,6 +498,7 @@ export default function ReviewManagement() {
                 icon: Clock,
                 color: 'text-amber-400',
                 bg: 'bg-amber-500/10',
+                filter: 'pending',
               },
               {
                 label: 'Approved',
@@ -517,6 +506,7 @@ export default function ReviewManagement() {
                 icon: CheckCircle,
                 color: 'text-emerald-400',
                 bg: 'bg-emerald-500/10',
+                filter: 'approved',
               },
               {
                 label: 'Rejected',
@@ -524,9 +514,32 @@ export default function ReviewManagement() {
                 icon: XCircle,
                 color: 'text-red-400',
                 bg: 'bg-red-500/10',
+                filter: 'rejected',
               },
             ].map((stat) => (
-              <Card key={stat.label}>
+              <Card
+                key={stat.label}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  setReviewStatus(stat.filter);
+                  setReviewPage(1);
+                  setSelectedReviews([]);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setReviewStatus(stat.filter);
+                    setReviewPage(1);
+                    setSelectedReviews([]);
+                  }
+                }}
+                className={`cursor-pointer transition-all ${
+                  reviewStatus === stat.filter
+                    ? 'ring-2 ring-primary/60 shadow-sm'
+                    : 'hover:border-primary/40 hover:shadow-sm'
+                }`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div
@@ -546,35 +559,9 @@ export default function ReviewManagement() {
             ))}
           </div>
 
-          {/* ── [D] Filter Tabs ────────────────────────────────────────── */}
-          <div className="flex items-center gap-2">
-            {[
-              { value: '', label: 'All', count: stats.total },
-              { value: 'pending', label: 'Pending', count: stats.pending },
-              { value: 'approved', label: 'Approved', count: stats.approved },
-              { value: 'rejected', label: 'Rejected', count: stats.rejected },
-            ].map((f) => (
-              <button
-                key={f.value}
-                onClick={() => {
-                  setReviewStatus(f.value);
-                  setReviewPage(1);
-                  setSelectedReviews([]);
-                }}
-                className={`px-4 py-2 text-sm rounded-md transition-colors ${
-                  reviewStatus === f.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {f.label} {f.count}
-              </button>
-            ))}
-          </div>
-
-          {/* ── [E] Search + Sort Bar ──────────────────────────────────── */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
+          {/* ── [D] Search + Sort Bar ──────────────────────────────────── */}
+          <div className="flex flex-wrap items-center justify-start gap-3">
+            <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search reviews by user, product, or content..."
@@ -603,34 +590,36 @@ export default function ReviewManagement() {
 
           {/* ── Bulk Actions ───────────────────────────────────────────── */}
           {selectedReviews.length > 0 && (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+            <div className="flex items-center justify-between gap-2 p-3 bg-muted rounded-md">
               <span className="text-sm font-medium">
                 {selectedReviews.length} selected
               </span>
-              <Button size="sm" onClick={handleBulkApprove}>
-                <Check className="h-4 w-4 mr-1" /> Approve All
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => setBulkRejectOpen(true)}
-              >
-                <Flag className="h-4 w-4 mr-1" /> Reject All
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => {
-                  if (
-                    confirm(
-                      `Permanently delete ${selectedReviews.length} selected reviews? This cannot be undone.`,
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={handleBulkApprove}>
+                  <Check className="h-4 w-4 mr-1" /> Approve All
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setBulkRejectOpen(true)}
+                >
+                  <Flag className="h-4 w-4 mr-1" /> Reject All
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    if (
+                      confirm(
+                        `Permanently delete ${selectedReviews.length} selected reviews? This cannot be undone.`,
+                      )
                     )
-                  )
-                    handleBulkDelete();
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-1" /> Delete All
-              </Button>
+                      handleBulkDelete();
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" /> Delete All
+                </Button>
+              </div>
             </div>
           )}
 
@@ -725,7 +714,7 @@ export default function ReviewManagement() {
                         {review.title || review.body || '-'}
                       </TableCell>
                       <TableCell>
-                        <ReviewStatusBadge isApproved={review.isApproved} />
+                        <ReviewStatusBadge status={review.status} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {new Date(review.createdAt).toLocaleDateString()}
@@ -744,17 +733,9 @@ export default function ReviewManagement() {
                             size="icon"
                             variant="outline"
                             className="h-8 w-8"
-                            onClick={() => handleApprove(review.id)}
+                            onClick={() => openDeleteDialog(review.id)}
                           >
-                            <Check className="h-4 w-4 text-emerald-500" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => openRejectDialog(review.id)}
-                          >
-                            <X className="h-4 w-4 text-destructive" />
+                            <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </div>
                       </TableCell>
@@ -784,7 +765,6 @@ export default function ReviewManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="4">4</SelectItem>
                   <SelectItem value="10">10</SelectItem>
                   <SelectItem value="20">20</SelectItem>
                   <SelectItem value="50">50</SelectItem>
@@ -841,69 +821,85 @@ export default function ReviewManagement() {
         {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="reports" className="space-y-4">
           {/* ── Reports Stats ──────────────────────────────────────────── */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-4">
             {[
               {
                 label: 'Total',
                 value: reportsQuery.data?.total ?? 0,
                 color: 'bg-blue-100 text-blue-800',
+                icon: Flag,
+                filter: '',
               },
               {
                 label: 'Pending',
                 value: reports.filter((r) => r.status === 'pending').length,
                 color: 'bg-amber-100 text-amber-800',
+                icon: Clock,
+                filter: 'pending',
+              },
+              {
+                label: 'Reviewed',
+                value: reports.filter((r) => r.status === 'reviewed').length,
+                color: 'bg-blue-100 text-blue-800',
+                icon: Eye,
+                filter: 'reviewed',
               },
               {
                 label: 'Resolved',
                 value: reports.filter((r) => r.status === 'resolved').length,
                 color: 'bg-emerald-100 text-emerald-800',
+                icon: CheckCircle,
+                filter: 'resolved',
               },
               {
                 label: 'Rejected',
                 value: reports.filter((r) => r.status === 'rejected').length,
                 color: 'bg-red-100 text-red-800',
+                icon: XCircle,
+                filter: 'rejected',
               },
             ].map((stat) => (
-              <Card key={stat.label}>
+              <Card
+                key={stat.label}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  setReportStatus(stat.filter);
+                  setReportPage(1);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setReportStatus(stat.filter);
+                    setReportPage(1);
+                  }
+                }}
+                className={`cursor-pointer transition-all ${
+                  reportStatus === stat.filter
+                    ? 'ring-2 ring-primary/60 shadow-sm'
+                    : 'hover:border-primary/40 hover:shadow-sm'
+                }`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {stat.label}
-                    </span>
-                    <Badge className={stat.color}>{stat.value}</Badge>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
+                      <stat.icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">
+                        {stat.label}
+                      </span>
+                      <Badge className={stat.color}>{stat.value}</Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          {/* ── Reports Filters ────────────────────────────────────────── */}
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              {[
-                { value: '', label: 'All' },
-                { value: 'pending', label: 'Pending' },
-                { value: 'reviewed', label: 'Reviewed' },
-                { value: 'resolved', label: 'Resolved' },
-                { value: 'rejected', label: 'Rejected' },
-              ].map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => {
-                    setReportStatus(f.value);
-                    setReportPage(1);
-                  }}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    reportStatus === f.value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            <div className="relative flex-1 max-w-sm">
+          {/* ── Reports Search Bar ─────────────────────────────────────── */}
+          <div className="flex items-center justify-start">
+            <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search reports..."
@@ -975,46 +971,37 @@ export default function ReviewManagement() {
                         {new Date(report.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => setDetailReport(report)}
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setReportAdminNote('');
+                              if (report.status === 'pending') {
+                                updateStatusMutation.mutate(
+                                  { id: report.id, data: { status: 'reviewed' } },
+                                  {
+                                    onError: () => toast.error('Failed to update report'),
+                                  },
+                                );
+                              }
+                              setDetailReport(report);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {report.status !== 'resolved' && (
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="h-8 w-8"
+                              onClick={() => handleDeleteReport(report.id)}
                             >
-                              <Eye className="h-4 w-4 mr-2" /> View Detail
-                            </DropdownMenuItem>
-                            {report.status === 'pending' && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleResolveReport(report.id, 'resolved')
-                                  }
-                                >
-                                  Resolve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleResolveReport(report.id, 'rejected')
-                                  }
-                                >
-                                  Reject
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {report.status !== 'resolved' && (
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleDeleteReport(report.id)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" /> Delete
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1056,84 +1043,140 @@ export default function ReviewManagement() {
 
       {/* ── Review Detail Modal ─────────────────────────────────────────── */}
       <Dialog open={!!detailReview} onOpenChange={() => setDetailReview(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Review Detail</DialogTitle>
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+          <DialogHeader className="border-b border-slate-200 pb-2">
+            <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
+              Review Detail
+            </DialogTitle>
           </DialogHeader>
           {detailReview && (
-            <div className="space-y-5">
-              {/* [B] User Info Card */}
-              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-medium text-white ${getAvatarColor(
-                    detailReview.user?.name || '',
-                  )}`}
-                >
-                  {getInitials(detailReview.user?.name || '?')}
+            <div className="space-y-3 pt-1">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Review Information
+                  </p>
                 </div>
-                <div>
-                  <p className="font-semibold">
-                    {detailReview.user?.name || 'N/A'}
+
+                <div className="rounded-md border border-slate-200 bg-white p-2">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
+                    Reviewer
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {detailReview.user?.email || ''}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700">
+                      {detailReview.user?.name
+                        ?.split(' ')
+                        .map((part: string) => part[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2) || '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {detailReview.user?.name || 'N/A'}
+                      </p>
+                      <p className="truncate text-xs text-slate-600">
+                        {detailReview.user?.email || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
+                    Product
                   </p>
+                  <div className="flex items-center gap-3">
+                    {detailReview.product?.images?.[0] && (
+                      <img
+                        src={getImageUrl(detailReview.product.images[0])}
+                        alt=""
+                        className="h-10 w-10 shrink-0 rounded object-cover"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      {detailReview.product?.slug ? (
+                        <Link
+                          to={`/buyer/products/${detailReview.product.slug}`}
+                          className="truncate text-sm font-medium text-slate-900 underline-offset-2 hover:text-blue-600 hover:underline"
+                        >
+                          {detailReview.product?.name || 'N/A'}
+                        </Link>
+                      ) : (
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {detailReview.product?.name || 'N/A'}
+                        </p>
+                      )}
+                      <p className="text-xs text-slate-600">
+                        {detailReview.product?.price != null
+                          ? `$${Number(detailReview.product.price).toFixed(2)}`
+                          : 'Price unavailable'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Status
+                    </p>
+                    <div className="mt-1">
+                      <ReviewStatusBadge status={detailReview.status} />
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Rating
+                    </p>
+                    <div className="mt-1 flex items-center gap-1">
+                      <StarRating rating={detailReview.rating} />
+                      <span className="text-xs text-slate-600">
+                        ({detailReview.rating}/5)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Submitted
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {new Date(detailReview.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* [C] Product Info Card */}
-              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                {detailReview.product?.images?.[0] && (
-                  <img
-                    src={getImageUrl(detailReview.product.images[0])}
-                    alt=""
-                    className="h-16 w-16 rounded object-cover"
-                  />
-                )}
-                <div>
-                  <p className="font-semibold">
-                    {detailReview.product?.name || 'N/A'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {detailReview.product?.slug || ''}
-                  </p>
-                </div>
-              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Review Content
+                </p>
 
-              {/* [D] Review Content */}
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">
-                    Rating
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <StarRating rating={detailReview.rating} />
-                    <span className="text-sm text-muted-foreground">
-                      ({detailReview.rating}/5)
-                    </span>
+                <div className="rounded-md border border-slate-200 bg-white p-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    {detailReview.isVerifiedPurchase && (
+                      <Badge variant="secondary">Verified Purchase</Badge>
+                    )}
                   </div>
-                </div>
-                {detailReview.title && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Title
+
+                  {detailReview.title && (
+                    <p className="mb-1 text-sm font-medium text-slate-900">
+                      {detailReview.title}
                     </p>
-                    <p className="font-medium">{detailReview.title}</p>
-                  </div>
-                )}
-                {detailReview.body && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Review
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm">
+                  )}
+
+                  {detailReview.body && (
+                    <p className="whitespace-pre-wrap text-xs leading-5 text-slate-700">
                       {detailReview.body}
                     </p>
-                  </div>
-                )}
+                  )}
+                </div>
+
                 {detailReview.images?.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">
+                  <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
                       Images
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -1148,59 +1191,48 @@ export default function ReviewManagement() {
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2">
-                  <ReviewStatusBadge isApproved={detailReview.isApproved} />
-                  {detailReview.isVerifiedPurchase && (
-                    <Badge variant="secondary">Verified Purchase</Badge>
-                  )}
-                </div>
               </div>
 
-              {/* [E] Moderation Reason (shown when rejecting) */}
-              {detailReview.isApproved && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Reason for Rejection
-                  </label>
+              {detailReview.status === 'pending' && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Rejection Reason
+                  </p>
                   <Textarea
                     placeholder="Enter rejection reason (required)..."
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    className="min-h-[80px]"
+                    className="min-h-[72px] rounded-md border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300"
                   />
                 </div>
               )}
 
-              {/* [F] Action Buttons */}
-              <div className="flex gap-2 pt-2">
-                {!detailReview.isApproved && (
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setDetailReview(null)}
+                  className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  Cancel
+                </Button>
+                {detailReview.status === 'pending' && (
                   <Button
                     onClick={() => handleApprove(detailReview.id)}
                     disabled={moderateMutation.isPending}
+                    className="bg-[oklch(0.596_0.145_163.225)] text-white hover:bg-[oklch(0.54_0.145_163.225)]"
                   >
                     <Check className="h-4 w-4 mr-1" /> Approve
                   </Button>
                 )}
-                {detailReview.isApproved && (
+                {detailReview.status === 'pending' && (
                   <Button
                     variant="destructive"
                     onClick={handleReject}
-                    disabled={
-                      !rejectReason.trim() || moderateMutation.isPending
-                    }
+                    disabled={!rejectReason.trim() || moderateMutation.isPending}
                   >
                     <Flag className="h-4 w-4 mr-1" /> Reject
                   </Button>
                 )}
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    setDetailReview(null);
-                    openDeleteDialog(detailReview.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" /> Delete
-                </Button>
               </div>
             </div>
           )}
@@ -1309,79 +1341,170 @@ export default function ReviewManagement() {
 
       {/* ── Report Detail Modal ─────────────────────────────────────────── */}
       <Dialog open={!!detailReport} onOpenChange={() => setDetailReport(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Report Detail</DialogTitle>
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+          <DialogHeader className="border-b border-slate-200 pb-2">
+            <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
+              Report Detail
+            </DialogTitle>
           </DialogHeader>
           {detailReport && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Reporter
-                  </p>
-                  <p>
-                    {detailReport.reporter?.name} ({detailReport.reporter?.email})
+            <div className="space-y-3 pt-1">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Report Information
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Status
-                  </p>
-                  <ReportStatusBadge status={detailReport.status} />
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Reporter
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-900">
+                      {detailReport.reporter?.name || 'N/A'}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {detailReport.reporter?.email || 'N/A'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Reason
+                    </p>
+                    <div className="mt-1">
+                      <ReasonBadge reason={detailReport.reason} />
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Submitted
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {new Date(detailReport.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Status
+                    </p>
+                    <div className="mt-1">
+                      <ReportStatusBadge status={detailReport.status} />
+                    </div>
+                  </div>
+                </div>
+
+                {detailReport.description && (
+                  <div className="mt-3 rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Report Details
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-700">
+                      {detailReport.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Reported Review
+                </p>
+
+                <div className="rounded-md border border-slate-200 bg-white p-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-medium text-slate-700">
+                      {detailReport.review?.user?.name
+                        ?.split(' ')
+                        .map((part) => part[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2) || '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        By: {detailReport.review?.user?.name || 'N/A'} ({detailReport.review?.user?.email || 'N/A'})
+                      </p>
+                      <p className="truncate text-xs text-slate-600">
+                        {detailReport.review?.product?.name || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                    <p className="whitespace-pre-wrap text-xs leading-5 text-slate-700">
+                      {detailReport.review?.body || detailReport.review?.title || 'No review content available.'}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Review
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Admin Note
                 </p>
-                <p className="whitespace-pre-wrap">
-                  {detailReport.review?.body}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  On: {detailReport.review?.product?.name}
-                </p>
+                <Textarea
+                  value={reportAdminNote}
+                  onChange={(e) => setReportAdminNote(e.target.value)}
+                  placeholder="Add internal resolution notes..."
+                  className="min-h-[72px] rounded-md border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Reason
-                  </p>
-                  <ReasonBadge reason={detailReport.reason} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Date
-                  </p>
-                  <p>
-                    {new Date(detailReport.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              {detailReport.description && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Detail
-                  </p>
-                  <p>{detailReport.description}</p>
-                </div>
-              )}
-              {detailReport.adminNote && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Admin Note
-                  </p>
-                  <p>{detailReport.adminNote}</p>
-                </div>
-              )}
-              <DialogFooter>
+
+              <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
                   onClick={() => setDetailReport(null)}
+                  className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                 >
-                  Close
+                  Cancel
                 </Button>
-              </DialogFooter>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (!detailReport) return;
+                    updateStatusMutation.mutate(
+                      { id: detailReport.id, data: { status: 'rejected', adminNote: reportAdminNote.trim() || undefined } },
+                      {
+                        onSuccess: () => {
+                          toast.success('Report rejected');
+                          setDetailReport(null);
+                        },
+                        onError: () => toast.error('Failed to reject report'),
+                      },
+                    );
+                  }}
+                >
+                  Reject
+                </Button>
+                <Button
+                  className="bg-emerald-600 text-white hover:bg-emerald-500"
+                  onClick={() => {
+                    if (!detailReport) return;
+                    updateStatusMutation.mutate(
+                      { id: detailReport.id, data: { status: 'resolved', adminNote: reportAdminNote.trim() || undefined } },
+                      {
+                        onSuccess: () => {
+                          if (detailReport.reviewId) {
+                            moderateMutation.mutate(
+                              { id: detailReport.reviewId, data: { action: 'reject', reason: 'Report resolved — review rejected' } },
+                              { onError: () => {} },
+                            );
+                          }
+                          toast.success('Report resolved');
+                          setDetailReport(null);
+                        },
+                        onError: () => toast.error('Failed to resolve report'),
+                      },
+                    );
+                  }}
+                >
+                  Resolve
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

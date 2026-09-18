@@ -99,7 +99,10 @@ export class AdvertisementsService {
     if (ad.paymentStatus !== 'pending' || ad.approvalStatus !== 'pending') {
       throw new BadRequestException('Advertisement cannot accept content');
     }
-    const imageUrl = file ? await this.saveImage(file) : ad.imageUrl;
+    if (!file) {
+      throw new BadRequestException('Advertisement image is required');
+    }
+    const imageUrl = await this.saveImage(file);
     const schedule = this.getSchedule(dto.startsAt, ad.feeSetting.durationDays);
     const updated = await this.prisma.advertisement.update({
       where: { id },
@@ -194,11 +197,19 @@ export class AdvertisementsService {
         expiresAt: { gte: now },
       });
     } else if (query.status === 'inactive') {
-      // Mutually exclusive with "expired": truly inactive only (not expired).
-      where.isActive = false;
-      where.OR = [{ expiresAt: { gte: now } }, { expiresAt: null }];
+      // "Inactive" shows every ad that is not currently on air and not gone:
+      // pending submissions (draft / content uploaded / pending approval) and
+      // merchant-toggled-off approved ads. Soft-deleted ads (isActive=false
+      // while not approved) and expired ads stay excluded.
+      where.OR = [
+        { approvalStatus: 'pending' },
+        { isActive: false, approvalStatus: 'approved' },
+      ];
+      where.AND = [{ OR: [{ expiresAt: { gte: now } }, { expiresAt: null }] }];
+      where.NOT = { isActive: false, approvalStatus: { not: 'approved' } };
     } else if (query.status === 'expired') {
       where.expiresAt = { lt: now };
+      where.NOT = { isActive: false, approvalStatus: { not: 'approved' } };
     } else {
       // Default "All statuses" view hides soft-deleted advertisements.
       // deleteAd sets isActive = false for non-approved ads, while only
@@ -265,10 +276,16 @@ export class AdvertisementsService {
         'Active approved advertisements cannot be deleted',
       );
     }
-    await this.prisma.advertisement.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    if (ad.paymentStatus === 'pending') {
+      // Draft ads (and unpaid rejected drafts) that were never paid hold no
+      // campaign or payment history, so they are removed permanently.
+      await this.prisma.advertisement.delete({ where: { id } });
+    } else {
+      await this.prisma.advertisement.update({
+        where: { id },
+        data: { isActive: false },
+      });
+    }
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_DELETED', id, { shopId: ad.shopId });
     return { message: 'Advertisement deleted' };

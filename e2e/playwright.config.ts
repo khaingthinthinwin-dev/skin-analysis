@@ -11,6 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     ['list'],
+    ['html'],
     ['./utils/modular-reporter.ts'],
   ],
 

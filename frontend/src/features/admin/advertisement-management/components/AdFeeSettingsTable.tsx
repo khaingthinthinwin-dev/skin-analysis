@@ -2,10 +2,10 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { AdFeeSetting } from '../services/advertisement.service';
+import type { AdminAdFeeSetting } from '@/types/admin-ad-management';
 
 interface AdFeeSettingsTableProps {
-  feeSettings?: AdFeeSetting[];
+  feeSettings?: AdminAdFeeSetting[];
   onUpdateRate?: (id: string, dailyRate: number) => void;
 }
 

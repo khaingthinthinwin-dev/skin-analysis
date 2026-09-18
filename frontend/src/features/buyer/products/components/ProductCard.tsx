@@ -1,6 +1,6 @@
+import { Link } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Link } from 'react-router';
 import { SimilarProduct } from '../services/product.service';
 import { StarRating } from './StarRating';
 import { ImageIcon } from 'lucide-react';

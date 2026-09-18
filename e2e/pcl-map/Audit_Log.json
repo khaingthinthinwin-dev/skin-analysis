@@ -1,0 +1,13 @@
+{
+  "pclFile": "docs/screen/Audit Log Screen/Admin_Audit_Log_PCL.md",
+  "specFiles": [
+    "e2e/tests/Audit_Log/audit-log.spec.ts"
+  ],
+  "mappings": {
+    "should display audit log page with log list": "E2E-AUDIT-01: Audit log page loads with log list",
+    "should filter logs by action type": "E2E-AUDIT-02: Action type filter works",
+    "should filter logs by date range": "E2E-AUDIT-03: Date range filter works",
+    "should view audit log detail": "E2E-AUDIT-04: Audit log detail view works",
+    "should export audit log as CSV": "E2E-AUDIT-05: CSV export works"
+  }
+}

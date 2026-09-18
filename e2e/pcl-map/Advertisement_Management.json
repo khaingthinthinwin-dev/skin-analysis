@@ -1,0 +1,13 @@
+{
+  "pclFile": "docs/screen/Advertisement_Management/Merchant_Advertisement_PCL.md",
+  "specFiles": [
+    "e2e/tests/Advertisement_Management/merchant-ads.spec.ts"
+  ],
+  "mappings": {
+    "should display merchant ad management page": "E2E-MAD-01: Merchant ad management page loads",
+    "should create a new advertisement": "E2E-MAD-02: Ad creation works",
+    "should edit an existing advertisement": "E2E-MAD-03: Ad editing works",
+    "should delete an advertisement": "E2E-MAD-04: Ad deletion works",
+    "should show ad status correctly": "E2E-MAD-05: Ad status displays correctly"
+  }
+}
