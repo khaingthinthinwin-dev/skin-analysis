@@ -89,6 +89,15 @@ export class AdminAdManagementService {
       if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
       if (query.dateTo) where.createdAt.lte = this.toEndOfDay(query.dateTo);
     }
+    // Draft ads (never paid) must not appear in the review table. A draft
+    // only becomes a submission for approval after the merchant pays. Ads
+    // that were paid are always visible, including soft-deleted ones, for
+    // audit purposes.
+    where.AND = [
+      {
+        NOT: { paymentStatus: 'pending' },
+      },
+    ];
 
     const skip = (query.page - 1) * query.limit;
     const [items, total] = await Promise.all([

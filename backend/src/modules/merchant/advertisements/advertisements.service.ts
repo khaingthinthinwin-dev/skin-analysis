@@ -276,10 +276,16 @@ export class AdvertisementsService {
         'Active approved advertisements cannot be deleted',
       );
     }
-    await this.prisma.advertisement.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    if (ad.paymentStatus === 'pending') {
+      // Draft ads (and unpaid rejected drafts) that were never paid hold no
+      // campaign or payment history, so they are removed permanently.
+      await this.prisma.advertisement.delete({ where: { id } });
+    } else {
+      await this.prisma.advertisement.update({
+        where: { id },
+        data: { isActive: false },
+      });
+    }
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_DELETED', id, { shopId: ad.shopId });
     return { message: 'Advertisement deleted' };
