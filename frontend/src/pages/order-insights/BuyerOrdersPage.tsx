@@ -253,14 +253,13 @@ function BuyerOrdersPageContent() {
       {data && (
         <div className="mb-[18px] grid grid-cols-1 shrink-0 gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl px-4 py-3 text-white shadow-[0_6px_18px_rgba(124,58,237,0.25)]"
-            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)' }}
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-white/85">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
                 {kpis.orders.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-white">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
                 {formatKpiValue(kpis.orders)}
               </p>
             </div>
@@ -270,14 +269,13 @@ function BuyerOrdersPageContent() {
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl px-4 py-3 text-white shadow-[0_6px_18px_rgba(124,58,237,0.25)]"
-            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)' }}
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-white/85">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
                 {kpis.value.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-white">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
                 {formatKpiValue(kpis.value)}
               </p>
             </div>
@@ -287,14 +285,13 @@ function BuyerOrdersPageContent() {
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl px-4 py-3 text-white shadow-[0_6px_18px_rgba(124,58,237,0.25)]"
-            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)' }}
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-white/85">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
                 {kpis.progress.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-white">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
                 {formatKpiValue(kpis.progress)}
               </p>
             </div>
@@ -304,14 +301,13 @@ function BuyerOrdersPageContent() {
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl px-4 py-3 text-white shadow-[0_6px_18px_rgba(124,58,237,0.25)]"
-            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)' }}
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-white/85">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
                 {kpis.completed.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-white">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
                 {formatKpiValue(kpis.completed)}
               </p>
             </div>
