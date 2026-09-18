@@ -1,0 +1,12 @@
+{
+  "pclFile": "docs/screen/Commission_Revenue/Commission_Revenue_PCL.md",
+  "specFiles": [
+    "e2e/tests/Commission_Revenue/commission-revenue.spec.ts"
+  ],
+  "mappings": {
+    "should display commission and revenue page with tabs": "E2E-COMM-01: Commission & revenue page loads with tabs",
+    "should display commission rate settings": "E2E-COMM-02: Commission rate settings display",
+    "should display revenue KPIs and charts": "E2E-COMM-03: Revenue KPIs and charts display",
+    "should export revenue report": "E2E-COMM-04: Revenue report export works"
+  }
+}

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -43,7 +43,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { contentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
+import { contentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
 import { useAdvertisements } from '@/features/merchant/advertisements/hooks/useAdvertisements'
 import type { AdPackage, Advertisement } from '@/features/merchant/advertisements/types'
 
@@ -125,7 +125,9 @@ function getImageUrl(url: string): string {
 }
 
 function scrollToAdvertisements() {
-  document.getElementById('merchant-advertisements')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  window.setTimeout(() => {
+    document.getElementById('merchant-advertisements')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, 60)
 }
 
 function toFormData(values: ContentForm, includeSchedule: boolean) {
@@ -636,9 +638,13 @@ export default function Advertisements() {
         onConfirm={confirmDelete}
         title="Delete Advertisement"
         description={
-          deleteTarget?.title
-            ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
-            : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
+          deleteTarget?.paymentStatus === 'pending'
+            ? deleteTarget.title
+              ? `Are you sure you want to delete "${deleteTarget.title}"? It has not been paid and will be permanently deleted from the system.`
+              : 'Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.'
+            : deleteTarget?.title
+              ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
+              : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
         }
         isLoading={remove.isPending}
       />
@@ -693,7 +699,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
-  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'inactive'
+  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded'
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const packageInfo = ad.package
   const expiresTomorrow =
@@ -808,7 +814,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
                 <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
                 <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
               </div>
-            ) : state === 'expired' ? (
+            ) : state === 'expired' || state === 'pending_approval' ? (
               <span className="text-sm text-muted-foreground">Inactive</span>
             ) : (
               <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
@@ -842,6 +848,35 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
   )
 }
 
+const DRAFT_CACHE_PREFIX = 'ad-draft-cache:'
+
+function loadDraftCache(adId: string): ContentForm | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_CACHE_PREFIX + adId)
+    return raw ? (JSON.parse(raw) as ContentForm) : null
+  } catch {
+    return null
+  }
+}
+
+function persistDraftCache(adId: string, values: ContentForm) {
+  try {
+    const rest: Record<string, unknown> = { ...values }
+    delete rest.image
+    localStorage.setItem(DRAFT_CACHE_PREFIX + adId, JSON.stringify(rest))
+  } catch {
+    // Ignore storage failures (private mode, quota, etc.).
+  }
+}
+
+function clearDraftCache(adId: string) {
+  try {
+    localStorage.removeItem(DRAFT_CACHE_PREFIX + adId)
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 interface ContentDialogProps {
   open: boolean
   target: Advertisement | null
@@ -863,8 +898,9 @@ function ContentDialog({
   showSaveAndPay,
   isPending,
 }: ContentDialogProps) {
+  const isNewUpload = !target?.title
   const form = useForm<ContentForm>({
-    resolver: zodResolver(contentSchema),
+    resolver: zodResolver(isNewUpload ? uploadContentSchema : contentSchema),
     defaultValues: {
       title: '',
       content: '',
@@ -877,6 +913,10 @@ function ContentDialog({
   const startsAt = form.watch('startsAt')
   const imageFile = form.watch('image')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // Preserves unsaved typed content per ad across cancel/reopen (and across
+  // logout/login via localStorage) so edits are not lost before a successful
+  // save. The uploaded File cannot be serialized, so only text fields persist.
+  const draftCache = useRef<Record<string, ContentForm>>({})
 
   useEffect(() => {
     if (imageFile instanceof File) {
@@ -889,20 +929,26 @@ function ContentDialog({
 
   useEffect(() => {
     if (target) {
-      form.reset({
-        title: target.title,
-        content: target.content ?? '',
-        linkUrl: target.linkUrl ?? '',
-        announcementMessage: target.announcementMessage,
-        startsAt: target.startsAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
-        image: null,
-      })
+      const cached = draftCache.current[target.id] ?? loadDraftCache(target.id)
+      form.reset(
+        cached ?? {
+          title: target.title,
+          content: target.content ?? '',
+          linkUrl: target.linkUrl ?? '',
+          announcementMessage: target.announcementMessage,
+          startsAt: target.startsAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+          image: null,
+        },
+      )
     }
   }, [target, form])
 
   if (!target) return null
-
-  const isNewUpload = !target.title
+  const handleClose = () => {
+    draftCache.current[target.id] = form.getValues()
+    persistDraftCache(target.id, form.getValues())
+    onClose()
+  }
   const canSetSchedule = !target.startsAt
   const durationDays = adPackage?.durationDays ?? 7
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
@@ -913,7 +959,7 @@ function ContentDialog({
   const currentPreview = imageFile instanceof File ? previewUrl : target.imageUrl ? getImageUrl(target.imageUrl) : null
 
   return (
-    <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
+    <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isNewUpload ? 'Upload Advertisement Content' : 'Edit Advertisement Content'}</DialogTitle>
@@ -930,7 +976,14 @@ function ContentDialog({
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          className="space-y-4"
+          onSubmit={form.handleSubmit(async (values) => {
+            await onSubmit(values)
+            draftCache.current = {}
+            clearDraftCache(target.id)
+          })}
+        >
           <div className="space-y-1.5">
             <Label htmlFor="ad-title">Title</Label>
             <Input id="ad-title" maxLength={200} placeholder="Enter advertisement title" {...form.register('title')} />
@@ -952,7 +1005,7 @@ function ContentDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ad-image">Advertisement image</Label>
+            <Label htmlFor="ad-image">Advertisement image{isNewUpload && ' (Required)'}</Label>
             <Input
               id="ad-image"
               type="file"
@@ -1038,11 +1091,21 @@ function ContentDialog({
           {feeSummary && <p className="rounded-lg bg-primary/10 p-3 text-sm font-semibold text-primary">{feeSummary}</p>}
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isPending}>
               Cancel
             </Button>
             {showSaveAndPay && onSaveAndPay && (
-              <Button type="button" disabled={isPending} onClick={() => form.handleSubmit(onSaveAndPay)()}>
+              <Button
+                type="button"
+                disabled={isPending}
+                onClick={() =>
+                  form.handleSubmit(async (values) => {
+                    await onSaveAndPay(values)
+                    draftCache.current = {}
+                    clearDraftCache(target.id)
+                  })()
+                }
+              >
                 {isPending ? 'Saving...' : 'Save & Pay'}
               </Button>
             )}

@@ -38,42 +38,58 @@ export function CartItemRow({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 border-b border-border/50 last:border-0">
-      {item.productImage ? (
-        <Link to={productLink}>
-          <img
-            src={getImageUrl(item.productImage)}
-            alt={item.productName}
-            className="h-20 w-20 rounded-md object-cover"
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl border border-border/70 bg-card shadow-xs transition-colors hover:border-border">
+      {/* Top / Left section: Image + Details + Mobile Delete Button */}
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+        {item.productImage ? (
+          <Link to={productLink} className="shrink-0">
+            <img
+              src={getImageUrl(item.productImage)}
+              alt={item.productName}
+              className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg object-cover border border-border/40"
+            />
+          </Link>
+        ) : (
+          <Link
+            to={productLink}
+            className="shrink-0 block h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-muted border border-border/40"
           />
-        </Link>
-      ) : (
-        <Link
-          to={productLink}
-          className="block h-20 w-20 rounded-md bg-muted"
-        />
-      )}
+        )}
 
-      <div className="flex-1 min-w-0">
-        <Link
-          to={productLink}
-          className="text-sm font-medium text-foreground hover:underline line-clamp-1"
-        >
-          {item.productName}
-        </Link>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {formatPrice(item.unitPrice)} each
-        </p>
+        <div className="flex-1 min-w-0 space-y-1">
+          <Link
+            to={productLink}
+            className="text-sm font-semibold text-foreground hover:underline line-clamp-2 sm:line-clamp-1 block leading-snug"
+          >
+            {item.productName}
+          </Link>
+          <p className="text-xs text-muted-foreground">
+            {formatPrice(item.unitPrice)} each
+          </p>
 
-        <div className="mt-2">
-          <StockBadge
-            status={item.stockStatus}
-            stockQuantity={item.stockQuantity}
-          />
+          <div className="pt-0.5">
+            <StockBadge
+              status={item.stockStatus}
+              stockQuantity={item.stockQuantity}
+            />
+          </div>
         </div>
+
+        {/* Remove button visible on mobile top-right */}
+        <Button
+          size="icon"
+          variant="ghost"
+          className="sm:hidden -mr-1 -mt-1 h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+          onClick={() => onRemove(item.id)}
+          disabled={isRemoving}
+          aria-label="Remove item"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Bottom / Right section: Quantity Stepper + Subtotal + Desktop Remove Button */}
+      <div className="flex items-center justify-between sm:justify-end gap-3 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-border/40 shrink-0 w-full sm:w-auto">
         <QuantityStepper
           value={item.quantity}
           onChange={(qty) => onQuantityChange(item.id, qty)}
@@ -81,19 +97,22 @@ export function CartItemRow({
           disabled={isUpdating || !item.isAvailable}
         />
 
-        <span className="text-sm font-extrabold text-foreground w-16 text-right">
-          {formatPrice(item.subtotal)}
-        </span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-sm sm:text-base font-extrabold text-foreground min-w-[64px] text-right">
+            {formatPrice(item.subtotal)}
+          </span>
 
-        <Button
-          size="icon"
-          variant="ghost"
-          className="text-muted-foreground hover:text-destructive"
-          onClick={() => onRemove(item.id)}
-          disabled={isRemoving}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="hidden sm:inline-flex text-muted-foreground hover:text-destructive h-9 w-9"
+            onClick={() => onRemove(item.id)}
+            disabled={isRemoving}
+            aria-label="Remove item"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

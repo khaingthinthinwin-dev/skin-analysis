@@ -1,31 +1,92 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { advertisementService } from '../services/advertisement.service'
-import type { AdListParams } from '../types'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { merchantAdService } from '../services/advertisement.service';
 
-export function useAdvertisements(params: AdListParams) {
-  const queryClient = useQueryClient()
+export function useAdvertisements(params?: {
+  status?: 'active' | 'inactive' | 'expired';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  search?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const queryClient = useQueryClient();
+
   const adsQuery = useQuery({
-    queryKey: ['merchant-ads', params],
-    queryFn: () => advertisementService.listAds(params),
-    staleTime: 30_000,
-  })
-  const packagesQuery = useQuery({
-    queryKey: ['merchant-ad-packages'],
-    queryFn: advertisementService.listPackages,
-    staleTime: 600_000,
-  })
-  const allAdsQuery = useQuery({
-    queryKey: ['merchant-ads', 'all'],
-    queryFn: () => advertisementService.listAds({ page: 1, limit: 100 }),
-    staleTime: 30_000,
-  })
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['merchant-ads'] })
-  const selectPackage = useMutation({ mutationFn: advertisementService.selectPackage, onSuccess: refresh })
-  const uploadContent = useMutation({ mutationFn: ({ id, formData }: { id: string; formData: FormData }) => advertisementService.uploadContent(id, formData), onSuccess: refresh })
-  const updateContent = useMutation({ mutationFn: ({ id, formData }: { id: string; formData: FormData }) => advertisementService.updateContent(id, formData), onSuccess: refresh })
-  const pay = useMutation({ mutationFn: ({ id, paymentReference }: { id: string; paymentReference?: string }) => advertisementService.pay(id, paymentReference), onSuccess: refresh })
-  const toggle = useMutation({ mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => advertisementService.toggle(id, isActive), onSuccess: refresh })
-  const remove = useMutation({ mutationFn: advertisementService.remove, onSuccess: refresh })
+    queryKey: ['merchant', 'ads', params],
+    queryFn: () => merchantAdService.getAds(params),
+  });
 
-  return { adsQuery, allAdsQuery, packagesQuery, selectPackage, uploadContent, updateContent, pay, toggle, remove, refresh }
+  const allAdsQuery = useQuery({
+    queryKey: ['merchant', 'ads', 'all'],
+    queryFn: () => merchantAdService.getAllAds(),
+  });
+
+  const packagesQuery = useQuery({
+    queryKey: ['merchant', 'ads', 'packages'],
+    queryFn: () => merchantAdService.getPackages(),
+  });
+
+  const selectPackage = useMutation({
+    mutationFn: (packageId: string) => merchantAdService.selectPackage(packageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
+    },
+  });
+
+  const uploadContent = useMutation({
+    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
+      merchantAdService.uploadContent(id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
+    },
+  });
+
+  const updateContent = useMutation({
+    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
+      merchantAdService.updateContent(id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
+    },
+  });
+
+  const pay = useMutation({
+    mutationFn: ({ id, paymentReference }: { id: string; paymentReference?: string }) =>
+      merchantAdService.pay(id, paymentReference),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
+    },
+  });
+
+  const toggle = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      merchantAdService.toggle(id, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => merchantAdService.deleteAd(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
+    },
+  });
+
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
+    queryClient.invalidateQueries({ queryKey: ['merchant', 'ads', 'all'] });
+    queryClient.invalidateQueries({ queryKey: ['merchant', 'ads', 'packages'] });
+  };
+
+  return {
+    adsQuery,
+    allAdsQuery,
+    packagesQuery,
+    selectPackage,
+    uploadContent,
+    updateContent,
+    pay,
+    toggle,
+    remove,
+    refresh,
+  };
 }

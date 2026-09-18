@@ -2,18 +2,22 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import type { AdminReview } from '@/features/admin/content-moderation/services/moderation.service';
 
 interface ReviewsTableProps {
   reviews?: AdminReview[];
-  onApprove?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
+const statusVariants: Record<string, string> = {
+  pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+};
+
 export const ReviewsTable: React.FC<ReviewsTableProps> = ({
   reviews = [],
-  onApprove,
   onDelete,
 }) => {
   return (
@@ -42,16 +46,11 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({
                 <TableCell>★ {rev.rating}/5</TableCell>
                 <TableCell className="max-w-xs truncate">{rev.body || rev.title || 'No comment'}</TableCell>
                 <TableCell>
-                  <Badge variant={rev.isApproved ? 'default' : 'outline'}>
-                    {rev.isApproved ? 'Approved' : 'Pending'}
+                  <Badge variant="outline" className={statusVariants[rev.status] || ''}>
+                    {rev.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right space-x-1">
-                  {!rev.isApproved && (
-                    <Button size="icon" variant="ghost" onClick={() => onApprove?.(rev.id)}>
-                      <Check className="h-4 w-4 text-emerald-600" />
-                    </Button>
-                  )}
                   <Button size="icon" variant="ghost" onClick={() => onDelete?.(rev.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>

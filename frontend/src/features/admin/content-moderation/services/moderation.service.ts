@@ -33,7 +33,7 @@ export interface AdminReview {
   body: string | null;
   images: string[];
   isVerifiedPurchase: boolean;
-  isApproved: boolean;
+  status: string;
   createdAt: string;
   user: { id: string; name: string; email: string; avatarUrl: string | null };
   product: { id: string; name: string; images: string[]; slug: string; price?: number };
@@ -103,7 +103,7 @@ export interface AdminReport {
     body: string | null;
     rating: number;
     title: string | null;
-    user: { id: string; name: string };
+    user: { id: string; name: string; email: string; avatarUrl: string | null };
     product: { id: string; name: string; slug: string };
   };
   resolver: { id: string; name: string } | null;
@@ -173,7 +173,7 @@ export const adminService = {
   moderateReview: async (
     id: string,
     data: { action: 'approve' | 'reject'; reason?: string },
-  ): Promise<{ id: string; isApproved: boolean; updatedAt: string }> => {
+  ): Promise<{ id: string; status: string; updatedAt: string }> => {
     const response = await api.post(`/admin/reviews/${id}/moderate`, data);
     return response.data.data;
   },

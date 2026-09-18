@@ -195,5 +195,30 @@
     "merchant": "出品者",
     "admin": "管理者",
     "super_admin": "スーパー管理者"
+  },
+  "admin": {
+    "ads": {
+      "title": "広告モデレーション",
+      "weeklyLimit": "今週の掲載中: {{count}} / 5 件",
+      "pendingQueue": "承認待ちキュー",
+      "shopName": "ショップ",
+      "feeInfo": "料金情報",
+      "approve": "承認",
+      "reject": "却下",
+      "rejectReason": "却下理由",
+      "all": "全広告",
+      "feeSettings": "広告パッケージ",
+      "newPackage": "新規パッケージ",
+      "createPkgTitle": "広告パッケージを作成",
+      "placement": "掲載場所",
+      "tier": "料金プラン",
+      "dailyRate": "日額",
+      "durationDays": "表示日数",
+      "maxAds": "最大枠数",
+      "saveRate": "料金を保存",
+      "feeHistory": "履歴",
+      "deactivate": "無効化",
+      "createPkg": "パッケージを作成"
+    }
   }
 }

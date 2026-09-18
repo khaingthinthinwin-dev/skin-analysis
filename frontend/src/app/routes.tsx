@@ -26,7 +26,11 @@ const Unauthorized = lazy(() => import('@/pages/Unauthorized'))
 const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'))
 const AdminUserManagement = lazy(() => import('@/pages/admin/UserManagement'))
 const AdminMerchantManagement = lazy(() => import('@/pages/admin/MerchantManagement'))
-const AdminAdvertisementManagement = lazy(() => import('@/pages/admin/AdvertisementManagement'))
+const AdminAdsIndex = lazy(() => import('@/pages/admin/ads/index'))
+const AdminAdsPackages = lazy(() => import('@/pages/admin/ads/packages'))
+const AdminAdsFeeHistory = lazy(() => import('@/pages/admin/ads/fee-history'))
+const AdminAdsAnalytics = lazy(() => import('@/pages/admin/ads/analytics'))
+const AdminAdsExport = lazy(() => import('@/pages/admin/ads/export'))
 const AdminReviewManagement = lazy(() => import('@/pages/admin/ReviewManagement'))
 const AdminContentModeration = lazy(() => import('@/pages/admin/ContentModeration'))
 const AdminCommissionRevenue = lazy(() => import('@/pages/admin/CommissionRevenue'))
@@ -166,12 +170,49 @@ export const router = createBrowserRouter([
                 ),
               },
               {
-                path: 'advertisements',
-                element: (
-                  <SuspenseWrapper>
-                    <AdminAdvertisementManagement />
-                  </SuspenseWrapper>
-                ),
+                path: 'ads',
+                children: [
+                  {
+                    index: true,
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsIndex />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'packages',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsPackages />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'fee-history',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsFeeHistory />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'analytics',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsAnalytics />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'export',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsExport />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                ],
               },
               {
                 path: 'reviews',

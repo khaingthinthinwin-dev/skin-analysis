@@ -1,0 +1,17 @@
+{
+  "pclFile": "docs/screen/SearchAndFilter/Search_And_Filter_PCL.md",
+  "specFiles": [
+    "e2e/tests/SearchAndFilter/search-filter.spec.ts"
+  ],
+  "mappings": {
+    "should display search page with search input": "E2E-SEARCH-01: Search page loads with search input",
+    "should search products by keyword": "E2E-SEARCH-02: Keyword search returns matching products",
+    "should display no results for invalid search": "E2E-SEARCH-03: No results message for invalid search",
+    "should filter by category": "E2E-SEARCH-04: Category filter narrows results",
+    "should filter by price range": "E2E-SEARCH-05: Price range filter works correctly",
+    "should sort results by price ascending": "E2E-SEARCH-06: Sort by price ascending",
+    "should sort results by price descending": "E2E-SEARCH-07: Sort by price descending",
+    "should display sponsored ads in search results": "E2E-SEARCH-08: Sponsored ads displayed in results",
+    "should navigate between pages": "E2E-SEARCH-09: Pagination navigation works"
+  }
+}

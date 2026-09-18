@@ -1,0 +1,17 @@
+{
+  "pclFile": "docs/screen/Wishlist_Cart/Wishlist_Cart_PCL.md",
+  "specFiles": [
+    "e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts"
+  ],
+  "mappings": {
+    "should display wishlist page": "E2E-WISH-01: Wishlist page loads",
+    "should display wishlist items": "E2E-WISH-02: Wishlist items display",
+    "should remove item from wishlist": "E2E-WISH-03: Remove from wishlist works",
+    "should display cart page": "E2E-CART-01: Cart page loads",
+    "should display cart items with correct total": "E2E-CART-02: Cart items and total display correctly",
+    "should update cart quantity": "E2E-CART-03: Quantity update works",
+    "should remove item from cart": "E2E-CART-04: Remove from cart works",
+    "should proceed to checkout from cart": "E2E-CART-05: Checkout redirect works",
+    "should show login prompt for guest users": "E2E-CART-06: Guest login prompt displays"
+  }
+}

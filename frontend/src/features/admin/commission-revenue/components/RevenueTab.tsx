@@ -4,7 +4,6 @@ import type { AxiosError } from "axios";
 import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -47,8 +46,7 @@ export const RevenueTab: React.FC = () => {
   const [exportType, setExportType] = useState<ExportReportType>("revenue");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [merchantFilter, setMerchantFilter] = useState<string>("");
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
+  const [payoutPeriod, setPayoutPeriod] = useState<string>("");
   const [selectedPayoutIds, setSelectedPayoutIds] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -71,8 +69,7 @@ export const RevenueTab: React.FC = () => {
       limit: 10,
       ...(statusFilter ? { status: statusFilter } : {}),
       ...(merchantFilter ? { merchantId: merchantFilter } : {}),
-      ...(dateFrom ? { from: dateFrom } : {}),
-      ...(dateTo ? { to: dateTo } : {}),
+      ...(payoutPeriod ? { period: payoutPeriod } : {}),
     },
     undefined,
     { settings: false, reports: false },
@@ -102,27 +99,31 @@ export const RevenueTab: React.FC = () => {
   };
 
   const handleProcessConfirm = (id: string) => {
-    processPayoutMutation.mutate(id, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ["admin", "commission", "payouts"],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["admin", "revenue", "kpis"],
-        });
+    const payout = payoutsQuery.data?.items.find((item) => item.payoutId === id);
+    const payoutIds = payout?.payoutIds ?? [id];
+    Promise.allSettled(payoutIds.map((payoutId) => processPayoutMutation.mutateAsync(payoutId))).then((results) => {
+      const failed = results.filter((r) => r.status === 'rejected');
+      const succeeded = results.length - failed.length;
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "commission", "payouts"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "revenue", "kpis"],
+      });
+      if (failed.length === 0) {
         toast({ title: "Payout processed" });
-        setConfirmPayout(null);
-      },
-      onError: (err: Error) => {
-        const status = (err as AxiosError).response?.status;
-        if (status === 409) {
-          toast({ title: "Payout already processed", variant: "destructive" });
-        } else if (status === 404) {
-          toast({ title: "Payout not found", variant: "destructive" });
-        } else {
-          toast({ title: "Failed to process payout", variant: "destructive" });
-        }
-      },
+      } else if (succeeded > 0) {
+        toast({
+          title: "Payout partially processed",
+          description: `${succeeded} succeeded, ${failed.length} skipped (already processed).`,
+        });
+      } else {
+        toast({
+          title: "Payout already processed",
+          variant: "destructive",
+        });
+      }
+      setConfirmPayout(null);
     });
   };
 
@@ -131,8 +132,15 @@ export const RevenueTab: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
+  const selectedPayouts = payoutsQuery.data?.items.filter((payout) =>
+    selectedPayoutIds.includes(payout.payoutId),
+  ) ?? [];
+  const selectedUnderlyingPayoutIds = [...new Set(
+    selectedPayouts.flatMap((payout) => payout.payoutIds ?? [payout.payoutId]),
+  )];
+
   const confirmDeletePayouts = () => {
-    deletePayoutMutation.mutate(selectedPayoutIds, {
+    deletePayoutMutation.mutate(selectedUnderlyingPayoutIds, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["admin", "commission", "payouts"] });
         toast({ title: "Payouts deleted" });
@@ -235,9 +243,7 @@ export const RevenueTab: React.FC = () => {
             >
               <option value="">All</option>
               <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
+              <option value="completed">Complete</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -259,28 +265,20 @@ export const RevenueTab: React.FC = () => {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">From</label>
-            <Input
-              type="date"
-              className="w-[150px]"
-              value={dateFrom}
+            <label className="text-xs font-medium text-muted-foreground">Period</label>
+            <select
+              className="flex h-9 w-[170px] items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              value={payoutPeriod}
               onChange={(e) => {
-                setDateFrom(e.target.value);
+                setPayoutPeriod(e.target.value);
                 setPayoutPage(1);
               }}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">To</label>
-            <Input
-              type="date"
-              className="w-[150px]"
-              value={dateTo}
-              onChange={(e) => {
-                setDateTo(e.target.value);
-                setPayoutPage(1);
-              }}
-            />
+            >
+              <option value="">All periods</option>
+              {getPayoutPeriodOptions().map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
           </div>
           <Button
             size="sm"
@@ -288,8 +286,7 @@ export const RevenueTab: React.FC = () => {
             onClick={() => {
               setStatusFilter("");
               setMerchantFilter("");
-              setDateFrom("");
-              setDateTo("");
+              setPayoutPeriod("");
               setPayoutPage(1);
             }}
           >
@@ -299,7 +296,7 @@ export const RevenueTab: React.FC = () => {
             size="sm"
             variant="outline"
             className="ml-auto border-red-300 bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800 disabled:opacity-50"
-            disabled={selectedPayoutIds.length === 0 || deletePayoutMutation.isPending}
+            disabled={selectedUnderlyingPayoutIds.length === 0 || deletePayoutMutation.isPending}
             title="Delete selected payouts"
             onClick={handleDeletePayouts}
           >
@@ -384,10 +381,38 @@ export const RevenueTab: React.FC = () => {
 
       {/* [S] Export modal */}
       <ExportDialog
+        key={`${exportType}-${payoutPeriod}-${exportOpen}`}
         open={exportOpen}
         onOpenChange={setExportOpen}
         reportType={exportType}
+        initialValues={exportType === "payout" ? getPayoutExportDates(payoutPeriod) : undefined}
+        merchants={exportType === "payout" ? payoutMerchantsQuery.data : undefined}
       />
     </div>
   );
 };
+
+function getPayoutPeriodOptions() {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    return {
+      value,
+      label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    };
+  });
+}
+
+function getPayoutExportDates(period: string) {
+  const options = getPayoutPeriodOptions();
+  const selected = period ? options.find((option) => option.value === period) : options[options.length - 1];
+  const latest = options[0];
+  if (!selected || !latest) return undefined;
+  const [year, month] = (period ? selected.value : latest.value).split("-").map(Number);
+  const [latestYear, latestMonth] = latest.value.split("-").map(Number);
+  return {
+    dateFrom: `${selected.value}-01`,
+    dateTo: new Date(Date.UTC(period ? year : latestYear, period ? month : latestMonth, 0)).toISOString().slice(0, 10),
+  };
+}

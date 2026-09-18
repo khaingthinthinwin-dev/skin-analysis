@@ -877,7 +877,7 @@ export class ProductsService {
       this.prisma.review
         .groupBy({
           by: ['rating'],
-          where: { productId: product.id, isApproved: true },
+          where: { productId: product.id, status: 'approved' },
           _count: { rating: true },
         })
         .then((groups) =>
@@ -918,7 +918,7 @@ export class ProductsService {
 
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
-        where: { productId: product.id, isApproved: true },
+        where: { productId: product.id, status: 'approved' },
         orderBy,
         skip,
         take: limit,
@@ -936,7 +936,7 @@ export class ProductsService {
         },
       }),
       this.prisma.review.count({
-        where: { productId: product.id, isApproved: true },
+        where: { productId: product.id, status: 'approved' },
       }),
     ]);
 
@@ -1013,7 +1013,7 @@ export class ProductsService {
     });
 
     const stats = await this.prisma.review.aggregate({
-      where: { productId: product.id, isApproved: true },
+      where: { productId: product.id, status: 'approved' },
       _avg: { rating: true },
       _count: { id: true },
     });
