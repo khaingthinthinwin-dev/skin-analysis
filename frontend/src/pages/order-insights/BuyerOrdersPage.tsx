@@ -18,7 +18,6 @@ import { OrderPagination } from '@/features/order-insights/components/OrderPagin
 import { EmptyOrderState } from '@/features/order-insights/components/EmptyOrderState';
 import { useOrderListFilters } from '@/features/order-insights/hooks/useOrderListFilters';
 import { useOrderQueryParams } from '@/features/order-insights/hooks/useOrderQueryParams';
-import { exportOrdersCsv } from '@/features/order-insights/utils/exportOrdersCsv';
 import { orderService } from '@/features/order-insights/services/orderService';
 import { toast } from 'sonner';
 import type { OrderListFilterFormData } from '@/features/order-insights/schemas/orderFilters.schema';
@@ -184,7 +183,37 @@ function BuyerOrdersPageContent() {
       const statusLabel = filters.status.replaceAll('_', '-');
       const fromLabel = filters.from ? filters.from.slice(0, 10) : 'all';
       const toLabel = filters.to ? filters.to.slice(0, 10) : 'all';
-      exportOrdersCsv(orders, `my-orders-${statusLabel}-${fromLabel}-to-${toLabel}-${today}.csv`);
+      const detailedOrders = await Promise.all(
+        orders.map(async (order) => ({
+          order,
+          detail: await orderService.getBuyerOrderDetail(order.id),
+        })),
+      );
+      const escapeCsvField = (value: string | number) => {
+        const field = String(value);
+        return /[",\n\r]/.test(field) ? `"${field.replaceAll('"', '""')}"` : field;
+      };
+      const headers = ['Order #', 'Date', 'Items', 'Total', 'Payment Status', 'Order Status'];
+      const rows = detailedOrders.map(({ order, detail }) => [
+        order.id,
+        new Date(order.createdAt).toISOString().slice(0, 10),
+        detail.items.map((item) => `${item.productName} (x${item.quantity})`).join(', '),
+        order.totalAmount,
+        order.paymentStatus,
+        order.status,
+      ]);
+      const csv = [headers, ...rows]
+        .map((row) => row.map(escapeCsvField).join(','))
+        .join('\r\n');
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `my-orders-${statusLabel}-${fromLabel}-to-${toLabel}-${today}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
       setExportMessage('Export successful!');
       setIsExportModalOpen(false);
     } catch {
