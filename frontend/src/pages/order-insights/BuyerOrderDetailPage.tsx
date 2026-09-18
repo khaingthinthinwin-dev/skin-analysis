@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeliveryProgress } from "@/features/order-insights/components/DeliveryProgress";
 import { PaymentBadge } from "@/features/order-insights/components/PaymentBadge";
+import { StatusBadge } from "@/features/order-insights/components/StatusBadge";
 import { useOrderDetail } from "@/features/order-insights/hooks/useOrderDetail";
 import { printInvoice } from "@/features/order-insights/utils/printInvoice";
 import type {
@@ -76,7 +77,7 @@ function paymentMethodLabel(method: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function statusCopy(status: OrderStatus, deliveredDate: string) {
+function statusCopy(status: OrderStatus) {
   switch (status) {
     case OrderStatus.PLACED:
       return {
@@ -86,8 +87,7 @@ function statusCopy(status: OrderStatus, deliveredDate: string) {
     case OrderStatus.CONFIRMED:
       return {
         title: "Your order is confirmed",
-        message:
-          "The seller has accepted your order and is preparing it. Estimated delivery: Sep 20 - Sep 22, 2026.",
+        message: "The seller has accepted your order and is preparing it.",
       };
     case OrderStatus.PACKED:
       return {
@@ -106,7 +106,7 @@ function statusCopy(status: OrderStatus, deliveredDate: string) {
       };
     case OrderStatus.DELIVERED:
       return {
-        title: `Delivered on ${deliveredDate}`,
+        title: "Your order has been delivered",
         message: "Enjoy your purchase!",
       };
   }
@@ -262,8 +262,8 @@ function BuyerOrderDetailContent() {
   const address = addressLines(order.shippingAddress);
 
   return (
-    <div className="space-y-6 p-2 lg:p-4">
-      <section className="flex flex-wrap items-center justify-between gap-5 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-5 py-5 text-white shadow-[0_8px_20px_rgba(124,58,237,0.2)] sm:px-7">
+    <div className="w-full max-w-full space-y-6 p-2 lg:p-4">
+      <section className="flex flex-col items-stretch gap-5 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-4 py-5 text-white shadow-[0_8px_20px_rgba(124,58,237,0.2)] sm:flex-row sm:items-center sm:justify-between sm:px-7">
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[1px] opacity-85">
             📦 Order Details
@@ -273,12 +273,13 @@ function BuyerOrderDetailContent() {
             <span>
               Placed {formatDate(order.createdAt, dateLocale)}, {formatTime(order.createdAt, dateLocale)}
             </span>
-            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold">
-              ● {order.status.replaceAll("_", " ").toUpperCase()}
-            </span>
+            <StatusBadge
+              status={order.status}
+              className="px-3.5 py-1.5 text-xs shadow-sm"
+            />
           </div>
         </div>
-        <Button asChild className="gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-semibold text-[#7c3aed] hover:bg-white/90">
+        <Button asChild className="w-full justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-semibold text-[#7c3aed] hover:bg-white/90 sm:w-auto">
           <Link to="/orders">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to My Orders
@@ -287,9 +288,9 @@ function BuyerOrderDetailContent() {
       </section>
 
       {(() => {
-        const copy = statusCopy(order.status, formatDate(order.createdAt, dateLocale));
+        const copy = statusCopy(order.status);
         return (
-          <section className="flex items-center gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-5 py-3.5">
+          <section className="flex items-start gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:items-center sm:px-5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white">
               ✓
             </div>
@@ -305,9 +306,9 @@ function BuyerOrderDetailContent() {
         <div className="flex min-w-0 flex-col gap-4">
           <DeliveryProgress currentStatus={order.status} />
 
-          <Card className="rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                 📦 {t("orders.detail.itemsTitle", "Order Items")}
                 <span className="text-xs font-normal text-[#9ca3af]">({order.items.length} items)</span>
               </CardTitle>
@@ -320,19 +321,20 @@ function BuyerOrderDetailContent() {
               ) : order.items.map((item) => {
                 const image = getImageUrl(item.productImage);
                 return (
-                  <div key={item.id} className="flex items-center gap-4 rounded-[10px] border border-[#f3f4f6] bg-[#fafafa] p-4">
+                  <div key={item.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-[10px] border border-[#f3f4f6] bg-[#fafafa] p-3 sm:gap-4 sm:p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
                     {image ? (
-                      <img src={image} alt={item.productName} className="h-14 w-14 shrink-0 rounded-[10px] object-cover" />
+                      <img src={image} alt={item.productName} className="h-20 w-20 shrink-0 rounded-[10px] object-cover" />
                     ) : (
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#f3f0ff] to-[#fce7f3] text-2xl">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#f3f0ff] to-[#fce7f3] text-2xl">
                         💄
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-[#111827]">{item.productName}</p>
-                      <p className="text-[13px] text-[#6b7280]">Qty: {item.quantity} × {formatMoney(item.unitPrice)}</p>
+                      <p className="break-words text-sm font-bold leading-5 text-[#111827]">{item.productName}</p>
+                      <p className="mt-1 text-[13px] text-[#6b7280]">Quantity: {item.quantity}</p>
+                      <p className="text-[13px] text-[#6b7280]">Unit price: {formatMoney(item.unitPrice)}</p>
                     </div>
-                    <div className="shrink-0 text-right">
+                    <div className="col-start-2 shrink-0 text-left sm:col-start-auto sm:text-right">
                       <p className="text-[11px] uppercase text-[#9ca3af]">Line total</p>
                       <p className="text-base font-bold text-[#111827]">{formatMoney(item.totalPrice)}</p>
                     </div>
@@ -372,14 +374,14 @@ function BuyerOrderDetailContent() {
           </section>
           <section className="space-y-2 p-5 text-sm">
             <h2 className="mb-3 text-[13px] font-bold text-[#111827]">🧾 Order Summary</h2>
-              <div className="flex items-center justify-between">
-                <span className="text-[#6b7280]">
+              <div className="flex items-start justify-between gap-4">
+                <span className="min-w-0 text-[#6b7280]">
                   {t("orders.detail.subtotal", "Subtotal")}
                 </span>
-                <span className="font-medium text-[#111827]">{formatMoney(subtotal)}</span>
+                <span className="shrink-0 font-medium text-[#111827]">{formatMoney(subtotal)}</span>
               </div>
-              {parseFloat(order.discountAmount) > 0 && <div className="flex items-center justify-between">
-                <span className="text-[#6b7280]">
+              {parseFloat(order.discountAmount) > 0 && <div className="flex items-start justify-between gap-4">
+                <span className="min-w-0 break-words text-[#6b7280]">
                   {order.couponCode
                     ? t(
                         "orders.detail.discountWithCoupon",
@@ -388,16 +390,21 @@ function BuyerOrderDetailContent() {
                       )
                     : t("orders.detail.discount", "Discount")}
                 </span>
-                <span className="font-medium text-[#10b981]">
+                <span className="shrink-0 font-medium text-[#10b981]">
                   -{formatMoney(order.discountAmount)}
                 </span>
               </div>}
+              {parseFloat(order.discountAmount) > 0 && (
+                <p className="text-xs font-semibold text-[#10b981]">
+                  You saved {formatMoney(order.discountAmount)}
+                </p>
+              )}
               <div className="my-3 h-px bg-[#f3f4f6]" />
-              <div className="flex items-center justify-between text-base">
+              <div className="flex items-center justify-between gap-4 text-lg">
                 <span className="font-bold text-[#111827]">
                   {t("orders.detail.total", "Total")}
                 </span>
-                <span className="text-lg font-bold text-[#7c3aed]">
+                <span className="shrink-0 text-xl font-extrabold text-[#7c3aed]">
                   {formatMoney(order.totalAmount)}
                 </span>
               </div>
@@ -424,13 +431,13 @@ function BuyerOrderDetailContent() {
         </Card>
       )}
 
-      <div className="flex flex-wrap gap-3 rounded-xl border border-[#f3f4f6] bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:px-5">
-        <Button asChild className="gap-2 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-[18px] text-[13.5px] font-semibold shadow-[0_4px_12px_rgba(124,58,237,0.25)] hover:opacity-90">
+      <div className="flex flex-col gap-3 rounded-xl border border-[#f3f4f6] bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:flex-row sm:p-4 sm:px-5">
+        <Button asChild className="w-full justify-center gap-2 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-[18px] text-[13.5px] font-semibold shadow-[0_4px_12px_rgba(124,58,237,0.25)] hover:opacity-90 sm:w-auto">
           <Link to="/buyer/search"><RotateCcw className="h-4 w-4" aria-hidden="true" /> Buy Again</Link>
         </Button>
         <Button
           variant="outline"
-          className="gap-2 rounded-lg border-[#e5e7eb] bg-white px-[18px] text-[13.5px] font-semibold text-[#374151] hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] active:bg-[#7c3aed] active:text-white"
+          className="w-full justify-center gap-2 rounded-lg border-[#e5e7eb] bg-white px-[18px] text-[13.5px] font-semibold text-[#374151] hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] active:bg-[#7c3aed] active:text-white sm:w-auto"
           onClick={() => printInvoice(order)}
         >
           <Download className="h-4 w-4" aria-hidden="true" />

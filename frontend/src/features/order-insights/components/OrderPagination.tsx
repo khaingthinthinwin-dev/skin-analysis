@@ -20,7 +20,7 @@ export function OrderPagination({ meta, onPageChange, onLimitChange }: OrderPagi
   const lastItem = Math.min(meta.page * meta.limit, meta.total);
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-100 px-5 py-2">
+    <div className="flex flex-col gap-3 border-t border-gray-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-2">
       <p className="text-[13px] text-gray-500">
         {t('common.pagination.showing', 'Showing')}{' '}
         <span className="font-medium text-foreground">{firstItem}-{lastItem}</span>{' '}
@@ -29,7 +29,7 @@ export function OrderPagination({ meta, onPageChange, onLimitChange }: OrderPagi
         {t('buyer.orders.orders', 'orders')}
       </p>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-end gap-2">
         <span className="text-[13px] text-gray-500">{t('common.pagination.show', 'Show')}</span>
         <Select value={String(meta.limit)} onValueChange={(value) => onLimitChange(Number(value))}>
           <SelectTrigger className="h-[30px] w-[60px] border-gray-200 px-2 text-[13px] focus:border-[#7c3aed] focus:ring-[#7c3aed]">

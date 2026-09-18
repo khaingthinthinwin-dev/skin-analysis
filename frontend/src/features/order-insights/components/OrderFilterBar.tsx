@@ -126,8 +126,8 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
       {/* Spacer: absorbs leftover width at md+ so From/To never stretch and Search/Clear stay pinned to the right */}
       <div className="hidden md:block" aria-hidden="true" />
 
-      <div className="flex flex-col items-end gap-1 sm:contents">
-        <span title={isDateRangeInvalid ? 'Please select a valid date range.' : undefined}>
+      <div className="grid w-full grid-cols-2 gap-2 sm:contents">
+        <span className="w-full sm:w-auto" title={isDateRangeInvalid ? 'Please select a valid date range.' : undefined}>
           <Button
             type="submit"
             aria-label={t('common.filters.search', 'Search')}
@@ -135,14 +135,14 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
             className="h-10 w-full shrink-0 gap-2 sm:-translate-y-4 sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
-            {t('common.filters.search', 'Search')}
+            <span>{t('common.filters.search', 'Search')}</span>
           </Button>
         </span>
         <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full gap-2 sm:-translate-y-4 sm:w-auto">
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
-          {t('common.filters.clear', 'Clear')}
+          <span>{t('common.filters.clear', 'Clear')}</span>
         </Button>
-        <span title={isDateRangeInvalid ? 'Please select a valid date range.' : undefined}>
+        <span className="col-span-2 w-full sm:col-span-1 sm:w-auto" title={isDateRangeInvalid ? 'Please select a valid date range.' : undefined}>
           <Button
             type="button"
             onClick={onExport}

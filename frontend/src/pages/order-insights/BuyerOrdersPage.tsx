@@ -212,7 +212,7 @@ function BuyerOrdersPageContent() {
 
   return (
     <div
-      className="flex flex-col gap-4 overflow-hidden p-2 lg:p-4"
+      className="flex min-w-0 flex-col gap-4 overflow-x-hidden overflow-y-auto p-2 sm:overflow-hidden lg:p-4"
       style={{ height: '100%' }}
     >
       <div className="mb-2 shrink-0">
@@ -293,8 +293,8 @@ function BuyerOrdersPageContent() {
         </div>
       )}
 
-      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-border/80 shadow-xs">
-        <CardContent className="flex min-h-0 flex-1 flex-col space-y-0 overflow-hidden p-4 pb-3">
+      <Card className="flex flex-col overflow-visible border-border/80 shadow-xs sm:min-h-0 sm:flex-1 sm:overflow-hidden">
+        <CardContent className="flex min-w-0 flex-col space-y-0 overflow-visible p-3 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-hidden sm:p-4">
           <div className="shrink-0">
             <OrderFilterBar
               methods={methods}
@@ -309,7 +309,7 @@ function BuyerOrdersPageContent() {
           {data && data.meta.total === 0 ? (
             <EmptyOrderState />
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="min-w-0 overflow-visible sm:flex sm:min-h-0 sm:flex-1 sm:flex-col sm:overflow-hidden">
               <OrderHistoryTable
                 rows={data?.orders || []}
                 loading={isLoading}
