@@ -228,20 +228,45 @@ export class OrdersService {
     const skip = (query.page - 1) * query.limit;
     const orderBy = this.orderBy(query.sort, query.order);
 
-    const [orders, total] = await Promise.all([
-      this.prisma.order.findMany({
-        where,
-        include: {
-          items: true,
-          buyer: { select: { name: true } },
-          merchant: { select: { shopName: true } },
-        },
-        skip,
-        take: query.limit,
-        orderBy,
-      }),
-      this.prisma.order.count({ where }),
-    ]);
+    const { statusCode: _statusFilter, ...baseFilters } = where;
+
+    const inProgressWhere: Prisma.OrderWhereInput = {
+      ...baseFilters,
+      AND: [
+        ...(query.status ? [{ statusCode: query.status }] : []),
+        { statusCode: { not: 'delivered' } },
+      ],
+    };
+
+    const deliveredWhere: Prisma.OrderWhereInput = {
+      ...baseFilters,
+      AND: [
+        ...(query.status ? [{ statusCode: query.status }] : []),
+        { statusCode: 'delivered' },
+      ],
+    };
+
+    const [orders, total, summaryAgg, inProgressCount, completedCount] =
+      await Promise.all([
+        this.prisma.order.findMany({
+          where,
+          include: {
+            items: true,
+            buyer: { select: { name: true } },
+            merchant: { select: { shopName: true } },
+          },
+          skip,
+          take: query.limit,
+          orderBy,
+        }),
+        this.prisma.order.count({ where }),
+        this.prisma.order.aggregate({
+          where,
+          _sum: { totalAmount: true },
+        }),
+        this.prisma.order.count({ where: inProgressWhere }),
+        this.prisma.order.count({ where: deliveredWhere }),
+      ]);
 
     return {
       orders: orders.map((order) => {
@@ -272,6 +297,11 @@ export class OrdersService {
         page: query.page,
         limit: query.limit,
         total,
+      },
+      summary: {
+        totalSpent: Number(summaryAgg._sum.totalAmount ?? 0),
+        inProgress: inProgressCount,
+        completed: completedCount,
       },
     };
   }

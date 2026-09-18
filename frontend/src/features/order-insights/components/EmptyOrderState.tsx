@@ -15,10 +15,10 @@ export function EmptyOrderState() {
           <Package className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">
-          {t('orders.empty.title', 'No orders yet')}
+          {t('buyer.orders.empty.filteredTitle', 'No orders found for this filter.')}
         </h3>
         <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-          {t('orders.empty.description', "You haven't placed any orders yet.")}
+          {t('buyer.orders.empty.filteredDescription', 'Try changing the status or date filters.')}
         </p>
         <Button className="gap-2" onClick={() => window.location.href = '/products'}>
           <ShoppingBag className="h-4 w-4" aria-hidden="true" />

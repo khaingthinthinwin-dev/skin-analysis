@@ -130,6 +130,17 @@ export const mockOrderService = {
         limit: filters.limit,
         total,
       },
+      summary: {
+        totalSpent: filtered.reduce(
+          (sum, o) => sum + parseFloat(o.totalAmount),
+          0,
+        ),
+        inProgress: filtered.filter((o) => o.status !== OrderStatus.DELIVERED)
+          .length,
+        completed: filtered.filter(
+          (o) => o.status === OrderStatus.DELIVERED,
+        ).length,
+      },
     };
   },
 };

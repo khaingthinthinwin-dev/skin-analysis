@@ -33,9 +33,16 @@ export interface PaginationMetaDto {
   total: number;
 }
 
+export interface OrderSummaryDto {
+  totalSpent: number;
+  inProgress: number;
+  completed: number;
+}
+
 export interface OrderListResponseDto {
   orders: OrderListRowDto[];
   meta: PaginationMetaDto;
+  summary: OrderSummaryDto;
 }
 
 export type OrderSortField = 'createdAt' | 'totalAmount' | 'status';

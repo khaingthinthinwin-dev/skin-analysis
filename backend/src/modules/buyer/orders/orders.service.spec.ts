@@ -20,7 +20,11 @@ const order = {
 describe('OrdersService getOrderHistory', () => {
   const prisma = {
     merchant: { findUnique: jest.fn() },
-    order: { findMany: jest.fn(), count: jest.fn() },
+    order: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn(),
+    },
   };
   const service = new OrdersService(prisma as never);
 
@@ -28,6 +32,9 @@ describe('OrdersService getOrderHistory', () => {
     jest.clearAllMocks();
     prisma.order.findMany.mockResolvedValue([order]);
     prisma.order.count.mockResolvedValue(1);
+    prisma.order.aggregate.mockResolvedValue({
+      _sum: { totalAmount: 30 },
+    });
   });
 
   it('keeps buyerId scoping while applying filters and sorting', async () => {
@@ -54,6 +61,11 @@ describe('OrdersService getOrderHistory', () => {
         },
       ],
       meta: { page: 2, limit: 20, total: 1 },
+      summary: {
+        totalSpent: 30,
+        inProgress: 1,
+        completed: 1,
+      },
     });
 
     const where = {

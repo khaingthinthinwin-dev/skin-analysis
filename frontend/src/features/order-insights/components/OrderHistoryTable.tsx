@@ -90,7 +90,7 @@ export function OrderHistoryTable({
 
   return (
     <>
-      <div className="hidden min-h-[330px] max-w-full flex-1 self-stretch overflow-x-auto overflow-y-auto overscroll-contain sm:block [&>div]:overflow-visible">
+      <div className="hidden min-h-0 max-w-full flex-1 self-stretch overflow-x-auto overflow-y-scroll overscroll-contain sm:block [&>div]:overflow-visible">
       <Table className="min-w-[980px]">
         <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff]">
           <TableRow className="border-b-0 hover:bg-transparent">

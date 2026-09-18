@@ -1,6 +1,6 @@
 import type { OrderListRowDto } from '../types/orderInsights.types';
 
-const CSV_HEADERS = ['Order #', 'Date', 'Items', 'Total', 'Payment Status', 'Order Status', 'Track URL'];
+const CSV_HEADERS = ['Order #', 'Date', 'Items', 'Total', 'Payment Status', 'Order Status'];
 
 function escapeCsvField(value: string | number): string {
   const field = String(value);
@@ -25,7 +25,6 @@ export function exportOrdersCsv(orders: OrderListRowDto[], filename?: string): v
     order.totalAmount,
     order.paymentStatus,
     order.status,
-    `/orders/${order.id}/tracking`,
   ]);
   const csv = [CSV_HEADERS, ...rows]
     .map((row) => row.map(escapeCsvField).join(','))
