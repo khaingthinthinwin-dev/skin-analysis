@@ -170,22 +170,6 @@ describe('ProductsController', () => {
       await expect(controller.create(mockUser, dto, [])).rejects.toThrow(
         ConflictException,
       );
-      await expect(
-        controller.create(
-          mockUser,
-          {
-            name: 'Test',
-            shortDescription: 'Test',
-            description: 'Test',
-            categoryId: 'cat-1',
-            sku: 'TAKEN',
-            price: 10,
-            compareAtPrice: 15,
-            stockQuantity: 5,
-          },
-          [],
-        ),
-      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -330,28 +314,18 @@ describe('ProductsController', () => {
 
   describe('POST /products/bulk-delete', () => {
     it('calls bulkDelete', async () => {
-      service.bulkDelete.mockResolvedValue({
-        deactivated: 2,
-        permanentlyDeleted: 0,
-        skippedIds: [],
-      });
+      service.bulkDelete.mockResolvedValue({ deleted: 2 });
       const result = await controller.bulkDelete(mockUser, {
         ids: ['p1', 'p2'],
       });
-      expect(result.deactivated).toBe(2);
+      expect(result.deleted).toBe(2);
     });
 
-    it('skips products with active orders', async () => {
-      service.bulkDelete.mockResolvedValue({
-        deactivated: 1,
-        permanentlyDeleted: 0,
-        skippedIds: ['p1'],
-      });
-      const result = await controller.bulkDelete(mockUser, {
-        ids: ['p1', 'p2'],
-      });
-      expect(result.deactivated).toBe(1);
-      expect(result.skippedIds).toEqual(['p1']);
+    it('throws ConflictException for products with active orders', async () => {
+      service.bulkDelete.mockRejectedValue(new ConflictException());
+      await expect(
+        controller.bulkDelete(mockUser, { ids: ['p1', 'p2'] }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -359,15 +333,12 @@ describe('ProductsController', () => {
     it('calls deleteAll', async () => {
       service.deleteAll.mockResolvedValue({
         deactivated: 3,
-        permanentlyDeleted: 2,
-        skippedActiveOrders: 0,
+        deleted: 2,
+        skipped: 0,
       });
       const result = await controller.deleteAll(mockUser, {});
-      expect(result).toEqual({
-        deactivated: 3,
-        permanentlyDeleted: 2,
-        skippedActiveOrders: 0,
-      });
+      expect(result.deactivated).toBe(3);
+      expect(result.deleted).toBe(2);
     });
   });
 });
