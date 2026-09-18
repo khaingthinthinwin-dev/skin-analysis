@@ -122,6 +122,13 @@
       "cta": "စတင်ရန်"
     }
   },
+  "buyer": {
+    "orders": {
+      "exportCsv": "CSV ထုတ်ယူရန်",
+      "exportCsvTooltip": "သင့်အော်ဒါများကို CSV ဖိုင်အဖြစ် ဒေါင်းလုဒ်လုပ်ရန်",
+      "exportEmpty": "ထုတ်ယူရန် အော်ဒါမရှိပါ"
+    }
+  },
   "footer": {
     "brand": "Cosmetics Finder",
     "tagline": "သင့်အလှအပခရီး ဒီမှာ စတင်ပါ။",

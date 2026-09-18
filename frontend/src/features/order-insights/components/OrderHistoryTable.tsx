@@ -90,7 +90,7 @@ export function OrderHistoryTable({
 
   return (
     <>
-      <div className="hidden min-h-0 max-w-full flex-1 self-stretch overflow-x-auto overflow-y-auto overscroll-contain sm:block [&>div]:overflow-visible">
+      <div className="hidden min-h-[330px] max-w-full flex-1 self-stretch overflow-x-auto overflow-y-auto overscroll-contain sm:block [&>div]:overflow-visible">
       <Table className="min-w-[980px]">
         <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff]">
           <TableRow className="border-b-0 hover:bg-transparent">
@@ -105,30 +105,30 @@ export function OrderHistoryTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} className="hover:bg-muted/50 transition-colors">
-              <TableCell className="font-mono text-xs font-medium">
+            <TableRow key={row.id} className="py-3 hover:bg-muted/50 transition-colors">
+              <TableCell className="py-3 px-4 font-mono text-xs font-medium">
                 #{row.id.slice(0, 8).toUpperCase()}
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
+              <TableCell className="py-3 px-4 text-sm text-muted-foreground">
                 {new Date(row.createdAt).toLocaleDateString(dateLocale, {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
                 })}
               </TableCell>
-              <TableCell className="text-center text-sm font-medium">
+              <TableCell className="py-3 px-4 text-center text-sm font-medium">
                 {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
               </TableCell>
-              <TableCell className="text-right font-semibold text-foreground pr-4">
+              <TableCell className="py-3 text-right font-semibold text-foreground pr-4">
                 ${parseFloat(row.totalAmount).toFixed(2)}
               </TableCell>
-              <TableCell className="text-center text-sm">
+              <TableCell className="py-3 px-4 text-center text-sm">
                 <PaymentBadge status={row.paymentStatus} />
               </TableCell>
-              <TableCell className="text-center">
+              <TableCell className="py-3 px-4 text-center">
                 <StatusBadge status={row.status} />
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="py-3 px-4 text-right">
                 <Button
                   variant="ghost"
                   size="sm"

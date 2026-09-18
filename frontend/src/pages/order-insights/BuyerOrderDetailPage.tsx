@@ -5,37 +5,24 @@ import { Link, useParams } from "react-router";
 import { AxiosError } from "axios";
 import {
   ArrowLeft,
-  Clock,
-  CreditCard,
-  MapPin,
-  Package,
-  PackageCheck,
+  Download,
   PackageSearch,
-  Receipt,
   RotateCcw,
-  Store,
   StickyNote,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DeliveryProgress } from "@/features/order-insights/components/DeliveryProgress";
 import { PaymentBadge } from "@/features/order-insights/components/PaymentBadge";
-import { StatusBadge } from "@/features/order-insights/components/StatusBadge";
 import { useOrderDetail } from "@/features/order-insights/hooks/useOrderDetail";
+import { printInvoice } from "@/features/order-insights/utils/printInvoice";
 import type {
   OrderDetailResponseDto,
   OrderShippingAddress,
 } from "@/features/order-insights/types/orderInsights.types";
+import { OrderStatus } from "@/features/order-insights/types/orderInsights.types";
 
 function formatMoney(value: string): string {
   return `$${parseFloat(value).toFixed(2)}`;
@@ -87,6 +74,42 @@ function paymentMethodLabel(method: string): string {
   return method
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function statusCopy(status: OrderStatus, deliveredDate: string) {
+  switch (status) {
+    case OrderStatus.PLACED:
+      return {
+        title: "We've received your order",
+        message: "Waiting for the seller to confirm your order.",
+      };
+    case OrderStatus.CONFIRMED:
+      return {
+        title: "Your order is confirmed",
+        message:
+          "The seller has accepted your order and is preparing it. Estimated delivery: Sep 20 - Sep 22, 2026.",
+      };
+    case OrderStatus.PACKED:
+      return {
+        title: "Your order is packed",
+        message: "Your items are packed and ready for pickup by the courier.",
+      };
+    case OrderStatus.SHIPPED:
+      return {
+        title: "Your order has shipped",
+        message: "On the way! Track your package with the courier.",
+      };
+    case OrderStatus.OUT_FOR_DELIVERY:
+      return {
+        title: "Out for delivery today",
+        message: "Your order is arriving today.",
+      };
+    case OrderStatus.DELIVERED:
+      return {
+        title: `Delivered on ${deliveredDate}`,
+        message: "Enjoy your purchase!",
+      };
+  }
 }
 
 function BuyerOrderDetailSkeleton() {
@@ -240,169 +263,92 @@ function BuyerOrderDetailContent() {
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-foreground">
-            <PackageCheck
-              className="h-6 w-6 text-purple-600"
-              aria-hidden="true"
-            />
-            {t("orders.detail.title", "Order Details")}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t(
-              "orders.detail.subtitle",
-              "Review your order items, payment, and shipping information",
-            )}
+      <section className="flex flex-wrap items-center justify-between gap-5 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-5 py-5 text-white shadow-[0_8px_20px_rgba(124,58,237,0.2)] sm:px-7">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[1px] opacity-85">
+            📦 Order Details
           </p>
+          <h1 className="mt-1 text-xl font-bold">Order {orderReference(order)}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-90">
+            <span>
+              Placed {formatDate(order.createdAt, dateLocale)}, {formatTime(order.createdAt, dateLocale)}
+            </span>
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold">
+              ● {order.status.replaceAll("_", " ").toUpperCase()}
+            </span>
+          </div>
         </div>
-        <Button asChild variant="outline" size="sm" className="gap-2">
+        <Button asChild className="gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-semibold text-[#7c3aed] hover:bg-white/90">
           <Link to="/orders">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            {t("orders.detail.backToOrders", "Back to My Orders")}
+            Back to My Orders
           </Link>
         </Button>
-      </div>
+      </section>
 
-      <Card className="border-border/80 shadow-xs">
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("orders.detail.orderNumber", "Order")}
-              </p>
-              <p className="mt-1 font-mono text-xl font-bold text-foreground">
-                {orderReference(order)}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" aria-hidden="true" />
-                  {formatDate(order.createdAt, dateLocale)},{" "}
-                  {formatTime(order.createdAt, dateLocale)}
-                </span>
-                {order.shop?.name && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Store className="h-4 w-4" aria-hidden="true" />
-                    {order.shop.name}
-                  </span>
-                )}
-              </div>
+      {(() => {
+        const copy = statusCopy(order.status, formatDate(order.createdAt, dateLocale));
+        return (
+          <section className="flex items-center gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-5 py-3.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white">
+              ✓
             </div>
-            <StatusBadge status={order.status} />
-          </div>
-        </CardContent>
-      </Card>
+            <div>
+              <h2 className="text-sm font-bold text-[#111827]">{copy.title}</h2>
+              <p className="text-[13px] text-[#6b7280]">{copy.message}</p>
+            </div>
+          </section>
+        );
+      })()}
 
-      <div className="grid items-start gap-5 min-[880px]:grid-cols-[1fr_360px]">
+      <div className="grid items-start gap-5 min-[901px]:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
           <DeliveryProgress currentStatus={order.status} />
 
-          <Card className="border-border/80 shadow-xs">
+          <Card className="rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Package
-                  className="h-4 w-4 text-purple-600"
-                  aria-hidden="true"
-                />
-                {t("orders.detail.itemsTitle", "Order Items")}
+                📦 {t("orders.detail.itemsTitle", "Order Items")}
+                <span className="text-xs font-normal text-[#9ca3af]">({order.items.length} items)</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto pt-0">
-              <Table className="min-w-[640px]">
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead>
-                      {t("orders.table.product", "Product")}
-                    </TableHead>
-                    <TableHead className="w-[80px] text-center">
-                      {t("orders.table.qty", "Qty")}
-                    </TableHead>
-                    <TableHead className="w-[140px] text-right">
-                      {t("orders.detail.unitPrice", "Unit Price")}
-                    </TableHead>
-                    <TableHead className="w-[140px] text-right">
-                      {t("orders.detail.lineTotal", "Line Total")}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {order.items.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="py-10 text-center text-sm text-muted-foreground"
-                      >
-                        {t("orders.detail.noItems", "No items in this order.")}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    order.items.map((item) => {
-                      const image = getImageUrl(item.productImage);
-                      return (
-                        <TableRow
-                          key={item.id}
-                          className="hover:bg-muted/50 transition-colors"
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              {image ? (
-                                <img
-                                  src={image}
-                                  alt={item.productName}
-                                  className="h-12 w-12 rounded-md border object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
-                                  <Package
-                                    className="h-5 w-5 text-muted-foreground"
-                                    aria-hidden="true"
-                                  />
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-foreground">
-                                  {item.productName}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {item.quantity} ×{" "}
-                                  {formatMoney(item.unitPrice)}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center text-sm font-medium">
-                            {item.quantity}
-                          </TableCell>
-                          <TableCell className="text-right text-sm">
-                            {formatMoney(item.unitPrice)}
-                          </TableCell>
-                          <TableCell className="text-right text-sm font-semibold">
-                            {formatMoney(item.totalPrice)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+            <CardContent className="space-y-3 pt-0">
+              {order.items.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {t("orders.detail.noItems", "No items in this order.")}
+                </p>
+              ) : order.items.map((item) => {
+                const image = getImageUrl(item.productImage);
+                return (
+                  <div key={item.id} className="flex items-center gap-4 rounded-[10px] border border-[#f3f4f6] bg-[#fafafa] p-4">
+                    {image ? (
+                      <img src={image} alt={item.productName} className="h-14 w-14 shrink-0 rounded-[10px] object-cover" />
+                    ) : (
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#f3f0ff] to-[#fce7f3] text-2xl">
+                        💄
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-[#111827]">{item.productName}</p>
+                      <p className="text-[13px] text-[#6b7280]">Qty: {item.quantity} × {formatMoney(item.unitPrice)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[11px] uppercase text-[#9ca3af]">Line total</p>
+                      <p className="text-base font-bold text-[#111827]">{formatMoney(item.totalPrice)}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-4 min-[880px]:sticky min-[880px]:top-20">
-          <Card className="border-border/80 shadow-xs">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <MapPin
-                  className="h-4 w-4 text-purple-600"
-                  aria-hidden="true"
-                />
-                {t("orders.detail.shippingTitle", "Shipping Address")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
+        <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[901px]:sticky min-[901px]:top-20">
+          <section className="border-b border-[#f3f4f6] p-5">
+            <h2 className="mb-3 text-[13px] font-bold text-[#111827]">📍 Shipping Address</h2>
+            <div>
               {address.length > 0 ? (
-                <address className="text-sm not-italic leading-relaxed text-foreground">
+                <address className="text-sm not-italic leading-relaxed text-[#374151]">
                   {address.map((line) => (
                     <span key={line} className="block">
                       {line}
@@ -410,65 +356,30 @@ function BuyerOrderDetailContent() {
                   ))}
                 </address>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[#6b7280]">
                   {t(
                     "orders.detail.noAddress",
                     "Shipping address is not available for this order.",
                   )}
                 </p>
               )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/80 shadow-xs">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CreditCard
-                  className="h-4 w-4 text-purple-600"
-                  aria-hidden="true"
-                />
-                {t("orders.detail.paymentTitle", "Payment")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0 text-sm">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("orders.detail.paymentMethod", "Payment Method")}
-                </p>
-                <p className="mt-1 font-medium text-foreground">
-                  {paymentMethodLabel(order.paymentMethod)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("orders.detail.paymentStatus", "Payment Status")}
-                </p>
-                <div className="mt-1">
-                  <PaymentBadge status={order.paymentStatus} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/80 shadow-xs">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Receipt
-                  className="h-4 w-4 text-purple-600"
-                  aria-hidden="true"
-                />
-                {t("orders.detail.totalsTitle", "Order Summary")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-0 text-sm">
+            </div>
+          </section>
+          <section className="space-y-3 border-b border-[#f3f4f6] p-5 text-sm">
+            <h2 className="text-[13px] font-bold text-[#111827]">💳 Payment</h2>
+            <div className="flex items-center justify-between"><span className="text-[#6b7280]">Method</span><span className="font-medium text-[#111827]">{paymentMethodLabel(order.paymentMethod)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-[#6b7280]">Status</span><PaymentBadge status={order.paymentStatus} /></div>
+          </section>
+          <section className="space-y-2 p-5 text-sm">
+            <h2 className="mb-3 text-[13px] font-bold text-[#111827]">🧾 Order Summary</h2>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">
+                <span className="text-[#6b7280]">
                   {t("orders.detail.subtotal", "Subtotal")}
                 </span>
-                <span className="font-medium">{formatMoney(subtotal)}</span>
+                <span className="font-medium text-[#111827]">{formatMoney(subtotal)}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">
+              {parseFloat(order.discountAmount) > 0 && <div className="flex items-center justify-between">
+                <span className="text-[#6b7280]">
                   {order.couponCode
                     ? t(
                         "orders.detail.discountWithCoupon",
@@ -477,22 +388,21 @@ function BuyerOrderDetailContent() {
                       )
                     : t("orders.detail.discount", "Discount")}
                 </span>
-                <span className="font-medium text-emerald-600">
+                <span className="font-medium text-[#10b981]">
                   -{formatMoney(order.discountAmount)}
                 </span>
-              </div>
-              <div className="my-2 h-px bg-border" />
+              </div>}
+              <div className="my-3 h-px bg-[#f3f4f6]" />
               <div className="flex items-center justify-between text-base">
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-[#111827]">
                   {t("orders.detail.total", "Total")}
                 </span>
-                <span className="text-lg font-bold text-foreground">
+                <span className="text-lg font-bold text-[#7c3aed]">
                   {formatMoney(order.totalAmount)}
                 </span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+          </section>
+        </Card>
       </div>
 
       {order.notes && (
@@ -514,12 +424,17 @@ function BuyerOrderDetailContent() {
         </Card>
       )}
 
-      <div className="flex justify-end">
-        <Button asChild className="w-full gap-2 sm:w-auto">
-          <Link to="/buyer/search">
-            <RotateCcw className="h-4 w-4" aria-hidden="true" />
-            {t("orders.detail.buyAgain", "Buy Again")}
-          </Link>
+      <div className="flex flex-wrap gap-3 rounded-xl border border-[#f3f4f6] bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:px-5">
+        <Button asChild className="gap-2 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-[18px] text-[13.5px] font-semibold shadow-[0_4px_12px_rgba(124,58,237,0.25)] hover:opacity-90">
+          <Link to="/buyer/search"><RotateCcw className="h-4 w-4" aria-hidden="true" /> Buy Again</Link>
+        </Button>
+        <Button
+          variant="outline"
+          className="gap-2 rounded-lg border-[#e5e7eb] bg-white px-[18px] text-[13.5px] font-semibold text-[#374151] hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] active:bg-[#7c3aed] active:text-white"
+          onClick={() => printInvoice(order)}
+        >
+          <Download className="h-4 w-4" aria-hidden="true" />
+          Download Invoice
         </Button>
       </div>
     </div>

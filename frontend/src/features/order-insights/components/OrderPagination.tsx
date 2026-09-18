@@ -2,7 +2,6 @@
 
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PaginationMetaDto } from '../types/orderInsights.types';
 
@@ -21,8 +20,8 @@ export function OrderPagination({ meta, onPageChange, onLimitChange }: OrderPagi
   const lastItem = Math.min(meta.page * meta.limit, meta.total);
 
   return (
-    <div className="mt-6 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex items-center justify-between border-t border-gray-100 px-5 py-2">
+      <p className="text-[13px] text-gray-500">
         {t('common.pagination.showing', 'Showing')}{' '}
         <span className="font-medium text-foreground">{firstItem}-{lastItem}</span>{' '}
         {t('common.pagination.of', 'of')}{' '}
@@ -30,10 +29,10 @@ export function OrderPagination({ meta, onPageChange, onLimitChange }: OrderPagi
         {t('buyer.orders.orders', 'orders')}
       </p>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">{t('common.pagination.show', 'Show')}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] text-gray-500">{t('common.pagination.show', 'Show')}</span>
         <Select value={String(meta.limit)} onValueChange={(value) => onLimitChange(Number(value))}>
-          <SelectTrigger className="h-9 w-[70px] border-violet-300 focus:border-violet-500 focus:ring-violet-500">
+          <SelectTrigger className="h-[30px] w-[60px] border-gray-200 px-2 text-[13px] focus:border-[#7c3aed] focus:ring-[#7c3aed]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -42,26 +41,24 @@ export function OrderPagination({ meta, onPageChange, onLimitChange }: OrderPagi
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          size="sm"
+        <button
+          type="button"
+          className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-[6px] border border-gray-200 bg-white text-gray-500 hover:border-[#7c3aed] hover:text-[#7c3aed] disabled:cursor-not-allowed disabled:opacity-40"
           disabled={meta.page <= 1}
           onClick={() => onPageChange(meta.page - 1)}
           aria-label={t('common.actions.previous', 'Previous')}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          <span className="hidden sm:inline">{t('common.actions.previous', 'Previous')}</span>
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-[6px] border border-gray-200 bg-white text-gray-500 hover:border-[#7c3aed] hover:text-[#7c3aed] disabled:cursor-not-allowed disabled:opacity-40"
           disabled={meta.page >= totalPages}
           onClick={() => onPageChange(meta.page + 1)}
           aria-label={t('common.actions.next', 'Next')}
         >
-          <span className="hidden sm:inline">{t('common.actions.next', 'Next')}</span>
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        </button>
       </div>
     </div>
   );

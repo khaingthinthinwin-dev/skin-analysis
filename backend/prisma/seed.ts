@@ -24,13 +24,13 @@ async function main() {
   await prisma.skinAnalysis.deleteMany();
   await prisma.wishlist.deleteMany();
   await prisma.review.deleteMany();
+  await prisma.payout.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.promotion.deleteMany();
   await prisma.adPayment.deleteMany();
   await prisma.adFeeHistory.deleteMany();
   await prisma.advertisement.deleteMany();
-  await prisma.payout.deleteMany();
   await prisma.shop.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
@@ -690,17 +690,29 @@ async function main() {
   orders.push(order4);
 
   // Additional orders for Htail Ay Mi Lin to exercise buyer pagination.
+  const hamlOrderVariants = [
+    { statusCode: 'placed', amount: 18000 },
+    { statusCode: 'confirmed', amount: 22000 },
+    { statusCode: 'packed', amount: 26500 },
+    { statusCode: 'shipped', amount: 31000 },
+    { statusCode: 'out_for_delivery', amount: 36000 },
+    { statusCode: 'delivered', amount: 44000 },
+  ];
+
   for (let orderIndex = 1; orderIndex <= 29; orderIndex++) {
+    const variant = hamlOrderVariants[(orderIndex - 1) % hamlOrderVariants.length];
+    const orderDate = new Date();
+    orderDate.setDate(orderDate.getDate() - orderIndex);
     const paginationOrder = await prisma.order.create({
       data: {
         buyerId: buyers[2].id,
         merchantId: merchants[2].id,
-        statusCode: 'confirmed',
-        totalAmount: 22000,
+        statusCode: variant.statusCode,
+        totalAmount: variant.amount,
         shippingAddress: { street: '789 Nay Pyi Taw', city: 'Nay Pyi Taw', country: 'Myanmar', zip: '05555' },
         paymentMethod: 'e_wallet',
         paymentStatus: 'completed',
-        createdAt: new Date(Date.now() - orderIndex * 24 * 60 * 60 * 1000),
+        createdAt: orderDate,
       },
     });
     await prisma.orderItem.create({
@@ -709,8 +721,8 @@ async function main() {
         productId: products[6].id,
         merchantId: merchants[2].id,
         quantity: 1,
-        unitPrice: 22000,
-        totalPrice: 22000,
+        unitPrice: variant.amount,
+        totalPrice: variant.amount,
       },
     });
     orders.push(paginationOrder);

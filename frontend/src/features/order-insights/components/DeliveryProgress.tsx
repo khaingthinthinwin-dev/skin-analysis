@@ -18,8 +18,8 @@ const STEP_ORDER: OrderStatus[] = [
 type StepState = 'done' | 'current' | 'upcoming';
 
 const CIRCLE_STYLES: Record<StepState, string> = {
-  done: 'border-purple-600 bg-purple-600 text-white',
-  current: 'border-purple-600 bg-card text-purple-600 ring-4 ring-purple-600/20',
+  done: 'border-[#7c3aed] bg-[#7c3aed] text-white',
+  current: 'border-[#7c3aed] bg-[#7c3aed] text-white shadow-[0_0_0_6px_rgba(124,58,237,0.15)]',
   upcoming: 'border-border bg-muted text-muted-foreground',
 };
 
@@ -51,9 +51,9 @@ export function DeliveryProgress({ currentStatus }: DeliveryProgressProps) {
           {t('orders.detail.deliveryProgress', 'Delivery progress')}
         </CardTitle>
       </CardHeader>
-      <CardContent className="pb-4 pt-1">
+      <CardContent className="pb-5 pt-2">
         <div className="overflow-x-auto">
-          <ol className="mx-auto flex w-fit items-start">
+          <ol className="mx-auto flex min-w-[620px] items-start px-2">
             {STEP_ORDER.map((status, index) => {
               const state = states[index];
               const connectorIsActive =
@@ -63,24 +63,24 @@ export function DeliveryProgress({ currentStatus }: DeliveryProgressProps) {
                 <Fragment key={status}>
                   {index > 0 && (
                     <div
-                      className={`mt-[13px] h-0.5 w-6 shrink-0 rounded-full ${connectorIsActive ? 'bg-purple-600' : 'bg-border'}`}
+                      className={`mt-[17px] h-0.5 min-w-6 flex-1 rounded-full ${connectorIsActive ? 'bg-[#7c3aed]' : 'bg-[#e5e7eb]'}`}
                       aria-hidden="true"
                     />
                   )}
                   <li
-                    className="flex w-[90px] shrink-0 flex-col items-center"
+                    className="flex min-w-[86px] flex-1 flex-col items-center"
                     aria-current={state === 'current' ? 'step' : undefined}
                   >
                     <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-full border-2 ${CIRCLE_STYLES[state]}`}
+                      className={`flex h-9 w-9 items-center justify-center rounded-full border-2 ${CIRCLE_STYLES[state]}`}
                       aria-hidden="true"
                     >
-                      {state === 'done' && (
+                      {(state === 'done' || state === 'current') && (
                         <Check className="h-4 w-4" strokeWidth={3} />
                       )}
                     </span>
                     <span
-                      className={`mt-1.5 flex min-h-8 items-start justify-center text-center text-[11px] font-semibold leading-tight ${LABEL_STYLES[state]}`}
+                      className={`mt-2 flex items-start justify-center text-center text-xs font-semibold leading-tight ${LABEL_STYLES[state]}`}
                     >
                       {t(
                         `common.status.${status}`,

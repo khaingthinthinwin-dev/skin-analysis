@@ -164,6 +164,13 @@
       "closeButton": "Cancel"
     }
   },
+  "buyer": {
+    "orders": {
+      "exportCsv": "Export CSV",
+      "exportCsvTooltip": "Download your orders as a CSV file",
+      "exportEmpty": "No orders to export"
+    }
+  },
   "footer": {
     "brand": "Cosmetics Finder",
     "tagline": "Your beauty journey starts here.",

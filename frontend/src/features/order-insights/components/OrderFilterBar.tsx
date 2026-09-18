@@ -12,9 +12,10 @@ interface OrderFilterBarProps {
   methods: UseFormReturn<OrderListFilterFormData, unknown, OrderListFilterFormData>;
   onApply: (values: OrderListFilterFormData) => void;
   onReset: () => void;
+  onExport: () => void;
 }
 
-export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProps) {
+export function OrderFilterBar({ methods, onApply, onReset, onExport }: OrderFilterBarProps) {
   const { t } = useTranslation();
   const { control, formState: { errors } } = methods;
 
@@ -23,7 +24,7 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
   };
 
   return (
-    <form onSubmit={methods.handleSubmit(handleSubmit)} className="flex w-full flex-col gap-4 rounded-lg border bg-muted/30 p-4 sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto]">
+    <form onSubmit={methods.handleSubmit(handleSubmit)} className="mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]">
       <div className="flex-1 min-w-0 sm:w-[130px]">
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground mb-1">
           {t('orders.filter.status', 'Status')}
@@ -132,6 +133,13 @@ export function OrderFilterBar({ methods, onApply, onReset }: OrderFilterBarProp
         <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full gap-2 sm:w-auto">
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
           {t('common.filters.clear', 'Clear')}
+        </Button>
+        <Button
+          type="button"
+          onClick={onExport}
+          className="h-auto w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] py-[9px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] sm:w-auto"
+        >
+          &#x2193; {t('buyer.orders.exportCsv', 'Export CSV')}
         </Button>
       </div>
     </form>
