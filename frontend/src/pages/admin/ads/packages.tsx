@@ -67,13 +67,13 @@ export default function PackageFeeManagementPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Package & Fee Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Package & Fee Management</h1>
           <p className="text-muted-foreground">Configure advertising fees by placement and tier</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button asChild size="sm" variant="outline">
             <Link to="/admin/ads">
               <ArrowLeft className="mr-1 h-4 w-4" />

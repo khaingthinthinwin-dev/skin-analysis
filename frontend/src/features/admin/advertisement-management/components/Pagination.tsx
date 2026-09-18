@@ -44,11 +44,11 @@ export function Pagination({
   const items = buildPageItems(page, totalPages)
 
   return (
-    <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+    <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
       <span className="text-sm text-muted-foreground">
         Showing {from}-{to} of {total}
       </span>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 max-sm:justify-center">
         <Button
           variant="outline"
           size="sm"
@@ -88,7 +88,7 @@ export function Pagination({
         </Button>
       </div>
       {onLimitChange && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2 sm:justify-start">
           <span className="text-sm text-muted-foreground">Rows per page</span>
           <Select
             value={String(limit)}

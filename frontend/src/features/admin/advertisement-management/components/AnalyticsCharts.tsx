@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { formatPrice } from '@/lib/format'
+import { formatPrice } from '../utils/format'
 import type { RevenueAnalytics } from '@/types/admin-ad-management'
 
 type PlacementBreakdownRow = RevenueAnalytics['byPlacement'][number]

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -156,7 +156,8 @@ export default function Advertisements() {
   const [paymentReference, setPaymentReference] = useState('')
   const [confirmingSelection, setConfirmingSelection] = useState(false)
   const [packagesPage, setPackagesPage] = useState(1)
-  const approvedMerchant = user?.licenseStatus === 'approved'
+  const merchantLicenseStatus = user?.licenseStatus ?? user?.license_status
+  const approvedMerchant = merchantLicenseStatus === 'approved'
   const params = {
     page,
     limit: 3,
@@ -337,21 +338,23 @@ export default function Advertisements() {
       </div>
 
       {/* Pending Merchant Banner (§4.3) */}
-      {user?.licenseStatus === 'pending' && (
-        <Alert variant="warning">
+      {merchantLicenseStatus === 'pending' && (
+        <Alert variant="warning" className="bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
+          <AlertTitle className="text-amber-900 dark:text-amber-100">Shop approval pending</AlertTitle>
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
             Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
             shop is approved.
           </AlertDescription>
         </Alert>
       )}
-      {user?.licenseStatus === 'rejected' && (
-        <Alert variant="destructive">
+      {merchantLicenseStatus === 'rejected' && (
+        <Alert variant="destructive" className="border-red-500/50 bg-red-50 text-red-800 dark:border-red-500/60 dark:bg-red-950/40 dark:text-red-200">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
-            shop is approved.
+          <AlertTitle className="text-red-900 dark:text-red-100">Shop approval rejected</AlertTitle>
+          <AlertDescription className="text-red-800 dark:text-red-200">
+            Your shop approval request was rejected. You can browse packages and view your ads, but you cannot select a package
+            until your shop is approved.
           </AlertDescription>
         </Alert>
       )}
@@ -659,25 +662,35 @@ interface PaginationProps {
 }
 
 function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
-  const pages = Array.from({ length: totalPages }, (_, index) => index + 1)
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1).filter(
+    (pageNumber) =>
+      totalPages <= 5 ||
+      pageNumber === 1 ||
+      pageNumber === totalPages ||
+      Math.abs(pageNumber - page) <= 1,
+  )
   return (
-    <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+    <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
       <span className="text-sm text-muted-foreground">
         Page {page} of {totalPages}
       </span>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(Math.max(1, page - 1))}>
           <ChevronLeft className="mr-1 h-4 w-4" /> Previous
         </Button>
-        {pages.map((pageNumber) => (
-          <Button
-            key={pageNumber}
-            size="sm"
-            variant={pageNumber === page ? 'default' : 'outline'}
-            onClick={() => onPageChange(pageNumber)}
-          >
-            {pageNumber}
-          </Button>
+        {pages.map((pageNumber, index) => (
+          <div key={pageNumber} className="contents">
+            {index > 0 && pageNumber - pages[index - 1] > 1 && <span className="px-1 text-sm text-muted-foreground">…</span>}
+            <Button
+              size="sm"
+              variant={pageNumber === page ? 'default' : 'outline'}
+              onClick={() => onPageChange(pageNumber)}
+              aria-label={`Go to page ${pageNumber}`}
+              aria-current={pageNumber === page ? 'page' : undefined}
+            >
+              {pageNumber}
+            </Button>
+          </div>
         ))}
         <Button size="sm" disabled={page >= totalPages} onClick={() => onPageChange(Math.min(totalPages, page + 1))}>
           Next <ChevronRight className="ml-1 h-4 w-4" />
