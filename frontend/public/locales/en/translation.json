@@ -43,6 +43,8 @@
       "title": "Create Account",
       "fullName": "Full Name",
       "fullNamePlaceholder": "John Doe",
+      "shopName": "Shop Name",
+      "shopNamePlaceholder": "Your Shop Name",
       "email": "Email",
       "emailPlaceholder": "user@example.com",
       "password": "Password",
@@ -164,6 +166,13 @@
       "closeButton": "Cancel"
     }
   },
+  "buyer": {
+    "orders": {
+      "exportCsv": "Export CSV",
+      "exportCsvTooltip": "Download your orders as a CSV file",
+      "exportEmpty": "No orders to export"
+    }
+  },
   "footer": {
     "brand": "Cosmetics Finder",
     "tagline": "Your beauty journey starts here.",
@@ -182,6 +191,70 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "copyright": "© 2026 Cosmetics Finder. All rights reserved."
+  },
+  "merchant": {
+    "promotions": {
+      "title": "Promotions",
+      "addNew": "Add Promotion",
+      "search": "Search promotions...",
+      "status": "Status",
+      "statusAll": "All",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "statusExpired": "Expired",
+      "statusExhausted": "Exhausted",
+      "empty": "No promotions yet",
+      "emptyHint": "Create your first promotion to offer discounts to customers.",
+      "code": "Code",
+      "description": "Description",
+      "discountType": "Discount Type",
+      "discountValue": "Discount Value",
+      "minOrderAmount": "Min Order Amount",
+      "usage": "Usage",
+      "expiresAt": "Expires At",
+      "isActive": "Active",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this promotion? This action cannot be undone.",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "deleteSuccess": "Promotion deleted successfully",
+      "notFound": "Promotion not found",
+      "toggleSuccess": "Promotion status updated",
+      "unlimited": "Unlimited",
+      "pendingBanner": "Your merchant account is pending approval. Promotion management features are restricted until your license is approved.",
+      "pendingBannerHint": "You can view your promotions but cannot create, edit, or delete until your license is approved.",
+      "pendingBannerTitle": "Pending Approval",
+      "rejectedBanner": "Your merchant account has been rejected. Promotion management features are restricted.",
+      "rejectedBannerTitle": "Account Rejected",
+      "usedRestriction": "Used - Cannot modify",
+      "pageInfo": "Showing {{from}}-{{to}} of {{total}} promotions",
+      "saveSuccess": "Promotion saved successfully",
+      "update": "Update Promotion",
+      "save": "Save Promotion",
+      "saving": "Saving...",
+      "form": {
+        "code": "Promotion Code",
+        "codePlaceholder": "e.g. SUMMER20",
+        "codeHelper": "Globally unique alphanumeric code (A-Z, 0-9, -, _). Max 50 characters.",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe the promotion...",
+        "discountType": "Discount Type",
+        "percentage": "Percentage",
+        "fixed": "Fixed Amount (MMK)",
+        "discountValue": "Discount Value",
+        "discountValuePlaceholder": "e.g. 10",
+        "minOrderAmount": "Minimum Order Amount (MMK)",
+        "minOrderAmountPlaceholder": "e.g. 30000",
+        "minOrderAmountHelper": "Leave blank for no minimum.",
+        "maxUses": "Maximum Uses",
+        "maxUsesPlaceholder": "e.g. 100",
+        "maxUsesHelper": "Leave blank for unlimited uses.",
+        "startsAt": "Start Date & Time",
+        "expiresAt": "Expiry Date & Time",
+        "isActive": "Active"
+      }
+    }
   },
   "roles": {
     "buyer": "Buyer",

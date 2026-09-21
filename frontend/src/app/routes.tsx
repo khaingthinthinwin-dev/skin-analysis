@@ -26,7 +26,11 @@ const Unauthorized = lazy(() => import('@/pages/Unauthorized'))
 const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'))
 const AdminUserManagement = lazy(() => import('@/pages/admin/UserManagement'))
 const AdminMerchantManagement = lazy(() => import('@/pages/admin/MerchantManagement'))
-const AdminAdvertisementManagement = lazy(() => import('@/pages/admin/AdvertisementManagement'))
+const AdminAdsIndex = lazy(() => import('@/pages/admin/ads/index'))
+const AdminAdsPackages = lazy(() => import('@/pages/admin/ads/packages'))
+const AdminAdsFeeHistory = lazy(() => import('@/pages/admin/ads/fee-history'))
+const AdminAdsAnalytics = lazy(() => import('@/pages/admin/ads/analytics'))
+const AdminAdsExport = lazy(() => import('@/pages/admin/ads/export'))
 const AdminReviewManagement = lazy(() => import('@/pages/admin/ReviewManagement'))
 const AdminContentModeration = lazy(() => import('@/pages/admin/ContentModeration'))
 const AdminCommissionRevenue = lazy(() => import('@/pages/admin/CommissionRevenue'))
@@ -40,6 +44,9 @@ const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
 const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
 const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
+const BuyerOrdersPage = lazy(() => import('@/pages/order-insights/BuyerOrdersPage'))
+const BuyerOrderDetailPage = lazy(() => import('@/pages/order-insights/BuyerOrderDetailPage'))
+
 // TODO: Uncomment when pages are implemented
 // const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
 // const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
@@ -53,6 +60,8 @@ const MerchantProductCreate = lazy(() => import('@/pages/merchant/ProductCreate'
 const MerchantProductEdit = lazy(() => import('@/pages/merchant/ProductEdit'))
 const MerchantAdvertisements = lazy(() => import('@/pages/merchant/Advertisements'))
 const MerchantPromotions = lazy(() => import('@/pages/merchant/Promotions'))
+const MerchantPromotionCreate = lazy(() => import('@/pages/merchant/PromotionCreate'))
+const MerchantPromotionEdit = lazy(() => import('@/pages/merchant/PromotionEdit'))
 import { MerchantErrorBoundary } from '@/components/merchant/MerchantErrorBoundary'
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
@@ -163,12 +172,49 @@ export const router = createBrowserRouter([
                 ),
               },
               {
-                path: 'advertisements',
-                element: (
-                  <SuspenseWrapper>
-                    <AdminAdvertisementManagement />
-                  </SuspenseWrapper>
-                ),
+                path: 'ads',
+                children: [
+                  {
+                    index: true,
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsIndex />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'packages',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsPackages />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'fee-history',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsFeeHistory />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'analytics',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsAnalytics />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                  {
+                    path: 'export',
+                    element: (
+                      <SuspenseWrapper>
+                        <AdminAdsExport />
+                      </SuspenseWrapper>
+                    ),
+                  },
+                ],
               },
               {
                 path: 'reviews',
@@ -190,7 +236,7 @@ export const router = createBrowserRouter([
                 path: 'commission-revenue',
                 element: (
                   <SuspenseWrapper>
-                     <AdminCommissionRevenue />
+                    <AdminCommissionRevenue />
                   </SuspenseWrapper>
                 ),
               },
@@ -350,14 +396,7 @@ export const router = createBrowserRouter([
                   </SuspenseWrapper>
                 ),
               },
-              {
-                path: 'order-insights',
-                element: (
-                  <SuspenseWrapper>
-                    <OrderInsights />
-                  </SuspenseWrapper>
-                ),
-              },
+
               {
                 path: 'profile',
                 element: (
@@ -435,6 +474,22 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'promotions/new',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantPromotionCreate />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'promotions/:id/edit',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantPromotionEdit />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'order-insights',
                 element: (
                   <SuspenseWrapper>
@@ -455,6 +510,33 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <Notifications />
+                  </SuspenseWrapper>
+                ),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        path: 'orders',
+        element: <ProtectedRoute roles={['buyer']} />,
+        children: [
+          {
+            element: <BuyerLayout />,
+            children: [
+              {
+                index: true,
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrdersPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: ':id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrderDetailPage />
                   </SuspenseWrapper>
                 ),
               },

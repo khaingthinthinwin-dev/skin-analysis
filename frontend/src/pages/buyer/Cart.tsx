@@ -63,18 +63,18 @@ export default function Cart() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-2 lg:p-4">
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
         <div>
           <Skeleton className="h-8 w-48 mb-2" />
           <Skeleton className="h-4 w-32" />
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-lg border h-24 animate-pulse bg-muted" />
+              <div key={i} className="rounded-xl border h-24 animate-pulse bg-muted" />
             ))}
           </div>
-          <div className="rounded-lg border h-48 animate-pulse bg-muted" />
+          <div className="rounded-xl border h-48 animate-pulse bg-muted" />
         </div>
       </div>
     );
@@ -82,10 +82,10 @@ export default function Cart() {
 
   if (isError) {
     return (
-      <div className="space-y-6 p-2 lg:p-4">
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-purple-600" />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <ShoppingCart className="h-6 w-6 text-purple-600 shrink-0" />
             {t('cart.title', 'Shopping Cart')}
           </h1>
         </div>
@@ -113,18 +113,18 @@ export default function Cart() {
   }
 
   return (
-    <div className="space-y-6 p-2 lg:p-4">
+    <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
       <div>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-purple-600" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <ShoppingCart className="h-6 w-6 text-purple-600 shrink-0" />
             {t('cart.title', 'Shopping Cart')}
           </h1>
           {Array.isArray(items) && items.length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive h-9 text-xs sm:text-sm"
               onClick={handleClearAll}
               disabled={isClearing}
             >
@@ -135,14 +135,14 @@ export default function Cart() {
             </Button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
           {t('cart.subtitle', 'Review items in your cart before checkout')}
         </p>
       </div>
 
       {Array.isArray(items) && items.length > 0 ? (
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-2">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4">
             {items.map((item) => (
               <CartItemRow
                 key={item.id}
@@ -155,7 +155,9 @@ export default function Cart() {
             ))}
           </div>
 
-          <CartSummaryPanel summary={summary} />
+          <div className="lg:col-span-1">
+            <CartSummaryPanel summary={summary} />
+          </div>
         </div>
       ) : (
         <EmptyState variant="cart" />

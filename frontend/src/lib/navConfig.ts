@@ -62,7 +62,7 @@ const adminNavConfig: RoleNavConfig = {
       items: [
         { label: 'Users', href: '/admin/users', icon: Users },
         { label: 'Merchants', href: '/admin/merchants', icon: UserCheck },
-        { label: 'Advertisements', href: '/admin/advertisements', icon: Megaphone },
+        { label: 'Advertisements', href: '/admin/ads', icon: Megaphone },
         { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
         { label: 'Content', href: '/admin/content', icon: FileText },
       ],
@@ -110,7 +110,7 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
         items: [
           { label: 'Wishlist', href: '/buyer/wishlist', icon: Heart },
           { label: 'Cart', href: '/buyer/cart', icon: ShoppingCart },
-          { label: 'Order Insights', href: '/buyer/order-insights', icon: PackageCheck },
+          { label: 'Order Insights', href: '/orders', icon: PackageCheck },
         ],
       },
       {

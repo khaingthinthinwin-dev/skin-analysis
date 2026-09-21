@@ -82,7 +82,7 @@ export interface CreateReviewData {
 
 export interface ReportReviewData {
   reason: 'spam' | 'inappropriate' | 'fake' | 'other';
-  description?: string;
+  detail?: string;
 }
 
 export interface ReportReviewResult {

@@ -79,7 +79,7 @@ export default function AdminDashboard() {
               Review and approve merchant advertising banner requests before live display on buyer feeds.
             </p>
             <Button asChild variant="outline" className="w-full justify-between">
-              <Link to="/admin/advertisements">
+              <Link to="/admin/ads">
                 Manage Ads <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>

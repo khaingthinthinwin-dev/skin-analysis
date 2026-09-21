@@ -24,6 +24,7 @@ async function main() {
   await prisma.skinAnalysis.deleteMany();
   await prisma.wishlist.deleteMany();
   await prisma.review.deleteMany();
+  await prisma.payout.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.promotion.deleteMany();
@@ -38,8 +39,8 @@ async function main() {
   await prisma.merchant.deleteMany();
   await prisma.user.deleteMany();
   await prisma.commissionSetting.deleteMany();
+  await prisma.commissionRateHistory.deleteMany();
   await prisma.revenueTarget.deleteMany();
-  await prisma.payout.deleteMany();
   await prisma.adFeeSetting.deleteMany();
   await prisma.orderStatus.deleteMany();
   await prisma.discountType.deleteMany();
@@ -126,8 +127,16 @@ async function main() {
   console.log('Seeded ad_fee_settings');
 
   // Commission Settings
-  await prisma.commissionSetting.create({
+  const seededCommission = await prisma.commissionSetting.create({
     data: { commissionRate: 12.00 },
+  });
+  // Record the initial rate in history so time-based commission calculations
+  // always resolve a rate for orders placed before any admin rate change.
+  await prisma.commissionRateHistory.create({
+    data: {
+      commissionRate: 12.00,
+      effectiveFrom: seededCommission.createdAt,
+    },
   });
   console.log('Seeded commission_settings');
 
@@ -274,59 +283,6 @@ async function main() {
     shops.push(shop);
   }
   console.log(`Seeded ${shops.length} shops`);
-
-  // ============================================
-  // ADVERTISEMENTS
-  // ============================================
-  const now = new Date();
-  const ads = [];
-  const adData = [
-    {
-      shopIndex: 0,
-      title: 'Summer Skincare Sale - 30% Off!',
-      content: 'Get 30% off on all cleansers and toners this summer. Limited time offer!',
-      announcementMessage: 'Summer Sale: 30% off cleansers & toners',
-      imageUrl: 'https://example.com/ad-summer-sale.jpg',
-      linkUrl: '/products?category=cleansers',
-    },
-    {
-      shopIndex: 1,
-      title: 'New arrivals: Organic Serums',
-      content: 'Discover our new line of organic serums crafted with natural ingredients for radiant skin.',
-      announcementMessage: 'Just In: Organic serum collection',
-      imageUrl: 'https://example.com/ad-organic-serums.jpg',
-      linkUrl: '/products?category=serums',
-    },
-    {
-      shopIndex: 2,
-      title: 'Free Shipping on Orders Over 50,000 MMK',
-      content: 'Enjoy free nationwide shipping on all orders above 50,000 MMK. Shop now!',
-      announcementMessage: 'Free shipping on orders over 50K',
-      imageUrl: null,
-      linkUrl: null,
-    },
-  ];
-
-  for (const ad of adData) {
-    const advertisement = await prisma.advertisement.create({
-      data: {
-        shopId: shops[ad.shopIndex].id,
-        title: ad.title,
-        content: ad.content,
-        announcementMessage: ad.announcementMessage,
-        imageUrl: ad.imageUrl,
-        linkUrl: ad.linkUrl,
-        isActive: true,
-        approvalStatus: 'approved',
-        paymentStatus: 'completed',
-        weekNumber: 1,
-        startsAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
-      },
-    });
-    ads.push(advertisement);
-  }
-  console.log(`Seeded ${ads.length} advertisements`);
 
   // ============================================
   // CATEGORIES
@@ -571,7 +527,7 @@ async function main() {
         title: r.title,
         body: r.body,
         isVerifiedPurchase: r.isVerifiedPurchase,
-        isApproved: true,
+        status: 'approved',
       },
     });
   }
@@ -680,7 +636,82 @@ async function main() {
   });
   orders.push(order4);
 
+  // Additional orders for Htail Ay Mi Lin to exercise buyer pagination.
+  const hamlOrderVariants = [
+    { statusCode: 'placed', amount: 18000 },
+    { statusCode: 'confirmed', amount: 22000 },
+    { statusCode: 'packed', amount: 26500 },
+    { statusCode: 'shipped', amount: 31000 },
+    { statusCode: 'out_for_delivery', amount: 36000 },
+    { statusCode: 'delivered', amount: 44000 },
+  ];
+
+  for (let orderIndex = 1; orderIndex <= 29; orderIndex++) {
+    const variant = hamlOrderVariants[(orderIndex - 1) % hamlOrderVariants.length];
+    const orderDate = new Date();
+    orderDate.setDate(orderDate.getDate() - orderIndex);
+    const paginationOrder = await prisma.order.create({
+      data: {
+        buyerId: buyers[2].id,
+        merchantId: merchants[2].id,
+        statusCode: variant.statusCode,
+        totalAmount: variant.amount,
+        shippingAddress: { street: '789 Nay Pyi Taw', city: 'Nay Pyi Taw', country: 'Myanmar', zip: '05555' },
+        paymentMethod: 'e_wallet',
+        paymentStatus: 'completed',
+        createdAt: orderDate,
+      },
+    });
+    await prisma.orderItem.create({
+      data: {
+        orderId: paginationOrder.id,
+        productId: products[6].id,
+        merchantId: merchants[2].id,
+        quantity: 1,
+        unitPrice: variant.amount,
+        totalPrice: variant.amount,
+      },
+    });
+    orders.push(paginationOrder);
+  }
+
   console.log(`Seeded ${orders.length} orders`);
+
+  // ============================================
+  // PAYOUTS
+  // ============================================
+  // Each payout is linked to a single order via orderId. Only orders with a
+  // completed payment get a payout. Commission is computed at the seeded rate
+  // (12%) and ad fees are platform revenue (never deducted from merchant
+  // payouts per BR-REV-016).
+  const payouts: any[] = [];
+  const COMMISSION_RATE = 12; // matches the seeded commission_setting / rate history
+  const payoutData = [
+    { order: order1, status: 'completed', processed: true },
+    { order: order2, status: 'pending', processed: false },
+    { order: order3, status: 'processing', processed: false },
+  ];
+
+  for (const p of payoutData) {
+    const totalAmount = Number(p.order.totalAmount);
+    const commissionAmount = Math.round((totalAmount * COMMISSION_RATE) / 100);
+    const netPayout = totalAmount - commissionAmount;
+    const payout = await prisma.payout.create({
+      data: {
+        merchantId: p.order.merchantId,
+        orderId: p.order.id,
+        totalAmount,
+        commissionAmount,
+        netPayout,
+        status: p.status,
+        processedBy: p.processed ? admins[0].id : null,
+        processedAt: p.processed ? new Date() : null,
+        idempotencyKey: p.processed ? `seed-payout-${p.order.orderNumber}` : null,
+      },
+    });
+    payouts.push(payout);
+  }
+  console.log(`Seeded ${payouts.length} payouts`);
 
   // ============================================
   // WISHLISTS
@@ -839,9 +870,9 @@ async function main() {
   console.log(`Categories: ${categories.length}`);
   console.log(`Products:   ${products.length}`);
   console.log(`Shops:      ${shops.length}`);
-  console.log(`Ads:        ${ads.length}`);
   console.log(`Reviews:    ${reviewData.length}`);
   console.log(`Orders:     ${orders.length}`);
+  console.log(`Payouts:    ${payouts.length}`);
   console.log(`Promotions: ${promotions.length}`);
   console.log(`Wishlists:  ${wishlistData.length}`);
   console.log(`Carts:      2`);

@@ -10,9 +10,9 @@
 | **Target Screen** | AI Skin Analysis Portal (AI肌分析ポータル) |
 | **Subsystem** | Skin Analysis — Image Upload, AI Processing & Historical Tracking |
 | **Function ID** | FN-SKIN-001 |
-| **Version** | 2.0 |
+| **Version** | 2.1 |
 | **Created** | 2026-08-21 |
-| **Last Updated** | 2026-08-21 |
+| **Last Updated** | 2026-09-14 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -25,6 +25,7 @@
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-21 | Software Architect | Initial functional specification for AI Skin Analysis Portal covering image upload, AI analysis processing, result display, history tracking, and report export. |
 | 2.0 | 2026-08-21 | Software Architect | Complete rewrite aligned with reference format. Added sections: DDL (16), Prisma Schema (17), Acceptance Criteria (18), i18n keys, comparison, recommendations, feedback, caching strategy, security considerations. |
+| 2.1 | 2026-09-14 | Software Architect | Cross-reference review against core-work documents. Fixed: Permission Matrix (Buyer-only), MY language label (Myanmar), added BR-SKIN-020/021, UC-SKIN-011, EL-127/128, clarified daily limit logic, fixed garbled i18n Japanese translations. |
 
 ---
 
@@ -154,6 +155,10 @@ This screen is responsible for the following core functional areas:
 | UC-SKIN-005 | Export Full Analysis History | User has analysis history records. | PDF report generated containing all analysis records. | Buyer |
 | UC-SKIN-006 | View Trend Visualization | User has 2+ analysis records. | Health score and hydration trend charts displayed. | Buyer |
 | UC-SKIN-007 | Initiate New Scan | User is on analysis portal. | Capture guidelines panel displayed, ready for new image upload. | Buyer |
+| UC-SKIN-008 | View Recommendations | Analysis results with recommendations displayed. | Product recommendations listed with priority and reason. | Buyer |
+| UC-SKIN-009 | Provide Recommendation Feedback | User is viewing recommendations. | Feedback recorded for a specific recommendation. | Buyer |
+| UC-SKIN-010 | Export Single Analysis Report | User is viewing a specific analysis. | PDF report generated and downloaded for the selected analysis. | Buyer |
+| UC-SKIN-011 | Compare Analyses | User has at least 2 completed analyses. | Side-by-side comparison displayed with score deltas. | Buyer |
 
 ### 2.2 Primary Business Workflow
 
@@ -316,9 +321,9 @@ This screen is responsible for the following core functional areas:
 | BR-SKIN-002 | Image Format | Accepted image formats: JPG, JPEG, PNG, WebP. | File | Required |
 | BR-SKIN-003 | Image Size | Maximum image file size: 10MB (10,485,760 bytes). | File | Required |
 | BR-SKIN-004 | Image Resolution | Minimum recommended resolution: 640ÁE80px. Maximum recommended: 4096ÁE096px. | File | Required |
-| BR-SKIN-005 | Analysis Limit | Maximum 5 analyses per buyer per day. | Account | Required |
+| BR-SKIN-005 | Analysis Limit | Maximum 5 analyses per buyer per day. Resets daily at 00:00:00 UTC (CFG-SKIN-011). Remaining daily quota is returned in analysis summary response and displayed on UI. | Account | Required |
 | BR-SKIN-006 | History Scope | Buyers may only view their own analysis history. Cannot access other users' analysis data. | Access | Required |
-| BR-SKIN-007 | Result Display | Analysis results are read-only once processing is complete. Buyers cannot modify analysis scores or conditions. | Display | Required |
+| BR-SKIN-007 | Result Display | Analysis results are read-only and immutable once completed to preserve clinical tracking integrity. Individual scans cannot be modified or manually deleted; raw scans are purged after 90 days per BR-SKIN-009. | Display | Required |
 | BR-SKIN-008 | Image Storage | Uploaded facial images stored in Azure Blob Storage with server-side encryption (SSE). | Storage | Required |
 | BR-SKIN-009 | Image Retention | Raw facial images are retained for 90 days, then permanently deleted. Analysis metadata retained indefinitely. | Retention | Required |
 | BR-SKIN-010 | Consent Required | Buyer must provide explicit consent before image upload. | Upload | Required |
@@ -331,6 +336,9 @@ This screen is responsible for the following core functional areas:
 | BR-SKIN-017 | Clinical Findings | Primary and secondary concerns displayed with descriptions and affected area indicators. | Display | Required |
 | BR-SKIN-018 | Caching Strategy | Analysis results cached in Redis with TTL of 5 minutes (`skin:analysis:{id}`). | Cache | Required |
 | BR-SKIN-019 | i18n Support | All user-facing text supports EN, JA, and MY languages. | Display | Required |
+| BR-SKIN-020 | Analysis Comparison | Buyers can compare two analysis results side-by-side. Comparison shows score deltas with improvement/regression indicators. | Feature | Required |
+| BR-SKIN-021 | Recommendation Feedback | Buyers can mark product recommendations as helpful or not helpful. Feedback is stored per recommendation per user. | Feature | Required |
+| BR-SKIN-022 | Product Recommendation Linking | Each recommended product item links directly to its catalog product detail page (/products/:id) with verified stock availability. | Feature | Required |
 
 ### 4.2 Validation Outcome Values
 
@@ -339,7 +347,7 @@ This screen is responsible for the following core functional areas:
 | BR-SKIN-002 | Image Format | MIME type is `image/jpeg`, `image/png`, or `image/webp` | Accept image | Reject with error message | 40001 |
 | BR-SKIN-003 | Image Size | File size ≤ 10,485,760 bytes | Accept image | Reject with error message | 40002 |
 | BR-SKIN-004 | Image Resolution | Width ≥ 640px AND Height ≥ 480px | Accept image | Accept with warning |  E|
-| BR-SKIN-005 | Analysis Limit | Daily count < 5 | Allow analysis | Reject with error message | 42901 |
+| BR-SKIN-005 | Analysis Limit | Daily count < 5 (max 5 analyses/day) | Allow analysis | Reject with error message | 42901 |
 | BR-SKIN-006 | Access Scope | User ID matches analysis owner | Allow access | Deny access | 40301 |
 | BR-SKIN-010 | Consent | Consent flag is true | Allow upload | Reject with message | 40003 |
 | BR-SKIN-013 | Trend Display | Analysis count ≥ 2 | Show charts | Show placeholder |  E|
@@ -403,6 +411,8 @@ The AI Skin Analysis Portal screen consists of the following major areas:
 | EL-124 | Progress Bar | AI processing indicator | `processingStatus` |  E| Show progress | Show error |
 | EL-125 | Alert | Validation error alert | `errorMessage` |  E| Show error |  E|
 | EL-126 | Alert | Success notification | `successMessage` |  E| Show success |  E|
+| EL-127 | Button | "Compare" button for analysis comparison | `analysisIds` |  | Show comparison view | Show error |
+| EL-128 | Button | "Helpful" / "Not Helpful" feedback buttons | `recommendationId`, `isHelpful` |  | Record feedback, show confirmation | Show error |
 
 
 ---
@@ -474,7 +484,9 @@ The AI Skin Analysis Portal screen consists of the following major areas:
 1. Check daily analysis limit for user (BR-SKIN-005). Reject if count ≥ 5.
 2. Display processing indicator (EL-124).
 3. Send POST request to AI Analysis Service API with `blobUrl`.
-4. Await AI service response (timeout: 30 seconds).
+4. Await AI service response (timeout: 30 seconds):
+   - In synchronous/WebSocket mode: Listen for EV-SKIN-001 completion event.
+   - In polling mode (default): Client polls GET /api/v1/skin-analysis/:id every 2 seconds for a maximum of 30 seconds (15 poll attempts) until status transitions from PROCESSING to COMPLETED or FAILED.
 5. Parse AI response into `AnalysisDTO` structure.
 6. Generate `meshOverlayUrl` from AI response (BR-SKIN-015).
 7. Store analysis results in `skin_analyses` table.
@@ -989,9 +1001,9 @@ All errors follow the standard API error response format per development rules:
 
 | Role | View Results | Upload Image | View History | Export Report | View Trends | Compare Analyses |
 |------|:------------:|:------------:|:------------:|:-------------:|:-----------:|:----------------:|
-| Buyer | ✁E| ✁E| ✁E(own only) | ✁E| ✁E| ✁E(own only) |
-| Seller | ✁E| ✁E| ✁E| ✁E| ✁E| ✁E|
-| Admin | ✁E| ✁E| ✁E| ✁E| ✁E| ✁E|
+| Buyer | ✓ | ✓ | ✓ (own only) | ✓ | ✓ | ✓ (own only) |
+| Merchant | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| Admin | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
 
 ### 10.2 Authentication Requirements
 
@@ -1197,32 +1209,32 @@ All errors follow the standard API error response format per development rules:
 |---------------|----------|--------|
 | `en` | English | Primary |
 | `ja` | Japanese | Supported |
-| `my` | Malay | Supported |
+| `my` | Myanmar (မြန်မာ) | Supported |
 
 **i18n Keys for AI Skin Analysis:**
 
 | Key | EN | JA | MY |
 |-----|----|----|-----|
-| `skin.page.title` | AI Skin Analysis | AI肌�E极E| Analisis Kulit AI |
-| `skin.upload.title` | Upload Facial Image | 面部画像をアチE�EローチE| Muat Naik Gambar Muka |
+| `skin.page.title` | AI Skin Analysis | AI肌分析| Analisis Kulit AI |
+| `skin.upload.title` | Upload Facial Image | 面部画像をアップロード| Muat Naik Gambar Muka |
 | `skin.upload.guidelines` | Capture Guidelines | 撮影ガイドライン | Panduan Pengambilan |
-| `skin.upload.consent` | I consent to AI analysis of my image | AI画像�E析に同意しまぁE| Saya bersetuju untuk analisis AI gambar saya |
-| `skin.upload.button` | Start Analysis | 刁E��開姁E| Mulakan Analisis |
-| `skin.result.title` | Analysis Results | 刁E��結果 | Keputusan Analisis |
+| `skin.upload.consent` | I consent to AI analysis of my image | AI画像分析に同意します| Saya bersetuju untuk analisis AI gambar saya |
+| `skin.upload.button` | Start Analysis | 分析を開始| Mulakan Analisis |
+| `skin.result.title` | Analysis Results | 分析結果 | Keputusan Analisis |
 | `skin.result.healthScore` | Health Score | 健康スコア | Skor Kesihatan |
-| `skin.result.hydration` | Hydration | 保湿玁E| Penghidratan |
-| `skin.result.skinType` | Skin Type | 肌タイチE| Jenis Kulit |
+| `skin.result.hydration` | Hydration | 保湿| Penghidratan |
+| `skin.result.skinType` | Skin Type | 肌タイプ| Jenis Kulit |
 | `skin.result.skinAge` | Skin Age | 肌年齢 | Umur Kulit |
 | `skin.result.confidence` | Confidence | 信頼度 | Keyakinan |
-| `skin.history.title` | Analysis History | 刁E��履歴 | Sejarah Analisis |
-| `skin.history.export` | Export Report | レポ�Eト�E劁E| Eksport Laporan |
-| `skin.history.exportAll` | Export Full History | 全履歴出劁E| Eksport Sejarah Penuh |
+| `skin.history.title` | Analysis History | 分析履歴 | Sejarah Analisis |
+| `skin.history.export` | Export Report | レポートをダウンロード| Eksport Laporan |
+| `skin.history.exportAll` | Export Full History | 全履歴をダウンロード| Eksport Sejarah Penuh |
 | `skin.trend.title` | Trend Visualization | トレンド可視化 | Visualisasi Trend |
-| `skin.metrics.total` | Total Analyses | 総�E析数 | Jumlah Analisis |
+| `skin.metrics.total` | Total Analyses | 総分析数 | Jumlah Analisis |
 | `skin.metrics.best` | Best Score | 最高スコア | Skor Terbaik |
-| `skin.metrics.avgHydration` | Average Hydration | 平坁E��湿玁E| Purata Penghidratan |
-| `skin.metrics.improvement` | Improvement | 改喁E�� | Peningkatan |
-| `skin.condition.severity.NONE` | None | なぁE| Tiada |
+| `skin.metrics.avgHydration` | Average Hydration | 平均湿度| Purata Penghidratan |
+| `skin.metrics.improvement` | Improvement | 改善 | Peningkatan |
+| `skin.condition.severity.NONE` | None | なし| Tiada |
 | `skin.condition.severity.MILD` | Mild | 軽度 | Ringan |
 | `skin.condition.severity.MODERATE` | Moderate | 中度 | Sederhana |
 | `skin.condition.severity.SEVERE` | Severe | 重度 | Teruk |

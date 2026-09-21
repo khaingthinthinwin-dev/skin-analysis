@@ -62,7 +62,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
               {formatPrice(product.compareAtPrice)} MMK
             </span>
             <Badge variant="destructive">
-              Save {Math.round(((Number(product.compareAtPrice) - Number(product.price)) / Number(product.compareAtPrice)) * 100)}%
+              Save {formatPrice(Number(product.compareAtPrice) - Number(product.price))} MMK
             </Badge>
           </>
         )}

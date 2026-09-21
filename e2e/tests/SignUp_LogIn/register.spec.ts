@@ -250,6 +250,90 @@ test.describe('Register Page', () => {
       await registerPage.expectErrorVisible();
       await captureScreenshot(page, 'register_merchant_no_license_error');
     });
+
+    test('should show error for merchant without shop name', async ({ page }) => {
+      await registerPage.goto();
+      await registerPage.fillName('Merchant No Shop');
+      await registerPage.fillEmail(`e2e.noshop.${Date.now()}@test.com`);
+      await registerPage.fillPassword('TestPass123!');
+      await registerPage.fillConfirmPassword('TestPass123!');
+      await registerPage.selectRole('merchant');
+      await registerPage.checkTerms();
+
+      const pdfBuffer = Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF');
+      await registerPage.licenseFileInput.setInputFiles({
+        name: 'license.pdf',
+        mimeType: 'application/pdf',
+        buffer: pdfBuffer,
+      });
+
+      await registerPage.clickSubmit();
+      await registerPage.expectErrorVisible();
+      await captureScreenshot(page, 'register_merchant_no_shop_name_error');
+    });
+
+    test('should show error for non-PDF license file', async ({ page }) => {
+      await registerPage.goto();
+      await registerPage.fillName('Merchant Bad File');
+      await registerPage.fillEmail(`e2e.badfile.${Date.now()}@test.com`);
+      await registerPage.fillPassword('TestPass123!');
+      await registerPage.fillConfirmPassword('TestPass123!');
+      await registerPage.selectRole('merchant');
+
+      const jpgBuffer = Buffer.from('\\xFF\\xD8\\xFF\\xE0 fake jpg');
+      await registerPage.licenseFileInput.setInputFiles({
+        name: 'license.jpg',
+        mimeType: 'image/jpeg',
+        buffer: jpgBuffer,
+      });
+
+      await registerPage.checkTerms();
+      await registerPage.clickSubmit();
+      await registerPage.expectErrorVisible();
+      await captureScreenshot(page, 'register_merchant_non_pdf_error');
+    });
+
+    test('should show error for license file exceeding 10MB', async ({ page }) => {
+      await registerPage.goto();
+      await registerPage.fillName('Merchant Big File');
+      await registerPage.fillEmail(`e2e.bigfile.${Date.now()}@test.com`);
+      await registerPage.fillPassword('TestPass123!');
+      await registerPage.fillConfirmPassword('TestPass123!');
+      await registerPage.selectRole('merchant');
+
+      const largeBuffer = Buffer.alloc(11 * 1024 * 1024, 0);
+      await registerPage.licenseFileInput.setInputFiles({
+        name: 'license.pdf',
+        mimeType: 'application/pdf',
+        buffer: largeBuffer,
+      });
+
+      await registerPage.checkTerms();
+      await registerPage.clickSubmit();
+      await registerPage.expectErrorVisible();
+      await captureScreenshot(page, 'register_merchant_oversized_license_error');
+    });
+
+    test('should show error for incorrectly named license file', async ({ page }) => {
+      await registerPage.goto();
+      await registerPage.fillName('Merchant Bad Name');
+      await registerPage.fillEmail(`e2e.badname.${Date.now()}@test.com`);
+      await registerPage.fillPassword('TestPass123!');
+      await registerPage.fillConfirmPassword('TestPass123!');
+      await registerPage.selectRole('merchant');
+
+      const pdfBuffer = Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF');
+      await registerPage.licenseFileInput.setInputFiles({
+        name: 'mylicense.pdf',
+        mimeType: 'application/pdf',
+        buffer: pdfBuffer,
+      });
+
+      await registerPage.checkTerms();
+      await registerPage.clickSubmit();
+      await registerPage.expectErrorVisible();
+      await captureScreenshot(page, 'register_merchant_bad_license_name_error');
+    });
   });
 
   test.describe('Navigation', () => {
@@ -304,6 +388,90 @@ test.describe('Register Page', () => {
         await expect(registerPage.confirmPasswordInput).toHaveAttribute('type', 'text');
         await captureScreenshot(page, 'register_confirm_password_visible');
       }
+    });
+  });
+
+  test.describe('Boundary - Name Length', () => {
+    test('should accept name at minimum length (2 chars)', async ({ page }) => {
+      const email = `e2e.bound.name2.${Date.now()}@test.com`;
+      await registerPage.goto();
+      await registerPage.register({
+        name: 'Ab',
+        email,
+        password: 'TestPass123!',
+        role: 'buyer',
+        agreeToTerms: true,
+      });
+      await registerPage.expectRedirectTo(ROUTES.LOGIN);
+      await captureScreenshot(page, 'register_boundary_name_min');
+    });
+
+    test('should accept name at reasonable length (50 chars)', async ({ page }) => {
+      const email = `e2e.bound.name50.${Date.now()}@test.com`;
+      const longName = 'A'.repeat(50);
+      await registerPage.goto();
+      await registerPage.register({
+        name: longName,
+        email,
+        password: 'TestPass123!',
+        role: 'buyer',
+        agreeToTerms: true,
+      });
+      await registerPage.expectRedirectTo(ROUTES.LOGIN);
+      await captureScreenshot(page, 'register_boundary_name_max');
+    });
+  });
+
+  test.describe('Boundary - Password Length', () => {
+    test('should accept password at minimum length (8 chars)', async ({ page }) => {
+      const email = `e2e.bound.pw8.${Date.now()}@test.com`;
+      await registerPage.goto();
+      await registerPage.register({
+        name: 'Boundary User',
+        email,
+        password: 'Abcdef1!',
+        role: 'buyer',
+        agreeToTerms: true,
+      });
+      await registerPage.expectRedirectTo(ROUTES.LOGIN);
+      await captureScreenshot(page, 'register_boundary_pw_min');
+    });
+
+    test('should accept password at maximum length (128 chars)', async ({ page }) => {
+      const email = `e2e.bound.pw128.${Date.now()}@test.com`;
+      const longPw = 'A'.repeat(60) + 'a'.repeat(60) + '1!' ;
+      await registerPage.goto();
+      await registerPage.register({
+        name: 'Boundary User',
+        email,
+        password: longPw,
+        role: 'buyer',
+        agreeToTerms: true,
+      });
+      await registerPage.expectRedirectTo(ROUTES.LOGIN);
+      await captureScreenshot(page, 'register_boundary_pw_max');
+    });
+  });
+
+  test.describe('Boundary - License Filename Case Insensitive', () => {
+    test('should accept license file named License.PDF (uppercase)', async ({ page }) => {
+      const email = `e2e.bound.liccase.${Date.now()}@test.com`;
+      await registerPage.goto();
+      await registerPage.fillName('Boundary Merchant');
+      await registerPage.fillEmail(email);
+      await registerPage.fillPassword('TestPass123!');
+      await registerPage.fillConfirmPassword('TestPass123!');
+      await registerPage.selectRole('merchant');
+      const pdfBuffer = Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF');
+      await registerPage.licenseFileInput.setInputFiles({
+        name: 'License.PDF',
+        mimeType: 'application/pdf',
+        buffer: pdfBuffer,
+      });
+      await registerPage.checkTerms();
+      await registerPage.clickSubmit();
+      await registerPage.expectRedirectTo(ROUTES.LOGIN);
+      await captureScreenshot(page, 'register_boundary_license_case');
     });
   });
 

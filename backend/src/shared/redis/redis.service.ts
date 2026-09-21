@@ -83,10 +83,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async del(key: string): Promise<void> {
-    if (!this.isAvailable()) return;
+  async del(...keys: string[]): Promise<void> {
+    if (!this.isAvailable() || keys.length === 0) return;
     await this.ensureClient()
-      .del(key)
+      .del(...keys)
       .catch(() => {});
   }
 
@@ -136,5 +136,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   getClient(): Redis | null {
     return this.client;
+  }
+
+  async keys(pattern: string): Promise<string[]> {
+    if (!this.isAvailable()) return [];
+    try {
+      return await this.ensureClient().keys(pattern);
+    } catch {
+      return [];
+    }
   }
 }

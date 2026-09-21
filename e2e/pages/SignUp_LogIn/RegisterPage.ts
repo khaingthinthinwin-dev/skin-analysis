@@ -23,7 +23,7 @@ export class RegisterPage {
     this.nameInput = page.getByPlaceholder('John Doe');
     this.emailInput = page.getByRole('textbox', { name: /email/i });
     this.passwordInput = page.getByPlaceholder('Create a password');
-    this.confirmPasswordInput = page.getByPlaceholder('Confirm your password');
+    this.confirmPasswordInput = page.getByPlaceholder('Re-enter password');
     this.buyerRadio = page.getByRole('radio', { name: /buyer/i });
     this.merchantRadio = page.getByRole('radio', { name: /merchant/i });
     this.licenseFileInput = page.locator('input[type="file"]');
@@ -38,7 +38,8 @@ export class RegisterPage {
 
   async goto() {
     await this.page.goto('/register');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(1000);
     await this.capture('01_register_page_loaded');
   }
 
@@ -145,6 +146,17 @@ export class RegisterPage {
     for (let i = 0; i < await errors.count(); i++) {
       const text = await errors.nth(i).textContent();
       if (text?.toLowerCase().includes('password')) {
+        return text;
+      }
+    }
+    return null;
+  }
+
+  async getNameError(): Promise<string | null> {
+    const errors = this.page.locator('p.text-destructive');
+    for (let i = 0; i < await errors.count(); i++) {
+      const text = await errors.nth(i).textContent();
+      if (text?.toLowerCase().includes('name')) {
         return text;
       }
     }

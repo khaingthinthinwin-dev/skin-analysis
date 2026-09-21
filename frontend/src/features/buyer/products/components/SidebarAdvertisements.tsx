@@ -85,7 +85,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               type="button"
               aria-label="Previous advertisement"
               onClick={() => setCurrent((c) => (c - 1 + total) % total)}
-              className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+              className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9]"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -93,7 +93,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               type="button"
               aria-label="Next advertisement"
               onClick={() => setCurrent((c) => (c + 1) % total)}
-              className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#e91e63] text-white shadow-sm transition-colors hover:bg-[#c2185b]"
+              className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9]"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

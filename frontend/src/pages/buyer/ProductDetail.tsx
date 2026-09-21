@@ -1,6 +1,7 @@
-import { useParams } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import { ProductGallery } from '@/features/buyer/products/components/ProductGallery';
 import { ProductInfo } from '@/features/buyer/products/components/ProductInfo';
 import { ProductTabs } from '@/features/buyer/products/components/ProductTabs';
@@ -12,6 +13,8 @@ import { useAuth } from '@/providers/AuthProvider';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const idOrSlug = id ?? '';
 
@@ -27,7 +30,7 @@ export default function ProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div key={location.pathname} className="container mx-auto">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <Skeleton className="aspect-square w-full rounded-lg" />
           <div className="space-y-4">
@@ -56,7 +59,16 @@ export default function ProductDetail() {
   const showCTA = !isAuthenticated || user?.role === 'buyer';
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div key={location.pathname} className="container mx-auto px-4 py-8">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="mb-4"
+        onClick={() => navigate(-1)}
+        aria-label="Go back"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
       <SidebarAdvertisements idOrSlug={product.id} />
 
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">

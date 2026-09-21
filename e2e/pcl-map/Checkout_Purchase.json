@@ -1,0 +1,14 @@
+{
+  "pclFile": "docs/screen/Checkout_Purchase/Checkout_Purchase_PCL.md",
+  "specFiles": [
+    "e2e/tests/Checkout_Purchase/checkout.spec.ts"
+  ],
+  "mappings": {
+    "should display checkout page with order summary": "E2E-CHECK-01: Checkout page loads with order summary",
+    "should place an order successfully": "E2E-CHECK-02: Order placement succeeds",
+    "should display order confirmation after purchase": "E2E-CHECK-03: Order confirmation displays",
+    "should apply a valid promo code": "E2E-CHECK-04: Valid promo code applies discount",
+    "should show error for invalid promo code": "E2E-CHECK-05: Invalid promo code shows error",
+    "should calculate correct total (subtotal - discount)": "E2E-CHECK-06: Total calculation is correct"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "common": {
+    "filters": {
+      "all": "All",
+      "clear": "Clear",
+      "apply": "Apply"
+    },
+    "status": {
+      "placed": "Placed",
+      "confirmed": "Confirmed",
+      "packed": "Packed",
+      "shipped": "Shipped",
+      "out_for_delivery": "Out for Delivery",
+      "delivered": "Delivered"
+    },
+    "paymentStatus": {
+      "pending": "Pending",
+      "completed": "Completed"
+    },
+    "actions": {
+      "track": "Track",
+      "previous": "Previous",
+      "next": "Next",
+      "retry": "Retry"
+    },
+    "pageInfo": "Page {{page}} of {{totalPages}} · {{total}} orders"
+  },
+  "orders": {
+    "filter": {
+      "status": "Status",
+      "dateRange": {
+        "from": "From",
+        "to": "To"
+      }
+    },
+    "table": {
+      "orderId": "Order #",
+      "date": "Date",
+      "items": "Items",
+      "item": "Item",
+      "total": "Total",
+      "payment": "Payment",
+      "status": "Status",
+      "track": "Track"
+    },
+    "track": "Track",
+    "empty": {
+      "title": "You haven't placed any orders yet.",
+      "description": "When you place an order, it will appear here.",
+      "cta": "Browse Products"
+    },
+    "pageInfo": "Page {{page}} of {{totalPages}} · {{total}} orders"
+  },
+  "buyer": {
+    "orders": {
+      "title": "My Orders",
+      "subtitle": "Track order status, delivery stages, and past receipts",
+      "recentOrders": "Recent Orders",
+      "error": {
+        "loadFailed": "Failed to load orders. Please try again."
+      }
+    }
+  }
+}

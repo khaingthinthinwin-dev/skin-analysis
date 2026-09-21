@@ -195,7 +195,7 @@ export function Header() {
         open={guestModal !== null}
         onClose={() => setGuestModal(null)}
         messageKey={guestModal ?? 'wishlist'}
-        returnUrl={guestModal === 'wishlist' ? '/buyer/wishlist' : '/buyer/search'}
+        returnUrl={guestModal === 'wishlist' ? '/buyer/wishlist' : '/buyer/cart'}
       />
     </header>
   )

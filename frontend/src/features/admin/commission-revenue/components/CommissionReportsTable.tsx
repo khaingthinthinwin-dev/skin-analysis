@@ -1,0 +1,64 @@
+import React from 'react';
+import { CommissionGroupBy, CommissionReport } from '../services/commission.service';
+
+interface CommissionReportsTableProps {
+  reports?: CommissionReport[];
+  groupBy?: CommissionGroupBy;
+}
+
+// Merchant commission reports (GET /admin/commission/reports).
+// Commission is derived from each merchant's completed order revenue at the
+// platform rate that was effective when each order was placed; values are
+// decimal strings from the backend.  A merchant may appear in multiple rows
+// when their orders span different commission-rate periods.
+export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
+  reports = [],
+  groupBy = 'merchant',
+}) => {
+  const thClass = "text-left py-2.5 px-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border bg-surface-dim";
+
+  const tdClass = "py-3 px-3.5 text-[13px] text-muted-foreground border-b border-border";
+
+  return (
+    <div className="rounded-md border bg-card">
+      <div className="max-h-[400px] overflow-y-auto">
+        <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            {groupBy === 'day' && <th className={thClass}>Date</th>}
+            {groupBy === 'order' && <th className={thClass}>Order Number</th>}
+            {groupBy === 'order' && <th className={thClass}>Date</th>}
+            <th className={thClass}>Merchant</th>
+            <th className={`${thClass} text-right`}>Commission Rate</th>
+            {groupBy !== 'order' && <th className={`${thClass} text-right`}>Orders</th>}
+            <th className={`${thClass} text-right`}>Revenue</th>
+            <th className={`${thClass} text-right`}>Commission</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reports.length === 0 ? (
+            <tr>
+              <td colSpan={groupBy === 'order' ? 6 : 5} className={`${tdClass} text-center py-6 text-muted-foreground`}>
+                No commission reports found.
+              </td>
+            </tr>
+          ) : (
+            reports.map((r, idx) => (
+              <tr key={`${r.orderId ?? r.merchantId}-${r.date ?? ''}-${r.commissionRate}-${idx}`}>
+                {groupBy === 'day' && <td className={tdClass}>{r.date}</td>}
+                {groupBy === 'order' && <td className={`${tdClass} text-foreground font-medium`}>{r.orderNumber}</td>}
+                {groupBy === 'order' && <td className={tdClass}>{r.date ? new Date(r.date).toLocaleString() : '-'}</td>}
+                <td className={`${tdClass} text-foreground font-medium`}>{r.merchantName}</td>
+                <td className={`${tdClass} text-right tabular-nums`}>{r.commissionRate}%</td>
+                {groupBy !== 'order' && <td className={`${tdClass} text-right tabular-nums`}>{r.orders}</td>}
+                <td className={`${tdClass} text-right tabular-nums`}>${r.revenue}</td>
+                <td className={`${tdClass} text-right text-primary font-semibold tabular-nums`}>${r.commission}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  );
+};

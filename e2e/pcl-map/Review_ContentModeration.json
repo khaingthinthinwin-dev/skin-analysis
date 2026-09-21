@@ -1,0 +1,12 @@
+{
+  "pclFile": "docs/screen/Review_ContentModeration/Review_Content_Moderation_PCL.md",
+  "specFiles": [
+    "e2e/tests/Review_ContentModeration/moderation.spec.ts"
+  ],
+  "mappings": {
+    "should display moderation page with review list": "E2E-MOD-01: Moderation page loads with review list",
+    "should approve a pending review": "E2E-MOD-02: Review approval works",
+    "should reject a pending review": "E2E-MOD-03: Review rejection works",
+    "should view and resolve reported content": "E2E-MOD-04: Reported content resolution works"
+  }
+}

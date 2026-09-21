@@ -3,9 +3,9 @@ import { test } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const SCREENSHOT_ROOT = path.resolve(__dirname, '../test-results');
+const TEST_RESULTS_ROOT = path.resolve(__dirname, '../test-results');
 
-const SCREEN_FOLDERS = [
+export const SCREEN_FOLDERS = [
   'SignUp_LogIn',
   'SearchAndFilter',
   'ProductDetail',
@@ -23,14 +23,20 @@ const SCREEN_FOLDERS = [
   'Audit_Log',
 ];
 
-function getScreenFromFilePath(filePath: string): string {
+export function getScreenFromFilePath(filePath: string): string {
   const normalized = filePath.replace(/\\/g, '/');
   for (const screen of SCREEN_FOLDERS) {
-    if (normalized.includes(`/tests/${screen}/`)) {
-      return `${screen}_Screenshots`;
+    if (
+      normalized.includes(`/tests/${screen}/`) ||
+      normalized.includes(`tests/${screen}/`) ||
+      normalized.startsWith(`${screen}/`) ||
+      normalized.includes(`/${screen}/`) ||
+      normalized.includes(screen)
+    ) {
+      return screen;
     }
   }
-  return 'Other_Screenshots';
+  return 'Other';
 }
 
 function ensureDir(dir: string) {
@@ -48,7 +54,7 @@ export async function captureScreenshot(
   stepName: string,
   testInfo?: { title: string; file: string }
 ): Promise<string> {
-  let screenFolder = 'Other_Screenshots';
+  let screenFolder = 'Other';
 
   try {
     const info = test.info();
@@ -59,7 +65,7 @@ export async function captureScreenshot(
     }
   }
 
-  const screenshotDir = path.join(SCREENSHOT_ROOT, screenFolder);
+  const screenshotDir = path.join(TEST_RESULTS_ROOT, screenFolder, 'screenshots');
   ensureDir(screenshotDir);
 
   const step = sanitize(stepName);
@@ -76,14 +82,14 @@ export async function captureElementScreenshot(
   selector: string,
   stepName: string
 ): Promise<string> {
-  let screenFolder = 'Other_Screenshots';
+  let screenFolder = 'Other';
 
   try {
     const info = test.info();
     screenFolder = getScreenFromFilePath(info.file);
   } catch {}
 
-  const screenshotDir = path.join(SCREENSHOT_ROOT, screenFolder);
+  const screenshotDir = path.join(TEST_RESULTS_ROOT, screenFolder, 'screenshots');
   ensureDir(screenshotDir);
 
   const step = sanitize(stepName);

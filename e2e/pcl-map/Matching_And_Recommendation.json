@@ -1,0 +1,13 @@
+{
+  "pclFile": "docs/screen/Matching_And_Recommendation/Matching_And_Recommendation_PCL.md",
+  "specFiles": [
+    "e2e/tests/Matching_And_Recommendation/matching.spec.ts"
+  ],
+  "mappings": {
+    "should display matching page with recommendations": "E2E-MATCH-01: Matching page loads with recommendations",
+    "should display personalized product recommendations": "E2E-MATCH-02: Personalized recommendations display",
+    "should display similar products section": "E2E-MATCH-03: Similar products section displays",
+    "should filter recommendations by category": "E2E-MATCH-04: Category filter works on recommendations",
+    "should display ad panel with sponsored ads": "E2E-MATCH-05: Sponsored ads panel displays"
+  }
+}

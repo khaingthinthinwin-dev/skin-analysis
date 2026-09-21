@@ -77,9 +77,9 @@ export class AdminService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ReviewWhereInput = {};
-    if (status === 'approved') where.isApproved = true;
-    else if (status === 'rejected') where.isApproved = false;
-    else if (status === 'pending') where.isApproved = false;
+    if (status === 'approved') where.status = 'approved';
+    else if (status === 'rejected') where.status = 'rejected';
+    else if (status === 'pending') where.status = 'pending';
 
     if (search) {
       where.OR = [
@@ -158,10 +158,10 @@ export class AdminService {
     if (!review) throw new NotFoundException('Review not found');
 
     if (dto.action === ReviewAction.APPROVE) {
-      if (review.isApproved)
+      if (review.status === 'approved')
         throw new ConflictException('Review already approved');
     } else {
-      if (!review.isApproved)
+      if (review.status === 'rejected')
         throw new ConflictException('Review already rejected');
       if (!dto.reason || dto.reason.trim().length === 0) {
         throw new BadRequestException('Rejection reason is required');
@@ -172,7 +172,10 @@ export class AdminService {
       async (tx: Prisma.TransactionClient) => {
         const r = await tx.review.update({
           where: { id: reviewId },
-          data: { isApproved: dto.action === ReviewAction.APPROVE },
+          data: {
+            status:
+              dto.action === ReviewAction.APPROVE ? 'approved' : 'rejected',
+          },
         });
 
         await this.recalculateProductStats(tx, review.productId);
@@ -184,7 +187,7 @@ export class AdminService {
               : 'REVIEW_REJECTED',
           entityType: 'review',
           entityId: reviewId,
-          newValue: { isApproved: r.isApproved, reason: dto.reason },
+          newValue: { status: r.status, reason: dto.reason },
         });
 
         return r;
@@ -195,7 +198,7 @@ export class AdminService {
 
     return {
       id: updated.id,
-      isApproved: updated.isApproved,
+      status: updated.status,
       updatedAt: updated.updatedAt,
     };
   }
@@ -852,7 +855,7 @@ export class AdminService {
         if (review) {
           await tx.review.update({
             where: { id: report.reviewId },
-            data: { isApproved: false },
+            data: { status: 'rejected' },
           });
           await this.recalculateProductStats(tx, review.productId);
           await this.invalidateProductCache(review.productId);
@@ -943,7 +946,7 @@ export class AdminService {
         COUNT(*)::int as review_count
       FROM reviews
       WHERE product_id = ${productId}::uuid
-      AND is_approved = true
+      AND status = 'approved'
     `;
     const stats = result[0];
     await tx.product.update({

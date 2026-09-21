@@ -1,0 +1,12 @@
+{
+  "pclFile": "docs/screen/Ad_Management_Screen/Admin_AdManagement_PCL.md",
+  "specFiles": [
+    "e2e/tests/Ad_Management_Screen/ad-management.spec.ts"
+  ],
+  "mappings": {
+    "should display ad management page with ad list": "E2E-ADM-01: Admin ad management page loads with ad list",
+    "should approve a pending ad": "E2E-ADM-02: Ad approval works",
+    "should reject a pending ad": "E2E-ADM-03: Ad rejection works",
+    "should export ad report as CSV": "E2E-ADM-04: CSV export works"
+  }
+}

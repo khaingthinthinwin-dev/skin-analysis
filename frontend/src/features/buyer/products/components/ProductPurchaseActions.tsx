@@ -123,6 +123,9 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
             <DialogDescription>This product is already in cart.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
+            <Button variant="outline" onClick={() => setCartDuplicateOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={() => setCartDuplicateOpen(false)}>OK</Button>
           </DialogFooter>
         </DialogContent>

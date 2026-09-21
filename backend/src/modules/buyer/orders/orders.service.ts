@@ -2,8 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { OrderListQueryDto } from './dto/order-list-query.dto';
 
 @Injectable()
 export class OrdersService {
@@ -15,6 +18,7 @@ export class OrdersService {
       shippingAddress: Record<string, string>;
       paymentMethod: string;
       couponCode?: string;
+      voucherCodes?: Record<string, string>;
       notes?: string;
     },
   ) {
@@ -44,7 +48,63 @@ export class OrdersService {
     }
 
     let discountAmount = 0;
-    if (payload.couponCode) {
+    const voucherBreakdown: Record<
+      string,
+      { code: string; discountAmount: number }
+    > = {};
+    const voucherCodesMap = payload.voucherCodes || {};
+
+    if (!payload.couponCode && Object.keys(voucherCodesMap).length > 0) {
+      payload.couponCode = Object.values(voucherCodesMap).join(', ');
+    }
+
+    // Per-shop voucher calculation
+    if (Object.keys(voucherCodesMap).length > 0) {
+      // Group cart items by merchant
+      const merchantItems = new Map<string, typeof cart.items>();
+      for (const item of cart.items) {
+        const mid = item.product.merchantId;
+        if (!merchantItems.has(mid)) merchantItems.set(mid, []);
+        merchantItems.get(mid)!.push(item);
+      }
+
+      for (const [merchantId, items] of merchantItems) {
+        const code = voucherCodesMap[merchantId];
+        if (!code) continue;
+
+        const shopSubtotal = items.reduce(
+          (sum, item) =>
+            sum + parseFloat(item.product.price.toString()) * item.quantity,
+          0,
+        );
+
+        const promotion = await this.prisma.promotion.findFirst({
+          where: { code, merchantId },
+          include: { discountType: true },
+        });
+
+        if (promotion && promotion.isActive) {
+          const now = new Date();
+          if (now >= promotion.startsAt && now <= promotion.expiresAt) {
+            const discountValue = parseFloat(
+              promotion.discountValue.toString(),
+            );
+            let shopDiscount: number;
+            if (promotion.discountType.typeCode === 'percentage') {
+              shopDiscount = (shopSubtotal * discountValue) / 100;
+            } else {
+              shopDiscount = Math.min(discountValue, shopSubtotal);
+            }
+            discountAmount += shopDiscount;
+            voucherBreakdown[merchantId] = {
+              code,
+              discountAmount: shopDiscount,
+            };
+          }
+        }
+      }
+    } else if (payload.couponCode) {
+      // Legacy single coupon fallback
       const subtotal = cart.items.reduce(
         (sum, item) =>
           sum + parseFloat(item.product.price.toString()) * item.quantity,
@@ -106,11 +166,30 @@ export class OrdersService {
           shippingAddress: payload.shippingAddress,
           paymentMethod: payload.paymentMethod,
           couponCode: payload.couponCode || null,
+          voucherCodes:
+            Object.keys(voucherBreakdown).length > 0
+              ? (voucherBreakdown as Prisma.InputJsonValue)
+              : undefined,
           notes: payload.notes || null,
           statusCode: 'placed',
           paymentStatus: 'pending',
         },
       });
+
+      // Increment usage for applied promotions
+      const codesToIncrement = new Set<string>();
+      for (const info of Object.values(voucherBreakdown)) {
+        codesToIncrement.add(info.code);
+      }
+      if (payload.couponCode && !codesToIncrement.has(payload.couponCode)) {
+        codesToIncrement.add(payload.couponCode);
+      }
+      for (const code of codesToIncrement) {
+        await tx.promotion.updateMany({
+          where: { code },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
 
       for (const item of cart.items) {
         const unitPriceNum = parseFloat(item.product.price.toString());
@@ -169,43 +248,165 @@ export class OrdersService {
     };
   }
 
-  async getOrderHistory(userId: string, page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
+  async getOrderHistory(
+    userId: string,
+    roleCode: string,
+    query: OrderListQueryDto,
+  ) {
+    if (
+      (roleCode === 'buyer' || roleCode === 'merchant') &&
+      (query.merchantId || query.shopId)
+    ) {
+      throw new ForbiddenException(
+        "You don't have permission to filter by merchant",
+      );
+    }
 
-    const [orders, total] = await Promise.all([
-      this.prisma.order.findMany({
-        where: { buyerId: userId },
-        include: {
-          status: true,
-          items: true,
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.order.count({ where: { buyerId: userId } }),
-    ]);
+    if (query.merchantId && query.shopId && query.merchantId !== query.shopId) {
+      throw new BadRequestException('Conflicting merchant/shop filter');
+    }
+
+    let where: Prisma.OrderWhereInput;
+    if (roleCode === 'buyer') {
+      where = { buyerId: userId };
+    } else if (roleCode === 'merchant') {
+      const merchant = await this.prisma.merchant.findUnique({
+        where: { userId },
+      });
+
+      if (!merchant || merchant.licenseStatus !== 'approved') {
+        throw new ForbiddenException('Your merchant account is not approved');
+      }
+
+      where = { merchantId: merchant.id };
+    } else if (roleCode === 'admin' || roleCode === 'super_admin') {
+      const merchantId = query.merchantId ?? query.shopId;
+      where = merchantId ? { merchantId } : {};
+    } else {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
+    if (query.status) {
+      where.statusCode = query.status;
+    }
+
+    if (query.from || query.to) {
+      where.createdAt = {
+        ...(query.from && { gte: this.startOfUtcDay(query.from) }),
+        ...(query.to && { lt: this.startOfNextUtcDay(query.to) }),
+      };
+    }
+
+    if (query.from && query.to && query.to < query.from) {
+      throw new BadRequestException('Invalid date range');
+    }
+
+    const skip = (query.page - 1) * query.limit;
+    const orderBy = this.orderBy(query.sort, query.order);
+
+    const { statusCode: _statusFilter, ...baseFilters } = where;
+
+    const inProgressWhere: Prisma.OrderWhereInput = {
+      ...baseFilters,
+      AND: [
+        ...(query.status ? [{ statusCode: query.status }] : []),
+        { statusCode: { not: 'delivered' } },
+      ],
+    };
+
+    const deliveredWhere: Prisma.OrderWhereInput = {
+      ...baseFilters,
+      AND: [
+        ...(query.status ? [{ statusCode: query.status }] : []),
+        { statusCode: 'delivered' },
+      ],
+    };
+
+    const [orders, total, summaryAgg, inProgressCount, completedCount] =
+      await Promise.all([
+        this.prisma.order.findMany({
+          where,
+          include: {
+            items: true,
+            buyer: { select: { name: true } },
+            merchant: { select: { shopName: true } },
+          },
+          skip,
+          take: query.limit,
+          orderBy,
+        }),
+        this.prisma.order.count({ where }),
+        this.prisma.order.aggregate({
+          where,
+          _sum: { totalAmount: true },
+        }),
+        this.prisma.order.count({ where: inProgressWhere }),
+        this.prisma.order.count({ where: deliveredWhere }),
+      ]);
 
     return {
-      orders: orders.map((order) => ({
-        id: order.id,
-        orderNumber: `ORD-${order.id.slice(0, 8).toUpperCase()}`,
-        status: order.statusCode,
-        statusName: order.status.statusName,
-        totalAmount: order.totalAmount.toString(),
-        discountAmount: order.discountAmount.toString(),
-        itemCount: order.items.length,
-        createdAt: order.createdAt.toISOString(),
-        paymentMethod: order.paymentMethod,
-        paymentStatus: order.paymentStatus,
-      })),
+      orders: orders.map((order) => {
+        const row = {
+          id: order.id,
+          createdAt: order.createdAt.toISOString(),
+          status: order.statusCode,
+          itemCount: order.items.length,
+          totalAmount: order.totalAmount.toString(),
+          paymentStatus: order.paymentStatus,
+        };
+
+        if (roleCode === 'merchant') {
+          return { ...row, customerName: order.buyer.name };
+        }
+
+        if (roleCode === 'admin' || roleCode === 'super_admin') {
+          return {
+            ...row,
+            customerName: order.buyer.name,
+            shopName: order.merchant.shopName,
+          };
+        }
+
+        return row;
+      }),
       meta: {
-        page,
-        limit,
+        page: query.page,
+        limit: query.limit,
         total,
-        totalPages: Math.ceil(total / limit),
+      },
+      summary: {
+        totalSpent: Number(summaryAgg._sum.totalAmount ?? 0),
+        inProgress: inProgressCount,
+        completed: completedCount,
       },
     };
+  }
+
+  private orderBy(
+    sort: OrderListQueryDto['sort'],
+    order: OrderListQueryDto['order'],
+  ): Prisma.OrderOrderByWithRelationInput {
+    switch (sort) {
+      case 'totalAmount':
+        return { totalAmount: order };
+      case 'status':
+        return { statusCode: order };
+      default:
+        return { createdAt: order };
+    }
+  }
+
+  private startOfUtcDay(value: string): Date {
+    const date = new Date(value);
+    return new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
+  }
+
+  private startOfNextUtcDay(value: string): Date {
+    const date = this.startOfUtcDay(value);
+    date.setUTCDate(date.getUTCDate() + 1);
+    return date;
   }
 
   async getOrderDetail(userId: string, orderId: string) {
@@ -246,6 +447,11 @@ export class OrdersService {
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       couponCode: order.couponCode,
+      voucherCodes:
+        (order.voucherCodes as Record<
+          string,
+          { code: string; discountAmount: number }
+        >) || null,
       notes: order.notes,
       shippingAddress: order.shippingAddress as Record<string, string>,
       createdAt: order.createdAt.toISOString(),

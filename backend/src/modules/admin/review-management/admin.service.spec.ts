@@ -62,10 +62,10 @@ describe('AdminService review moderation', () => {
   it('rejects a review with a reason and keeps it hidden', async () => {
     prisma.review.findUnique.mockResolvedValue({
       id: 'r1',
-      isApproved: true,
+      status: 'approved',
       productId: 'p1',
     });
-    prisma.review.update.mockResolvedValue({ id: 'r1', isApproved: false });
+    prisma.review.update.mockResolvedValue({ id: 'r1', status: 'rejected' });
 
     const result = await service.moderateReview(
       'r1',
@@ -76,7 +76,7 @@ describe('AdminService review moderation', () => {
     expect(prisma.review.findUnique).toHaveBeenCalledWith({
       where: { id: 'r1' },
     });
-    expect(result.isApproved).toBe(false);
+    expect(result.status).toBe('rejected');
   });
 
   it('creates a report record for a review', async () => {

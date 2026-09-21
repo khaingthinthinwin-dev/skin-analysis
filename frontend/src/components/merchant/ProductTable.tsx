@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,7 +13,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { InlineStockEditor } from './InlineStockEditor'
-import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/product.types'
 
@@ -51,10 +50,8 @@ interface ProductTableProps {
   selectedIds: string[]
   onSelectionChange: (ids: string[]) => void
   onStockUpdate: (id: string, stock: number) => void
-  onDelete: (id: string, isActive: boolean) => void
   onToggleFeatured: (id: string) => void
   onToggleActive: (id: string) => void
-  isDeleting?: boolean
   isTogglingFeatured?: boolean
   isTogglingActive?: boolean
   showActions?: boolean
@@ -65,16 +62,13 @@ export function ProductTable({
   selectedIds,
   onSelectionChange,
   onStockUpdate,
-  onDelete,
   onToggleFeatured,
   onToggleActive,
-  isDeleting = false,
   isTogglingFeatured = false,
   isTogglingActive = false,
   showActions = true,
 }: ProductTableProps) {
   const navigate = useNavigate()
-  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
 
   const toggleAll = () => {
     if (selectedIds.length === products.length) {
@@ -261,15 +255,7 @@ export function ProductTable({
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(product)}
-                          aria-label={`Delete ${product.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+
                       </div>
                     </TableCell>
                   )}
@@ -280,23 +266,7 @@ export function ProductTable({
         </Table>
       </div>
 
-      <DeleteConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        onConfirm={() => {
-          if (deleteTarget) {
-            onDelete(deleteTarget.id, deleteTarget.isActive)
-            setDeleteTarget(null)
-          }
-        }}
-        title={deleteTarget?.isActive ? 'Deactivate Product' : 'Delete Product'}
-        description={
-          deleteTarget?.isActive
-            ? `Are you sure you want to deactivate '${deleteTarget?.name}'? It will be hidden from the store but can be reactivated later.`
-            : `Are you sure you want to permanently delete '${deleteTarget?.name}'? All related data will be lost and cannot be recovered.`
-        }
-        isLoading={isDeleting}
-      />
+
     </>
   )
 }
