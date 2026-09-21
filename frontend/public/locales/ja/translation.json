@@ -164,6 +164,13 @@
       "closeButton": "キャンセル"
     }
   },
+  "buyer": {
+    "orders": {
+      "exportCsv": "CSVをエクスポート",
+      "exportCsvTooltip": "注文をCSVファイルとしてダウンロード",
+      "exportEmpty": "エクスポートする注文がありません"
+    }
+  },
   "footer": {
     "brand": "Cosmetics Finder",
     "tagline": "あなたのビューティージャーニーはここから始まります。",
@@ -183,35 +190,74 @@
     "terms": "利用規約",
     "copyright": "© 2026 Cosmetics Finder. 全著作権所有。"
   },
+  "merchant": {
+    "promotions": {
+      "title": "プロモーション",
+      "addNew": "プロモーション追加",
+      "search": "プロモーションを検索...",
+      "status": "ステータス",
+      "statusAll": "すべて",
+      "statusActive": "有効",
+      "statusInactive": "無効",
+      "statusExpired": "期限切れ",
+      "statusExhausted": "使用済み",
+      "empty": "プロモーションがまだありません",
+      "emptyHint": "最初のプロモーションを作成して、顧客に割引を提供しましょう。",
+      "code": "コード",
+      "description": "説明",
+      "discountType": "割引タイプ",
+      "discountValue": "割引額",
+      "minOrderAmount": "最低注文金額",
+      "usage": "使用回数",
+      "expiresAt": "有効期限",
+      "isActive": "有効",
+      "edit": "編集",
+      "delete": "削除",
+      "deleteConfirm": "このプロモーションを削除してもよろしいですか？この操作は取り消せません。",
+      "cancel": "キャンセル",
+      "deleting": "削除中...",
+      "deleteSuccess": "プロモーションが削除されました",
+      "notFound": "プロモーションが見つかりません",
+      "toggleSuccess": "プロモーションステータスが更新されました",
+      "unlimited": "無制限",
+      "pendingBanner": "マーチャントアカウントが承認待ちです。プロモーション管理機能はライセンス承認まで制限されています。",
+      "pendingBannerHint": "プロモーションの閲覧は可能ですが、ライセンス承認まで作成・編集・削除はできません。",
+      "pendingBannerTitle": "承認待ち",
+      "rejectedBanner": "マーチャントアカウントが拒否されました。プロモーション管理機能は制限されています。",
+      "rejectedBannerTitle": "アカウント拒否",
+      "usedRestriction": "使用済み - 変更不可",
+      "pageInfo": "{{total}}件中 {{from}}-{{to}}件を表示",
+      "saveSuccess": "プロモーションが保存されました",
+      "update": "プロモーション更新",
+      "save": "プロモーション保存",
+      "saving": "保存中...",
+      "form": {
+        "code": "プロモーションコード",
+        "codePlaceholder": "例: SUMMER20",
+        "codeHelper": "グローバルユニークな英数字コード (A-Z, 0-9, -, _)。最大50文字。",
+        "description": "説明",
+        "descriptionPlaceholder": "プロモーションの説明...",
+        "discountType": "割引タイプ",
+        "percentage": "パーセンテージ",
+        "fixed": "固定金額 (MMK)",
+        "discountValue": "割引額",
+        "discountValuePlaceholder": "例: 10",
+        "minOrderAmount": "最低注文金額 (MMK)",
+        "minOrderAmountPlaceholder": "例: 30000",
+        "minOrderAmountHelper": "空欄にすると最低金額なし。",
+        "maxUses": "最大使用回数",
+        "maxUsesPlaceholder": "例: 100",
+        "maxUsesHelper": "空欄にすると無制限。",
+        "startsAt": "開始日時",
+        "expiresAt": "有効期限",
+        "isActive": "有効"
+      }
+    }
+  },
   "roles": {
     "buyer": "購入者",
     "merchant": "出品者",
     "admin": "管理者",
     "super_admin": "スーパー管理者"
-  },
-  "admin": {
-    "ads": {
-      "title": "広告モデレーション",
-      "weeklyLimit": "今週の掲載中: {{count}} / 5 件",
-      "pendingQueue": "承認待ちキュー",
-      "shopName": "ショップ",
-      "feeInfo": "料金情報",
-      "approve": "承認",
-      "reject": "却下",
-      "rejectReason": "却下理由",
-      "all": "全広告",
-      "feeSettings": "広告パッケージ",
-      "newPackage": "新規パッケージ",
-      "createPkgTitle": "広告パッケージを作成",
-      "placement": "掲載場所",
-      "tier": "料金プラン",
-      "dailyRate": "日額",
-      "durationDays": "表示日数",
-      "maxAds": "最大枠数",
-      "saveRate": "料金を保存",
-      "feeHistory": "履歴",
-      "deactivate": "無効化",
-      "createPkg": "パッケージを作成"
-    }
   }
 }

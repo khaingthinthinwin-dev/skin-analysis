@@ -32,8 +32,14 @@ export function RichTextEditor({
   })
 
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value)
+    if (editor) {
+      try {
+        if (value !== editor.getHTML()) {
+          editor.commands.setContent(value)
+        }
+      } catch {
+        // Editor schema not yet initialized
+      }
     }
   }, [value, editor])
 

@@ -48,10 +48,23 @@ export interface CouponValidation {
   newTotal: string;
 }
 
+export interface MerchantPromotion {
+  id: string;
+  code: string;
+  description?: string;
+  discountType: string;
+  discountValue: string;
+  minOrderAmount?: string | null;
+  maxUses?: number | null;
+  usedCount?: number;
+  expiresAt: string;
+}
+
 export interface CreateOrderPayload {
   shippingAddress: ShippingAddress;
   paymentMethod: PaymentMethod;
   couponCode?: string;
+  voucherCodes?: Record<string, string>;
   notes?: string;
 }
 
@@ -120,6 +133,7 @@ export interface OrderDetail {
   paymentMethod: string;
   paymentStatus: string;
   couponCode: string | null;
+  voucherCodes: Record<string, { code: string; discountAmount: string }> | null;
   notes: string | null;
   shippingAddress: ShippingAddress;
   createdAt: string;

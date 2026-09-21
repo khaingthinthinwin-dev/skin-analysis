@@ -20,11 +20,20 @@ export function ImageUploadZone({
 }: ImageUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [formatError, setFormatError] = useState<string | null>(null)
 
   const handleFiles = useCallback(
     (newFiles: FileList | null) => {
       if (!newFiles) return
-      const imageFiles = Array.from(newFiles).filter((f) =>
+      setFormatError(null)
+      const allFiles = Array.from(newFiles)
+      const invalidFiles = allFiles.filter(
+        (f) => !['image/jpeg', 'image/png', 'image/webp'].includes(f.type),
+      )
+      if (invalidFiles.length > 0) {
+        setFormatError('Only JPG, PNG, and WebP images are allowed')
+      }
+      const imageFiles = allFiles.filter((f) =>
         ['image/jpeg', 'image/png', 'image/webp'].includes(f.type),
       )
       const remaining = maxFiles - files.length
@@ -91,6 +100,10 @@ export function ImageUploadZone({
           JPG, PNG, WebP · Max 5MB each · {remaining} of {maxFiles} remaining
         </p>
       </div>
+
+      {formatError && (
+        <p className="text-sm text-destructive">{formatError}</p>
+      )}
 
       {files.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">

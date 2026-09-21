@@ -41,20 +41,15 @@ export class RequireApprovedMerchantGuard implements CanActivate {
     }
 
     if (merchant.licenseStatus === 'pending') {
-      throw new ForbiddenException({
-        statusCode: 403,
-        error: 'MERCHANT_NOT_APPROVED',
-        message:
-          'Your merchant account is pending approval. This operation is restricted until your license is approved.',
-      });
+      throw new ForbiddenException(
+        'Your merchant account is pending approval. This operation is restricted until your license is approved.',
+      );
     }
 
     if (merchant.licenseStatus === 'rejected') {
-      throw new ForbiddenException({
-        statusCode: 403,
-        error: 'MERCHANT_REJECTED',
-        message: `Your account has been rejected. Reason: ${merchant.rejectionReason || 'No reason provided'}`,
-      });
+      throw new ForbiddenException(
+        `Your account has been rejected. Reason: ${merchant.rejectionReason || 'No reason provided'}`,
+      );
     }
 
     throw new ForbiddenException('Access denied');

@@ -16,6 +16,7 @@ import { OrdersModule } from './modules/buyer/orders/orders.module';
 import { CategoriesModule } from './modules/catalog/categories/categories.module';
 import { SearchModule } from './modules/catalog/search/search.module';
 import { AdvertisementsModule } from './modules/merchant/advertisements/advertisements.module';
+import { PromotionsModule } from './modules/merchant/promotions/promotions.module';
 import { AdsModule } from './modules/shared/ads/ads.module';
 import { MatchingModule } from './modules/buyer/matching/matching.module';
 import { AppController } from './app.controller';
@@ -41,6 +42,7 @@ import { AppService } from './app.service';
     CategoriesModule,
     SearchModule,
     AdvertisementsModule,
+    PromotionsModule,
     AdsModule,
     MatchingModule,
   ],

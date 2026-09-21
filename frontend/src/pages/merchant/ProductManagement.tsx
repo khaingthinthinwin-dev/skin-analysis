@@ -287,8 +287,8 @@ export default function ProductManagement() {
       </div>
 
       {showPendingBanner && (
-        <Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-200">
-          <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <Alert variant="warning">
+          <ShieldAlert className="h-4 w-4" />
           <AlertTitle>Pending Approval</AlertTitle>
           <AlertDescription>
             {t(

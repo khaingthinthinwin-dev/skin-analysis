@@ -321,9 +321,9 @@ This screen is responsible for the following core functional areas:
 | BR-SKIN-002 | Image Format | Accepted image formats: JPG, JPEG, PNG, WebP. | File | Required |
 | BR-SKIN-003 | Image Size | Maximum image file size: 10MB (10,485,760 bytes). | File | Required |
 | BR-SKIN-004 | Image Resolution | Minimum recommended resolution: 640ÁE80px. Maximum recommended: 4096ÁE096px. | File | Required |
-| BR-SKIN-005 | Analysis Limit | Maximum 5 analyses per buyer per day. | Account | Required |
+| BR-SKIN-005 | Analysis Limit | Maximum 5 analyses per buyer per day. Resets daily at 00:00:00 UTC (CFG-SKIN-011). Remaining daily quota is returned in analysis summary response and displayed on UI. | Account | Required |
 | BR-SKIN-006 | History Scope | Buyers may only view their own analysis history. Cannot access other users' analysis data. | Access | Required |
-| BR-SKIN-007 | Result Display | Analysis results are read-only once processing is complete. Buyers cannot modify analysis scores or conditions. | Display | Required |
+| BR-SKIN-007 | Result Display | Analysis results are read-only and immutable once completed to preserve clinical tracking integrity. Individual scans cannot be modified or manually deleted; raw scans are purged after 90 days per BR-SKIN-009. | Display | Required |
 | BR-SKIN-008 | Image Storage | Uploaded facial images stored in Azure Blob Storage with server-side encryption (SSE). | Storage | Required |
 | BR-SKIN-009 | Image Retention | Raw facial images are retained for 90 days, then permanently deleted. Analysis metadata retained indefinitely. | Retention | Required |
 | BR-SKIN-010 | Consent Required | Buyer must provide explicit consent before image upload. | Upload | Required |
@@ -338,6 +338,7 @@ This screen is responsible for the following core functional areas:
 | BR-SKIN-019 | i18n Support | All user-facing text supports EN, JA, and MY languages. | Display | Required |
 | BR-SKIN-020 | Analysis Comparison | Buyers can compare two analysis results side-by-side. Comparison shows score deltas with improvement/regression indicators. | Feature | Required |
 | BR-SKIN-021 | Recommendation Feedback | Buyers can mark product recommendations as helpful or not helpful. Feedback is stored per recommendation per user. | Feature | Required |
+| BR-SKIN-022 | Product Recommendation Linking | Each recommended product item links directly to its catalog product detail page (/products/:id) with verified stock availability. | Feature | Required |
 
 ### 4.2 Validation Outcome Values
 
@@ -483,7 +484,9 @@ The AI Skin Analysis Portal screen consists of the following major areas:
 1. Check daily analysis limit for user (BR-SKIN-005). Reject if count ≥ 5.
 2. Display processing indicator (EL-124).
 3. Send POST request to AI Analysis Service API with `blobUrl`.
-4. Await AI service response (timeout: 30 seconds).
+4. Await AI service response (timeout: 30 seconds):
+   - In synchronous/WebSocket mode: Listen for EV-SKIN-001 completion event.
+   - In polling mode (default): Client polls GET /api/v1/skin-analysis/:id every 2 seconds for a maximum of 30 seconds (15 poll attempts) until status transitions from PROCESSING to COMPLETED or FAILED.
 5. Parse AI response into `AnalysisDTO` structure.
 6. Generate `meshOverlayUrl` from AI response (BR-SKIN-015).
 7. Store analysis results in `skin_analyses` table.
