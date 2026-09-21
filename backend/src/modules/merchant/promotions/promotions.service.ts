@@ -1,9 +1,11 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
@@ -13,6 +15,8 @@ import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PromotionsService {
+  private readonly logger = new Logger(PromotionsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -47,6 +51,24 @@ export class PromotionsService {
       Math.floor((expiresAt.getTime() - now.getTime()) / 1000),
     );
     return ttl;
+  }
+
+  @Cron('0 2 * * *')
+  async cleanupExpiredPromotions(): Promise<void> {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const result = await this.prisma.promotion.deleteMany({
+      where: {
+        expiresAt: { lt: sevenDaysAgo },
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.log(
+        `Auto-cleanup: deleted ${result.count} expired promotions (older than 7 days)`,
+      );
+    }
   }
 
   async findAll(userId: string, query: PromotionQueryDto) {
@@ -93,7 +115,8 @@ export class PromotionsService {
     return {
       items: items.map((p) => ({
         ...p,
-        discountType: p.discountType.typeCode,
+        usedCount: p.usedCount,
+        discountType: p.discountType?.typeCode ?? p.discountTypeCode,
         discountValue: p.discountValue.toString(),
         minOrderAmount: p.minOrderAmount?.toString() ?? null,
       })),
@@ -118,8 +141,16 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
+    const usageResult = await this.prisma.order.groupBy({
+      by: ['couponCode'],
+      where: { couponCode: promotion.code },
+      _count: { id: true },
+    });
+    const realUsedCount = usageResult[0]?._count.id ?? 0;
+
     return {
       ...promotion,
+      usedCount: realUsedCount,
       discountType: promotion.discountType.typeCode,
       discountValue: promotion.discountValue.toString(),
       minOrderAmount: promotion.minOrderAmount?.toString() ?? null,
@@ -138,6 +169,16 @@ export class PromotionsService {
 
     if (dto.discountTypeCode === 'percentage' && dto.discountValue > 100) {
       throw new BadRequestException('Percentage discount must not exceed 100');
+    }
+
+    if (
+      dto.discountTypeCode === 'fixed' &&
+      dto.minOrderAmount != null &&
+      dto.discountValue >= dto.minOrderAmount
+    ) {
+      throw new BadRequestException(
+        'Fixed discount cannot be equal to or greater than minimum order amount',
+      );
     }
 
     const existing = await this.prisma.promotion.findUnique({
@@ -195,7 +236,14 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    if (existing.usedCount > 0) {
+    const usageResult = await this.prisma.order.groupBy({
+      by: ['couponCode'],
+      where: { couponCode: existing.code },
+      _count: { id: true },
+    });
+    const realUsedCount = usageResult[0]?._count.id ?? 0;
+
+    if (realUsedCount > 0) {
       throw new ConflictException(
         'Cannot edit a promotion that has already been used',
       );
@@ -218,6 +266,25 @@ export class PromotionsService {
       dto.discountValue > 100
     ) {
       throw new BadRequestException('Percentage discount must not exceed 100');
+    }
+
+    const effectiveType = dto.discountTypeCode || existing.discountTypeCode;
+    const effectiveValue =
+      dto.discountValue ?? parseFloat(existing.discountValue.toString());
+    const effectiveMinOrder =
+      dto.minOrderAmount ??
+      (existing.minOrderAmount
+        ? parseFloat(existing.minOrderAmount.toString())
+        : null);
+
+    if (
+      effectiveType === 'fixed' &&
+      effectiveMinOrder != null &&
+      effectiveValue >= effectiveMinOrder
+    ) {
+      throw new BadRequestException(
+        'Fixed discount cannot be equal to or greater than minimum order amount',
+      );
     }
 
     if (dto.startsAt && dto.expiresAt) {
@@ -269,7 +336,14 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    if (existing.usedCount > 0) {
+    const usageResult = await this.prisma.order.groupBy({
+      by: ['couponCode'],
+      where: { couponCode: existing.code },
+      _count: { id: true },
+    });
+    const realUsedCount = usageResult[0]?._count.id ?? 0;
+
+    if (realUsedCount > 0) {
       throw new ConflictException(
         'Cannot delete a promotion that has already been used',
       );
@@ -298,10 +372,18 @@ export class PromotionsService {
       include: { discountType: true },
     });
 
+    const usageResult = await this.prisma.order.groupBy({
+      by: ['couponCode'],
+      where: { couponCode: promotion.code },
+      _count: { id: true },
+    });
+    const realUsedCount = usageResult[0]?._count.id ?? 0;
+
     await this.invalidateCache(merchantId, promotion.code);
 
     return {
       ...promotion,
+      usedCount: realUsedCount,
       discountType: promotion.discountType.typeCode,
       discountValue: promotion.discountValue.toString(),
       minOrderAmount: promotion.minOrderAmount?.toString() ?? null,
@@ -329,7 +411,14 @@ export class PromotionsService {
       throw new BadRequestException('Coupon has expired or is not yet valid');
     }
 
-    if (promotion.maxUses && promotion.usedCount >= promotion.maxUses) {
+    const usageResult = await this.prisma.order.groupBy({
+      by: ['couponCode'],
+      where: { couponCode: promotion.code },
+      _count: { id: true },
+    });
+    const realUsedCount = usageResult[0]?._count.id ?? 0;
+
+    if (promotion.maxUses && realUsedCount >= promotion.maxUses) {
       throw new BadRequestException('Coupon has reached maximum usage');
     }
 

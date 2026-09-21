@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -36,6 +36,16 @@ export class CheckoutController {
       dto.couponCode,
       dto.subtotal,
     );
+    return { data };
+  }
+
+  @Get('merchant-promotions/:merchantId')
+  @ApiOperation({ summary: 'Get available promotions for a merchant' })
+  async getMerchantPromotions(
+    @CurrentUser() user: AuthUser,
+    @Param('merchantId') merchantId: string,
+  ) {
+    const data = await this.checkoutService.getMerchantPromotions(merchantId);
     return { data };
   }
 }

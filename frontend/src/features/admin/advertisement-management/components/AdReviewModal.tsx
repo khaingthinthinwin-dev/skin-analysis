@@ -12,6 +12,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { formatPrice } from '@/lib/format'
+import { getImageUrl } from '@/lib/image-url'
 import type { AdminAdDetail } from '@/types/admin-ad-management'
 import { PaymentBadge, StatusBadge, TierBadge } from './badges'
 import { PLACEMENT_LABELS, formatDate } from '../utils/labels'
@@ -81,19 +82,22 @@ export function AdReviewModal({
                 <p className="text-sm font-medium">{ad.title}</p>
                 <StatusBadge status={ad.approvalStatus} />
               </div>
-              <div className="flex aspect-[21/6] w-full items-center justify-center overflow-hidden rounded-md bg-secondary/50">
+              <div className="flex max-h-[320px] w-full items-center justify-center overflow-hidden rounded-md bg-secondary/50">
                 {ad.imageUrl ? (
                   <img
-                    src={ad.imageUrl}
+                    src={getImageUrl(ad.imageUrl)}
                     alt={ad.title}
-                    className="h-full w-full object-cover"
+                    className="max-h-[320px] w-full object-contain"
                   />
                 ) : (
-                  <span className="text-xs text-muted-foreground">No banner image</span>
+                  <span className="px-4 py-16 text-xs text-muted-foreground">No banner image</span>
                 )}
               </div>
               {ad.announcementMessage && (
-                <p className="text-sm">{ad.announcementMessage}</p>
+                <div className="rounded-md border bg-secondary/40 px-3 py-2.5">
+                  <p className="text-xs font-medium text-muted-foreground">Announcement</p>
+                  <p className="mt-0.5 text-sm font-medium">{ad.announcementMessage}</p>
+                </div>
               )}
               {ad.content && <p className="text-sm text-muted-foreground">{ad.content}</p>}
               {ad.linkUrl && (
