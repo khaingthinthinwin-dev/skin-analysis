@@ -37,8 +37,9 @@
   "merchant.promotions.usedRestriction": "Cannot edit/delete promotion that has already been used",
   "merchant.promotions.pageInfo": "Page {page} of {totalPages} ({total} promotions)",
   "merchant.promotions.pendingBanner": "Your merchant account is pending approval. Promotion management features are restricted until your license is approved.",
-  "merchant.promotions.rejectedBanner": "Your merchant account was rejected. Please review the reason and resubmit your application.",
+  "merchant.promotions.rejectedBanner": "Your merchant account has been rejected. Promotion management features are restricted. You can resubmit your license from your Profile page.",
   "merchant.promotions.pendingBannerHint": "You can view your promotions but cannot create, edit, or delete until your license is approved.",
+  "merchant.promotions.rejectedBannerLink": "Go to Profile",
   "merchant.promotions.empty": "No promotions found",
   "merchant.promotions.emptyHint": "Create your first promotion to start offering discounts.",
   "merchant.promotions.form": {

@@ -37,8 +37,9 @@
   "merchant.promotions.usedRestriction": "既に使用されたプロモーションは編集/削除できません",
   "merchant.promotions.pageInfo": "ページ {page} / {totalPages}（{total}件）",
   "merchant.promotions.pendingBanner": "メルカントアカウントは承認待ちです。プロモーション管理機能はライセンスが承認されるまで制限されています。",
-  "merchant.promotions.rejectedBanner": "出品者アカウントが却下されました。理由を確認して再申請してください。",
+  "merchant.promotions.rejectedBanner": "プロモーション管理機能は制限されています。プロフィールページからライセンスを再提出できます。",
   "merchant.promotions.pendingBannerHint": "プロモーションは閲覧できますが、ライセンスが承認されるまで作成・編集・削除はできません。",
+  "merchant.promotions.rejectedBannerLink": "プロフィールへ",
   "merchant.promotions.empty": "プロモーションが見つかりません",
   "merchant.promotions.emptyHint": "最初のプロモーションを作成して割引を開始しましょう。",
   "merchant.promotions.form": {
