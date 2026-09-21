@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { checkoutService } from '../services/checkout.service';
+import { queryKeys } from '@/services/queryKeys';
 import type { CreateOrderPayload } from '@/types/checkout.types';
 
 export const checkoutKeys = {
@@ -52,6 +53,7 @@ export function usePlaceOrder() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: checkoutKeys.orders() });
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.merchantPromotions.all });
     },
   });
 }
@@ -81,6 +83,16 @@ export function useOrderTracking(orderId: string) {
     queryFn: () => checkoutService.getOrderTracking(orderId),
     enabled: !!orderId,
     staleTime: 30_000,
+    retry: 1,
+  });
+}
+
+export function useMerchantPromotions(merchantId: string) {
+  return useQuery({
+    queryKey: [...checkoutKeys.all, 'merchant-promotions', merchantId],
+    queryFn: () => checkoutService.getMerchantPromotions(merchantId),
+    enabled: !!merchantId,
+    staleTime: 60_000,
     retry: 1,
   });
 }

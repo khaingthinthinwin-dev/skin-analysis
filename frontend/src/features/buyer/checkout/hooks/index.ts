@@ -5,5 +5,6 @@ export {
   useOrderHistory,
   useOrderDetail,
   useOrderTracking,
+  useMerchantPromotions,
   checkoutKeys,
 } from './useCheckout';

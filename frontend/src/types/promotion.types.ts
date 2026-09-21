@@ -44,3 +44,29 @@ export interface UpdatePromotionInput {
   expiresAt?: string
   isActive?: boolean
 }
+
+export type CreatePromotionData = CreatePromotionInput
+export type UpdatePromotionData = UpdatePromotionInput
+
+export interface PromotionListResponse {
+  items: Promotion[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+export interface ValidateCouponData {
+  couponCode: string
+  subtotal: number
+}
+
+export interface ValidateCouponResponse {
+  valid: boolean
+  discountType: string
+  discountValue: string
+  discountAmount: string
+  finalAmount: string
+}
