@@ -18,7 +18,6 @@ const VerifyCode = lazy(() => import('@/pages/auth/VerifyCode'))
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const Profile = lazy(() => import('@/pages/shared/Profile'))
 const Notifications = lazy(() => import('@/pages/shared/Notifications'))
-const OrderInsights = lazy(() => import('@/pages/shared/OrderInsights'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const Unauthorized = lazy(() => import('@/pages/Unauthorized'))
@@ -45,6 +44,7 @@ const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
 const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
 const BuyerOrdersPage = lazy(() => import('@/pages/order-insights/BuyerOrdersPage'))
+const MerchantOrderInsightsPage = lazy(() => import('@/pages/order-insights/MerchantOrderInsightsPage'))
 const BuyerOrderDetailPage = lazy(() => import('@/pages/order-insights/BuyerOrderDetailPage'))
 
 // TODO: Uncomment when pages are implemented
@@ -493,7 +493,7 @@ export const router = createBrowserRouter([
                 path: 'order-insights',
                 element: (
                   <SuspenseWrapper>
-                    <OrderInsights />
+                    <MerchantOrderInsightsPage />
                   </SuspenseWrapper>
                 ),
               },

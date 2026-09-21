@@ -1,0 +1,71 @@
+import apiClient from '@/lib/api-client';
+import { revenuePeriodSchema, type OrderListFilterFormData, type RevenuePeriodFormData } from '../schemas/orderFilters.schema';
+import type {
+  MerchantOrderListResponseDto,
+  RevenueSummaryDto,
+  SalesSummaryDto,
+} from '../types/merchantOrderInsights.types';
+
+export const MERCHANT_ORDER_DETAIL_PATH = (orderId: string) => `/merchant/orders/${orderId}`;
+export const ORDER_TRACKING_PATH = (orderId: string) => `/orders/${orderId}/tracking`;
+
+function unwrap<T>(payload: unknown, key: string): T {
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    const data = record.data;
+    if (data && typeof data === 'object') {
+      const nested = data as Record<string, unknown>;
+      if (key in nested) return nested[key] as T;
+      if ('data' in nested && nested.data && typeof nested.data === 'object') {
+        const nestedData = nested.data as Record<string, unknown>;
+        if (key in nestedData) return nestedData[key] as T;
+      }
+    }
+    if (key in record) return record[key] as T;
+  }
+  return payload as T;
+}
+
+function unwrapData<T>(payload: unknown): T {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return unwrapData((payload as { data: unknown }).data);
+  }
+  return payload as T;
+}
+
+/** Fetches the merchant's server-scoped order list. */
+export async function getMerchantOrders(
+  filters: OrderListFilterFormData,
+): Promise<MerchantOrderListResponseDto> {
+  const params = {
+    ...(filters.status !== 'all' ? { status: filters.status } : {}),
+    ...(filters.from ? { from: filters.from } : {}),
+    ...(filters.to ? { to: filters.to } : {}),
+    page: filters.page,
+    limit: filters.limit,
+    sort: filters.sort,
+    order: filters.order,
+  };
+  const response = await apiClient.get('/orders', { params });
+  return unwrapData<MerchantOrderListResponseDto>(response.data);
+}
+
+/** Fetches the merchant order-count summary. */
+export async function getSalesSummary(): Promise<SalesSummaryDto> {
+  const response = await apiClient.get('/order-insights/merchant/sales-summary');
+  return unwrap<SalesSummaryDto>(response.data, 'salesSummary');
+}
+
+/** Fetches the merchant revenue summary for a validated period. */
+export async function getRevenueSummary(period: RevenuePeriodFormData): Promise<RevenueSummaryDto> {
+  const parsed = revenuePeriodSchema.safeParse(period);
+  if (!parsed.success) throw new Error('Select a start and end date');
+
+  const params = {
+    period: period.period,
+    ...(period.from ? { from: period.from } : {}),
+    ...(period.to ? { to: period.to } : {}),
+  };
+  const response = await apiClient.get('/order-insights/merchant/revenue-summary', { params });
+  return unwrap<RevenueSummaryDto>(response.data, 'revenueSummary');
+}
