@@ -41,7 +41,7 @@ export class SearchService {
         orderBy,
         skip,
         take,
-        include: { category: true },
+        include: { category: true, merchant: { select: { shopName: true } } },
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -310,6 +310,7 @@ export class SearchService {
     reviewCount: number;
     stockQuantity: number;
     category: { id: string; name: string; slug: string };
+    merchant?: { shopName: string } | null;
   }): ProductSummaryDto {
     return {
       id: product.id,
@@ -329,6 +330,7 @@ export class SearchService {
         name: product.category.name,
         slug: product.category.slug,
       },
+      shop_name: product.merchant?.shopName ?? null,
     };
   }
 
