@@ -38,14 +38,14 @@ export function CategorySelect({ categories, selectedCategoryId, onSelect }: Cat
             key={item.id}
             type="button"
             onClick={() => onSelect(item.id)}
-            className={`block w-full text-left text-sm transition-colors ${
+            className={`flex w-full items-center rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
               isActive
-                ? 'text-orange-500 font-semibold'
-                : 'text-gray-600 hover:text-orange-500'
+                ? 'bg-orange-50 font-semibold text-orange-500'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-orange-500'
             }`}
             style={{ paddingLeft: `${item.depth * 1}rem` }}
           >
-            {item.name}
+            <span>{item.name}</span>
           </button>
         )
       })}
@@ -56,7 +56,7 @@ export function CategorySelect({ categories, selectedCategoryId, onSelect }: Cat
           onClick={() => setExpanded((prev) => !prev)}
           className="mt-1 text-cyan-600 font-bold text-xs uppercase"
         >
-          {expanded ? 'View Less' : 'View More'}
+          {expanded ? 'VIEW LESS' : 'VIEW MORE'}
         </button>
       )}
     </div>
