@@ -164,6 +164,13 @@
       "closeButton": "キャンセル"
     }
   },
+  "buyer": {
+    "orders": {
+      "exportCsv": "CSVをエクスポート",
+      "exportCsvTooltip": "注文をCSVファイルとしてダウンロード",
+      "exportEmpty": "エクスポートする注文がありません"
+    }
+  },
   "footer": {
     "brand": "Cosmetics Finder",
     "tagline": "あなたのビューティージャーニーはここから始まります。",

@@ -44,6 +44,9 @@ const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
 const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
 const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
+const BuyerOrdersPage = lazy(() => import('@/pages/order-insights/BuyerOrdersPage'))
+const BuyerOrderDetailPage = lazy(() => import('@/pages/order-insights/BuyerOrderDetailPage'))
+
 // TODO: Uncomment when pages are implemented
 // const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
 // const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
@@ -233,7 +236,7 @@ export const router = createBrowserRouter([
                 path: 'commission-revenue',
                 element: (
                   <SuspenseWrapper>
-                     <AdminCommissionRevenue />
+                    <AdminCommissionRevenue />
                   </SuspenseWrapper>
                 ),
               },
@@ -393,14 +396,7 @@ export const router = createBrowserRouter([
                   </SuspenseWrapper>
                 ),
               },
-              {
-                path: 'order-insights',
-                element: (
-                  <SuspenseWrapper>
-                    <OrderInsights />
-                  </SuspenseWrapper>
-                ),
-              },
+
               {
                 path: 'profile',
                 element: (
@@ -514,6 +510,33 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <Notifications />
+                  </SuspenseWrapper>
+                ),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        path: 'orders',
+        element: <ProtectedRoute roles={['buyer']} />,
+        children: [
+          {
+            element: <BuyerLayout />,
+            children: [
+              {
+                index: true,
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrdersPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: ':id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrderDetailPage />
                   </SuspenseWrapper>
                 ),
               },
