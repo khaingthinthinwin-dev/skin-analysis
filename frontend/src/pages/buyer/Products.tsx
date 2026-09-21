@@ -1,6 +1,6 @@
-import { useSearchParams, useNavigate } from 'react-router'
+import { useLocation, useSearchParams, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Search as SearchIcon, Loader2 } from 'lucide-react'
+import { Search as SearchIcon, Loader2, SlidersHorizontal, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
 import { Pagination } from '@/components/Pagination'
@@ -28,7 +28,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import type { ViewMode } from '@/types/search.types'
 import type { ProductSummary } from '@/types/search.types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -46,6 +45,7 @@ export default function Products() {
   const [, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [view, setView] = useState<ViewMode>(readInitialViewMode)
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
   const { isAuthenticated } = useAuth()
   const { items: wishlistItems, addToWishlist, removeFromWishlist } = useWishlist()
   const { items: cartItems, addToCart } = useCart()
