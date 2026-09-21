@@ -170,15 +170,33 @@ function ReviewStatusBadge({ status }: { status: string }) {
 }
 
 function ReportStatusBadge({ status }: { status: string }) {
-  const variants: Record<string, string> = {
-    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    reviewed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    resolved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+  const variants: Record<string, { badge: string; icon: React.ReactNode; label: string }> = {
+    pending: {
+      badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      icon: <Clock className="h-3 w-3 mr-1" />,
+      label: 'Pending',
+    },
+    reviewed: {
+      badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+      icon: <Eye className="h-3 w-3 mr-1" />,
+      label: 'Reviewed',
+    },
+    resolved: {
+      badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      icon: <CheckCircle className="h-3 w-3 mr-1" />,
+      label: 'Resolved',
+    },
+    rejected: {
+      badge: 'bg-red-500/10 text-red-400 border-red-500/20',
+      icon: <XCircle className="h-3 w-3 mr-1" />,
+      label: 'Rejected',
+    },
   };
+  const v = variants[status] || variants.pending;
   return (
-    <Badge variant="outline" className={variants[status] || ''}>
-      {status}
+    <Badge variant="outline" className={v.badge}>
+      {v.icon}
+      {v.label}
     </Badge>
   );
 }
@@ -212,6 +230,7 @@ export default function ReviewManagement() {
 
   // ── Reports State ────────────────────────────────────────────────────────
   const [reportPage, setReportPage] = useState(1);
+  const [reportLimit, setReportLimit] = useState(10);
   const [reportStatus, setReportStatus] = useState<string>('');
   const [reportSearch, setReportSearch] = useState('');
 
@@ -221,6 +240,7 @@ export default function ReviewManagement() {
   const [detailReview, setDetailReview] = useState<AdminReview | null>(null);
   const [detailReport, setDetailReport] = useState<AdminReport | null>(null);
   const [reportAdminNote, setReportAdminNote] = useState('');
+  const [reportAdminNoteError, setReportAdminNoteError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
 
@@ -249,7 +269,7 @@ export default function ReviewManagement() {
     deleteMutation: deleteReportMutation,
   } = useAdminReports({
     page: reportPage,
-    limit: 20,
+    limit: reportLimit,
     status: (reportStatus as 'pending' | 'reviewed' | 'resolved' | 'rejected' | undefined) || undefined,
     search: reportSearch || undefined,
   });
@@ -260,6 +280,7 @@ export default function ReviewManagement() {
   const reviewTotalPages = reviewsQuery.data?.totalPages || 1;
   const reportTotalPages = reportsQuery.data?.totalPages || 1;
   const reviewTotal = reviewsQuery.data?.total ?? 0;
+  const reportTotal = reportsQuery.data?.total ?? 0;
 
   // ── Sort Mapping ─────────────────────────────────────────────────────────
   const sortOptions = useMemo(
@@ -288,6 +309,7 @@ export default function ReviewManagement() {
       {
         onSuccess: () => {
           toast.success('Review approved');
+          setDetailReview(null);
           refreshStats();
         },
         onError: () => toast.error('Failed to approve review'),
@@ -482,7 +504,7 @@ export default function ReviewManagement() {
         {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="reviews" className="space-y-4">
           {/* ── [C] Stats Bar ──────────────────────────────────────────── */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               {
                 label: 'Total Reviews',
@@ -590,11 +612,11 @@ export default function ReviewManagement() {
 
           {/* ── Bulk Actions ───────────────────────────────────────────── */}
           {selectedReviews.length > 0 && (
-            <div className="flex items-center justify-between gap-2 p-3 bg-muted rounded-md">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted rounded-md">
               <span className="text-sm font-medium">
                 {selectedReviews.length} selected
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={handleBulkApprove}>
                   <Check className="h-4 w-4 mr-1" /> Approve All
                 </Button>
@@ -624,7 +646,7 @@ export default function ReviewManagement() {
           )}
 
           {/* ── [F] Reviews Table ──────────────────────────────────────── */}
-          <div className="rounded-md border bg-card">
+          <div className="overflow-x-auto rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -747,7 +769,7 @@ export default function ReviewManagement() {
           </div>
 
           {/* ── [G] Pagination ─────────────────────────────────────────── */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm text-muted-foreground">
               Showing {reviews.length > 0 ? (reviewPage - 1) * reviewLimit + 1 : 0}-
               {Math.min(reviewPage * reviewLimit, reviewTotal)} of {reviewTotal}{' '}
@@ -821,41 +843,46 @@ export default function ReviewManagement() {
         {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="reports" className="space-y-4">
           {/* ── Reports Stats ──────────────────────────────────────────── */}
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
             {[
               {
-                label: 'Total',
+                label: 'Total Reports',
                 value: reportsQuery.data?.total ?? 0,
-                color: 'bg-blue-100 text-blue-800',
                 icon: Flag,
+                color: 'text-blue-400',
+                bg: 'bg-blue-500/10',
                 filter: '',
               },
               {
                 label: 'Pending',
                 value: reports.filter((r) => r.status === 'pending').length,
-                color: 'bg-amber-100 text-amber-800',
                 icon: Clock,
+                color: 'text-amber-400',
+                bg: 'bg-amber-500/10',
                 filter: 'pending',
               },
               {
                 label: 'Reviewed',
                 value: reports.filter((r) => r.status === 'reviewed').length,
-                color: 'bg-blue-100 text-blue-800',
                 icon: Eye,
+                color: 'text-blue-400',
+                bg: 'bg-blue-500/10',
                 filter: 'reviewed',
               },
               {
                 label: 'Resolved',
                 value: reports.filter((r) => r.status === 'resolved').length,
-                color: 'bg-emerald-100 text-emerald-800',
                 icon: CheckCircle,
+                color: 'text-emerald-400',
+                bg: 'bg-emerald-500/10',
                 filter: 'resolved',
               },
               {
                 label: 'Rejected',
                 value: reports.filter((r) => r.status === 'rejected').length,
-                color: 'bg-red-100 text-red-800',
                 icon: XCircle,
+                color: 'text-red-400',
+                bg: 'bg-red-500/10',
                 filter: 'rejected',
               },
             ].map((stat) => (
@@ -881,15 +908,17 @@ export default function ReviewManagement() {
                 }`}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                      <stat.icon className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.bg}`}
+                    >
+                      <stat.icon className={`h-5 w-5 ${stat.color}`} />
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm text-muted-foreground">
+                    <div>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                      <p className="text-xs text-muted-foreground">
                         {stat.label}
-                      </span>
-                      <Badge className={stat.color}>{stat.value}</Badge>
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -914,7 +943,7 @@ export default function ReviewManagement() {
           </div>
 
           {/* ── Reports Table ──────────────────────────────────────────── */}
-          <div className="rounded-md border bg-card">
+          <div className="overflow-x-auto rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -1011,27 +1040,71 @@ export default function ReviewManagement() {
           </div>
 
           {/* ── Reports Pagination ─────────────────────────────────────── */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm text-muted-foreground">
-              Page {reportPage} of {reportTotalPages}
+              Showing {reports.length > 0 ? (reportPage - 1) * reportLimit + 1 : 0}-
+              {Math.min(reportPage * reportLimit, reportTotal)} of {reportTotal}{' '}
+              reports
             </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={reportPage <= 1}
-                onClick={() => setReportPage(reportPage - 1)}
+            <div className="flex items-center gap-2">
+              <Select
+                value={String(reportLimit)}
+                onValueChange={(v) => {
+                  setReportLimit(Number(v));
+                  setReportPage(1);
+                }}
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={reportPage >= reportTotalPages}
-                onClick={() => setReportPage(reportPage + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                <SelectTrigger className="w-[70px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex gap-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  disabled={reportPage <= 1}
+                  onClick={() => setReportPage(reportPage - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {getPageNumbers(reportPage, reportTotalPages).map(
+                  (page, idx) =>
+                    typeof page === 'number' ? (
+                      <Button
+                        key={idx}
+                        size="icon"
+                        variant={page === reportPage ? 'default' : 'outline'}
+                        className="h-8 w-8"
+                        onClick={() => setReportPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ) : (
+                      <span
+                        key={idx}
+                        className="flex items-center px-1 text-muted-foreground"
+                      >
+                        ...
+                      </span>
+                    ),
+                )}
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  disabled={reportPage >= reportTotalPages}
+                  onClick={() => setReportPage(reportPage + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </TabsContent>
@@ -1211,7 +1284,6 @@ export default function ReviewManagement() {
                 <Button
                   variant="outline"
                   onClick={() => setDetailReview(null)}
-                  className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                 >
                   Cancel
                 </Button>
@@ -1219,7 +1291,7 @@ export default function ReviewManagement() {
                   <Button
                     onClick={() => handleApprove(detailReview.id)}
                     disabled={moderateMutation.isPending}
-                    className="bg-[oklch(0.596_0.145_163.225)] text-white hover:bg-[oklch(0.54_0.145_163.225)]"
+                    className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
                   >
                     <Check className="h-4 w-4 mr-1" /> Approve
                   </Button>
@@ -1340,7 +1412,7 @@ export default function ReviewManagement() {
       </Dialog>
 
       {/* ── Report Detail Modal ─────────────────────────────────────────── */}
-      <Dialog open={!!detailReport} onOpenChange={() => setDetailReport(null)}>
+      <Dialog open={!!detailReport} onOpenChange={() => { setDetailReport(null); setReportAdminNoteError(''); }}>
         <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
@@ -1444,48 +1516,43 @@ export default function ReviewManagement() {
 
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Admin Note
+                  Admin Note <span className="text-red-500">*</span>
                 </p>
                 <Textarea
                   value={reportAdminNote}
-                  onChange={(e) => setReportAdminNote(e.target.value)}
+                  onChange={(e) => {
+                    setReportAdminNote(e.target.value);
+                    if (reportAdminNoteError) setReportAdminNoteError('');
+                  }}
                   placeholder="Add internal resolution notes..."
-                  className="min-h-[72px] rounded-md border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300"
+                  className={`min-h-[72px] rounded-md bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 ${
+                    reportAdminNoteError
+                      ? 'border-red-500 focus-visible:ring-red-300'
+                      : 'border-slate-200'
+                  }`}
                 />
+                {reportAdminNoteError && (
+                  <p className="mt-1 text-xs text-red-500">{reportAdminNoteError}</p>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
                   onClick={() => setDetailReport(null)}
-                  className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                 >
                   Cancel
                 </Button>
                 <Button
-                  variant="destructive"
+                  className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
                   onClick={() => {
                     if (!detailReport) return;
+                    if (!reportAdminNote.trim()) {
+                      setReportAdminNoteError('Admin note is required.');
+                      return;
+                    }
                     updateStatusMutation.mutate(
-                      { id: detailReport.id, data: { status: 'rejected', adminNote: reportAdminNote.trim() || undefined } },
-                      {
-                        onSuccess: () => {
-                          toast.success('Report rejected');
-                          setDetailReport(null);
-                        },
-                        onError: () => toast.error('Failed to reject report'),
-                      },
-                    );
-                  }}
-                >
-                  Reject
-                </Button>
-                <Button
-                  className="bg-emerald-600 text-white hover:bg-emerald-500"
-                  onClick={() => {
-                    if (!detailReport) return;
-                    updateStatusMutation.mutate(
-                      { id: detailReport.id, data: { status: 'resolved', adminNote: reportAdminNote.trim() || undefined } },
+                      { id: detailReport.id, data: { status: 'resolved', adminNote: reportAdminNote.trim() } },
                       {
                         onSuccess: () => {
                           if (detailReport.reviewId) {
@@ -1502,7 +1569,29 @@ export default function ReviewManagement() {
                     );
                   }}
                 >
-                  Resolve
+                  <CheckCircle className="h-4 w-4 mr-1" /> Resolve
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (!detailReport) return;
+                    if (!reportAdminNote.trim()) {
+                      setReportAdminNoteError('Admin note is required.');
+                      return;
+                    }
+                    updateStatusMutation.mutate(
+                      { id: detailReport.id, data: { status: 'rejected', adminNote: reportAdminNote.trim() } },
+                      {
+                        onSuccess: () => {
+                          toast.success('Report rejected');
+                          setDetailReport(null);
+                        },
+                        onError: () => toast.error('Failed to reject report'),
+                      },
+                    );
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-1" /> Reject
                 </Button>
               </div>
             </div>

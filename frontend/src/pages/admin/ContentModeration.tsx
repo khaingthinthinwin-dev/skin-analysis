@@ -162,7 +162,7 @@ function getPageNumbers(current: number, total: number) {
 export default function ContentModeration() {
   // ── State ───────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState(10);
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 300);
@@ -311,7 +311,7 @@ export default function ContentModeration() {
       </div>
 
       {/* ── [B] Stats Bar ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {[
           {
             label: 'Total Products',
@@ -411,11 +411,11 @@ export default function ContentModeration() {
 
       {/* ── Bulk Actions ────────────────────────────────────────────────── */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between gap-2 p-3 bg-muted rounded-md">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted rounded-md">
           <span className="text-sm font-medium">
             {selectedIds.length} selected
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="destructive"
@@ -436,7 +436,7 @@ export default function ContentModeration() {
       )}
 
       {/* ── [E] Products Table ──────────────────────────────────────────── */}
-      <div className="rounded-md border bg-card">
+      <div className="overflow-x-auto rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -551,7 +551,7 @@ export default function ContentModeration() {
       </div>
 
       {/* ── [F] Pagination ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">
           Showing {products.length > 0 ? (page - 1) * limit + 1 : 0}-
           {Math.min(page * limit, total)} of {total} products
@@ -565,6 +565,7 @@ export default function ContentModeration() {
             }}
             className="h-8 px-2 text-sm rounded-md border bg-background"
           >
+            <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
@@ -621,41 +622,98 @@ export default function ContentModeration() {
         open={!!detailProduct}
         onOpenChange={() => setDetailProduct(null)}
       >
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Product Moderation</DialogTitle>
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+          <DialogHeader className="border-b border-slate-200 pb-2">
+            <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
+              Product Moderation
+            </DialogTitle>
           </DialogHeader>
           {detailProduct && (
-            <div className="space-y-5">
-              {/* [B] Product Info Card */}
-              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                {detailProduct.images?.[0] && (
-                  <img
-                    src={getImageUrl(detailProduct.images[0])}
-                    alt=""
-                    className="h-16 w-16 rounded object-cover"
-                  />
-                )}
-                <div>
-                  <p className="font-semibold">{detailProduct.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    ${Number(detailProduct.price).toFixed(2)}
+            <div className="space-y-3 pt-1">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Product Information
                   </p>
-                  {detailProduct.category && (
-                    <p className="text-xs text-muted-foreground">
-                      {detailProduct.category.name}
+                </div>
+
+                <div className="rounded-md border border-slate-200 bg-white p-2">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
+                    Product
+                  </p>
+                  <div className="flex items-center gap-3">
+                    {detailProduct.images?.[0] && (
+                      <img
+                        src={getImageUrl(detailProduct.images[0])}
+                        alt=""
+                        className="h-10 w-10 shrink-0 rounded object-cover"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {detailProduct.name}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        ${Number(detailProduct.price).toFixed(2)}
+                        {detailProduct.category && (
+                          <> &middot; {detailProduct.category.name}</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
+                    Shop
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700">
+                      {detailProduct.merchant?.shopName
+                        ?.split(' ')
+                        .map((part: string) => part[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2) || '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {detailProduct.merchant?.shopName || 'N/A'}
+                      </p>
+                      <p className="truncate text-xs text-slate-600">
+                        {detailProduct.merchant?.user?.name || ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Status
                     </p>
-                  )}
+                    <div className="mt-1">
+                      <ProductStatusBadge isActive={detailProduct.isActive} />
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Created
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {new Date(detailProduct.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* [C] Product Images Gallery */}
               {detailProduct.images?.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                     Product Images
                   </p>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {detailProduct.images.map((img, i) => (
                       <img
                         key={i}
@@ -668,46 +726,7 @@ export default function ContentModeration() {
                 </div>
               )}
 
-              {/* [D] Shop Owner Card */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Shop Information
-                </p>
-                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Package className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">
-                      {detailProduct.merchant?.shopName || 'N/A'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {detailProduct.merchant?.user?.name || ''}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* [E] Status Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Status
-                  </p>
-                  <ProductStatusBadge isActive={detailProduct.isActive} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Created
-                  </p>
-                  <p className="text-sm">
-                    {new Date(detailProduct.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-
-              {/* [F] Action Buttons */}
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
                   onClick={() => setDetailProduct(null)}
@@ -726,6 +745,7 @@ export default function ContentModeration() {
                   </Button>
                 ) : (
                   <Button
+                    className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
                     onClick={() => {
                       setDetailProduct(null);
                       openModerate(detailProduct, 'reactivate');
