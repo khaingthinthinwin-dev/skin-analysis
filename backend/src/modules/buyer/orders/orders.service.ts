@@ -18,6 +18,7 @@ export class OrdersService {
       shippingAddress: Record<string, string>;
       paymentMethod: string;
       couponCode?: string;
+      voucherCodes?: Record<string, string>;
       notes?: string;
     },
   ) {
@@ -47,7 +48,63 @@ export class OrdersService {
     }
 
     let discountAmount = 0;
-    if (payload.couponCode) {
+    const voucherBreakdown: Record<
+      string,
+      { code: string; discountAmount: number }
+    > = {};
+    const voucherCodesMap = payload.voucherCodes || {};
+
+    if (!payload.couponCode && Object.keys(voucherCodesMap).length > 0) {
+      payload.couponCode = Object.values(voucherCodesMap).join(', ');
+    }
+
+    // Per-shop voucher calculation
+    if (Object.keys(voucherCodesMap).length > 0) {
+      // Group cart items by merchant
+      const merchantItems = new Map<string, typeof cart.items>();
+      for (const item of cart.items) {
+        const mid = item.product.merchantId;
+        if (!merchantItems.has(mid)) merchantItems.set(mid, []);
+        merchantItems.get(mid)!.push(item);
+      }
+
+      for (const [merchantId, items] of merchantItems) {
+        const code = voucherCodesMap[merchantId];
+        if (!code) continue;
+
+        const shopSubtotal = items.reduce(
+          (sum, item) =>
+            sum + parseFloat(item.product.price.toString()) * item.quantity,
+          0,
+        );
+
+        const promotion = await this.prisma.promotion.findFirst({
+          where: { code, merchantId },
+          include: { discountType: true },
+        });
+
+        if (promotion && promotion.isActive) {
+          const now = new Date();
+          if (now >= promotion.startsAt && now <= promotion.expiresAt) {
+            const discountValue = parseFloat(
+              promotion.discountValue.toString(),
+            );
+            let shopDiscount: number;
+            if (promotion.discountType.typeCode === 'percentage') {
+              shopDiscount = (shopSubtotal * discountValue) / 100;
+            } else {
+              shopDiscount = Math.min(discountValue, shopSubtotal);
+            }
+            discountAmount += shopDiscount;
+            voucherBreakdown[merchantId] = {
+              code,
+              discountAmount: shopDiscount,
+            };
+          }
+        }
+      }
+    } else if (payload.couponCode) {
+      // Legacy single coupon fallback
       const subtotal = cart.items.reduce(
         (sum, item) =>
           sum + parseFloat(item.product.price.toString()) * item.quantity,
@@ -109,11 +166,30 @@ export class OrdersService {
           shippingAddress: payload.shippingAddress,
           paymentMethod: payload.paymentMethod,
           couponCode: payload.couponCode || null,
+          voucherCodes:
+            Object.keys(voucherBreakdown).length > 0
+              ? (voucherBreakdown as Prisma.InputJsonValue)
+              : undefined,
           notes: payload.notes || null,
           statusCode: 'placed',
           paymentStatus: 'pending',
         },
       });
+
+      // Increment usage for applied promotions
+      const codesToIncrement = new Set<string>();
+      for (const info of Object.values(voucherBreakdown)) {
+        codesToIncrement.add(info.code);
+      }
+      if (payload.couponCode && !codesToIncrement.has(payload.couponCode)) {
+        codesToIncrement.add(payload.couponCode);
+      }
+      for (const code of codesToIncrement) {
+        await tx.promotion.updateMany({
+          where: { code },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
 
       for (const item of cart.items) {
         const unitPriceNum = parseFloat(item.product.price.toString());
@@ -371,6 +447,11 @@ export class OrdersService {
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       couponCode: order.couponCode,
+      voucherCodes:
+        (order.voucherCodes as Record<
+          string,
+          { code: string; discountAmount: number }
+        >) || null,
       notes: order.notes,
       shippingAddress: order.shippingAddress as Record<string, string>,
       createdAt: order.createdAt.toISOString(),

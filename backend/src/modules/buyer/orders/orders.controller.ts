@@ -44,6 +44,7 @@ export class OrdersController {
       shippingAddress: dto.shippingAddress as unknown as Record<string, string>,
       paymentMethod: dto.paymentMethod,
       couponCode: dto.couponCode,
+      voucherCodes: dto.voucherCodes,
       notes: dto.notes,
     });
     return { data };

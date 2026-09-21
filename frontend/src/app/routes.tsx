@@ -60,6 +60,8 @@ const MerchantProductCreate = lazy(() => import('@/pages/merchant/ProductCreate'
 const MerchantProductEdit = lazy(() => import('@/pages/merchant/ProductEdit'))
 const MerchantAdvertisements = lazy(() => import('@/pages/merchant/Advertisements'))
 const MerchantPromotions = lazy(() => import('@/pages/merchant/Promotions'))
+const MerchantPromotionCreate = lazy(() => import('@/pages/merchant/PromotionCreate'))
+const MerchantPromotionEdit = lazy(() => import('@/pages/merchant/PromotionEdit'))
 import { MerchantErrorBoundary } from '@/components/merchant/MerchantErrorBoundary'
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
@@ -468,6 +470,22 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <MerchantPromotions />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'promotions/new',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantPromotionCreate />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'promotions/:id/edit',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantPromotionEdit />
                   </SuspenseWrapper>
                 ),
               },

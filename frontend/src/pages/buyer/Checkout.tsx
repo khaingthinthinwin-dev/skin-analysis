@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { CreditCard, Loader2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
-import { useCart } from '@/features/buyer/cart/hooks/useCart';
 import {
   useCheckoutData,
   useValidateCoupon,
@@ -29,10 +28,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+interface MerchantCoupon {
+  coupon: CouponValidation;
+  code: string;
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { summary } = useCart();
   const {
     data: checkoutData,
     isLoading: isCheckoutLoading,
@@ -42,33 +45,37 @@ export default function Checkout() {
   const placeOrderMutation = usePlaceOrder();
   const { data: sponsoredAds = [] } = useSponsoredAds();
 
-  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(
-    null,
+  const [appliedByMerchant, setAppliedByMerchant] = useState<
+    Record<string, MerchantCoupon>
+  >({});
+
+  const handleApplyCoupon = useCallback(
+    async (merchantId: string, code: string, shopSubtotal: number) => {
+      try {
+        const result = await validateCouponMutation.mutateAsync({
+          couponCode: code,
+          subtotal: shopSubtotal,
+        });
+        setAppliedByMerchant((prev) => ({
+          ...prev,
+          [merchantId]: { coupon: result, code },
+        }));
+        toast.success('Coupon applied successfully');
+      } catch {
+        toast.error('Invalid coupon code');
+      }
+    },
+    [validateCouponMutation],
   );
-  const [couponCode, setCouponCode] = useState<string | null>(null);
 
-  const handleApplyCoupon = async (code: string) => {
-    const subtotal = parseFloat(
-      (checkoutData?.subtotal || summary.subtotal) as string,
-    );
-    try {
-      const result = await validateCouponMutation.mutateAsync({
-        couponCode: code,
-        subtotal,
-      });
-      setAppliedCoupon(result);
-      setCouponCode(code);
-      toast.success('Coupon applied successfully');
-    } catch {
-      toast.error('Invalid coupon code');
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode(null);
+  const handleRemoveCoupon = useCallback((merchantId: string) => {
+    setAppliedByMerchant((prev) => {
+      const next = { ...prev };
+      delete next[merchantId];
+      return next;
+    });
     toast.success('Coupon removed');
-  };
+  }, []);
 
   const handlePlaceOrder = async (data: {
     shippingAddress: ShippingAddress;
@@ -76,10 +83,18 @@ export default function Checkout() {
     notes: string;
   }) => {
     try {
+      const voucherCodesMap: Record<string, string> = {};
+      for (const [mid, entry] of Object.entries(appliedByMerchant)) {
+        voucherCodesMap[mid] = entry.code;
+      }
+      const voucherCodeValues = Object.values(voucherCodesMap);
       const result = await placeOrderMutation.mutateAsync({
         shippingAddress: data.shippingAddress,
         paymentMethod: data.paymentMethod,
-        couponCode: couponCode || undefined,
+        couponCode:
+          voucherCodeValues.length > 0 ? voucherCodeValues.join(', ') : undefined,
+        voucherCodes:
+          Object.keys(voucherCodesMap).length > 0 ? voucherCodesMap : undefined,
         notes: data.notes || undefined,
       });
       toast.success('Order placed successfully!');
@@ -151,7 +166,7 @@ export default function Checkout() {
           <OrderSummary
             items={checkoutData.items}
             subtotal={checkoutData.subtotal}
-            appliedCoupon={appliedCoupon}
+            appliedByMerchant={appliedByMerchant}
             onApplyCoupon={handleApplyCoupon}
             onRemoveCoupon={handleRemoveCoupon}
             isCouponLoading={validateCouponMutation.isPending}

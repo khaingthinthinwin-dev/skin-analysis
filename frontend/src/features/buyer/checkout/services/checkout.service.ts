@@ -8,6 +8,7 @@ import type {
   OrderDetail,
   OrderTracking,
   SponsoredAd,
+  MerchantPromotion,
 } from '@/types/checkout.types';
 
 export const checkoutService = {
@@ -71,5 +72,11 @@ export const checkoutService = {
     const { data } = await apiClient.get(`/orders/${orderId}/tracking`);
     const payload = data?.data?.data ?? data?.data ?? data;
     return payload;
+  },
+
+  async getMerchantPromotions(merchantId: string): Promise<MerchantPromotion[]> {
+    const { data } = await apiClient.get(`/checkout/merchant-promotions/${merchantId}`);
+    const payload = data?.data?.data ?? data?.data ?? data;
+    return Array.isArray(payload) ? payload : [];
   },
 };

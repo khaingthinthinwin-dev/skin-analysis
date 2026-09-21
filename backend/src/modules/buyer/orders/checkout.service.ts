@@ -118,4 +118,38 @@ export class CheckoutService {
       newTotal,
     };
   }
+
+  async getMerchantPromotions(merchantId: string) {
+    const now = new Date();
+
+    const promotions = await this.prisma.promotion.findMany({
+      where: {
+        merchantId,
+        isActive: true,
+        startsAt: { lte: now },
+        expiresAt: { gte: now },
+      },
+      include: { discountType: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return promotions
+      .filter((p) => {
+        if (p.maxUses) {
+          return p.usedCount < p.maxUses;
+        }
+        return true;
+      })
+      .map((p) => ({
+        id: p.id,
+        code: p.code,
+        description: p.description,
+        discountType: p.discountType?.typeCode ?? p.discountTypeCode,
+        discountValue: p.discountValue.toString(),
+        minOrderAmount: p.minOrderAmount?.toString() ?? null,
+        maxUses: p.maxUses,
+        usedCount: p.usedCount,
+        expiresAt: p.expiresAt.toISOString(),
+      }));
+  }
 }
