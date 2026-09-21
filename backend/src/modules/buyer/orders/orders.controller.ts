@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,11 +26,12 @@ import {
 } from '../../../common/decorators/current-user.decorator';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderListQueryDto } from './dto/order-list-query.dto';
 
 @ApiTags('orders')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('buyer')
+@Roles('buyer', 'merchant', 'admin', 'super_admin')
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -49,19 +51,33 @@ export class OrdersController {
 
   @Get()
   @ApiOperation({ summary: 'Get order history' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'from', required: false, type: String })
+  @ApiQuery({ name: 'to', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number, default: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, default: 20 })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['createdAt', 'totalAmount', 'status'],
+  })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'merchantId', required: false, type: String })
+  @ApiQuery({ name: 'shopId', required: false, type: String })
   async getOrderHistory(
     @CurrentUser() user: AuthUser,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query() query: OrderListQueryDto,
   ) {
-    const data = await this.ordersService.getOrderHistory(
-      user.id,
-      page || 1,
-      limit || 10,
-    );
-    return { data };
+    if (
+      (user.roleCode === 'buyer' || user.roleCode === 'merchant') &&
+      (query.merchantId || query.shopId)
+    ) {
+      throw new ForbiddenException(
+        "You don't have permission to filter by merchant",
+      );
+    }
+
+    return this.ordersService.getOrderHistory(user.id, user.roleCode, query);
   }
 
   @Get(':orderId')
