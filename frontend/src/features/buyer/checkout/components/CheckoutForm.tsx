@@ -27,8 +27,9 @@ const shippingSchema = z.object({
     .max(200, 'Name must not exceed 200 characters'),
   phone: z
     .string()
-    .min(1, 'Phone number is required')
-    .max(20, 'Phone must not exceed 20 characters'),
+    .min(11, 'Phone number must be exactly 11 digits')
+    .max(11, 'Phone number must be exactly 11 digits')
+    .regex(/^\d{11}$/, 'Phone number must be exactly 11 digits'),
   addressLine1: z
     .string()
     .min(1, 'Address is required')
@@ -45,7 +46,8 @@ const shippingSchema = z.object({
   postalCode: z
     .string()
     .min(1, 'Postal code is required')
-    .max(20, 'Postal code must not exceed 20 characters'),
+    .max(20, 'Postal code must not exceed 20 characters')
+    .regex(/^\d+$/, 'Postal code must contain only digits'),
   country: z.string().min(1, 'Country is required'),
 });
 
@@ -71,6 +73,12 @@ const COUNTRIES = [
   { value: 'CN', label: 'China' },
   { value: 'SG', label: 'Singapore' },
 ];
+
+const blockNonNumeric = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    e.preventDefault();
+  }
+};
 
 export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
@@ -128,7 +136,7 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Phone number" type="tel" {...field} />
+                    <Input placeholder="Phone number" type="tel" inputMode="numeric" pattern="[0-9]*" onKeyDown={blockNonNumeric} maxLength={11} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,7 +207,7 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                   <FormItem>
                     <FormLabel>Postal Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="Postal code" {...field} />
+                      <Input placeholder="Postal code" inputMode="numeric" pattern="[0-9]*" onKeyDown={blockNonNumeric} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
