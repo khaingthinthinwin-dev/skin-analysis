@@ -85,29 +85,29 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               type="button"
               aria-label="Previous advertisement"
               onClick={() => setCurrent((c) => (c - 1 + total) % total)}
-              className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9]"
+              className="absolute left-1 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9] sm:left-2 sm:h-7 sm:w-7"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
             <button
               type="button"
               aria-label="Next advertisement"
               onClick={() => setCurrent((c) => (c + 1) % total)}
-              className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9]"
+              className="absolute right-1 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9] sm:right-2 sm:h-7 sm:w-7"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </>
         )}
 
-        <div className="px-12 py-4">
-          <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-[#7c3aed]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#7c3aed]">
+        <div className="px-9 pb-3 pt-3 sm:px-12 sm:py-4">
+          <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-[#7c3aed]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#7c3aed] sm:mb-3 sm:px-2.5 sm:py-1 sm:text-[11px]">
             Sponsored
           </span>
 
-          <div className="flex gap-4">
+          <div className="flex items-start gap-2 sm:gap-4">
             {imageUrl && (
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-zinc-700">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-zinc-700 sm:h-20 sm:w-20">
                 <img
                   src={getImageUrl(imageUrl)}
                   alt={title}
@@ -117,18 +117,18 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold leading-snug text-foreground">{title}</p>
+              <p className="text-xs font-bold leading-snug text-foreground sm:text-sm">{title}</p>
               {description && (
-                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{description}</p>
+                <p className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground sm:mt-1 sm:text-xs">{description}</p>
               )}
               {linkUrl && (
                 <a
                   href={linkUrl}
                   target="_blank"
                   rel="noopener noreferrer nofollow sponsored"
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#7c3aed] hover:underline"
+                  className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-[#7c3aed] hover:underline sm:mt-2 sm:text-xs"
                 >
-                  Learn more <ExternalLink className="h-3 w-3" />
+                  Learn more <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </a>
               )}
             </div>
@@ -136,7 +136,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
         </div>
 
         {total > 1 && (
-          <div className="flex items-center justify-center gap-1.5 pb-3">
+          <div className="flex items-center justify-center gap-1 pb-2 sm:gap-1.5 sm:pb-3">
             {Array.from({ length: total }).map((_, i) => (
               <button
                 key={i}
@@ -145,7 +145,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                 aria-current={i === current ? 'true' : undefined}
                 onClick={() => setCurrent(i)}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === current ? 'w-4 bg-[#7c3aed]' : 'w-1.5 bg-muted-foreground/30'
+                  i === current ? 'w-3 sm:w-4 bg-[#7c3aed]' : 'w-1.5 bg-muted-foreground/30'
                 }`}
               />
             ))}

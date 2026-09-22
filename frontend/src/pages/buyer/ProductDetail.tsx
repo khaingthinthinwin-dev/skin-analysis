@@ -30,8 +30,8 @@ export default function ProductDetail() {
 
   if (isLoading) {
     return (
-      <div key={location.pathname} className="container mx-auto">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div key={location.pathname} className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2">
           <Skeleton className="aspect-square w-full rounded-lg" />
           <div className="space-y-4">
             <Skeleton className="h-8 w-3/4" />
@@ -59,7 +59,7 @@ export default function ProductDetail() {
   const showCTA = !isAuthenticated || user?.role === 'buyer';
 
   return (
-    <div key={location.pathname} className="container mx-auto px-4 py-8">
+    <div key={location.pathname} className="container mx-auto px-4 py-4 sm:py-8">
       <Button
         variant="ghost"
         size="icon"
@@ -71,7 +71,7 @@ export default function ProductDetail() {
       </Button>
       <SidebarAdvertisements idOrSlug={product.id} />
 
-      <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-6 sm:mt-6 sm:gap-8 md:grid-cols-2">
         <ProductGallery images={product.images} name={product.name} />
         <ProductInfo product={product} />
       </div>
