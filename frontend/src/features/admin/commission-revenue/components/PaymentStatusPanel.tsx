@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaymentStatus } from '../services/commission.service';
+import { PaymentStatusStat } from './badges';
 
 interface PaymentStatusPanelProps {
   payments?: PaymentStatus;
@@ -8,7 +9,8 @@ interface PaymentStatusPanelProps {
 }
 
 // [J] Order payment status panel — Completed / Pending (DD_02).
-// Single-row 2-column grid of status badges with counts.
+// Two-line stats: count on top, coloured status pill underneath.
+// Colours come from the shared §9.6 registry in ./badges.
 export const PaymentStatusPanel: React.FC<PaymentStatusPanelProps> = ({
   payments,
   loading,
@@ -21,19 +23,13 @@ export const PaymentStatusPanel: React.FC<PaymentStatusPanelProps> = ({
       <CardContent>
         {loading ? (
           <div className="flex gap-4">
-            <div className="h-10 w-full animate-pulse rounded bg-muted" />
-            <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            <div className="h-14 w-full animate-pulse rounded bg-muted" />
+            <div className="h-14 w-full animate-pulse rounded bg-muted" />
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 rounded-md bg-green-950 px-2.5 py-1">
-              <span className="text-sm font-bold text-green-400">{payments?.completed ?? 0}</span>
-              <span className="text-xs text-green-400">Completed</span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-md bg-amber-950 px-2.5 py-1">
-              <span className="text-sm font-bold text-amber-400">{payments?.pending ?? 0}</span>
-              <span className="text-xs text-amber-400">Pending</span>
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            <PaymentStatusStat kind="completed" value={payments?.completed ?? 0} />
+            <PaymentStatusStat kind="pending" value={payments?.pending ?? 0} />
           </div>
         )}
       </CardContent>
