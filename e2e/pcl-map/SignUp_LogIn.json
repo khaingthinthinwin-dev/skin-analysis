@@ -9,7 +9,7 @@
     "e2e/tests/SignUp_LogIn/api-auth.spec.ts"
   ],
   "mappings": {
-    "should register as buyer and redirect to login": "N-01",
+    "should register a new buyer and redirect to login": "N-01",
     "should register as merchant with license file upload": "N-02",
     "should login as buyer and redirect to buyer dashboard": "N-03",
     "should log out buyer and clear session": "N-04",

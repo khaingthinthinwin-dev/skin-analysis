@@ -18,7 +18,7 @@
 
 ## 1. Normal Scenarios (N) — Happy Path
 
-- [ ] **N-01**: Register as buyer successfully
+- [x] **N-01**: Register as buyer successfully
   - **Precondition**: User is not authenticated
   - **Steps**:
     1. Navigate to `/register`
