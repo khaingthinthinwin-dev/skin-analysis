@@ -5,6 +5,21 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Area,
+  ComposedChart,
+  type PieLabelRenderProps,
+} from 'recharts'
 import { formatPrice } from '../utils/format'
 import type { RevenueAnalytics } from '@/types/admin-ad-management'
 
@@ -12,50 +27,73 @@ type PlacementBreakdownRow = RevenueAnalytics['byPlacement'][number]
 type TierBreakdownRow = RevenueAnalytics['byTier'][number]
 type TrendRow = RevenueAnalytics['trend'][number]
 
-function horizontalMax(rows: Array<{ revenue: number }>): number {
-  return Math.max(1, ...rows.map((row) => Number(row.revenue)))
+const PLACEMENT_COLORS = ['#7C3AED', '#EC4899', '#F59E0B', '#22D3EE']
+const TIER_COLORS = ['#C4B5FD', '#A78BFA', '#7C3AED']
+const TREND_COLOR = '#7C3AED'
+
+const tooltipContentStyle: React.CSSProperties = {
+  background: 'var(--color-popover)',
+  border: '1px solid var(--color-border)',
+  borderRadius: 8,
+  color: 'var(--color-popover-foreground)',
 }
 
-interface BarChartProps {
+function formatAxisPrice(value: number): string {
+  const n = Number(value)
+  if (Number.isNaN(n)) return '$0'
+  if (Math.abs(n) >= 1000) {
+    return `$${(n / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })}k`
+  }
+  return `$${n}`
+}
+
+interface RevenuePieChartProps {
   title: string
   description: string
-  rows: Array<{ label: string; name: string; revenue: number }>
+  rows: Array<{ name: string; value: number }>
+  colors: string[]
 }
 
-export function RevenueBarChart({ title, description, rows }: BarChartProps) {
-  const max = horizontalMax(rows)
+function RevenuePieChart({ title, description, rows, colors }: RevenuePieChartProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent>
         {rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">No data</p>
         ) : (
-          rows.map((row) => {
-            const revenue = Number(row.revenue)
-            const width = Math.max(2, (revenue / max) * 100)
-            return (
-              <div key={row.name} className="flex items-center gap-3">
-                <span className="w-32 shrink-0 truncate text-sm" title={row.label}>
-                  {row.label}
-                </span>
-                <div className="h-5 flex-1 overflow-hidden rounded bg-secondary">
-                  <div
-                    className="h-5 rounded bg-purple-500"
-                    style={{ width: `${width}%` }}
-                    role="img"
-                    aria-label={`${row.label} revenue ${formatPrice(revenue)}`}
-                  />
-                </div>
-                <span className="w-24 shrink-0 text-right text-sm font-medium">
-                  {formatPrice(revenue)}
-                </span>
-              </div>
-            )
-          })
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                <Pie
+                  data={rows}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={85}
+                  paddingAngle={2}
+                  label={(props: PieLabelRenderProps) =>
+                    `${Math.round((props.percent ?? 0) * 100)}%`
+                  }
+                  labelLine={false}
+                >
+                  {rows.map((row, index) => (
+                    <Cell key={row.name} fill={colors[index % colors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={tooltipContentStyle}
+                  formatter={(value) => formatPrice(Number(value))}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -68,14 +106,11 @@ interface RevenueByPlacementChartProps {
 
 export function RevenueByPlacementChart({ rows }: RevenueByPlacementChartProps) {
   return (
-    <RevenueBarChart
+    <RevenuePieChart
       title="Revenue by Placement"
       description="Total revenue grouped by ad placement"
-      rows={rows.map((row) => ({
-        label: row.placementName,
-        name: row.placement,
-        revenue: row.revenue,
-      }))}
+      rows={rows.map((row) => ({ name: row.placementName, value: Number(row.revenue) }))}
+      colors={PLACEMENT_COLORS}
     />
   )
 }
@@ -86,14 +121,11 @@ interface RevenueByTierChartProps {
 
 export function RevenueByTierChart({ rows }: RevenueByTierChartProps) {
   return (
-    <RevenueBarChart
+    <RevenuePieChart
       title="Revenue by Tier"
       description="Total revenue grouped by advertising tier"
-      rows={rows.map((row) => ({
-        label: row.tierName,
-        name: row.tier,
-        revenue: row.revenue,
-      }))}
+      rows={rows.map((row) => ({ name: row.tierName, value: Number(row.revenue) }))}
+      colors={TIER_COLORS}
     />
   )
 }
@@ -103,7 +135,6 @@ interface RevenueTrendChartProps {
 }
 
 export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
-  const max = Math.max(1, ...rows.map((row) => Number(row.revenue)))
   return (
     <Card>
       <CardHeader>
@@ -114,26 +145,61 @@ export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
         {rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">No data</p>
         ) : (
-          <div className="flex h-48 items-end gap-1">
-            {rows.map((row) => {
-              const revenue = Number(row.revenue)
-              const height = revenue > 0 ? Math.max(4, (revenue / max) * 160) : 2
-              const label = new Date(row.date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })
-              return (
-                <div key={row.date} className="flex flex-1 flex-col items-center gap-1">
-                  <div
-                    className="w-full rounded-t bg-pink-500"
-                    style={{ height: `${height}px` }}
-                    role="img"
-                    aria-label={`${row.date} revenue ${formatPrice(revenue)}`}
-                  />
-                  <span className="truncate text-[10px] text-muted-foreground">{label}</span>
-                </div>
-              )
-            })}
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={TREND_COLOR} stopOpacity={0.4} />
+                    <stop offset="100%" stopColor={TREND_COLOR} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(value: string) =>
+                    new Date(value).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  }
+                  tick={{ fontSize: 12 }}
+                  stroke="var(--color-muted-foreground)"
+                />
+                <YAxis
+                  tickFormatter={(value: number) => formatAxisPrice(value)}
+                  width={64}
+                  tick={{ fontSize: 12 }}
+                  stroke="var(--color-muted-foreground)"
+                />
+                <Tooltip
+                  contentStyle={tooltipContentStyle}
+                  labelFormatter={(label) =>
+                    new Date(String(label)).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  }
+                  formatter={(value) => formatPrice(Number(value))}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  fill="url(#revenueGradient)"
+                  stroke="none"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  name="Revenue"
+                  stroke={TREND_COLOR}
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: TREND_COLOR, stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 7 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>

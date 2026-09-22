@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -15,6 +16,7 @@ import {
   Pencil,
   RefreshCw,
   Search,
+  ShieldAlert,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -68,6 +70,52 @@ function displayState(ad: Advertisement): DisplayState {
     return ad.startsAt && new Date(ad.startsAt) > new Date() ? 'scheduled' : 'active'
   }
   return ad.title || ad.imageUrl ? 'content_uploaded' : 'draft'
+}
+
+function deleteConfirmDescription(ad: Advertisement) {
+  const expired = Boolean(ad.expiresAt && new Date(ad.expiresAt) < new Date())
+  if (expired) {
+    return ad.title
+      ? `Are you sure you want to delete "${ad.title}"? This expired advertisement will be permanently deleted from the system.`
+      : 'Are you sure you want to delete this expired advertisement? It will be permanently deleted from the system.'
+  }
+  if (ad.paymentStatus === 'pending') {
+    return ad.title
+      ? `Are you sure you want to delete "${ad.title}"? It has not been paid and will be permanently deleted from the system.`
+      : 'Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.'
+  }
+  return ad.title
+    ? `Are you sure you want to delete "${ad.title}"? The advertisement will be deactivated and kept for history.`
+    : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
+}
+
+// Stats mirror the exact WHERE clauses of the backend listOwnAds filters so a
+// stat card count always equals what its chevron-click shows:
+//  - active:   is_active=true AND approved AND completed AND in schedule
+//  - expired:  expires_at < now AND (is_active OR approved)  (excludes soft-deleted drafts)
+//  - pending:  approval_status='pending' AND is_active (the approval filter view)
+function isActiveAd(ad: Advertisement, now: Date) {
+  return (
+    ad.isActive &&
+    ad.approvalStatus === 'approved' &&
+    ad.paymentStatus === 'completed' &&
+    ad.startsAt !== null &&
+    ad.expiresAt !== null &&
+    new Date(ad.startsAt) <= now &&
+    new Date(ad.expiresAt) >= now
+  )
+}
+
+function isExpiredAd(ad: Advertisement, now: Date) {
+  return (
+    ad.expiresAt !== null &&
+    new Date(ad.expiresAt) < now &&
+    (ad.isActive || ad.approvalStatus === 'approved')
+  )
+}
+
+function isPendingApprovalAd(ad: Advertisement) {
+  return ad.approvalStatus === 'pending' && ad.isActive
 }
 
 const tierLabels: Record<string, string> = {
@@ -143,6 +191,7 @@ function toFormData(values: ContentForm, includeSchedule: boolean) {
 
 export default function Advertisements() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
   const [approvalStatus, setApprovalStatus] = useState('')
@@ -185,14 +234,14 @@ export default function Advertisements() {
   }, [search])
 
   // Stats per 画面項目設計書 §4.4: active / pending approval / expired counts.
-  const stats = useMemo(
-    () => ({
-      active: allAds.filter((ad) => displayState(ad) === 'active').length,
-      pending: allAds.filter((ad) => displayState(ad) === 'pending_approval').length,
-      expired: allAds.filter((ad) => displayState(ad) === 'expired').length,
-    }),
-    [allAds],
-  )
+  const stats = useMemo(() => {
+    const now = new Date()
+    return {
+      active: allAds.filter((ad) => isActiveAd(ad, now)).length,
+      pending: allAds.filter((ad) => isPendingApprovalAd(ad)).length,
+      expired: allAds.filter((ad) => isExpiredAd(ad, now)).length,
+    }
+  }, [allAds])
 
   const statCards = [
     {
@@ -349,12 +398,18 @@ export default function Advertisements() {
         </Alert>
       )}
       {merchantLicenseStatus === 'rejected' && (
-        <Alert variant="destructive" className="border-red-500/50 bg-red-50 text-red-800 dark:border-red-500/60 dark:bg-red-950/40 dark:text-red-200">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="text-red-900 dark:text-red-100">Shop approval rejected</AlertTitle>
-          <AlertDescription className="text-red-800 dark:text-red-200">
-            Your shop approval request was rejected. You can browse packages and view your ads, but you cannot select a package
-            until your shop is approved.
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle className="font-semibold">Account Rejected</AlertTitle>
+          <AlertDescription>
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your license from your Profile page.{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/merchant/profile')}
+              className="font-semibold underline underline-offset-2 hover:opacity-80"
+            >
+              Go to Profile
+            </button>
           </AlertDescription>
         </Alert>
       )}
@@ -634,21 +689,13 @@ export default function Advertisements() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation (soft delete, BR-AD-012) */}
+      {/* Delete Confirmation (expired/unpaid = permanent delete, others soft delete) */}
       <DeleteConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={confirmDelete}
         title="Delete Advertisement"
-        description={
-          deleteTarget?.paymentStatus === 'pending'
-            ? deleteTarget.title
-              ? `Are you sure you want to delete "${deleteTarget.title}"? It has not been paid and will be permanently deleted from the system.`
-              : 'Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.'
-            : deleteTarget?.title
-              ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
-              : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
-        }
+        description={deleteTarget ? deleteConfirmDescription(deleteTarget) : ''}
         isLoading={remove.isPending}
       />
     </div>
@@ -712,7 +759,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
-  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded'
+  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'expired'
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const packageInfo = ad.package
   const expiresTomorrow =
@@ -824,8 +871,18 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
           <div>
             {canToggle ? (
               <div className="flex items-center gap-2">
-                <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
-                <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
+                {/* Approved ads only read as Active once the schedule starts
+                    (TR-AD-08). Before starts_at the campaign is SCHEDULED —
+                    not on air yet — so it displays as Inactive like other
+                    inactive ads. The switch stays disabled because there is
+                    nothing to toggle until the start date is reached. */}
+                <Switch
+                  checked={state === 'active'}
+                  disabled={state === 'scheduled'}
+                  onCheckedChange={(isActive) => onToggle(ad, isActive)}
+                  aria-label="Toggle active"
+                />
+                <span className="text-sm">{state === 'active' ? 'Active' : 'Inactive'}</span>
               </div>
             ) : state === 'expired' || state === 'pending_approval' ? (
               <span className="text-sm text-muted-foreground">Inactive</span>
@@ -911,6 +968,13 @@ function ContentDialog({
   showSaveAndPay,
   isPending,
 }: ContentDialogProps) {
+  // Earliest selectable start date: today + 3 days (UTC day granularity, the
+  // same convention the backend getSchedule uses). Today, tomorrow, and the
+  // day after tomorrow cannot be selected.
+  const minStartsAtDate = new Date()
+  minStartsAtDate.setUTCHours(0, 0, 0, 0)
+  minStartsAtDate.setUTCDate(minStartsAtDate.getUTCDate() + 3)
+  const minStartsAt = minStartsAtDate.toISOString().slice(0, 10)
   const isNewUpload = !target?.title
   const form = useForm<ContentForm>({
     resolver: zodResolver(isNewUpload ? uploadContentSchema : contentSchema),
@@ -919,7 +983,7 @@ function ContentDialog({
       content: '',
       linkUrl: '',
       announcementMessage: '',
-      startsAt: new Date().toISOString().slice(0, 10),
+      startsAt: minStartsAt,
       image: null,
     },
   })
@@ -949,12 +1013,12 @@ function ContentDialog({
           content: target.content ?? '',
           linkUrl: target.linkUrl ?? '',
           announcementMessage: target.announcementMessage,
-          startsAt: target.startsAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+          startsAt: target.startsAt?.slice(0, 10) ?? minStartsAt,
           image: null,
         },
       )
     }
-  }, [target, form])
+  }, [target, form, minStartsAt])
 
   if (!target) return null
   const handleClose = () => {
@@ -1078,10 +1142,15 @@ function ContentDialog({
               <Input
                 id="ad-start"
                 type="date"
-                min={new Date().toISOString().slice(0, 10)}
+                min={minStartsAt}
                 disabled={!canSetSchedule}
                 {...form.register('startsAt')}
               />
+              {canSetSchedule && (
+                <p className="text-xs text-muted-foreground">
+                  Select a date from {minStartsAt} (3 days from today) onward.
+                </p>
+              )}
               {form.formState.errors.startsAt && (
                 <p role="alert" className="text-sm text-destructive">
                   {form.formState.errors.startsAt.message}
