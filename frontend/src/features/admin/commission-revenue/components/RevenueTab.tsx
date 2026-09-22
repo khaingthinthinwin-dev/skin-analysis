@@ -24,6 +24,7 @@ import { PayoutConfirmationDialog } from "./PayoutConfirmationDialog";
 import { PayoutDetailDialog } from "./PayoutDetailDialog";
 import { ExportDialog } from "./ExportDialog";
 import { PaginationControls } from "./PaginationControls";
+
 import { useRevenue } from "../hooks/useRevenue";
 import { useCommission } from "../hooks/useCommission";
 import {
@@ -72,7 +73,7 @@ export const RevenueTab: React.FC = () => {
   const { payoutsQuery, processPayoutMutation, deletePayoutMutation } = useCommission(
     {
       page: payoutPage,
-      limit: 10,
+      limit: 5,
       ...(statusFilter ? { status: statusFilter } : {}),
       ...(merchantFilter ? { merchantId: merchantFilter } : {}),
       ...(payoutPeriod ? { period: payoutPeriod } : {}),

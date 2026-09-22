@@ -54,7 +54,7 @@ export interface Payout {
   commissionAmount: string; // Decimal string
   adFeeAmount: string; // Always "0.00" - ad fees are platform revenue, never deducted
   netAmount: string; // totalAmount - commissionAmount
-  status: "pending" | "processing" | "completed" | "failed";
+  status: "pending" | "processing" | "completed";
   failureReason?: string | null;
   createdAt: string;
   processedAt?: string | null;
