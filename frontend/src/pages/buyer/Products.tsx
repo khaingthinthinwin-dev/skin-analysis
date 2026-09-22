@@ -400,6 +400,7 @@ export default function Products() {
               {meta && (
                 <Pagination
                   meta={meta}
+                  currentLimit={params.limit}
                   onLimitChange={handleLimitChange}
                 />
               )}

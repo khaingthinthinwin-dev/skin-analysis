@@ -10,10 +10,11 @@ import type { PaginationMeta } from '@/types/search.types'
 
 interface PaginationProps {
   meta: PaginationMeta
+  currentLimit: number
   onLimitChange: (limit: number) => void
 }
 
-export function Pagination({ meta, onLimitChange }: PaginationProps) {
+export function Pagination({ meta, currentLimit, onLimitChange }: PaginationProps) {
   return (
     <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground">
@@ -28,7 +29,7 @@ export function Pagination({ meta, onLimitChange }: PaginationProps) {
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Show</span>
         <Select
-          value={String(meta.limit)}
+          value={String(currentLimit)}
           onValueChange={(v) => onLimitChange(Number(v))}
         >
           <SelectTrigger className="w-[70px] h-9 border-violet-300 focus:ring-violet-500 focus:border-violet-500">

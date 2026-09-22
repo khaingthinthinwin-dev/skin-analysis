@@ -59,7 +59,7 @@ export function HistoryAccordion({ sessions }: HistoryAccordionProps) {
                     <Link
                       key={rec.id}
                       to={`/buyer/products/${rec.slug}`}
-                      className="flex items-center gap-3 p-2.5 rounded-lg border border-border/60 bg-card hover:bg-muted/50 transition-colors w-[280px]"
+                      className="flex items-center gap-3 p-2.5 rounded-lg border border-border/60 bg-card hover:bg-muted/50 transition-colors w-full sm:w-[280px] min-w-0"
                     >
                       <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {rec.images && rec.images[0] ? (
