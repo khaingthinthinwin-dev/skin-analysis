@@ -44,6 +44,9 @@ const BuyerWishlist = lazy(() => import('@/pages/buyer/Wishlist'))
 const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
 const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
+const BuyerOrdersPage = lazy(() => import('@/pages/order-insights/BuyerOrdersPage'))
+const BuyerOrderDetailPage = lazy(() => import('@/pages/order-insights/BuyerOrderDetailPage'))
+
 // TODO: Uncomment when pages are implemented
 // const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
 // const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
@@ -57,6 +60,8 @@ const MerchantProductCreate = lazy(() => import('@/pages/merchant/ProductCreate'
 const MerchantProductEdit = lazy(() => import('@/pages/merchant/ProductEdit'))
 const MerchantAdvertisements = lazy(() => import('@/pages/merchant/Advertisements'))
 const MerchantPromotions = lazy(() => import('@/pages/merchant/Promotions'))
+const MerchantPromotionCreate = lazy(() => import('@/pages/merchant/PromotionCreate'))
+const MerchantPromotionEdit = lazy(() => import('@/pages/merchant/PromotionEdit'))
 import { MerchantErrorBoundary } from '@/components/merchant/MerchantErrorBoundary'
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
@@ -231,7 +236,7 @@ export const router = createBrowserRouter([
                 path: 'commission-revenue',
                 element: (
                   <SuspenseWrapper>
-                     <AdminCommissionRevenue />
+                    <AdminCommissionRevenue />
                   </SuspenseWrapper>
                 ),
               },
@@ -391,14 +396,7 @@ export const router = createBrowserRouter([
                   </SuspenseWrapper>
                 ),
               },
-              {
-                path: 'order-insights',
-                element: (
-                  <SuspenseWrapper>
-                    <OrderInsights />
-                  </SuspenseWrapper>
-                ),
-              },
+
               {
                 path: 'profile',
                 element: (
@@ -476,6 +474,22 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'promotions/new',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantPromotionCreate />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'promotions/:id/edit',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantPromotionEdit />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'order-insights',
                 element: (
                   <SuspenseWrapper>
@@ -496,6 +510,33 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <Notifications />
+                  </SuspenseWrapper>
+                ),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        path: 'orders',
+        element: <ProtectedRoute roles={['buyer']} />,
+        children: [
+          {
+            element: <BuyerLayout />,
+            children: [
+              {
+                index: true,
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrdersPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: ':id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerOrderDetailPage />
                   </SuspenseWrapper>
                 ),
               },

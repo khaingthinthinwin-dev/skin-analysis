@@ -5,7 +5,11 @@ import {
   ExportFormat,
   GroupByType,
 } from './dto/export-request.dto';
-import { fmtDecimal, toNumber } from './commission-revenue.util';
+import {
+  fmtDecimal,
+  fmtExportCurrency,
+  toNumber,
+} from './commission-revenue.util';
 import { buildCsv, buildXlsx } from './file-builder';
 import type { Response } from 'express';
 
@@ -171,8 +175,8 @@ export class ExportService {
           dateStr,
           o.merchant?.shopName ?? 'Unknown',
           `${fmtDecimal(rate)}%`,
-          fmtDecimal(amount),
-          fmtDecimal(commission),
+          fmtExportCurrency(amount),
+          fmtExportCurrency(commission),
         ]);
       }
     } else if (groupBy === 'day') {
@@ -223,8 +227,8 @@ export class ExportService {
           g.name,
           `${fmtDecimal(g.rate)}%`,
           g.orders,
-          fmtDecimal(g.revenue),
-          fmtDecimal(g.commission),
+          fmtExportCurrency(g.revenue),
+          fmtExportCurrency(g.commission),
         ]);
     } else {
       // By Merchant (default)
@@ -265,8 +269,8 @@ export class ExportService {
         g.name,
         `${fmtDecimal(g.rate)}%`,
         g.orders,
-        fmtDecimal(g.revenue),
-        fmtDecimal(g.commission),
+        fmtExportCurrency(g.revenue),
+        fmtExportCurrency(g.commission),
       ]);
     }
 
@@ -353,12 +357,12 @@ export class ExportService {
     const rows: (string | number)[][] = [
       ['Date From', dto.dateFrom],
       ['Date To', dto.dateTo],
-      ['Total Revenue', fmtDecimal(totalRevenue)],
-      ['Total Commission', fmtDecimal(totalCommission)],
-      ['Ad Fee Revenue', fmtDecimal(adFeeRevenue)],
-      ['Total Income', fmtDecimal(totalIncome)],
-      ['Avg Order Value', fmtDecimal(avgOrderValue)],
-      ['Net Revenue', fmtDecimal(totalRevenue - totalCommission)],
+      ['Total Revenue', fmtExportCurrency(totalRevenue)],
+      ['Total Commission', fmtExportCurrency(totalCommission)],
+      ['Ad Fee Revenue', fmtExportCurrency(adFeeRevenue)],
+      ['Total Income', fmtExportCurrency(totalIncome)],
+      ['Avg Order Value', fmtExportCurrency(avgOrderValue)],
+      ['Net Revenue', fmtExportCurrency(totalRevenue - totalCommission)],
       ['Completed Orders', completedOrders],
       ['Pending Orders', pendingOrders],
       ['Ad Completed', adCompleted?._count._all ?? 0],
@@ -443,9 +447,9 @@ export class ExportService {
           p.merchant?.shopName ?? 'Unknown',
           p.order?.orderNumber ?? '-',
           `${fmtDecimal(rate)}%`,
-          fmtDecimal(total),
-          fmtDecimal(commission),
-          fmtDecimal(total - commission),
+          fmtExportCurrency(total),
+          fmtExportCurrency(commission),
+          fmtExportCurrency(total - commission),
           p.status,
           p.processedAt?.toISOString().slice(0, 10) ?? '-',
         ];
@@ -525,9 +529,9 @@ export class ExportService {
       group.total > 0
         ? fmtDecimal((group.commission / group.total) * 100)
         : '0.00',
-      fmtDecimal(group.total),
-      fmtDecimal(group.commission),
-      fmtDecimal(group.total - group.commission),
+      fmtExportCurrency(group.total),
+      fmtExportCurrency(group.commission),
+      fmtExportCurrency(group.total - group.commission),
       group.status,
       group.processedAt?.toISOString().slice(0, 10) ?? '-',
     ]);

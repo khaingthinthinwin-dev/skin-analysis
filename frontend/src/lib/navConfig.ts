@@ -110,7 +110,7 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
         items: [
           { label: 'Wishlist', href: '/buyer/wishlist', icon: Heart },
           { label: 'Cart', href: '/buyer/cart', icon: ShoppingCart },
-          { label: 'Order Insights', href: '/buyer/order-insights', icon: PackageCheck },
+          { label: 'Order Insights', href: '/orders', icon: PackageCheck },
         ],
       },
       {

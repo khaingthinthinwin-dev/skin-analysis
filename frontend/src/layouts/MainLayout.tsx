@@ -7,7 +7,7 @@ export function MainLayout() {
   const { isAuthenticated } = useAuth()
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2"
