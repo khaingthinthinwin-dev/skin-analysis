@@ -51,6 +51,8 @@
     "discountType": "Discount Type",
     "percentage": "Percentage (%)",
     "fixed": "Fixed Amount (MMK)",
+    "discountPercentage": "Discount Percentage (%)",
+    "discountPercentagePlaceholder": "e.g. 50",
     "discountValue": "Discount Value",
     "discountValuePlaceholder": "e.g. 10",
     "minOrderAmount": "Minimum Order Amount (MMK)",

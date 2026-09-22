@@ -240,6 +240,8 @@
         "discountType": "割引タイプ",
         "percentage": "パーセンテージ",
         "fixed": "固定金額 (MMK)",
+        "discountPercentage": "割引パーセンテージ（%）",
+        "discountPercentagePlaceholder": "例: 50",
         "discountValue": "割引額",
         "discountValuePlaceholder": "例: 10",
         "minOrderAmount": "最低注文金額 (MMK)",

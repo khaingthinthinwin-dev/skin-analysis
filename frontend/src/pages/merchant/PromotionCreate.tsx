@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, type FormEvent } from 'react'
+import { useEffect, useState, useMemo, useRef, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useCreatePromotion } from '@/hooks/usePromotions'
 
@@ -50,6 +51,11 @@ export default function PromotionCreate() {
   const [expiresAt, setExpiresAt] = useState(defaultExpiresAt)
   const [isActive, setIsActive] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const codeRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    codeRef.current?.focus()
+  }, [])
 
   useEffect(() => {
     if (status === 'pending') {
@@ -128,8 +134,18 @@ export default function PromotionCreate() {
   }
 
   return (
-    <div className="p-2 lg:p-4 max-w-2xl mx-auto">
-      <Card>
+    <div className="p-2 lg:p-4">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 mb-2"
+        onClick={() => navigate('/merchant/promotions')}
+      >
+        <ArrowLeft className="h-4 w-4" />
+      </Button>
+      <div className="max-w-2xl mx-auto">
+        <Card>
         <CardHeader>
           <CardTitle>{t('merchant.promotions.addNew')}</CardTitle>
         </CardHeader>
@@ -140,6 +156,7 @@ export default function PromotionCreate() {
               <Label htmlFor="code">{t('merchant.promotions.form.code')}</Label>
               <Input
                 id="code"
+                ref={codeRef}
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder={t('merchant.promotions.form.codePlaceholder')}
@@ -179,15 +196,23 @@ export default function PromotionCreate() {
               </Select>
             </div>
 
-            {/* Discount Value */}
+            {/* Discount Value — label changes based on discount type */}
             <div className="space-y-2">
-              <Label htmlFor="discountValue">{t('merchant.promotions.form.discountValue')}</Label>
+              <Label htmlFor="discountValue">
+                {discountTypeCode === 'percentage'
+                  ? t('merchant.promotions.form.discountPercentage')
+                  : t('merchant.promotions.form.discountValue')}
+              </Label>
               <Input
                 id="discountValue"
                 type="number"
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
-                placeholder={t('merchant.promotions.form.discountValuePlaceholder')}
+                placeholder={
+                  discountTypeCode === 'percentage'
+                    ? t('merchant.promotions.form.discountPercentagePlaceholder')
+                    : t('merchant.promotions.form.discountValuePlaceholder')
+                }
                 min="0.01"
                 step="0.01"
               />
@@ -292,6 +317,7 @@ export default function PromotionCreate() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

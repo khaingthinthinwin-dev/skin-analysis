@@ -84,11 +84,11 @@ export default function Promotions() {
   const getDiscountBadge = useCallback(
     (promo: Promotion) => {
       if (promo.discountTypeCode === 'percentage') {
-        return <Badge className="bg-blue-100 text-blue-800">{promo.discountValue}% OFF</Badge>
+        return <Badge className="bg-blue-100 text-blue-800">{t('merchant.promotions.form.percentage')}</Badge>
       }
-      return <Badge className="bg-green-100 text-green-800">{promo.discountValue} MMK OFF</Badge>
+      return <Badge className="bg-green-100 text-green-800">{t('merchant.promotions.form.fixed')}</Badge>
     },
-    [],
+    [t],
   )
 
   const handleDelete = useCallback(
@@ -141,26 +141,6 @@ export default function Promotions() {
     (promo: Promotion) => promo.expiresAt && new Date(promo.expiresAt) < now,
     [now],
   )
-
-  if (isLoading) {
-    return <LoadingSpinner className="min-h-[400px]" />
-  }
-
-  if (error) {
-    const errorInfo = getPromotionErrorInfo(error)
-    return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <p className="text-destructive">{errorInfo.message}</p>
-          {errorInfo.type === 'network' || errorInfo.type === 'server' || errorInfo.type === 'unknown' ? (
-            <Button className="mt-4" onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
@@ -256,7 +236,25 @@ export default function Promotions() {
       </div>
 
       {/* Promotion List */}
-      {promotions.length === 0 ? (
+      {isLoading ? (
+        <LoadingSpinner className="min-h-[400px]" />
+      ) : error ? (
+        (() => {
+          const errorInfo = getPromotionErrorInfo(error)
+          return (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-destructive">{errorInfo.message}</p>
+                {errorInfo.type === 'network' || errorInfo.type === 'server' || errorInfo.type === 'unknown' ? (
+                  <Button className="mt-4" onClick={() => window.location.reload()}>
+                    Retry
+                  </Button>
+                ) : null}
+              </CardContent>
+            </Card>
+          )
+        })()
+      ) : promotions.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center">
             <Tag className="mx-auto h-12 w-12 text-muted-foreground/50" />
