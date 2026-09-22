@@ -200,6 +200,8 @@
         "discountType": "လျှော့စျေးအမျိုးအစား",
         "percentage": "ရာခိုင်နှုန်း",
         "fixed": "သတ်မှတ်ပမာဏ (MMK)",
+        "discountPercentage": "လျှော့စျေးရာခိုင်နှုန်း (%)",
+        "discountPercentagePlaceholder": "ဥပမာ 50",
         "discountValue": "လျှော့စျေးတန်ဖိုး",
         "discountValuePlaceholder": "ဥပမာ 10",
         "minOrderAmount": "အနည်းဆုံးအော်ဒါပမာဏ (MMK)",
