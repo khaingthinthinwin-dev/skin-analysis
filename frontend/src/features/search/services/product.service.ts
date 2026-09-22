@@ -2,7 +2,7 @@ import api from '@/lib/api-client'
 import type { ProductListResponse, ProductDetail } from '@/types/search.types'
 import type { SearchParams } from '@/schemas/search.schema'
 
-function buildProductParams(params: SearchParams): Record<string, string | string[]> {
+function buildProductParams(params: SearchParams & { isFeatured?: boolean }): Record<string, string | string[]> {
   const entries: [string, string | string[]][] = []
   if (params.q) entries.push(['q', params.q])
   if (params.categoryId) entries.push(['categoryId', params.categoryId])
@@ -16,6 +16,7 @@ function buildProductParams(params: SearchParams): Record<string, string | strin
   if (params.order !== 'desc') entries.push(['order', params.order])
   if (params.page > 1) entries.push(['page', String(params.page)])
   if (params.limit !== 20) entries.push(['limit', String(params.limit)])
+  if (params.isFeatured !== undefined) entries.push(['isFeatured', String(params.isFeatured)])
   return Object.fromEntries(entries)
 }
 
@@ -34,7 +35,7 @@ function serializeArrayParams(params: Record<string, string | string[]>): string
 }
 
 export const productService = {
-  async search(params: SearchParams): Promise<ProductListResponse> {
+  async search(params: SearchParams & { isFeatured?: boolean }): Promise<ProductListResponse> {
     const queryParams = buildProductParams(params)
     const response = await api.get<{ data: ProductListResponse }>('/search/products', {
       params: queryParams,

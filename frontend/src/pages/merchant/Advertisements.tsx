@@ -638,9 +638,13 @@ export default function Advertisements() {
         onConfirm={confirmDelete}
         title="Delete Advertisement"
         description={
-          deleteTarget?.title
-            ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
-            : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
+          deleteTarget?.paymentStatus === 'pending'
+            ? deleteTarget.title
+              ? `Are you sure you want to delete "${deleteTarget.title}"? It has not been paid and will be permanently deleted from the system.`
+              : 'Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.'
+            : deleteTarget?.title
+              ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
+              : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
         }
         isLoading={remove.isPending}
       />
@@ -844,6 +848,35 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
   )
 }
 
+const DRAFT_CACHE_PREFIX = 'ad-draft-cache:'
+
+function loadDraftCache(adId: string): ContentForm | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_CACHE_PREFIX + adId)
+    return raw ? (JSON.parse(raw) as ContentForm) : null
+  } catch {
+    return null
+  }
+}
+
+function persistDraftCache(adId: string, values: ContentForm) {
+  try {
+    const rest: Record<string, unknown> = { ...values }
+    delete rest.image
+    localStorage.setItem(DRAFT_CACHE_PREFIX + adId, JSON.stringify(rest))
+  } catch {
+    // Ignore storage failures (private mode, quota, etc.).
+  }
+}
+
+function clearDraftCache(adId: string) {
+  try {
+    localStorage.removeItem(DRAFT_CACHE_PREFIX + adId)
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 interface ContentDialogProps {
   open: boolean
   target: Advertisement | null
@@ -880,8 +913,9 @@ function ContentDialog({
   const startsAt = form.watch('startsAt')
   const imageFile = form.watch('image')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  // Preserves unsaved typed content per ad across cancel/reopen so edits are
-  // not lost before a successful save.
+  // Preserves unsaved typed content per ad across cancel/reopen (and across
+  // logout/login via localStorage) so edits are not lost before a successful
+  // save. The uploaded File cannot be serialized, so only text fields persist.
   const draftCache = useRef<Record<string, ContentForm>>({})
 
   useEffect(() => {
@@ -895,7 +929,7 @@ function ContentDialog({
 
   useEffect(() => {
     if (target) {
-      const cached = draftCache.current[target.id]
+      const cached = draftCache.current[target.id] ?? loadDraftCache(target.id)
       form.reset(
         cached ?? {
           title: target.title,
@@ -912,6 +946,7 @@ function ContentDialog({
   if (!target) return null
   const handleClose = () => {
     draftCache.current[target.id] = form.getValues()
+    persistDraftCache(target.id, form.getValues())
     onClose()
   }
   const canSetSchedule = !target.startsAt
@@ -946,6 +981,7 @@ function ContentDialog({
           onSubmit={form.handleSubmit(async (values) => {
             await onSubmit(values)
             draftCache.current = {}
+            clearDraftCache(target.id)
           })}
         >
           <div className="space-y-1.5">
@@ -1066,6 +1102,7 @@ function ContentDialog({
                   form.handleSubmit(async (values) => {
                     await onSaveAndPay(values)
                     draftCache.current = {}
+                    clearDraftCache(target.id)
                   })()
                 }
               >

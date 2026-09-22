@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 import { Package, Plus, Search, Filter, Trash2, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -287,8 +287,8 @@ export default function ProductManagement() {
       </div>
 
       {showPendingBanner && (
-        <Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-200">
-          <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <Alert variant="warning">
+          <ShieldAlert className="h-4 w-4" />
           <AlertTitle>Pending Approval</AlertTitle>
           <AlertDescription>
             {t(
@@ -304,7 +304,10 @@ export default function ProductManagement() {
           <ShieldAlert className="h-4 w-4 text-destructive" />
           <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            Your merchant account has been rejected. Product management features are restricted.
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-medium hover:text-destructive/80">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}

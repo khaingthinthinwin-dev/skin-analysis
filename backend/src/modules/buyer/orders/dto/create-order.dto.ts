@@ -4,6 +4,7 @@ import {
   IsOptional,
   ValidateNested,
   IsIn,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -24,10 +25,17 @@ export class CreateOrderDto {
   @IsIn(['cod', 'bank_transfer', 'card'])
   paymentMethod: string;
 
-  @ApiPropertyOptional({ description: 'Coupon code' })
+  @ApiPropertyOptional({ description: 'Coupon code (legacy single)' })
   @IsOptional()
   @IsString()
   couponCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'Per-shop voucher codes, e.g. { "merchant-id-1": "CODE1" }',
+  })
+  @IsOptional()
+  @IsObject()
+  voucherCodes?: Record<string, string>;
 
   @ApiPropertyOptional({ description: 'Order notes' })
   @IsOptional()

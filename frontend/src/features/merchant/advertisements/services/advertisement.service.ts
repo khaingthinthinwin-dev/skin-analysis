@@ -54,6 +54,19 @@ export interface AdPackage {
   totalFee: string;
 }
 
+// Works around the double { data } wrapping produced by the merchant
+// controller (which manually returns { data } and the global
+// TransformInterceptor wraps again). Paginated list responses are kept
+// intact so callers can read `.data` and `.meta`.
+function unwrap<T>(value: { data: unknown }): T {
+  const firstValue = value.data;
+  if (typeof firstValue === 'object' && firstValue !== null && 'data' in firstValue) {
+    if ('meta' in firstValue) return firstValue as T;
+    return (firstValue as { data: unknown }).data as T;
+  }
+  return firstValue as T;
+}
+
 export const merchantAdService = {
   getAds: async (params?: {
     status?: string;
@@ -62,68 +75,50 @@ export const merchantAdService = {
     approvalStatus?: string;
     search?: string;
   }): Promise<PaginatedAdsResponse> => {
-    const response = await api.get('/merchant/advertisements', { params });
-    return response.data;
+    const response = await api.get('/ads/my-ads', { params });
+    return unwrap<PaginatedAdsResponse>(response.data);
   },
 
-  getAllAds: async (): Promise<{ data: Advertisement[] }> => {
-    const response = await api.get('/merchant/advertisements/all');
-    return response.data;
+  getAllAds: async (): Promise<PaginatedAdsResponse> => {
+    const response = await api.get('/ads/my-ads', { params: { page: 1, limit: 100 } });
+    return unwrap<PaginatedAdsResponse>(response.data);
   },
 
   getPackages: async (): Promise<AdPackage[]> => {
-    const response = await api.get('/merchant/advertisements/packages');
-    return response.data;
-  },
-
-  getAd: async (id: string): Promise<Advertisement> => {
-    const response = await api.get(`/merchant/advertisements/${id}`);
-    return response.data;
-  },
-
-  createAd: async (data: CreateAdInput): Promise<Advertisement> => {
-    const response = await api.post('/merchant/advertisements', data);
-    return response.data;
-  },
-
-  updateAd: async (
-    id: string,
-    data: Partial<CreateAdInput>,
-  ): Promise<Advertisement> => {
-    const response = await api.patch(`/merchant/advertisements/${id}`, data);
-    return response.data;
+    const response = await api.get('/ads/packages');
+    return unwrap<AdPackage[]>(response.data);
   },
 
   deleteAd: async (id: string): Promise<void> => {
-    await api.delete(`/merchant/advertisements/${id}`);
+    await api.delete(`/ads/${id}`);
   },
 
   selectPackage: async (packageId: string): Promise<Advertisement> => {
-    const response = await api.post(`/merchant/advertisements/select-package/${packageId}`);
-    return response.data;
+    const response = await api.post(`/ads/packages/${packageId}/select`);
+    return unwrap<Advertisement>(response.data);
   },
 
   uploadContent: async (id: string, formData: FormData): Promise<Advertisement> => {
-    const response = await api.post(`/merchant/advertisements/${id}/content`, formData, {
+    const response = await api.patch(`/ads/${id}/content`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return response.data;
+    return unwrap<Advertisement>(response.data);
   },
 
   updateContent: async (id: string, formData: FormData): Promise<Advertisement> => {
-    const response = await api.patch(`/merchant/advertisements/${id}/content`, formData, {
+    const response = await api.patch(`/ads/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return response.data;
+    return unwrap<Advertisement>(response.data);
   },
 
   pay: async (id: string, paymentReference?: string): Promise<Advertisement> => {
-    const response = await api.post(`/merchant/advertisements/${id}/pay`, { paymentReference });
-    return response.data;
+    const response = await api.post(`/ads/${id}/pay`, { paymentReference });
+    return unwrap<Advertisement>(response.data);
   },
 
   toggle: async (id: string, isActive: boolean): Promise<Advertisement> => {
-    const response = await api.patch(`/merchant/advertisements/${id}/toggle`, { isActive });
-    return response.data;
+    const response = await api.patch(`/ads/${id}/toggle`, { isActive });
+    return unwrap<Advertisement>(response.data);
   },
 };

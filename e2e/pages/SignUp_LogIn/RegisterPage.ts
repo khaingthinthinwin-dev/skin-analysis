@@ -38,7 +38,8 @@ export class RegisterPage {
 
   async goto() {
     await this.page.goto('/register');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(1000);
     await this.capture('01_register_page_loaded');
   }
 
@@ -145,6 +146,17 @@ export class RegisterPage {
     for (let i = 0; i < await errors.count(); i++) {
       const text = await errors.nth(i).textContent();
       if (text?.toLowerCase().includes('password')) {
+        return text;
+      }
+    }
+    return null;
+  }
+
+  async getNameError(): Promise<string | null> {
+    const errors = this.page.locator('p.text-destructive');
+    for (let i = 0; i < await errors.count(); i++) {
+      const text = await errors.nth(i).textContent();
+      if (text?.toLowerCase().includes('name')) {
         return text;
       }
     }

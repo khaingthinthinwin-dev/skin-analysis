@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useParams, Link } from 'react-router';
 import {
   CheckCircle2,
@@ -23,8 +24,8 @@ function getImageUrl(url: string | null | undefined): string {
   return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
-function formatCurrency(amount: string): string {
-  return `$${parseFloat(amount).toFixed(2)}`;
+function formatCurrency(amount: string | number): string {
+  return `$${Number.parseFloat(String(amount) || '0').toFixed(2)}`;
 }
 
 function formatDate(iso: string): string {
@@ -82,6 +83,38 @@ export default function OrderConfirmation() {
     isError,
   } = useOrderDetail(orderId || '');
 
+  const computed = useMemo(() => {
+    if (!order) return null;
+
+    // Subtotal = sum of each item's totalPrice (unitPrice * quantity)
+    const itemsSubtotal = order.items.reduce(
+      (sum, item) => sum + Number.parseFloat(item.totalPrice),
+      0,
+    );
+
+    // Per-shop voucher breakdown
+    const voucherEntries: { code: string; discount: number }[] = [];
+    if (order.voucherCodes) {
+      for (const info of Object.values(order.voucherCodes)) {
+        voucherEntries.push({
+          code: info.code,
+          discount: Number.parseFloat(String(info.discountAmount)),
+        });
+      }
+    } else if (order.couponCode && Number.parseFloat(order.discountAmount) > 0) {
+      // Legacy single coupon
+      voucherEntries.push({
+        code: order.couponCode,
+        discount: Number.parseFloat(order.discountAmount),
+      });
+    }
+
+    const totalDiscount = voucherEntries.reduce((s, v) => s + v.discount, 0);
+    const finalTotal = Math.max(itemsSubtotal - totalDiscount, 0);
+
+    return { itemsSubtotal, voucherEntries, totalDiscount, finalTotal };
+  }, [order]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh] px-4">
@@ -90,7 +123,7 @@ export default function OrderConfirmation() {
     );
   }
 
-  if (isError || !order) {
+  if (isError || !order || !computed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 px-4 text-center">
         <h2 className="text-xl font-bold">Order not found</h2>
@@ -104,10 +137,7 @@ export default function OrderConfirmation() {
     );
   }
 
-  const subtotal = (
-    parseFloat(order.totalAmount) + parseFloat(order.discountAmount)
-  ).toFixed(2);
-  const hasDiscount = parseFloat(order.discountAmount) > 0;
+  const { itemsSubtotal, voucherEntries, totalDiscount, finalTotal } = computed;
   const itemCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
@@ -147,7 +177,7 @@ export default function OrderConfirmation() {
 
           <Separator />
 
-          {/* ── RESERVED FORMULATIONS ───────────────── */}
+          {/* ── Items ─────────────────────────────────── */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Reserved Formulations
@@ -187,10 +217,10 @@ export default function OrderConfirmation() {
                   </div>
                   <div className="text-right shrink-0 pl-1">
                     <p className="text-sm sm:text-base font-semibold">
-                      {formatCurrency(item.unitPrice)}
+                      {formatCurrency(item.totalPrice)}
                     </p>
                     <p className="text-xs text-muted-foreground whitespace-nowrap">
-                      Qty: {item.quantity}
+                      {item.quantity} x {formatCurrency(item.unitPrice)}
                     </p>
                   </div>
                 </div>
@@ -204,18 +234,29 @@ export default function OrderConfirmation() {
           <div className="space-y-2 text-xs sm:text-sm">
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium shrink-0">{formatCurrency(subtotal)}</span>
+              <span className="font-medium shrink-0">{formatCurrency(itemsSubtotal)}</span>
             </div>
 
-            {hasDiscount && (
+            {voucherEntries.map((v) => (
+              <div
+                key={v.code}
+                className="flex items-center justify-between gap-2 text-green-600"
+              >
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <Tag className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Voucher {v.code}</span>
+                </span>
+                <span className="font-medium shrink-0">
+                  -{formatCurrency(v.discount)}
+                </span>
+              </div>
+            ))}
+
+            {totalDiscount === 0 && order.discountAmount && Number.parseFloat(order.discountAmount) > 0 && (
               <div className="flex items-center justify-between gap-2 text-green-600">
                 <span className="flex items-center gap-1.5 min-w-0">
                   <Tag className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">
-                    {order.couponCode
-                      ? `Coupon ${order.couponCode} (-10%)`
-                      : 'Discount'}
-                  </span>
+                  <span className="truncate">Discount</span>
                 </span>
                 <span className="font-medium shrink-0">
                   -{formatCurrency(order.discountAmount)}
@@ -244,7 +285,7 @@ export default function OrderConfirmation() {
                   Total Due
                 </p>
                 <p className="text-xl sm:text-2xl font-bold text-primary">
-                  {formatCurrency(order.totalAmount)}
+                  {formatCurrency(finalTotal)}
                 </p>
               </div>
               <div className="text-left sm:text-right shrink-0">

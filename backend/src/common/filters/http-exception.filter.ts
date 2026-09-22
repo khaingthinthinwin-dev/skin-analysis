@@ -57,6 +57,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message = responseObj.message as string[];
         } else if (typeof responseObj.message === 'string') {
           message = responseObj.message;
+        } else if (
+          typeof responseObj.message === 'object' &&
+          responseObj.message !== null
+        ) {
+          const nested = responseObj.message as Record<string, unknown>;
+          if (typeof nested.errorCode === 'string') {
+            errorCode = nested.errorCode;
+          }
+          if (typeof nested.message === 'string') {
+            message = nested.message;
+          } else if (Array.isArray(nested.message)) {
+            message = nested.message as string[];
+          }
         } else if (typeof exceptionResponse === 'string') {
           message = exceptionResponse;
         }

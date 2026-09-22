@@ -67,10 +67,10 @@ export default function CommissionAndRevenue() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-[1400px]" style={{ padding: "28px 32px" }}>
+      <div className="max-w-[1400px] px-4 py-6 sm:px-6 md:px-8">
         {/* [A] Page Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 className="text-foreground" style={{ fontSize: 24, fontWeight: 700 }}>
+        <div className="mb-6">
+          <h1 className="text-foreground text-xl font-bold sm:text-2xl">
             Commission & Revenue
           </h1>
         </div>
@@ -84,13 +84,13 @@ export default function CommissionAndRevenue() {
           >
             <TabsTrigger
               value="commission"
-              className="text-muted-foreground px-6 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary"
+              className="text-muted-foreground px-4 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary sm:px-6"
             >
               Commission
             </TabsTrigger>
             <TabsTrigger
               value="revenue"
-              className="text-muted-foreground px-6 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary"
+              className="text-muted-foreground px-4 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary sm:px-6"
             >
               Revenue
             </TabsTrigger>
@@ -111,15 +111,15 @@ export default function CommissionAndRevenue() {
             />
 
             {/* [F] Commission report table */}
-            <div className="bg-card border border-border rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-card border border-border rounded-xl p-3 sm:p-5">
+              <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-card-foreground text-[15px] font-bold">
                   Commission Report ({groupBy === "day" ? "daily" : groupBy === "order" ? "by order" : "by merchant"})
                 </span>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="bg-muted text-muted-foreground border-border text-xs py-1 px-3"
+                  variant="default"
+                  className="text-xs py-1 px-3"
                   onClick={() => {
                     setExportType("commission");
                     setExportOpen(true);
