@@ -1,9 +1,10 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Eye, DollarSign } from 'lucide-react';
 import { Payout } from '../services/commission.service';
+import { PayoutStatusBadge } from './badges';
+import { formatCurrency } from '../utils/format';
 
 interface PayoutTableProps {
   payouts?: Payout[];
@@ -41,12 +42,12 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
   };
 
   return (
-    <div className="rounded-md border bg-card">
+    <div className="overflow-x-auto rounded-md border bg-card">
       <div className="max-h-[400px] overflow-y-auto">
-      <Table>
-        <TableHeader>
+      <Table className="w-full">
+        <TableHeader className="sticky top-0 z-10 bg-background">
           <TableRow>
-            <TableHead className="w-12">
+            <TableHead className="w-12 bg-background">
               <input
                 type="checkbox"
                 aria-label="Select all payouts on this page"
@@ -54,15 +55,15 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                 onChange={togglePage}
               />
             </TableHead>
-            <TableHead>Merchant</TableHead>
-            <TableHead>Period</TableHead>
-            <TableHead>Commission Rate</TableHead>
-            <TableHead>Total Amount</TableHead>
-            <TableHead>Commission</TableHead>
-            <TableHead>Net Payout</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Payment Date</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            <TableHead className="bg-background">Merchant</TableHead>
+            <TableHead className="bg-background">Period</TableHead>
+            <TableHead className="bg-background">Commission Rate</TableHead>
+            <TableHead className="bg-background">Total Amount</TableHead>
+            <TableHead className="bg-background">Commission</TableHead>
+            <TableHead className="bg-background">Net Payout</TableHead>
+            <TableHead className="bg-background">Status</TableHead>
+            <TableHead className="bg-background">Payment Date</TableHead>
+            <TableHead className="text-right bg-background">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -86,21 +87,11 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                 <TableCell className="font-medium">{p.merchantName}</TableCell>
                 <TableCell>{formatPeriod(p.period)}</TableCell>
                 <TableCell>{p.commissionRate}%</TableCell>
-                <TableCell>${p.totalAmount}</TableCell>
-                <TableCell className="text-destructive">-${p.commissionAmount}</TableCell>
-                <TableCell className="font-semibold">${p.netAmount}</TableCell>
+                <TableCell>{formatCurrency(p.totalAmount)} Ks</TableCell>
+                <TableCell className="text-destructive">-{formatCurrency(p.commissionAmount)} Ks</TableCell>
+                <TableCell className="font-semibold">{formatCurrency(p.netAmount)} Ks</TableCell>
                 <TableCell>
-                  <Badge
-                    variant={
-                      p.status === 'completed'
-                        ? 'default'
-                        : p.status === 'failed'
-                        ? 'destructive'
-                        : 'outline'
-                    }
-                  >
-                    {p.status}
-                  </Badge>
+                  <PayoutStatusBadge status={p.status} />
                 </TableCell>
                 <TableCell>{p.processedAt ? formatDate(p.processedAt) : '-'}</TableCell>
                 <TableCell className="text-right">
