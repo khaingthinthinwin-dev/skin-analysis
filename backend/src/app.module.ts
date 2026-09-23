@@ -22,6 +22,7 @@ import { MatchingModule } from './modules/buyer/matching/matching.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OrderInsightsModule } from './modules/shared/order-insights/order-insights.module';
+import { OrderFulfillmentModule } from './modules/merchant/order-fulfillment/order-fulfillment.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { OrderInsightsModule } from './modules/shared/order-insights/order-insig
     AdsModule,
     MatchingModule,
     OrderInsightsModule,
+    OrderFulfillmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
