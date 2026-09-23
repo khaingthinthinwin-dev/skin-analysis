@@ -52,8 +52,10 @@ function CategoryItem({ node, selectedCategoryId, onSelect, depth }: CategoryIte
   return (
     <div>
       <div
-        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent cursor-pointer ${
-          isSelected ? 'bg-accent font-medium' : ''
+        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${
+          isSelected
+            ? 'bg-purple-100 dark:bg-purple-950/60 font-medium text-purple-700 dark:text-purple-300'
+            : 'hover:bg-purple-50 dark:hover:bg-purple-950/30 text-gray-700 dark:text-zinc-300 hover:text-purple-700 dark:hover:text-purple-300'
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
@@ -64,7 +66,7 @@ function CategoryItem({ node, selectedCategoryId, onSelect, depth }: CategoryIte
               e.stopPropagation()
               setIsExpanded(!isExpanded)
             }}
-            className="shrink-0 text-muted-foreground hover:text-foreground"
+            className="shrink-0 text-muted-foreground hover:text-purple-600 dark:hover:text-purple-400 cursor-pointer"
           >
             {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </button>

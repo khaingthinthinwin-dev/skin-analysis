@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { matchingService } from '../services/matching.service'
 import type { MatchQueryParams } from '@/schemas/matching.schema'
 
-export function usePersonalizedRecommendations(params: MatchQueryParams) {
+export function usePersonalizedRecommendations(params: MatchQueryParams, refreshKey = 0) {
   // TODO: Implement TanStack Query hook
   return useQuery({
-    queryKey: ['recommendations', 'personalized', params],
+    queryKey: ['recommendations', 'personalized', params, refreshKey],
     queryFn: () => matchingService.getPersonalized(params),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: (prev) => prev,
+    staleTime: 30_000,
   })
 }
 

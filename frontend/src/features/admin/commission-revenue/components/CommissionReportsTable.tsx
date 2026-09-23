@@ -1,5 +1,6 @@
 import React from 'react';
 import { CommissionGroupBy, CommissionReport } from '../services/commission.service';
+import { formatCurrency } from '../utils/format';
 
 interface CommissionReportsTableProps {
   reports?: CommissionReport[];
@@ -15,15 +16,15 @@ export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
   reports = [],
   groupBy = 'merchant',
 }) => {
-  const thClass = "text-left py-2.5 px-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border bg-surface-dim";
+  const thClass = "text-left py-2.5 px-2 sm:px-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border bg-primary/10 whitespace-nowrap";
 
-  const tdClass = "py-3 px-3.5 text-[13px] text-muted-foreground border-b border-border";
+  const tdClass = "py-3 px-2 sm:px-3.5 text-[13px] text-muted-foreground border-b border-border whitespace-nowrap";
 
   return (
-    <div className="rounded-md border bg-card">
+    <div className="overflow-x-auto rounded-md border bg-card">
       <div className="max-h-[400px] overflow-y-auto">
         <table className="w-full border-collapse">
-        <thead>
+        <thead className="sticky top-0 z-10">
           <tr>
             {groupBy === 'day' && <th className={thClass}>Date</th>}
             {groupBy === 'order' && <th className={thClass}>Order Number</th>}
@@ -51,8 +52,8 @@ export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
                 <td className={`${tdClass} text-foreground font-medium`}>{r.merchantName}</td>
                 <td className={`${tdClass} text-right tabular-nums`}>{r.commissionRate}%</td>
                 {groupBy !== 'order' && <td className={`${tdClass} text-right tabular-nums`}>{r.orders}</td>}
-                <td className={`${tdClass} text-right tabular-nums`}>${r.revenue}</td>
-                <td className={`${tdClass} text-right text-primary font-semibold tabular-nums`}>${r.commission}</td>
+                <td className={`${tdClass} text-right tabular-nums`}>{formatCurrency(r.revenue)} Ks</td>
+                <td className={`${tdClass} text-right text-primary font-semibold tabular-nums`}>{formatCurrency(r.commission)} Ks</td>
               </tr>
             ))
           )}

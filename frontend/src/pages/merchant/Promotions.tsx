@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 import { Tag, Plus, Search, Filter, Trash2, Pencil, ShieldAlert, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -84,11 +84,11 @@ export default function Promotions() {
   const getDiscountBadge = useCallback(
     (promo: Promotion) => {
       if (promo.discountTypeCode === 'percentage') {
-        return <Badge className="bg-blue-100 text-blue-800">{promo.discountValue}% OFF</Badge>
+        return <Badge className="bg-blue-100 text-blue-800">{t('merchant.promotions.form.percentage')}</Badge>
       }
-      return <Badge className="bg-green-100 text-green-800">{promo.discountValue} MMK OFF</Badge>
+      return <Badge className="bg-green-100 text-green-800">{t('merchant.promotions.form.fixed')}</Badge>
     },
-    [],
+    [t],
   )
 
   const handleDelete = useCallback(
@@ -142,26 +142,6 @@ export default function Promotions() {
     [now],
   )
 
-  if (isLoading) {
-    return <LoadingSpinner className="min-h-[400px]" />
-  }
-
-  if (error) {
-    const errorInfo = getPromotionErrorInfo(error)
-    return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <p className="text-destructive">{errorInfo.message}</p>
-          {errorInfo.type === 'network' || errorInfo.type === 'server' || errorInfo.type === 'unknown' ? (
-            <Button className="mt-4" onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <div className="space-y-6 p-2 lg:p-4">
       {/* Pending/Rejected Banners */}
@@ -180,7 +160,10 @@ export default function Promotions() {
           <ShieldAlert className="h-4 w-4 text-destructive" />
           <AlertTitle>{t('merchant.promotions.rejectedBannerTitle', 'Account Rejected')}</AlertTitle>
           <AlertDescription>
-            {t('merchant.promotions.rejectedBanner')}
+            Your merchant account has been rejected. Promotion management features are restricted. You can resubmit your license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-medium hover:text-destructive/80">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}
@@ -253,7 +236,25 @@ export default function Promotions() {
       </div>
 
       {/* Promotion List */}
-      {promotions.length === 0 ? (
+      {isLoading ? (
+        <LoadingSpinner className="min-h-[400px]" />
+      ) : error ? (
+        (() => {
+          const errorInfo = getPromotionErrorInfo(error)
+          return (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-destructive">{errorInfo.message}</p>
+                {errorInfo.type === 'network' || errorInfo.type === 'server' || errorInfo.type === 'unknown' ? (
+                  <Button className="mt-4" onClick={() => window.location.reload()}>
+                    Retry
+                  </Button>
+                ) : null}
+              </CardContent>
+            </Card>
+          )
+        })()
+      ) : promotions.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center">
             <Tag className="mx-auto h-12 w-12 text-muted-foreground/50" />

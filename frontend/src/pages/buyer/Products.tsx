@@ -1,13 +1,16 @@
-import { useSearchParams, useNavigate } from 'react-router'
+import { useLocation, useSearchParams, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Search as SearchIcon, Loader2 } from 'lucide-react'
+import { Search as SearchIcon, Loader2, SlidersHorizontal, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
 import { Pagination } from '@/components/Pagination'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { categoryService } from '@/features/search/services/category.service'
 import { SearchBar } from '@/features/search/components/SearchBar'
 import { FilterPanel } from '@/features/search/components/FilterPanel'
 import { FilterChips } from '@/features/search/components/FilterChips'
+import { MobileFilterSheet } from '@/features/search/components/MobileFilterSheet'
 import { ViewToggle } from '@/features/search/components/ViewToggle'
 import { SortSelect } from '@/features/search/components/SortSelect'
 import { SponsoredAdSlider } from '@/features/search/components/SponsoredAdSlider'
@@ -25,7 +28,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import type { ViewMode } from '@/types/search.types'
 import type { ProductSummary } from '@/types/search.types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -39,9 +41,11 @@ function readInitialViewMode(): ViewMode {
 }
 
 export default function Products() {
+  const location = useLocation()
   const [, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [view, setView] = useState<ViewMode>(readInitialViewMode)
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
   const { isAuthenticated } = useAuth()
   const { items: wishlistItems, addToWishlist, removeFromWishlist } = useWishlist()
   const { items: cartItems, addToCart } = useCart()
@@ -126,7 +130,9 @@ export default function Products() {
     localStorage.setItem(VIEW_MODE_KEY, view)
   }, [view])
 
-  const { data, isLoading, isError, params, updateParams } = useProductSearch()
+  const { data, isLoading, isError, params, updateParams } = useProductSearch({
+    featuredOnly: location.pathname === '/products',
+  })
 
   const { data: categoryData } = useQuery({
     queryKey: ['categories'] as const,
@@ -137,6 +143,15 @@ export default function Products() {
   const categories = categoryData?.data ?? []
   const products = data?.data ?? []
   const meta = data?.meta
+
+  const activeFilterCount =
+    (params.categoryId !== '' ? 1 : 0) +
+    params.skinTypes.length +
+    params.ingredients.length +
+    params.tags.length +
+    (params.minPrice !== undefined ? 1 : 0) +
+    (params.maxPrice !== undefined ? 1 : 0) +
+    (params.rating !== undefined ? 1 : 0)
 
   const serializeToUrl = (p: SearchParams) => {
     const entries: [string, string][] = []
@@ -242,8 +257,10 @@ export default function Products() {
     return null
   }
 
+  const categoryName = resolveCategoryName(categories, params.categoryId)
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
       {/* A. Page header */}
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
@@ -264,18 +281,49 @@ export default function Products() {
       {/* Advertisement panel */}
       <SponsoredAdSlider />
 
-      <FilterChips
+      <div className="md:hidden">
+        <div className="mb-4 flex items-center justify-end gap-2">
+          <Button type="button" variant="outline" onClick={() => setIsMobileFilterOpen(true)}>
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <Badge className="ml-2 h-5 min-w-5 rounded-full px-1 text-xs">
+                {activeFilterCount}
+              </Badge>
+            )}
+          </Button>
+          <SortSelect
+            sort={params.sort}
+            order={params.order}
+            onChange={(sort, order) => handleFilterUpdate({ sort, order })}
+          />
+          <ViewToggle view={view} onChange={setView} />
+        </div>
+        <FilterChips
+          params={params}
+          onRemove={handleRemoveChip}
+          onClearAll={hasActiveFilters ? handleClearAll : undefined}
+          categoryName={categoryName}
+        />
+      </div>
+
+      <MobileFilterSheet
+        open={isMobileFilterOpen}
+        onOpenChange={setIsMobileFilterOpen}
         params={params}
-        onRemove={handleRemoveChip}
-        onClearAll={hasActiveFilters ? handleClearAll : undefined}
-        categoryName={resolveCategoryName(categories, params.categoryId)}
+        onUpdate={handleFilterUpdate}
+        categories={categories}
+        onClearAll={handleClearAll}
+        onApply={() => setIsMobileFilterOpen(false)}
+        activeFilterCount={activeFilterCount}
+        totalProductCount={meta?.total}
       />
 
       {/* Main content area: Fixed left sidebar + Product grid on right */}
-      <div className="flex gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[250px_1fr] md:gap-8">
         {/* Left Sidebar - Filters */}
-        <aside className="w-72 flex-shrink-0">
-          <div className="lg:sticky lg:top-0 max-h-[calc(100vh-6rem)] overflow-y-auto border rounded-lg bg-card p-4">
+        <aside className="hidden md:block">
+          <div className="sticky top-0 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-lg border bg-card p-4">
             <FilterPanel
               params={params}
               onUpdate={handleFilterUpdate}
@@ -286,9 +334,9 @@ export default function Products() {
         </aside>
 
         {/* Right Content - Product Grid */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           {/* Toolbar above grid */}
-          <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
+          <div className="mb-4 hidden flex-wrap items-center justify-end gap-3 md:flex">
             <SortSelect
               sort={params.sort}
               order={params.order}
@@ -314,14 +362,24 @@ export default function Products() {
               <p className="text-sm text-muted-foreground">
                 Try adjusting your search or filter criteria.
               </p>
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  className="mt-4 gap-2"
+                  onClick={handleClearAll}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Reset Filters
+                </Button>
+              )}
             </div>
           ) : (
             <>
               <div
                 className={
                   view === 'grid'
-                    ? 'grid gap-4 grid-cols-3 min-w-0'
-                    : 'space-y-4 min-w-0'
+                    ? 'grid min-w-0 grid-cols-2 gap-4 lg:grid-cols-3'
+                    : 'min-w-0 space-y-4'
                 }
               >
                 {Array.isArray(products) && products.map((product) => (
@@ -342,6 +400,7 @@ export default function Products() {
               {meta && (
                 <Pagination
                   meta={meta}
+                  currentLimit={params.limit}
                   onLimitChange={handleLimitChange}
                 />
               )}
