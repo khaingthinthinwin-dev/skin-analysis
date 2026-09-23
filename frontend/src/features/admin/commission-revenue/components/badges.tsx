@@ -30,6 +30,7 @@ const PAYOUT_STATUS_TONES: Record<Payout['status'], StatusTone> = {
   pending: 'pending',
   processing: 'processing',
   completed: 'success',
+  failed: 'danger',
 };
 
 // Order / ad-fee payment counters -> tone (§9.6: completed = green,
@@ -72,6 +73,7 @@ const PAYOUT_STATUS_LABELS: Record<Payout['status'], string> = {
   pending: 'Pending',
   processing: 'Processing',
   completed: 'Completed',
+  failed: 'Failed',
 };
 
 export const PayoutStatusBadge: React.FC<{
