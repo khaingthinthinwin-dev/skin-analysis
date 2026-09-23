@@ -14,7 +14,8 @@ const contentFields = {
 
 // Start date must be at least 3 days from today (UTC day granularity): today,
 // tomorrow, and the day after tomorrow cannot be selected, so the first
-// selectable date is two days after tomorrow.
+// selectable date is two days after tomorrow. Applies to both new uploads and
+// resubmission of rejected ads.
 function isSelectableStartDate(value: string): boolean {
   const date = new Date(`${value}T00:00:00.000Z`)
   if (Number.isNaN(date.getTime()) || value.length !== 10) return false
@@ -23,11 +24,6 @@ function isSelectableStartDate(value: string): boolean {
   min.setUTCDate(min.getUTCDate() + 3)
   return date >= min
 }
-
-// Start date must be at least 3 days from today (UTC day granularity): today,
-// tomorrow, and the day after tomorrow cannot be selected, so the first
-// selectable date is two days after tomorrow. Applies to both new uploads and
-// resubmission of rejected ads.
 
 export const uploadContentSchema = z.object({
   ...contentFields,

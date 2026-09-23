@@ -198,19 +198,12 @@ export class AdvertisementsService {
       });
     } else if (query.status === 'inactive') {
       // "Inactive" shows every ad that is not currently on air and not gone:
-      // pending submissions (draft / content uploaded / pending approval),
-      // merchant-toggled-off approved ads, and approved+paid ads whose
-      // schedule has not started yet — a SCHEDULED ad is not on air until
-      // starts_at, so it reads as Inactive. Expired ads stay excluded.
+      // pending submissions (draft / content uploaded / pending approval) and
+      // merchant-toggled-off approved ads. Soft-deleted ads (isActive=false
+      // while not approved) and expired ads stay excluded.
       where.OR = [
         { approvalStatus: 'pending' },
         { isActive: false, approvalStatus: 'approved' },
-        {
-          isActive: true,
-          approvalStatus: 'approved',
-          paymentStatus: 'completed',
-          startsAt: { gt: now },
-        },
       ];
       where.AND = [{ OR: [{ expiresAt: { gte: now } }, { expiresAt: null }] }];
       where.NOT = { isActive: false, approvalStatus: { not: 'approved' } };
@@ -290,17 +283,14 @@ export class AdvertisementsService {
 
   async deleteAd(id: string, userId: string) {
     const ad = await this.getOwnedAd(id, userId);
-    const isExpired = ad.expiresAt !== null && ad.expiresAt < new Date();
-    if (!isExpired && ad.approvalStatus === 'approved' && ad.isActive) {
+    if (ad.approvalStatus === 'approved' && ad.isActive) {
       throw new BadRequestException(
         'Active approved advertisements cannot be deleted',
       );
     }
-    if (ad.paymentStatus === 'pending' || isExpired) {
-      // Unpaid drafts hold no campaign history, and expired campaigns are
-      // permanently removed per the merchant's request. Related ad_payments
-      // cascade on delete. Paid, non-expired ads are deactivated and kept
-      // for history.
+    if (ad.paymentStatus === 'pending') {
+      // Draft ads (and unpaid rejected drafts) that were never paid hold no
+      // campaign or payment history, so they are removed permanently.
       await this.prisma.advertisement.delete({ where: { id } });
     } else {
       await this.prisma.advertisement.update({
@@ -309,10 +299,7 @@ export class AdvertisementsService {
       });
     }
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
-    await this.audit(userId, 'AD_DELETED', id, {
-      shopId: ad.shopId,
-      permanent: ad.paymentStatus === 'pending' || isExpired,
-    });
+    await this.audit(userId, 'AD_DELETED', id, { shopId: ad.shopId });
     return { message: 'Advertisement deleted' };
   }
 
@@ -383,13 +370,11 @@ export class AdvertisementsService {
     minDaysFromToday = 3,
   ) {
     const startsAt = new Date(startsAtValue);
-    // Earliest selectable start date is today + minDaysFromToday (UTC day
-    // granularity). Content upload keeps the 3-day lead time; resubmission
-    // (minDaysFromToday = 0) lets the merchant start the ad today.
+    // Earliest selectable start date is today + 3 days (UTC day granularity):
+    // today, tomorrow, and the day after tomorrow are not allowed. Applies to
+    // both new uploads and resubmission of rejected ads.
     const minDate = new Date();
     minDate.setUTCHours(0, 0, 0, 0);
-    // Earliest selectable start date is today + 3 days (UTC day granularity):
-    // today, tomorrow, and the day after tomorrow are not allowed.
     minDate.setUTCDate(minDate.getUTCDate() + minDaysFromToday);
     if (Number.isNaN(startsAt.getTime()) || startsAt < minDate) {
       throw new BadRequestException(
