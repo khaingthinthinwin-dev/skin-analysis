@@ -9,6 +9,7 @@ import { CommissionTable } from "@/features/admin/commission-revenue/components/
 import { CommissionReportsTable } from "@/features/admin/commission-revenue/components/CommissionReportsTable";
 import { ReportFilterPanel } from "@/features/admin/commission-revenue/components/ReportFilterPanel";
 import { PaginationControls } from "@/features/admin/commission-revenue/components/PaginationControls";
+
 import { ExportDialog } from "@/features/admin/commission-revenue/components/ExportDialog";
 import { RevenueTab } from "@/features/admin/commission-revenue/components/RevenueTab";
 import {
@@ -31,7 +32,7 @@ export default function CommissionAndRevenue() {
   // the Revenue tab and are skipped here to avoid duplicate requests.
   const { settingsQuery, reportsQuery, updateSettingsMutation } = useCommission(
     undefined,
-    { ...reportFilters, page: reportPage, limit: 10 },
+    { ...reportFilters, page: reportPage, limit: 5 },
     { payouts: false },
   );
 

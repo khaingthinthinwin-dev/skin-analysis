@@ -25,12 +25,11 @@ const TONE_CLASSES: Record<StatusTone, string> = {
 };
 
 // Payout status -> tone (§9.6: completed = green, pending = amber,
-// processing = purple, failed = red). The annotation keeps this exhaustive.
+// processing = purple). The annotation keeps this exhaustive.
 const PAYOUT_STATUS_TONES: Record<Payout['status'], StatusTone> = {
   pending: 'pending',
   processing: 'processing',
   completed: 'success',
-  failed: 'danger',
 };
 
 // Order / ad-fee payment counters -> tone (§9.6: completed = green,
