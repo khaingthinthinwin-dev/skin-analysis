@@ -38,7 +38,7 @@ function ProductImage({ src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement
 }
 
 export default function MatchingRecommendations() {
-  const { filters, updateFilters, resetFilters, handleLimitChange, pageSizeVersion } = useMatchFilters()
+  const { filters, updateFilters, resetFilters, pageSizeVersion } = useMatchFilters()
   const [view, setView] = useState<ViewMode>('grid')
 
   const { data: recData, isLoading, error: recError, refetch } = usePersonalizedRecommendations(filters, pageSizeVersion)
@@ -411,8 +411,7 @@ export default function MatchingRecommendations() {
               {meta && (
                 <Pagination
                   meta={meta}
-                  currentLimit={filters.limit}
-                  onLimitChange={handleLimitChange}
+                  onPageChange={(page) => updateFilters({ page })}
                 />
               )}
             </>
