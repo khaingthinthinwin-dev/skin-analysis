@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdFeeKpis } from '../services/commission.service';
-import { formatCurrency } from '../utils/format';
 
 interface AdFeeSummaryCardProps {
   kpis?: AdFeeKpis;
@@ -23,13 +22,13 @@ export const AdFeeSummaryCard: React.FC<AdFeeSummaryCardProps> = ({ kpis, loadin
             <div className="h-10 w-full animate-pulse rounded bg-muted" />
           </div>
         ) : (
-          <div className="flex flex-col gap-2 sm:grid sm:grid-cols-3 sm:gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="flex flex-col items-center gap-1">
               <span className="text-2xl font-bold">{kpis?.activeAds ?? 0}</span>
               <span className="text-xs text-muted-foreground">Active Ads</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <span className="text-2xl font-bold">{formatCurrency(kpis?.totalAdFees)} Ks</span>
+              <span className="text-2xl font-bold">${kpis?.totalAdFees ?? '0.00'}</span>
               <span className="text-xs text-muted-foreground">Total Collected</span>
             </div>
             <div className="flex flex-col items-center gap-1">

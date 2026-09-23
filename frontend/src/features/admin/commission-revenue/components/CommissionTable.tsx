@@ -50,7 +50,7 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-base font-semibold">
             Commission Rate

@@ -29,7 +29,7 @@ export function BulkActionsBar({
     <>
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2.5',
+          'flex flex-wrap items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2.5',
           className,
         )}
       >
@@ -37,7 +37,7 @@ export function BulkActionsBar({
         <span className="text-sm font-medium">
           {selectedIds.length} product{selectedIds.length > 1 ? 's' : ''} selected
         </span>
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
           <Button
             variant="outline"
             size="sm"

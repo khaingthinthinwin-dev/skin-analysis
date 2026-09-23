@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef, type FormEvent } from 'react'
+import { useEffect, useState, useMemo, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { AlertTriangle, ArrowLeft } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePromotion, useUpdatePromotion } from '@/hooks/usePromotions'
 import type { Promotion } from '@/types/promotion.types'
@@ -81,11 +81,6 @@ function PromotionForm({
   const [expiresAt, setExpiresAt] = useState(initial.expiresAt)
   const [isActive, setIsActive] = useState(initial.isActive)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const descriptionRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    descriptionRef.current?.focus()
-  }, [])
 
   const isUsed = (promotion.usedCount ?? 0) > 0
 
@@ -138,8 +133,8 @@ function PromotionForm({
           description: description.trim() || undefined,
           discountTypeCode,
           discountValue: Number(discountValue),
-          minOrderAmount: minOrderAmount ? Number(minOrderAmount) : null,
-          maxUses: maxUses ? Number(maxUses) : null,
+          minOrderAmount: minOrderAmount ? Number(minOrderAmount) : undefined,
+          maxUses: maxUses ? Number(maxUses) : undefined,
           startsAt: new Date(startsAt).toISOString(),
           expiresAt: new Date(expiresAt).toISOString(),
           isActive,
@@ -160,18 +155,8 @@ function PromotionForm({
   }
 
   return (
-    <div className="p-2 lg:p-4">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 mb-2"
-        onClick={onNavigateBack}
-      >
-        <ArrowLeft className="h-4 w-4" />
-      </Button>
-      <div className="max-w-2xl mx-auto">
-        <Card>
+    <div className="p-2 lg:p-4 max-w-2xl mx-auto">
+      <Card>
         <CardHeader>
           <CardTitle>{t('merchant.promotions.update')}</CardTitle>
         </CardHeader>
@@ -198,7 +183,6 @@ function PromotionForm({
               <Label htmlFor="description">{t('merchant.promotions.form.description')}</Label>
               <Textarea
                 id="description"
-                ref={descriptionRef}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('merchant.promotions.form.descriptionPlaceholder')}
@@ -222,23 +206,15 @@ function PromotionForm({
               </Select>
             </div>
 
-            {/* Discount Value — label changes based on discount type */}
+            {/* Discount Value */}
             <div className="space-y-2">
-              <Label htmlFor="discountValue">
-                {discountTypeCode === 'percentage'
-                  ? t('merchant.promotions.form.discountPercentage')
-                  : t('merchant.promotions.form.discountValue')}
-              </Label>
+              <Label htmlFor="discountValue">{t('merchant.promotions.form.discountValue')}</Label>
               <Input
                 id="discountValue"
                 type="number"
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
-                placeholder={
-                  discountTypeCode === 'percentage'
-                    ? t('merchant.promotions.form.discountPercentagePlaceholder')
-                    : t('merchant.promotions.form.discountValuePlaceholder')
-                }
+                placeholder={t('merchant.promotions.form.discountValuePlaceholder')}
                 min="0.01"
                 step="0.01"
                 disabled={isUsed}
@@ -348,7 +324,6 @@ function PromotionForm({
           </form>
         </CardContent>
       </Card>
-      </div>
     </div>
   )
 }

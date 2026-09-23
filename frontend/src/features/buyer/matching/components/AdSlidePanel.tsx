@@ -74,8 +74,8 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
       aria-roledescription="carousel"
       aria-label="Sponsored advertisements"
     >
-      <Card className="p-3 sm:p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <Card className="p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50">
+        <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
@@ -88,7 +88,7 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
           </Button>
 
           <div
-            className="flex-1 min-w-0 flex items-center gap-3 sm:gap-4"
+            className="flex-1 flex items-center gap-4"
             onFocusCapture={() => setIsFocused(true)}
             onBlurCapture={() => setIsFocused(false)}
           >
@@ -96,11 +96,11 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
               <img
                 src={ad.imageUrl}
                 alt={ad.title}
-                className="w-14 h-14 sm:w-20 sm:h-20 object-cover rounded shrink-0"
+                className="w-24 h-24 object-cover rounded shrink-0"
               />
             )}
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold flex-1 truncate">{ad.title}</h4>
+              <h4 className="font-semibold truncate">{ad.title}</h4>
               {ad.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2">{ad.description}</p>
               )}
