@@ -21,6 +21,7 @@ import { AdsModule } from './modules/shared/ads/ads.module';
 import { MatchingModule } from './modules/buyer/matching/matching.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { OrderInsightsModule } from './modules/shared/order-insights/order-insights.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { AppService } from './app.service';
     PromotionsModule,
     AdsModule,
     MatchingModule,
+    OrderInsightsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

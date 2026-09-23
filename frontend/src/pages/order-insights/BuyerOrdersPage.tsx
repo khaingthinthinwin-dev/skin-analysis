@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Package, Wallet, Truck, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -263,9 +264,9 @@ function BuyerOrdersPageContent() {
                 {formatKpiValue(kpis.orders)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F4E6;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-300">
+              <Package className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
 
           <div
@@ -279,9 +280,9 @@ function BuyerOrdersPageContent() {
                 {formatKpiValue(kpis.value)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F4B0;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
+              <Wallet className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
 
           <div
@@ -295,9 +296,9 @@ function BuyerOrdersPageContent() {
                 {formatKpiValue(kpis.progress)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F69A;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-300">
+              <Truck className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
 
           <div
@@ -311,9 +312,9 @@ function BuyerOrdersPageContent() {
                 {formatKpiValue(kpis.completed)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F3C6;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300">
+              <Trophy className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
         </div>
       )}
