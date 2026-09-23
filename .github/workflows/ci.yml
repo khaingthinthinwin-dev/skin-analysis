@@ -46,14 +46,17 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       # ── Install Dependencies (Backend) ──
+      # npm ci (not npm install) so the lockfile is respected exactly:
+      # npm install re-resolves caret ranges and can hit a registry 404 for
+      # a transitive dependency version that was published moments ago.
       - name: Install backend dependencies
         working-directory: backend
-        run: npm install
+        run: npm ci
 
       # ── Install Dependencies (Frontend) ──
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci
 
       # ── Run Verification Script ──
       - name: Run verify-all.sh
