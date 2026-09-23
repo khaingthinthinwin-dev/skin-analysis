@@ -23,7 +23,7 @@ export class RegisterPage {
     this.nameInput = page.getByPlaceholder('John Doe');
     this.emailInput = page.getByRole('textbox', { name: /email/i });
     this.passwordInput = page.getByPlaceholder('Create a password');
-    this.confirmPasswordInput = page.getByPlaceholder('Confirm your password');
+    this.confirmPasswordInput = page.getByPlaceholder('Re-enter password');
     this.buyerRadio = page.getByRole('radio', { name: /buyer/i });
     this.merchantRadio = page.getByRole('radio', { name: /merchant/i });
     this.licenseFileInput = page.locator('input[type="file"]');

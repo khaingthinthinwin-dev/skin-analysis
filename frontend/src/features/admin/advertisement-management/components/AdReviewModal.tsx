@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { formatPrice } from '../utils/format'
+import { formatPrice } from '@/lib/format'
 import { getImageUrl } from '@/lib/image-url'
 import type { AdminAdDetail } from '@/types/admin-ad-management'
 import { PaymentBadge, StatusBadge, TierBadge } from './badges'

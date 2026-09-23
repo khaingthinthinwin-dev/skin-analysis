@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { formatPrice } from '../utils/format'
+import { formatPrice } from '@/lib/format'
 import type { RevenueAnalytics } from '@/types/admin-ad-management'
 
 interface SummaryMetricsProps {

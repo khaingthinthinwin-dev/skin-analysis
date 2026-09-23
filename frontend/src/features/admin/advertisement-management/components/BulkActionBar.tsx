@@ -18,8 +18,8 @@ export function BulkActionBar({
   const overLimit = selectedCount > 50
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-card px-4 py-3">
+      <div className="flex items-center gap-3">
         <span className="text-sm font-medium">{selectedCount} ads selected</span>
         {overLimit && (
           <span role="alert" className="text-sm text-destructive">
@@ -30,7 +30,7 @@ export function BulkActionBar({
           Clear
         </Button>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         <Button
           size="sm"
           disabled={overLimit}

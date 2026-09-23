@@ -60,15 +60,11 @@ export class AdminAdExportService {
 
     const where: Prisma.AdvertisementWhereInput = { createdAt: { gte: start } };
     where.createdAt = { gte: start, lte: end };
-    const feeSetting: Prisma.AdFeeSettingWhereInput = {};
     if (dto.placement?.length) {
-      feeSetting.placement = { in: dto.placement };
+      where.feeSetting = { placement: { in: dto.placement } };
     }
     if (dto.tier?.length) {
-      feeSetting.tier = { in: dto.tier };
-    }
-    if (Object.keys(feeSetting).length > 0) {
-      where.feeSetting = feeSetting;
+      where.feeSetting = { tier: { in: dto.tier } };
     }
     if (dto.status?.length) {
       where.approvalStatus = { in: dto.status };
@@ -185,15 +181,11 @@ export class AdminAdExportService {
     const where: Prisma.AdFeeHistoryWhereInput = {
       createdAt: { gte: start, lte: end },
     };
-    const setting: Prisma.AdFeeSettingWhereInput = {};
     if (dto.placement?.length) {
-      setting.placement = { in: dto.placement };
+      where.setting = { placement: { in: dto.placement } };
     }
     if (dto.tier?.length) {
-      setting.tier = { in: dto.tier };
-    }
-    if (Object.keys(setting).length > 0) {
-      where.setting = setting;
+      where.setting = { tier: { in: dto.tier } };
     }
 
     const history = await this.prisma.adFeeHistory.findMany({

@@ -35,13 +35,13 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
 
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-3">
-      <div className="w-full sm:w-auto">
+      <div>
         <span className="mb-1 block text-xs font-medium text-muted-foreground">Status</span>
         <Select
           value={filters.status ?? 'all'}
           onValueChange={(value) => onChange({ status: value === 'all' ? undefined : (value as ApprovalStatus) })}
         >
-          <SelectTrigger className="h-9 w-full sm:w-36" aria-label="Status filter">
+          <SelectTrigger className="h-9 w-36" aria-label="Status filter">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -55,13 +55,13 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
         </Select>
       </div>
 
-      <div className="w-full sm:w-auto">
+      <div>
         <span className="mb-1 block text-xs font-medium text-muted-foreground">Placement</span>
         <Select
           value={filters.placement ?? 'all'}
           onValueChange={(value) => onChange({ placement: value === 'all' ? undefined : (value as Placement) })}
         >
-          <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Placement filter">
+          <SelectTrigger className="h-9 w-44" aria-label="Placement filter">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -75,13 +75,13 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
         </Select>
       </div>
 
-      <div className="w-full sm:w-auto">
+      <div>
         <span className="mb-1 block text-xs font-medium text-muted-foreground">Tier</span>
         <Select
           value={filters.tier ?? 'all'}
           onValueChange={(value) => onChange({ tier: value === 'all' ? undefined : (value as Tier) })}
         >
-          <SelectTrigger className="h-9 w-full sm:w-36" aria-label="Tier filter">
+          <SelectTrigger className="h-9 w-36" aria-label="Tier filter">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -95,7 +95,7 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
         </Select>
       </div>
 
-      <div className="w-full sm:w-auto">
+      <div>
         <span className="mb-1 block text-xs font-medium text-muted-foreground">Shop</span>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -103,13 +103,13 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
             value={shopInput}
             onChange={(e) => setShopInput(e.target.value)}
             placeholder={shopPlaceholder}
-            className="h-9 w-full sm:w-52 pl-8"
+            className="h-9 w-52 pl-8"
             aria-label="Search shop name"
           />
         </div>
       </div>
 
-      <div className="w-full sm:w-auto">
+      <div>
         <span className="mb-1 block text-xs font-medium text-muted-foreground">Date range</span>
         <DateRangePicker
           value={{ from: filters.dateFrom, to: filters.dateTo }}

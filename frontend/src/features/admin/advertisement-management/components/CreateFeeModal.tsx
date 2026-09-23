@@ -22,7 +22,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { formatPrice } from '../utils/format'
+import { formatPrice } from '@/lib/format'
 import { ADMIN_AD_PLACEMENTS, ADMIN_AD_TIERS, type CreateFeeSettingInput } from '@/types/admin-ad-management'
 import type { Placement, Tier } from '@/types/admin-ad-management'
 import { PLACEMENT_LABELS, TIER_LABELS, todayIso } from '../utils/labels'

@@ -3,13 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatPrice } from '../utils/format'
+import { formatPrice } from '@/lib/format'
 import type { AdminAdvertisement } from '@/types/admin-ad-management'
 import { PaymentBadge, StatusBadge, TierBadge } from './badges'
 import { PLACEMENT_LABELS, formatDate } from '../utils/labels'
-
-const headerCellClass =
-  'h-14 whitespace-nowrap bg-muted/95 text-xs font-semibold uppercase tracking-wide text-foreground'
 
 interface AdTableProps {
   ads?: AdminAdvertisement[]
@@ -38,19 +35,19 @@ export function AdTable({
     return (
       <div className="rounded-md border bg-card">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-muted/95 shadow-sm">
+          <TableHeader>
             <TableRow>
-              <TableHead className={`${headerCellClass} w-10`} />
-              <TableHead className={headerCellClass}>Shop</TableHead>
-              <TableHead className={headerCellClass}>Title</TableHead>
-              <TableHead className={headerCellClass}>Placement</TableHead>
-              <TableHead className={headerCellClass}>Tier</TableHead>
-              <TableHead className={headerCellClass}>Status</TableHead>
-              <TableHead className={headerCellClass}>Payment</TableHead>
-              <TableHead className={`${headerCellClass} text-right`}>Fee</TableHead>
-              <TableHead className={headerCellClass}>Submitted</TableHead>
-              <TableHead className={headerCellClass}>Schedule</TableHead>
-              <TableHead className={`${headerCellClass} text-right`}>Actions</TableHead>
+              <TableHead className="w-10" />
+              <TableHead>Shop</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Placement</TableHead>
+              <TableHead>Tier</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Payment</TableHead>
+              <TableHead className="text-right">Fee</TableHead>
+              <TableHead>Submitted</TableHead>
+              <TableHead>Schedule</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -72,9 +69,9 @@ export function AdTable({
   return (
     <div className="rounded-md border bg-card">
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-muted/95 shadow-sm">
+        <TableHeader>
           <TableRow>
-            <TableHead className={`${headerCellClass} w-10`}>
+            <TableHead className="w-10">
               {selectableAds.length > 0 && (
                 <Checkbox
                   checked={allSelectableSelected}
@@ -84,16 +81,16 @@ export function AdTable({
                 />
               )}
             </TableHead>
-            <TableHead className={headerCellClass}>Shop</TableHead>
-            <TableHead className={headerCellClass}>Title</TableHead>
-            <TableHead className={headerCellClass}>Placement</TableHead>
-            <TableHead className={headerCellClass}>Tier</TableHead>
-            <TableHead className={headerCellClass}>Status</TableHead>
-            <TableHead className={headerCellClass}>Payment</TableHead>
-            <TableHead className={`${headerCellClass} text-right`}>Fee</TableHead>
-            <TableHead className={headerCellClass}>Submitted</TableHead>
-            <TableHead className={headerCellClass}>Schedule</TableHead>
-            <TableHead className={`${headerCellClass} text-right`}>Actions</TableHead>
+            <TableHead>Shop</TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead>Placement</TableHead>
+            <TableHead>Tier</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Payment</TableHead>
+            <TableHead className="text-right">Fee</TableHead>
+            <TableHead>Submitted</TableHead>
+            <TableHead>Schedule</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

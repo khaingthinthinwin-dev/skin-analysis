@@ -80,20 +80,8 @@ export const merchantAdService = {
   },
 
   getAllAds: async (): Promise<PaginatedAdsResponse> => {
-    const pageSize = 100;
-    const firstResponse = await api.get('/ads/my-ads', { params: { page: 1, limit: pageSize } });
-    const firstPage = unwrap<PaginatedAdsResponse>(firstResponse.data);
-    if (firstPage.meta.totalPages <= 1) return firstPage;
-    const restResponses = await Promise.all(
-      Array.from({ length: firstPage.meta.totalPages - 1 }, (_, index) =>
-        api.get('/ads/my-ads', { params: { page: index + 2, limit: pageSize } }),
-      ),
-    );
-    const restPages = restResponses.map((response) => unwrap<PaginatedAdsResponse>(response.data));
-    return {
-      data: [firstPage, ...restPages].flatMap((page) => page.data),
-      meta: firstPage.meta,
-    };
+    const response = await api.get('/ads/my-ads', { params: { page: 1, limit: 100 } });
+    return unwrap<PaginatedAdsResponse>(response.data);
   },
 
   getPackages: async (): Promise<AdPackage[]> => {

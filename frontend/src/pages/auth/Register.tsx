@@ -129,7 +129,24 @@ export default function Register() {
         )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Email - First input */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('auth.register.fullName')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('auth.register.fullNamePlaceholder')}
+                      autoComplete="name"
+                      maxLength={200}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="email"
@@ -149,77 +166,6 @@ export default function Register() {
                 </FormItem>
               )}
             />
-
-            {/* Role Selector - Second, determines the name field label */}
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>{t('auth.register.iAm')}</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={(value: string) => {
-                        field.onChange(value)
-                        if (value === 'buyer') {
-                          handleRemoveFile()
-                        }
-                      }}
-                      value={field.value || ''}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="buyer" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {t('auth.register.buyer')}
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="merchant" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {t('auth.register.merchant')}
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Name - Dynamic label/placeholder based on role */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {role === 'merchant'
-                      ? t('auth.register.shopName')
-                      : t('auth.register.fullName')}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={
-                        role === 'merchant'
-                          ? t('auth.register.shopNamePlaceholder')
-                          : t('auth.register.fullNamePlaceholder')
-                      }
-                      autoComplete={role === 'merchant' ? 'organization' : 'name'}
-                      maxLength={200}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Password */}
             <FormField
               control={form.control}
               name="password"
@@ -278,8 +224,6 @@ export default function Register() {
                 </FormItem>
               )}
             />
-
-            {/* Confirm Password */}
             <FormField
               control={form.control}
               name="confirmPassword"
@@ -318,8 +262,47 @@ export default function Register() {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>{t('auth.register.iAm')}</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={(value: string) => {
+                        field.onChange(value)
+                        if (value === 'buyer') {
+                          handleRemoveFile()
+                        }
+                      }}
+                      value={field.value || ''}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="buyer" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          {t('auth.register.buyer')}
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="merchant" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          {t('auth.register.merchant')}
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {/* License Upload - Conditional for Merchant */}
+            {/* License Upload - Conditional */}
             {role === 'merchant' && (
               <FormField
                 control={form.control}

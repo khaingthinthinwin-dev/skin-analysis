@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Payout } from '../services/commission.service';
-import { formatCurrency } from '../utils/format';
 
 interface PayoutDetailDialogProps {
   open: boolean;
@@ -44,21 +43,21 @@ export const PayoutDetailDialog: React.FC<PayoutDetailDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Payout Detail for {payout.merchantName}</DialogTitle>
           <DialogDescription>
-            This payout has been {payout.status}. Below are the details.
+            This payout has been completed. Below are the details.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 py-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Total Amount</span>
-            <span>{formatCurrency(payout.totalAmount)} Ks</span>
+            <span>${payout.totalAmount}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Commission Fee</span>
-            <span>-{formatCurrency(payout.commissionAmount)} Ks</span>
+            <span>-${payout.commissionAmount}</span>
           </div>
           <div className="flex justify-between font-semibold">
             <span>Net Payout</span>
-            <span>{formatCurrency(payout.netAmount)} Ks</span>
+            <span>${payout.netAmount}</span>
           </div>
           <div className="flex justify-between border-t pt-2 mt-2">
             <span className="text-sm text-muted-foreground">Paid Date</span>

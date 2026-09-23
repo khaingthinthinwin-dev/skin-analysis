@@ -36,7 +36,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
               type="button"
               onClick={() => setSelected(i)}
               className={cn(
-                'h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all sm:h-20 sm:w-20',
+                'h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all',
                 i === selected
                   ? 'border-primary ring-2 ring-primary/20'
                   : 'border-border hover:border-primary/50',

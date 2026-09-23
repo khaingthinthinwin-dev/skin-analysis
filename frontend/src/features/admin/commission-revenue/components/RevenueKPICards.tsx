@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RevenueKPI, TrendRange } from '../services/commission.service';
-import { formatCurrency } from '../utils/format';
 
 interface RevenueKPICardsProps {
   kpis?: RevenueKPI;
@@ -51,7 +50,7 @@ export const RevenueKPICards: React.FC<RevenueKPICardsProps> = ({ kpis, loading,
             {loading ? (
               <div className="h-7 w-24 animate-pulse rounded bg-muted" />
             ) : (
-              <p className="text-2xl font-bold">{formatCurrency(kpis?.[item.key])} Ks</p>
+              <p className="text-2xl font-bold">${kpis?.[item.key] ?? '0.00'}</p>
             )}
           </CardContent>
         </Card>
