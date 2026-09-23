@@ -167,7 +167,15 @@ type TickLabel = { index: number; label: string };
             No trend data available.
           </p>
         ) : (
-          <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="w-full">
+          <svg
+            width={W}
+            height={H}
+            viewBox={`0 0 ${W} ${H}`}
+            className="w-full"
+            role="img"
+            aria-label="Revenue trend chart"
+          >
+            <title>Revenue trend over time</title>
             {Array.from({ length: gridCount + 1 }).map((_, i) => {
               const frac = i / gridCount;
               const vx = max * frac;

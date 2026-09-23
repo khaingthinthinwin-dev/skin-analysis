@@ -49,7 +49,7 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
           Commission Report
         </span>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex flex-wrap items-center gap-2">
         {([ 
           ['merchant', 'By Merchant'],
@@ -59,8 +59,8 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
           <button
             key={value}
             type="button"
-            role="tab"
-            aria-selected={groupBy === value}
+            role="button"
+            aria-pressed={groupBy === value}
             onClick={() => handleGroupByChange(value)}
             className={`rounded-md border px-3 py-2 text-xs font-semibold ${
               groupBy === value
@@ -78,6 +78,7 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
+            aria-label="From date"
             className="flex-1 px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none min-w-[140px]"
           />
           <span className="text-sm text-muted-foreground font-medium">To</span>
@@ -85,6 +86,7 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
+            aria-label="To date"
             className="flex-1 px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none min-w-[140px]"
           />
         </div>
@@ -96,7 +98,7 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
           Apply
         </button>
         {/* Ghost variant so the Reset button matches the Revenue tab Reset colour. */}
-        <Button variant="ghost" size="sm" onClick={handleReset}>
+        <Button variant="outline" size="sm" onClick={handleReset}>
           Reset
         </Button>
         </div>

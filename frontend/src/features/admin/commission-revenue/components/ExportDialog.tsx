@@ -123,12 +123,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Report Type</span>
             <span className="font-medium">{REPORT_LABELS[reportType]}</span>
           </div>
           {reportType === 'commission' && (
-            <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Group By</span>
               <span className="font-medium capitalize">{groupBy === 'day' ? 'Day' : groupBy === 'order' ? 'Order' : 'Merchant'}</span>
             </div>
@@ -158,13 +158,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             <span className="text-xs text-muted-foreground">End Date</span>
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
-          <div className="space-y-1.5">
+           <div className="space-y-1.5">
             <span className="text-xs text-muted-foreground">Format</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2" role="radiogroup" aria-label="Export format">
               <Button
                 type="button"
                 size="sm"
                 variant={format === 'csv' ? 'default' : 'outline'}
+                aria-pressed={format === 'csv'}
                 onClick={() => setFormat('csv')}
               >
                 CSV
@@ -173,6 +174,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 type="button"
                 size="sm"
                 variant={format === 'xlsx' ? 'default' : 'outline'}
+                aria-pressed={format === 'xlsx'}
                 onClick={() => setFormat('xlsx')}
               >
                 Excel

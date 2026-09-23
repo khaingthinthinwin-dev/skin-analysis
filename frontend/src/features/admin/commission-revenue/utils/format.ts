@@ -12,18 +12,3 @@ export function formatCurrency(value: string | number | undefined | null): strin
   }
   return Math.round(num).toLocaleString('en-US');
 }
-
-/**
- * Format a number as currency with comma separators for export (no decimals).
- * Example: 12000.00 -> "12,000"
- */
-export function formatExportCurrency(value: string | number | undefined | null): string {
-  if (value === undefined || value === null || value === '') {
-    return '0';
-  }
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) {
-    return '0';
-  }
-  return Math.round(num).toLocaleString('en-US');
-}

@@ -14,6 +14,7 @@ import { buildCsv, buildXlsx } from './file-builder';
 import type { Response } from 'express';
 
 const MAX_EXPORT_DAYS = 365;
+const MAX_EXPORT_ROWS = 10000;
 
 interface ExportFile {
   filename: string;
@@ -109,17 +110,27 @@ export class ExportService {
       : buildCsv(header, rows);
   }
 
-  private async getEffectiveRate(at: Date): Promise<number> {
-    const historyEntry = await this.prisma.commissionRateHistory.findFirst({
-      where: { effectiveFrom: { lte: at } },
-      orderBy: { effectiveFrom: 'desc' },
-    });
-    if (historyEntry) return toNumber(historyEntry.commissionRate);
-
-    const settings = await this.prisma.commissionSetting.findFirst({
-      orderBy: { updatedAt: 'desc' },
-    });
-    return settings ? toNumber(settings.commissionRate) : 0;
+  private async buildRateLookup(): Promise<(at: Date) => number> {
+    const [history, settings] = await Promise.all([
+      this.prisma.commissionRateHistory.findMany({
+        orderBy: { effectiveFrom: 'asc' },
+      }),
+      this.prisma.commissionSetting.findFirst({
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
+    const fallbackRate = settings ? toNumber(settings.commissionRate) : 0;
+    return (at: Date): number => {
+      let rate = fallbackRate;
+      for (const entry of history) {
+        if (entry.effectiveFrom <= at) {
+          rate = toNumber(entry.commissionRate);
+        } else {
+          break;
+        }
+      }
+      return rate;
+    };
   }
 
   async generateCommissionReport(
@@ -147,7 +158,11 @@ export class ExportService {
         merchant: { select: { shopName: true } },
       },
       orderBy: { createdAt: 'asc' },
+      take: MAX_EXPORT_ROWS,
     });
+
+    const truncated = orders.length >= MAX_EXPORT_ROWS;
+    const getRate = await this.buildRateLookup();
 
     let header: string[];
     let rows: (string | number)[][];
@@ -163,7 +178,7 @@ export class ExportService {
       ];
       rows = [];
       for (const o of orders) {
-        const rate = await this.getEffectiveRate(o.createdAt);
+        const rate = getRate(o.createdAt);
         const amount = toNumber(o.totalAmount);
         const commission = (amount * rate) / 100;
         const dateStr = o.createdAt
@@ -200,7 +215,7 @@ export class ExportService {
         }
       >();
       for (const o of orders) {
-        const rate = await this.getEffectiveRate(o.createdAt);
+        const rate = getRate(o.createdAt);
         const dateStr = o.createdAt.toISOString().split('T')[0];
         const key = `${dateStr}_${o.merchantId}_${rate}`;
         const g = grouped.get(key) ?? {
@@ -250,7 +265,7 @@ export class ExportService {
         }
       >();
       for (const o of orders) {
-        const rate = await this.getEffectiveRate(o.createdAt);
+        const rate = getRate(o.createdAt);
         const key = `${o.merchantId}_${rate}`;
         const g = grouped.get(key) ?? {
           name: o.merchant?.shopName ?? 'Unknown',
@@ -271,6 +286,13 @@ export class ExportService {
         g.orders,
         fmtExportCurrency(g.revenue),
         fmtExportCurrency(g.commission),
+      ]);
+    }
+
+    if (truncated) {
+      rows.push([
+        `Warning: Results truncated at ${MAX_EXPORT_ROWS.toLocaleString()} rows. Narrow your date range or filter by merchant.`,
+        '',
       ]);
     }
 
@@ -309,6 +331,7 @@ export class ExportService {
           createdAt: { gte: from, lte: to },
         },
         select: { totalAmount: true, createdAt: true },
+        take: MAX_EXPORT_ROWS,
       }),
       this.prisma.adPayment.aggregate({
         where: {
@@ -338,10 +361,11 @@ export class ExportService {
 
     let totalRevenue = 0;
     let totalCommission = 0;
+    const getRate = await this.buildRateLookup();
     for (const o of completedOrderRows) {
       const amount = toNumber(o.totalAmount);
       totalRevenue += amount;
-      const rate = await this.getEffectiveRate(o.createdAt);
+      const rate = getRate(o.createdAt);
       totalCommission += (amount * rate) / 100;
     }
     const orderCount = completedOrderRows.length;
@@ -370,6 +394,13 @@ export class ExportService {
       ['Ad Refunded', adRefunded?._count._all ?? 0],
     ];
 
+    if (completedOrderRows.length >= MAX_EXPORT_ROWS) {
+      rows.push([
+        'Warning',
+        `Revenue figures are based on the first ${MAX_EXPORT_ROWS.toLocaleString()} completed orders only. Actual totals may be higher.`,
+      ]);
+    }
+
     const buffer = this.encode(header, rows, dto.format);
     await this.audit(adminId, 'revenue', dto, rows.length, ip);
 
@@ -389,47 +420,45 @@ export class ExportService {
     ip?: string,
   ): Promise<ExportFile> {
     this.validateRange(dto);
-    const where: {
-      merchantId?: string;
-      order: {
-        createdAt: {
-          gte: Date;
-          lte: Date;
-        };
-      };
-    } = {
-      order: {
-        createdAt: {
-          gte: new Date(dto.dateFrom),
-          lte: new Date(`${dto.dateTo}T23:59:59.999Z`),
-        },
-      },
-    };
-    if (dto.merchantId) {
-      where.merchantId = dto.merchantId;
-    }
-    const payouts = await this.prisma.payout.findMany({
-      where,
-      include: {
-        merchant: { select: { shopName: true } },
-        order: { select: { orderNumber: true, createdAt: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
 
     let merchantName = 'all';
-    if (dto.merchantId && payouts.length > 0) {
-      merchantName = payouts[0].merchant?.shopName ?? 'Unknown';
-    } else if (dto.merchantId && payouts.length === 0) {
+    if (dto.merchantId) {
       const merchant = await this.prisma.merchant.findUnique({
         where: { id: dto.merchantId },
         select: { shopName: true },
       });
       merchantName = merchant?.shopName ?? 'Unknown';
-    }
 
-    if (dto.merchantId) {
+      const payoutItems = await this.prisma.payoutItem.findMany({
+        where: {
+          payout: {
+            merchantId: dto.merchantId,
+            periodStart: {
+              gte: new Date(dto.dateFrom),
+              lte: new Date(`${dto.dateTo}T23:59:59.999Z`),
+            },
+          },
+        },
+        select: {
+          orderAmount: true,
+          commissionAmount: true,
+          payout: {
+            select: {
+              status: true,
+              processedAt: true,
+              periodStart: true,
+            },
+          },
+          order: {
+            select: { orderNumber: true, totalAmount: true },
+          },
+        },
+        orderBy: [{ payout: { periodStart: 'asc' } }],
+        take: MAX_EXPORT_ROWS,
+      });
+
       const header = [
+        'Period',
         'Merchant',
         'Order Number',
         'Commission Rate',
@@ -439,21 +468,34 @@ export class ExportService {
         'Status',
         'Payment Date',
       ];
-      const rows: (string | number)[][] = payouts.map((p) => {
-        const total = toNumber(p.totalAmount);
-        const commission = toNumber(p.commissionAmount);
-        const rate = total > 0 ? (commission / total) * 100 : 0;
+      const rows: (string | number)[][] = payoutItems.map((item) => {
+        const amount = toNumber(item.order.totalAmount);
+        const commission = toNumber(item.commissionAmount);
         return [
-          p.merchant?.shopName ?? 'Unknown',
-          p.order?.orderNumber ?? '-',
-          `${fmtDecimal(rate)}%`,
-          fmtExportCurrency(total),
+          item.payout.periodStart.toISOString().slice(0, 7),
+          merchantName,
+          item.order.orderNumber,
+          amount > 0 ? `${fmtDecimal((commission / amount) * 100)}%` : '0.00%',
+          fmtExportCurrency(amount),
           fmtExportCurrency(commission),
-          fmtExportCurrency(total - commission),
-          p.status,
-          p.processedAt?.toISOString().slice(0, 10) ?? '-',
+          fmtExportCurrency(amount - commission),
+          item.payout.status,
+          item.payout.processedAt?.toISOString().slice(0, 10) ?? '-',
         ];
       });
+      if (payoutItems.length >= MAX_EXPORT_ROWS) {
+        rows.push([
+          'Warning',
+          '',
+          '',
+          '',
+          '',
+          `Results truncated at ${MAX_EXPORT_ROWS.toLocaleString()} rows. Narrow your date range for complete data.`,
+          '',
+          '',
+          '',
+        ]);
+      }
       const buffer = this.encode(header, rows, dto.format);
       await this.audit(adminId, 'payout', dto, rows.length, ip);
       const dateRange = `${this.getDateString(dto.dateFrom)}-${this.getDateString(dto.dateTo)}`;
@@ -470,8 +512,9 @@ export class ExportService {
     }
 
     const header = [
+      'Period',
       'Merchant',
-      'Order Numbers',
+      'Order Number',
       'Commission Rate',
       'Total',
       'Commission',
@@ -480,61 +523,67 @@ export class ExportService {
       'Payment Date',
     ];
 
-    const grouped = new Map<
-      string,
-      {
-        merchant: string;
-        orderNumbers: string[];
-        total: number;
-        commission: number;
-        status: string;
-        processedAt: Date | null;
-        period: string;
-      }
-    >();
-    for (const p of payouts) {
-      const period = (p.order?.createdAt ?? p.createdAt)
-        .toISOString()
-        .slice(0, 7);
-      const key = `${p.merchantId}:${period}`;
-      const existing = grouped.get(key);
-      if (existing) {
-        if (p.order?.orderNumber)
-          existing.orderNumbers.push(p.order.orderNumber);
-        existing.total += toNumber(p.totalAmount);
-        existing.commission += toNumber(p.commissionAmount);
-        if (p.status !== 'completed') existing.status = p.status;
-        if (
-          p.processedAt &&
-          (!existing.processedAt || p.processedAt > existing.processedAt)
-        ) {
-          existing.processedAt = p.processedAt;
-        }
-      } else {
-        grouped.set(key, {
-          merchant: p.merchant?.shopName ?? 'Unknown',
-          orderNumbers: p.order?.orderNumber ? [p.order.orderNumber] : [],
-          total: toNumber(p.totalAmount),
-          commission: toNumber(p.commissionAmount),
-          status: p.status,
-          processedAt: p.processedAt,
-          period,
-        });
-      }
-    }
+    const payoutItems = await this.prisma.payoutItem.findMany({
+      where: {
+        payout: {
+          periodStart: {
+            gte: new Date(dto.dateFrom),
+            lte: new Date(`${dto.dateTo}T23:59:59.999Z`),
+          },
+        },
+      },
+      select: {
+        orderAmount: true,
+        commissionAmount: true,
+        payout: {
+          select: {
+            status: true,
+            processedAt: true,
+            periodStart: true,
+            merchant: { select: { shopName: true } },
+          },
+        },
+        order: {
+          select: { orderNumber: true, totalAmount: true, createdAt: true },
+        },
+      },
+      orderBy: [
+        { payout: { periodStart: 'asc' } },
+        { payout: { merchant: { shopName: 'asc' } } },
+        { order: { createdAt: 'asc' } },
+      ],
+      take: MAX_EXPORT_ROWS,
+    });
 
-    const rows: (string | number)[][] = [...grouped.values()].map((group) => [
-      group.merchant,
-      group.orderNumbers.join(','),
-      group.total > 0
-        ? fmtDecimal((group.commission / group.total) * 100)
-        : '0.00',
-      fmtExportCurrency(group.total),
-      fmtExportCurrency(group.commission),
-      fmtExportCurrency(group.total - group.commission),
-      group.status,
-      group.processedAt?.toISOString().slice(0, 10) ?? '-',
-    ]);
+    const rows: (string | number)[][] = payoutItems.map((item) => {
+      const amount = toNumber(item.order.totalAmount);
+      const commission = toNumber(item.commissionAmount);
+      return [
+        item.payout.periodStart.toISOString().slice(0, 7),
+        item.payout.merchant?.shopName ?? 'Unknown',
+        item.order.orderNumber,
+        amount > 0 ? `${fmtDecimal((commission / amount) * 100)}%` : '0.00%',
+        fmtExportCurrency(amount),
+        fmtExportCurrency(commission),
+        fmtExportCurrency(amount - commission),
+        item.payout.status,
+        item.payout.processedAt?.toISOString().slice(0, 10) ?? '-',
+      ];
+    });
+
+    if (payoutItems.length >= MAX_EXPORT_ROWS) {
+      rows.push([
+        'Warning',
+        '',
+        '',
+        '',
+        '',
+        `Results truncated at ${MAX_EXPORT_ROWS.toLocaleString()} rows. Filter by merchant for complete data.`,
+        '',
+        '',
+        '',
+      ]);
+    }
 
     const buffer = this.encode(header, rows, dto.format);
     await this.audit(adminId, 'payout', dto, rows.length, ip);

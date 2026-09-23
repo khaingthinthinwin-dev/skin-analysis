@@ -20,6 +20,33 @@ export class CommissionService {
   }
 
   /**
+   * Batch-load commission rate history and return a lookup function.
+   * Avoids N+1 queries when computing rates for many orders.
+   */
+  private async buildRateLookup(): Promise<(at: Date) => number> {
+    const [history, settings] = await Promise.all([
+      this.prisma.commissionRateHistory.findMany({
+        orderBy: { effectiveFrom: 'asc' },
+      }),
+      this.prisma.commissionSetting.findFirst({
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
+    const fallbackRate = settings ? toNumber(settings.commissionRate) : 0;
+    return (at: Date): number => {
+      let rate = fallbackRate;
+      for (const entry of history) {
+        if (entry.effectiveFrom <= at) {
+          rate = toNumber(entry.commissionRate);
+        } else {
+          break;
+        }
+      }
+      return rate;
+    };
+  }
+
+  /**
    * Returns the commission rate that was effective at the given point in time.
    * Looks up the most recent history entry whose effectiveFrom <= at.
    * Falls back to the singleton commission_settings row for orders placed
@@ -124,8 +151,8 @@ export class CommissionService {
   }
 
   async getCommissionReports(query: CommissionReportQueryDto = {}) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const page = Math.max(query.page ?? 1, 1);
+    const limit = Math.max(query.limit ?? 20, 1);
     const groupBy: GroupByType = query.groupBy ?? 'merchant';
 
     if (query.from && query.to && query.from > query.to) {
@@ -163,9 +190,10 @@ export class CommissionService {
 
     if (groupBy === 'order') {
       // By Order: show individual orders
+      const getRate = await this.buildRateLookup();
       const orderReports = [];
       for (const order of completedOrders) {
-        const effectiveRate = await this.getEffectiveRate(order.createdAt);
+        const effectiveRate = getRate(order.createdAt);
         const orderAmount = toNumber(order.totalAmount);
         const commission = (orderAmount * effectiveRate) / 100;
         orderReports.push({
@@ -206,8 +234,9 @@ export class CommissionService {
         }
       >();
 
+      const getRate = await this.buildRateLookup();
       for (const order of completedOrders) {
-        const effectiveRate = await this.getEffectiveRate(order.createdAt);
+        const effectiveRate = getRate(order.createdAt);
         const dateStr = order.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD
         const key = `${dateStr}_${order.merchantId}_${effectiveRate}`;
         const entry = grouped.get(key) ?? {
@@ -265,8 +294,9 @@ export class CommissionService {
         commission: number;
       }
     >();
+    const getRate = await this.buildRateLookup();
     for (const order of completedOrders) {
-      const effectiveRate = await this.getEffectiveRate(order.createdAt);
+      const effectiveRate = getRate(order.createdAt);
       const key = `${order.merchantId}_${effectiveRate}`;
       const entry = grouped.get(key) ?? {
         merchantId: order.merchantId,

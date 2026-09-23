@@ -33,10 +33,11 @@ const PAYOUT_STATUS_TONES: Record<Payout['status'], StatusTone> = {
 };
 
 // Order / ad-fee payment counters -> tone (§9.6: completed = green,
-// pending = amber, refunded = gray). `satisfies` keeps this exhaustive for
-// every counter returned by both payment-status endpoints.
+// processing = purple, pending = amber, refunded = gray). `satisfies` keeps
+// this exhaustive for every counter returned by both payment-status endpoints.
 const PAYMENT_STATUS_TONES = {
   completed: 'success',
+  processing: 'processing',
   pending: 'pending',
   refunded: 'neutral',
 } satisfies Record<keyof PaymentStatus | keyof AdFeePaymentStatus, StatusTone>;
@@ -47,6 +48,7 @@ type PaymentStatusKind = keyof PaymentStatus | keyof AdFeePaymentStatus;
 // Canonical display labels so the pill text is defined once, not per card.
 const PAYMENT_STATUS_LABELS: Record<PaymentStatusKind, string> = {
   completed: 'Completed',
+  processing: 'Processing',
   pending: 'Pending',
   refunded: 'Refunded',
 };
@@ -65,13 +67,19 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ tone, className, children }) 
   </Badge>
 );
 
-// Merchant payout row status (e.g. "pending", "completed", "failed").
+// Merchant payout row status (e.g. "Pending", "Completed", "Processing").
+const PAYOUT_STATUS_LABELS: Record<Payout['status'], string> = {
+  pending: 'Pending',
+  processing: 'Processing',
+  completed: 'Completed',
+};
+
 export const PayoutStatusBadge: React.FC<{
   status: Payout['status'];
   className?: string;
 }> = ({ status, className }) => (
   <StatusBadge tone={PAYOUT_STATUS_TONES[status]} className={className}>
-    {status}
+    {PAYOUT_STATUS_LABELS[status]}
   </StatusBadge>
 );
 

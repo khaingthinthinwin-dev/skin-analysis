@@ -22,10 +22,10 @@ export const AdPaymentStatusPanel: React.FC<AdPaymentStatusPanelProps> = ({
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex gap-4">
-            <div className="h-14 w-full animate-pulse rounded bg-muted" />
-            <div className="h-14 w-full animate-pulse rounded bg-muted" />
-            <div className="h-14 w-full animate-pulse rounded bg-muted" />
+          <div className="grid grid-cols-3 gap-2">
+            <div className="h-14 animate-pulse rounded bg-muted" />
+            <div className="h-14 animate-pulse rounded bg-muted" />
+            <div className="h-14 animate-pulse rounded bg-muted" />
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">

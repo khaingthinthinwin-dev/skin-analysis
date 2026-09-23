@@ -24,6 +24,7 @@ async function main() {
   await prisma.skinAnalysis.deleteMany();
   await prisma.wishlist.deleteMany();
   await prisma.review.deleteMany();
+  await prisma.payoutItem.deleteMany();
   await prisma.payout.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -136,6 +137,13 @@ async function main() {
     data: {
       commissionRate: 12.00,
       effectiveFrom: seededCommission.createdAt,
+    },
+  });
+  // Second history point so commission reports can show a rate change over time.
+  await prisma.commissionRateHistory.create({
+    data: {
+      commissionRate: 10.00,
+      effectiveFrom: new Date('2025-07-01T00:00:00Z'),
     },
   });
   console.log('Seeded commission_settings');
@@ -558,6 +566,8 @@ async function main() {
   const orders = [];
 
   // Order 1 - Buyer 0 buys from Merchant 0
+  // Fixed createdAt outside the payout months (2025-10..2026-09) so this
+  // sample order is not counted into a monthly payout by accident.
   const order1 = await prisma.order.create({
     data: {
       buyerId: buyers[0].id,
@@ -567,6 +577,7 @@ async function main() {
       shippingAddress: { street: '123 Yangon Street', city: 'Yangon', country: 'Myanmar', zip: '11111' },
       paymentMethod: 'bank_transfer',
       paymentStatus: 'completed',
+      createdAt: new Date('2025-09-15T10:00:00Z'),
     },
   });
   await prisma.orderItem.create({
@@ -648,7 +659,9 @@ async function main() {
 
   for (let orderIndex = 1; orderIndex <= 29; orderIndex++) {
     const variant = hamlOrderVariants[(orderIndex - 1) % hamlOrderVariants.length];
-    const orderDate = new Date();
+    // Anchor to 2025-09 so relative dates stay outside the payout months
+    // (2025-10..2026-09) and cannot inflate a monthly payout's order count.
+    const orderDate = new Date('2025-09-20T10:00:00Z');
     orderDate.setDate(orderDate.getDate() - orderIndex);
     const paginationOrder = await prisma.order.create({
       data: {
@@ -678,40 +691,256 @@ async function main() {
   console.log(`Seeded ${orders.length} orders`);
 
   // ============================================
-  // PAYOUTS
+  // PAYOUTS (12 months × 4 merchants = 48 payouts)
   // ============================================
-  // Each payout is linked to a single order via orderId. Only orders with a
-  // completed payment get a payout. Commission is computed at the seeded rate
-  // (12%) and ad fees are platform revenue (never deducted from merchant
-  // payouts per BR-REV-016).
+  // One payout per merchant per month (period grain). Completed payment
+  // orders in that month are linked via payout_items (unique order_id).
+  // Commission 12%; ad fees never deducted (BR-REV-016).
   const payouts: any[] = [];
+  const payoutItems: any[] = [];
   const COMMISSION_RATE = 12; // matches the seeded commission_setting / rate history
-  const payoutData = [
-    { order: order1, status: 'completed', processed: true },
-    { order: order2, status: 'pending', processed: false },
-    { order: order3, status: 'processing', processed: false },
+
+  const months = [
+    '2025-10', '2025-11', '2025-12',
+    '2026-01', '2026-02', '2026-03',
+    '2026-04', '2026-05', '2026-06',
+    '2026-07', '2026-08', '2026-09',
+  ];
+  // Vary amounts per merchant so the data looks realistic
+  const merchantAmounts = [40000, 55000, 35000, 62000];
+  // Status distribution: 8 completed, 1 processing, 3 pending
+  const monthStatuses: Array<{ status: string; processed: boolean }> = [
+    { status: 'completed', processed: true },
+    { status: 'completed', processed: true },
+    { status: 'completed', processed: true },
+    { status: 'completed', processed: true },
+    { status: 'completed', processed: true },
+    { status: 'completed', processed: true },
+    { status: 'completed', processed: true },
+    { status: 'completed', processed: true },
+    { status: 'processing', processed: false },
+    { status: 'pending', processed: false },
+    { status: 'pending', processed: false },
+    { status: 'pending', processed: false },
   ];
 
-  for (const p of payoutData) {
-    const totalAmount = Number(p.order.totalAmount);
-    const commissionAmount = Math.round((totalAmount * COMMISSION_RATE) / 100);
-    const netPayout = totalAmount - commissionAmount;
-    const payout = await prisma.payout.create({
+  // Multi-order months: "YYYY-MM_merchantIndex" → array of { amount, day }
+  // Multiple orders in the same month → multiple payout_items on one payout.
+  const multiOrderMonths: Record<string, Array<{ amount: number; day: number }>> = {
+    // Beauty Hub Myanmar (index 0) — Sep 2026: 3 orders → 45,000 Ks total
+    '2026-09_0': [
+      { amount: 10000, day: 5 },
+      { amount: 20000, day: 15 },
+      { amount: 15000, day: 25 },
+    ],
+    // Beauty Hub Myanmar — Aug 2026: 2 orders → 45,000 Ks total
+    '2026-08_0': [
+      { amount: 18000, day: 8 },
+      { amount: 27000, day: 20 },
+    ],
+    // Yangon Skincare (index 1) — Sep 2026: 2 orders → 55,000 Ks total
+    '2026-09_1': [
+      { amount: 25000, day: 10 },
+      { amount: 30000, day: 22 },
+    ],
+  };
+
+  const parseMonthBounds = (month: string) => {
+    const [year, mon] = month.split('-').map(Number);
+    const periodStart = new Date(Date.UTC(year, mon - 1, 1, 0, 0, 0, 0));
+    const periodEnd = new Date(Date.UTC(year, mon, 0, 23, 59, 59, 999));
+    return { periodStart, periodEnd };
+  };
+
+  for (let i = 0; i < months.length; i++) {
+    const month = months[i];
+    const ms = monthStatuses[i];
+    const { periodStart, periodEnd } = parseMonthBounds(month);
+
+    // One payout per merchant per month (4 per month × 12 = 48)
+    for (let m = 0; m < merchants.length; m++) {
+      const key = `${month}_${m}`;
+      const orderDefs = multiOrderMonths[key] ?? [
+        { amount: merchantAmounts[m] + (i % 3) * 5000, day: 15 },
+      ];
+
+      let totalAmount = 0;
+      let totalCommission = 0;
+      const orderSnapshots: Array<{ orderId: string; orderAmount: number; commissionAmount: number }> = [];
+
+      for (const def of orderDefs) {
+        const orderDate = new Date(
+          `${month}-${String(def.day).padStart(2, '0')}T10:00:00Z`,
+        );
+        const payoutOrder = await prisma.order.create({
+          data: {
+            buyerId: buyers[m % buyers.length].id,
+            merchantId: merchants[m].id,
+            statusCode: 'delivered',
+            totalAmount: def.amount,
+            shippingAddress: {
+              street: '123 Street',
+              city: 'Yangon',
+              country: 'Myanmar',
+              zip: '11111',
+            },
+            paymentMethod: 'bank_transfer',
+            paymentStatus: 'completed',
+            createdAt: orderDate,
+          },
+        });
+        await prisma.orderItem.create({
+          data: {
+            orderId: payoutOrder.id,
+            productId: products[m % products.length].id,
+            merchantId: merchants[m].id,
+            quantity: 1,
+            unitPrice: def.amount,
+            totalPrice: def.amount,
+          },
+        });
+        orders.push(payoutOrder);
+
+        const commissionAmount = Math.round((def.amount * COMMISSION_RATE) / 100);
+        totalAmount += def.amount;
+        totalCommission += commissionAmount;
+        orderSnapshots.push({
+          orderId: payoutOrder.id,
+          orderAmount: def.amount,
+          commissionAmount,
+        });
+      }
+
+      const netPayout = totalAmount - totalCommission;
+      const orderDate = new Date(`${month}-15T10:00:00Z`);
+      const idempotencyKey = `seed-payout-${merchants[m].id}-${month}`;
+      const payout = await prisma.payout.create({
+        data: {
+          merchantId: merchants[m].id,
+          periodStart,
+          periodEnd,
+          orderCount: orderSnapshots.length,
+          totalAmount,
+          commissionAmount: totalCommission,
+          netPayout,
+          status: ms.status,
+          processedBy: ms.processed ? admins[0].id : null,
+          processedAt: ms.processed ? orderDate : null,
+          idempotencyKey,
+          createdAt: orderDate,
+        },
+      });
+      payouts.push(payout);
+
+      for (const snap of orderSnapshots) {
+        const item = await prisma.payoutItem.create({
+          data: {
+            payoutId: payout.id,
+            orderId: snap.orderId,
+            orderAmount: snap.orderAmount,
+            commissionAmount: snap.commissionAmount,
+            createdAt: orderDate,
+          },
+        });
+        payoutItems.push(item);
+      }
+    }
+  }
+  console.log(`Seeded ${payouts.length} payouts with ${payoutItems.length} payout items`);
+
+  // ============================================
+  // REVENUE TARGETS
+  // ============================================
+  const revenueTargets = [];
+  const targetData = [
+    { period: 'monthly', targetAmount: 500000 },
+    { period: 'quarterly', targetAmount: 1500000 },
+  ];
+  for (const t of targetData) {
+    const target = await prisma.revenueTarget.create({
       data: {
-        merchantId: p.order.merchantId,
-        orderId: p.order.id,
-        totalAmount,
-        commissionAmount,
-        netPayout,
-        status: p.status,
-        processedBy: p.processed ? admins[0].id : null,
-        processedAt: p.processed ? new Date() : null,
-        idempotencyKey: p.processed ? `seed-payout-${p.order.orderNumber}` : null,
+        targetAmount: t.targetAmount,
+        period: t.period,
+        createdBy: admins[0].id,
       },
     });
-    payouts.push(payout);
+    revenueTargets.push(target);
   }
-  console.log(`Seeded ${payouts.length} payouts`);
+  console.log(`Seeded ${revenueTargets.length} revenue targets`);
+
+  // ============================================
+  // ADVERTISEMENTS & AD PAYMENTS (12 months)
+  // ============================================
+  const advertisements: any[] = [];
+  const adPayments: any[] = [];
+  const adPlacements = ['homepage_banner', 'product_sidebar', 'category_banner'];
+  const adTiers = ['basic', 'standard', 'premium'];
+
+  for (let i = 0; i < months.length; i++) {
+    const month = months[i];
+    const adDate = new Date(`${month}-01T09:00:00Z`);
+    const expiresDate = new Date(`${month}-28T23:59:59Z`);
+
+    // 2 ads per month from different merchants
+    for (let a = 0; a < 2; a++) {
+      const merchantIdx = (i + a) % merchants.length;
+      const placement = adPlacements[a % adPlacements.length];
+      const tier = adTiers[i % adTiers.length];
+
+      // Find matching fee setting
+      const feeSetting = await prisma.adFeeSetting.findUnique({
+        where: { placement_tier: { placement, tier } },
+      });
+
+      const ad = await prisma.advertisement.create({
+        data: {
+          shopId: shops[merchantIdx].id,
+          feeSettingId: feeSetting?.id ?? null,
+          title: `Ad ${month} #${a + 1} for ${merchantShops[merchantIdx].shopName}`,
+          content: `Promotional content for ${month}`,
+          announcementMessage: `Special offer from ${merchantShops[merchantIdx].shopName}`,
+          imageUrl: `https://storage.example.com/ads/${month}-${a}.jpg`,
+          isActive: true,
+          approvalStatus: 'approved',
+          paymentStatus: 'paid',
+          paymentAmount: feeSetting ? Number(feeSetting.dailyRate) * 7 : 20,
+          approvedBy: admins[0].id,
+          approvedAt: adDate,
+          weekNumber: Math.ceil((i + 1) / 4),
+          startsAt: adDate,
+          expiresAt: expiresDate,
+          createdAt: adDate,
+        },
+      });
+      advertisements.push(ad);
+
+      // Mix statuses so Ad Payment Status panel shows completed / pending / refunded.
+      // Pattern by month index: most completed, a few pending, one refunded.
+      let adPayStatus: 'completed' | 'pending' | 'refunded' = 'completed';
+      if (i === months.length - 1 && a === 0) adPayStatus = 'refunded';
+      else if (i >= months.length - 2 && a === 1) adPayStatus = 'pending';
+
+      const amount = feeSetting ? Number(feeSetting.dailyRate) * 7 : 20;
+      const adPay = await prisma.adPayment.create({
+        data: {
+          adId: ad.id,
+          merchantId: merchants[merchantIdx].id,
+          amount,
+          paymentMethod: 'bank_transfer',
+          paymentStatus: adPayStatus,
+          transactionId: `txn-${month}-${a}-${merchantIdx}`,
+          paidAt: adPayStatus === 'pending' ? null : adDate,
+          refundAmount: adPayStatus === 'refunded' ? amount : null,
+          refundReason: adPayStatus === 'refunded' ? 'Sample refund for demo' : null,
+          refundedAt: adPayStatus === 'refunded' ? adDate : null,
+          createdAt: adDate,
+        },
+      });
+      adPayments.push(adPay);
+    }
+  }
+  console.log(`Seeded ${advertisements.length} advertisements`);
+  console.log(`Seeded ${adPayments.length} ad payments`);
 
   // ============================================
   // WISHLISTS
@@ -873,6 +1102,10 @@ async function main() {
   console.log(`Reviews:    ${reviewData.length}`);
   console.log(`Orders:     ${orders.length}`);
   console.log(`Payouts:    ${payouts.length}`);
+  console.log(`Payout Items: ${payoutItems.length}`);
+  console.log(`Revenue Targets: ${revenueTargets.length}`);
+  console.log(`Advertisements: ${advertisements.length}`);
+  console.log(`Ad Payments: ${adPayments.length}`);
   console.log(`Promotions: ${promotions.length}`);
   console.log(`Wishlists:  ${wishlistData.length}`);
   console.log(`Carts:      2`);

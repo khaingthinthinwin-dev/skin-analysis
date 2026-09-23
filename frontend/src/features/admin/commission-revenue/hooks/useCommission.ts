@@ -49,6 +49,13 @@ export function useCommission(
     },
   });
 
+  const reviewPayoutMutation = useMutation({
+    mutationFn: (payoutId: string) => commissionService.reviewPayout(payoutId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'commission', 'payouts'] });
+    },
+  });
+
   const deletePayoutMutation = useMutation({
     mutationFn: (payoutIds: string[]) => commissionService.deletePayouts(payoutIds),
     onSuccess: () => {
@@ -62,6 +69,7 @@ export function useCommission(
     payoutsQuery,
     updateSettingsMutation,
     processPayoutMutation,
+    reviewPayoutMutation,
     deletePayoutMutation,
   };
 }

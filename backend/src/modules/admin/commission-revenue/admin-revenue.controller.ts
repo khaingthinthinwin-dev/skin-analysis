@@ -153,6 +153,21 @@ export class AdminRevenueController {
     return this.revenueService.processPayout(id, user.id, ip);
   }
 
+  @Post('payouts/:id/review')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Mark payout as being reviewed (pending -> processing)',
+  })
+  @ApiResponse({ status: 200, description: 'Payout marked as processing' })
+  @ApiResponse({ status: 404, description: 'Payout not found' })
+  async reviewPayout(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Ip() ip: string,
+  ) {
+    return this.revenueService.reviewPayout(id, user.id, ip);
+  }
+
   @Delete('payouts')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete old completed merchant payouts' })
@@ -179,7 +194,7 @@ export class AdminRevenueController {
     @Body() dto: ExportRequestDto,
     @CurrentUser() user: AuthUser,
     @Ip() ip: string,
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
   ) {
     await this.exportService.streamRevenueReport(dto, user.id, ip, res);
   }
@@ -193,7 +208,7 @@ export class AdminRevenueController {
     @Body() dto: ExportRequestDto,
     @CurrentUser() user: AuthUser,
     @Ip() ip: string,
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
   ) {
     await this.exportService.streamPayoutReport(dto, user.id, ip, res);
   }
