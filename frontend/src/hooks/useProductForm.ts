@@ -1,4 +1,4 @@
-import { useForm, type UseFormReturn } from 'react-hook-form'
+import { useForm, type UseFormReturn, type Resolver } from 'react-hook-form'
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
 import { createProductSchema, updateProductSchema } from '@/schemas/product.schema'
 import type { CreateProductFormData, UpdateProductFormData, ProductFormData } from '@/schemas/product.schema'
@@ -31,7 +31,14 @@ export function useProductForm(options: {
 }): UseFormReturn<ProductFormData> {
   const { mode, product } = options
   return useForm<ProductFormData>({
-    resolver: standardSchemaResolver(mode === 'edit' ? updateProductSchema : createProductSchema),
+    // The edit schema's fields are optional, so its inferred input type
+    // doesn't satisfy standardSchemaResolver's FieldValues constraint, and
+    // validation output differs from ProductFormData at the type level only.
+    // Runtime behavior is identical, so casts on both the schema argument
+    // and the resulting resolver are safe.
+    resolver: standardSchemaResolver(
+      (mode === 'edit' ? updateProductSchema : createProductSchema) as never,
+    ) as unknown as Resolver<ProductFormData>,
     defaultValues:
       mode === 'edit' && product
         ? {

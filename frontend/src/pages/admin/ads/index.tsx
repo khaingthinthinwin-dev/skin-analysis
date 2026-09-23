@@ -125,13 +125,13 @@ export default function AdminAdListPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Advertisement Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Advertisement Management</h1>
           <p className="text-muted-foreground">Review merchant ads and manage advertising fees</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className="bg-amber-100 text-amber-800">
             {pendingCount} pending
           </Badge>

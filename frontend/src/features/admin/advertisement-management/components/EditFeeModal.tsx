@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { formatPrice } from '@/lib/format'
+import { formatPrice } from '../utils/format'
 import type { AdminAdFeeSetting, EditFeeSettingInput } from '@/types/admin-ad-management'
 import { TierBadge } from './badges'
 import { PLACEMENT_LABELS, todayIso } from '../utils/labels'
