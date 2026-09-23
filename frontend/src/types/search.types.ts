@@ -18,7 +18,6 @@ export interface ProductSummary {
   reviewCount: number
   isInStock: boolean
   category: ProductCategory
-  shop_name?: string
 }
 
 export interface PaginationMeta {

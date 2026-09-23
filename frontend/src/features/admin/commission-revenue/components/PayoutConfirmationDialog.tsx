@@ -9,8 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Payout } from '../services/commission.service';
-import { PaymentStatusBadge } from './badges';
-import { formatCurrency } from '../utils/format';
 
 interface PayoutConfirmationDialogProps {
   open: boolean;
@@ -49,15 +47,15 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
         <div className="space-y-2 py-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Total Amount</span>
-            <span>{formatCurrency(payout.totalAmount)} Ks</span>
+            <span>${payout.totalAmount}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Commission Fee</span>
-            <span>-{formatCurrency(payout.commissionAmount)} Ks</span>
+            <span>-${payout.commissionAmount}</span>
           </div>
           <div className="flex justify-between font-semibold">
             <span>Net Payout</span>
-            <span>{formatCurrency(payout.netAmount)} Ks</span>
+            <span>${payout.netAmount}</span>
           </div>
 
           {hasBreakdown && (
@@ -65,19 +63,19 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
               <div className="my-2 border-t" />
               <p className="text-xs font-medium text-muted-foreground">Breakdown</p>
               {payout.completedCount > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <PaymentStatusBadge kind="completed">
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-600">
                     {payout.completedCount} completed order{payout.completedCount > 1 ? 's' : ''}
-                  </PaymentStatusBadge>
-                  <span className="font-medium">{formatCurrency(payout.completedTotal)} Ks</span>
+                  </span>
+                  <span className="text-green-600">${payout.completedTotal}</span>
                 </div>
               )}
               {payout.pendingCount > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <PaymentStatusBadge kind="pending">
+                <div className="flex justify-between text-sm">
+                  <span className="text-amber-600">
                     {payout.pendingCount} pending order{payout.pendingCount > 1 ? 's' : ''}
-                  </PaymentStatusBadge>
-                  <span className="font-medium">{formatCurrency(payout.pendingTotal)} Ks</span>
+                  </span>
+                  <span className="text-amber-600">${payout.pendingTotal}</span>
                 </div>
               )}
             </>

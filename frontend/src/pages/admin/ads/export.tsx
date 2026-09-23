@@ -58,10 +58,10 @@ export default function ExportReportsPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Export Reports</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Export Reports</h1>
           <p className="text-muted-foreground">Generate CSV reports for advertisements and fee history</p>
         </div>
         <Button asChild size="sm" variant="outline">

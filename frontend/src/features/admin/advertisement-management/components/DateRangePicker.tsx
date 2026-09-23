@@ -37,13 +37,13 @@ export function DateRangePicker({
   }
 
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 sm:flex">
+    <div className="flex items-center gap-2">
       <label className="text-sm text-muted-foreground">{fromLabel}</label>
       <Input
         type="date"
         value={value.from ?? ''}
         onChange={(e) => handleFrom(e.target.value)}
-        className="h-9 w-full sm:w-44"
+        className="h-9 w-44"
         aria-label={fromLabel}
       />
       <label className="text-sm text-muted-foreground">{toLabel}</label>
@@ -52,7 +52,7 @@ export function DateRangePicker({
         min={value.from}
         value={value.to ?? ''}
         onChange={(e) => handleTo(e.target.value)}
-        className="h-9 w-full sm:w-44"
+        className="h-9 w-44"
         aria-label={toLabel}
       />
       {(value.from || value.to) && (

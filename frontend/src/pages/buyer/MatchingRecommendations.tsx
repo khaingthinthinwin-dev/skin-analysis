@@ -1,8 +1,7 @@
 import { useState, type ImgHTMLAttributes } from 'react'
-import { Link } from 'react-router'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ShoppingCart, Star, Sparkles, FlaskConical, Heart, Check } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
+import { Card } from '@/components/ui/card'
+import { ShoppingCart, Star, ChevronLeft, ChevronRight, Sparkles, FlaskConical, Heart, Plus, Check } from 'lucide-react'
 import { useMatchFilters } from '@/features/buyer/matching/hooks/useMatchFilters'
 import { usePersonalizedRecommendations, useRecommendationHistory, useAdPanel } from '@/features/buyer/matching/hooks/useMatching'
 import { matchingService } from '@/features/buyer/matching/services/matching.service'
@@ -13,13 +12,7 @@ import { SkeletonGrid } from '@/features/buyer/matching/components/SkeletonGrid'
 import { HistoryAccordion } from '@/features/buyer/matching/components/HistoryAccordion'
 import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
 import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
-import { MatchingSortSelect } from '@/features/buyer/matching/components/MatchingSortSelect'
-import { MatchingFilterChips } from '@/features/buyer/matching/components/MatchingFilterChips'
-import { SampleAdBanner } from '@/features/buyer/matching/components/SampleAdBanner'
-import { ViewToggle } from '@/features/search/components/ViewToggle'
-import { Pagination } from '@/components/Pagination'
 import { cn } from '@/lib/utils'
-import type { ViewMode } from '@/types/search.types'
 
 function getImageUrl(url: string): string {
   if (!url) return ''
@@ -37,65 +30,59 @@ function ProductImage({ src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement
   return <img src={getImageUrl(src)} alt={alt} onError={() => setError(true)} {...props} />
 }
 
-export default function MatchingRecommendations() {
-  const { filters, updateFilters, resetFilters, pageSizeVersion } = useMatchFilters()
-  const [view, setView] = useState<ViewMode>('grid')
+const BADGE_STYLES: Record<string, string> = {
+  featured: 'bg-amber-100 text-amber-700',
+  topRated: 'bg-teal-100 text-teal-700',
+  bestSeller: 'bg-orange-100 text-orange-700',
+  new: 'bg-purple-100 text-purple-700',
+}
 
-  const { data: recData, isLoading, error: recError, refetch } = usePersonalizedRecommendations(filters, pageSizeVersion)
+const BADGE_LABELS: Record<string, string> = {
+  featured: '⭐ Featured',
+  topRated: '🏆 Top Rated',
+  bestSeller: '🔥 Best Seller',
+  new: '✨ New',
+}
+
+export default function MatchingRecommendations() {
+  const navigate = useNavigate()
+  const { filters, updateFilters, resetFilters } = useMatchFilters()
+
+  const { data: recData, isLoading, error: recError, refetch } = usePersonalizedRecommendations({ ...filters, limit: 12 })
   const { data: historyData } = useRecommendationHistory(1, 5)
   const { data: adPanelData } = useAdPanel('category_banner')
 
-  // Keep the rendered list and pagination in sync with the selected page size
-  // even while a refresh is in flight (placeholder data can still be from a
-  // previous larger selection).
-  const products = (recData?.data ?? []).slice(0, filters.limit)
+  const products = recData?.data ?? []
   const source = recData?.source ?? 'generic'
   const analysisAge = recData?.analysisAge ?? null
   const skinTypes = recData?.skinTypes ?? []
-  const meta = {
-    ...(recData?.meta ?? { page: filters.page, limit: filters.limit, total: 0, totalPages: 0 }),
-    page: filters.page,
-    limit: filters.limit,
-  }
+  const meta = recData?.meta ?? { page: 1, limit: 12, total: 0, totalPages: 0 }
   const history = historyData?.data ?? []
 
-  const skinTypeLabel = skinTypes.length > 0 ? skinTypes.join(', ') : 'All Types'
+  const handlePageChange = (newPage: number) => {
+    updateFilters({ page: newPage })
+  }
 
-  const hasActiveFilters = Boolean(
-    filters.categoryId ||
-    (filters.skinTypes && filters.skinTypes.split(',').filter(Boolean).filter((t) => t !== 'all').length > 0) ||
-    filters.minPrice !== undefined ||
-    filters.maxPrice !== undefined ||
-    filters.rating !== undefined,
-  )
+  const getPageNumbers = () => {
+    const pages: (number | '...')[] = []
+    const total = meta.totalPages
+    const current = meta.page
 
-  const handleRemoveChip = (key: string, value?: string) => {
-    if (key === 'categoryId') {
-      updateFilters({ categoryId: undefined })
-    } else if (key === 'skinTypes' && value) {
-      const current = filters.skinTypes
-        ? filters.skinTypes.split(',').filter(Boolean).filter((t) => t !== 'all')
-        : []
-      const updated = current.filter((t) => t !== value)
-      updateFilters({ skinTypes: updated.length > 0 ? updated.join(',') : undefined })
-    } else if (key === 'minPrice') {
-      updateFilters({ minPrice: undefined })
-    } else if (key === 'maxPrice') {
-      updateFilters({ maxPrice: undefined })
-    } else if (key === 'rating') {
-      updateFilters({ rating: undefined })
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) pages.push(i)
+    } else {
+      pages.push(1)
+      if (current > 3) pages.push('...')
+      for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+        pages.push(i)
+      }
+      if (current < total - 2) pages.push('...')
+      pages.push(total)
     }
+    return pages
   }
 
-  const handleClearAllFilters = () => {
-    updateFilters({
-      categoryId: undefined,
-      skinTypes: undefined,
-      minPrice: undefined,
-      maxPrice: undefined,
-      rating: undefined,
-    })
-  }
+  const skinTypeLabel = skinTypes.length > 0 ? skinTypes.join(', ') : 'All Types'
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
@@ -118,9 +105,6 @@ export default function MatchingRecommendations() {
         </p>
       </div>
 
-      {/* Sample Advertisement */}
-      <SampleAdBanner />
-
       {/* Analysis Status Banner */}
       <ProfilePromptBanner source={source} analysisAge={analysisAge} />
 
@@ -132,15 +116,6 @@ export default function MatchingRecommendations() {
         onImpression={(adIds) => matchingService.trackImpression(adIds)}
         onClick={(adId) => matchingService.trackClick(adId)}
       />
-
-      {/* Active Filter Chips */}
-      {hasActiveFilters && (
-        <MatchingFilterChips
-          filters={filters}
-          onRemove={handleRemoveChip}
-          onClearAll={handleClearAllFilters}
-        />
-      )}
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Filters Sidebar */}
@@ -159,260 +134,188 @@ export default function MatchingRecommendations() {
           ) : (
             <>
               {/* Sort Bar */}
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <MatchingSortSelect
-                  sort={filters.sort}
-                  order={filters.order}
-                  source={source}
-                  onChange={(sort, order) => updateFilters({ sort, order })}
-                />
-                <ViewToggle view={view} onChange={setView} />
+              <div className="flex items-center gap-3">
+                {source === 'ai' && (
+                  <>
+                    <span className="text-sm text-muted-foreground">Sort by:</span>
+                    <select
+                      value={filters.sort ?? ''}
+                      onChange={(e) => updateFilters({ sort: e.target.value as 'matchScore' | 'price' | 'rating' | 'createdAt' || undefined })}
+                      className="px-3 py-1.5 text-sm border border-border rounded-md bg-card text-foreground cursor-pointer focus:outline-none focus:border-primary"
+                    >
+                      <option value="matchScore">Match Score</option>
+                      <option value="price">Price: Low to High</option>
+                      <option value="rating">Rating</option>
+                      <option value="createdAt">Newest</option>
+                    </select>
+                  </>
+                )}
+                <span className="ml-auto text-sm text-muted-foreground">
+                  Showing {((meta.page - 1) * meta.limit) + 1}–{Math.min(meta.page * meta.limit, meta.total)} of {meta.total} results
+                </span>
               </div>
 
               {/* Product Grid */}
-              {view === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {products.map((product) => (
-                    <Card key={product.id} className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
-                      <Link to={`/buyer/products/${product.slug}`} className="block">
-                        <div className="relative aspect-square bg-muted">
-                          <ProductImage
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="h-full w-full object-cover"
-                          />
-                          
-                          {/* Badges top-left */}
-                          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                            {product.compareAtPrice && (
-                              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
-                                SALE
-                              </span>
-                            )}
-                            {!product.isInStock && (
-                              <span className="inline-flex items-center rounded-full bg-gray-900 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
-                                OUT OF STOCK
-                              </span>
-                            )}
-                          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {products.map((product) => (
+                  <Card key={product.id} onClick={() => navigate(`/buyer/products/${product.slug}`)} className="relative border border-border/60 bg-card shadow-sm flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-200 cursor-pointer group rounded-xl">
+                    {/* Image Area */}
+                    <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+                      <ProductImage
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
 
-                          {/* Match Score - Bottom Left (original position) */}
-                          {product.matchScore !== null && (
-                            <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
-                              <Check className="h-3 w-3" />
-                              {product.matchScore}% Match
-                            </span>
-                          )}
+                      {/* Category Badge - Top Left */}
+                      {product.categoryBadge && (
+                        <span className={cn(
+                          'absolute top-3 left-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold',
+                          BADGE_STYLES[product.categoryBadge]
+                        )}>
+                          {BADGE_LABELS[product.categoryBadge]}
+                        </span>
+                      )}
 
-                          {/* Heart icon top-right */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/80 hover:bg-white shadow-sm z-10"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          >
-                            <Heart className="h-4 w-4 text-gray-600 hover:text-red-500 transition-colors" />
-                          </Button>
-                        </div>
+                      {/* Out of Stock */}
+                      {!product.isInStock && (
+                        <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-black/60 text-white">
+                          Out of Stock
+                        </span>
+                      )}
+
+                      {/* Match Score - Bottom Left Overlay */}
+                      {product.matchScore !== null && (
+                        <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+                          <Check className="h-3 w-3" />
+                          {product.matchScore}% Match
+                        </span>
+                      )}
+
+                      {/* Mobile Add Button - Bottom Right */}
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        className="absolute bottom-3 right-3 z-10 sm:hidden w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center shadow-lg hover:bg-primary transition-colors"
+                      >
+                        <Plus className="h-5 w-5 text-white" />
+                      </button>
+                    </div>
+
+                    {/* Favorite Heart - Fixed position */}
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full flex items-center justify-center"
+                    >
+                      <Heart className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors" />
+                    </button>
+
+                    {/* Card Body */}
+                    <div className="p-4 flex flex-col flex-1">
+                      {product.brandName && (
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-widest mb-1">
+                          {product.brandName}
+                        </p>
+                      )}
+
+                      <Link to={`/buyer/products/${product.slug}`} className="text-sm font-bold text-foreground line-clamp-2 hover:text-primary transition-colors leading-snug mb-2">
+                        {product.name}
                       </Link>
-                      <CardContent className="space-y-1.5 p-3 pt-2.5">
-                        {/* Sold By / Shop Name with icon */}
-                        {product.brandName && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-muted-foreground text-[10px]">🏪</span>
-                            <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">
-                              SOLD BY {product.brandName}
-                            </span>
-                          </div>
-                        )}
-                        {/* Product Name */}
-                        <Link to={`/buyer/products/${product.slug}`} className="block">
-                          <h3 className="line-clamp-1 text-sm font-semibold hover:text-primary transition-colors">
-                            {product.name}
-                          </h3>
-                        </Link>
-                        {/* Rating */}
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={cn(
-                                  'h-3.5 w-3.5',
-                                  star <= Math.round(Number(product.avgRating))
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'fill-gray-200 text-gray-200'
-                                )}
-                              />
-                            ))}
-                          </div>
-                          <span className="font-medium">{Number(product.avgRating).toFixed(2)}</span>
-                          <span className="text-muted-foreground">({product.reviewCount})</span>
-                        </div>
-                        {/* Skin Types */}
-                        <div className="flex flex-wrap gap-1">
-                          {product.skinTypes.slice(0, 2).map((t) => (
-                            <span
-                              key={t}
-                              className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-medium"
-                            >
-                              {t.charAt(0).toUpperCase() + t.slice(1)}
-                            </span>
-                          ))}
-                          {product.skinTypes.length > 2 && (
-                            <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-[10px] font-medium">
-                              +{product.skinTypes.length - 2}
-                            </span>
-                          )}
-                        </div>
-                        {/* Price and Add to Cart */}
-                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-base font-bold text-gray-900">
-                              Ks {Number(product.price).toLocaleString()}
-                            </span>
-                            {product.compareAtPrice && (
-                              <span className="text-xs text-muted-foreground line-through">
-                                Ks {Number(product.compareAtPrice).toLocaleString()}
-                              </span>
-                            )}
-                          </div>
-                          {product.isInStock && (
-                            <Button
-                              size="icon"
-                              className="h-9 w-9 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                            >
-                              <ShoppingCart className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {products.map((product) => (
-                    <Card key={product.id} className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
-                      <Link to={`/buyer/products/${product.slug}`} className="block">
-                        <div className="flex gap-4 p-4">
-                          <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-muted overflow-hidden">
-                            <ProductImage
-                              src={product.images[0]}
-                              alt={product.name}
-                              className="h-full w-full object-cover"
-                            />
-                            {product.matchScore !== null && (
-                              <span className="absolute bottom-1.5 left-1.5 z-10 inline-flex items-center gap-1 bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-md">
-                                <Check className="h-2.5 w-2.5" />
-                                {product.matchScore}% Match
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  {product.compareAtPrice && (
-                                    <span className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
-                                      SALE
-                                    </span>
-                                  )}
-                                  {!product.isInStock && (
-                                    <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
-                                      OUT OF STOCK
-                                    </span>
-                                  )}
-                                </div>
-                                {product.brandName && (
-                                  <div className="flex items-center gap-1 mb-0.5">
-                                    <span className="text-muted-foreground text-[10px]">🏪</span>
-                                    <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">
-                                      SOLD BY {product.brandName}
-                                    </span>
-                                  </div>
-                                )}
-                                <h3 className="truncate text-sm font-semibold">{product.name}</h3>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="shrink-0 h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200"
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                              >
-                                <Heart className="h-4 w-4 text-gray-600 hover:text-red-500 transition-colors" />
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-1 text-xs">
-                              <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={cn(
-                                      'h-3 w-3',
-                                      star <= Math.round(Number(product.avgRating))
-                                        ? 'fill-amber-400 text-amber-400'
-                                        : 'fill-gray-200 text-gray-200'
-                                    )}
-                                  />
-                                ))}
-                              </div>
-                              <span className="font-medium">{Number(product.avgRating).toFixed(2)}</span>
-                              <span className="text-muted-foreground">({product.reviewCount})</span>
-                            </div>
-                            {product.skinTypes.length > 0 && (
-                              <div className="mt-1.5 flex flex-wrap gap-1">
-                                {product.skinTypes.slice(0, 2).map((t) => (
-                                  <span
-                                    key={t}
-                                    className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-medium"
-                                  >
-                                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                                  </span>
-                                ))}
-                                {product.skinTypes.length > 2 && (
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-[10px] font-medium">
-                                    +{product.skinTypes.length - 2}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="flex items-baseline gap-2">
-                                <span className="text-base font-bold text-gray-900">
-                                  Ks {Number(product.price).toLocaleString()}
-                                </span>
-                                {product.compareAtPrice && (
-                                  <span className="text-xs text-muted-foreground line-through">
-                                    Ks {Number(product.compareAtPrice).toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
-                              {product.isInStock && (
-                                <Button
-                                  size="icon"
-                                  className="h-8 w-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                >
-                                  <ShoppingCart className="h-4 w-4" />
-                                </Button>
+
+                      {/* Rating */}
+                      <div className="flex items-center gap-1 mb-2">
+                        <div className="flex items-center">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={cn(
+                                'h-3.5 w-3.5',
+                                star <= Math.round(Number(product.avgRating))
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'fill-gray-200 text-gray-200'
                               )}
-                            </div>
-                          </div>
+                            />
+                          ))}
                         </div>
-                      </Link>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {Number(product.avgRating).toFixed(2)} ({product.reviewCount})
+                        </span>
+                      </div>
+
+                      {/* Skin Types */}
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {product.skinTypes.slice(0, 3).map((t) => (
+                          <span key={t} className="px-2 py-0.5 text-[10px] font-medium bg-purple-50 text-purple-700 rounded">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex-1" />
+
+                      {/* Price and Cart Button */}
+                      <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                        <div className="flex items-baseline gap-2">
+                          {product.compareAtPrice && (
+                            <span className="text-sm text-muted-foreground line-through">
+                              Ks {Number(product.compareAtPrice).toLocaleString()}
+                            </span>
+                          )}
+                          <span className="text-base font-bold text-purple-700">
+                            Ks {Number(product.price).toLocaleString()}
+                          </span>
+                        </div>
+
+                        <Link
+                          to={`/buyer/products/${product.slug}`}
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                          className="hidden sm:flex w-9 h-9 rounded-full bg-purple-100 items-center justify-center hover:bg-purple-200 transition-colors"
+                        >
+                          <ShoppingCart className="h-4 w-4 text-purple-700" />
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
 
               {/* Pagination */}
-              {meta && (
-                <Pagination
-                  meta={meta}
-                  onPageChange={(page) => updateFilters({ page })}
-                />
+              {meta.totalPages > 1 && (
+                <div className="flex items-center justify-center gap-1.5 pt-4">
+                  <button
+                    onClick={() => handlePageChange(meta.page - 1)}
+                    disabled={meta.page <= 1}
+                    className="w-9 h-9 rounded-lg border border-border bg-card text-sm text-muted-foreground flex items-center justify-center hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {getPageNumbers().map((page, i) =>
+                    page === '...' ? (
+                      <span key={`dots-${i}`} className="w-9 h-9 flex items-center justify-center text-sm text-muted-foreground">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={cn(
+                          'w-9 h-9 rounded-lg text-sm font-medium flex items-center justify-center transition-colors',
+                          meta.page === page
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border border-border bg-card text-muted-foreground hover:bg-muted'
+                        )}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() => handlePageChange(meta.page + 1)}
+                    disabled={meta.page >= meta.totalPages}
+                    className="w-9 h-9 rounded-lg border border-border bg-card text-sm text-muted-foreground flex items-center justify-center hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               )}
             </>
           )}

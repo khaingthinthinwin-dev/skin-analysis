@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { CommissionGroupBy, CommissionReportFilter } from '../services/commission.service';
 
 interface ReportFilterPanelProps {
@@ -43,14 +42,13 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 sm:p-5">
+    <div className="bg-card border border-border rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <span className="text-card-foreground text-[15px] font-bold">
           Commission Report
         </span>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         {([ 
           ['merchant', 'By Merchant'],
           ['day', 'By Day'],
@@ -71,35 +69,32 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
             {label}
           </button>
         ))}
-        </div>
-        <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
-          <span className="text-sm text-muted-foreground font-medium">From</span>
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="flex-1 px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none min-w-[140px]"
-          />
-          <span className="text-sm text-muted-foreground font-medium">To</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="flex-1 px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none min-w-[140px]"
-          />
-        </div>
-        <div className="ml-auto flex items-center gap-2">
+        <span className="text-sm text-muted-foreground font-medium">From</span>
+        <input
+          type="date"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          className="px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none"
+        />
+        <span className="text-sm text-muted-foreground font-medium">To</span>
+        <input
+          type="date"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          className="px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none"
+        />
         <button
           onClick={handleApply}
           className="px-4 py-2 text-[13px] font-semibold rounded-lg border-none bg-primary text-primary-foreground cursor-pointer"
         >
           Apply
         </button>
-        {/* Ghost variant so the Reset button matches the Revenue tab Reset colour. */}
-        <Button variant="ghost" size="sm" onClick={handleReset}>
+        <button
+          onClick={handleReset}
+          className="px-4 py-2 text-[13px] font-semibold rounded-lg bg-transparent text-muted-foreground border border-border cursor-pointer"
+        >
           Reset
-        </Button>
-        </div>
+        </button>
       </div>
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
     </div>

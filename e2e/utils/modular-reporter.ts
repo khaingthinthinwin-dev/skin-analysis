@@ -8,32 +8,7 @@ import type {
 } from '@playwright/test/reporter';
 import * as fs from 'fs';
 import * as path from 'path';
-// Inline getScreenFromFilePath to avoid importing 'test' from @playwright/test
-// (which breaks in reporter context)
-
-const SCREEN_FOLDERS = [
-  'SignUp_LogIn', 'SearchAndFilter', 'ProductDetail',
-  'Matching_And_Recommendation', 'AI_Skin_Analysis', 'Wishlist_Cart',
-  'Checkout_Purchase', 'Product_Management', 'Advertisement_Management',
-  'Promotion_Pages', 'Ad_Management_Screen', 'Review_ContentModeration',
-  'Commission_Revenue', 'Order_Insights', 'Audit_Log',
-];
-
-function getScreenFromFilePath(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, '/');
-  for (const screen of SCREEN_FOLDERS) {
-    if (
-      normalized.includes(`/tests/${screen}/`) ||
-      normalized.includes(`tests/${screen}/`) ||
-      normalized.startsWith(`${screen}/`) ||
-      normalized.includes(`/${screen}/`) ||
-      normalized.includes(screen)
-    ) {
-      return screen;
-    }
-  }
-  return 'Other';
-}
+import { SCREEN_FOLDERS, getScreenFromFilePath } from './screenshot';
 
 const TEST_RESULTS_DIR = path.resolve(__dirname, '../test-results');
 
@@ -54,8 +29,6 @@ export default class ModularReporter implements Reporter {
       error?: string;
     }>
   > = {};
-
-  onBegin(config: FullConfig, suite: Suite) {}
 
   onTestEnd(test: TestCase, result: TestResult) {
     const filePath = test.location.file;

@@ -25,10 +25,10 @@ export default function FeeHistoryPage() {
   const resetPage = () => setPage(1)
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fee Change History</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Fee Change History</h1>
           <p className="text-muted-foreground">Audit trail of fee setting changes</p>
         </div>
         <Button asChild size="sm" variant="outline">

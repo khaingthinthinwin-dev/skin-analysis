@@ -23,9 +23,9 @@ interface RevenueTrendChartProps {
 const toNum = (v: string | undefined) => parseFloat(v ?? '0') || 0;
 
 function compactMoney(v: number): string {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M Ks`;
-  if (v >= 1_000) return `${(v / 1_000).toFixed(v >= 10_000 ? 0 : 1)}k Ks`;
-  return `${v.toFixed(0)} Ks`;
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(v >= 10_000 ? 0 : 1)}k`;
+  return `$${v.toFixed(0)}`;
 }
 
 function niceMax(max: number): number {
@@ -143,7 +143,7 @@ type TickLabel = { index: number; label: string };
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">Revenue Trend</CardTitle>
           <RangeToggle value={range} onChange={onRangeChange} />
         </div>

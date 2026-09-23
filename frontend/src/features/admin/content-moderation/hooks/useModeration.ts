@@ -199,6 +199,8 @@ export function useAdminReports(params?: ReportsParams) {
     }) => adminService.updateReportStatus(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'reports'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'reviewStats'] });
     },
   });
 
