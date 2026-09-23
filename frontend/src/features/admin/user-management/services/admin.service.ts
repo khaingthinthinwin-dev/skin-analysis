@@ -47,7 +47,12 @@ export const adminService = {
     order?: 'asc' | 'desc';
   }): Promise<PaginatedResponse<User>> => {
     const response = await api.get('/admin/users', { params });
-    return response.data.data;
+    const data = response.data.data;
+    data.items = data.items.map((item: Record<string, unknown>) => ({
+      ...item,
+      merchant: item.merchantProfile ?? item.merchant ?? null,
+    }));
+    return data;
   },
 
   toggleUserStatus: async (userId: string, isActive: boolean): Promise<{ id: string; isActive: boolean; updatedAt: string }> => {

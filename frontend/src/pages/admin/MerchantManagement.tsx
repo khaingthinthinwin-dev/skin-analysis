@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -12,6 +12,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +40,7 @@ import {
   XCircle,
   FileText,
   Download,
-  Trash2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -194,13 +201,14 @@ export default function MerchantManagement() {
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 300);
+  const [merchantSort, setMerchantSort] = useState('createdAt');
+  const [merchantOrder, setMerchantOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedMerchants, setSelectedMerchants] = useState<string[]>([]);
 
   // ── Dialog State ────────────────────────────────────────────────────────
   const [detailMerchant, setDetailMerchant] = useState<Merchant | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Merchant | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // ── Stats ───────────────────────────────────────────────────────────────
   const { stats, refreshStats } = useMerchantStats();
@@ -211,12 +219,35 @@ export default function MerchantManagement() {
     limit,
     status: (status as 'pending' | 'approved' | 'rejected' | undefined) || undefined,
     search: debouncedSearch || undefined,
+    sort: merchantSort,
+    order: merchantOrder,
   });
 
   // ── Derived Data ────────────────────────────────────────────────────────
   const merchants = merchantsQuery.data?.items || [];
   const totalPages = merchantsQuery.data?.totalPages || 1;
   const total = merchantsQuery.data?.total ?? 0;
+
+  // ── Sort Mapping ────────────────────────────────────────────────────────
+  const sortOptions = useMemo(
+    () => [
+      { value: 'createdAt:desc', label: 'Newest' },
+      { value: 'createdAt:asc', label: 'Oldest' },
+      { value: 'shopName:asc', label: 'Name (A-Z)' },
+      { value: 'shopName:desc', label: 'Name (Z-A)' },
+    ],
+    [],
+  );
+
+  const currentSortValue = `${merchantSort}:${merchantOrder}`;
+
+  const handleSortChange = (value: string) => {
+    const [sort, order] = value.split(':');
+    setMerchantSort(sort);
+    setMerchantOrder(order as 'asc' | 'desc');
+    setPage(1);
+    setSelectedMerchants([]);
+  };
 
   // ── Selection Helpers ───────────────────────────────────────────────────
   const toggleSelectAll = () => {
@@ -267,23 +298,6 @@ export default function MerchantManagement() {
         onError: () => toast.error('Failed to reject merchant'),
       },
     );
-  };
-
-  const openDeleteDialog = (id: string) => {
-    setDeleteTarget(id);
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await api.delete(`/admin/merchants/${deleteTarget}`);
-      toast.success('Merchant deleted');
-      setDeleteTarget(null);
-      setDetailMerchant(null);
-      refreshStats();
-    } catch {
-      toast.error('Failed to delete merchant');
-    }
   };
 
   return (
@@ -376,8 +390,8 @@ export default function MerchantManagement() {
         ))}
       </div>
 
-      {/* ── [C] Search Bar ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-start gap-3">
+      {/* ── [C] Search + Sort Bar ─────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -390,6 +404,19 @@ export default function MerchantManagement() {
             className="pl-9"
           />
         </div>
+        <Select value={currentSortValue} onValueChange={handleSortChange}>
+          <SelectTrigger className="w-[180px]">
+            <SlidersHorizontal className="h-4 w-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* ── [E] Merchants Table ─────────────────────────────────────────── */}
@@ -410,7 +437,7 @@ export default function MerchantManagement() {
               <TableHead>Shop</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Registered</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>License Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -486,14 +513,6 @@ export default function MerchantManagement() {
                         onClick={() => setDetailMerchant(merchant)}
                       >
                         <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-8 w-8"
-                        onClick={() => openDeleteDialog(merchant.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -784,29 +803,6 @@ export default function MerchantManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Merchant Confirmation ─────────────────────────────────── */}
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Merchant</DialogTitle>
-          </DialogHeader>
-          <p>
-            Are you sure you want to permanently delete this merchant? This action
-            cannot be undone.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -258,7 +258,12 @@ export default function ContentModeration() {
           setReason('');
           refreshStats();
         },
-        onError: () => toast.error('Failed to update product'),
+        onError: (error: unknown) => {
+          const msg =
+            (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            'Failed to update product';
+          toast.error(msg);
+        },
       },
     );
   };

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import {
   useAdminReviews,
   useAdminReports,
@@ -54,52 +55,28 @@ import type {
   AdminReport,
 } from '@/features/admin/content-moderation/services/moderation.service';
 
-// ─── Stats Types ────────────────────────────────────────────────────────────
-
-interface ReviewStats {
-  total: number;
-  pending: number;
-  approved: number;
-  rejected: number;
-}
-
 // ─── Stats Fetcher Hook ─────────────────────────────────────────────────────
 
 function useReviewStats() {
-  const [stats, setStats] = useState<ReviewStats>({
-    total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0,
-  });
-
-  const fetchStats = useCallback(async () => {
-    try {
+  const query = useQuery({
+    queryKey: ['admin', 'reviewStats'],
+    queryFn: async () => {
       const [totalRes, pendingRes, approvedRes, rejectedRes] = await Promise.all([
         api.get('/admin/reviews', { params: { limit: 1 } }),
         api.get('/admin/reviews', { params: { status: 'pending', limit: 1 } }),
         api.get('/admin/reviews', { params: { status: 'approved', limit: 1 } }),
         api.get('/admin/reviews', { params: { status: 'rejected', limit: 1 } }),
       ]);
-      setStats({
+      return {
         total: totalRes.data.data.total ?? 0,
         pending: pendingRes.data.data.total ?? 0,
         approved: approvedRes.data.data.total ?? 0,
         rejected: rejectedRes.data.data.total ?? 0,
-      });
-    } catch {
-      // Stats will remain at 0 on error
-    }
-  }, []);
+      };
+    },
+  });
 
-  useEffect(() => {
-    const loadStats = async () => {
-      await fetchStats();
-    };
-    loadStats();
-  }, [fetchStats]);
-
-  return { stats, refreshStats: fetchStats };
+  return { stats: query.data ?? { total: 0, pending: 0, approved: 0, rejected: 0 }, refreshStats: query.refetch };
 }
 
 // ─── Debounce Hook ──────────────────────────────────────────────────────────
