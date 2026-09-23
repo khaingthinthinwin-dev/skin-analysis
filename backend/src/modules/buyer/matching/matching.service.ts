@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
@@ -454,7 +455,11 @@ export class MatchingService {
       p: query.page,
       l: query.limit,
     });
-    const hash = Buffer.from(params).toString('base64url').slice(0, 32);
+    // Full SHA-256 digest of the serialized query. Do NOT truncate: a short
+    // key would drop the trailing `p` (page) / `l` (limit) fields whenever the
+    // filter JSON exceeds the captured window, making every page collide on
+    // the same Redis key and returning the first page for all pagination.
+    const hash = createHash('sha256').update(params).digest('hex');
     return `cache:recommendations:user:${userId}:${hash}`;
   }
 

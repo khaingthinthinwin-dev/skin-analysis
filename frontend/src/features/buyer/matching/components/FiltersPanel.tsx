@@ -16,6 +16,30 @@ const RATING_OPTIONS = [
   { value: 3.0, label: '3.0+ Stars' },
 ]
 
+const PRICE_ERROR_MIN_MAX = 'Minimum price cannot be greater than maximum price.'
+const PRICE_ERROR_NEGATIVE = 'Price cannot be negative.'
+const PRICE_ERROR_INVALID = 'Please enter a valid price.'
+
+function validatePriceRange(minValue?: string, maxValue?: string): string | null {
+  const parsedMin = minValue && minValue.trim() !== '' ? Number(minValue) : undefined
+  const parsedMax = maxValue && maxValue.trim() !== '' ? Number(maxValue) : undefined
+
+  for (const value of [parsedMin, parsedMax]) {
+    if (value !== undefined && Number.isNaN(value)) return PRICE_ERROR_INVALID
+  }
+  for (const value of [parsedMin, parsedMax]) {
+    if (value !== undefined && value < 0) return PRICE_ERROR_NEGATIVE
+  }
+  if (
+    parsedMin !== undefined &&
+    parsedMax !== undefined &&
+    parsedMin > parsedMax
+  ) {
+    return PRICE_ERROR_MIN_MAX
+  }
+  return null
+}
+
 interface FiltersPanelProps {
   filters: MatchQueryParams
   onUpdate: (updates: Partial<MatchQueryParams>) => void
@@ -26,6 +50,7 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
   const [priceMinDraft, setPriceMinDraft] = useState(filters.minPrice?.toString() ?? '')
   const [priceMaxDraft, setPriceMaxDraft] = useState(filters.maxPrice?.toString() ?? '')
   const [focusedPriceField, setFocusedPriceField] = useState<'min' | 'max' | null>(null)
+  const [priceError, setPriceError] = useState<string | null>(null)
   const { data: categoryData } = useCategoryTree()
   const categories = categoryData?.data ?? []
 
@@ -41,8 +66,9 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
       filters.rating !== undefined,
   )
 
-  const priceMin = focusedPriceField === 'min' ? priceMinDraft : (filters.minPrice?.toString() ?? '')
-  const priceMax = focusedPriceField === 'max' ? priceMaxDraft : (filters.maxPrice?.toString() ?? '')
+  const priceErrorActive = Boolean(priceError)
+  const priceMin = focusedPriceField === 'min' || priceErrorActive ? priceMinDraft : (filters.minPrice?.toString() ?? '')
+  const priceMax = focusedPriceField === 'max' || priceErrorActive ? priceMaxDraft : (filters.maxPrice?.toString() ?? '')
 
   const toggleSkinType = (value: string) => {
     const updated = selectedSkinTypes.includes(value)
@@ -56,9 +82,16 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
   }
 
   const commitPrice = () => {
+    const validationError = validatePriceRange(priceMin, priceMax)
+    if (validationError) {
+      setPriceError(validationError)
+      setFocusedPriceField(null)
+      return
+    }
+    setPriceError(null)
     onUpdate({
-      minPrice: priceMin ? Number(priceMin) : undefined,
-      maxPrice: priceMax ? Number(priceMax) : undefined,
+      minPrice: priceMin && priceMin.trim() !== '' ? Number(priceMin) : undefined,
+      maxPrice: priceMax && priceMax.trim() !== '' ? Number(priceMax) : undefined,
     })
     setFocusedPriceField(null)
   }
@@ -67,6 +100,7 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
     setPriceMinDraft('')
     setPriceMaxDraft('')
     setFocusedPriceField(null)
+    setPriceError(null)
     onReset()
   }
 
@@ -85,6 +119,8 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
             categories={categories}
             selectedCategoryId={filters.categoryId ?? ''}
             onSelect={(categoryId) => onUpdate({ categoryId: categoryId || undefined })}
+            activeClassName="rounded-lg bg-gradient-to-r from-purple-100/80 to-purple-50/50 pr-4 font-semibold text-purple-900 shadow-xs dark:from-purple-950/60 dark:to-purple-900/30 dark:text-purple-200"
+            noIndent
           />
         </div>
 
@@ -118,6 +154,7 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
               onChange={(e) => {
                 setFocusedPriceField('min')
                 setPriceMinDraft(e.target.value)
+                setPriceError(validatePriceRange(e.target.value, priceMax))
               }}
               onBlur={commitPrice}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
@@ -132,12 +169,18 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
               onChange={(e) => {
                 setFocusedPriceField('max')
                 setPriceMaxDraft(e.target.value)
+                setPriceError(validatePriceRange(priceMin, e.target.value))
               }}
               onBlur={commitPrice}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
               className="h-8 text-xs"
             />
           </div>
+          {priceError && (
+            <p role="alert" className="mt-1.5 text-xs font-medium text-destructive">
+              {priceError}
+            </p>
+          )}
         </div>
 
         <Separator />

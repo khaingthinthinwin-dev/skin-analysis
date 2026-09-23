@@ -84,7 +84,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
 
       <div className="space-y-3">
         <div>
-          <h4 className="mb-2 border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500">Category</h4>
+          <h4 className="mb-2 border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Category</h4>
           <CategorySelect
             categories={categories}
             selectedCategoryId={params.categoryId}
@@ -95,7 +95,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
         <Separator className="bg-gray-100" />
 
         <div>
-          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500">Skin Type <ChevronUp className="h-3 w-3" /></h4>
+          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Skin Type <ChevronUp className="h-3 w-3" /></h4>
           <div className="space-y-1.5">
             {SKIN_TYPES.map((st) => (
               <div key={st.value} className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
         <Separator className="bg-gray-100" />
 
         <div>
-          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500">Price Range <ChevronUp className="h-3 w-3" /></h4>
+          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Price Range <ChevronUp className="h-3 w-3" /></h4>
           <div className="flex items-center gap-2">
             <Input
               type="number"
@@ -155,7 +155,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
         <Separator className="bg-gray-100" />
 
         <div>
-          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500">Rating <ChevronUp className="h-3 w-3" /></h4>
+          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Rating <ChevronUp className="h-3 w-3" /></h4>
           <div className="space-y-1.5">
             {RATING_OPTIONS.map((r) => (
               <div key={r.value} className="flex items-center gap-2">

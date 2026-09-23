@@ -1,7 +1,9 @@
 import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useCategoryTree } from '@/features/search/hooks/useCategoryTree'
 import type { MatchQueryParams } from '@/schemas/matching.schema'
+import type { CategoryNode } from '@/types/search.types'
 
 interface MatchingFilterChipsProps {
   filters: MatchQueryParams
@@ -9,10 +11,27 @@ interface MatchingFilterChipsProps {
   onClearAll?: () => void
 }
 
+function findCategoryName(categories: CategoryNode[], id: string): string | null {
+  for (const cat of categories) {
+    if (cat.id === id) return cat.name
+    const child = findCategoryName(cat.children ?? [], id)
+    if (child) return child
+  }
+  return null
+}
+
 export function MatchingFilterChips({ filters, onRemove, onClearAll }: MatchingFilterChipsProps) {
+  const { data: categoryData } = useCategoryTree()
+  const categories = categoryData?.data ?? []
+  const categoryName = filters.categoryId
+    ? findCategoryName(categories, filters.categoryId)
+    : null
+
   const chips: Array<{ key: string; label: string; value?: string }> = []
 
-  if (filters.categoryId) chips.push({ key: 'categoryId', label: 'Category' })
+  if (filters.categoryId) {
+    chips.push({ key: 'categoryId', label: categoryName ?? 'Category' })
+  }
 
   if (filters.skinTypes) {
     const types = filters.skinTypes.split(',').filter(Boolean).filter((t) => t !== 'all')
@@ -21,8 +40,8 @@ export function MatchingFilterChips({ filters, onRemove, onClearAll }: MatchingF
     })
   }
 
-  if (filters.minPrice !== undefined) chips.push({ key: 'minPrice', label: `Min: Ks ${Number(filters.minPrice).toLocaleString()}` })
-  if (filters.maxPrice !== undefined) chips.push({ key: 'maxPrice', label: `Max: Ks ${Number(filters.maxPrice).toLocaleString()}` })
+  if (filters.minPrice !== undefined) chips.push({ key: 'minPrice', label: `Min: ${Number(filters.minPrice).toLocaleString()}Ks` })
+  if (filters.maxPrice !== undefined) chips.push({ key: 'maxPrice', label: `Max: ${Number(filters.maxPrice).toLocaleString()}Ks` })
   if (filters.rating !== undefined) chips.push({ key: 'rating', label: `${filters.rating}+ Stars` })
 
   if (chips.length === 0) return null

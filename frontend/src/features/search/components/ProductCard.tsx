@@ -67,7 +67,7 @@ export function ProductCard({
                   {product.category.name}
                 </span>
                 {product.shop_name && (
-                  <span className="text-xs text-purple-800 bg-purple-50 px-2 py-0.5 rounded mt-1 block">
+                  <span className="text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded mt-1 block">
                     Sold by {product.shop_name}
                   </span>
                 )}
@@ -100,10 +100,10 @@ export function ProductCard({
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-                <span className="text-base font-bold">{Number(product.price).toLocaleString()} Ks</span>
+                <span className="text-base font-bold">{Number(product.price).toLocaleString()}Ks</span>
                 {product.compareAtPrice && (
                   <span className="text-xs text-muted-foreground line-through">
-                    {Number(product.compareAtPrice).toLocaleString()} Ks
+                    {Number(product.compareAtPrice).toLocaleString()}Ks
                   </span>
                 )}
               </div>
@@ -176,14 +176,14 @@ export function ProductCard({
       <CardContent className="space-y-2 p-3 pt-2.5">
         {/* Sold By */}
         {product.shop_name && (
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             <Store className="h-3 w-3" />
             <span>Sold by {product.shop_name}</span>
           </div>
         )}
 
         {/* Product Title */}
-        <h3 className="line-clamp-1 text-sm font-bold text-gray-900">
+        <h3 className="line-clamp-1 text-sm font-bold text-gray-900 dark:text-zinc-100">
           {product.name}
         </h3>
 
@@ -199,10 +199,10 @@ export function ProductCard({
               }`}
             />
           ))}
-          <span className="ml-1 text-xs font-semibold text-gray-700">
+          <span className="ml-1 text-xs font-semibold text-gray-700 dark:text-zinc-200">
             {Number(product.avgRating).toFixed(2)}
           </span>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 dark:text-muted-foreground">
             ({product.reviewCount})
           </span>
         </div>
@@ -224,12 +224,12 @@ export function ProductCard({
         {/* Price + Cart Button */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-gray-900">
-              {Number(product.price).toLocaleString()} Ks
+            <span className="text-lg font-bold text-gray-900 dark:text-zinc-100">
+              {Number(product.price).toLocaleString()}Ks
             </span>
             {product.compareAtPrice && (
-              <span className="text-xs text-gray-400 line-through">
-                {Number(product.compareAtPrice).toLocaleString()} Ks
+              <span className="text-xs text-gray-400 dark:text-muted-foreground line-through">
+                {Number(product.compareAtPrice).toLocaleString()}Ks
               </span>
             )}
           </div>

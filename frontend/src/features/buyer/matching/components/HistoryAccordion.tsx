@@ -76,9 +76,9 @@ export function HistoryAccordion({ sessions }: HistoryAccordionProps) {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground truncate">{rec.name}</p>
                         {rec.matchScore !== null && (
-                          <p className="text-xs font-semibold text-emerald-600">{rec.matchScore}% match</p>
+                          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{rec.matchScore}% match</p>
                         )}
-                        <p className="text-xs text-muted-foreground">Ks {Number(rec.price).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{Number(rec.price).toLocaleString()}Ks</p>
                       </div>
                     </Link>
                   ))}

@@ -55,7 +55,7 @@ function CategoryItem({ node, selectedCategoryId, onSelect, depth }: CategoryIte
         className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${
           isSelected
             ? 'bg-purple-100 dark:bg-purple-950/60 font-medium text-purple-700 dark:text-purple-300'
-            : 'hover:bg-purple-50 dark:hover:bg-purple-950/30 text-gray-700 dark:text-zinc-300 hover:text-purple-700 dark:hover:text-purple-300'
+            : 'hover:bg-purple-50 dark:hover:bg-purple-950/30 text-gray-700 dark:text-zinc-100 hover:text-purple-700 dark:hover:text-purple-300'
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >

@@ -195,6 +195,38 @@ describe('MatchingService', () => {
       expect(findManyCall.skip).toBe(10);
       expect(findManyCall.take).toBe(10);
     });
+
+    it('should NOT collide page 1 and page 2 Redis cache keys', async () => {
+      mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
+      mockRedis.get.mockResolvedValue(null);
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.product.count.mockResolvedValue(50);
+
+      await service.getPersonalized(userId, { page: 1, limit: 10 });
+      await service.getPersonalized(userId, { page: 2, limit: 10 });
+
+      const cachedKeys = (
+        mockRedis.set.mock.calls as unknown as Array<[string]>
+      ).map((call) => call[0]);
+      expect(cachedKeys).toHaveLength(2);
+      expect(cachedKeys[0]).not.toBe(cachedKeys[1]);
+    });
+
+    it('should NOT collide different page sizes in Redis cache keys', async () => {
+      mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
+      mockRedis.get.mockResolvedValue(null);
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.product.count.mockResolvedValue(50);
+
+      await service.getPersonalized(userId, { page: 1, limit: 12 });
+      await service.getPersonalized(userId, { page: 1, limit: 24 });
+
+      const cachedKeys = (
+        mockRedis.set.mock.calls as unknown as Array<[string]>
+      ).map((call) => call[0]);
+      expect(cachedKeys).toHaveLength(2);
+      expect(cachedKeys[0]).not.toBe(cachedKeys[1]);
+    });
   });
 
   describe('getSimilar', () => {

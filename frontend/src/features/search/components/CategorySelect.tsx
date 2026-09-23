@@ -5,6 +5,8 @@ interface CategorySelectProps {
   categories: CategoryNode[]
   selectedCategoryId: string
   onSelect: (categoryId: string) => void
+  activeClassName?: string
+  noIndent?: boolean
 }
 
 const COLLAPSED_COUNT = 5
@@ -20,7 +22,13 @@ function flattenCategories(categories: CategoryNode[], depth = 0): { id: string;
   return result
 }
 
-export function CategorySelect({ categories, selectedCategoryId, onSelect }: CategorySelectProps) {
+export function CategorySelect({
+  categories,
+  selectedCategoryId,
+  onSelect,
+  activeClassName,
+  noIndent,
+}: CategorySelectProps) {
   const [expanded, setExpanded] = useState(false)
   const safeCategories = Array.isArray(categories) ? categories : []
   const flatCategories = flattenCategories(safeCategories)
@@ -28,6 +36,9 @@ export function CategorySelect({ categories, selectedCategoryId, onSelect }: Cat
   const allItems = [{ id: '', name: 'All', depth: 0 }, ...flatCategories]
   const visibleItems = expanded ? allItems : allItems.slice(0, COLLAPSED_COUNT)
   const hasMore = allItems.length > COLLAPSED_COUNT
+
+  const defaultActiveClass =
+    'bg-gradient-to-r from-purple-200/80 to-purple-100/60 border border-purple-500 font-semibold text-purple-700 dark:from-purple-950 dark:to-purple-900/70 dark:border-purple-600 dark:text-purple-300'
 
   return (
     <div className="space-y-1">
@@ -38,12 +49,12 @@ export function CategorySelect({ categories, selectedCategoryId, onSelect }: Cat
             key={item.id}
             type="button"
             onClick={() => onSelect(item.id)}
-            className={`flex w-full items-center rounded-md px-2 py-1.5 text-left text-xs transition-colors cursor-pointer ${
+            className={`flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors cursor-pointer ${
               isActive
-                ? 'bg-purple-100 dark:bg-purple-950/60 font-semibold text-purple-700 dark:text-purple-300'
-                : 'text-gray-600 dark:text-zinc-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-300'
+                ? activeClassName ?? defaultActiveClass
+                : 'text-foreground hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-300'
             }`}
-            style={{ paddingLeft: `${item.depth * 1}rem` }}
+            style={{ paddingLeft: noIndent ? (isActive ? '0.5rem' : 0) : `${item.depth * 1}rem` }}
           >
             <span>{item.name}</span>
           </button>
