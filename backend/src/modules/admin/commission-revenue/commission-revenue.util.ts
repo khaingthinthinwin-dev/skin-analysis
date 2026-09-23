@@ -9,6 +9,17 @@ export function fmtDecimal(value: unknown): string {
   return num.toFixed(2);
 }
 
+/**
+ * Format a number with comma separators and no decimal places for exports.
+ * Example: 12000.00 -> "12,000"
+ */
+export function fmtExportCurrency(value: unknown): string {
+  if (value === null || value === undefined) return '0';
+  const num = typeof value === 'number' ? value : Number(value);
+  if (Number.isNaN(num)) return '0';
+  return Math.round(num).toLocaleString('en-US');
+}
+
 export function toNumber(value: unknown): number {
   if (value === null || value === undefined) return 0;
   const num = typeof value === 'number' ? value : Number(value);

@@ -52,13 +52,13 @@ export function ProductInfo({ product }: ProductInfoProps) {
       </div>
 
       {/* [C3] Price */}
-      <div className="flex items-center gap-3">
-        <span className="text-2xl font-semibold text-primary">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <span className="text-xl font-semibold text-primary sm:text-2xl">
           {formatPrice(product.price)} MMK
         </span>
         {product.compareAtPrice && (
           <>
-            <span className="text-lg text-muted-foreground line-through">
+            <span className="text-sm text-muted-foreground line-through sm:text-lg">
               {formatPrice(product.compareAtPrice)} MMK
             </span>
             <Badge variant="destructive">

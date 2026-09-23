@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatPrice } from '@/lib/format'
+import { formatPrice } from '../utils/format'
 import type { RevenueAnalytics } from '@/types/admin-ad-management'
 
 function formatCtr(value: number): string {

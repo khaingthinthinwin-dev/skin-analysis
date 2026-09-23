@@ -3,7 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Search, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import { PayoutConfirmationDialog } from "./PayoutConfirmationDialog";
 import { PayoutDetailDialog } from "./PayoutDetailDialog";
 import { ExportDialog } from "./ExportDialog";
 import { PaginationControls } from "./PaginationControls";
+
 import { useRevenue } from "../hooks/useRevenue";
 import { useCommission } from "../hooks/useCommission";
 import {
@@ -47,6 +49,11 @@ export const RevenueTab: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [merchantFilter, setMerchantFilter] = useState<string>("");
   const [payoutPeriod, setPayoutPeriod] = useState<string>("");
+  // Search box: `searchInput` is what is typed, `searchTerm` is what has been
+  // submitted (via the lens icon button or Enter), so typing alone does not
+  // filter the table until the admin confirms the search.
+  const [searchInput, setSearchInput] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedPayoutIds, setSelectedPayoutIds] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -66,7 +73,7 @@ export const RevenueTab: React.FC = () => {
   const { payoutsQuery, processPayoutMutation, deletePayoutMutation } = useCommission(
     {
       page: payoutPage,
-      limit: 10,
+      limit: 5,
       ...(statusFilter ? { status: statusFilter } : {}),
       ...(merchantFilter ? { merchantId: merchantFilter } : {}),
       ...(payoutPeriod ? { period: payoutPeriod } : {}),
@@ -138,6 +145,28 @@ export const RevenueTab: React.FC = () => {
   const selectedUnderlyingPayoutIds = [...new Set(
     selectedPayouts.flatMap((payout) => payout.payoutIds ?? [payout.payoutId]),
   )];
+
+  const periodOptions = getPayoutPeriodOptions();
+
+  // Client-side partial search over merchant name and period. The payouts
+  // endpoint has no `search` param, so the match runs over the loaded page and
+  // accepts either the raw "YYYY-MM" value or its "September 2026" label.
+  const searchQuery = searchTerm.trim().toLowerCase();
+  const visiblePayouts = (payoutsQuery.data?.items ?? []).filter((payout) => {
+    if (!searchQuery) return true;
+    const periodLabel =
+      periodOptions.find((option) => option.value === payout.period)?.label ?? "";
+    return (
+      payout.merchantName.toLowerCase().includes(searchQuery) ||
+      payout.period.toLowerCase().includes(searchQuery) ||
+      periodLabel.toLowerCase().includes(searchQuery)
+    );
+  });
+
+  const applyPayoutSearch = () => {
+    setSearchTerm(searchInput);
+    setPayoutPage(1);
+  };
 
   const confirmDeletePayouts = () => {
     deletePayoutMutation.mutate(selectedUnderlyingPayoutIds, {
@@ -217,11 +246,10 @@ export const RevenueTab: React.FC = () => {
 
       {/* [M] Payout table */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-medium">Merchant Payouts</h3>
           <Button
             size="sm"
-            variant="outline"
             onClick={() => {
               setExportType("payout");
               setExportOpen(true);
@@ -230,11 +258,11 @@ export const RevenueTab: React.FC = () => {
             Export Payout
           </Button>
         </div>
-        <div className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-3">
+        <div className="flex flex-col gap-3 rounded-md border bg-card p-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Status</label>
             <select
-              className="flex h-9 w-[140px] items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:w-[140px]"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
@@ -249,7 +277,7 @@ export const RevenueTab: React.FC = () => {
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Merchant</label>
             <select
-              className="flex h-9 w-[180px] items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:w-[180px]"
               value={merchantFilter}
               onChange={(e) => {
                 setMerchantFilter(e.target.value);
@@ -267,7 +295,7 @@ export const RevenueTab: React.FC = () => {
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Period</label>
             <select
-              className="flex h-9 w-[170px] items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:w-[170px]"
               value={payoutPeriod}
               onChange={(e) => {
                 setPayoutPeriod(e.target.value);
@@ -275,37 +303,71 @@ export const RevenueTab: React.FC = () => {
               }}
             >
               <option value="">All periods</option>
-              {getPayoutPeriodOptions().map((option) => (
+              {periodOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setStatusFilter("");
-              setMerchantFilter("");
-              setPayoutPeriod("");
-              setPayoutPage(1);
-            }}
-          >
-            Reset
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto border-red-300 bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800 disabled:opacity-50"
-            disabled={selectedUnderlyingPayoutIds.length === 0 || deletePayoutMutation.isPending}
-            title="Delete selected payouts"
-            onClick={handleDeletePayouts}
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete selected payouts</span>
-          </Button>
+          {/* Single search box that covers both merchant name and period. */}
+          <div className="flex min-w-[220px] flex-1 flex-col gap-1">
+            <label
+              htmlFor="payout-search"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              Search
+            </label>
+            <div className="relative flex h-9 w-full items-center">
+              <Input
+                id="payout-search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") applyPayoutSearch();
+                }}
+                placeholder="Search merchant or period"
+                className="h-9 pr-10 text-sm"
+              />
+              <button
+                type="button"
+                aria-label="Search payouts"
+                title="Search"
+                onClick={applyPayoutSearch}
+                className="absolute right-0 flex h-9 w-9 items-center justify-center rounded-r-md border-l border-input text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="ml-auto flex items-end gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setStatusFilter("");
+                setMerchantFilter("");
+                setPayoutPeriod("");
+                setSearchInput("");
+                setSearchTerm("");
+                setPayoutPage(1);
+              }}
+            >
+              Reset
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-300 bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800 disabled:opacity-50"
+              disabled={selectedUnderlyingPayoutIds.length === 0 || deletePayoutMutation.isPending}
+              title="Delete selected payouts"
+              onClick={handleDeletePayouts}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete selected payouts</span>
+            </Button>
+          </div>
         </div>
         <PayoutTable
-          payouts={payoutsQuery.data?.items}
+          payouts={visiblePayouts}
           onProcessPayout={(id) => {
             const p = payoutsQuery.data?.items.find((pp) => pp.payoutId === id);
             setConfirmPayout(p ?? null);

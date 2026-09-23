@@ -50,7 +50,7 @@ type AdRevenueRow = {
   payment_amount: Prisma.Decimal | null;
   placement: string;
   tier: string;
-  approved_at: Date;
+  paid_at: Date;
 };
 
 type RefundAggRow = {
@@ -769,8 +769,9 @@ export class AdminAdManagementService {
 
     const conditions: Prisma.Sql[] = [
       Prisma.sql`ad.approval_status = 'approved'`,
-      Prisma.sql`ad.approved_at >= ${start}`,
-      Prisma.sql`ad.approved_at <= ${this.toEndOfDay(query.dateTo)}`,
+      Prisma.sql`payment.payment_status = 'completed'`,
+      Prisma.sql`payment.paid_at >= ${start}`,
+      Prisma.sql`payment.paid_at <= ${this.toEndOfDay(query.dateTo)}`,
     ];
     if (query.placement?.length) {
       conditions.push(
@@ -782,20 +783,35 @@ export class AdminAdManagementService {
     }
 
     const rows = await this.prisma.$queryRaw<AdRevenueRow[]>`
-      SELECT ad.payment_amount, f.placement, f.tier, ad.approved_at
+      SELECT payment.amount AS payment_amount, f.placement, f.tier, payment.paid_at
       FROM advertisements ad
+      JOIN ad_payments payment ON payment.ad_id = ad.id
       JOIN ad_fee_settings f ON f.id = ad.fee_setting_id
       WHERE ${Prisma.join(conditions, ' AND ')}
     `;
 
+    const refundConditions: Prisma.Sql[] = [
+      Prisma.sql`payment.payment_status = 'refunded'`,
+      Prisma.sql`payment.refunded_at >= ${start}`,
+      Prisma.sql`payment.refunded_at <= ${this.toEndOfDay(query.dateTo)}`,
+    ];
+    if (query.placement?.length) {
+      refundConditions.push(
+        Prisma.sql`f.placement IN (${Prisma.join(query.placement)})`,
+      );
+    }
+    if (query.tier?.length) {
+      refundConditions.push(Prisma.sql`f.tier IN (${Prisma.join(query.tier)})`);
+    }
+
     const refunds = await this.prisma.$queryRaw<RefundAggRow[]>`
       SELECT
         COUNT(*)::int AS refund_count,
-        COALESCE(SUM(refund_amount), 0) AS refund_amount
-      FROM ad_payments
-      WHERE payment_status = 'refunded'
-        AND refunded_at >= ${start}
-        AND refunded_at <= ${this.toEndOfDay(query.dateTo)}
+        COALESCE(SUM(payment.refund_amount), 0) AS refund_amount
+      FROM ad_payments payment
+      JOIN advertisements ad ON ad.id = payment.ad_id
+      JOIN ad_fee_settings f ON f.id = ad.fee_setting_id
+      WHERE ${Prisma.join(refundConditions, ' AND ')}
     `;
     const refundAgg = refunds[0];
 
@@ -803,9 +819,12 @@ export class AdminAdManagementService {
       rows.reduce((sum, row) => sum + Number(row.payment_amount ?? 0), 0),
     );
     const totalAdsApproved = rows.length;
-    const totalRefunds = refundAgg?.refund_count ?? 0;
     const refundAmount = Number(refundAgg?.refund_amount ?? 0);
-    const totalFeesCollected = round2(totalRevenue - refundAmount);
+    // The summary and charts use completed payments of approved ads. Refunds
+    // are reported separately because they belong to rejected ads and must
+    // not reduce the approved-ad revenue or fee metrics.
+    const totalRefunds = round2(refundAmount);
+    const totalFeesCollected = totalRevenue;
     const avgRevenuePerAd =
       totalAdsApproved > 0 ? round2(totalRevenue / totalAdsApproved) : 0;
 
@@ -833,7 +852,7 @@ export class AdminAdManagementService {
       tierAgg.revenue += amount;
       tierMap.set(row.tier, tierAgg);
 
-      const date = row.approved_at.toISOString().slice(0, 10);
+      const date = row.paid_at.toISOString().slice(0, 10);
       const trendAgg = trendMap.get(date) ?? {
         date,
         revenue: 0,

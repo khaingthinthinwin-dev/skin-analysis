@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatPrice } from '@/lib/format'
+import { formatPrice } from '../utils/format'
 import type { AdminAdFeeHistory } from '@/types/admin-ad-management'
 import { TierBadge } from './badges'
 import { PLACEMENT_LABELS, formatDate } from '../utils/labels'

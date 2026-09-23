@@ -11,6 +11,10 @@ import { Type } from 'class-transformer';
 export class MatchQueryDto {
   @IsOptional()
   @IsString()
+  categoryId?: string;
+
+  @IsOptional()
+  @IsString()
   skinTypes?: string;
 
   @IsOptional()

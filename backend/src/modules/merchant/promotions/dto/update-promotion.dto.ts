@@ -24,12 +24,12 @@ export class UpdatePromotionDto {
   @IsNumber()
   @IsOptional()
   @Min(0)
-  minOrderAmount?: number;
+  minOrderAmount?: number | null;
 
   @IsNumber()
   @IsOptional()
   @Min(1)
-  maxUses?: number;
+  maxUses?: number | null;
 
   @IsDateString()
   @IsOptional()

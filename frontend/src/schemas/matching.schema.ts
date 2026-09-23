@@ -1,15 +1,16 @@
 import { z } from 'zod'
 
 export const matchQuerySchema = z.object({
+  categoryId: z.string().optional(),
   skinTypes: z.string().optional(),
   ingredients: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   rating: z.coerce.number().min(1).max(5).optional(),
-  sort: z.enum(['matchScore', 'price', 'rating', 'createdAt']).optional(),
-  order: z.enum(['asc', 'desc']).optional(),
-  page: z.coerce.number().min(1).optional(),
-  limit: z.coerce.number().min(1).max(50).optional(),
+  sort: z.enum(['matchScore', 'price', 'rating', 'createdAt']).optional().default('createdAt'),
+  order: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(48).optional().default(12),
 })
 
 export type MatchQueryParams = z.infer<typeof matchQuerySchema>
