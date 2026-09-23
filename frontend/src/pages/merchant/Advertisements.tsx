@@ -45,7 +45,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { contentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
+import { contentSchema, resubmitContentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
 import { useAdvertisements } from '@/features/merchant/advertisements/hooks/useAdvertisements'
 import type { AdPackage, Advertisement } from '@/features/merchant/advertisements/types'
 
@@ -317,7 +317,10 @@ export default function Advertisements() {
         toast.success('Advertisement content saved')
         setPayTarget(updatedAd)
       } else {
-        await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, false) })
+        // Rejected ads are rescheduled on resubmit: the backend derives a
+        // fresh expires_at from the package duration.
+        const includeSchedule = target.approvalStatus === 'rejected'
+        await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, includeSchedule) })
         setEditTarget(null)
         toast.success('Advertisement content saved')
       }
@@ -331,7 +334,10 @@ export default function Advertisements() {
     const target = editTarget
     if (!target) return
     try {
-      const updatedAd = await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, false) })
+      const updatedAd = await updateContent.mutateAsync({
+        id: target.id,
+        formData: toFormData(values, target.approvalStatus === 'rejected'),
+      })
       setEditTarget(null)
       toast.success('Advertisement saved. Payment required to resubmit.')
       setPayTarget(updatedAd)
@@ -968,16 +974,23 @@ function ContentDialog({
   showSaveAndPay,
   isPending,
 }: ContentDialogProps) {
-  // Earliest selectable start date: today + 3 days (UTC day granularity, the
-  // same convention the backend getSchedule uses). Today, tomorrow, and the
-  // day after tomorrow cannot be selected.
+  // Earliest selectable start date for new uploads: today + 3 days (UTC day
+  // granularity, the same convention the backend getSchedule uses). Today,
+  // tomorrow, and the day after tomorrow cannot be selected.
   const minStartsAtDate = new Date()
   minStartsAtDate.setUTCHours(0, 0, 0, 0)
   minStartsAtDate.setUTCDate(minStartsAtDate.getUTCDate() + 3)
   const minStartsAt = minStartsAtDate.toISOString().slice(0, 10)
+  // Resubmitting a rejected ad may re-pick the start date; the same 3-day
+  // lead time as new uploads applies.
+  const minTodayDate = new Date()
+  minTodayDate.setUTCHours(0, 0, 0, 0)
+  minTodayDate.setUTCDate(minTodayDate.getUTCDate() + 3)
+  const minToday = minTodayDate.toISOString().slice(0, 10)
   const isNewUpload = !target?.title
+  const isResubmit = target?.approvalStatus === 'rejected'
   const form = useForm<ContentForm>({
-    resolver: zodResolver(isNewUpload ? uploadContentSchema : contentSchema),
+    resolver: zodResolver(isNewUpload ? uploadContentSchema : isResubmit ? resubmitContentSchema : contentSchema),
     defaultValues: {
       title: '',
       content: '',
@@ -1026,7 +1039,8 @@ function ContentDialog({
     persistDraftCache(target.id, form.getValues())
     onClose()
   }
-  const canSetSchedule = !target.startsAt
+  // Rejected ads may re-pick their schedule when resubmitting.
+  const canSetSchedule = !target.startsAt || isResubmit
   const durationDays = adPackage?.durationDays ?? 7
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
   if (endDate) endDate.setUTCDate(endDate.getUTCDate() + durationDays)
@@ -1142,13 +1156,15 @@ function ContentDialog({
               <Input
                 id="ad-start"
                 type="date"
-                min={minStartsAt}
+                min={isResubmit ? minToday : minStartsAt}
                 disabled={!canSetSchedule}
                 {...form.register('startsAt')}
               />
               {canSetSchedule && (
                 <p className="text-xs text-muted-foreground">
-                  Select a date from {minStartsAt} (3 days from today) onward.
+                  {isResubmit
+                    ? `Select a start date from ${minToday} (3 days from today) onward. The end date is recalculated automatically.`
+                    : `Select a date from ${minStartsAt} (3 days from today) onward.`}
                 </p>
               )}
               {form.formState.errors.startsAt && (

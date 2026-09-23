@@ -8,6 +8,7 @@ import {
 import {
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Line,
   Pie,
@@ -18,7 +19,6 @@ import {
   YAxis,
   Area,
   ComposedChart,
-  type PieLabelRenderProps,
 } from 'recharts'
 import { formatPrice } from '../utils/format'
 import type { RevenueAnalytics } from '@/types/admin-ad-management'
@@ -55,6 +55,13 @@ interface RevenuePieChartProps {
 }
 
 function RevenuePieChart({ title, description, rows, colors }: RevenuePieChartProps) {
+  const total = rows.reduce((sum, row) => sum + row.value, 0)
+  const pieData = rows.map((row) => ({
+    name: row.name,
+    value: row.value,
+    percentLabel: total > 0 ? `${Math.round((row.value / total) * 100)}%` : '0%',
+  }))
+
   return (
     <Card>
       <CardHeader>
@@ -69,7 +76,7 @@ function RevenuePieChart({ title, description, rows, colors }: RevenuePieChartPr
             <ResponsiveContainer width="100%" height="100%">
               <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                 <Pie
-                  data={rows}
+                  data={pieData}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -77,12 +84,15 @@ function RevenuePieChart({ title, description, rows, colors }: RevenuePieChartPr
                   innerRadius={50}
                   outerRadius={85}
                   paddingAngle={2}
-                  label={(props: PieLabelRenderProps) =>
-                    `${Math.round((props.percent ?? 0) * 100)}%`
-                  }
-                  labelLine={false}
                 >
-                  {rows.map((row, index) => (
+                  <LabelList
+                    dataKey="percentLabel"
+                    position="inside"
+                    fill="#111827"
+                    fontSize={12}
+                    fontWeight={600}
+                  />
+                  {pieData.map((row, index) => (
                     <Cell key={row.name} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>

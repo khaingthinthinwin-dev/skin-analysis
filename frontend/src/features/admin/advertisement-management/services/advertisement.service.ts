@@ -53,11 +53,14 @@ export interface FeeHistoryExportParams extends ExportParams {
   tier?: Tier[];
 }
 
-const EXPORT_FILENAMES = {
-  ad_performance: 'ad_performance_report.csv',
-  submission_history: 'submission_history_report.csv',
-  fee_history: 'fee_history_report.csv',
+const EXPORT_BASENAMES = {
+  ad_performance: 'ad_performance',
+  submission_history: 'submission_history',
+  fee_history: 'fee_history',
 } as const;
+
+const buildExportFilename = (base: string, dateFrom: string, dateTo: string): string =>
+  `${base}_from${dateFrom}_to${dateTo}.csv`
 
 const serializeParams = <P extends object>(params: P): string => {
   const search = new URLSearchParams();
@@ -187,7 +190,7 @@ export const advertisementService = {
     const response = await api.post('/admin/ads/export/ad-performance', input, {
       responseType: 'blob',
     });
-    return { blob: response.data as Blob, filename: EXPORT_FILENAMES.ad_performance };
+    return { blob: response.data as Blob, filename: buildExportFilename(EXPORT_BASENAMES.ad_performance, input.dateFrom, input.dateTo) };
   },
 
   exportSubmissionHistory: async (
@@ -198,7 +201,7 @@ export const advertisementService = {
       input,
       { responseType: 'blob' },
     );
-    return { blob: response.data as Blob, filename: EXPORT_FILENAMES.submission_history };
+    return { blob: response.data as Blob, filename: buildExportFilename(EXPORT_BASENAMES.submission_history, input.dateFrom, input.dateTo) };
   },
 
   exportFeeHistory: async (
@@ -207,7 +210,7 @@ export const advertisementService = {
     const response = await api.post('/admin/ads/export/fee-history', input, {
       responseType: 'blob',
     });
-    return { blob: response.data as Blob, filename: EXPORT_FILENAMES.fee_history };
+    return { blob: response.data as Blob, filename: buildExportFilename(EXPORT_BASENAMES.fee_history, input.dateFrom, input.dateTo) };
   },
 };
 
