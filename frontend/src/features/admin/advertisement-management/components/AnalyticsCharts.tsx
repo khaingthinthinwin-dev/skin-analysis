@@ -40,11 +40,11 @@ const tooltipContentStyle: React.CSSProperties = {
 
 function formatAxisPrice(value: number): string {
   const n = Number(value)
-  if (Number.isNaN(n)) return '$0'
+  if (Number.isNaN(n)) return '0 KS'
   if (Math.abs(n) >= 1000) {
-    return `$${(n / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })}k`
+    return `${(n / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })}k KS`
   }
-  return `$${n}`
+  return `${n} KS`
 }
 
 interface RevenuePieChartProps {

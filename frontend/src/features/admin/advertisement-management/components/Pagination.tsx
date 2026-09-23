@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-const PAGE_SIZES = [20, 50, 100] as const
+const PAGE_SIZES = [5, 20, 50, 100] as const
 
 interface PaginationProps {
   page: number

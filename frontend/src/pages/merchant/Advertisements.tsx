@@ -472,7 +472,7 @@ export default function Advertisements() {
                       </Badge>
                     </div>
                     <div className="mt-2 flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-primary">${pkg.dailyRate}</span>
+                      <span className="text-3xl font-bold text-primary">{pkg.dailyRate} KS</span>
                       <span className="text-sm text-muted-foreground">/day</span>
                     </div>
                   </CardHeader>
@@ -486,7 +486,7 @@ export default function Advertisements() {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> Total fee:{' '}
-                        <span className="font-semibold text-foreground">${pkg.totalFee}</span>
+                        <span className="font-semibold text-foreground">{pkg.totalFee} KS</span>
                       </li>
                     </ul>
                     <Button
@@ -612,7 +612,7 @@ export default function Advertisements() {
                 [
                   ['Placement', packageLabel(selectedPackage.placement)],
                   ['Tier', tierLabels[selectedPackage.tier] ?? selectedPackage.tier],
-                  ['Daily Rate', `$${selectedPackage.dailyRate}/day`],
+                  ['Daily Rate', `${selectedPackage.dailyRate} KS/day`],
                   ['Duration', `${selectedPackage.durationDays} days`],
                 ] as const
               ).map(([label, value]) => (
@@ -623,7 +623,7 @@ export default function Advertisements() {
               ))}
               <div className="flex justify-between gap-4 border-t pt-2">
                 <span className="text-muted-foreground">Total Fee</span>
-                <span className="font-bold text-primary">${selectedPackage.totalFee}</span>
+                <span className="font-bold text-primary">{selectedPackage.totalFee} KS</span>
               </div>
             </div>
           )}
@@ -660,10 +660,10 @@ export default function Advertisements() {
             <DialogTitle>Pay Advertising Fee</DialogTitle>
           </DialogHeader>
           <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal ? `$${payFeeTotal}` : 'Calculated at payment'}</p>
+            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal ? `${payFeeTotal} KS` : 'Calculated at payment'}</p>
             {payPackage && (
               <p className="text-muted-foreground">
-                {payPackage.durationDays} days × ${payPackage.dailyRate}/day
+                {payPackage.durationDays} days × {payPackage.dailyRate} KS/day
               </p>
             )}
           </div>
@@ -798,7 +798,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
         {packageInfo && (
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • ${packageInfo.dailyRate}/day
+              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • {packageInfo.dailyRate} KS/day
             </p>
             <Badge className={paymentBadgeClass[ad.paymentStatus] ?? ''}>{paymentLabels[ad.paymentStatus] ?? ad.paymentStatus}</Badge>
           </div>
@@ -1031,7 +1031,7 @@ function ContentDialog({
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
   if (endDate) endDate.setUTCDate(endDate.getUTCDate() + durationDays)
   const feeSummary = adPackage
-    ? `Advertising Fee: $${formatMoney(Number(adPackage.dailyRate) * durationDays)} · ${durationDays} days × $${adPackage.dailyRate}/day`
+    ? `Advertising Fee: ${formatMoney(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${adPackage.dailyRate} KS/day`
     : null
   const currentPreview = imageFile instanceof File ? previewUrl : target.imageUrl ? getImageUrl(target.imageUrl) : null
 

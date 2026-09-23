@@ -62,7 +62,7 @@ export function AdvertisementForm({ onSubmit, onCancel, isLoading }: Advertiseme
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Payment Amount ($)</label>
+            <label className="text-sm font-medium">Payment Amount (KS)</label>
             <Input
               type="number"
               min="0"

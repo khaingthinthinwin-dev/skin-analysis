@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft, History, Plus } from 'lucide-react'
+import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useFeeSettings } from '@/features/admin/advertisement-management/hooks/useFeeSettings'
@@ -10,6 +11,20 @@ import { EditFeeModal } from '@/features/admin/advertisement-management/componen
 import { FeeSettingsTable } from '@/features/admin/advertisement-management/components/FeeSettingsTable'
 import type { AdminAdFeeSetting } from '@/types/admin-ad-management'
 import type { CreateFeeSettingInput, EditFeeSettingInput } from '@/types/admin-ad-management'
+
+function apiErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as
+      | { message?: string | string[] }
+      | undefined
+    const message = Array.isArray(data?.message)
+      ? data.message[0]
+      : data?.message
+    if (message) return message
+    return error.message
+  }
+  return error instanceof Error ? error.message : 'Unknown error'
+}
 
 export default function PackageFeeManagementPage() {
   const [createOpen, setCreateOpen] = useState(false)
@@ -29,8 +44,12 @@ export default function PackageFeeManagementPage() {
         toast({ title: 'Fee setting created', variant: 'default' })
         setCreateOpen(false)
       },
-      onError: () => {
-        toast({ title: 'Failed to create fee setting', variant: 'destructive' })
+      onError: (error) => {
+        toast({
+          title: 'Failed to create fee setting',
+          description: apiErrorMessage(error),
+          variant: 'destructive',
+        })
       },
     })
   }
@@ -43,8 +62,12 @@ export default function PackageFeeManagementPage() {
           toast({ title: 'Fee setting updated', variant: 'default' })
           setEditTarget(null)
         },
-        onError: () => {
-          toast({ title: 'Failed to update fee setting', variant: 'destructive' })
+        onError: (error) => {
+          toast({
+            title: 'Failed to update fee setting',
+            description: apiErrorMessage(error),
+            variant: 'destructive',
+          })
         },
       },
     )
@@ -59,8 +82,12 @@ export default function PackageFeeManagementPage() {
           toast({ title: 'Fee setting deactivated', variant: 'default' })
           setDeactivateTarget(null)
         },
-        onError: () => {
-          toast({ title: 'Failed to deactivate fee setting', variant: 'destructive' })
+        onError: (error) => {
+          toast({
+            title: 'Failed to deactivate fee setting',
+            description: apiErrorMessage(error),
+            variant: 'destructive',
+          })
         },
       },
     )
