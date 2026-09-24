@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Star, ShoppingCart, Heart, Loader2, Store } from 'lucide-react'
+import { Star, ShoppingCart, Heart, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { ProductSummary, ViewMode } from '@/types/search.types'
@@ -18,21 +18,13 @@ interface ProductCardProps {
 function getImageUrl(url: string | null | undefined): string {
   if (!url) return ''
   if (url.startsWith('http')) return url
+
   const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
   const base = raw.replace(/\/api\/v1\/?$/, '')
   return `${base}${url.startsWith('/') ? url : `/${url}`}`
 }
 
-export function ProductCard({
-  product,
-  view,
-  productLink,
-  isInWishlist = false,
-  onWishlistToggle,
-  onAddToCart,
-  isWishlistLoading = false,
-  isCartLoading = false,
-}: ProductCardProps) {
+export function ProductCard({ product, view, productLink, isInWishlist = false, onWishlistToggle, onAddToCart, isWishlistLoading = false, isCartLoading = false }: ProductCardProps) {
   const imageUrl = getImageUrl(Array.isArray(product.images) ? product.images[0] : null)
 
   if (view === 'list') {
@@ -42,7 +34,7 @@ export function ProductCard({
         className="block rounded-lg border bg-card transition-shadow hover:shadow-md"
       >
         <div className="flex gap-4 p-4">
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-muted">
+<div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-muted">
             {imageUrl ? (
               <>
                 <img
@@ -66,11 +58,14 @@ export function ProductCard({
                 <span className="text-[10px] font-semibold uppercase text-muted-foreground">
                   {product.category.name}
                 </span>
+<<<<<<< HEAD
                 {product.shop_name && (
                   <span className="text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded mt-1 block">
                     Sold by {product.shop_name}
                   </span>
                 )}
+=======
+>>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
                 <h3 className="truncate text-sm font-semibold">{product.name}</h3>
               </div>
               <Button
@@ -100,10 +95,17 @@ export function ProductCard({
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-baseline gap-2">
+<<<<<<< HEAD
                 <span className="text-base font-bold">{Number(product.price).toLocaleString()}Ks</span>
                 {product.compareAtPrice && (
                   <span className="text-xs text-muted-foreground line-through">
                     {Number(product.compareAtPrice).toLocaleString()}Ks
+=======
+                <span className="text-base font-bold">${product.price}</span>
+                {product.compareAtPrice && (
+                  <span className="text-xs text-muted-foreground line-through">
+                    ${product.compareAtPrice}
+>>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
                   </span>
                 )}
               </div>
@@ -119,7 +121,6 @@ export function ProductCard({
 
   return (
     <Card className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
-      {/* Image Section */}
       <Link to={productLink} className="block">
         <div className="relative aspect-square bg-muted">
           {imageUrl ? (
@@ -142,19 +143,26 @@ export function ProductCard({
               <span className="text-xs text-muted-foreground">No image</span>
             </div>
           )}
+          
+          {/* Badges top-left */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {product.compareAtPrice && (
+              <span className="rounded bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground">
+                SALE
+              </span>
+            )}
+            {!product.isInStock && (
+              <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                OUT OF STOCK
+              </span>
+            )}
+          </div>
 
-          {/* SALE Badge - Top Left */}
-          {product.compareAtPrice && (
-            <span className="absolute top-2 left-2 rounded-full bg-pink-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-              SALE
-            </span>
-          )}
-
-          {/* Wishlist Heart - Top Right */}
+          {/* Heart icon top-right - always visible */}
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50"
+            className="absolute top-2 right-2 h-8 w-8"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -166,11 +174,12 @@ export function ProductCard({
             {isWishlistLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+              <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-foreground/80 hover:text-foreground'}`} />
             )}
           </Button>
         </div>
       </Link>
+<<<<<<< HEAD
 
       {/* Content Section */}
       <CardContent className="space-y-2 p-3 pt-2.5">
@@ -205,19 +214,33 @@ export function ProductCard({
           <span className="text-xs text-gray-400 dark:text-muted-foreground">
             ({product.reviewCount})
           </span>
+=======
+      <CardContent className="space-y-2 p-3 pt-2">
+        {/* Category (brand) */}
+        <span className="text-[10px] font-semibold uppercase text-muted-foreground block">
+          {product.category.name}
+        </span>
+        {/* Title */}
+        <h3 className="line-clamp-1 text-sm font-semibold">{product.name}</h3>
+        {/* Rating */}
+        <div className="flex items-center gap-1 text-xs">
+          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+          <span className="font-medium">{product.avgRating}</span>
+          <span className="text-muted-foreground">({product.reviewCount})</span>
+>>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
         </div>
-
-        {/* Skin Type Badge */}
+        {/* Skin type chips */}
         {product.skinTypes.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {product.skinTypes.slice(0, 2).map((skinType) => (
+            {product.skinTypes.slice(0, 3).map((skinType) => (
               <span
                 key={skinType}
-                className="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600"
+                className="inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground"
               >
                 {skinType.charAt(0).toUpperCase() + skinType.slice(1)}
               </span>
             ))}
+<<<<<<< HEAD
           </div>
         )}
 
@@ -230,15 +253,29 @@ export function ProductCard({
             {product.compareAtPrice && (
               <span className="text-xs text-gray-400 dark:text-muted-foreground line-through">
                 {Number(product.compareAtPrice).toLocaleString()}Ks
+=======
+            {product.skinTypes.length > 3 && (
+              <span className="inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                +{product.skinTypes.length - 3}
               </span>
             )}
           </div>
-
+        )}
+        {/* Price and Add to Cart */}
+        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+          <div className="flex items-baseline gap-2">
+            <span className="text-base font-bold">${product.price}</span>
+            {product.compareAtPrice && (
+              <span className="text-xs text-muted-foreground line-through">
+                ${product.compareAtPrice}
+>>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
+              </span>
+            )}
+          </div>
           {product.isInStock && (
             <Button
-              type="button"
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-full bg-purple-600 text-white shadow-md hover:bg-purple-700"
+              size="sm"
+              className="gap-1 text-xs"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -247,10 +284,10 @@ export function ProductCard({
               disabled={isCartLoading}
             >
               {isCartLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <ShoppingCart className="h-4 w-4" />
-              )}
+                <ShoppingCart className="h-3.5 w-3.5" />
+              )} Add
             </Button>
           )}
         </div>

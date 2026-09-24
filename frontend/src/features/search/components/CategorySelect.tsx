@@ -49,14 +49,21 @@ export function CategorySelect({
             key={item.id}
             type="button"
             onClick={() => onSelect(item.id)}
+<<<<<<< HEAD
             className={`flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors cursor-pointer ${
               isActive
                 ? activeClassName ?? defaultActiveClass
                 : 'text-foreground hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-300'
+=======
+            className={`block w-full text-left text-sm transition-colors ${
+              isActive
+                ? 'text-orange-500 font-semibold'
+                : 'text-gray-600 hover:text-orange-500'
+>>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
             }`}
             style={{ paddingLeft: noIndent ? (isActive ? '0.5rem' : 0) : `${item.depth * 1}rem` }}
           >
-            <span>{item.name}</span>
+            {item.name}
           </button>
         )
       })}
@@ -65,9 +72,9 @@ export function CategorySelect({
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-1 text-purple-600 dark:text-purple-400 font-bold text-xs uppercase cursor-pointer"
+          className="mt-1 text-cyan-600 font-bold text-xs uppercase"
         >
-          {expanded ? 'VIEW LESS' : 'VIEW MORE'}
+          {expanded ? 'View Less' : 'View More'}
         </button>
       )}
     </div>

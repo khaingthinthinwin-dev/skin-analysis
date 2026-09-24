@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { matchingService } from '../services/matching.service'
 import type { MatchQueryParams } from '@/schemas/matching.schema'
 
+<<<<<<< HEAD
 const PREFETCH_STALE_MS = 30_000
 
 export function usePersonalizedRecommendations(params: MatchQueryParams, refreshKey = 0) {
@@ -16,6 +17,14 @@ export function usePersonalizedRecommendations(params: MatchQueryParams, refresh
     staleTime: 0,
     refetchOnMount: 'always',
     refetchOnReconnect: true,
+=======
+export function usePersonalizedRecommendations(params: MatchQueryParams) {
+  // TODO: Implement TanStack Query hook
+  return useQuery({
+    queryKey: ['recommendations', 'personalized', params],
+    queryFn: () => matchingService.getPersonalized(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+>>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
   })
 
   // Warm adjacent pages so Next/Prev paint instantly, then revalidate via staleTime: 0.
