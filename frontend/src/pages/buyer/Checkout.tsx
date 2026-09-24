@@ -98,7 +98,15 @@ export default function Checkout() {
         notes: data.notes || undefined,
       });
       toast.success('Order placed successfully!');
-      navigate(`/buyer/checkout/confirmation/${result.orderId}`);
+      const primaryId = result.orders[0]?.orderId;
+      const extraIds = result.orders
+        .slice(1)
+        .map((o) => o.orderId)
+        .filter(Boolean);
+      const query = extraIds.length
+        ? `?orderIds=${encodeURIComponent(extraIds.join(','))}`
+        : '';
+      navigate(`/buyer/checkout/confirmation/${primaryId}${query}`);
     } catch {
       toast.error('Failed to place order. Please try again.');
     }

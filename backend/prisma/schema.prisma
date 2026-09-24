@@ -65,10 +65,11 @@ model User {
   merchantId    String?  @map("merchant_id") @db.Uuid
   phone         String?
   avatarUrl     String?  @map("avatar_url")
-  isActive      Boolean  @default(true) @map("is_active")
-  emailVerified Boolean  @default(false) @map("email_verified")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  isActive           Boolean  @default(true) @map("is_active")
+  emailVerified      Boolean  @default(false) @map("email_verified")
+  deactivationReason String?  @map("deactivation_reason")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations
   role                  UserRole                @relation(fields: [roleCode], references: [roleCode], onDelete: Restrict, onUpdate: Cascade)
@@ -303,6 +304,7 @@ model Order {
   paymentStatus   String   @default("pending") @map("payment_status")
   couponCode      String?  @map("coupon_code")
   discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  commissionRate  Decimal  @default(12.00) @map("commission_rate") @db.Decimal(5, 2)
   voucherCodes    Json?    @map("voucher_codes")
   notes           String?
   createdAt       DateTime @default(now()) @map("created_at")

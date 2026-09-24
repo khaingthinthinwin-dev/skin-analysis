@@ -730,6 +730,9 @@ export class AdminService {
 
     if (!dto.isActive) {
       if (!user.isActive) throw new ConflictException('User already inactive');
+      if (!dto.reason || dto.reason.trim().length === 0) {
+        throw new BadRequestException('Deactivation reason is required');
+      }
     } else {
       if (user.isActive) throw new ConflictException('User already active');
     }
@@ -777,7 +780,10 @@ export class AdminService {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updated = await tx.user.update({
         where: { id: userId },
-        data: { isActive: dto.isActive },
+        data: {
+          isActive: dto.isActive,
+          ...(!dto.isActive ? { deactivationReason: dto.reason } : {}),
+        },
       });
 
       if (!dto.isActive) {
@@ -813,7 +819,7 @@ export class AdminService {
         action: dto.isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
         entityType: 'user',
         entityId: userId,
-        newValue: { isActive: dto.isActive },
+        newValue: { isActive: dto.isActive, reason: dto.reason },
       });
 
       return {

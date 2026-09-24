@@ -1,5 +1,5 @@
 import { AdminService } from './admin.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
 import { ReviewAction, ReportReviewReason } from './dto/moderation.dto';
@@ -26,6 +26,19 @@ describe('AdminService review moderation', () => {
       product: {
         findUnique: jest.fn(),
         update: jest.fn(),
+      },
+      user: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      merchant: {
+        findFirst: jest.fn(),
+      },
+      orderStatusHistory: {
+        findFirst: jest.fn(),
+      },
+      refreshToken: {
+        updateMany: jest.fn(),
       },
       reviewReport: {
         create: jest.fn(),
@@ -119,5 +132,127 @@ describe('AdminService review moderation', () => {
         'admin1',
       ),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  describe('user moderation', () => {
+    beforeEach(() => {
+      prisma.orderStatusHistory.findFirst.mockResolvedValue(null);
+      prisma.user.update.mockResolvedValue({
+        id: 'u1',
+        isActive: false,
+        updatedAt: new Date('2026-09-23T00:00:00Z'),
+      });
+    });
+
+    it('deactivates a user and stores the deactivation reason', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        roleCode: 'buyer',
+        isActive: true,
+      });
+
+      const result = await service.moderateUser(
+        'u1',
+        { isActive: false, reason: 'Violated terms of service' },
+        'admin1',
+      );
+
+      expect(result.isActive).toBe(false);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: {
+          isActive: false,
+          deactivationReason: 'Violated terms of service',
+        },
+      });
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalled();
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'admin1',
+          action: 'USER_DEACTIVATED',
+          entityType: 'user',
+          entityId: 'u1',
+          newValue: {
+            isActive: false,
+            reason: 'Violated terms of service',
+          },
+        },
+      });
+    });
+
+    it('throws when deactivating without a reason', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        roleCode: 'buyer',
+        isActive: true,
+      });
+
+      await expect(
+        service.moderateUser('u1', { isActive: false }, 'admin1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when deactivating your own account', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'admin1',
+        roleCode: 'admin',
+        isActive: true,
+      });
+
+      await expect(
+        service.moderateUser(
+          'admin1',
+          { isActive: false, reason: 'Reason' },
+          'admin1',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when the user is missing', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.moderateUser(
+          'missing',
+          { isActive: false, reason: 'Reason' },
+          'admin1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('reactivates a user without a reason', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        roleCode: 'buyer',
+        isActive: false,
+      });
+      prisma.user.update.mockResolvedValue({
+        id: 'u1',
+        isActive: true,
+        updatedAt: new Date('2026-09-23T00:00:00Z'),
+      });
+
+      const result = await service.moderateUser(
+        'u1',
+        { isActive: true },
+        'admin1',
+      );
+
+      expect(result.isActive).toBe(true);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: { isActive: true },
+      });
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'admin1',
+          action: 'USER_ACTIVATED',
+          entityType: 'user',
+          entityId: 'u1',
+          newValue: { isActive: true },
+        },
+      });
+    });
   });
 });

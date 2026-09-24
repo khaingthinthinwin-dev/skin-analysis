@@ -55,8 +55,15 @@ export const adminService = {
     return data;
   },
 
-  toggleUserStatus: async (userId: string, isActive: boolean): Promise<{ id: string; isActive: boolean; updatedAt: string }> => {
-    const response = await api.patch(`/admin/users/${userId}/status`, { isActive });
+  toggleUserStatus: async (
+    userId: string,
+    isActive: boolean,
+    reason?: string,
+  ): Promise<{ id: string; isActive: boolean; updatedAt: string }> => {
+    const response = await api.patch(`/admin/users/${userId}/status`, {
+      isActive,
+      ...(reason ? { reason } : {}),
+    });
     return response.data.data;
   },
 };
