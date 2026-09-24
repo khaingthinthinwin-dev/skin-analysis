@@ -34,11 +34,18 @@ export function useFeeSettings() {
     onSuccess: refreshFeeData,
   })
 
+  const reactivateMutation = useMutation({
+    mutationFn: ({ id, change_reason }: { id: string; change_reason?: string }) =>
+      advertisementService.reactivateFeeSetting(id, { change_reason }),
+    onSuccess: refreshFeeData,
+  })
+
   return {
     feeSettingsQuery,
     createMutation,
     updateMutation,
     deactivateMutation,
+    reactivateMutation,
     refreshFeeData,
   }
 }
