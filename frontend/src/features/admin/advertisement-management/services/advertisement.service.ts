@@ -12,6 +12,7 @@ import type {
   CreateFeeSettingInput,
   DeactivateFeeInput,
   EditFeeSettingInput,
+  ReactivateFeeInput,
   PaginatedAdminAdList,
   PaginatedFeeHistory,
   Placement,
@@ -153,6 +154,14 @@ export const advertisementService = {
     input: DeactivateFeeInput,
   ): Promise<AdminAdFeeSetting> => {
     const response = await api.patch(`/admin/ad-fees/${id}/deactivate`, input);
+    return response.data.data;
+  },
+
+  reactivateFeeSetting: async (
+    id: string,
+    input: ReactivateFeeInput,
+  ): Promise<AdminAdFeeSetting> => {
+    const response = await api.patch(`/admin/ad-fees/${id}/reactivate`, input);
     return response.data.data;
   },
 
