@@ -36,10 +36,26 @@ export class AdvertisementsService {
     if (cached) return JSON.parse(cached) as unknown;
 
     const settings = await this.prisma.adFeeSetting.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        history: {
+          some: { effectiveFrom: { lte: new Date() } },
+        },
+      },
+      include: {
+        history: {
+          orderBy: { effectiveFrom: 'desc' },
+          take: 1,
+        },
+      },
       orderBy: [{ placement: 'asc' }, { tier: 'asc' }],
     });
-    const result = settings.map((setting) => ({
+    // Hide packages whose latest effective_from date has not been reached yet.
+    const visibleSettings = settings.filter(
+      (setting) =>
+        setting.history[0] && setting.history[0].effectiveFrom <= new Date(),
+    );
+    const result = visibleSettings.map((setting) => ({
       id: setting.id,
       placement: setting.placement,
       tier: setting.tier,
@@ -59,7 +75,11 @@ export class AdvertisementsService {
     }
 
     const setting = await this.prisma.adFeeSetting.findFirst({
-      where: { id: feeSettingId, isActive: true },
+      where: {
+        id: feeSettingId,
+        isActive: true,
+        history: { some: { effectiveFrom: { lte: new Date() } } },
+      },
     });
     if (!setting) throw new NotFoundException('AD_PACKAGE_INVALID');
 
