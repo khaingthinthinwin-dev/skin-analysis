@@ -8,6 +8,10 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+const toDate = ({ value }: { value: unknown }): unknown =>
+  value instanceof Date ? value : new Date(value as string);
 
 export class CreateAdFeeSettingDto {
   @IsString()
@@ -39,6 +43,7 @@ export class CreateAdFeeSettingDto {
   @Min(1, { message: 'Max ads must be at least 1' })
   max_ads: number;
 
+  @Transform(toDate, { toClassOnly: true })
   @IsDate({ message: 'Effective from must be a valid date' })
   effective_from: Date;
 

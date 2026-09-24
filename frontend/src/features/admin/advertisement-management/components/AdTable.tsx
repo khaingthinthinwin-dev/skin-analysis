@@ -101,11 +101,14 @@ export function AdTable({
               </TableCell>
             </TableRow>
           ) : (
-            ads.map((ad) => {
+            ads.map((ad, index) => {
               const selectable = ad.approvalStatus === 'pending'
               const selected = selectedIds.includes(ad.id)
               return (
-                <TableRow key={ad.id} className={selected ? 'bg-secondary/40' : undefined}>
+                <TableRow
+                  key={ad.id}
+                  className={selected ? 'bg-secondary/40' : index % 2 === 1 ? 'bg-muted/50' : undefined}
+                >
                   <TableCell>
                     <Checkbox
                       checked={selected}
