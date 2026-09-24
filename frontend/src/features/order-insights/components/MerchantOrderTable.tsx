@@ -23,23 +23,35 @@ export function MerchantOrderTable({ rows, loading, onView, onSort, currentSort,
   const { t } = useTranslation();
   const dateLocale = 'en-US';
   const sortIcon = (field: OrderSortField) => currentSort === field ? (currentOrder === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />) : null;
-  const sortButton = (label: string, field: OrderSortField) => <button type="button" className="inline-flex items-center gap-1 font-bold uppercase tracking-wider" onClick={() => onSort(field)}>{label}{sortIcon(field)}</button>;
+  const ariaSort = (field: OrderSortField) => currentSort === field ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'none';
+  const sortButton = (label: string, field: OrderSortField) => <button type="button" className="inline-flex items-center gap-1 font-bold uppercase tracking-wider text-gray-700 hover:text-[#7c3aed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => onSort(field)}>{label}{sortIcon(field)}</button>;
+  // Header cells mirror the Buyer Order Insights table: 48px band, uppercase gray-700 labels.
+  const headClassName = 'h-12 whitespace-nowrap font-bold uppercase tracking-wider text-gray-700';
 
   if (loading) return <div className="space-y-3 p-4">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)}</div>;
 
   return <>
-    <div className="hidden overflow-x-auto sm:block">
+    <div className="hidden sm:block [&>div]:overflow-visible">
       <Table className="min-w-[1120px]">
-        <TableHeader className="border-b-2 border-[#7c3aed] bg-[#f3f0ff]"><TableRow>
-          <TableHead>{t('orders.table.orderId', 'Order #')}</TableHead><TableHead>{sortButton(t('orders.table.date', 'Date'), 'createdAt')}</TableHead>
-          <TableHead>{t('orders.table.customer', 'Customer')}</TableHead><TableHead className="text-center">{t('orders.table.items', 'Items')}</TableHead>
-          <TableHead className="text-right">{sortButton(t('orders.table.total', 'Total'), 'totalAmount')}</TableHead><TableHead className="text-center">{t('orders.table.payment', 'Payment')}</TableHead><TableHead className="text-center">{t('orders.table.status', 'Status')}</TableHead><TableHead className="text-right">{t('orders.table.actions', 'Actions')}</TableHead>
+        <TableHeader className="sticky -top-4 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff] shadow-[0_1px_3px_rgba(0,0,0,0.15)] lg:-top-6"><TableRow className="border-b-0 hover:bg-transparent">
+          <TableHead className={headClassName}>{t('orders.table.orderId', 'Order #')}</TableHead>
+          <TableHead className={headClassName} aria-sort={ariaSort('createdAt')}>{sortButton(t('orders.table.date', 'Date'), 'createdAt')}</TableHead>
+          <TableHead className={headClassName}>{t('orders.table.customer', 'Customer')}</TableHead>
+          <TableHead className={`${headClassName} text-center`}>{t('orders.table.items', 'Items')}</TableHead>
+          <TableHead className={`${headClassName} text-right [&_button]:ml-auto`} aria-sort={ariaSort('totalAmount')}>{sortButton(t('orders.table.total', 'Total'), 'totalAmount')}</TableHead>
+          <TableHead className={`${headClassName} text-center`}>{t('orders.table.payment', 'Payment')}</TableHead>
+          <TableHead className={`${headClassName} text-center`}>{t('orders.table.status', 'Status')}</TableHead>
+          <TableHead className={`${headClassName} text-right`}>{t('orders.table.actions', 'Actions')}</TableHead>
         </TableRow></TableHeader>
-        <TableBody>{rows.map((row) => <TableRow key={row.id}>
-          <TableCell className="font-mono text-xs">#{row.id.slice(0, 8).toUpperCase()}</TableCell><TableCell>{new Date(row.createdAt).toLocaleDateString(dateLocale, { year: 'numeric', month: 'short', day: 'numeric' })}</TableCell>
-          <TableCell>{row.customerName}</TableCell><TableCell className="text-center">{row.itemCount}</TableCell><TableCell className="text-right font-semibold">{formatCurrencyAmount(row.totalAmount)}</TableCell>
-          <TableCell className="text-center"><PaymentBadge status={row.paymentStatus} /></TableCell><TableCell className="text-center"><StatusBadge status={row.status} /></TableCell>
-          <TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" title={t('common.view', 'View')} aria-label={t('common.view', 'View')} onClick={() => onView(row.id)}><Eye className="h-4 w-4" /></Button></div></TableCell>
+        <TableBody>{rows.map((row) => <TableRow key={row.id} className="py-3 transition-colors hover:bg-muted/50">
+          <TableCell className="px-4 py-3 font-mono text-xs font-medium">#{row.id.slice(0, 8).toUpperCase()}</TableCell>
+          <TableCell className="px-4 py-3 text-sm text-muted-foreground">{new Date(row.createdAt).toLocaleDateString(dateLocale, { year: 'numeric', month: 'short', day: 'numeric' })}</TableCell>
+          <TableCell className="px-4 py-3 text-sm">{row.customerName}</TableCell>
+          <TableCell className="px-4 py-3 text-center text-sm">{row.itemCount}</TableCell>
+          <TableCell className="px-4 py-3 text-right font-semibold">{formatCurrencyAmount(row.totalAmount)}</TableCell>
+          <TableCell className="px-4 py-3 text-center"><PaymentBadge status={row.paymentStatus} /></TableCell>
+          <TableCell className="px-4 py-3 text-center"><StatusBadge status={row.status} /></TableCell>
+          <TableCell className="px-4 py-3"><div className="flex justify-end"><Button variant="ghost" size="sm" className="h-7 w-7 px-0" title={t('common.view', 'View')} aria-label={t('common.view', 'View')} onClick={() => onView(row.id)}><Eye className="h-4 w-4" /></Button></div></TableCell>
         </TableRow>)}</TableBody>
       </Table>
     </div>

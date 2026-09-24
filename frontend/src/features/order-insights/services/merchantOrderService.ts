@@ -2,6 +2,7 @@ import apiClient from '@/lib/api-client';
 import { revenuePeriodSchema, type OrderListFilterFormData, type RevenuePeriodFormData } from '../schemas/orderFilters.schema';
 import type {
   MerchantOrderListResponseDto,
+  MerchantOrderListRowDto,
   RevenueSummaryDto,
   SalesSummaryDto,
 } from '../types/merchantOrderInsights.types';
@@ -48,6 +49,32 @@ export async function getMerchantOrders(
   };
   const response = await apiClient.get('/orders', { params });
   return unwrapData<MerchantOrderListResponseDto>(response.data);
+}
+
+/** Page size of the export walk — the list endpoint caps `limit` at 100 (BR-OI-010). */
+export const MERCHANT_EXPORT_PAGE_SIZE = 100;
+
+/**
+ * Fetches every merchant row matching the filters, page by page, so an export
+ * covers the whole filtered result set instead of the visible page only. The
+ * filters keep the applied status, date range and table sort, so the CSV rows
+ * are the list rows in the same order. The walk also stops on an empty page, so
+ * a stale `total` can never loop forever.
+ */
+export async function getAllMerchantOrders(
+  filters: OrderListFilterFormData,
+): Promise<MerchantOrderListRowDto[]> {
+  const rows: MerchantOrderListRowDto[] = [];
+  let page = 1;
+
+  for (;;) {
+    const response = await getMerchantOrders({ ...filters, page, limit: MERCHANT_EXPORT_PAGE_SIZE });
+    rows.push(...response.orders);
+    if (response.orders.length === 0 || rows.length >= response.meta.total) break;
+    page += 1;
+  }
+
+  return rows;
 }
 
 /** Fetches the merchant order-count summary. */

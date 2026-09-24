@@ -1,8 +1,25 @@
 import type { MerchantOrderListRowDto } from '../types/merchantOrderInsights.types';
+import type { OrderListFilterFormData } from '../schemas/orderFilters.schema';
 
 function escapeCsvField(value: string | number): string {
   const field = String(value);
   return /[",\n\r]/.test(field) ? `"${field.replaceAll('"', '""')}"` : field;
+}
+
+/**
+ * Names the download after the exported scope, so two exports of the same shop
+ * never overwrite each other silently (e.g.
+ * `merchant-orders-delivered-2026-09-01-to-2026-09-30-2026-09-24.csv`).
+ */
+export function buildMerchantOrdersExportFilename(
+  filters: Pick<OrderListFilterFormData, 'status' | 'from' | 'to'>,
+  today: string = new Date().toISOString().slice(0, 10),
+): string {
+  const status = filters.status.replaceAll('_', '-');
+  const from = filters.from ? filters.from.slice(0, 10) : 'all';
+  const to = filters.to ? filters.to.slice(0, 10) : 'all';
+
+  return `merchant-orders-${status}-${from}-to-${to}-${today}.csv`;
 }
 
 /** Downloads the supplied merchant list rows as a CSV without fetching order details. */

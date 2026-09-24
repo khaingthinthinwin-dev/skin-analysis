@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import MerchantOrderInsightsPage from './MerchantOrderInsightsPage';
@@ -16,5 +16,31 @@ describe('MerchantOrderInsightsPage', () => {
     render(<MemoryRouter><MerchantOrderInsightsPage /></MemoryRouter>);
     expect(screen.getByText('Order Insights')).toBeInTheDocument();
     expect(screen.getByText('Showing orders for your shop only.')).toBeInTheDocument();
+  });
+
+  it('opens the custom range modal from the Revenue Summary period toggle', () => {
+    render(<MemoryRouter><MerchantOrderInsightsPage /></MemoryRouter>);
+    expect(screen.getByText('Revenue Summary')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Period' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+
+    // The open dialog hides the page behind it from the accessibility tree.
+    expect(screen.getByRole('dialog', { name: 'Custom range' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+    expect(screen.getByLabelText('End date')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('applies a custom range from the modal and labels it in the pill', () => {
+    render(<MemoryRouter><MerchantOrderInsightsPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2024-01-05' } });
+    fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2024-01-20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Jan 5 – Jan 20, 2024')).toBeInTheDocument();
   });
 });

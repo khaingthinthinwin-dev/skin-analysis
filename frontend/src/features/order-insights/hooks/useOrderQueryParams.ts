@@ -12,18 +12,18 @@ export const DEFAULT_ORDER_LIST_FILTERS: OrderListFilterFormData = {
   order: 'desc',
 };
 
-export function parseOrderListFilters(searchParams: URLSearchParams): OrderListFilterFormData {
+export function parseOrderListFilters(searchParams: URLSearchParams, defaultLimit: number = DEFAULT_ORDER_LIST_FILTERS.limit): OrderListFilterFormData {
   const parsed = orderListFilterSchema.safeParse({
     status: searchParams.get('status') ?? DEFAULT_ORDER_LIST_FILTERS.status,
     from: searchParams.get('from') ?? DEFAULT_ORDER_LIST_FILTERS.from,
     to: searchParams.get('to') ?? DEFAULT_ORDER_LIST_FILTERS.to,
     page: searchParams.get('page') ?? DEFAULT_ORDER_LIST_FILTERS.page,
-    limit: searchParams.get('limit') ?? DEFAULT_ORDER_LIST_FILTERS.limit,
+    limit: searchParams.get('limit') ?? defaultLimit,
     sort: searchParams.get('sort') ?? DEFAULT_ORDER_LIST_FILTERS.sort,
     order: searchParams.get('order') ?? DEFAULT_ORDER_LIST_FILTERS.order,
   });
 
-  if (!parsed.success) return DEFAULT_ORDER_LIST_FILTERS;
+  if (!parsed.success) return { ...DEFAULT_ORDER_LIST_FILTERS, limit: defaultLimit };
 
   return {
     ...DEFAULT_ORDER_LIST_FILTERS,
@@ -33,12 +33,12 @@ export function parseOrderListFilters(searchParams: URLSearchParams): OrderListF
   };
 }
 
-export function useOrderQueryParams() {
+export function useOrderQueryParams(defaultLimit?: number) {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryString = searchParams.toString();
   const filters = useMemo(
-    () => parseOrderListFilters(new URLSearchParams(queryString)),
-    [queryString],
+    () => parseOrderListFilters(new URLSearchParams(queryString), defaultLimit),
+    [queryString, defaultLimit],
   );
 
   function patch(values: Record<string, string | number | undefined>) {

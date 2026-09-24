@@ -9,9 +9,10 @@ interface OrderPaginationProps {
   meta: PaginationMetaDto;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
+  sizes?: number[];
 }
 
-export function OrderPagination({ meta, onPageChange, onLimitChange }: OrderPaginationProps) {
+export function OrderPagination({ meta, onPageChange, onLimitChange, sizes = [10, 20, 30] }: OrderPaginationProps) {
   const { t } = useTranslation();
 
   const totalPages = Math.ceil(meta.total / meta.limit);
@@ -36,7 +37,7 @@ export function OrderPagination({ meta, onPageChange, onLimitChange }: OrderPagi
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[10, 20, 30].map((size) => (
+            {sizes.map((size) => (
               <SelectItem key={size} value={String(size)}>{size}</SelectItem>
             ))}
           </SelectContent>

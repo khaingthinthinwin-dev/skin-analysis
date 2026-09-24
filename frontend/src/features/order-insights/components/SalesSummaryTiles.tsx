@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Package, PackageCheck, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Calendar, Package, PackageCheck, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SalesSummaryDto } from '../types/merchantOrderInsights.types';
 
@@ -11,11 +11,17 @@ export function SalesSummaryTiles({ data, loading, onCompletedClick }: { data?: 
     { label: t('merchant.orders.thisMonth', "This Month's Orders"), value: data?.thisMonthCount ?? 0, clickable: false, icon: Calendar, iconClassName: 'bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-300' },
     { label: t('merchant.orders.completed', 'Completed Orders'), value: data?.completedCount ?? 0, clickable: true, icon: PackageCheck, iconClassName: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300' },
   ];
-  const cardClassName = 'flex min-h-[96px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]';
+  // Same KPI card recipe as the Buyer Order Insights page: label top-left, value bottom-left, icon top-right.
+  const cardClassName = 'flex h-auto min-h-[72px] items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]';
+  // Only the Completed tile is a button, so it replaces the outline variant's default hover surface
+  // (`hover:bg-accent` = pink #EC4899 + `hover:text-accent-foreground` = white) with the Revenue
+  // highlight tint and a purple border, keeping label and value dark and readable. The lift stays the
+  // soft `shadow-md` already used, and focus mirrors the hover surface with a purple ring.
+  const clickableCardClassName = `${cardClassName} group cursor-pointer transition hover:border-[#7c3aed] hover:bg-[#f9f5ff] hover:text-gray-900 hover:shadow-md focus-visible:border-[#7c3aed] focus-visible:bg-[#f9f5ff] focus-visible:text-gray-900 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2`;
 
-  return <section aria-label={t('merchant.orders.salesSummary', 'Sales Summary')} className="grid gap-3 sm:grid-cols-3">{tiles.map((tile) => {
+  return <section aria-label={t('merchant.orders.salesSummary', 'Sales Summary')} className="grid grid-cols-1 gap-[14px] sm:grid-cols-3">{tiles.map((tile) => {
     const Icon = tile.icon;
-    const content = <><span><span className="block text-sm text-muted-foreground">{tile.label}</span><strong className="mt-2 block text-2xl font-bold tabular-nums text-gray-900">{tile.value}</strong></span><span className={`flex h-11 w-11 items-center justify-center rounded-xl ${tile.iconClassName}`}><Icon className="h-5 w-5" strokeWidth={2} aria-hidden="true" /></span></>;
-    return loading ? <Skeleton key={tile.label} className="h-24" /> : tile.clickable ? <Button key={tile.label} type="button" variant="outline" className={`${cardClassName} cursor-pointer transition hover:border-violet-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2`} onClick={onCompletedClick}>{content}</Button> : <div key={tile.label} className={cardClassName}>{content}</div>;
+    const content = <><span className="min-w-0"><span className="block text-[12.5px] font-medium tracking-[0.2px] text-gray-500">{tile.label}</span><span className="mt-[6px] flex items-center gap-2"><strong className="text-[22px] font-bold tabular-nums tracking-[-0.3px] text-gray-900">{tile.value}</strong>{tile.clickable && <span className="inline-flex items-center gap-0.5 text-[12px] font-medium text-[#7c3aed]/60 transition-colors group-hover:text-[#7c3aed] group-focus-visible:text-[#7c3aed]">{t('common.view', 'View')}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></span>}</span></span><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tile.iconClassName}`}><Icon className="h-5 w-5" strokeWidth={2} aria-hidden="true" /></span></>;
+    return loading ? <Skeleton key={tile.label} className="h-[72px] rounded-xl" /> : tile.clickable ? <Button key={tile.label} type="button" variant="outline" className={clickableCardClassName} aria-label={t('merchant.orders.viewCompletedOrders', 'View completed orders')} onClick={onCompletedClick}>{content}</Button> : <div key={tile.label} className={cardClassName}>{content}</div>;
   })}</section>;
 }
