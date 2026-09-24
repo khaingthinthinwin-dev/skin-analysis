@@ -1,539 +1,515 @@
 {
   "module": "SignUp_LogIn",
-  "timestamp": "2026-09-17T07:03:20.565Z",
-  "total": 88,
-  "passed": 88,
+  "timestamp": "2026-09-24T09:52:00.302Z",
+  "total": 84,
+  "passed": 84,
   "failed": 0,
   "skipped": 0,
-  "durationMs": 396303,
+  "durationMs": 200103,
   "tests": [
     {
       "title": "should return 201 with user data for valid buyer registration",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 391
+      "duration": 1297
     },
     {
       "title": "should return 409 when registering with existing email",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 373
+      "duration": 469
     },
     {
       "title": "should return accessToken for valid credentials",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 1908
+      "duration": 768
     },
     {
       "title": "should return 401 for wrong password",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 18
-    },
-    {
-      "title": "should return new accessToken on valid refresh",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 776
-    },
-    {
-      "title": "should return error for invalid refresh token",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 16
-    },
-    {
-      "title": "should return success on successful logout",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 302
-    },
-    {
-      "title": "should return user data for valid token",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 304
-    },
-    {
-      "title": "should return 401 for invalid/expired token",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 12
-    },
-    {
-      "title": "should navigate back to login page from reset password",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 7282
-    },
-    {
-      "title": "should display login form with all fields",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 7412
+      "duration": 11
     },
     {
       "title": "should display register form with all fields",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 7684
+      "duration": 2163
     },
     {
-      "title": "should return success message for valid email",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 5467
-    },
-    {
-      "title": "should return error or same message for non-existent email",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 45
-    },
-    {
-      "title": "should return response for reset password request",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 19
-    },
-    {
-      "title": "should return 400 for invalid reset token",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 13
-    },
-    {
-      "title": "should return 400 for weak password",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 13
-    },
-    {
-      "title": "should return error with statusCode, message, error",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 29
-    },
-    {
-      "title": "should return merchant data for merchant registration",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 328
-    },
-    {
-      "title": "should submit forgot password form and show success message",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
-      "status": "passed",
-      "duration": 9418
-    },
-    {
-      "title": "should return tokens for buyer registration",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
-      "status": "passed",
-      "duration": 396
-    },
-    {
-      "title": "should register a new buyer and redirect to login",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 10039
-    },
-    {
-      "title": "should show error for password mismatch on reset form",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 4664
-    },
-    {
-      "title": "should have correct page title",
+      "title": "should display login form with all fields",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 4847
+      "duration": 2925
     },
     {
-      "title": "should have buyer selected by default",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "title": "should return new accessToken on valid refresh",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 4706
+      "duration": 806
     },
     {
-      "title": "should have back to login link on forgot password page",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "title": "should return error for invalid refresh token",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 4654
+      "duration": 13
+    },
+    {
+      "title": "should return success on successful logout",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 325
+    },
+    {
+      "title": "should return user data for valid token",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 318
+    },
+    {
+      "title": "should return 401 for invalid/expired token",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 7
     },
     {
       "title": "should register as merchant with license file upload",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 5221
+      "duration": 4005
     },
     {
-      "title": "should show error for weak password on reset form",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "title": "should have buyer selected by default",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3770
+      "duration": 1872
+    },
+    {
+      "title": "should have correct page title",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 2156
     },
     {
       "title": "should hide license upload for buyer role",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3995
+      "duration": 1840
     },
     {
-      "title": "should login as buyer and redirect to buyer dashboard",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 4875
-    },
-    {
-      "title": "should show validation error for invalid email format",
+      "title": "should submit forgot password form and show success message",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
       "status": "passed",
-      "duration": 4601
-    },
-    {
-      "title": "should show validation errors on empty submission",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 5199
-    },
-    {
-      "title": "should show error for invalid reset token",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 5068
-    },
-    {
-      "title": "should register as buyer successfully",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
-      "status": "passed",
-      "duration": 6913
-    },
-    {
-      "title": "should show toast notification on successful login",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 6248
-    },
-    {
-      "title": "should show error for duplicate email registration",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 6018
-    },
-    {
-      "title": "should show error with invalid email",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 4660
-    },
-    {
-      "title": "should show success message after registration",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
-      "status": "passed",
-      "duration": 5871
-    },
-    {
-      "title": "should show error for password mismatch",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 5670
-    },
-    {
-      "title": "should show error with invalid password",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 4743
-    },
-    {
-      "title": "should show errors for empty form submission",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
-      "status": "passed",
-      "duration": 4137
-    },
-    {
-      "title": "should show validation error for empty email",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 4395
-    },
-    {
-      "title": "should log in as buyer and navigate to buyer dashboard",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 5356
-    },
-    {
-      "title": "should show error for invalid email format",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
-      "status": "passed",
-      "duration": 4423
-    },
-    {
-      "title": "should show validation error for empty password",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 5274
+      "duration": 6669
     },
     {
       "title": "should log in as merchant and navigate to merchant dashboard",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 5430
+      "duration": 2521
     },
     {
-      "title": "should show error for short password",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "title": "should return success message for valid email",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 5509
+      "duration": 3170
     },
     {
-      "title": "should show validation error for invalid email format",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "title": "should return error or same message for non-existent email",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 4652
+      "duration": 49
+    },
+    {
+      "title": "should return response for reset password request",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 49
+    },
+    {
+      "title": "should return 400 for invalid reset token",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 29
+    },
+    {
+      "title": "should return 400 for weak password",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 19
+    },
+    {
+      "title": "should return error with statusCode, message, error",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 35
+    },
+    {
+      "title": "should return merchant data for merchant registration",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 399
+    },
+    {
+      "title": "should return tokens for buyer registration",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 483
+    },
+    {
+      "title": "should reset password with valid verification code and login with new password",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 8368
     },
     {
       "title": "should show generic error for wrong credentials without leaking account existence",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 4305
+      "duration": 2021
     },
     {
-      "title": "should show error for password missing uppercase",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "title": "should have back to login link on forgot password page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
       "status": "passed",
-      "duration": 4249
+      "duration": 2413
     },
     {
-      "title": "should validate invalid email format inline",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 4666
-    },
-    {
-      "title": "should show validation error for short password",
+      "title": "should login as buyer and redirect to buyer dashboard",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 4931
+      "duration": 4077
     },
     {
-      "title": "should show error for password missing lowercase",
+      "title": "should register as buyer successfully",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4987
+      "duration": 3847
+    },
+    {
+      "title": "should navigate back to login page from reset password",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 2200
+    },
+    {
+      "title": "should show validation error for invalid email format",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "status": "passed",
+      "duration": 2262
     },
     {
       "title": "should toggle password visibility on login page",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 4664
+      "duration": 3330
     },
     {
-      "title": "should navigate to register page when clicking Create Account",
+      "title": "should show toast notification on successful login",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 4727
+      "duration": 3234
     },
     {
-      "title": "should show error for password missing number",
+      "title": "should show success message after registration",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4638
+      "duration": 2523
     },
     {
-      "title": "should navigate to forgot password page",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "title": "should show error for password mismatch on reset form",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
       "status": "passed",
-      "duration": 4203
+      "duration": 1862
     },
     {
-      "title": "should show error for password missing special character",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
-      "status": "passed",
-      "duration": 5410
-    },
-    {
-      "title": "should toggle password visibility",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 4229
-    },
-    {
-      "title": "should navigate to forgot password and submit email",
+      "title": "should redirect to forgot password when reset page opened without code",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 8951
+      "duration": 1616
     },
     {
-      "title": "should show error for password mismatch",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "title": "should show error for weak password on reset form",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
       "status": "passed",
-      "duration": 5007
+      "duration": 1642
     },
     {
-      "title": "should display reset password form and validate match",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 4689
-    },
-    {
-      "title": "should redirect to dashboard if already logged in",
+      "title": "should show error with invalid email",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 5974
+      "duration": 2422
     },
     {
-      "title": "should show error when terms not checked",
+      "title": "should show errors for empty form submission",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4903
+      "duration": 2441
+    },
+    {
+      "title": "should redirect to login when accessing protected route without authentication",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 1644
+    },
+    {
+      "title": "should show error for invalid reset token",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 2114
+    },
+    {
+      "title": "should show error for invalid email format",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 1868
+    },
+    {
+      "title": "should redirect to login when accessing buyer dashboard without authentication",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 1661
+    },
+    {
+      "title": "should show error with invalid password",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 2700
+    },
+    {
+      "title": "should show error for short password",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 2332
+    },
+    {
+      "title": "should show validation error for empty fields",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 2307
+    },
+    {
+      "title": "should show error for password missing uppercase",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 2429
+    },
+    {
+      "title": "should show validation error for invalid email format",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 1998
     },
     {
       "title": "should log out buyer and clear session",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 6108
+      "duration": 6283
     },
     {
-      "title": "should show error for duplicate email",
+      "title": "should show validation error for short password",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 1907
+    },
+    {
+      "title": "should show error for password missing lowercase",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5792
+      "duration": 2506
+    },
+    {
+      "title": "should navigate to register page when clicking Create Account",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 2477
+    },
+    {
+      "title": "should show error for password missing number",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 2310
     },
     {
       "title": "should switch language on auth pages",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 5793
+      "duration": 4519
     },
     {
-      "title": "should show license upload when merchant role selected",
+      "title": "should show error for password missing special character",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4392
+      "duration": 2370
+    },
+    {
+      "title": "should navigate to forgot password page",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 4026
+    },
+    {
+      "title": "should show error for password mismatch",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 2300
     },
     {
       "title": "should toggle light and dark theme on auth pages",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 6067
+      "duration": 4015
+    },
+    {
+      "title": "should show error when terms not checked",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 1777
+    },
+    {
+      "title": "should redirect to dashboard if already logged in",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 3226
+    },
+    {
+      "title": "should display login correctly on desktop viewport",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 1992
+    },
+    {
+      "title": "should show error for duplicate email",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 3494
+    },
+    {
+      "title": "should display register correctly on desktop viewport",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 2764
+    },
+    {
+      "title": "should show license upload when merchant role selected",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 1654
+    },
+    {
+      "title": "should display login correctly on mobile viewport",
+      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 2180
     },
     {
       "title": "should show error for merchant without license",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5845
+      "duration": 2578
     },
     {
-      "title": "should display correctly on desktop viewport",
+      "title": "should display register correctly on mobile viewport",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 5265
+      "duration": 2156
     },
     {
-      "title": "should display correctly on mobile viewport",
+      "title": "should have no horizontal overflow at 320px width",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 4316
-    },
-    {
-      "title": "should display correctly on tablet viewport",
-      "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 4299
+      "duration": 2215
     },
     {
       "title": "should show error for merchant without shop name",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 15100
+      "duration": 12112
     },
     {
       "title": "should show error for non-PDF license file",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4876
+      "duration": 2631
     },
     {
       "title": "should show error for license file exceeding 10MB",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 6204
+      "duration": 3507
     },
     {
       "title": "should show error for incorrectly named license file",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4893
+      "duration": 2537
     },
     {
       "title": "should navigate to login page when clicking Already have an account",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4035
+      "duration": 1975
     },
     {
       "title": "should show weak indicator for short password",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4208
+      "duration": 1737
     },
     {
       "title": "should show strong indicator for complex password",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4068
+      "duration": 1554
     },
     {
       "title": "should toggle password visibility",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4387
+      "duration": 1789
     },
     {
       "title": "should toggle confirm password visibility",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4396
+      "duration": 2009
     },
     {
       "title": "should accept name at minimum length (2 chars)",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5847
+      "duration": 2892
     },
     {
       "title": "should accept name at reasonable length (50 chars)",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5312
+      "duration": 2637
     },
     {
       "title": "should accept password at minimum length (8 chars)",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5379
+      "duration": 2623
     },
     {
       "title": "should accept password at maximum length (128 chars)",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5416
+      "duration": 2777
     },
     {
       "title": "should accept license file named License.PDF (uppercase)",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4886
+      "duration": 3940
     },
     {
       "title": "should redirect to dashboard if already logged in",
       "file": "C:\\AI Agent\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5742
+      "duration": 2925
     }
   ]
 }

@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-09-24T09:51:47.510Z",
+  "description": "DB users row — name length 50 accepted",
+  "results": [
+    {
+      "label": "users by email",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "67f5d8bc-62be-4e09-b229-dbfd73c8c5aa",
+          "email": "boundary.name50.mufcrdfb24@gmail.com",
+          "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "role_code": "buyer",
+          "is_active": true,
+          "email_verified": false,
+          "created_at": "2026-09-24T03:21:47.275Z"
+        }
+      ]
+    }
+  ]
+}

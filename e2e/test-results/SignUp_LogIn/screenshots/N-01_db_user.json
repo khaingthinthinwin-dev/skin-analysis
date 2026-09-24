@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-09-24T09:50:41.026Z",
+  "description": "DB users row after successful buyer registration",
+  "results": [
+    {
+      "label": "users by email",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "1eca4cba-656c-4d0e-9229-c9eaa03a92fb",
+          "email": "alison.bennett.mufcpxdc5@gmail.com",
+          "name": "Alison Bennett",
+          "role_code": "buyer",
+          "is_active": true,
+          "email_verified": false,
+          "created_at": "2026-09-24T03:20:40.357Z"
+        }
+      ]
+    }
+  ]
+}

@@ -25,6 +25,9 @@
     "update-pcl:AuditLog": "node ../scripts/update-pcl.cjs Audit_Log"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52.0"
+    "@playwright/test": "^1.52.0",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.0",
+    "typescript": "^7.0.2"
   }
 }

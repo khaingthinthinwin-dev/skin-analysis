@@ -23,7 +23,7 @@ export class RegisterPage {
     this.nameInput = page.getByPlaceholder('John Doe');
     this.emailInput = page.getByRole('textbox', { name: /email/i });
     this.passwordInput = page.getByPlaceholder('Create a password');
-    this.confirmPasswordInput = page.getByPlaceholder('Re-enter password');
+    this.confirmPasswordInput = page.getByPlaceholder('Confirm your password');
     this.buyerRadio = page.getByRole('radio', { name: /buyer/i });
     this.merchantRadio = page.getByRole('radio', { name: /merchant/i });
     this.licenseFileInput = page.locator('input[type="file"]');
@@ -40,7 +40,6 @@ export class RegisterPage {
     await this.page.goto('/register');
     await this.page.waitForLoadState('domcontentloaded');
     await this.page.waitForTimeout(1000);
-    await this.capture('01_register_page_loaded');
   }
 
   async capture(stepName: string) {
@@ -106,31 +105,23 @@ export class RegisterPage {
     licensePath?: string;
   }) {
     await this.fillName(data.name);
-    await this.capture('02_name_filled');
     await this.fillEmail(data.email);
-    await this.capture('03_email_filled');
     await this.fillPassword(data.password);
-    await this.capture('04_password_filled');
     await this.fillConfirmPassword(data.password);
-    await this.capture('05_confirm_password_filled');
 
     if (data.role) {
       await this.selectRole(data.role);
-      await this.capture(`06_role_selected_${data.role}`);
     }
 
     if (data.licensePath && data.role === 'merchant') {
       await this.uploadLicense(data.licensePath);
-      await this.capture('07_license_uploaded');
     }
 
     if (data.agreeToTerms !== false) {
       await this.checkTerms();
-      await this.capture('08_terms_checked');
     }
 
     await this.clickSubmit();
-    await this.capture('09_submit_clicked');
   }
 
   async togglePasswordVisibility() {
@@ -198,6 +189,12 @@ export class RegisterPage {
       (p) => window.location.pathname === p || window.location.pathname.startsWith(p + '/'),
       path,
       { timeout: 10_000 }
+    );
+    await this.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        })
     );
   }
 
