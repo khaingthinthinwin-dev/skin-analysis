@@ -171,6 +171,326 @@ describe('MatchingService', () => {
       });
     });
 
+    describe('filters', () => {
+      function mockGenericSource() {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+      }
+
+      function mockAiSource() {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+      }
+
+      function getCachedKeys(): string[] {
+        return (mockRedis.set.mock.calls as unknown as Array<[string]>).map(
+          (call) => call[0],
+        );
+      }
+
+      it('should treat skinTypes=all as no skin-type restriction', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { skinTypes: 'all' });
+
+        expect(
+          getMockWhere(mockPrisma.product.findMany).skinTypes,
+        ).toBeUndefined();
+      });
+
+      it('should drop the "all" sentinel from a mixed skin-type filter', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { skinTypes: 'oily,all' });
+
+        expect(getMockWhere(mockPrisma.product.findMany).skinTypes).toEqual({
+          hasSome: ['oily'],
+        });
+      });
+
+      it('should keep the analysed skin type when no skinTypes param is sent', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, {});
+
+        expect(getMockWhere(mockPrisma.product.findMany).skinTypes).toEqual({
+          hasSome: ['oily'],
+        });
+      });
+
+      it('should still score against the analysed skin type when all skin types are requested', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'p1',
+            name: 'Oily Skin Serum',
+            slug: 'oily-skin-serum',
+            price: 1500,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.5,
+            reviewCount: 20,
+            isFeatured: false,
+            stockQuantity: 3,
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(1);
+
+        const result = await service.getPersonalized(userId, {
+          skinTypes: 'all',
+        });
+
+        expect(
+          getMockWhere(mockPrisma.product.findMany).skinTypes,
+        ).toBeUndefined();
+        expect(result.data[0].matchScore).toBeGreaterThan(0);
+      });
+
+      it('should filter by categoryId', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { categoryId: 'cat-1' });
+
+        expect(getMockWhere(mockPrisma.product.findMany).categoryId).toBe(
+          'cat-1',
+        );
+      });
+
+      it('should support the category alias', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { category: 'cat-2' });
+
+        expect(getMockWhere(mockPrisma.product.findMany).categoryId).toBe(
+          'cat-2',
+        );
+      });
+
+      it('should apply the rating filter as a minimum avgRating', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { rating: 4.5 });
+
+        expect(getMockWhere(mockPrisma.product.findMany).avgRating).toEqual({
+          gte: 4.5,
+        });
+      });
+
+      it('should combine all filters in one query', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, {
+          skinTypes: 'oily,dry',
+          ingredients: 'vitamin_c',
+          minPrice: 1000,
+          maxPrice: 5000,
+          rating: 4,
+          categoryId: 'cat-1',
+        });
+
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.skinTypes).toEqual({ hasSome: ['oily', 'dry'] });
+        expect(where.ingredients).toEqual({ hasSome: ['Vitamin C'] });
+        expect(where.price).toEqual({ gte: 1000, lte: 5000 });
+        expect(where.avgRating).toEqual({ gte: 4 });
+        expect(where.categoryId).toBe('cat-1');
+      });
+
+      it('should NOT collide cache keys when only the rating filter differs', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { page: 1, limit: 12 });
+        await service.getPersonalized(userId, {
+          page: 1,
+          limit: 12,
+          rating: 4.5,
+        });
+
+        const keys = getCachedKeys();
+        expect(keys).toHaveLength(2);
+        expect(keys[0]).not.toBe(keys[1]);
+      });
+
+      it('should NOT collide cache keys when only the category filter differs', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { page: 1, limit: 12 });
+        await service.getPersonalized(userId, {
+          page: 1,
+          limit: 12,
+          categoryId: 'cat-1',
+        });
+
+        const keys = getCachedKeys();
+        expect(keys).toHaveLength(2);
+        expect(keys[0]).not.toBe(keys[1]);
+      });
+
+      it('should NOT reuse the entry of an unfiltered request for skinTypes=all', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, { page: 1, limit: 12 });
+        await service.getPersonalized(userId, {
+          page: 1,
+          limit: 12,
+          skinTypes: 'all',
+        });
+
+        const keys = getCachedKeys();
+        expect(keys).toHaveLength(2);
+        expect(keys[0]).not.toBe(keys[1]);
+      });
+    });
+
+    describe('sorting', () => {
+      function mockGenericSource() {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+      }
+
+      function mockAiSource() {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+      }
+
+      function getOrderBy(): any {
+        return getMockCallArgs(mockPrisma.product.findMany).orderBy;
+      }
+
+      it('should honour sort=price for generic results', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, { sort: 'price', order: 'asc' });
+
+        expect(getOrderBy()).toEqual({ price: 'asc' });
+      });
+
+      it('should honour sort=createdAt for generic results', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, {
+          sort: 'createdAt',
+          order: 'desc',
+        });
+
+        expect(getOrderBy()).toEqual({ createdAt: 'desc' });
+      });
+
+      it('should honour sort=rating for generic results', async () => {
+        mockGenericSource();
+
+        await service.getPersonalized(userId, {
+          sort: 'rating',
+          order: 'desc',
+        });
+
+        expect(getOrderBy()).toEqual({ avgRating: 'desc' });
+      });
+
+      it('should honour sort=rating for AI results', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, { sort: 'rating', order: 'asc' });
+
+        expect(getOrderBy()).toEqual({ avgRating: 'asc' });
+      });
+
+      it('should fall back to featured + rating when no sort field is requested', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, {});
+
+        expect(getOrderBy()).toEqual([
+          { isFeatured: 'desc' },
+          { avgRating: 'desc' },
+        ]);
+      });
+
+      it('should sort AI results by match score in the requested direction', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'low',
+            name: 'Low Match',
+            slug: 'low-match',
+            price: 1000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['dry'],
+            tags: [],
+            ingredients: [],
+            avgRating: 3.0,
+            reviewCount: 5,
+            isFeatured: false,
+            stockQuantity: 1,
+          },
+          {
+            id: 'high',
+            name: 'High Match',
+            slug: 'high-match',
+            price: 2000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.8,
+            reviewCount: 100,
+            isFeatured: true,
+            stockQuantity: 1,
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(2);
+
+        const desc = await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'desc',
+        });
+        expect(desc.data.map((product) => product.id)).toEqual(['high', 'low']);
+
+        const asc = await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'asc',
+        });
+        expect(asc.data.map((product) => product.id)).toEqual(['low', 'high']);
+      });
+
+      it('should leave explicit field sorts untouched for AI results', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, { sort: 'price', order: 'desc' });
+
+        expect(getOrderBy()).toEqual({ price: 'desc' });
+      });
+    });
+
     it('should handle pagination correctly', async () => {
       mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
       mockRedis.get.mockResolvedValue(null);
@@ -190,6 +510,38 @@ describe('MatchingService', () => {
       const findManyCall = getMockCallArgs(mockPrisma.product.findMany);
       expect(findManyCall.skip).toBe(10);
       expect(findManyCall.take).toBe(10);
+    });
+
+    it('should NOT collide page 1 and page 2 Redis cache keys', async () => {
+      mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
+      mockRedis.get.mockResolvedValue(null);
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.product.count.mockResolvedValue(50);
+
+      await service.getPersonalized(userId, { page: 1, limit: 10 });
+      await service.getPersonalized(userId, { page: 2, limit: 10 });
+
+      const cachedKeys = (
+        mockRedis.set.mock.calls as unknown as Array<[string]>
+      ).map((call) => call[0]);
+      expect(cachedKeys).toHaveLength(2);
+      expect(cachedKeys[0]).not.toBe(cachedKeys[1]);
+    });
+
+    it('should NOT collide different page sizes in Redis cache keys', async () => {
+      mockPrisma.skinAnalysis.findFirst.mockResolvedValue(null);
+      mockRedis.get.mockResolvedValue(null);
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.product.count.mockResolvedValue(50);
+
+      await service.getPersonalized(userId, { page: 1, limit: 12 });
+      await service.getPersonalized(userId, { page: 1, limit: 24 });
+
+      const cachedKeys = (
+        mockRedis.set.mock.calls as unknown as Array<[string]>
+      ).map((call) => call[0]);
+      expect(cachedKeys).toHaveLength(2);
+      expect(cachedKeys[0]).not.toBe(cachedKeys[1]);
     });
   });
 

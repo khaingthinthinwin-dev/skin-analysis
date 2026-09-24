@@ -26,6 +26,28 @@ describe('MatchQueryDto', () => {
     expect(errors.length).toBe(0);
   });
 
+  it('should accept the filter params the recommendations page sends', async () => {
+    const dto = plainToInstance(MatchQueryDto, {
+      categoryId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      skinTypes: 'oily',
+      minPrice: 1000,
+      maxPrice: 5000,
+      rating: 4.5,
+      sort: 'createdAt',
+      order: 'desc',
+      page: 1,
+      limit: 12,
+    });
+    const errors = await validate(dto);
+    expect(errors.length).toBe(0);
+  });
+
+  it('should accept the category alias', async () => {
+    const dto = plainToInstance(MatchQueryDto, { category: 'cat-1' });
+    const errors = await validate(dto);
+    expect(errors.length).toBe(0);
+  });
+
   it('should fail with invalid sort', async () => {
     const dto = plainToInstance(MatchQueryDto, { sort: 'invalid' });
     const errors = await validate(dto);

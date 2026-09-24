@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { CategorySelect } from './CategorySelect'
+import { CategorySelect } from '@/features/search/components/CategorySelect'
 import type { CategoryNode } from '@/types/search.types'
 import type { SearchParams } from '@/schemas/search.schema'
 

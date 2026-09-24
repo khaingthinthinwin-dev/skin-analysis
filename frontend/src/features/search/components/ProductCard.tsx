@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Star, ShoppingCart, Heart, Loader2 } from 'lucide-react'
+import { Star, ShoppingCart, Heart, Loader2, Store } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { ProductSummary, ViewMode } from '@/types/search.types'
@@ -59,6 +59,11 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
                 <span className="text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-400">
                   {product.category.name}
                 </span>
+                {product.shop_name && (
+                  <span className="text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded mt-1 block">
+                    Sold by {product.shop_name}
+                  </span>
+                )}
                 <h3 className="truncate text-sm font-semibold">{product.name}</h3>
               </div>
               <Button
@@ -88,10 +93,10 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-                <span className="text-base font-bold">${product.price}</span>
+                <span className="text-base font-bold">{Number(product.price).toLocaleString()}Ks</span>
                 {product.compareAtPrice && (
                   <span className="text-xs text-muted-foreground line-through">
-                    ${product.compareAtPrice}
+                    {Number(product.compareAtPrice).toLocaleString()}Ks
                   </span>
                 )}
               </div>
@@ -165,18 +170,40 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
           </Button>
         </div>
       </Link>
-      <CardContent className="space-y-2 p-3 pt-2">
-        {/* Category (brand) */}
-        <span className="text-[10px] font-semibold uppercase text-muted-foreground block">
-          {product.category.name}
-        </span>
-        {/* Title */}
-        <h3 className="line-clamp-1 text-sm font-semibold">{product.name}</h3>
-        {/* Rating */}
-        <div className="flex items-center gap-1 text-xs">
-          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-          <span className="font-medium">{product.avgRating}</span>
-          <span className="text-muted-foreground">({product.reviewCount})</span>
+
+      {/* Content Section */}
+      <CardContent className="space-y-2 p-3 pt-2.5">
+        {/* Sold By */}
+        {product.shop_name && (
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <Store className="h-3 w-3" />
+            <span>Sold by {product.shop_name}</span>
+          </div>
+        )}
+
+        {/* Product Title */}
+        <h3 className="line-clamp-1 text-sm font-bold text-gray-900 dark:text-zinc-100">
+          {product.name}
+        </h3>
+
+        {/* Rating: 5 Stars + Score + Review Count */}
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`h-3.5 w-3.5 ${
+                star <= Math.round(Number(product.avgRating))
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'fill-gray-200 text-gray-200'
+              }`}
+            />
+          ))}
+          <span className="ml-1 text-xs font-semibold text-gray-700 dark:text-zinc-200">
+            {Number(product.avgRating).toFixed(2)}
+          </span>
+          <span className="text-xs text-gray-400 dark:text-muted-foreground">
+            ({product.reviewCount})
+          </span>
         </div>
         {/* Skin type chips */}
         {product.skinTypes.length > 0 && (
@@ -189,20 +216,18 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
                 {skinType.charAt(0).toUpperCase() + skinType.slice(1)}
               </span>
             ))}
-            {product.skinTypes.length > 3 && (
-              <span className="inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                +{product.skinTypes.length - 3}
-              </span>
-            )}
           </div>
         )}
-        {/* Price and Add to Cart */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+
+        {/* Price + Cart Button */}
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold">${product.price}</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-zinc-100">
+              {Number(product.price).toLocaleString()}Ks
+            </span>
             {product.compareAtPrice && (
-              <span className="text-xs text-muted-foreground line-through">
-                ${product.compareAtPrice}
+              <span className="text-xs text-gray-400 dark:text-muted-foreground line-through">
+                {Number(product.compareAtPrice).toLocaleString()}Ks
               </span>
             )}
           </div>
