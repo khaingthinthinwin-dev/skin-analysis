@@ -25,7 +25,7 @@ export function SortSelect({ sort, order, onChange }: SortSelectProps) {
 
   return (
     <Select value={currentValue} onValueChange={handleChange}>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-[180px] border-border bg-card text-foreground">
         <ArrowUpDown className="mr-2 h-4 w-4" />
         <SelectValue placeholder="Sort by" />
       </SelectTrigger>

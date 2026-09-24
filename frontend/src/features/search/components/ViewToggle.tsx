@@ -9,7 +9,7 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onChange }: ViewToggleProps) {
   return (
-    <div role="group" aria-label="View mode" className="flex items-center gap-1 rounded-md border p-0.5">
+    <div role="group" aria-label="View mode" className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
       <Button
         variant={view === 'grid' ? 'default' : 'ghost'}
         size="icon"

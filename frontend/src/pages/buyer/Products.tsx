@@ -1,9 +1,9 @@
 import { useLocation, useSearchParams, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Search as SearchIcon, Loader2, SlidersHorizontal, RefreshCw } from 'lucide-react'
+import { Search as SearchIcon, Loader2, SlidersHorizontal, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
-import { Pagination } from '@/components/Pagination'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { categoryService } from '@/features/search/services/category.service'
@@ -243,10 +243,6 @@ export default function Products() {
     })
   }
 
-  const handleLimitChange = (limit: number) => {
-    serializeToUrl({ ...params, limit, page: 1 })
-  }
-
   const resolveCategoryName = (categories: CategoryNode[], id: string): string | null => {
     if (!id) return null
     for (const cat of categories) {
@@ -258,9 +254,10 @@ export default function Products() {
   }
 
   const categoryName = resolveCategoryName(categories, params.categoryId)
+  const isGuestProductsPage = location.pathname === '/products'
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
+    <div className={`${isGuestProductsPage ? 'mx-auto max-w-7xl' : ''} w-full space-y-6 overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8`}>
       {/* A. Page header */}
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
@@ -337,12 +334,14 @@ export default function Products() {
         <div className="min-w-0 flex-1">
           {/* Toolbar above grid */}
           <div className="mb-4 hidden flex-wrap items-center justify-end gap-3 md:flex">
-            <SortSelect
-              sort={params.sort}
-              order={params.order}
-              onChange={(sort, order) => handleFilterUpdate({ sort, order })}
-            />
-            <ViewToggle view={view} onChange={setView} />
+            <div className="ml-auto flex items-center gap-3">
+              <SortSelect
+                sort={params.sort}
+                order={params.order}
+                onChange={(sort, order) => handleFilterUpdate({ sort, order })}
+              />
+              <ViewToggle view={view} onChange={setView} />
+            </div>
           </div>
 
           {isLoading ? (
@@ -378,7 +377,7 @@ export default function Products() {
               <div
                 className={
                   view === 'grid'
-                    ? 'grid min-w-0 grid-cols-2 gap-4 lg:grid-cols-3'
+                    ? 'grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
                     : 'min-w-0 space-y-4'
                 }
               >
@@ -398,10 +397,42 @@ export default function Products() {
               </div>
 
               {meta && (
-                <Pagination
-                  meta={meta}
-                  onLimitChange={handleLimitChange}
-                />
+                <div className="flex justify-center items-center gap-2 mt-8">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateParams({ ...params, page: params.page > 1 ? params.page - 1 : 1 })}
+                    disabled={params.page <= 1}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  {Array.from({ length: meta?.totalPages || 1 }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updateParams({ ...params, page })}
+                      className={`
+                        flex h-10 w-10 items-center justify-center rounded-xl ${params.page === page
+                          ? 'bg-primary font-bold text-primary-foreground'
+                          : 'border border-border bg-background text-foreground hover:bg-muted'}
+                      `}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateParams({ ...params, page: params.page < meta?.totalPages ? params.page + 1 : meta?.totalPages })}
+                    disabled={params.page >= (meta?.totalPages || 1)}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </div>
               )}
             </>
           )}

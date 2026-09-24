@@ -39,7 +39,8 @@ export function ProductCard({
     return (
       <Link
         to={productLink}
-        className="block rounded-lg border bg-card transition-shadow hover:shadow-md"
+        onClick={(e) => e.stopPropagation()}
+        className="block rounded-lg border border-border bg-card transition-shadow hover:shadow-md"
       >
         <div className="flex gap-4 p-4">
           <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -63,15 +64,15 @@ export function ProductCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+                <span className="text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-400">
                   {product.category.name}
                 </span>
                 {product.shop_name && (
-                  <span className="text-xs text-purple-800 bg-purple-50 px-2 py-0.5 rounded mt-1 block">
+                    <span className="mt-1 block rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
                     Sold by {product.shop_name}
                   </span>
                 )}
-                <h3 className="truncate text-sm font-semibold">{product.name}</h3>
+                <h3 className="cursor-pointer truncate text-sm font-semibold text-foreground transition-colors duration-200 hover:text-primary">{product.name}</h3>
               </div>
               <Button
                 variant="ghost"
@@ -100,9 +101,9 @@ export function ProductCard({
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-                <span className="text-base font-bold">{Number(product.price).toLocaleString()} Ks</span>
+                <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">{Number(product.price).toLocaleString()} Ks</span>
                 {product.compareAtPrice && (
-                  <span className="text-xs text-muted-foreground line-through">
+                  <span className="text-gray-400 dark:text-gray-500 line-through text-xs">
                     {Number(product.compareAtPrice).toLocaleString()} Ks
                   </span>
                 )}
@@ -118,10 +119,10 @@ export function ProductCard({
   }
 
   return (
-    <Card className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
+    <Card className="group overflow-hidden border-border bg-card transition-transform hover:-translate-y-0.5 hover:shadow-md">
       {/* Image Section */}
-      <Link to={productLink} className="block">
-        <div className="relative aspect-square bg-muted">
+      <Link to={productLink} onClick={(e) => e.stopPropagation()} className="block">
+          <div className="relative aspect-square bg-muted">
           {imageUrl ? (
             <>
               <img
@@ -154,7 +155,7 @@ export function ProductCard({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-transparent shadow-none hover:bg-transparent"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -176,14 +177,14 @@ export function ProductCard({
       <CardContent className="space-y-2 p-3 pt-2.5">
         {/* Sold By */}
         {product.shop_name && (
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+          <div className="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 uppercase font-semibold mb-1">
             <Store className="h-3 w-3" />
             <span>Sold by {product.shop_name}</span>
           </div>
         )}
 
         {/* Product Title */}
-        <h3 className="line-clamp-1 text-sm font-bold text-gray-900">
+        <h3 className="line-clamp-1 cursor-pointer text-sm font-semibold text-foreground transition-colors duration-200 hover:text-primary">
           {product.name}
         </h3>
 
@@ -199,10 +200,10 @@ export function ProductCard({
               }`}
             />
           ))}
-          <span className="ml-1 text-xs font-semibold text-gray-700">
+          <span className="ml-1 text-xs font-semibold text-gray-600 dark:text-gray-300">
             {Number(product.avgRating).toFixed(2)}
           </span>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 dark:text-gray-400">
             ({product.reviewCount})
           </span>
         </div>
@@ -213,7 +214,7 @@ export function ProductCard({
             {product.skinTypes.slice(0, 2).map((skinType) => (
               <span
                 key={skinType}
-                className="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600"
+                className="inline-flex items-center rounded-full bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400"
               >
                 {skinType.charAt(0).toUpperCase() + skinType.slice(1)}
               </span>
@@ -224,11 +225,11 @@ export function ProductCard({
         {/* Price + Cart Button */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-gray-900">
+            <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">
               {Number(product.price).toLocaleString()} Ks
             </span>
             {product.compareAtPrice && (
-              <span className="text-xs text-gray-400 line-through">
+              <span className="text-gray-400 dark:text-gray-500 line-through text-xs">
                 {Number(product.compareAtPrice).toLocaleString()} Ks
               </span>
             )}
