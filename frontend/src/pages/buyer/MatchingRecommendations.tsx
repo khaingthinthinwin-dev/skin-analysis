@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useCallback, useEffect, useMemo, useRef, useState, type ImgHTMLAttributes } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Card, CardContent } from '@/components/ui/card'
@@ -10,28 +9,23 @@ import { toast } from 'sonner'
 import { useAuth } from '@/providers/AuthProvider'
 import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { useCart } from '@/features/buyer/cart/hooks/useCart'
-=======
-import { useState, type ImgHTMLAttributes } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { Card } from '@/components/ui/card'
-import { ShoppingCart, Star, ChevronLeft, ChevronRight, Sparkles, FlaskConical, Heart, Plus, Check } from 'lucide-react'
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
 import { useMatchFilters } from '@/features/buyer/matching/hooks/useMatchFilters'
 import { usePersonalizedRecommendations, useRecommendationHistory, useAdPanel } from '@/features/buyer/matching/hooks/useMatching'
 import { matchingService } from '@/features/buyer/matching/services/matching.service'
 import { FiltersPanel } from '@/features/buyer/matching/components/FiltersPanel'
+import { MatchingFilterChips } from '@/features/buyer/matching/components/MatchingFilterChips'
 import { EmptyState } from '@/features/buyer/matching/components/EmptyState'
 import { ErrorBanner } from '@/features/buyer/matching/components/ErrorBanner'
 import { SkeletonGrid } from '@/features/buyer/matching/components/SkeletonGrid'
 import { HistoryAccordion } from '@/features/buyer/matching/components/HistoryAccordion'
 import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
 import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
+import { getMatchingSortOptions, resolveMatchingSort } from '@/features/buyer/matching/utils/matchingSort'
+import { SortSelect } from '@/features/search/components/SortSelect'
+import { ViewToggle } from '@/features/search/components/ViewToggle'
 import { cn } from '@/lib/utils'
-<<<<<<< HEAD
-import type { ViewMode } from '@/types/search.types'
 import type { RecommendationProduct } from '@/schemas/matching.schema'
-=======
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
+import type { ViewMode } from '@/types/search.types'
 
 function getImageUrl(url: string): string {
   if (!url) return ''
@@ -49,13 +43,23 @@ function ProductImage({ src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement
   return <img src={getImageUrl(src)} alt={alt} onError={() => setError(true)} {...props} />
 }
 
-<<<<<<< HEAD
+const BADGE_STYLES: Record<string, string> = {
+  topRated: 'bg-teal-100 text-teal-700',
+  bestSeller: 'bg-orange-100 text-orange-700',
+}
+
+const BADGE_LABELS: Record<string, string> = {
+  topRated: '🏆 Top Rated',
+  bestSeller: '🔥 Best Seller',
+}
+
 export default function MatchingRecommendations() {
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const { items: wishlistItems, addToWishlist, removeFromWishlist, isAdding: isWishlistLoading } = useWishlist()
   const { items: cartItems, addToCart, isAdding: isCartLoading } = useCart()
-  const { filters, updateFilters, resetFilters, pageSizeVersion } = useMatchFilters()
+  const { filters, updateFilters, resetFilters } = useMatchFilters()
+  const resolvedSort = resolveMatchingSort(filters)
   const [view, setView] = useState<ViewMode>('grid')
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
   const [loginRequiredModal, setLoginRequiredModal] = useState<'wishlist' | 'cart' | null>(null)
@@ -135,7 +139,7 @@ export default function MatchingRecommendations() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
 
-  const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters, pageSizeVersion)
+  const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters)
   const { data: historyData } = useRecommendationHistory(1, 5)
   const { data: adPanelData } = useAdPanel('category_banner')
 
@@ -145,7 +149,7 @@ export default function MatchingRecommendations() {
     updateFilters({ page })
     // Hit the network right away on Prev/Next (don't wait on cache/prefetch).
     void queryClient.fetchQuery({
-      queryKey: ['recommendations', 'personalized', nextParams, pageSizeVersion],
+      queryKey: ['recommendations', 'personalized', nextParams, 0],
       queryFn: () => matchingService.getPersonalized(nextParams),
       staleTime: 0,
     })
@@ -158,59 +162,55 @@ export default function MatchingRecommendations() {
   // even while a refresh is in flight (placeholder data can still be from a
   // previous larger selection).
   const products = (recData?.data ?? []).slice(0, filters.limit)
-=======
-const BADGE_STYLES: Record<string, string> = {
-  featured: 'bg-amber-100 text-amber-700',
-  topRated: 'bg-teal-100 text-teal-700',
-  bestSeller: 'bg-orange-100 text-orange-700',
-  new: 'bg-purple-100 text-purple-700',
-}
-
-const BADGE_LABELS: Record<string, string> = {
-  featured: '⭐ Featured',
-  topRated: '🏆 Top Rated',
-  bestSeller: '🔥 Best Seller',
-  new: '✨ New',
-}
-
-export default function MatchingRecommendations() {
-  const navigate = useNavigate()
-  const { filters, updateFilters, resetFilters } = useMatchFilters()
-
-  const { data: recData, isLoading, error: recError, refetch } = usePersonalizedRecommendations({ ...filters, limit: 12 })
-  const { data: historyData } = useRecommendationHistory(1, 5)
-  const { data: adPanelData } = useAdPanel('category_banner')
-
-  const products = recData?.data ?? []
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
   const source = recData?.source ?? 'generic'
   const analysisAge = recData?.analysisAge ?? null
   const skinTypes = recData?.skinTypes ?? []
   const meta = recData?.meta ?? { page: 1, limit: 12, total: 0, totalPages: 0 }
   const history = historyData?.data ?? []
 
-  const handlePageChange = (newPage: number) => {
-    updateFilters({ page: newPage })
-  }
-
-  const getPageNumbers = () => {
-    const pages: (number | '...')[] = []
-    const total = meta.totalPages
-    const current = meta.page
-
-    if (total <= 5) {
-      for (let i = 1; i <= total; i++) pages.push(i)
-    } else {
-      pages.push(1)
-      if (current > 3) pages.push('...')
-      for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-        pages.push(i)
-      }
-      if (current < total - 2) pages.push('...')
-      pages.push(total)
-    }
-    return pages
-  }
+  const pageNav =
+    meta.total > 0 ? (
+      <div className="flex items-center justify-between mt-4">
+        <span className="text-[13px] text-muted-foreground">
+          Showing {(meta.page - 1) * meta.limit + 1}-{Math.min(meta.page * meta.limit, meta.total)} of {meta.total} products
+        </span>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            aria-label="Previous page"
+            className={`w-8 h-8 rounded-md flex items-center justify-center text-[13px] border cursor-pointer ${
+              meta.page <= 1
+                ? 'opacity-50 cursor-not-allowed bg-card border-border text-muted-foreground'
+                : 'bg-card border-border text-muted-foreground'
+            }`}
+            disabled={meta.page <= 1}
+            onClick={() => handlePageChange(meta.page - 1)}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="w-8 h-8 rounded-md flex items-center justify-center text-[13px] border bg-primary border-primary text-primary-foreground cursor-default"
+            aria-current="page"
+          >
+            {meta.page}
+          </button>
+          <button
+            type="button"
+            aria-label="Next page"
+            className={`w-8 h-8 rounded-md flex items-center justify-center text-[13px] border cursor-pointer ${
+              meta.page >= meta.totalPages
+                ? 'opacity-50 cursor-not-allowed bg-card border-border text-muted-foreground'
+                : 'bg-card border-border text-muted-foreground'
+            }`}
+            disabled={meta.page >= meta.totalPages}
+            onClick={() => handlePageChange(meta.page + 1)}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    ) : null
 
   const skinTypeLabel = skinTypes.length > 0 ? skinTypes.join(', ') : 'All Types'
 
@@ -237,11 +237,6 @@ export default function MatchingRecommendations() {
         </p>
       </div>
 
-      {/* Analysis Status Banner */}
-      <ProfilePromptBanner source={source} analysisAge={analysisAge} />
-
-      {recError && <ErrorBanner message={recError.message || 'Failed to load recommendations.'} onRetry={() => refetch()} />}
-
       {/* Ad Carousel */}
       <AdSlidePanel
         ads={adPanelData?.data ?? []}
@@ -249,11 +244,21 @@ export default function MatchingRecommendations() {
         onClick={(adId) => matchingService.trackClick(adId)}
       />
 
+      {/* Analysis Status Banner */}
+      <ProfilePromptBanner source={source} analysisAge={analysisAge} />
+
+      {recError && <ErrorBanner message={recError.message || 'Failed to load recommendations.'} onRetry={() => refetch()} />}
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Filters Sidebar */}
         <aside className="w-full lg:w-[280px] flex-shrink-0">
           <div className="lg:sticky lg:top-4">
-            <FiltersPanel filters={filters} onUpdate={updateFilters} onReset={resetFilters} />
+            <MatchingFilterChips
+              filters={filters}
+              onRemove={(key) => updateFilters({ [key]: undefined })}
+              onClearAll={resetFilters}
+            />
+            <FiltersPanel filters={filters} onUpdate={updateFilters} onReset={resetFilters} className="mt-4" />
           </div>
         </aside>
 
@@ -269,45 +274,32 @@ export default function MatchingRecommendations() {
           {isLoading ? (
             <SkeletonGrid count={meta.limit} />
           ) : products.length === 0 ? (
-            <>
-              <EmptyState />
-              {meta.totalPages > 1 && (
-                <Pagination
-                  meta={meta}
-                  onPageChange={handlePageChange}
-                />
-              )}
-            </>
+            <EmptyState />
           ) : (
             <>
-              {/* Sort Bar */}
-              <div className="flex items-center gap-3">
-                {source === 'ai' && (
-                  <>
-                    <span className="text-sm text-muted-foreground">Sort by:</span>
-                    <select
-                      value={filters.sort ?? ''}
-                      onChange={(e) => updateFilters({ sort: e.target.value as 'matchScore' | 'price' | 'rating' | 'createdAt' || undefined })}
-                      className="px-3 py-1.5 text-sm border border-border rounded-md bg-card text-foreground cursor-pointer focus:outline-none focus:border-primary"
-                    >
-                      <option value="matchScore">Match Score</option>
-                      <option value="price">Price: Low to High</option>
-                      <option value="rating">Rating</option>
-                      <option value="createdAt">Newest</option>
-                    </select>
-                  </>
-                )}
-                <span className="ml-auto text-sm text-muted-foreground">
-                  Showing {((meta.page - 1) * meta.limit) + 1}–{Math.min(meta.page * meta.limit, meta.total)} of {meta.total} results
-                </span>
+              {/* Sort Bar — values mirror the backend contract (BR-MATCH-025): "Newest" is
+                  the default selection and `rating` is orderable for both sources. Match
+                  Score is only offered for AI results, which are the only ones scored. */}
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <SortSelect
+                  sort={resolvedSort.sort}
+                  order={resolvedSort.order}
+                  onChange={(sort, order) => updateFilters({ sort, order })}
+                  options={getMatchingSortOptions(source)}
+                />
+                <ViewToggle view={view} onChange={setView} />
               </div>
 
-<<<<<<< HEAD
-              {/* Product Grid — stay interactive while page N+1 loads (prefetch/cached swap) */}
-              <div>
-              {view === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {products.map((product) => (
+              {/* Product Grid / List — stay interactive while page N+1 loads (prefetch/cached swap) */}
+              <div
+                className={
+                  view === 'grid'
+                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+                    : 'space-y-3'
+                }
+              >
+                {view === 'grid' ? (
+                  products.map((product) => (
                     <Card key={product.id} className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
                       <Link to={`/buyer/products/${product.slug}`} className="block">
                         <div className="relative aspect-square bg-muted">
@@ -317,7 +309,7 @@ export default function MatchingRecommendations() {
                             className="h-full w-full object-cover"
                           />
                           
-                          {/* Badges top-left */}
+{/* Badges top-left */}
                           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                             {product.compareAtPrice && (
                               <span className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
@@ -330,21 +322,16 @@ export default function MatchingRecommendations() {
                               </span>
                             )}
                           </div>
-=======
-              {/* Product Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {products.map((product) => (
-                  <Card key={product.id} onClick={() => navigate(`/buyer/products/${product.slug}`)} className="relative border border-border/60 bg-card shadow-sm flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-200 cursor-pointer group rounded-xl">
-                    {/* Image Area */}
-                    <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
-                      <ProductImage
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
 
-                      {/* Category Badge - Top Left */}
+                          {/* Match Score - Bottom Left Overlay */}
+                          {source === 'ai' && product.matchScore !== null && (
+                            <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
+                              <Check className="h-3 w-3" />
+                              {product.matchScore}% Match
+                            </span>
+                          )}
+
+                       {/* Category Badge - Top Left */}
                       {product.categoryBadge && (
                         <span className={cn(
                           'absolute top-3 left-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold',
@@ -354,7 +341,6 @@ export default function MatchingRecommendations() {
                         </span>
                       )}
 
-<<<<<<< HEAD
                           {/* Heart icon top-right */}
                           <Button
                             variant="ghost"
@@ -465,11 +451,9 @@ export default function MatchingRecommendations() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {products.map((product) => (
+                  ))
+                ) : (
+                  products.map((product) => (
                     <Card key={product.id} className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
                       <Link to={`/buyer/products/${product.slug}`} className="block">
                         <div className="flex gap-4 p-4">
@@ -598,164 +582,18 @@ export default function MatchingRecommendations() {
                                     <ShoppingCart className="h-4 w-4" />
                                   )}
                                 </Button>
-=======
-                      {/* Out of Stock */}
-                      {!product.isInStock && (
-                        <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-black/60 text-white">
-                          Out of Stock
-                        </span>
-                      )}
-
-                      {/* Match Score - Bottom Left Overlay */}
-                      {product.matchScore !== null && (
-                        <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
-                          <Check className="h-3 w-3" />
-                          {product.matchScore}% Match
-                        </span>
-                      )}
-
-                      {/* Mobile Add Button - Bottom Right */}
-                      <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        className="absolute bottom-3 right-3 z-10 sm:hidden w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center shadow-lg hover:bg-primary transition-colors"
-                      >
-                        <Plus className="h-5 w-5 text-white" />
-                      </button>
-                    </div>
-
-                    {/* Favorite Heart - Fixed position */}
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                      className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full flex items-center justify-center"
-                    >
-                      <Heart className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors" />
-                    </button>
-
-                    {/* Card Body */}
-                    <div className="p-4 flex flex-col flex-1">
-                      {product.brandName && (
-                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-widest mb-1">
-                          {product.brandName}
-                        </p>
-                      )}
-
-                      <Link to={`/buyer/products/${product.slug}`} className="text-sm font-bold text-foreground line-clamp-2 hover:text-primary transition-colors leading-snug mb-2">
-                        {product.name}
-                      </Link>
-
-                      {/* Rating */}
-                      <div className="flex items-center gap-1 mb-2">
-                        <div className="flex items-center">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={cn(
-                                'h-3.5 w-3.5',
-                                star <= Math.round(Number(product.avgRating))
-                                  ? 'fill-amber-400 text-amber-400'
-                                  : 'fill-gray-200 text-gray-200'
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
                               )}
-                            />
-                          ))}
+                            </div>
+                          </div>
                         </div>
-<<<<<<< HEAD
                       </Link>
                     </Card>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
               </div>
 
               {/* Pagination */}
-              {meta && (
-                <Pagination
-                  meta={meta}
-                  onPageChange={handlePageChange}
-                />
-=======
-                        <span className="text-xs text-muted-foreground font-medium">
-                          {Number(product.avgRating).toFixed(2)} ({product.reviewCount})
-                        </span>
-                      </div>
-
-                      {/* Skin Types */}
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {product.skinTypes.slice(0, 3).map((t) => (
-                          <span key={t} className="px-2 py-0.5 text-[10px] font-medium bg-purple-50 text-purple-700 rounded">
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="flex-1" />
-
-                      {/* Price and Cart Button */}
-                      <div className="flex items-center justify-between pt-3 border-t border-border/50">
-                        <div className="flex items-baseline gap-2">
-                          {product.compareAtPrice && (
-                            <span className="text-sm text-muted-foreground line-through">
-                              Ks {Number(product.compareAtPrice).toLocaleString()}
-                            </span>
-                          )}
-                          <span className="text-base font-bold text-purple-700">
-                            Ks {Number(product.price).toLocaleString()}
-                          </span>
-                        </div>
-
-                        <Link
-                          to={`/buyer/products/${product.slug}`}
-                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                          className="hidden sm:flex w-9 h-9 rounded-full bg-purple-100 items-center justify-center hover:bg-purple-200 transition-colors"
-                        >
-                          <ShoppingCart className="h-4 w-4 text-purple-700" />
-                        </Link>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {meta.totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1.5 pt-4">
-                  <button
-                    onClick={() => handlePageChange(meta.page - 1)}
-                    disabled={meta.page <= 1}
-                    className="w-9 h-9 rounded-lg border border-border bg-card text-sm text-muted-foreground flex items-center justify-center hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  {getPageNumbers().map((page, i) =>
-                    page === '...' ? (
-                      <span key={`dots-${i}`} className="w-9 h-9 flex items-center justify-center text-sm text-muted-foreground">
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={cn(
-                          'w-9 h-9 rounded-lg text-sm font-medium flex items-center justify-center transition-colors',
-                          meta.page === page
-                            ? 'bg-primary text-primary-foreground'
-                            : 'border border-border bg-card text-muted-foreground hover:bg-muted'
-                        )}
-                      >
-                        {page}
-                      </button>
-                    )
-                  )}
-                  <button
-                    onClick={() => handlePageChange(meta.page + 1)}
-                    disabled={meta.page >= meta.totalPages}
-                    className="w-9 h-9 rounded-lg border border-border bg-card text-sm text-muted-foreground flex items-center justify-center hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
-              )}
+              {pageNav}
             </>
           )}
         </div>

@@ -24,6 +24,8 @@ describe('matchingService.getPersonalized', () => {
       limit: 12,
       sort: 'createdAt',
       order: 'desc',
+      categoryId: undefined,
+      skinTypes: undefined,
     });
 
     const calledUrl = (apiClient.get as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
@@ -41,6 +43,8 @@ describe('matchingService.getPersonalized', () => {
       limit: 12,
       sort: 'createdAt',
       order: 'desc',
+      categoryId: undefined,
+      skinTypes: undefined,
     });
 
     const firstUrl = (apiClient.get as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;

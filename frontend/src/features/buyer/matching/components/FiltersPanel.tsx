@@ -44,9 +44,10 @@ interface FiltersPanelProps {
   filters: MatchQueryParams
   onUpdate: (updates: Partial<MatchQueryParams>) => void
   onReset: () => void
+  className?: string
 }
 
-export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) {
+export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersPanelProps) {
   const [priceMinDraft, setPriceMinDraft] = useState(filters.minPrice?.toString() ?? '')
   const [priceMaxDraft, setPriceMaxDraft] = useState(filters.maxPrice?.toString() ?? '')
   const [focusedPriceField, setFocusedPriceField] = useState<'min' | 'max' | null>(null)
@@ -105,7 +106,7 @@ export function FiltersPanel({ filters, onUpdate, onReset }: FiltersPanelProps) 
   }
 
   return (
-    <Card className="overflow-hidden border-border/80 shadow-xs">
+    <Card className={`overflow-hidden border-border/80 shadow-xs ${className ?? ''}`}>
       <div className="flex w-full items-center gap-2 p-4">
         <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
         <h3 className="text-sm font-bold text-foreground">Filters</h3>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Star, ShoppingCart, Heart, Loader2 } from 'lucide-react'
+import { Star, ShoppingCart, Heart, Loader2, Store } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { ProductSummary, ViewMode } from '@/types/search.types'
@@ -58,14 +58,11 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
                 <span className="text-[10px] font-semibold uppercase text-muted-foreground">
                   {product.category.name}
                 </span>
-<<<<<<< HEAD
                 {product.shop_name && (
                   <span className="text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded mt-1 block">
                     Sold by {product.shop_name}
                   </span>
                 )}
-=======
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
                 <h3 className="truncate text-sm font-semibold">{product.name}</h3>
               </div>
               <Button
@@ -95,17 +92,10 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-<<<<<<< HEAD
                 <span className="text-base font-bold">{Number(product.price).toLocaleString()}Ks</span>
                 {product.compareAtPrice && (
                   <span className="text-xs text-muted-foreground line-through">
                     {Number(product.compareAtPrice).toLocaleString()}Ks
-=======
-                <span className="text-base font-bold">${product.price}</span>
-                {product.compareAtPrice && (
-                  <span className="text-xs text-muted-foreground line-through">
-                    ${product.compareAtPrice}
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
                   </span>
                 )}
               </div>
@@ -179,7 +169,6 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
           </Button>
         </div>
       </Link>
-<<<<<<< HEAD
 
       {/* Content Section */}
       <CardContent className="space-y-2 p-3 pt-2.5">
@@ -214,20 +203,6 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
           <span className="text-xs text-gray-400 dark:text-muted-foreground">
             ({product.reviewCount})
           </span>
-=======
-      <CardContent className="space-y-2 p-3 pt-2">
-        {/* Category (brand) */}
-        <span className="text-[10px] font-semibold uppercase text-muted-foreground block">
-          {product.category.name}
-        </span>
-        {/* Title */}
-        <h3 className="line-clamp-1 text-sm font-semibold">{product.name}</h3>
-        {/* Rating */}
-        <div className="flex items-center gap-1 text-xs">
-          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-          <span className="font-medium">{product.avgRating}</span>
-          <span className="text-muted-foreground">({product.reviewCount})</span>
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
         </div>
         {/* Skin type chips */}
         {product.skinTypes.length > 0 && (
@@ -240,7 +215,6 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
                 {skinType.charAt(0).toUpperCase() + skinType.slice(1)}
               </span>
             ))}
-<<<<<<< HEAD
           </div>
         )}
 
@@ -253,22 +227,6 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
             {product.compareAtPrice && (
               <span className="text-xs text-gray-400 dark:text-muted-foreground line-through">
                 {Number(product.compareAtPrice).toLocaleString()}Ks
-=======
-            {product.skinTypes.length > 3 && (
-              <span className="inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                +{product.skinTypes.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-        {/* Price and Add to Cart */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold">${product.price}</span>
-            {product.compareAtPrice && (
-              <span className="text-xs text-muted-foreground line-through">
-                ${product.compareAtPrice}
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
               </span>
             )}
           </div>

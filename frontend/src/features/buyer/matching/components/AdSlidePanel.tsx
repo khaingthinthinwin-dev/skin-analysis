@@ -74,13 +74,8 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
       aria-roledescription="carousel"
       aria-label="Sponsored advertisements"
     >
-<<<<<<< HEAD
       <Card className="p-3 sm:p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/40 dark:to-pink-950/40">
         <div className="flex items-center gap-2 sm:gap-3">
-=======
-      <Card className="p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50">
-        <div className="flex items-center gap-4">
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
           <Button
             variant="ghost"
             size="icon"
@@ -105,11 +100,7 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
               />
             )}
             <div className="flex-1 min-w-0">
-<<<<<<< HEAD
               <h4 className="font-semibold flex-1 truncate text-gray-900">{ad.title}</h4>
-=======
-              <h4 className="font-semibold truncate">{ad.title}</h4>
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
               {ad.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2">{ad.description}</p>
               )}

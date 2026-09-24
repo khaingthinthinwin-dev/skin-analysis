@@ -39,6 +39,17 @@ describe('useMatchFilters pagination', () => {
     expect(screen.getByTestId('limit')).toHaveTextContent('12');
   });
 
+  it('defaults the sort to Newest (createdAt desc) from a clean URL', () => {
+    render(
+      <MemoryRouter initialEntries={['/buyer/recommendations']}>
+        <MatchProbe />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('sort')).toHaveTextContent('createdAt');
+    expect(screen.getByTestId('order')).toHaveTextContent('desc');
+  });
+
   it('keeps limit and goes to page 2 when Next is clicked', async () => {
     const user = userEvent.setup();
 

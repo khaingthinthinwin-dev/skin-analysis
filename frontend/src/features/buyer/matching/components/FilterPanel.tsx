@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { SlidersHorizontal } from 'lucide-react'
+import { ChevronUp, SlidersHorizontal } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { CategorySelect } from './CategorySelect'
+import { CategorySelect } from '@/features/search/components/CategorySelect'
 import type { CategoryNode } from '@/types/search.types'
 import type { SearchParams } from '@/schemas/search.schema'
 
@@ -80,11 +80,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
 
       <div className="space-y-4">
         <div>
-<<<<<<< HEAD
           <h4 className="mb-2 border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Category</h4>
-=======
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Category</h4>
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
           <CategorySelect
             categories={categories}
             selectedCategoryId={params.categoryId}
@@ -95,11 +91,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
         <Separator />
 
         <div>
-<<<<<<< HEAD
           <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Skin Type <ChevronUp className="h-3 w-3" /></h4>
-=======
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Skin Type</h4>
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
           <div className="space-y-1.5">
             {SKIN_TYPES.map((st) => (
               <div key={st.value} className="flex items-center gap-2">
@@ -116,11 +108,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
         <Separator />
 
         <div>
-<<<<<<< HEAD
           <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Price Range <ChevronUp className="h-3 w-3" /></h4>
-=======
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Price Range</h4>
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
           <div className="flex items-center gap-2">
             <Input
               type="number"
@@ -155,11 +143,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
         <Separator />
 
         <div>
-<<<<<<< HEAD
           <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 dark:border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-300">Rating <ChevronUp className="h-3 w-3" /></h4>
-=======
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Rating</h4>
->>>>>>> 77322afeaf33a1dac8dc230bbefb6e26b27888fc
           <div className="space-y-1.5">
             {RATING_OPTIONS.map((r) => (
               <div key={r.value} className="flex items-center gap-2">
