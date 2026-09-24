@@ -26,7 +26,7 @@ describe('AdminAdExportService', () => {
     prisma = {
       advertisement: { findMany: jest.fn() },
       adFeeHistory: { findMany: jest.fn() },
-      auditLog: { create: jest.fn() },
+      auditLog: { create: jest.fn(), findMany: jest.fn() },
     };
 
     service = new AdminAdExportService(prisma as unknown as PrismaService);
@@ -84,6 +84,7 @@ describe('AdminAdExportService', () => {
         ],
       },
     ]);
+    prisma.auditLog.findMany.mockResolvedValue([]);
     prisma.auditLog.create.mockResolvedValue({});
 
     const csv = await service.exportSubmissionHistory(
@@ -102,6 +103,60 @@ describe('AdminAdExportService', () => {
           reportType: 'submission_history',
           rowCount: 1,
         }),
+      }),
+    });
+  });
+
+  it('exports submission history with separate reject and approve rows per review event', async () => {
+    prisma.advertisement.findMany.mockResolvedValue([
+      {
+        ...completedAd,
+        id: 'a1',
+        paymentAmount: new Prisma.Decimal('50.00'),
+        adPayments: [
+          {
+            amount: new Prisma.Decimal('50.00'),
+            paymentStatus: 'refunded',
+            refundAmount: new Prisma.Decimal('50.00'),
+          },
+        ],
+      },
+    ]);
+    // Ad was rejected on Jun 02, resubmitted, then approved on Jun 10.
+    prisma.auditLog.findMany.mockResolvedValue([
+      {
+        action: 'AD_REJECTED',
+        entityType: 'Advertisement',
+        entityId: 'a1',
+        createdAt: new Date('2024-06-02T00:00:00.000Z'),
+        user: { name: 'Admin One' },
+      },
+      {
+        action: 'AD_APPROVED',
+        entityType: 'Advertisement',
+        entityId: 'a1',
+        createdAt: new Date('2024-06-10T00:00:00.000Z'),
+        user: { name: 'Admin Two' },
+      },
+    ]);
+    prisma.auditLog.create.mockResolvedValue({});
+
+    const csv = await service.exportSubmissionHistory(
+      { dateFrom: '2024-06-01', dateTo: '2024-06-30', format: 'csv' },
+      'admin1',
+    );
+
+    const lines = csv.split('\r\n');
+    expect(lines).toHaveLength(3); // header + 2 review-event rows
+    expect(lines[1]).toContain('rejected');
+    expect(lines[1]).toContain('Admin One');
+    expect(lines[1]).toContain('2024-06-02T00:00:00.000Z');
+    expect(lines[2]).toContain('approved');
+    expect(lines[2]).toContain('Admin Two');
+    expect(lines[2]).toContain('2024-06-10T00:00:00.000Z');
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        newValue: expect.objectContaining({ rowCount: 2 }),
       }),
     });
   });

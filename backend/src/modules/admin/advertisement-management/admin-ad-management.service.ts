@@ -803,9 +803,9 @@ export class AdminAdManagementService {
       rows.reduce((sum, row) => sum + Number(row.payment_amount ?? 0), 0),
     );
     const totalAdsApproved = rows.length;
-    const totalRefunds = refundAgg?.refund_count ?? 0;
-    const refundAmount = Number(refundAgg?.refund_amount ?? 0);
-    const totalFeesCollected = round2(totalRevenue - refundAmount);
+    // Refunds from rejected ads must NOT reduce the collected fees.
+    const totalRefunds = round2(Number(refundAgg?.refund_amount ?? 0));
+    const totalFeesCollected = totalRevenue;
     const avgRevenuePerAd =
       totalAdsApproved > 0 ? round2(totalRevenue / totalAdsApproved) : 0;
 

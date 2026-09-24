@@ -83,9 +83,9 @@ describe('AdminAdManagementService revenue analytics', () => {
     expect(result.summary).toEqual({
       totalRevenue: 100,
       totalAdsApproved: 3,
-      totalFeesCollected: 90,
+      totalFeesCollected: 100,
       avgRevenuePerAd: 33.33,
-      totalRefunds: 1,
+      totalRefunds: 10,
     });
 
     expect(result.byPlacement).toHaveLength(2);
