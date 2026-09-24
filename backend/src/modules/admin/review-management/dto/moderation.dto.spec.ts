@@ -4,6 +4,7 @@ import { plainToInstance } from 'class-transformer';
 import {
   ModerateReviewDto,
   ModerateProductDto,
+  ModerateUserDto,
   UpdateReportStatusDto,
 } from './moderation.dto';
 
@@ -40,6 +41,38 @@ describe('ModerationDto', () => {
 
     it('should fail with missing isActive', async () => {
       const dto = plainToInstance(ModerateProductDto, {});
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('ModerateUserDto', () => {
+    it('should pass with valid data', async () => {
+      const dto = plainToInstance(ModerateUserDto, { isActive: true });
+      const errors = await validate(dto);
+      expect(errors.length).toBe(0);
+    });
+
+    it('should pass with a deactivation reason', async () => {
+      const dto = plainToInstance(ModerateUserDto, {
+        isActive: false,
+        reason: 'Policy violation',
+      });
+      const errors = await validate(dto);
+      expect(errors.length).toBe(0);
+    });
+
+    it('should fail with missing isActive', async () => {
+      const dto = plainToInstance(ModerateUserDto, {});
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('should fail with a reason exceeding 500 characters', async () => {
+      const dto = plainToInstance(ModerateUserDto, {
+        isActive: false,
+        reason: 'x'.repeat(501),
+      });
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
     });
