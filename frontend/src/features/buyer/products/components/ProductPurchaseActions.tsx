@@ -85,10 +85,10 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
         </span>
       </div>
 
-      <div className="grid grid-rows-2 gap-2 sm:grid-cols-2 sm:grid-rows-1">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           size="lg"
-          className="w-full h-11 gap-2"
+          className="w-full gap-2 sm:w-auto"
           onClick={handleAddToCart}
           disabled={cartDisabled}
         >
@@ -102,7 +102,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
         <Button
           variant={isInWishlist ? 'default' : 'outline'}
           size="lg"
-          className={`w-full h-11 gap-2 ${isInWishlist ? 'bg-pink-500 text-white hover:bg-pink-600 border-pink-500' : ''}`}
+          className={`gap-2 ${isInWishlist ? 'bg-pink-500 text-white hover:bg-pink-600 border-pink-500' : ''}`}
           onClick={handleAddToWishlist}
           disabled={wishlistDisabled}
           aria-label="Add to wishlist"

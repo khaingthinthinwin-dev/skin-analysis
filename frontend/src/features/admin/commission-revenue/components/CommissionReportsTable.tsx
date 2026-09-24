@@ -16,24 +16,23 @@ export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
   reports = [],
   groupBy = 'merchant',
 }) => {
-  const thClass = "text-left py-2.5 px-2 sm:px-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border bg-primary/10 whitespace-nowrap";
+  const thClass = "text-left py-2.5 px-2 sm:px-3.5 text-xs font-bold uppercase tracking-wide text-muted-foreground border-b border-border bg-primary/10 whitespace-nowrap";
 
-  const tdClass = "py-3 px-2 sm:px-3.5 text-[13px] text-muted-foreground border-b border-border whitespace-nowrap";
+  const tdClass = "py-3 px-2 sm:px-3.5 text-[13px] text-muted-foreground border-b border-border whitespace-nowrap bg-card";
 
   return (
     <div className="overflow-x-auto rounded-md border bg-card">
-      <div className="max-h-[400px] overflow-y-auto">
-        <table className="w-full border-collapse">
+        <table className="w-full border-separate border-spacing-0">
         <thead className="sticky top-0 z-10">
           <tr>
-            {groupBy === 'day' && <th className={thClass}>Date</th>}
-            {groupBy === 'order' && <th className={thClass}>Order Number</th>}
-            {groupBy === 'order' && <th className={thClass}>Date</th>}
-            <th className={thClass}>Merchant</th>
-            <th className={`${thClass} text-right`}>Commission Rate</th>
-            {groupBy !== 'order' && <th className={`${thClass} text-right`}>Orders</th>}
-            <th className={`${thClass} text-right`}>Revenue</th>
-            <th className={`${thClass} text-right`}>Commission</th>
+            {groupBy === 'day' && <th scope="col" className={thClass}>Date</th>}
+            {groupBy === 'order' && <th scope="col" className={thClass}>Order Number</th>}
+            {groupBy === 'order' && <th scope="col" className={thClass}>Date</th>}
+            <th scope="col" className={thClass}>Merchant</th>
+            <th scope="col" className={`${thClass} text-right`}>Commission Rate</th>
+            {groupBy !== 'order' && <th scope="col" className={`${thClass} text-right`}>Orders</th>}
+            <th scope="col" className={`${thClass} text-right`}>Revenue</th>
+            <th scope="col" className={`${thClass} text-right`}>Commission</th>
           </tr>
         </thead>
         <tbody>
@@ -59,7 +58,6 @@ export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
           )}
         </tbody>
       </table>
-      </div>
     </div>
   );
 };

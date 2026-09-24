@@ -30,11 +30,23 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
         Showing page {page} of {safeTotal}
       </span>
       <div className="flex gap-1">
-        <button className={btnClass()} disabled={prevDisabled} onClick={() => onPageChange(page - 1)}>
+        <button
+          aria-label="Previous page"
+          className={btnClass()}
+          disabled={prevDisabled}
+          onClick={() => onPageChange(page - 1)}
+        >
           ‹
         </button>
-        <button className={btnClass(true)}>{page}</button>
-        <button className={btnClass()} disabled={nextDisabled} onClick={() => onPageChange(page + 1)}>
+        <button className={btnClass(true)} aria-current="page">
+          {page}
+        </button>
+        <button
+          aria-label="Next page"
+          className={btnClass()}
+          disabled={nextDisabled}
+          onClick={() => onPageChange(page + 1)}
+        >
           ›
         </button>
       </div>

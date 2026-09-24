@@ -13,7 +13,6 @@ import {
   SaveRevenueTargetPayload,
 } from "../services/commission.service";
 import { EditTargetDialog } from "./EditTargetDialog";
-import { formatCurrency } from "../utils/format";
 
 interface RevenueTargetCardProps {
   target?: RevenueTarget | null;
@@ -74,24 +73,31 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
               <span className="text-xs text-muted-foreground">
                 Target Amount
               </span>
-              <p className="text-xl font-semibold">{formatCurrency(target.targetAmount)} Ks</p>
+              <p className="text-xl font-semibold">${target.targetAmount}</p>
             </div>
             <div className="space-y-1">
               <span className="text-xs text-muted-foreground">
                 Actual Revenue
               </span>
-              <p className="text-xl font-semibold">{formatCurrency(actual)} Ks</p>
+              <p className="text-xl font-semibold">${actual}</p>
             </div>
             <div className="space-y-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Progress</span>
                 <span className="text-xs font-medium">
                   {clamped.toFixed(0)}%
                 </span>
               </div>
-              <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="relative h-3 w-full overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-valuenow={clamped}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Revenue target progress: ${clamped.toFixed(0)}%`}
+              >
                 <div
-                  className="h-full rounded-full bg-green-500 transition-all duration-500 ease-in-out"
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-in-out"
                   style={{ width: `${clamped}%` }}
                 />
               </div>
@@ -103,7 +109,7 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
           </p>
         )}
         <Button size="sm" onClick={() => setDialogOpen(true)}>
-          Edit Target
+          {target ? 'Edit Target' : 'Set Target'}
         </Button>
 
         <EditTargetDialog
@@ -111,7 +117,6 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
           onOpenChange={setDialogOpen}
           target={target}
           period={period}
-          onPeriodChange={onPeriodChange}
           onSave={(payload) => {
             onSaveTarget(payload);
             setDialogOpen(false);

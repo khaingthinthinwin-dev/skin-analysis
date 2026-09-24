@@ -9,7 +9,6 @@ import { CommissionTable } from "@/features/admin/commission-revenue/components/
 import { CommissionReportsTable } from "@/features/admin/commission-revenue/components/CommissionReportsTable";
 import { ReportFilterPanel } from "@/features/admin/commission-revenue/components/ReportFilterPanel";
 import { PaginationControls } from "@/features/admin/commission-revenue/components/PaginationControls";
-
 import { ExportDialog } from "@/features/admin/commission-revenue/components/ExportDialog";
 import { RevenueTab } from "@/features/admin/commission-revenue/components/RevenueTab";
 import {
@@ -32,7 +31,7 @@ export default function CommissionAndRevenue() {
   // the Revenue tab and are skipped here to avoid duplicate requests.
   const { settingsQuery, reportsQuery, updateSettingsMutation } = useCommission(
     undefined,
-    { ...reportFilters, page: reportPage, limit: 5 },
+    { ...reportFilters, page: reportPage, limit: 10 },
     { payouts: false },
   );
 
@@ -68,10 +67,10 @@ export default function CommissionAndRevenue() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-[1400px] px-4 py-6 sm:px-6 md:px-8">
+      <div className="max-w-[1400px]" style={{ padding: "28px 32px" }}>
         {/* [A] Page Header */}
-        <div className="mb-6">
-          <h1 className="text-foreground text-xl font-bold sm:text-2xl">
+        <div style={{ marginBottom: 24 }}>
+          <h1 className="text-foreground" style={{ fontSize: 24, fontWeight: 700 }}>
             Commission & Revenue
           </h1>
         </div>
@@ -85,13 +84,13 @@ export default function CommissionAndRevenue() {
           >
             <TabsTrigger
               value="commission"
-              className="text-muted-foreground px-4 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary sm:px-6"
+              className="text-muted-foreground px-6 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary"
             >
               Commission
             </TabsTrigger>
             <TabsTrigger
               value="revenue"
-              className="text-muted-foreground px-4 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary sm:px-6"
+              className="text-muted-foreground px-6 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary"
             >
               Revenue
             </TabsTrigger>
@@ -112,15 +111,15 @@ export default function CommissionAndRevenue() {
             />
 
             {/* [F] Commission report table */}
-            <div className="bg-card border border-border rounded-xl p-3 sm:p-5">
-              <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
                 <span className="text-card-foreground text-[15px] font-bold">
                   Commission Report ({groupBy === "day" ? "daily" : groupBy === "order" ? "by order" : "by merchant"})
                 </span>
                 <Button
                   size="sm"
-                  variant="default"
-                  className="text-xs py-1 px-3"
+                  variant="outline"
+                  className="bg-muted text-muted-foreground border-border text-xs py-1 px-3"
                   onClick={() => {
                     setExportType("commission");
                     setExportOpen(true);

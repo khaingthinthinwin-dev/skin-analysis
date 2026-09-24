@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { commissionService } from '../services/commission.service';
 import type { CommissionReportFilter, PayoutFilter } from '../services/commission.service';
 
@@ -23,14 +23,12 @@ export function useCommission(
     queryKey: ['admin', 'commission', 'reports', reportParams],
     queryFn: () => commissionService.getReports(reportParams),
     enabled: options.reports !== false,
-    placeholderData: keepPreviousData,
   });
 
   const payoutsQuery = useQuery({
     queryKey: ['admin', 'commission', 'payouts', payoutParams],
     queryFn: () => commissionService.getPayouts(payoutParams),
     enabled: options.payouts !== false,
-    placeholderData: keepPreviousData,
   });
 
   const updateSettingsMutation = useMutation({
@@ -49,6 +47,13 @@ export function useCommission(
     },
   });
 
+  const reviewPayoutMutation = useMutation({
+    mutationFn: (payoutId: string) => commissionService.reviewPayout(payoutId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'commission', 'payouts'] });
+    },
+  });
+
   const deletePayoutMutation = useMutation({
     mutationFn: (payoutIds: string[]) => commissionService.deletePayouts(payoutIds),
     onSuccess: () => {
@@ -62,6 +67,7 @@ export function useCommission(
     payoutsQuery,
     updateSettingsMutation,
     processPayoutMutation,
+    reviewPayoutMutation,
     deletePayoutMutation,
   };
 }

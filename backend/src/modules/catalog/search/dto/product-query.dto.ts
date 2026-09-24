@@ -6,7 +6,6 @@ import {
   IsEnum,
   IsArray,
   IsNumber,
-  IsBoolean,
   Min,
   Max,
   MaxLength,
@@ -153,12 +152,4 @@ export class ProductQueryDto {
   @Min(1, { message: 'Limit must be between 1 and 100' })
   @Max(100, { message: 'Limit must be between 1 and 100' })
   limit?: number = 20;
-
-  @ApiPropertyOptional({ description: 'Filter to featured products' })
-  @IsOptional()
-  @Transform(
-    ({ value }: { value: unknown }) => value === 'true' || value === true,
-  )
-  @IsBoolean()
-  isFeatured?: boolean;
 }

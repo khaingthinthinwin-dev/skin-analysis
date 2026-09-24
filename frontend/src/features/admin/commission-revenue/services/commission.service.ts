@@ -40,9 +40,9 @@ export interface CommissionReportFilter {
 
 export type CommissionGroupBy = "merchant" | "day" | "order";
 
-// Merchant payout row (GET /admin/revenue/payouts)
+// Merchant payout row (GET /admin/revenue/payouts) — one payout = merchant × period
 export interface Payout {
-  id: string; // order id (payouts are flattened to one row per order)
+  id: string; // payout id
   payoutId: string;
   payoutIds?: string[];
   merchantId: string;
@@ -54,7 +54,7 @@ export interface Payout {
   commissionAmount: string; // Decimal string
   adFeeAmount: string; // Always "0.00" - ad fees are platform revenue, never deducted
   netAmount: string; // totalAmount - commissionAmount
-  status: "pending" | "processing" | "completed";
+  status: "pending" | "processing" | "completed" | "failed";
   failureReason?: string | null;
   createdAt: string;
   processedAt?: string | null;
@@ -73,6 +73,13 @@ export interface PayoutsResponse {
   page: number;
   limit: number;
   totalPages: number;
+  statusCounts: {
+    completed: number;
+    processing: number;
+    pending: number;
+  };
+  /** Distinct YYYY-MM payout periods, newest first (for period filter + export range). */
+  periods?: string[];
 }
 
 export interface PayoutProcessResult {
@@ -92,6 +99,7 @@ export interface PayoutFilter {
   from?: string;
   to?: string;
   period?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -153,6 +161,7 @@ export interface SaveRevenueTargetResult {
 // Order payment status (GET /admin/revenue/payments/status)
 export interface PaymentStatus {
   completed: number;
+  processing: number;
   pending: number;
 }
 
@@ -249,6 +258,13 @@ export const commissionService = {
     return response.data.data;
   },
 
+  reviewPayout: async (payoutId: string): Promise<{ payoutId: string; status: string }> => {
+    const response = await api.post<{ data: { payoutId: string; status: string } }>(
+      `/admin/revenue/payouts/${payoutId}/review`,
+    );
+    return response.data.data;
+  },
+
   deletePayouts: async (payoutIds: string[]): Promise<{ payoutIds: string[]; deleted: boolean }> => {
     const response = await api.delete<{ data: { payoutIds: string[]; deleted: boolean } }>(
       "/admin/revenue/payouts",
@@ -330,7 +346,9 @@ export const commissionService = {
     const disposition =
       (response.headers?.["content-disposition"] as string) || "";
     const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match?.[1] ?? buildExportFilename(type, body, merchantName);
+    const rawFilename = match?.[1] ?? buildExportFilename(type, body, merchantName);
+    // Sanitize filename: remove path traversal and invalid characters
+    const filename = rawFilename.replace(/[^a-zA-Z0-9_\-.\s()]/g, '_').replace(/_{2,}/g, '_');
     const blob = new Blob([response.data as BlobPart]);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);

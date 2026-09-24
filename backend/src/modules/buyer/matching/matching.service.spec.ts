@@ -1,18 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { MatchingService } from './matching.service';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
-import { Prisma } from '@prisma/client';
 
-function getMockWhere(mock: jest.Mock): Prisma.ProductWhereInput {
-  const calls = mock.mock.calls as unknown as Array<[object?]>;
-  return calls[0]?.[0]?.where ?? {};
+function getMockWhere(mock: jest.Mock): any {
+  return (mock.mock.calls[0] as any[])[0]?.where;
 }
 
-function getMockCallArgs(mock: jest.Mock): unknown {
-  const calls = mock.mock.calls as unknown as Array<[object?]>;
-  return calls[0]?.[0] ?? {};
+function getMockCallArgs(mock: jest.Mock): any {
+  return (mock.mock.calls[0] as any[])[0];
 }
 
 const mockPrisma = {
@@ -143,7 +140,7 @@ describe('MatchingService', () => {
       await service.getPersonalized(userId, { skinTypes: 'dry' });
 
       const where = getMockWhere(mockPrisma.product.findMany);
-      expect(where.skinTypes).toEqual({ hasEvery: ['dry'] });
+      expect(where.skinTypes).toEqual({ hasSome: ['dry'] });
     });
 
     it('should apply price range filter', async () => {
@@ -155,8 +152,7 @@ describe('MatchingService', () => {
       await service.getPersonalized(userId, { minPrice: 1000, maxPrice: 5000 });
 
       const where = getMockWhere(mockPrisma.product.findMany);
-      expect((where.price.gte as Prisma.Decimal).toString()).toBe('1000');
-      expect((where.price.lte as Prisma.Decimal).toString()).toBe('5000');
+      expect(where.price).toEqual({ gte: 1000, lte: 5000 });
     });
 
     it('should apply ingredients filter with mapping', async () => {

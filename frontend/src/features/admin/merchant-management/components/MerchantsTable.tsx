@@ -23,7 +23,7 @@ export const MerchantsTable: React.FC<MerchantsTableProps> = ({
           <TableRow>
             <TableHead>Shop Name</TableHead>
             <TableHead>User Email</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>License Status</TableHead>
             <TableHead>Submitted At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -55,7 +55,12 @@ export const MerchantsTable: React.FC<MerchantsTableProps> = ({
                 </TableCell>
                 <TableCell>{new Date(merchant.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => onSelectReview?.(merchant)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={merchant.licenseStatus !== 'approved'}
+                    onClick={() => onSelectReview?.(merchant)}
+                  >
                     View License
                   </Button>
                   {merchant.licenseStatus === 'pending' && (

@@ -12,8 +12,7 @@ import {
   HistoryResponseDto,
   HistorySessionDto,
 } from './dto/history-response.dto';
-import type { Product, Merchant } from '@prisma/client';
-import { Prisma } from '@prisma/client';
+import type { Product, Prisma, Merchant } from '@prisma/client';
 
 interface PersonalizationContext {
   source: 'ai' | 'generic';
@@ -60,12 +59,10 @@ export class MatchingService {
     query: MatchQueryDto,
   ): Promise<RecommendationResponseDto> {
     const {
-      categoryId,
       skinTypes: skinTypesFilter,
       ingredients: ingredientsFilter,
       minPrice,
       maxPrice,
-      rating,
       sort = 'matchScore',
       order = 'desc',
       page = 1,
@@ -73,29 +70,14 @@ export class MatchingService {
     } = query;
 
     const context = await this.determineSource(userId);
-    const requestedSkinTypes = skinTypesFilter
-      ? skinTypesFilter
-          .split(',')
-          .filter(Boolean)
-          .filter((skinType) => skinType !== 'all')
-      : undefined;
-    const effectiveSkinTypes = requestedSkinTypes ?? context.skinTypes;
-
-    const hasActiveFilters = Boolean(
-      categoryId ||
-      skinTypesFilter ||
-      ingredientsFilter ||
-      minPrice !== undefined ||
-      maxPrice !== undefined ||
-      rating !== undefined,
-    );
+    const effectiveSkinTypes = skinTypesFilter
+      ? skinTypesFilter.split(',').filter(Boolean)
+      : context.skinTypes;
 
     const cacheKey = this.buildCacheKey(userId, query);
-    if (!hasActiveFilters) {
-      const cached = await this.getCachedRecommendations(cacheKey);
-      if (cached) {
-        return cached;
-      }
+    const cached = await this.getCachedRecommendations(cacheKey);
+    if (cached) {
+      return cached;
     }
 
     const where: Prisma.ProductWhereInput = {
@@ -103,13 +85,8 @@ export class MatchingService {
       merchant: { user: { shop: { isApproved: true } } },
     };
 
-    if (categoryId) {
-      const descendantIds = await this.getCategoryDescendants(categoryId);
-      where.categoryId = { in: descendantIds };
-    }
-
     if (effectiveSkinTypes.length > 0) {
-      where.skinTypes = { hasEvery: effectiveSkinTypes };
+      where.skinTypes = { hasSome: effectiveSkinTypes };
     }
 
     if (ingredientsFilter) {
@@ -124,15 +101,8 @@ export class MatchingService {
 
     if (minPrice !== undefined || maxPrice !== undefined) {
       where.price = {};
-      if (minPrice !== undefined)
-        where.price.gte = new Prisma.Decimal(minPrice.toFixed(2));
-      if (maxPrice !== undefined)
-        where.price.lte = new Prisma.Decimal(maxPrice.toFixed(2));
-    }
-
-    if (rating !== undefined) {
-      const ratingValue = Number(rating);
-      where.avgRating = { gte: new Prisma.Decimal(ratingValue.toFixed(1)) };
+      if (minPrice !== undefined) where.price.gte = minPrice;
+      if (maxPrice !== undefined) where.price.lte = maxPrice;
     }
 
     const orderBy = this.buildOrderBy(sort, order, context.source);
@@ -430,13 +400,12 @@ export class MatchingService {
     | Prisma.ProductOrderByWithRelationInput[] {
     const direction = order === 'asc' ? ('asc' as const) : ('desc' as const);
 
-    if (sort === 'price') return { price: direction };
-    if (sort === 'rating') return { avgRating: direction };
-    if (sort === 'createdAt') return { createdAt: direction };
-
     if (source === 'generic') {
       return [{ isFeatured: 'desc' as const }, { avgRating: 'desc' as const }];
     }
+
+    if (sort === 'price') return { price: direction };
+    if (sort === 'createdAt') return { createdAt: direction };
 
     // Default for AI source: matchScore descending (will be sorted in-memory after scoring)
     return [{ isFeatured: 'desc' as const }, { avgRating: 'desc' as const }];
@@ -445,11 +414,9 @@ export class MatchingService {
   private buildCacheKey(userId: string, query: MatchQueryDto): string {
     const params = JSON.stringify({
       s: query.skinTypes,
-      c: query.categoryId,
       i: query.ingredients,
       mn: query.minPrice,
       mx: query.maxPrice,
-      r: query.rating,
       so: query.sort,
       o: query.order,
       p: query.page,
@@ -461,25 +428,6 @@ export class MatchingService {
     // the same Redis key and returning the first page for all pagination.
     const hash = createHash('sha256').update(params).digest('hex');
     return `cache:recommendations:user:${userId}:${hash}`;
-  }
-
-  private async getCategoryDescendants(categoryId: string): Promise<string[]> {
-    const descendants: string[] = [categoryId];
-    const queue = [categoryId];
-
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      const children = await this.prisma.category.findMany({
-        where: { parentId: currentId },
-        select: { id: true },
-      });
-      for (const child of children) {
-        descendants.push(child.id);
-        queue.push(child.id);
-      }
-    }
-
-    return descendants;
   }
 
   private async getCachedRecommendations(
