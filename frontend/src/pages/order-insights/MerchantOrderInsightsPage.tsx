@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +32,7 @@ function MerchantOrderInsightsPageContent() {
   const { t } = useTranslation();
   const translate = (key: string, fallback?: string) => t(key, { defaultValue: fallback });
   const navigate = useNavigate();
+  const location = useLocation();
   const { methods, filters } = useOrderListFilters(DEFAULT_FILTERS.limit);
   const { patch } = useOrderQueryParams();
   const listRef = useRef<HTMLDivElement>(null);
@@ -60,7 +61,7 @@ function MerchantOrderInsightsPageContent() {
     {salesQuery.isLoading ? <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-3"><Skeleton className="h-[72px] rounded-xl" /><Skeleton className="h-[72px] rounded-xl" /><Skeleton className="h-[72px] rounded-xl" /></div> : salesQuery.error ? <PanelError message={getPanelErrorMessage(salesQuery.error, translate, 'merchant.orders.error.loadFailed', 'Unable to load sales summary.')} onRetry={() => void salesQuery.refetch()} /> : <SalesSummaryTiles data={salesQuery.data} onCompletedClick={completedClick} />}
     {revenueServerError && <PanelError message={revenueServerError} onRetry={() => void revenueQuery.refetch()} />}
     <RevenueSummaryGroup data={revenueQuery.data} loading={revenueQuery.isLoading} period={period} from={periodDates.from} to={periodDates.to} onPeriodChange={changePeriod} onApply={applyCustomDates} error={revenueDateError} />
-    <div ref={listRef}><Card className="border-border/80 shadow-xs"><CardContent className="p-3 sm:p-4"><OrderFilterBar methods={methods} onApply={applyFilters} onReset={resetFilters} onExport={() => setIsExportDialogOpen(true)} exportLabel="Export CSV" />{ordersQuery.error ? <PanelError message={getPanelErrorMessage(ordersQuery.error, translate, 'merchant.orders.error.loadFailed', 'Unable to load orders.')} onRetry={() => void ordersQuery.refetch()} /> : ordersQuery.data?.meta.total === 0 ? <MerchantEmptyOrderState onReset={resetFilters} /> : <MerchantOrderTable rows={ordersQuery.data?.orders ?? []} loading={ordersQuery.isLoading} onView={(id) => navigate(`/merchant/orders/${id}`)} onSort={changeSort} currentSort={filters.sort} currentOrder={filters.order} />}</CardContent></Card></div>
+    <div ref={listRef}><Card className="border-border/80 shadow-xs"><CardContent className="p-3 sm:p-4"><OrderFilterBar methods={methods} onApply={applyFilters} onReset={resetFilters} onExport={() => setIsExportDialogOpen(true)} exportLabel="Export CSV" />{ordersQuery.error ? <PanelError message={getPanelErrorMessage(ordersQuery.error, translate, 'merchant.orders.error.loadFailed', 'Unable to load orders.')} onRetry={() => void ordersQuery.refetch()} /> : ordersQuery.data?.meta.total === 0 ? <MerchantEmptyOrderState onReset={resetFilters} /> : <MerchantOrderTable rows={ordersQuery.data?.orders ?? []} loading={ordersQuery.isLoading} onView={(id) => navigate(`/merchant/orders/${id}`, { state: { listSearch: location.search } })} onSort={changeSort} currentSort={filters.sort} currentOrder={filters.order} />}</CardContent></Card></div>
     {ordersQuery.data && ordersQuery.data.meta.total > 0 && <OrderPagination meta={ordersQuery.data.meta} onPageChange={changePage} onLimitChange={changeLimit} sizes={[10, 20, 50]} />}
     {isExportDialogOpen && <ExportMerchantOrdersDialog filters={filters} total={ordersQuery.data?.meta.total ?? 0} onClose={() => setIsExportDialogOpen(false)} />}
   </main>;

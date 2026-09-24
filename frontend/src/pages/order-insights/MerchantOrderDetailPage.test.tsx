@@ -51,10 +51,25 @@ const tracking: MerchantTrackingDto = {
 const getMock = apiClient.get as ReturnType<typeof vi.fn>;
 const patchMock = apiClient.patch as ReturnType<typeof vi.fn>;
 
+const revenueSummary = {
+  sales: '10.00',
+  commission: '1.20',
+  revenue: '8.80',
+  aov: '8.80',
+  orderCount: 1,
+  commissionRate: '12.00',
+  commissionRateSource: 'current_settings',
+  commissionRateLocked: false,
+  period: { code: 'this_month', from: '', to: '' },
+};
+
 function mockApi({ order = detail, timeline = tracking } = {}) {
   getMock.mockImplementation((url: string) => {
     if (url === '/merchant/orders/order-1/tracking') {
       return Promise.resolve({ data: { data: timeline } });
+    }
+    if (url.startsWith('/order-insights/merchant/revenue-summary')) {
+      return Promise.resolve({ data: { revenueSummary } });
     }
     return Promise.resolve({ data: { data: order } });
   });
@@ -65,10 +80,12 @@ function mockApi({ order = detail, timeline = tracking } = {}) {
   });
 }
 
-function renderPage() {
+type Entry = string | { pathname: string; state?: unknown };
+
+function renderPage(entry: Entry = '/merchant/orders/order-1') {
   const router = createMemoryRouter(
     [{ path: '/merchant/orders/:id', element: <MerchantOrderDetailPage /> }],
-    { initialEntries: ['/merchant/orders/order-1'] },
+    { initialEntries: [entry] },
   );
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -162,7 +179,7 @@ describe('MerchantOrderDetailPage', () => {
 
     await waitFor(() => expect(patchMock).toHaveBeenCalledWith('/merchant/orders/order-1/status', { status: 'confirmed' }));
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Order marked as Confirmed')));
-    await waitFor(() => expect(getMock).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(getMock).toHaveBeenCalledTimes(5));
   });
 
   it('surfaces a 422 server message via toast and re-enables the button after failure', async () => {
@@ -196,5 +213,75 @@ describe('MerchantOrderDetailPage', () => {
     await user.click(screen.getByRole('button', { name: /confirm/i }));
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Too many requests. Please wait 60 seconds'));
+  });
+
+  it('shows the status pill once — in the header, not in the action bar', async () => {
+    mockApi();
+
+    renderPage();
+
+    await screen.findByText('Order ORD-ORDER-1');
+    expect(screen.getAllByText('placed')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /Advance to Confirmed/i })).toBeInTheDocument();
+  });
+
+  it('renders the singular item count label', async () => {
+    mockApi();
+
+    renderPage();
+
+    await screen.findByText('Order ORD-ORDER-1');
+    expect(screen.getByText('(1 item)')).toBeInTheDocument();
+  });
+
+  it('shows commission on the total after discount with a You receive figure', async () => {
+    mockApi({ order: { ...detail, discountAmount: '5.00', totalAmount: '5.00' } });
+
+    renderPage();
+
+    await screen.findByText('Order ORD-ORDER-1');
+    expect(screen.getByText('Commission (12%)')).toBeInTheDocument();
+    // 12% of the $5.00 total (after discount), not of the $10.00 subtotal.
+    expect(screen.getByText('-$0.60')).toBeInTheDocument();
+    expect(screen.getByText('$4.40')).toBeInTheDocument();
+    expect(screen.getByText('Subtotal')).toBeInTheDocument();
+    expect(screen.getByText('Discount')).toBeInTheDocument();
+    expect(screen.queryByText('Order Summary')).not.toBeInTheDocument();
+  });
+
+  it('restores validated list filters on the back link from navigation state', async () => {
+    mockApi();
+
+    renderPage({ pathname: '/merchant/orders/order-1', state: { listSearch: '?status=delivered&page=2&evil=1' } });
+
+    const backLink = await screen.findByRole('link', { name: /Back to Order Insights/i });
+    expect(backLink).toHaveAttribute('href', '/merchant/order-insights?status=delivered&page=2');
+  });
+
+  it('falls back to the plain list link when the carried state is invalid', async () => {
+    mockApi();
+
+    renderPage({ pathname: '/merchant/orders/order-1', state: { listSearch: '?status=hacked' } });
+
+    const backLink = await screen.findByRole('link', { name: /Back to Order Insights/i });
+    expect(backLink).toHaveAttribute('href', '/merchant/order-insights');
+  });
+
+  it('shows the delivered completion timestamp in the action bar when history has it', async () => {
+    mockApi({
+      order: { ...detail, status: OrderStatus.DELIVERED, availableTransitions: [] },
+      timeline: {
+        timeline: [
+          { status: 'placed', statusName: 'Placed', note: 'Order placed', changedBy: null, createdAt: '2026-09-01T12:00:00.000Z' },
+          { status: 'delivered', statusName: 'Delivered', note: null, changedBy: null, createdAt: '2026-09-03T12:00:00.000Z' },
+        ],
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('Order delivered')).toBeInTheDocument();
+    expect(screen.getByText(/Completed on/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Advance to/i })).not.toBeInTheDocument();
   });
 });

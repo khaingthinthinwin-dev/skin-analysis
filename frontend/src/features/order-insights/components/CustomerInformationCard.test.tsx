@@ -30,4 +30,10 @@ describe('CustomerInformationCard', () => {
     expect(screen.getByText('Aye Aye')).toBeInTheDocument();
     expect(screen.queryByText('Phone')).not.toBeInTheDocument();
   });
+
+  it('offers a keyboard-accessible copy button for the email', () => {
+    render(<CustomerInformationCard customer={customer} />);
+
+    expect(screen.getByRole('button', { name: 'Copy customer email' })).toBeInTheDocument();
+  });
 });

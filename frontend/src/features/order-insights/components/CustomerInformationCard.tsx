@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { MerchantCustomerInfoDto } from '../types/merchantOrderFulfillment.types';
+import { CopyButton } from './CopyButton';
 
 interface CustomerInformationCardProps {
   customer: MerchantCustomerInfoDto;
@@ -27,7 +28,14 @@ export function CustomerInformationCard({ customer }: CustomerInformationCardPro
           </div>
           <div className="flex items-center justify-between gap-4">
             <dt className="text-[#6b7280]">{t('merchant.orders.customerEmail', 'Email')}</dt>
-            <dd className="break-all text-right font-medium text-[#111827]">{customer.email}</dd>
+            <dd className="flex min-w-0 items-center justify-end gap-1.5">
+              <span className="break-all text-right font-medium text-[#111827]">{customer.email}</span>
+              <CopyButton
+                value={customer.email}
+                label={t('merchant.orders.copyEmail', 'Copy customer email')}
+                className="text-[#9ca3af] hover:bg-[#f3f0ff] hover:text-[#7c3aed] focus-visible:ring-[#7c3aed]/50"
+              />
+            </dd>
           </div>
           {customer.phone && (
             <div className="flex items-center justify-between gap-4">

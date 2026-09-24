@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { StatusTransitionControl } from './StatusTransitionControl';
 import { formatStatusLabel } from '../utils/orderStatusLabel';
-import { OrderStatus } from '../types/orderInsights.types';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, fallback?: string) => fallback ?? _key }) }));
 
@@ -15,10 +14,9 @@ describe('formatStatusLabel', () => {
 });
 
 describe('StatusTransitionControl', () => {
-  it('renders the current badge and an "Advance to …" button when a next status is available', () => {
+  it('renders an "Advance to …" button when a next status is available', () => {
     render(
       <StatusTransitionControl
-        currentStatus={OrderStatus.PLACED}
         nextStatus="confirmed"
         isUpdating={false}
         onAdvance={vi.fn()}
@@ -27,25 +25,22 @@ describe('StatusTransitionControl', () => {
 
     expect(screen.getByText('Advance to Confirmed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /advance to confirmed/i })).toBeInTheDocument();
+    // The status pill lives in the page header now — never duplicated here.
+    expect(screen.queryByText('placed')).not.toBeInTheDocument();
   });
 
-  it('does not render any button when there is no next status', () => {
-    render(
-      <StatusTransitionControl
-        currentStatus={OrderStatus.DELIVERED}
-        nextStatus={null}
-        isUpdating={false}
-        onAdvance={vi.fn()}
-      />,
+  it('renders nothing when there is no next status', () => {
+    const { container } = render(
+      <StatusTransitionControl nextStatus={null} isUpdating={false} onAdvance={vi.fn()} />,
     );
 
     expect(screen.queryByRole('button', { name: /advance/i })).not.toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
   });
 
   it('disables the advance button while an update is in flight', () => {
     render(
       <StatusTransitionControl
-        currentStatus={OrderStatus.CONFIRMED}
         nextStatus="packed"
         isUpdating
         onAdvance={vi.fn()}
@@ -55,13 +50,12 @@ describe('StatusTransitionControl', () => {
     expect(screen.getByRole('button', { name: /advance to packed/i })).toBeDisabled();
   });
 
-  it('calls onAdvance with the next status when the dialog is confirmed', async () => {
+  it('asks for confirmation with the target status and notification copy', async () => {
     const onAdvance = vi.fn();
     const user = userEvent.setup();
 
     render(
       <StatusTransitionControl
-        currentStatus={OrderStatus.CONFIRMED}
         nextStatus="packed"
         isUpdating={false}
         onAdvance={onAdvance}
@@ -69,7 +63,10 @@ describe('StatusTransitionControl', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /advance to packed/i }));
-    expect(screen.getByText('Mark this order as Packed?')).toBeInTheDocument();
+    expect(screen.getByText('Confirm order?')).toBeInTheDocument();
+    expect(
+      screen.getByText('The status will change to Packed and the customer will be notified.'),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /confirm/i }));
 
@@ -82,7 +79,6 @@ describe('StatusTransitionControl', () => {
 
     render(
       <StatusTransitionControl
-        currentStatus={OrderStatus.CONFIRMED}
         nextStatus="packed"
         isUpdating={false}
         onAdvance={onAdvance}
