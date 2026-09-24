@@ -31,7 +31,8 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
     return (
       <Link
         to={productLink}
-        className="block rounded-lg border bg-card transition-shadow hover:shadow-md"
+        onClick={(e) => e.stopPropagation()}
+        className="block rounded-lg border border-border bg-card transition-shadow hover:shadow-md"
       >
         <div className="flex gap-4 p-4">
 <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -55,7 +56,7 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+                <span className="text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-400">
                   {product.category.name}
                 </span>
                 <h3 className="truncate text-sm font-semibold">{product.name}</h3>

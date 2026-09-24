@@ -43,7 +43,7 @@ export function CategorySelect({ categories, selectedCategoryId, onSelect }: Cat
                 ? 'text-orange-500 font-semibold'
                 : 'text-gray-600 hover:text-orange-500'
             }`}
-            style={{ paddingLeft: `${item.depth * 1}rem` }}
+            style={{ paddingLeft: `${item.depth + 1}rem` }}
           >
             {item.name}
           </button>
@@ -54,7 +54,7 @@ export function CategorySelect({ categories, selectedCategoryId, onSelect }: Cat
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-1 text-cyan-600 font-bold text-xs uppercase"
+          className="mt-1 pl-4 text-cyan-600 font-bold text-xs uppercase dark:text-cyan-400"
         >
           {expanded ? 'View Less' : 'View More'}
         </button>
