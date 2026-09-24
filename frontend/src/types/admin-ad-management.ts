@@ -235,6 +235,10 @@ export const deactivateFeeSchema = z.object({
     .max(1000, 'VAL-ADM-027'),
 })
 
+export const reactivateFeeSchema = z.object({
+  change_reason: z.string().max(1000, 'VAL-ADM-027').optional(),
+})
+
 export const revenueAnalyticsSchema = z.object({
   dateFrom: z
     .string({ message: 'VAL-ADM-031' })
@@ -269,6 +273,7 @@ export type AdminBulkRejectInput = z.infer<typeof adminBulkRejectSchema>
 export type CreateFeeSettingInput = z.infer<typeof createFeeSettingSchema>
 export type EditFeeSettingInput = z.infer<typeof editFeeSettingSchema>
 export type DeactivateFeeInput = z.infer<typeof deactivateFeeSchema>
+export type ReactivateFeeInput = z.infer<typeof reactivateFeeSchema>
 export type RevenueAnalyticsQuery = z.infer<typeof revenueAnalyticsSchema>
 export type AdminExportInput = z.infer<typeof exportSchema>
 
