@@ -14,6 +14,7 @@ export function useFeeSettings() {
     queryKey: ['fee-settings'],
     queryFn: advertisementService.listFeeSettings,
     staleTime: 30_000,
+    refetchOnMount: 'always',
   })
 
   const createMutation = useMutation({

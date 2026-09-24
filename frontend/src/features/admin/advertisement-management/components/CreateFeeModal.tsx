@@ -106,7 +106,7 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Placement</FormLabel>
-                    <Select value={field.value} onValueChange={(value) => field.onChange(value as Placement)}>
+                    <Select value={field.value ?? ''} onValueChange={(value) => field.onChange(value as Placement)}>
                       <FormControl>
                         <SelectTrigger aria-label="Placement">
                           <SelectValue placeholder="Select placement" />
@@ -130,20 +130,23 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tier</FormLabel>
-                    <Select value={field.value} onValueChange={(value) => field.onChange(value as Tier)}>
-                      <FormControl>
-                        <SelectTrigger aria-label="Tier">
-                          <SelectValue placeholder="Select tier" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {ADMIN_AD_TIERS.map((tier) => (
-                          <SelectItem key={tier} value={tier}>
-                            {TIER_LABELS[tier]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Select
+                        value={field.value ?? ''}
+                        onValueChange={(value) => field.onChange(value as Tier)}
+                      >
+                        <FormControl>
+                          <SelectTrigger aria-label="Tier">
+                            <SelectValue placeholder="Select tier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ADMIN_AD_TIERS.map((tier) => (
+                            <SelectItem key={tier} value={tier}>
+                              {TIER_LABELS[tier]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     <FormMessage />
                   </FormItem>
                 )}

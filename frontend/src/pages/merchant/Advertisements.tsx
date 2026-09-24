@@ -43,7 +43,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { contentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
+import { contentSchema, resubmitContentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
 import { useAdvertisements } from '@/features/merchant/advertisements/hooks/useAdvertisements'
 import type { AdPackage, Advertisement } from '@/features/merchant/advertisements/types'
 
@@ -267,7 +267,10 @@ export default function Advertisements() {
         toast.success('Advertisement content saved')
         setPayTarget(updatedAd)
       } else {
-        await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, false) })
+        // Rejected ads are rescheduled on resubmit: the backend derives a
+        // fresh expires_at from the package duration.
+        const includeSchedule = target.approvalStatus === 'rejected'
+        await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, includeSchedule) })
         setEditTarget(null)
         toast.success('Advertisement content saved')
       }
@@ -281,7 +284,10 @@ export default function Advertisements() {
     const target = editTarget
     if (!target) return
     try {
-      const updatedAd = await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, false) })
+      const updatedAd = await updateContent.mutateAsync({
+        id: target.id,
+        formData: toFormData(values, target.approvalStatus === 'rejected'),
+      })
       setEditTarget(null)
       toast.success('Advertisement saved. Payment required to resubmit.')
       setPayTarget(updatedAd)
@@ -414,7 +420,7 @@ export default function Advertisements() {
                       </Badge>
                     </div>
                     <div className="mt-2 flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-primary">${pkg.dailyRate}</span>
+                      <span className="text-3xl font-bold text-primary">{pkg.dailyRate} KS</span>
                       <span className="text-sm text-muted-foreground">/day</span>
                     </div>
                   </CardHeader>
@@ -428,7 +434,7 @@ export default function Advertisements() {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> Total fee:{' '}
-                        <span className="font-semibold text-foreground">${pkg.totalFee}</span>
+                        <span className="font-semibold text-foreground">{pkg.totalFee} KS</span>
                       </li>
                     </ul>
                     <Button
@@ -554,7 +560,7 @@ export default function Advertisements() {
                 [
                   ['Placement', packageLabel(selectedPackage.placement)],
                   ['Tier', tierLabels[selectedPackage.tier] ?? selectedPackage.tier],
-                  ['Daily Rate', `$${selectedPackage.dailyRate}/day`],
+                  ['Daily Rate', `${selectedPackage.dailyRate} KS/day`],
                   ['Duration', `${selectedPackage.durationDays} days`],
                 ] as const
               ).map(([label, value]) => (
@@ -565,7 +571,7 @@ export default function Advertisements() {
               ))}
               <div className="flex justify-between gap-4 border-t pt-2">
                 <span className="text-muted-foreground">Total Fee</span>
-                <span className="font-bold text-primary">${selectedPackage.totalFee}</span>
+                <span className="font-bold text-primary">{selectedPackage.totalFee} KS</span>
               </div>
             </div>
           )}
@@ -602,10 +608,10 @@ export default function Advertisements() {
             <DialogTitle>Pay Advertising Fee</DialogTitle>
           </DialogHeader>
           <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal ? `$${payFeeTotal}` : 'Calculated at payment'}</p>
+            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal ? `${payFeeTotal} KS` : 'Calculated at payment'}</p>
             {payPackage && (
               <p className="text-muted-foreground">
-                {payPackage.durationDays} days × ${payPackage.dailyRate}/day
+                {payPackage.durationDays} days × {payPackage.dailyRate} KS/day
               </p>
             )}
           </div>
@@ -738,7 +744,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
         {packageInfo && (
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • ${packageInfo.dailyRate}/day
+              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • {packageInfo.dailyRate} KS/day
             </p>
             <Badge className={paymentBadgeClass[ad.paymentStatus] ?? ''}>{paymentLabels[ad.paymentStatus] ?? ad.paymentStatus}</Badge>
           </div>
@@ -898,15 +904,24 @@ function ContentDialog({
   showSaveAndPay,
   isPending,
 }: ContentDialogProps) {
+  // Earliest selectable start date for new uploads and resubmission: today +
+  // 3 days (UTC day granularity, the same convention the backend getSchedule
+  // uses). Today, tomorrow, and the day after tomorrow cannot be selected.
+  const minStartsAtDate = new Date()
+  minStartsAtDate.setUTCHours(0, 0, 0, 0)
+  minStartsAtDate.setUTCDate(minStartsAtDate.getUTCDate() + 3)
+  const minStartsAt = minStartsAtDate.toISOString().slice(0, 10)
+  const minToday = minStartsAt
   const isNewUpload = !target?.title
+  const isResubmit = target?.approvalStatus === 'rejected'
   const form = useForm<ContentForm>({
-    resolver: zodResolver(isNewUpload ? uploadContentSchema : contentSchema),
+    resolver: zodResolver(isNewUpload ? uploadContentSchema : isResubmit ? resubmitContentSchema : contentSchema),
     defaultValues: {
       title: '',
       content: '',
       linkUrl: '',
       announcementMessage: '',
-      startsAt: new Date().toISOString().slice(0, 10),
+      startsAt: minStartsAt,
       image: null,
     },
   })
@@ -949,12 +964,13 @@ function ContentDialog({
     persistDraftCache(target.id, form.getValues())
     onClose()
   }
-  const canSetSchedule = !target.startsAt
+  // Rejected ads may re-pick their schedule when resubmitting.
+  const canSetSchedule = !target.startsAt || isResubmit
   const durationDays = adPackage?.durationDays ?? 7
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
   if (endDate) endDate.setUTCDate(endDate.getUTCDate() + durationDays)
   const feeSummary = adPackage
-    ? `Advertising Fee: $${formatMoney(Number(adPackage.dailyRate) * durationDays)} · ${durationDays} days × $${adPackage.dailyRate}/day`
+    ? `Advertising Fee: ${formatMoney(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${adPackage.dailyRate} KS/day`
     : null
   const currentPreview = imageFile instanceof File ? previewUrl : target.imageUrl ? getImageUrl(target.imageUrl) : null
 
@@ -1065,10 +1081,17 @@ function ContentDialog({
               <Input
                 id="ad-start"
                 type="date"
-                min={new Date().toISOString().slice(0, 10)}
+                min={isResubmit ? minToday : minStartsAt}
                 disabled={!canSetSchedule}
                 {...form.register('startsAt')}
               />
+              {canSetSchedule && (
+                <p className="text-xs text-muted-foreground">
+                  {isResubmit
+                    ? `Select a start date from ${minToday} (3 days from today) onward. The end date is recalculated automatically.`
+                    : `Select a date from ${minStartsAt} (3 days from today) onward.`}
+                </p>
+              )}
               {form.formState.errors.startsAt && (
                 <p role="alert" className="text-sm text-destructive">
                   {form.formState.errors.startsAt.message}
