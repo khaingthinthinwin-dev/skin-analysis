@@ -19,7 +19,7 @@ interface SidebarAdvertisementsProps {
 const sampleAds = [
   { shop: 'Aura & Essence', title: 'Hydrating Jade Set & Facial Gua Sha', desc: 'Handcrafted natural jade stone set designed to soothe skin and boost serum absorption.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
   { shop: 'Glow Essentials', title: 'Summer Glow Collection', desc: 'Discover our bestselling serums and moisturizers — 20% off this week only.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
-  { shop: 'Dermaluxe Lab', title: 'Retinol Night Repair', desc: 'Clinically proven anti-aging serum. Free shipping on orders over $50.', image: '/uploads/products/347496ad-6e35-48f5-97c1-1b8e68545715.png' },
+  { shop: 'Dermaluxe Lab', title: 'Retinol Night Repair', desc: 'Clinically proven anti-aging serum. Free shipping on orders over 50 KS.', image: '/uploads/products/347496ad-6e35-48f5-97c1-1b8e68545715.png' },
   { shop: 'PureSkin Co.', title: 'Vitamin C Brightening Set', desc: 'Complete 3-step routine for radiant skin. Bundle & save 15%.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
   { shop: 'Botanica Beauty', title: 'Organic Rose Mist', desc: 'Hydrating facial toner with real rose petals. Limited batch available.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
 ];

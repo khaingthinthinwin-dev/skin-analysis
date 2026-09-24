@@ -21,7 +21,6 @@ export class ProductSummaryDto {
   @ApiProperty() reviewCount: number;
   @ApiProperty() isInStock: boolean;
   @ApiProperty({ type: ProductCategoryDto }) category: ProductCategoryDto;
-  @ApiProperty({ nullable: true }) shop_name: string | null;
 }
 
 export class PaginationMetaDto {

@@ -417,16 +417,6 @@ export class AdminService {
       }
 
       if (dto.status === MerchantStatus.REJECTED && shop) {
-        const products = await tx.product.findMany({
-          where: { merchantId, isActive: true },
-        });
-        for (const product of products) {
-          await tx.product.update({
-            where: { id: product.id },
-            data: { isActive: false },
-          });
-          await this.redis.del(`cache:product:${product.id}`);
-        }
         const client = this.redis.getClient();
         if (client) {
           const keys = await client.keys('cache:products:list:*');
@@ -558,9 +548,38 @@ export class AdminService {
       if (!dto.reason || dto.reason.trim().length === 0) {
         throw new BadRequestException('Deactivation reason is required');
       }
+      const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst({
+        where: {
+          statusId: { not: 6 },
+          order: {
+            items: {
+              some: { productId },
+            },
+          },
+        },
+      });
+      if (hasPendingOrders) {
+        throw new BadRequestException(
+          'Cannot deactivate until the order delivery is completed.',
+        );
+      }
     } else {
       if (product.isActive)
         throw new ConflictException('Product already active');
+
+      const merchant = await this.prisma.merchant.findUnique({
+        where: { id: product.merchantId },
+        select: { userId: true },
+      });
+      if (merchant) {
+        const merchantUser = await this.prisma.user.findUnique({
+          where: { id: merchant.userId },
+          select: { isActive: true },
+        });
+        if (merchantUser && !merchantUser.isActive) {
+          throw new BadRequestException('Merchant user is inactive');
+        }
+      }
     }
 
     const updated = await this.prisma.$transaction(
@@ -663,6 +682,13 @@ export class AdminService {
           avatarUrl: true,
           isActive: true,
           createdAt: true,
+          merchantProfile: {
+            select: {
+              id: true,
+              shopName: true,
+              licenseStatus: true,
+            },
+          },
         },
         skip,
         take: limit,
@@ -708,6 +734,46 @@ export class AdminService {
       if (user.isActive) throw new ConflictException('User already active');
     }
 
+    if (user.roleCode === 'merchant') {
+      const merchant = await this.prisma.merchant.findFirst({
+        where: { userId: user.id },
+      });
+      if (merchant && merchant.licenseStatus !== 'approved') {
+        throw new BadRequestException(
+          `Cannot change status: merchant license is ${merchant.licenseStatus}`,
+        );
+      }
+      if (!dto.isActive && merchant) {
+        const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst(
+          {
+            where: {
+              statusId: { not: 6 },
+              order: { merchantId: merchant.id },
+            },
+          },
+        );
+        if (hasPendingOrders) {
+          throw new BadRequestException(
+            'Cannot deactivate until the order delivery is completed.',
+          );
+        }
+      }
+    }
+
+    if (user.roleCode === 'buyer' && !dto.isActive) {
+      const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst({
+        where: {
+          statusId: { not: 6 },
+          order: { buyerId: userId },
+        },
+      });
+      if (hasPendingOrders) {
+        throw new BadRequestException(
+          'Cannot deactivate until the order delivery is completed.',
+        );
+      }
+    }
+
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updated = await tx.user.update({
         where: { id: userId },
@@ -719,6 +785,27 @@ export class AdminService {
           where: { userId, isRevoked: false },
           data: { isRevoked: true },
         });
+
+        if (user.roleCode === 'merchant') {
+          const merchant = await tx.merchant.findFirst({
+            where: { userId },
+          });
+          if (merchant) {
+            const products = await tx.product.findMany({
+              where: { merchantId: merchant.id, isActive: true },
+              select: { id: true },
+            });
+            if (products.length > 0) {
+              await tx.product.updateMany({
+                where: { merchantId: merchant.id, isActive: true },
+                data: { isActive: false },
+              });
+              for (const p of products) {
+                await this.invalidateProductCache(p.id);
+              }
+            }
+          }
+        }
       }
 
       await this.logAudit(tx, {

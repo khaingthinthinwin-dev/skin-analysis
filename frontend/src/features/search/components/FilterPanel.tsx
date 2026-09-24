@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronUp, SlidersHorizontal, Star } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
@@ -9,18 +9,18 @@ import type { CategoryNode } from '@/types/search.types'
 import type { SearchParams } from '@/schemas/search.schema'
 
 const SKIN_TYPES = [
-  { value: 'dry' as const, label: 'Dry', count: 54 },
-  { value: 'oily' as const, label: 'Oily', count: 42 },
-  { value: 'combination' as const, label: 'Combination', count: 68 },
-  { value: 'sensitive' as const, label: 'Sensitive', count: 31 },
-  { value: 'normal' as const, label: 'Normal', count: 87 },
+  { value: 'dry' as const, label: 'Dry' },
+  { value: 'oily' as const, label: 'Oily' },
+  { value: 'combination' as const, label: 'Combination' },
+  { value: 'sensitive' as const, label: 'Sensitive' },
+  { value: 'normal' as const, label: 'Normal' },
 ]
 
 const RATING_OPTIONS = [
-  { value: 4.5, label: '4.5 & up', count: 89 },
-  { value: 4.0, label: '4.0 & up', count: 64 },
-  { value: 3.5, label: '3.5 & up', count: 18 },
-  { value: 3.0, label: '3.0 & up', count: 4 },
+  { value: 4.5, label: '4.5+ Stars' },
+  { value: 4.0, label: '4.0+ Stars' },
+  { value: 3.5, label: '3.5+ Stars' },
+  { value: 3.0, label: '3.0+ Stars' },
 ]
 
 interface FilterPanelProps {
@@ -35,6 +35,14 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
   const [priceMaxDraft, setPriceMaxDraft] = useState(params.maxPrice?.toString() ?? '')
   const [focusedPriceField, setFocusedPriceField] = useState<'min' | 'max' | null>(null)
 
+  const hasActiveFilters =
+    params.categoryId !== '' ||
+    params.skinTypes.length > 0 ||
+    params.tags.length > 0 ||
+    params.minPrice !== undefined ||
+    params.maxPrice !== undefined ||
+    params.rating !== undefined
+
   const priceMin = focusedPriceField === 'min' ? priceMinDraft : (params.minPrice?.toString() ?? '')
   const priceMax = focusedPriceField === 'max' ? priceMaxDraft : (params.maxPrice?.toString() ?? '')
 
@@ -44,10 +52,6 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
       maxPrice: priceMax ? Number(priceMax) : undefined,
     })
     setFocusedPriceField(null)
-  }
-
-  const applyPriceFilter = () => {
-    commitPrice()
   }
 
   const handleSkinTypeToggle = (type: 'dry' | 'oily' | 'combination' | 'sensitive' | 'normal') => {
@@ -68,23 +72,15 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
   }
 
   return (
-    <div className="min-w-0 space-y-3 px-1 text-[11px] leading-4">
-      <div className="flex items-center justify-between text-[11px] font-semibold text-foreground">
-        <span className="flex items-center gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5 text-purple-600" />Filters</span>
-        {onReset && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="text-[9px] font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-600"
-          >
-            Clear All
-          </button>
-        )}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <SlidersHorizontal className="h-4 w-4" />
+        Filters
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
-          <h4 className="mb-2 border-b border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Category</h4>
+          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Category</h4>
           <CategorySelect
             categories={categories}
             selectedCategoryId={params.categoryId}
@@ -92,28 +88,28 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
           />
         </div>
 
-        <Separator className="bg-border" />
+        <Separator />
 
         <div>
-          <h4 className="mb-2 flex items-center justify-between border-b border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Skin Type <ChevronUp className="h-3 w-3" /></h4>
-          <div className="space-y-1 px-4">
+          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Skin Type</h4>
+          <div className="space-y-1.5">
             {SKIN_TYPES.map((st) => (
               <div key={st.value} className="flex items-center gap-2">
                 <Checkbox
                   checked={params.skinTypes.includes(st.value)}
                   onCheckedChange={() => handleSkinTypeToggle(st.value)}
                 />
-                <span className="text-[11px] text-foreground">{st.label}</span>
+                <span className="text-sm">{st.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <Separator className="bg-border" />
+        <Separator />
 
         <div>
-          <h4 className="mb-2 flex items-center justify-between border-b border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Price Range <ChevronUp className="h-3 w-3" /></h4>
-          <div className="flex items-center gap-2 px-1">
+          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Price Range</h4>
+          <div className="flex items-center gap-2">
             <Input
               type="number"
               placeholder="Min"
@@ -124,7 +120,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
               }}
               onBlur={commitPrice}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-              className="h-8 border-border bg-background text-foreground text-[10px]"
+              className="h-8 text-xs"
               min={0}
             />
             <span className="text-muted-foreground">-</span>
@@ -138,40 +134,43 @@ export function FilterPanel({ params, onUpdate, categories, onReset }: FilterPan
               }}
               onBlur={commitPrice}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-              className="h-8 border-border bg-background text-foreground text-[10px]"
+              className="h-8 text-xs"
               min={0}
             />
           </div>
-          <Button
-            type="button"
-            size="sm"
-            onClick={applyPriceFilter}
-            className="mt-3 h-7 w-full bg-purple-100 dark:bg-purple-950/50 text-[9px] font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50"
-          >
-            Apply Filter
-          </Button>
         </div>
 
-        <Separator className="bg-border" />
+        <Separator />
 
         <div>
-          <h4 className="mb-2 flex items-center justify-between border-b border-border pb-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Rating <ChevronUp className="h-3 w-3" /></h4>
-          <div className="space-y-1 px-1">
+          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Rating</h4>
+          <div className="space-y-1.5">
             {RATING_OPTIONS.map((r) => (
               <div key={r.value} className="flex items-center gap-2">
                 <Checkbox
                   checked={params.rating === r.value}
                   onCheckedChange={() => handleRatingChange(r.value)}
                 />
-                <span className="flex items-center gap-1 text-[11px] text-foreground">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" aria-label={`${r.label} rating`} />
-                  {r.label}
-                </span>
+                <span className="text-sm">{r.label}</span>
               </div>
             ))}
           </div>
         </div>
 
+        {hasActiveFilters && onReset && (
+          <>
+            <Separator />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={handleReset}
+            >
+              Reset Filters
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

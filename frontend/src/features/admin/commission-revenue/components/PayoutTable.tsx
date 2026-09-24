@@ -1,9 +1,10 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Eye, DollarSign } from 'lucide-react';
 import { Payout } from '../services/commission.service';
+import { PayoutStatusBadge } from './badges';
+import { formatCurrency } from '../utils/format';
 
 interface PayoutTableProps {
   payouts?: Payout[];
@@ -41,12 +42,11 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
   };
 
   return (
-    <div className="rounded-md border bg-card">
-      <div className="max-h-[400px] overflow-y-auto">
-      <Table>
-        <TableHeader>
+    <div className="overflow-x-auto rounded-md border bg-card">
+      <Table className="w-full">
+        <TableHeader className="sticky top-0 z-10 bg-primary/10">
           <TableRow>
-            <TableHead className="w-12">
+            <TableHead className="w-12 bg-primary/10">
               <input
                 type="checkbox"
                 aria-label="Select all payouts on this page"
@@ -54,15 +54,15 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                 onChange={togglePage}
               />
             </TableHead>
-            <TableHead>Merchant</TableHead>
-            <TableHead>Period</TableHead>
-            <TableHead>Commission Rate</TableHead>
-            <TableHead>Total Amount</TableHead>
-            <TableHead>Commission</TableHead>
-            <TableHead>Net Payout</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Payment Date</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Merchant</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Period</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold text-center">Total Orders</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Total Amount</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Commission</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Net Payout</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Status</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Completed Date</TableHead>
+            <TableHead className="text-right bg-primary/10 whitespace-nowrap font-bold">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,42 +85,42 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                 </TableCell>
                 <TableCell className="font-medium">{p.merchantName}</TableCell>
                 <TableCell>{formatPeriod(p.period)}</TableCell>
-                <TableCell>{p.commissionRate}%</TableCell>
-                <TableCell>${p.totalAmount}</TableCell>
-                <TableCell className="text-destructive">-${p.commissionAmount}</TableCell>
-                <TableCell className="font-semibold">${p.netAmount}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      p.status === 'completed'
-                        ? 'default'
-                        : p.status === 'failed'
-                        ? 'destructive'
-                        : 'outline'
-                    }
-                  >
-                    {p.status}
-                  </Badge>
+                <TableCell className="text-center">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium">
+                    {p.completedCount + p.pendingCount}
+                  </span>
                 </TableCell>
-                <TableCell>{p.processedAt ? formatDate(p.processedAt) : '-'}</TableCell>
+                <TableCell>{formatCurrency(p.totalAmount)} Ks</TableCell>
+                <TableCell className="text-destructive">-{formatCurrency(p.commissionAmount)} Ks</TableCell>
+                <TableCell className="font-semibold">{formatCurrency(p.netAmount)} Ks</TableCell>
+                <TableCell>
+                  <PayoutStatusBadge status={p.status} />
+                </TableCell>
+                <TableCell>
+                  {p.status === 'completed' && p.processedAt
+                    ? formatDate(p.processedAt)
+                    : '-'}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="outline"
-                      className="border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
+                      aria-label="View payout details"
+                      className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                       onClick={() => onViewDetail?.(p.payoutId)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-3.5 w-3.5" />
                     </Button>
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="outline"
-                      className="border-green-300 bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 disabled:opacity-50"
+                      aria-label="Process payout"
+                      className="h-7 w-7 border-green-300 bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 disabled:opacity-50"
                       disabled={p.status === 'completed'}
                       onClick={() => onProcessPayout?.(p.payoutId)}
                     >
-                      <DollarSign className="h-4 w-4" />
+                      <DollarSign className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </TableCell>
@@ -129,14 +129,13 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
           )}
         </TableBody>
       </Table>
-      </div>
     </div>
   );
 };
 
 const formatPeriod = (period: string): string => {
   const date = new Date(`${period}-01T00:00:00`);
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 };
 
 const formatDate = (date: string): string =>

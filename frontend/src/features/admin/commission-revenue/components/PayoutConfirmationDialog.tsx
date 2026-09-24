@@ -15,6 +15,7 @@ interface PayoutConfirmationDialogProps {
   onOpenChange: (open: boolean) => void;
   payout?: Payout | null;
   onConfirm: (id: string) => void;
+  onCancel?: () => void;
   processing?: boolean;
 }
 
@@ -26,6 +27,7 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
   onOpenChange,
   payout,
   onConfirm,
+  onCancel,
   processing,
 }) => {
   if (!payout) {
@@ -53,6 +55,7 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
             <span className="text-sm text-muted-foreground">Commission Fee</span>
             <span>-${payout.commissionAmount}</span>
           </div>
+          <div className="border-t" />
           <div className="flex justify-between font-semibold">
             <span>Net Payout</span>
             <span>${payout.netAmount}</span>
@@ -82,7 +85,7 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
+          <Button variant="outline" onClick={() => { onCancel?.(); onOpenChange(false); }} disabled={processing}>
             Cancel
           </Button>
           <Button variant="default" onClick={() => onConfirm(payout.payoutId)} disabled={processing}>

@@ -43,8 +43,6 @@
       "title": "Create Account",
       "fullName": "Full Name",
       "fullNamePlaceholder": "John Doe",
-      "shopName": "Shop Name",
-      "shopNamePlaceholder": "Your Shop Name",
       "email": "Email",
       "emailPlaceholder": "user@example.com",
       "password": "Password",

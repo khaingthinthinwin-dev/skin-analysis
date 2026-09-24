@@ -247,12 +247,21 @@ export class AdvertisementsService {
     userId: string,
   ) {
     const ad = await this.getOwnedAd(id, userId);
+    if (!ad.feeSetting)
+      throw new ConflictException('Advertisement package is unavailable');
     if (
       ad.approvalStatus !== 'rejected' &&
       (ad.approvalStatus !== 'pending' || ad.paymentStatus !== 'pending')
     ) {
       throw new BadRequestException('Advertisement cannot be edited');
     }
+    // A rejected ad being resubmitted may re-pick its start date (its
+    // original window may already have started or passed). expires_at is
+    // derived from the package duration; the 3-day lead time applies, same
+    // as new uploads.
+    const schedule = dto.startsAt
+      ? this.getSchedule(dto.startsAt, ad.feeSetting.durationDays)
+      : null;
     const updated = await this.prisma.advertisement.update({
       where: { id },
       data: {
@@ -261,6 +270,9 @@ export class AdvertisementsService {
         imageUrl: file ? await this.saveImage(file) : undefined,
         linkUrl: dto.linkUrl || null,
         announcementMessage: dto.announcementMessage,
+        ...(schedule
+          ? { startsAt: schedule.startsAt, expiresAt: schedule.expiresAt }
+          : {}),
       },
       include: { feeSetting: true },
     });
@@ -352,12 +364,22 @@ export class AdvertisementsService {
     return ad;
   }
 
-  private getSchedule(startsAtValue: string, durationDays: number) {
+  private getSchedule(
+    startsAtValue: string,
+    durationDays: number,
+    minDaysFromToday = 3,
+  ) {
     const startsAt = new Date(startsAtValue);
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    if (Number.isNaN(startsAt.getTime()) || startsAt < today) {
-      throw new BadRequestException('Start date must be today or later');
+    // Earliest selectable start date is today + 3 days (UTC day granularity):
+    // today, tomorrow, and the day after tomorrow are not allowed. Applies to
+    // both new uploads and resubmission of rejected ads.
+    const minDate = new Date();
+    minDate.setUTCHours(0, 0, 0, 0);
+    minDate.setUTCDate(minDate.getUTCDate() + minDaysFromToday);
+    if (Number.isNaN(startsAt.getTime()) || startsAt < minDate) {
+      throw new BadRequestException(
+        'Start date must be at least 3 days from today',
+      );
     }
     const expiresAt = new Date(startsAt);
     expiresAt.setUTCDate(expiresAt.getUTCDate() + durationDays);

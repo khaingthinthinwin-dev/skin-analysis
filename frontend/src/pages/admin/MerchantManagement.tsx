@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -12,6 +12,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +40,7 @@ import {
   XCircle,
   FileText,
   Download,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -189,17 +197,18 @@ function getPageNumbers(current: number, total: number) {
 export default function MerchantManagement() {
   // ── State ───────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState(10);
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 300);
+  const [merchantSort, setMerchantSort] = useState('createdAt');
+  const [merchantOrder, setMerchantOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedMerchants, setSelectedMerchants] = useState<string[]>([]);
 
   // ── Dialog State ────────────────────────────────────────────────────────
   const [detailMerchant, setDetailMerchant] = useState<Merchant | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Merchant | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // ── Stats ───────────────────────────────────────────────────────────────
   const { stats, refreshStats } = useMerchantStats();
@@ -210,12 +219,35 @@ export default function MerchantManagement() {
     limit,
     status: (status as 'pending' | 'approved' | 'rejected' | undefined) || undefined,
     search: debouncedSearch || undefined,
+    sort: merchantSort,
+    order: merchantOrder,
   });
 
   // ── Derived Data ────────────────────────────────────────────────────────
   const merchants = merchantsQuery.data?.items || [];
   const totalPages = merchantsQuery.data?.totalPages || 1;
   const total = merchantsQuery.data?.total ?? 0;
+
+  // ── Sort Mapping ────────────────────────────────────────────────────────
+  const sortOptions = useMemo(
+    () => [
+      { value: 'createdAt:desc', label: 'Newest' },
+      { value: 'createdAt:asc', label: 'Oldest' },
+      { value: 'shopName:asc', label: 'Name (A-Z)' },
+      { value: 'shopName:desc', label: 'Name (Z-A)' },
+    ],
+    [],
+  );
+
+  const currentSortValue = `${merchantSort}:${merchantOrder}`;
+
+  const handleSortChange = (value: string) => {
+    const [sort, order] = value.split(':');
+    setMerchantSort(sort);
+    setMerchantOrder(order as 'asc' | 'desc');
+    setPage(1);
+    setSelectedMerchants([]);
+  };
 
   // ── Selection Helpers ───────────────────────────────────────────────────
   const toggleSelectAll = () => {
@@ -268,23 +300,6 @@ export default function MerchantManagement() {
     );
   };
 
-  const openDeleteDialog = (id: string) => {
-    setDeleteTarget(id);
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await api.delete(`/admin/merchants/${deleteTarget}`);
-      toast.success('Merchant deleted');
-      setDeleteTarget(null);
-      setDetailMerchant(null);
-      refreshStats();
-    } catch {
-      toast.error('Failed to delete merchant');
-    }
-  };
-
   return (
     <div className="space-y-6 p-6">
       {/* ── [A] Page Header ──────────────────────────────────────────────── */}
@@ -298,7 +313,7 @@ export default function MerchantManagement() {
       </div>
 
       {/* ── [B] Stats Bar ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
           {
             label: 'Total Merchants',
@@ -375,8 +390,8 @@ export default function MerchantManagement() {
         ))}
       </div>
 
-      {/* ── [C] Search Bar ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-start gap-3">
+      {/* ── [C] Search + Sort Bar ─────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -389,10 +404,23 @@ export default function MerchantManagement() {
             className="pl-9"
           />
         </div>
+        <Select value={currentSortValue} onValueChange={handleSortChange}>
+          <SelectTrigger className="w-[180px]">
+            <SlidersHorizontal className="h-4 w-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* ── [E] Merchants Table ─────────────────────────────────────────── */}
-      <div className="rounded-md border bg-card">
+      <div className="overflow-x-auto rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -409,7 +437,7 @@ export default function MerchantManagement() {
               <TableHead>Shop</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Registered</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>License Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -486,26 +514,6 @@ export default function MerchantManagement() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {merchant.licenseStatus === 'pending' && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => handleApprove(merchant.id)}
-                          >
-                            <Check className="h-4 w-4 text-emerald-500" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => openRejectDialog(merchant)}
-                          >
-                            <X className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -516,7 +524,7 @@ export default function MerchantManagement() {
       </div>
 
       {/* ── [F] Pagination ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">
           Showing {merchants.length > 0 ? (page - 1) * limit + 1 : 0}-
           {Math.min(page * limit, total)} of {total} merchants
@@ -530,6 +538,7 @@ export default function MerchantManagement() {
             }}
             className="h-8 px-2 text-sm rounded-md border bg-background"
           >
+            <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
@@ -586,46 +595,59 @@ export default function MerchantManagement() {
         open={!!detailMerchant}
         onOpenChange={() => setDetailMerchant(null)}
       >
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Merchant Detail</DialogTitle>
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+          <DialogHeader className="border-b border-slate-200 pb-2">
+            <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
+              Merchant Detail
+            </DialogTitle>
           </DialogHeader>
           {detailMerchant && (
-            <div className="space-y-5">
-              {/* [B] Shop Info Card */}
-              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-medium text-white ${getAvatarColor(
-                    detailMerchant.shopName || '',
-                  )}`}
-                >
-                  {getInitials(detailMerchant.shopName || 'S')}
-                </div>
-                <div>
-                  <p className="font-semibold">{detailMerchant.shopName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Registered {new Date(detailMerchant.createdAt).toLocaleDateString()}
+            <div className="space-y-3 pt-1">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Merchant Information
                   </p>
                 </div>
-              </div>
 
-              {/* [C] License Viewer */}
-              {detailMerchant.businessLicenseUrl && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Business License
+                <div className="rounded-md border border-slate-200 bg-white p-2">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
+                    Shop
                   </p>
-                  <div className="p-4 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white ${getAvatarColor(
+                        detailMerchant.shopName || '',
+                      )}`}
+                    >
+                      {getInitials(detailMerchant.shopName || 'S')}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {detailMerchant.shopName}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        Registered {new Date(detailMerchant.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {detailMerchant.businessLicenseUrl && (
+                  <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
+                      Business License
+                    </p>
                     {detailMerchant.businessLicenseUrl.endsWith('.pdf') ? (
                       <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
+                        <FileText className="h-8 w-8 text-slate-400" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium">Business License Document</p>
-                          <p className="text-xs text-muted-foreground">PDF document</p>
+                          <p className="text-sm font-medium text-slate-900">Business License Document</p>
+                          <p className="text-xs text-slate-600">PDF document</p>
                         </div>
-                        <Button size="sm" variant="outline" asChild>
+                        <Button size="sm" variant="outline" asChild className="border-slate-200 text-slate-700">
                           <a
-                            href={detailMerchant.businessLicenseUrl}
+                            href={getImageUrl(detailMerchant.businessLicenseUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -642,46 +664,67 @@ export default function MerchantManagement() {
                       />
                     )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* [D] User Info Card */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Owner Information
-                </p>
-                <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Name</p>
-                    <p className="font-medium">{detailMerchant.user?.name || 'N/A'}</p>
+                <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
+                    Owner
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700">
+                      {detailMerchant.user?.name
+                        ?.split(' ')
+                        .map((part: string) => part[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2) || '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {detailMerchant.user?.name || 'N/A'}
+                      </p>
+                      <p className="truncate text-xs text-slate-600">
+                        {detailMerchant.user?.email || 'N/A'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="font-medium">{detailMerchant.user?.email || 'N/A'}</p>
+                </div>
+
+                <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Status
+                    </p>
+                    <div className="mt-1">
+                      <MerchantStatusBadge status={detailMerchant.licenseStatus} />
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Submitted
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {new Date(detailMerchant.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Status */}
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-muted-foreground">Status:</p>
-                <MerchantStatusBadge status={detailMerchant.licenseStatus} />
-              </div>
-
-              {/* Rejection Reason */}
               {detailMerchant.rejectionReason && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                     Rejection Reason
                   </p>
-                  <p className="text-destructive text-sm">
-                    {detailMerchant.rejectionReason}
-                  </p>
+                  <div className="rounded-md border border-slate-200 bg-white p-2">
+                    <p className="whitespace-pre-wrap text-xs leading-5 text-slate-700">
+                      {detailMerchant.rejectionReason}
+                    </p>
+                  </div>
                 </div>
               )}
 
-              {/* [E] Action Buttons */}
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
                   onClick={() => setDetailMerchant(null)}
@@ -693,6 +736,7 @@ export default function MerchantManagement() {
                     <Button
                       onClick={() => handleApprove(detailMerchant.id)}
                       disabled={approveMutation.isPending}
+                      className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
                     >
                       <Check className="h-4 w-4 mr-1" /> Approve
                     </Button>
@@ -707,15 +751,6 @@ export default function MerchantManagement() {
                     </Button>
                   </>
                 )}
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    setDetailMerchant(null);
-                    openDeleteDialog(detailMerchant.id);
-                  }}
-                >
-                  Delete
-                </Button>
               </div>
             </div>
           )}
@@ -768,29 +803,6 @@ export default function MerchantManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Merchant Confirmation ─────────────────────────────────── */}
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Merchant</DialogTitle>
-          </DialogHeader>
-          <p>
-            Are you sure you want to permanently delete this merchant? This action
-            cannot be undone.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -88,7 +88,14 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
                   {clamped.toFixed(0)}%
                 </span>
               </div>
-              <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="relative h-3 w-full overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-valuenow={clamped}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Revenue target progress: ${clamped.toFixed(0)}%`}
+              >
                 <div
                   className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-in-out"
                   style={{ width: `${clamped}%` }}
@@ -102,7 +109,7 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
           </p>
         )}
         <Button size="sm" onClick={() => setDialogOpen(true)}>
-          Edit Target
+          {target ? 'Edit Target' : 'Set Target'}
         </Button>
 
         <EditTargetDialog

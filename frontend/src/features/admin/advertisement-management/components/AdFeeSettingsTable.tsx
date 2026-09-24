@@ -20,7 +20,7 @@ export const AdFeeSettingsTable: React.FC<AdFeeSettingsTableProps> = ({
           <TableRow>
             <TableHead>Placement Location</TableHead>
             <TableHead>Tier</TableHead>
-            <TableHead>Daily Rate ($)</TableHead>
+            <TableHead>Daily Rate (KS)</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

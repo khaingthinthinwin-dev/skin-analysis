@@ -314,7 +314,7 @@ model Order {
   status        OrderStatus          @relation(fields: [statusCode], references: [statusCode], onDelete: Restrict, onUpdate: Cascade)
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
-  payouts       Payout[]
+  payoutItems   PayoutItem[]
 
   @@index([buyerId])
   @@index([merchantId])
@@ -431,9 +431,9 @@ model Advertisement {
   createdAt           DateTime  @default(now()) @map("created_at")
 
   // Relations
-  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  shop       Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   feeSetting AdFeeSetting? @relation(fields: [feeSettingId], references: [id], onDelete: Restrict)
-  approver   User?       @relation("AdminAdApprovals", fields: [approvedBy], references: [id], onDelete: SetNull)
+  approver   User?         @relation("AdminAdApprovals", fields: [approvedBy], references: [id], onDelete: SetNull)
   adPayments AdPayment[]
 
   @@index([shopId])
@@ -565,28 +565,46 @@ model RevenueTarget {
 model Payout {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   merchantId       String    @map("merchant_id") @db.Uuid
-  orderId          String?   @map("order_id") @db.Uuid
-  totalAmount      Decimal   @map("total_amount") @db.Decimal(12, 2)
+  periodStart      DateTime  @map("period_start") @db.Timestamp(3)
+  periodEnd        DateTime  @map("period_end") @db.Timestamp(3)
+  orderCount       Int       @default(0) @map("order_count")
+  totalAmount      Decimal   @default(0) @map("total_amount") @db.Decimal(12, 2)
   commissionAmount Decimal   @default(0) @map("commission_amount") @db.Decimal(12, 2)
-  netPayout        Decimal   @map("net_payout") @db.Decimal(12, 2)
-  status           String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  netPayout        Decimal   @default(0) @map("net_payout") @db.Decimal(12, 2)
+  status           String    @default("pending") // 'pending', 'processing', 'completed'
   processedBy      String?   @map("processed_by") @db.Uuid
   processedAt      DateTime? @map("processed_at")
-  failureReason    String?   @map("failure_reason")
-  idempotencyKey   String?   @unique @map("idempotency_key")
+  idempotencyKey   String    @unique @map("idempotency_key")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  merchant         Merchant @relation(fields: [merchantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  order            Order?   @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  processedByAdmin User?    @relation(fields: [processedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  merchant         Merchant     @relation(fields: [merchantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  processedByAdmin User?        @relation(fields: [processedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  items            PayoutItem[]
 
+  @@unique([merchantId, periodStart, periodEnd])
   @@index([merchantId])
-  @@index([orderId])
   @@index([status])
+  @@index([periodStart, periodEnd])
   @@index([createdAt])
   @@map("payouts")
+}
+
+model PayoutItem {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payoutId         String   @map("payout_id") @db.Uuid
+  orderId          String   @unique @map("order_id") @db.Uuid
+  orderAmount      Decimal  @map("order_amount") @db.Decimal(12, 2)
+  commissionAmount Decimal  @default(0) @map("commission_amount") @db.Decimal(12, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  payout Payout @relation(fields: [payoutId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([payoutId])
+  @@map("payout_items")
 }
 
 // ============================================

@@ -524,7 +524,7 @@ model Payout {
   totalAmount      Decimal   @map("total_amount") @db.Decimal(12, 2)
   commissionAmount Decimal   @default(0) @map("commission_amount") @db.Decimal(12, 2)
   adFeeAmount      Decimal   @default(0) @map("ad_fee_amount") @db.Decimal(12, 2)
-  status           String    @default("pending") // 'pending', 'processing', 'completed', 'failed'
+  status           String    @default("pending") // 'pending', 'processing', 'completed'
   processedBy      String?   @map("processed_by") @db.Uuid
   processedAt      DateTime? @map("processed_at")
   failureReason    String?   @map("failure_reason")
