@@ -45,7 +45,7 @@ export function SponsoredAdSlider() {
 
   return (
     <Card
-      className="relative overflow-hidden border-border/60 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent"
+      className="relative overflow-hidden border-border bg-muted"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       aria-roledescription="carousel"

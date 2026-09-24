@@ -267,9 +267,10 @@ export default function Advertisements() {
         toast.success('Advertisement content saved')
         setPayTarget(updatedAd)
       } else {
-        // Rejected ads are rescheduled on resubmit: the backend derives a
-        // fresh expires_at from the package duration.
-        const includeSchedule = target.approvalStatus === 'rejected'
+        // Content-uploaded ads that have not been paid yet may re-pick their
+        // start date; rejected ads are rescheduled on resubmit. In both cases
+        // the backend derives a fresh expires_at from the package duration.
+        const includeSchedule = target.approvalStatus === 'rejected' || target.paymentStatus === 'pending'
         await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, includeSchedule) })
         setEditTarget(null)
         toast.success('Advertisement content saved')
@@ -707,6 +708,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
   const canEdit = state === 'draft' || state === 'content_uploaded'
   const canDelete = isRejected || state === 'draft' || state === 'content_uploaded'
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
+  const isScheduled = state === 'scheduled'
   const packageInfo = ad.package
   const expiresTomorrow =
     ad.expiresAt && (() => {
@@ -815,12 +817,12 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
           <div>
-            {canToggle ? (
+            {canToggle && !isScheduled ? (
               <div className="flex items-center gap-2">
                 <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
                 <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
               </div>
-            ) : state === 'expired' || state === 'pending_approval' ? (
+            ) : isScheduled || state === 'expired' || state === 'pending_approval' ? (
               <span className="text-sm text-muted-foreground">Inactive</span>
             ) : (
               <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
@@ -914,8 +916,9 @@ function ContentDialog({
   const minToday = minStartsAt
   const isNewUpload = !target?.title
   const isResubmit = target?.approvalStatus === 'rejected'
+  const canSetSchedule = isNewUpload || !target?.startsAt || isResubmit || target?.paymentStatus === 'pending'
   const form = useForm<ContentForm>({
-    resolver: zodResolver(isNewUpload ? uploadContentSchema : isResubmit ? resubmitContentSchema : contentSchema),
+    resolver: zodResolver(isNewUpload ? uploadContentSchema : canSetSchedule ? resubmitContentSchema : contentSchema),
     defaultValues: {
       title: '',
       content: '',
@@ -964,8 +967,6 @@ function ContentDialog({
     persistDraftCache(target.id, form.getValues())
     onClose()
   }
-  // Rejected ads may re-pick their schedule when resubmitting.
-  const canSetSchedule = !target.startsAt || isResubmit
   const durationDays = adPackage?.durationDays ?? 7
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
   if (endDate) endDate.setUTCDate(endDate.getUTCDate() + durationDays)

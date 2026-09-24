@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, useSearchParams, Link } from 'react-router';
+import { useQueries } from '@tanstack/react-query';
 import {
   CheckCircle2,
   ShoppingBag,
@@ -14,7 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useOrderDetail } from '@/features/buyer/checkout/hooks/useCheckout';
+import { checkoutKeys } from '@/features/buyer/checkout/hooks/useCheckout';
+import { checkoutService } from '@/features/buyer/checkout/services/checkout.service';
+import type { OrderDetail } from '@/types/checkout.types';
 
 function getImageUrl(url: string | null | undefined): string {
   if (!url) return '';
@@ -77,43 +80,72 @@ function getPaymentLabel(method: string): string {
 
 export default function OrderConfirmation() {
   const { orderId } = useParams<{ orderId: string }>();
-  const {
-    data: order,
-    isLoading,
-    isError,
-  } = useOrderDetail(orderId || '');
+  const [searchParams] = useSearchParams();
+
+  const orderIds = useMemo(() => {
+    const primary = orderId || '';
+    const siblings = (searchParams.get('orderIds') || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return [primary, ...siblings].filter(Boolean);
+  }, [orderId, searchParams]);
+
+  const orderQueries = useQueries({
+    queries: orderIds.map((id) => ({
+      queryKey: checkoutKeys.orderDetail(id),
+      queryFn: () => checkoutService.getOrderDetail(id),
+      staleTime: 30_000,
+      retry: 1,
+    })),
+  });
+
+  const isLoading = orderQueries.some((q) => q.isLoading);
+  const isError = orderQueries.some((q) => q.isError);
+  const orders = orderQueries.map((q) => q.data).filter(Boolean) as OrderDetail[];
+  const order = orders[0] ?? null;
 
   const computed = useMemo(() => {
     if (!order) return null;
 
     // Subtotal = sum of each item's totalPrice (unitPrice * quantity)
-    const itemsSubtotal = order.items.reduce(
+    const allItems = orders.flatMap((o) => o.items);
+    const itemsSubtotal = allItems.reduce(
       (sum, item) => sum + Number.parseFloat(item.totalPrice),
       0,
     );
+    const totalItemCount = allItems.reduce((sum, i) => sum + i.quantity, 0);
 
-    // Per-shop voucher breakdown
+    // Per-shop voucher breakdown, merged across all split orders
     const voucherEntries: { code: string; discount: number }[] = [];
-    if (order.voucherCodes) {
-      for (const info of Object.values(order.voucherCodes)) {
+    for (const o of orders) {
+      if (o.voucherCodes) {
+        for (const info of Object.values(o.voucherCodes)) {
+          voucherEntries.push({
+            code: info.code,
+            discount: Number.parseFloat(String(info.discountAmount)),
+          });
+        }
+      } else if (o.couponCode && Number.parseFloat(o.discountAmount) > 0) {
+        // Legacy single coupon
         voucherEntries.push({
-          code: info.code,
-          discount: Number.parseFloat(String(info.discountAmount)),
+          code: o.couponCode,
+          discount: Number.parseFloat(o.discountAmount),
         });
       }
-    } else if (order.couponCode && Number.parseFloat(order.discountAmount) > 0) {
-      // Legacy single coupon
-      voucherEntries.push({
-        code: order.couponCode,
-        discount: Number.parseFloat(order.discountAmount),
-      });
     }
 
     const totalDiscount = voucherEntries.reduce((s, v) => s + v.discount, 0);
     const finalTotal = Math.max(itemsSubtotal - totalDiscount, 0);
 
-    return { itemsSubtotal, voucherEntries, totalDiscount, finalTotal };
-  }, [order]);
+    return {
+      itemsSubtotal,
+      totalItemCount,
+      voucherEntries,
+      totalDiscount,
+      finalTotal,
+    };
+  }, [orders, order]);
 
   if (isLoading) {
     return (
@@ -130,15 +162,15 @@ export default function OrderConfirmation() {
         <p className="text-sm text-muted-foreground max-w-sm">
           We couldn&apos;t retrieve the details for this order. It may have been moved or the link might be incorrect.
         </p>
-        <Link to="/buyer/order-insights">
+        <Link to="/orders">
           <Button variant="outline">View Order History</Button>
         </Link>
       </div>
     );
   }
 
-  const { itemsSubtotal, voucherEntries, totalDiscount, finalTotal } = computed;
-  const itemCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
+  const { itemsSubtotal, totalItemCount, voucherEntries, totalDiscount, finalTotal } = computed;
+  const allItems = orders.flatMap((o) => o.items);
 
   return (
     <div className="order-confirmation w-full max-w-2xl mx-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6" data-testid="order-confirmation">
@@ -171,7 +203,7 @@ export default function OrderConfirmation() {
             </div>
             <Badge variant="secondary" className="gap-1 shrink-0 text-xs">
               <Package className="h-3 w-3" />
-              {itemCount} {itemCount === 1 ? 'item' : 'items'}
+              {totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}
             </Badge>
           </div>
 
@@ -183,7 +215,7 @@ export default function OrderConfirmation() {
               Reserved Formulations
             </h3>
             <div className="space-y-3">
-              {order.items.map((item) => (
+              {allItems.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition-colors sm:gap-4"
@@ -362,7 +394,7 @@ export default function OrderConfirmation() {
 
       {/* ── Action Buttons ──────────────────────────── */}
       <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full max-w-md mx-auto pt-2">
-        <Link to={`/buyer/orders/${order.id}`} className="w-full sm:flex-1">
+        <Link to={`/orders/${order.id}`} className="w-full sm:flex-1">
           <Button variant="outline" className="w-full h-11 text-sm font-medium">
             <ExternalLink className="mr-2 h-4 w-4" />
             View Order

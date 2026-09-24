@@ -116,6 +116,11 @@ export class ModerateUserDto {
   @IsBoolean({ message: 'Active status must be a boolean' })
   @IsNotEmpty({ message: 'Active status is required' })
   isActive!: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: 'Reason must not exceed 500 characters' })
+  reason?: string;
 }
 
 export class UpdateReportStatusDto {

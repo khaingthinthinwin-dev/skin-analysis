@@ -1,6 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Search as SearchIcon, Loader2 } from 'lucide-react'
+import { Search as SearchIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
 import { Pagination } from '@/components/Pagination'
@@ -228,10 +228,6 @@ export default function Products() {
     })
   }
 
-  const handleLimitChange = (limit: number) => {
-    serializeToUrl({ ...params, limit, page: 1 })
-  }
-
   const resolveCategoryName = (categories: CategoryNode[], id: string): string | null => {
     if (!id) return null
     for (const cat of categories) {
@@ -342,10 +338,48 @@ export default function Products() {
               </div>
 
               {meta && (
-                <Pagination
-                  meta={meta}
-                  onLimitChange={handleLimitChange}
-                />
+                <>
+                  <div className="flex justify-center items-center gap-2 mt-8">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updateParams({ ...params, page: params.page > 1 ? params.page - 1 : 1 })}
+                      disabled={params.page <= 1}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    {Array.from({ length: meta?.totalPages || 1 }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updateParams({ ...params, page })}
+                        className={`
+                          flex h-10 w-10 items-center justify-center rounded-xl ${params.page === page
+                            ? 'bg-primary font-bold text-primary-foreground'
+                            : 'border border-border bg-background text-foreground hover:bg-muted'}
+                        `}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updateParams({ ...params, page: params.page < meta?.totalPages ? params.page + 1 : meta?.totalPages })}
+                      disabled={params.page >= (meta?.totalPages || 1)}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                  <Pagination
+                    meta={meta}
+                    onLimitChange={(limit) => updateParams({ ...params, limit, page: 1 })}
+                  />
+                </>
               )}
             </>
           )}
