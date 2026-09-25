@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'sonner';
 import apiClient from '@/lib/api-client';
 import MerchantOrderDetailPage from './MerchantOrderDetailPage';
@@ -98,6 +98,11 @@ function renderPage(entry: Entry = '/merchant/orders/order-1') {
 describe('MerchantOrderDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // The window.open spies of the invoice printing tests must never leak.
+    vi.restoreAllMocks();
   });
 
   it('renders a loading skeleton while the detail query is pending', () => {
@@ -241,9 +246,10 @@ describe('MerchantOrderDetailPage', () => {
 
     await screen.findByText('Order ORD-ORDER-1');
     expect(screen.getByText('Commission (12%)')).toBeInTheDocument();
-    // 12% of the $5.00 total (after discount), not of the $10.00 subtotal.
-    expect(screen.getByText('-$0.60')).toBeInTheDocument();
-    expect(screen.getByText('$4.40')).toBeInTheDocument();
+    // 12% of the 5.00 total (after discount), not of the 10.00 subtotal: 0.60 -> 1 Ks
+    // and 5.00 - 0.60 = 4.40 -> 4 Ks, because amounts are shown as whole Ks.
+    expect(screen.getByText('-1 Ks')).toBeInTheDocument();
+    expect(screen.getByText('4 Ks')).toBeInTheDocument();
     expect(screen.getByText('Subtotal')).toBeInTheDocument();
     expect(screen.getByText('Discount')).toBeInTheDocument();
     expect(screen.queryByText('Order Summary')).not.toBeInTheDocument();
@@ -283,5 +289,142 @@ describe('MerchantOrderDetailPage', () => {
     expect(await screen.findByText('Order delivered')).toBeInTheDocument();
     expect(screen.getByText(/Completed on/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Advance to/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a View Invoice action in the header of a loaded order', async () => {
+    mockApi();
+
+    renderPage();
+
+    await screen.findByText('Order ORD-ORDER-1');
+    expect(screen.getByRole('button', { name: /View Invoice/i })).toBeInTheDocument();
+    // The back link and the status action keep their places around it.
+    expect(screen.getByRole('link', { name: /Back to Order Insights/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Advance to Confirmed/i })).toBeInTheDocument();
+  });
+
+  it('opens the invoice dialog with the order data already on the page', async () => {
+    mockApi();
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /View Invoice/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /Invoice .*ORD-ORDER-1/ });
+    expect(within(dialog).getByText('ORD-ORDER-1')).toBeInTheDocument();
+    expect(within(dialog).getByText('Hydrating Serum')).toBeInTheDocument();
+    expect(within(dialog).getByText('1 Main St')).toBeInTheDocument();
+    expect(within(dialog).getByText('aye@example.com')).toBeInTheDocument();
+    expect(within(dialog).getByText('Placed')).toBeInTheDocument();
+    expect(within(dialog).getByText('Unit price')).toBeInTheDocument();
+    expect(within(dialog).getByText('Subtotal')).toBeInTheDocument();
+    expect(within(dialog).getByText('Total')).toBeInTheDocument();
+    // Unit price, line total, subtotal and total are all the same 10.00 here.
+    expect(within(dialog).getAllByText('10 Ks').length).toBeGreaterThanOrEqual(3);
+    expect(within(dialog).getByText('Cod')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /Print/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /Download PDF/i })).toBeInTheDocument();
+    // The order page stays mounted behind the dialog (Radix hides it from
+    // assistive tech while the dialog is open), so nothing has to be refetched.
+    expect(screen.getByText('Order ORD-ORDER-1')).toBeInTheDocument();
+  });
+
+  it('labels a pending payment as PENDING and says the document is not a receipt', async () => {
+    mockApi();
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /View Invoice/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /Invoice .*ORD-ORDER-1/ });
+    expect(within(dialog).getByText('pending')).toBeInTheDocument();
+    expect(within(dialog).getByText(/not a payment receipt/)).toBeInTheDocument();
+    expect(
+      within(dialog).queryByText('Payment for this order has been collected.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('reports a collected payment once the order payment is completed', async () => {
+    mockApi({ order: { ...detail, paymentStatus: 'completed' } });
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /View Invoice/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /Invoice .*ORD-ORDER-1/ });
+    expect(within(dialog).getByText('completed')).toBeInTheDocument();
+    expect(within(dialog).getByText('Payment for this order has been collected.')).toBeInTheDocument();
+    expect(within(dialog).queryByText(/not a payment receipt/)).not.toBeInTheDocument();
+  });
+
+  it('hands the printable invoice to the browser print dialog without patching the order', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    const written: string[] = [];
+    let printed = 0;
+    const open = vi.spyOn(window, 'open').mockReturnValue({
+      document: {
+        write: (html: string) => {
+          written.push(html);
+        },
+        close: () => undefined,
+      },
+      focus: () => undefined,
+      print: () => {
+        printed += 1;
+      },
+      // Runs the deferred print immediately instead of waiting 250 ms.
+      setTimeout: (callback: () => void) => {
+        callback();
+        return 0;
+      },
+    } as unknown as Window);
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /View Invoice/i }));
+    await user.click(screen.getByRole('button', { name: /Download PDF/i }));
+
+    expect(open).toHaveBeenCalledWith('', '_blank');
+    expect(written).toHaveLength(1);
+    expect(written[0]).toContain('ORD-ORDER-1');
+    expect(written[0]).toContain('PENDING');
+    expect(printed).toBe(1);
+    // Printing an invoice is read-only (BR-OI-007): nothing is mutated.
+    expect(patchMock).not.toHaveBeenCalled();
+  });
+
+  it('tells the merchant when the pop-up for the invoice is blocked', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    vi.spyOn(window, 'open').mockReturnValue(null);
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /View Invoice/i }));
+    await user.click(screen.getByRole('button', { name: /Print/i }));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Please allow pop-ups to print or save this invoice.'),
+    );
+  });
+
+  it('closes the invoice dialog on Escape and leaves the order untouched', async () => {
+    mockApi();
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /View Invoice/i }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(patchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Advance to Confirmed/i })).toBeInTheDocument();
   });
 });

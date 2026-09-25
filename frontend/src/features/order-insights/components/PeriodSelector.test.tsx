@@ -30,4 +30,13 @@ describe('PeriodSelector', () => {
     fireEvent.click(screen.getByRole('button', { name: 'This Month' }));
     expect(onChange).toHaveBeenCalledWith('this_month', undefined, undefined);
   });
+
+  it('wraps the pills into a full-width two-column grid below sm and restores the inline pills from sm up', () => {
+    render(<PeriodSelector value="this_month" onChange={vi.fn()} />);
+
+    // Four 88px pills cannot fit a phone viewport, so the group fills the card and wraps 2x2 on mobile.
+    expect(screen.getByRole('group', { name: 'Period' })).toHaveClass('grid', 'w-full', 'grid-cols-2', 'sm:inline-flex', 'sm:w-auto');
+    expect(screen.getByRole('button', { name: 'This Month' })).toHaveClass('w-full', 'sm:w-auto', 'sm:min-w-[88px]', 'sm:px-4');
+    expect(screen.getByRole('button', { name: 'Custom' })).toHaveClass('w-full', 'sm:min-w-[88px]', 'sm:px-4');
+  });
 });

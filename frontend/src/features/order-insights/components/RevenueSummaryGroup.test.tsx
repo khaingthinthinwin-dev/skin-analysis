@@ -20,8 +20,9 @@ const summary: RevenueSummaryDto = {
 describe('RevenueSummaryGroup', () => {
   it('keeps all figures together and exposes the unlocked-rate note via the info button', () => {
     render(<RevenueSummaryGroup data={summary} period="this_month" onPeriodChange={vi.fn()} />);
-    expect(screen.getByText('$100.00')).toBeInTheDocument();
-    expect(screen.getAllByText('$88.00')).toHaveLength(2);
+    // Figures are MMK rendered via formatCurrencyAmount (whole Ks, no decimals).
+    expect(screen.getByText('100 Ks')).toBeInTheDocument();
+    expect(screen.getAllByText('88 Ks')).toHaveLength(2);
     expect(screen.getByRole('button', { name: /historical rate locking is pending/i })).toBeInTheDocument();
   });
 
@@ -73,7 +74,7 @@ describe('RevenueSummaryGroup', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'This Month' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('$100.00')).toBeInTheDocument();
+    expect(screen.getByText('100 Ks')).toBeInTheDocument();
     expect(screen.getByText('Sep 1 – Sep 30, 2026')).toBeInTheDocument();
     expect(onPeriodChange).not.toHaveBeenCalled();
   });
@@ -131,5 +132,26 @@ describe('RevenueSummaryGroup', () => {
     render(<RevenueSummaryGroup period="custom" onPeriodChange={vi.fn()} />);
     expect(screen.getAllByText('—')).toHaveLength(4);
     expect(screen.getByText('Based on 0 orders · Commission at 0%')).toBeInTheDocument();
+  });
+
+  it('stacks the four figures vertically below sm and keeps the formula row from sm up (BR-OI-026)', () => {
+    const { container } = render(<RevenueSummaryGroup data={summary} period="this_month" onPeriodChange={vi.fn()} />);
+
+    // Mobile is a single column (all four figures stay visible); the sm variant is the original
+    // Sales − Commission = Revenue | AOV row.
+    const formulaBox = screen.getByText('Sales').parentElement?.parentElement;
+    expect(formulaBox).toHaveClass('grid-cols-1', 'sm:grid-cols-[1fr_auto_1fr_auto_1fr_1px_1fr]');
+
+    // Every figure is a label/value line on mobile and the stacked block from sm up.
+    for (const label of ['Sales', 'Commission', 'Revenue', 'AOV']) {
+      expect(screen.getByText(label).parentElement).toHaveClass('justify-between', 'sm:block');
+    }
+    expect(screen.getByText('Revenue').parentElement).toHaveClass('bg-[#f9f5ff]', 'px-3', 'sm:py-1');
+
+    // The period pill toggle spans the card on mobile and shrinks back to its intrinsic width from sm up.
+    expect(screen.getByRole('group', { name: 'Period' }).parentElement).toHaveClass('w-full', 'sm:w-max');
+
+    // The AOV separator is a horizontal rule below sm and the vertical divider from sm up.
+    expect(container.querySelector('div[aria-hidden="true"].h-px')).toHaveClass('h-px', 'bg-gray-200', 'sm:h-auto', 'sm:self-stretch');
   });
 });

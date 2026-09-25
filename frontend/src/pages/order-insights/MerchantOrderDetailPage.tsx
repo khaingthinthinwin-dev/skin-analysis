@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
   ArrowLeft,
   CreditCard,
+  FileText,
   Info,
   MapPin,
   Package,
@@ -21,6 +22,7 @@ import { DeliveryProgress } from '@/features/order-insights/components/DeliveryP
 import { PaymentBadge } from '@/features/order-insights/components/PaymentBadge';
 import { StatusBadge } from '@/features/order-insights/components/StatusBadge';
 import { CustomerInformationCard } from '@/features/order-insights/components/CustomerInformationCard';
+import { MerchantInvoiceDialog } from '@/features/order-insights/components/MerchantInvoiceDialog';
 import { StatusTransitionControl } from '@/features/order-insights/components/StatusTransitionControl';
 import { useMerchantOrderDetail } from '@/features/order-insights/hooks/useMerchantOrderDetail';
 import { useMerchantOrderTracking } from '@/features/order-insights/hooks/useMerchantOrderTracking';
@@ -279,6 +281,9 @@ function MerchantOrderDetailContent() {
   const trackingQuery = useMerchantOrderTracking(id);
   const updateMutation = useUpdateOrderStatus(id);
   const backHref = useBackToListHref();
+  // The invoice is a view of the order already in memory — it opens in a dialog
+  // instead of adding a section to this page, so the detail layout stays focused.
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   // The Revenue Summary endpoint is the merchant's only source for the current
   // platform commission rate — the order detail DTO carries no commission fields.
   const revenueQuery = useRevenueSummary({ period: 'this_month' });
@@ -404,16 +409,32 @@ function MerchantOrderDetailContent() {
             Placed {formatDate(order.createdAt, dateLocale)}, {formatTime(order.createdAt, dateLocale)}
           </p>
         </div>
-        <Button
-          asChild
-          className="w-full justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-semibold text-[#7c3aed] hover:bg-white/90 sm:w-auto"
-        >
-          <Link to={backHref}>
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            {translate('merchant.orders.detail.backToOrders', 'Back to Order Insights')}
-          </Link>
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {/* Deliberately the weakest action in the header: a translucent outline
+              on the gradient, so it never outranks the white Back button here or
+              the status advance action in the bar below. */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsInvoiceOpen(true)}
+            className="w-full justify-center gap-2 rounded-lg border-white/70 bg-white/15 px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-white/25 hover:text-white sm:w-auto"
+          >
+            <FileText className="h-4 w-4" aria-hidden="true" />
+            {translate('merchant.orders.detail.viewInvoice', 'View Invoice')}
+          </Button>
+          <Button
+            asChild
+            className="w-full justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-semibold text-[#7c3aed] hover:bg-white/90 sm:w-auto"
+          >
+            <Link to={backHref}>
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              {translate('merchant.orders.detail.backToOrders', 'Back to Order Insights')}
+            </Link>
+          </Button>
+        </div>
       </section>
+
+      {isInvoiceOpen && <MerchantInvoiceDialog order={order} onClose={() => setIsInvoiceOpen(false)} />}
 
       <section className="rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

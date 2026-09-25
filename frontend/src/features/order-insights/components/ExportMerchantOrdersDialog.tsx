@@ -10,7 +10,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { getAllMerchantOrders } from '../services/merchantOrderService';
-import { buildMerchantOrdersExportFilename, exportMerchantOrdersCsv } from '../utils/exportMerchantOrdersCsv';
+import { useRevenueSummary } from '../hooks/useRevenueSummary';
+import { buildMerchantOrdersExportFilename, exportMerchantOrdersCsv, normalizeCommissionRate } from '../utils/exportMerchantOrdersCsv';
 import { formatStatusLabel } from '../utils/orderStatusLabel';
 import type { OrderListFilterFormData } from '../schemas/orderFilters.schema';
 
@@ -42,6 +43,14 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
   const [isExporting, setIsExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
+  // Same cached Revenue Summary the order detail page reads (no extra endpoint
+  // beyond it): its current platform rate drives the Commission / You receive
+  // CSV columns. Without a usable rate those columns are skipped entirely —
+  // never exported as 0/blank — and the notice below says so.
+  const revenueQuery = useRevenueSummary({ period: 'this_month' });
+  const commissionRate = normalizeCommissionRate(revenueQuery.data?.commissionRate);
+  const commissionSkipped = commissionRate === null;
+
   const isEmpty = total === 0;
   const statusLabel = filters.status === 'all'
     ? t('common.filters.all', 'All')
@@ -64,7 +73,10 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
 
     try {
       const rows = await getAllMerchantOrders(filters);
-      exportMerchantOrdersCsv(rows, buildMerchantOrdersExportFilename(filters));
+      exportMerchantOrdersCsv(rows, {
+        filename: buildMerchantOrdersExportFilename(filters),
+        commissionRate,
+      });
       setIsExporting(false);
       onClose();
     } catch {
@@ -103,6 +115,14 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
             <span className="font-medium text-foreground">{statusLabel}</span>{' '}
             {t('merchant.orders.exportResultSuffix', 'orders within this range')}
           </p>
+          {commissionSkipped && (
+            <p className="text-sm text-muted-foreground">
+              {t(
+                'merchant.orders.exportCommissionUnavailable',
+                'Commission and You receive columns are not included — commission rate unavailable.',
+              )}
+            </p>
+          )}
           {isEmpty ? (
             <p className="text-sm text-destructive" role="alert">
               {t('merchant.orders.exportEmpty', 'No orders to export.')}

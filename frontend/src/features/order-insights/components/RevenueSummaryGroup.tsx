@@ -14,7 +14,11 @@ import { CustomRangeModal } from './CustomRangeModal';
 /** Operator circles ("−", "=") inside the formula box. */
 const operatorClassName = 'flex h-6 w-6 items-center justify-center self-center justify-self-center rounded-full bg-gray-100 text-sm leading-none text-gray-400';
 const metricLabelClassName = 'm-0 text-xs font-medium text-gray-500';
-const metricValueClassName = 'm-0 mt-1 whitespace-nowrap text-[20px] font-medium text-gray-900';
+// `sm:mt-1` keeps the desktop label/value stack while the mobile rows (BR-OI-026 vertical
+// stack) place label and value on one line, where the 4px top margin would misalign them.
+const metricValueClassName = 'm-0 whitespace-nowrap text-[20px] font-medium text-gray-900 sm:mt-1';
+// One stat row: a label/value line inside the box below `sm`, the original stacked block from `sm` up.
+const metricRowClassName = 'flex min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2 sm:block sm:px-0 sm:py-1';
 
 /**
  * Revenue Summary card (EL-OI-38): title with the active-range pill, the period
@@ -75,7 +79,7 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
   }, [customRangeOpen, focusCustomToggle]);
 
   if (loading) return <Card className={cardClassName}><CardContent className="space-y-5 p-5 sm:p-6">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><Skeleton className="h-6 w-44" /><Skeleton className="h-10 w-[380px] rounded-full" /></div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><Skeleton className="h-6 w-44" /><Skeleton className="h-10 w-full rounded-full sm:w-[380px]" /></div>
     <Skeleton className="h-[80px] rounded-lg" />
     <Skeleton className="h-4 w-72" />
   </CardContent></Card>;
@@ -101,26 +105,29 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
         <h2 className="m-0 text-[17px] font-bold text-gray-900">{t('merchant.revenue.title', 'Revenue Summary')}</h2>
         {rangeLabel && <RangeLabelPill label={rangeLabel} interactive={visiblePeriod === 'custom'} onClick={() => setCustomRangeOpen(true)} />}
       </div>
-      <div ref={toggleRef} className="w-max"><PeriodSelector value={visiblePeriod} from={from} to={to} onChange={handlePeriodChange} /></div>
+      <div ref={toggleRef} className="w-full sm:w-max"><PeriodSelector value={visiblePeriod} from={from} to={to} onChange={handlePeriodChange} /></div>
     </div>
 
-    <div className="grid grid-cols-3 gap-x-3 gap-y-3 rounded-lg border border-gray-200 bg-white px-4 py-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr_1px_1fr]">
-      <div className="min-w-0 py-1">
+    {/* Below `sm` the four figures stack vertically (BR-OI-026, DD §2.4) as label/value rows so the
+        20px Ks amounts never collide with the operator chips; from `sm` up this is the original
+        Sales − Commission = Revenue | AOV formula row. */}
+    <div className="grid grid-cols-1 gap-y-1 rounded-lg border border-gray-200 bg-white p-1.5 sm:grid-cols-[1fr_auto_1fr_auto_1fr_1px_1fr] sm:gap-x-3 sm:gap-y-3 sm:px-4 sm:py-3">
+      <div className={metricRowClassName}>
         <p className={metricLabelClassName}>{t('merchant.revenue.sales', 'Sales')}</p>
         <p className={metricValueClassName}>{metricText(displayData?.sales)}</p>
       </div>
       <span aria-hidden="true" className={operatorClassName}>−</span>
-      <div className="min-w-0 py-1">
+      <div className={metricRowClassName}>
         <p className={metricLabelClassName}>{t('merchant.revenue.commission', 'Commission')}</p>
         <p className={metricValueClassName}>{metricText(displayData?.commission)}</p>
       </div>
       <span aria-hidden="true" className={operatorClassName}>=</span>
-      <div className="min-w-0 rounded-lg bg-[#f9f5ff] px-3 py-1">
+      <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[#f9f5ff] px-3 py-2 sm:block sm:py-1">
         <p className="m-0 text-xs font-medium text-[#7c3aed]">{t('merchant.revenue.net', 'Revenue')}</p>
-        <p className="m-0 mt-1 whitespace-nowrap text-[20px] font-medium text-[#7c3aed]">{metricText(displayData?.revenue)}</p>
+        <p className="m-0 whitespace-nowrap text-[20px] font-medium text-[#7c3aed] sm:mt-1">{metricText(displayData?.revenue)}</p>
       </div>
-      <div aria-hidden="true" className="hidden self-stretch bg-gray-200 sm:block" />
-      <div className="min-w-0 py-1">
+      <div aria-hidden="true" className="h-px w-full self-center bg-gray-200 sm:h-auto sm:self-stretch" />
+      <div className={metricRowClassName}>
         <p className={metricLabelClassName}>{t('merchant.revenue.aov', 'AOV')}</p>
         <p className={metricValueClassName}>{metricText(displayData?.aov)}</p>
       </div>

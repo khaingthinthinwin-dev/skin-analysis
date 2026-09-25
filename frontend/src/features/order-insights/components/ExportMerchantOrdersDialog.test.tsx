@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExportMerchantOrdersDialog } from './ExportMerchantOrdersDialog';
+import { useRevenueSummary } from '../hooks/useRevenueSummary';
 import { getAllMerchantOrders } from '../services/merchantOrderService';
 import { buildMerchantOrdersExportFilename, exportMerchantOrdersCsv } from '../utils/exportMerchantOrdersCsv';
 import { OrderStatus } from '../types/orderInsights.types';
@@ -10,7 +11,17 @@ import type { OrderListFilterFormData } from '../schemas/orderFilters.schema';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, fallback?: string) => fallback ?? _key }) }));
 vi.mock('../services/merchantOrderService', () => ({ getAllMerchantOrders: vi.fn() }));
-vi.mock('../utils/exportMerchantOrdersCsv', () => ({
+// The dialog reads the current platform rate from the cached Revenue Summary;
+// the query itself is covered by useRevenueSummary.test.tsx. Tests that need the
+// "columns skipped" state set `mockCommissionRate` to undefined/''.
+let mockCommissionRate: string | undefined = '12.00';
+vi.mock('../hooks/useRevenueSummary', () => ({
+  useRevenueSummary: vi.fn(() => ({ data: mockCommissionRate === undefined ? undefined : { commissionRate: mockCommissionRate } })),
+}));
+// Only the filename and the download are stubbed: normalizeCommissionRate stays
+// the real one, so the notice follows the exact rule the export uses.
+vi.mock('../utils/exportMerchantOrdersCsv', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../utils/exportMerchantOrdersCsv')>()),
   buildMerchantOrdersExportFilename: vi.fn(() => 'merchant-orders-scope.csv'),
   exportMerchantOrdersCsv: vi.fn(),
 }));
@@ -38,6 +49,7 @@ function dialogText() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockCommissionRate = '12.00';
   vi.mocked(getAllMerchantOrders).mockResolvedValue([row('1')]);
 });
 
@@ -50,6 +62,8 @@ describe('ExportMerchantOrdersDialog', () => {
     expect(screen.getByText('The CSV will include orders matching your current filters.')).toBeInTheDocument();
     expect(dialogText()).toContain('Export Scope');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(useRevenueSummary).toHaveBeenCalledWith({ period: 'this_month' });
+    expect(dialogText()).not.toContain('commission rate unavailable');
   });
 
   it('states the unfiltered scope as Status: All and Date Range: All dates', () => {
@@ -92,7 +106,10 @@ describe('ExportMerchantOrdersDialog', () => {
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(getAllMerchantOrders).toHaveBeenCalledWith(DEFAULT_FILTERS);
-    expect(exportMerchantOrdersCsv).toHaveBeenCalledWith([row('1')], 'merchant-orders-scope.csv');
+    expect(exportMerchantOrdersCsv).toHaveBeenCalledWith([row('1')], {
+      filename: 'merchant-orders-scope.csv',
+      commissionRate: '12.00',
+    });
     expect(buildMerchantOrdersExportFilename).toHaveBeenCalledWith(DEFAULT_FILTERS);
   });
 
@@ -138,5 +155,20 @@ describe('ExportMerchantOrdersDialog', () => {
 
     resolveExport([row('1')]);
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Exporting...' })).not.toBeInTheDocument());
+  });
+
+  it('warns that the commission columns are skipped while the rate is unavailable', () => {
+    mockCommissionRate = undefined;
+    renderDialog();
+
+    expect(dialogText()).toContain('Commission and You receive columns are not included — commission rate unavailable.');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('treats an empty rate from the summary as unavailable', () => {
+    mockCommissionRate = '';
+    renderDialog();
+
+    expect(dialogText()).toContain('commission rate unavailable');
   });
 });

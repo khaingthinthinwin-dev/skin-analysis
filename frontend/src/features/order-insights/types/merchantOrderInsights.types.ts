@@ -48,14 +48,29 @@ export interface RevenueSummaryEnvelopeDto {
 
 export type TranslateFn = (key: string, defaultValue?: string) => string;
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
+/**
+ * Rounds a Money/DECIMAL value to the nearest whole Ks — the senior-confirmed
+ * rule: 12000.00 -> 12000, 12000.40 -> 12000, 12000.60 -> 12001 (Math.round).
+ * Falls back to 0 for null/undefined/NaN. The single home of the rounding rule:
+ * both the on-screen formatter (formatCurrencyAmount) and the merchant order
+ * CSV export (exportMerchantOrdersCsv) round through this helper, so a figure
+ * can never be shown one way in the UI and exported another.
+ */
+export function roundToWholeKs(value: string | number | null | undefined): number {
+  if (value == null) return 0;
+  const amount = Number(value);
+  if (Number.isNaN(amount)) return 0;
+  return Math.round(amount);
+}
 
-/** Formats a Money/DECIMAL string value as a USD amount (e.g. "$1,000.00"). */
-export function formatCurrencyAmount(value: string): string {
-  return currencyFormatter.format(Number(value));
+/**
+ * Formats a Money/DECIMAL value as MMK in Ks via roundToWholeKs —
+ * senior-confirmed rule: 12000.00 -> "12,000 Ks", 12000.40 -> "12,000 Ks",
+ * 12000.60 -> "12,001 Ks". Same rounding as the backend export's
+ * fmtExportCurrency. Falls back to "0 Ks" for null/undefined/NaN.
+ */
+export function formatCurrencyAmount(value: string | number | null | undefined): string {
+  return `${roundToWholeKs(value).toLocaleString('en-US')} Ks`;
 }
 
 /** Extracts the HTTP status code from an axios-style error, if present. */

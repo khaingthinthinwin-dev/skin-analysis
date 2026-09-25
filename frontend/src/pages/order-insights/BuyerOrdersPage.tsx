@@ -20,6 +20,7 @@ import { EmptyOrderState } from '@/features/order-insights/components/EmptyOrder
 import { useOrderListFilters } from '@/features/order-insights/hooks/useOrderListFilters';
 import { useOrderQueryParams } from '@/features/order-insights/hooks/useOrderQueryParams';
 import { orderService } from '@/features/order-insights/services/orderService';
+import { formatCurrencyAmount } from '@/features/order-insights/types/merchantOrderInsights.types';
 import { toast } from 'sonner';
 import type { OrderListFilterFormData } from '@/features/order-insights/schemas/orderFilters.schema';
 import type { OrderListRowDto } from '@/features/order-insights/types/orderInsights.types';
@@ -58,11 +59,6 @@ const FIXED_KPIS: Partial<Record<'all' | 'placed' | 'delivered', BuyerKpiSet>> =
   },
 };
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
-
 function formatStatusLabel(status: OrderListFilterFormData['status']): string {
   if (status === 'all') return 'All';
 
@@ -100,7 +96,7 @@ function BuyerOrdersPageContent() {
   };
 
   const formatKpiValue = (kpi: BuyerKpi) =>
-    kpi.isCurrency ? currencyFormatter.format(kpi.value) : kpi.value;
+    kpi.isCurrency ? formatCurrencyAmount(kpi.value) : kpi.value;
 
   const formatFilterDate = (date: string | undefined) =>
     date ? date.slice(0, 10).replaceAll('-', '/') : 'All dates';
