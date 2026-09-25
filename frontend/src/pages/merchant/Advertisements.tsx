@@ -542,7 +542,29 @@ export default function Advertisements() {
                 onPay={(target) => setPayTarget(target)}
                 onDelete={(target) => setDeleteTarget(target)}
                 onView={(target) => setViewTarget(target)}
-                onToggle={(target, isActive) => toggle.mutate({ id: target.id, isActive })}
+                onToggle={(target) => {
+                  const next = !target.isActive
+                  toggle.mutate(
+                    { id: target.id, isActive: next },
+                    {
+                      onSuccess: () =>
+                        toast.success(
+                          next ? 'Advertisement activated' : 'Advertisement deactivated',
+                        ),
+                      onError: (error) => {
+                        const axiosError = error as {
+                          response?: { data?: { message?: string } }
+                        }
+                        toast.error(
+                          axiosError.response?.data?.message ||
+                            (error instanceof Error
+                              ? error.message
+                              : 'Unable to update advertisement status'),
+                        )
+                      },
+                    },
+                  )
+                }}
               />
             ))}
           </div>
@@ -655,9 +677,13 @@ export default function Advertisements() {
             ? deleteTarget.title
               ? `Are you sure you want to delete "${deleteTarget.title}"? It has not been paid and will be permanently deleted from the system.`
               : 'Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.'
-            : deleteTarget?.title
-              ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
-              : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
+            : deleteTarget && displayState(deleteTarget) === 'expired'
+              ? deleteTarget.title
+                ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement has expired and will be permanently deleted from the system.`
+                : 'Are you sure you want to delete this advertisement? It has expired and will be permanently deleted from the system.'
+              : deleteTarget?.title
+                ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
+                : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
         }
         isLoading={remove.isPending}
       />
@@ -713,7 +739,7 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) 
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
-  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded'
+  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'expired'
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const isScheduled = state === 'scheduled'
   const packageInfo = ad.package
@@ -825,45 +851,66 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) 
           </div>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-          <div>
-            {canToggle && !isScheduled ? (
-              <div className="flex items-center gap-2">
-                <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
-                <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
-              </div>
-            ) : isScheduled || state === 'expired' || state === 'pending_approval' ? (
-              <span className="text-sm text-muted-foreground">Inactive</span>
-            ) : (
-              <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
-            )}
+        {state === 'draft' ? (
+          <div className="mt-auto space-y-2 border-t pt-3">
+            <span className="block text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
+            <div className="flex flex-wrap justify-end gap-2">
+              {canEdit && !isRejected && (
+                <Button size="sm" variant="outline" className="w-9 px-0" aria-label="Edit advertisement" title="Edit" onClick={() => onEdit(ad)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {canDelete && (
+                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label="Delete advertisement" title="Delete" onClick={() => onDelete(ad)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="w-9 px-0" aria-label="View advertisement" title="View" onClick={() => onView(ad)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => onView(ad)}>
-              <Eye className="mr-1.5 h-4 w-4" /> View
-            </Button>
-            {state === 'content_uploaded' && (
-              <Button size="sm" onClick={() => onPay(ad)}>
-                <CreditCard className="mr-1.5 h-4 w-4" /> Pay Fee
-              </Button>
-            )}
-            {isRejected && (
-              <Button size="sm" onClick={() => onEdit(ad)}>
-                <Pencil className="mr-1.5 h-4 w-4" /> Edit &amp; Resubmit
-              </Button>
-            )}
-            {canEdit && !isRejected && (
-              <Button size="sm" variant="outline" onClick={() => onEdit(ad)}>
-                <Pencil className="mr-1.5 h-4 w-4" /> Edit
-              </Button>
-            )}
-            {canDelete && (
-              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => onDelete(ad)}>
-                <Trash2 className="mr-1.5 h-4 w-4" /> Delete
-              </Button>
-            )}
+        ) : (
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+            <div>
+              {canToggle && !isScheduled ? (
+                <div className="flex items-center gap-2">
+                  <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
+                  <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
+                </div>
+              ) : isScheduled || state === 'expired' || state === 'pending_approval' ? (
+                <span className="text-sm text-muted-foreground">Inactive</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {state === 'content_uploaded' && (
+                <Button size="sm" className="w-9 px-0" aria-label="Pay fee" title="Pay Fee" onClick={() => onPay(ad)}>
+                  <CreditCard className="h-4 w-4" />
+                </Button>
+              )}
+              {isRejected && (
+                <Button size="sm" className="w-9 px-0" aria-label="Edit and resubmit" title="Edit & Resubmit" onClick={() => onEdit(ad)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {canEdit && !isRejected && (
+                <Button size="sm" variant="outline" className="w-9 px-0" aria-label="Edit advertisement" title="Edit" onClick={() => onEdit(ad)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {canDelete && (
+                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label="Delete advertisement" title="Delete" onClick={() => onDelete(ad)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="w-9 px-0" aria-label="View advertisement" title="View" onClick={() => onView(ad)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )
