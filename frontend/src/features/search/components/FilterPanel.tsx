@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SlidersHorizontal, Star } from 'lucide-react'
+import { ChevronUp, SlidersHorizontal, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
@@ -76,7 +76,9 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
     return (
       <div className="space-y-5">
         <div>
-          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Category</h4>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Category
+          </h4>
           <CategorySelect
             categories={categories}
             selectedCategoryId={params.categoryId}
@@ -86,13 +88,18 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
         </div>
 
         <div>
-          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Price Range</h4>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Price Range
+          </h4>
           <div className="flex items-center gap-2">
             <Input
               type="number"
               placeholder="Min"
               value={priceMin}
-              onChange={(e) => { setFocusedPriceField('min'); setPriceMinDraft(e.target.value) }}
+              onChange={(e) => {
+                setFocusedPriceField('min')
+                setPriceMinDraft(e.target.value)
+              }}
               onBlur={commitPrice}
               className="h-10 flex-1 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
               min={0}
@@ -102,7 +109,10 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
               type="number"
               placeholder="Max"
               value={priceMax}
-              onChange={(e) => { setFocusedPriceField('max'); setPriceMaxDraft(e.target.value) }}
+              onChange={(e) => {
+                setFocusedPriceField('max')
+                setPriceMaxDraft(e.target.value)
+              }}
               onBlur={commitPrice}
               className="h-10 flex-1 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
               min={0}
@@ -111,12 +121,23 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
         </div>
 
         <div>
-          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Skin Type</h4>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Skin Type
+          </h4>
           <div className="grid grid-cols-2 gap-2">
             {SKIN_TYPES.map((st) => {
               const checked = params.skinTypes.includes(st.value)
               return (
-                <button key={st.value} type="button" onClick={() => handleSkinTypeToggle(st.value)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium ${checked ? 'border-violet-200 bg-violet-50 text-slate-800 dark:border-violet-400/40 dark:bg-violet-400/15 dark:text-white' : 'border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200'}`}>
+                <button
+                  key={st.value}
+                  type="button"
+                  onClick={() => handleSkinTypeToggle(st.value)}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium ${
+                    checked
+                      ? 'border-violet-200 bg-violet-50 text-slate-800 dark:border-violet-400/40 dark:bg-violet-400/15 dark:text-white'
+                      : 'border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200'
+                  }`}
+                >
                   <span className="text-base">{st.icon}</span>
                   <span>{st.label}</span>
                 </button>
@@ -126,10 +147,21 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
         </div>
 
         <div>
-          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Rating</h4>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Rating
+          </h4>
           <div className="grid grid-cols-2 gap-2">
             {RATING_OPTIONS.map((rating) => (
-              <button key={rating.value} type="button" onClick={() => handleRatingChange(rating.value)} className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm text-slate-700 dark:text-slate-200 ${params.rating === rating.value ? 'border-violet-200 bg-violet-50 dark:border-violet-400/40 dark:bg-violet-400/15' : 'border-slate-200 bg-white dark:border-white/10 dark:bg-white/5'}`}>
+              <button
+                key={rating.value}
+                type="button"
+                onClick={() => handleRatingChange(rating.value)}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm text-slate-700 dark:text-slate-200 ${
+                  params.rating === rating.value
+                    ? 'border-violet-200 bg-violet-50 dark:border-violet-400/40 dark:bg-violet-400/15'
+                    : 'border-slate-200 bg-white dark:border-white/10 dark:bg-white/5'
+                }`}
+              >
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                 {rating.label}
               </button>
@@ -143,13 +175,15 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters
+        <SlidersHorizontal className="h-4 w-4" />
+        Filters
       </div>
 
       <div className="space-y-4">
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Category</h4>
+          <h4 className="mb-2 border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
+            Category
+          </h4>
           <CategorySelect
             categories={categories}
             selectedCategoryId={params.categoryId}
@@ -159,7 +193,9 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
         <Separator />
 
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Skin Type</h4>
+          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
+            Skin Type <ChevronUp className="h-3 w-3" />
+          </h4>
           <div className="space-y-1.5">
             {SKIN_TYPES.map((st) => (
               <div key={st.value} className="flex items-center gap-2">
@@ -176,42 +212,54 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
         <Separator />
 
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Price Range</h4>
+          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
+            Price Range <ChevronUp className="h-3 w-3" />
+          </h4>
           <div className="flex items-center gap-2">
             <Input
-                type="number"
-                placeholder="Min"
-                value={priceMin}
-                onChange={(e) => {
-                  setFocusedPriceField('min')
-                  setPriceMinDraft(e.target.value)
-                }}
-                onBlur={commitPrice}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-                className="h-8 text-xs"
-                min={0}
-              />
+              type="number"
+              placeholder="Min"
+              value={priceMin}
+              onChange={(e) => {
+                setFocusedPriceField('min')
+                setPriceMinDraft(e.target.value)
+              }}
+              onBlur={commitPrice}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                }
+              }}
+              className="h-8 text-xs"
+              min={0}
+            />
             <span className="text-slate-400">-</span>
             <Input
-                type="number"
-                placeholder="Max"
-                value={priceMax}
-                onChange={(e) => {
-                  setFocusedPriceField('max')
-                  setPriceMaxDraft(e.target.value)
-                }}
-                onBlur={commitPrice}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-                className="h-8 text-xs"
-                min={0}
-              />
+              type="number"
+              placeholder="Max"
+              value={priceMax}
+              onChange={(e) => {
+                setFocusedPriceField('max')
+                setPriceMaxDraft(e.target.value)
+              }}
+              onBlur={commitPrice}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                }
+              }}
+              className="h-8 text-xs"
+              min={0}
+            />
           </div>
         </div>
 
         <Separator />
 
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Rating</h4>
+          <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
+            Rating <ChevronUp className="h-3 w-3" />
+          </h4>
           <div className="space-y-1.5">
             {RATING_OPTIONS.map((r) => (
               <div key={r.value} className="flex items-center gap-2">
@@ -228,13 +276,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
         {hasActiveFilters && onReset && (
           <>
             <Separator />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={handleReset}
-            >
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleReset}>
               Clear All
             </Button>
           </>
