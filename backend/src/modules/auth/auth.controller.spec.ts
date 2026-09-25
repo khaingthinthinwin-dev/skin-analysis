@@ -13,6 +13,7 @@ const mockAuthService = {
   resetPassword: jest.fn(),
   createAdmin: jest.fn(),
   changePassword: jest.fn(),
+  resubmitLicense: jest.fn(),
 };
 
 describe('AuthController', () => {
@@ -99,6 +100,28 @@ describe('AuthController', () => {
 
       expect(result.user.id).toBe('1');
     });
+  });
+
+  it('resubmits a merchant license', async () => {
+    mockAuthService.resubmitLicense.mockResolvedValue({
+      licenseStatus: 'pending',
+    });
+    const file = {
+      buffer: Buffer.from('test'),
+      originalname: 'license.pdf',
+      mimetype: 'application/pdf',
+    } as Express.Multer.File;
+
+    const result = await controller.resubmitLicense(
+      { id: 'merchant-1', email: 'merchant@test.com', roleCode: 'merchant' },
+      file,
+    );
+
+    expect(result.licenseStatus).toBe('pending');
+    expect(mockAuthService.resubmitLicense).toHaveBeenCalledWith(
+      'merchant-1',
+      file,
+    );
   });
 
   describe('login', () => {

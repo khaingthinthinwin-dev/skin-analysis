@@ -134,6 +134,15 @@ describe('ProductForm', () => {
     expect(screen.getByText('Pricing & Inventory')).toBeInTheDocument()
   })
 
+  it('labels compare price as required with asterisk', () => {
+    render(
+      <MemoryRouter>
+        <ProductForm mode="create" />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Compare At Price *')).toBeInTheDocument()
+  })
+
   it('renders SKU field as disabled', () => {
     render(
       <MemoryRouter>

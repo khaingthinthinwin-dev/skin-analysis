@@ -4,8 +4,8 @@ export interface Product {
   slug: string
   shortDescription: string
   description: string
-  price: number
-  compareAtPrice: number | null
+  price: number | string
+  compareAtPrice: number | string | null
   sku: string | null
   stockQuantity: number
   lowStockThreshold: number
@@ -43,7 +43,7 @@ export interface CreateProductData {
   categoryId: string
   sku?: string
   price?: number | null
-  compareAtPrice?: number
+  compareAtPrice?: number | null
   stockQuantity: number
   lowStockThreshold?: number
   skinTypes?: string[]

@@ -239,7 +239,12 @@ export class ProductsService {
     const baseSlug = generateSlug(dto.name);
     const slug = await this.ensureSlugUnique(baseSlug, merchantId);
 
-    const price = dto.price ?? dto.compareAtPrice;
+    const price =
+      dto.price !== undefined && dto.price !== null
+        ? dto.price
+        : dto.compareAtPrice !== undefined && dto.compareAtPrice !== null
+          ? dto.compareAtPrice
+          : undefined;
     if (price === undefined) {
       throw new BadRequestException('Price or compare at price is required');
     }
@@ -253,7 +258,9 @@ export class ProductsService {
         shortDescription: dto.shortDescription,
         price,
         compareAtPrice:
-          dto.price !== undefined ? dto.compareAtPrice : undefined,
+          dto.price !== undefined && dto.price !== null
+            ? (dto.compareAtPrice ?? null)
+            : undefined,
         sku,
         stockQuantity: dto.stockQuantity,
         lowStockThreshold: dto.lowStockThreshold,
@@ -319,6 +326,7 @@ export class ProductsService {
       dto.price !== null &&
       dto.compareAtPrice !== undefined &&
       dto.compareAtPrice !== null &&
+      dto.compareAtPrice > 0 &&
       dto.compareAtPrice <= effectivePrice
     ) {
       throw new BadRequestException(

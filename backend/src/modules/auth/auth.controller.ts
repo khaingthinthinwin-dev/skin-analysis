@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Patch,
   Body,
   Get,
   UseGuards,
@@ -105,6 +106,54 @@ export class AuthController {
     }
 
     return this.authService.register(registerDto, license);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @Patch('resubmit-license')
+  @UseInterceptors(
+    FileInterceptor('license', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (file && file.mimetype !== 'application/pdf') {
+          return cb(
+            new BadRequestException('Only PDF files are accepted'),
+            false,
+          );
+        }
+        if (file && file.originalname.toLowerCase() !== 'license.pdf') {
+          return cb(
+            new BadRequestException('File must be named license.pdf'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Resubmit a rejected merchant business license' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        license: {
+          type: 'string',
+          format: 'binary',
+          description: 'Updated business license PDF',
+        },
+      },
+      required: ['license'],
+    },
+  })
+  async resubmitLicense(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() license?: Express.Multer.File,
+  ) {
+    if (!license) {
+      throw new BadRequestException('Business license is required');
+    }
+    return this.authService.resubmitLicense(user.id, license);
   }
 
   @Public()

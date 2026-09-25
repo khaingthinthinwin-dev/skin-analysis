@@ -16,6 +16,28 @@ import { InlineStockEditor } from './InlineStockEditor'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/product.types'
 
+function toPriceNumber(value: number | string | null | undefined): number | null {
+  if (value == null || value === '') return null
+  const num = Number(value)
+  return Number.isNaN(num) ? null : num
+}
+
+function getPricing(product: Product) {
+  const rawPrice = toPriceNumber(product.price)
+  const rawCompareValue = toPriceNumber(product.compareAtPrice)
+  // Backend treats 0 compareAtPrice as "no compare" (validator skips 0).
+  const rawCompare = rawCompareValue === 0 ? null : rawCompareValue
+  const hasDiscount =
+    rawPrice != null && rawCompare != null && rawCompare > rawPrice
+  // UI-only mapping (no backend change): backend stores the selling price in
+  // `price` and nulls `compareAtPrice` when there is no discount. To match the
+  // "Compare required, Price (discount) optional" form model, display the
+  // regular price in Compare (fallback to price) and show Price only on sale.
+  const compareAtPrice = rawCompare ?? rawPrice
+  const price = hasDiscount ? rawPrice : null
+  return { price, compareAtPrice, hasDiscount }
+}
+
 function getImageUrl(url: string): string {
   if (!url) return ''
   if (url.startsWith('http')) return url
@@ -122,8 +144,8 @@ export function ProductTable({
               <TableHead>Image</TableHead>
               <TableHead>Product Name</TableHead>
               <TableHead>SKU</TableHead>
-              <TableHead>Compare At Price</TableHead>
               <TableHead>Price (Discount Price)</TableHead>
+              <TableHead>Compare At Price</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>isFeatured</TableHead>
@@ -167,25 +189,43 @@ export function ProductTable({
                     {product.sku || '—'}
                   </TableCell>
                   <TableCell>
-                    {product.compareAtPrice != null ? (
-                      <span className="font-semibold line-through">
-                        {formatPrice(product.compareAtPrice)}
-                      </span>
-                    ) : (
-                      <span className="font-semibold">{formatPrice(product.price)}</span>
-                    )}
+                    {(() => {
+                      const { price, compareAtPrice, hasDiscount } = getPricing(product)
+                      return (
+                        <div className="space-y-0.5">
+                          <div className="font-semibold">
+                            {price != null ? (
+                              formatPrice(price)
+                            ) : (
+                              <span className="text-muted-foreground font-normal">—</span>
+                            )}
+                          </div>
+                          {hasDiscount && (
+                            <div className="text-xs text-emerald-600 dark:text-emerald-400">
+                              Saved {formatPrice(compareAtPrice! - price!)}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </TableCell>
                   <TableCell>
-                    {product.compareAtPrice != null ? (
-                      <div className="space-y-0.5">
-                        <div className="font-semibold">{formatPrice(product.price)}</div>
-                        <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                          Saved {formatPrice(product.compareAtPrice - product.price)}
-                        </div>
-                      </div>
-                    ) : (
-                      '—'
-                    )}
+                    {(() => {
+                      const { compareAtPrice, hasDiscount } = getPricing(product)
+                      return compareAtPrice != null ? (
+                        <span
+                          className={
+                            hasDiscount
+                              ? 'font-semibold line-through'
+                              : 'font-semibold'
+                          }
+                        >
+                          {formatPrice(compareAtPrice)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )
+                    })()}
                   </TableCell>
                   <TableCell>
                     {showActions ? (

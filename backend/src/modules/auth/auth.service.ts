@@ -63,7 +63,7 @@ export class AuthService {
       const licenseUrl = license
         ? this.saveLicenseFile(license, email)
         : 'pending_upload';
-      await this.prisma.merchant.create({
+      const merchant = await this.prisma.merchant.create({
         data: {
           userId: user.id,
           shopName: name,
@@ -71,6 +71,7 @@ export class AuthService {
           licenseStatus: 'pending',
         },
       });
+      await this.notifyAdminsOfNewMerchant(merchant.id, name, email);
     }
 
     // Generate tokens
@@ -114,6 +115,66 @@ export class AuthService {
     return {
       user: userData,
       ...tokens,
+    };
+  }
+
+  async resubmitLicense(userId: string, license: Express.Multer.File) {
+    if (
+      license.mimetype !== 'application/pdf' ||
+      license.originalname.toLowerCase() !== 'license.pdf' ||
+      license.size > 10 * 1024 * 1024
+    ) {
+      throw new BadRequestException(
+        'Business license must be a PDF named license.pdf and no larger than 10MB',
+      );
+    }
+
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { userId },
+      include: {
+        user: { select: { email: true, name: true } },
+      },
+    });
+    if (!merchant) {
+      throw new NotFoundException('Merchant profile not found');
+    }
+    if (merchant.licenseStatus !== 'rejected') {
+      throw new ConflictException(
+        'Only rejected merchant accounts can resubmit a license',
+      );
+    }
+
+    const licenseUrl = this.saveLicenseFile(license, merchant.user.email);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedMerchant = await tx.merchant.update({
+        where: { id: merchant.id },
+        data: {
+          businessLicenseUrl: licenseUrl,
+          licenseStatus: 'pending',
+          rejectionReason: null,
+          reviewedAt: null,
+          reviewedBy: null,
+          licenseExpiresAt: null,
+        },
+      });
+      await tx.shop.updateMany({
+        where: { userId },
+        data: { isApproved: false },
+      });
+      return updatedMerchant;
+    });
+
+    await this.notifyAdminsOfLicenseResubmission(
+      merchant.id,
+      merchant.shopName,
+      merchant.user.email,
+    );
+
+    return {
+      id: updated.id,
+      licenseStatus: updated.licenseStatus,
+      licenseUrl: updated.businessLicenseUrl,
+      updatedAt: updated.updatedAt,
     };
   }
 
@@ -508,6 +569,105 @@ export class AuthService {
 
     // Return relative URL
     return `/uploads/licenses/${filename}`;
+  }
+
+  /**
+   * Creates an in-app notification for every admin when a new merchant
+   * registers. Failures are logged but never break registration.
+   */
+  private async notifyAdminsOfNewMerchant(
+    merchantId: string,
+    shopName: string,
+    merchantEmail: string,
+  ): Promise<void> {
+    try {
+      const admins = await this.prisma.user.findMany({
+        where: { roleCode: { in: ['admin', 'super_admin'] } },
+        select: { id: true },
+      });
+      if (admins.length === 0) {
+        return;
+      }
+
+      const adminIds = admins.map((admin) => admin.id);
+      const existingNotifications = await this.prisma.notification.findMany({
+        where: {
+          type: {
+            in: [
+              'MERCHANT_REGISTERED',
+              'NEW_MERCHANT_REGISTRATION',
+              'MERCHANT_REGISTRATION',
+            ],
+          },
+          entityId: merchantId,
+          userId: { in: adminIds },
+        },
+        select: { userId: true },
+      });
+      const notifiedAdminIds = new Set(
+        existingNotifications.map((notification) => notification.userId),
+      );
+      const notifications = admins
+        .filter((admin) => !notifiedAdminIds.has(admin.id))
+        .map((admin) => ({
+          userId: admin.id,
+          type: 'MERCHANT_REGISTERED',
+          title: 'New merchant registration',
+          message: `"${shopName}" (${merchantEmail}) registered and is pending license approval.`,
+          entityType: 'merchant',
+          entityId: merchantId,
+        }));
+
+      if (notifications.length === 0) {
+        return;
+      }
+
+      await this.prisma.notification.createMany({
+        data: notifications,
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to notify admins of new merchant "${shopName}": ${(error as Error).message}`,
+      );
+    }
+  }
+
+  private async notifyAdminsOfLicenseResubmission(
+    merchantId: string,
+    shopName: string,
+    merchantEmail: string,
+  ): Promise<void> {
+    try {
+      const admins = await this.prisma.user.findMany({
+        where: { roleCode: { in: ['admin', 'super_admin'] } },
+        select: { id: true },
+      });
+      if (admins.length === 0) {
+        return;
+      }
+
+      const notifications = admins.map((admin) => ({
+        userId: admin.id,
+        type: 'MERCHANT_LICENSE_RESUBMITTED',
+        title: 'Merchant license resubmitted',
+        message: `"${shopName}" (${merchantEmail}) resubmitted a business license and is pending approval.`,
+        entityType: 'merchant',
+        entityId: merchantId,
+      }));
+
+      if (notifications.length === 0) {
+        return;
+      }
+
+      await this.prisma.notification.createMany({
+        data: notifications,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to notify admins of merchant license resubmission "${shopName}": ${(error as Error).message}`,
+      );
+    }
   }
 
   private async generateTokens(

@@ -48,13 +48,18 @@ export class UpdateProductDto {
   )
   price?: number | null;
 
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === '' || value === null || value === undefined) {
+      return null;
+    }
+    const n = Number(value);
+    return Number.isNaN(n) ? null : n;
+  })
   @IsOptional()
   @IsNumber({}, { message: 'Compare at price must be a number' })
   @Min(0, { message: 'Compare at price must be 0 or greater' })
   @Validate(ComparePriceGreaterThanPriceValidator)
-  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
-  @Type(() => Number)
-  compareAtPrice?: number;
+  compareAtPrice?: number | null;
 
   @IsOptional()
   @IsInt({ message: 'Stock quantity must be a whole number' })

@@ -51,7 +51,16 @@ const mockConfigService = {
 };
 
 const mockPrisma = {
-  merchant: { create: jest.fn(), findFirst: jest.fn() },
+  merchant: {
+    create: jest.fn(),
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+  shop: { updateMany: jest.fn() },
+  user: { findMany: jest.fn() },
+  notification: { createMany: jest.fn(), findMany: jest.fn() },
+  $transaction: jest.fn(),
   refreshToken: {
     create: jest.fn(),
     findFirst: jest.fn(),
@@ -94,6 +103,11 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+    mockPrisma.$transaction.mockImplementation(
+      async (callback: (tx: typeof mockPrisma) => Promise<unknown>) =>
+        callback(mockPrisma),
+    );
+    mockPrisma.notification.findMany.mockResolvedValue([]);
   });
 
   it('should be defined', () => {
@@ -167,6 +181,154 @@ describe('AuthService', () => {
       });
     });
 
+    it('should notify all admins when a merchant registers', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 'user-1',
+        email: 'merchant@test.com',
+        name: 'Merchant',
+        roleCode: 'merchant',
+        avatarUrl: null,
+      });
+      mockPrisma.merchant.create.mockResolvedValue({ id: 'merchant-1' });
+      mockPrisma.user.findMany.mockResolvedValue([
+        { id: 'admin-1' },
+        { id: 'admin-2' },
+      ]);
+      mockPrisma.notification.createMany.mockResolvedValue({ count: 2 });
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      await service.register({
+        email: 'merchant@test.com',
+        name: 'Merchant',
+        password: 'Password1!',
+        role: 'merchant',
+      });
+
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+        where: { roleCode: { in: ['admin', 'super_admin'] } },
+        select: { id: true },
+      });
+      expect(mockPrisma.notification.findMany).toHaveBeenCalledWith({
+        where: {
+          type: {
+            in: [
+              'MERCHANT_REGISTERED',
+              'NEW_MERCHANT_REGISTRATION',
+              'MERCHANT_REGISTRATION',
+            ],
+          },
+          entityId: 'merchant-1',
+          userId: { in: ['admin-1', 'admin-2'] },
+        },
+        select: { userId: true },
+      });
+      expect(mockPrisma.notification.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            userId: 'admin-1',
+            type: 'MERCHANT_REGISTERED',
+            entityType: 'merchant',
+            entityId: 'merchant-1',
+          }),
+          expect.objectContaining({
+            userId: 'admin-2',
+            type: 'MERCHANT_REGISTERED',
+            entityType: 'merchant',
+            entityId: 'merchant-1',
+          }),
+        ],
+        skipDuplicates: true,
+      });
+    });
+
+    it('should not recreate a registration notification for an already notified admin', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 'user-1',
+        email: 'merchant@test.com',
+        name: 'Merchant',
+        roleCode: 'merchant',
+        avatarUrl: null,
+      });
+      mockPrisma.merchant.create.mockResolvedValue({ id: 'merchant-1' });
+      mockPrisma.user.findMany.mockResolvedValue([
+        { id: 'admin-1' },
+        { id: 'admin-2' },
+      ]);
+      mockPrisma.notification.findMany.mockResolvedValue([
+        { userId: 'admin-1' },
+      ]);
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      await service.register({
+        email: 'merchant@test.com',
+        name: 'Merchant',
+        password: 'Password1!',
+        role: 'merchant',
+      });
+
+      expect(mockPrisma.notification.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            userId: 'admin-2',
+            type: 'MERCHANT_REGISTERED',
+            entityId: 'merchant-1',
+          }),
+        ],
+        skipDuplicates: true,
+      });
+    });
+
+    it('should not create notifications when a buyer registers', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 'user-1',
+        email: 'buyer@test.com',
+        name: 'Buyer',
+        roleCode: 'buyer',
+        avatarUrl: null,
+      });
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      await service.register({
+        email: 'buyer@test.com',
+        name: 'Buyer',
+        password: 'Password1!',
+      });
+
+      expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.notification.createMany).not.toHaveBeenCalled();
+    });
+
+    it('should still register the merchant if admin notification fails', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 'user-1',
+        email: 'merchant@test.com',
+        name: 'Merchant',
+        roleCode: 'merchant',
+        avatarUrl: null,
+      });
+      mockPrisma.merchant.create.mockResolvedValue({ id: 'merchant-1' });
+      mockPrisma.user.findMany.mockRejectedValue(new Error('db down'));
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockPrisma.refreshToken.create.mockResolvedValue({});
+
+      const result = await service.register({
+        email: 'merchant@test.com',
+        name: 'Merchant',
+        password: 'Password1!',
+        role: 'merchant',
+      });
+
+      expect(result.user.email).toBe('merchant@test.com');
+      expect(mockPrisma.notification.createMany).not.toHaveBeenCalled();
+    });
+
     it('should call saveLicenseFile when merchant with license', async () => {
       mockConfigService.get.mockReturnValue('./uploads/licenses');
 
@@ -198,6 +360,52 @@ describe('AuthService', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(jest.requireMock('fs').writeFileSync).toHaveBeenCalled();
+    });
+  });
+
+  it('resubmits a rejected license and notifies admins', async () => {
+    mockConfigService.get.mockReturnValue('./uploads/licenses');
+    mockPrisma.merchant.findUnique.mockResolvedValue({
+      id: 'merchant-1',
+      userId: 'user-1',
+      shopName: 'Glow Beauty',
+      licenseStatus: 'rejected',
+      user: { email: 'merchant@test.com', name: 'Merchant' },
+    });
+    mockPrisma.merchant.update.mockResolvedValue({
+      id: 'merchant-1',
+      licenseStatus: 'pending',
+      businessLicenseUrl: '/uploads/licenses/license_merchant_1.pdf',
+      updatedAt: new Date(),
+    });
+    mockPrisma.shop.updateMany.mockResolvedValue({ count: 1 });
+    mockPrisma.user.findMany.mockResolvedValue([{ id: 'admin-1' }]);
+    mockPrisma.notification.createMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.resubmitLicense('user-1', {
+      buffer: Buffer.from('pdf'),
+      originalname: 'license.pdf',
+      mimetype: 'application/pdf',
+      size: 3,
+    } as Express.Multer.File);
+
+    expect(result.licenseStatus).toBe('pending');
+    expect(mockPrisma.shop.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      data: { isApproved: false },
+    });
+    expect(mockPrisma.notification.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: 'admin-1',
+          type: 'MERCHANT_LICENSE_RESUBMITTED',
+          title: 'Merchant license resubmitted',
+          message:
+            '"Glow Beauty" (merchant@test.com) resubmitted a business license and is pending approval.',
+          entityType: 'merchant',
+          entityId: 'merchant-1',
+        },
+      ],
     });
   });
 

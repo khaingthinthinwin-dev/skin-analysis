@@ -20,6 +20,14 @@ export function useProfile() {
     },
   })
 
+  const resubmitLicenseMutation = useMutation({
+    mutationFn: (file: File) => profileService.resubmitLicense(file),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profile'] })
+      await refreshUser()
+    },
+  })
+
   const changePasswordMutation = useMutation({
     mutationFn: (data: ChangePasswordData) => profileService.changePassword(data),
   })
@@ -29,6 +37,8 @@ export function useProfile() {
     isLoading: profileQuery.isLoading,
     error: profileQuery.error,
     updateProfile: updateProfileMutation,
+    resubmitLicense: resubmitLicenseMutation,
+    isResubmitting: resubmitLicenseMutation.isPending,
     changePassword: changePasswordMutation,
   }
 }

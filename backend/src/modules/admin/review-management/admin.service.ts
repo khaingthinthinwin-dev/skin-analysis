@@ -434,7 +434,7 @@ export class AdminService {
           message:
             dto.status === MerchantStatus.APPROVED
               ? `Your shop "${merchant.shopName}" has been approved. You can now list products.`
-              : `Your shop "${merchant.shopName}" has been rejected. ${dto.reason || ''}`,
+              : `Your business license has been rejected.${dto.reason ? ` Reason: ${dto.reason}` : ''}`,
           entityType: 'merchant',
           entityId: merchantId,
         },

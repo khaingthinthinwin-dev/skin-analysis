@@ -11,22 +11,28 @@ const imageFileSchema = z
     'Only JPG, PNG, and WebP images are allowed',
   )
 
+function toNullableNumber(value: unknown): number | null | unknown {
+  if (value === '' || value === undefined || value === null) return null
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed === '') return null
+    const n = Number(trimmed)
+    return Number.isNaN(n) ? null : n
+  }
+  if (typeof value === 'number' && Number.isNaN(value)) return null
+  return value
+}
+
 const optionalNumber = (message: string) =>
   z.preprocess(
-    (value) =>
-      value === '' ||
-      value === undefined ||
-      value === null ||
-      (typeof value === 'number' && Number.isNaN(value))
-        ? null
-        : value,
+    toNullableNumber,
     z.number({ message }).min(0.01, 'Price must be greater than 0').nullable(),
   )
 
-const requiredNumber = (message: string) =>
+const requiredComparePrice = () =>
   z.preprocess(
-    (value) => (value === '' || (typeof value === 'number' && Number.isNaN(value)) ? undefined : value),
-    z.number({ message }),
+    toNullableNumber,
+    z.number({ message: 'Compare price is required' }).min(0.01, 'Compare price must be greater than 0'),
   )
 
 const productFieldsSchema = z.object({
@@ -51,10 +57,7 @@ const productFieldsSchema = z.object({
   categoryId: z.string().min(1, 'Category is required'),
   sku: z.string().max(100, 'SKU must not exceed 100 characters').optional().or(z.literal('')),
   price: optionalNumber('Price must be a number'),
-  compareAtPrice: requiredNumber('Compare at price must be a number').refine(
-    (value) => value >= 0,
-    'Compare at price must be 0 or greater',
-  ),
+  compareAtPrice: requiredComparePrice(),
   stockQuantity: z
     .number({ message: 'Stock quantity must be a number' })
     .int('Stock quantity must be a whole number')
@@ -81,18 +84,22 @@ const productFieldsSchema = z.object({
   images: z.array(imageFileSchema).max(10, 'Maximum 10 images allowed'),
 })
 
-const pricesSchema = <T extends { price?: number | null; compareAtPrice?: number }>(schema: z.ZodType<T>) =>
+const pricesSchema = <T extends { price?: number | null; compareAtPrice?: number | null }>(
+  schema: z.ZodType<T>,
+) =>
   schema.refine(
-  (data) =>
-    data.price === undefined ||
-    data.price === null ||
-    data.compareAtPrice === undefined ||
-    data.compareAtPrice > data.price,
-  {
-    message: 'Compare at price must be greater than price',
-    path: ['compareAtPrice'],
-  },
-)
+    (data) =>
+      data.price === undefined ||
+      data.price === null ||
+      data.compareAtPrice === undefined ||
+      data.compareAtPrice === null ||
+      data.compareAtPrice === 0 ||
+      data.compareAtPrice > data.price,
+    {
+      message: 'Compare price must be greater than selling price',
+      path: ['compareAtPrice'],
+    },
+  )
 
 const stockThresholdSchema = <T extends { stockQuantity?: number; lowStockThreshold?: number }>(schema: z.ZodType<T>) =>
   schema.refine(
@@ -117,7 +124,9 @@ const newImagesRequiredSchema = <T extends { images?: File[] }>(schema: z.ZodTyp
   },
 )
 
-export const createProductSchema = newImagesRequiredSchema(stockThresholdSchema(pricesSchema(productFieldsSchema)))
+export const createProductSchema = newImagesRequiredSchema(
+  stockThresholdSchema(pricesSchema(productFieldsSchema)),
+)
 
 export type CreateProductFormData = z.infer<typeof createProductSchema>
 export type ProductFormData = CreateProductFormData
@@ -135,7 +144,21 @@ const imagesRequiredSchema = <T extends { retainedImageUrls?: string[]; images?:
   },
 )
 
-export const updateProductSchema = imagesRequiredSchema(stockThresholdSchema(pricesSchema(productFieldsSchema.partial())))
+const requireCompareAtPriceSchema = <
+  T extends { compareAtPrice?: number | null },
+>(
+  schema: z.ZodType<T>,
+) =>
+  schema.refine((data) => data.compareAtPrice != null, {
+    message: 'Compare price is required',
+    path: ['compareAtPrice'],
+  })
+
+export const updateProductSchema = imagesRequiredSchema(
+  stockThresholdSchema(
+    requireCompareAtPriceSchema(pricesSchema(productFieldsSchema.partial())),
+  ),
+)
 
 export type UpdateProductFormData = z.infer<typeof updateProductSchema>
 
