@@ -56,7 +56,7 @@ test.describe('Register Page', () => {
       await registerPage.checkTerms();
       await captureScreenshot(
         page,
-        'N-01_form_filled',
+        'N-01_1_form_filled',
         'Screenshot of the Register page with valid input values entered'
       );
 
@@ -65,12 +65,12 @@ test.describe('Register Page', () => {
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
       await captureScreenshot(
         page,
-        'N-01_redirected_to_login',
+        'N-01_2_redirected_to_login',
         'Screenshot of the Login page after redirection to /login'
       );
       await captureUserDbEvidence(
         page,
-        'N-01_db_user',
+        'N-01_3_db_user',
         buyer.email,
         'DB users row after successful buyer registration'
       );
@@ -102,7 +102,7 @@ test.describe('Register Page', () => {
       const errors = page.locator('p.text-destructive');
       const errorCount = await errors.count();
       expect(errorCount).toBeGreaterThan(0);
-      await captureScreenshot(page, 'A-01_empty_form_errors');
+      await captureScreenshot(page, 'A-01_1_empty_form_errors');
     });
 
     test('should show error for invalid email format', async ({ page }) => {
@@ -145,7 +145,7 @@ test.describe('Register Page', () => {
 
       const passwordError = await registerPage.getPasswordError();
       expect(passwordError).toContain('uppercase');
-      await captureScreenshot(page, 'A-03_missing_uppercase');
+      await captureScreenshot(page, 'A-03_1_missing_uppercase');
     });
 
     test('should show error for password missing lowercase', async ({ page }) => {
@@ -160,7 +160,7 @@ test.describe('Register Page', () => {
 
       const passwordError = await registerPage.getPasswordError();
       expect(passwordError).toContain('lowercase');
-      await captureScreenshot(page, 'A-04_missing_lowercase');
+      await captureScreenshot(page, 'A-04_1_missing_lowercase');
     });
 
     test('should show error for password missing number', async ({ page }) => {
@@ -175,7 +175,7 @@ test.describe('Register Page', () => {
 
       const passwordError = await registerPage.getPasswordError();
       expect(passwordError).toContain('number');
-      await captureScreenshot(page, 'A-05_missing_number');
+      await captureScreenshot(page, 'A-05_1_missing_number');
     });
 
     test('should show error for password missing special character', async ({ page }) => {
@@ -190,7 +190,7 @@ test.describe('Register Page', () => {
 
       const passwordError = await registerPage.getPasswordError();
       expect(passwordError).toContain('special');
-      await captureScreenshot(page, 'A-06_missing_special');
+      await captureScreenshot(page, 'A-06_1_missing_special');
     });
 
     test('should show error for password mismatch', async ({ page }) => {
@@ -205,7 +205,7 @@ test.describe('Register Page', () => {
 
       const confirmError = await registerPage.getConfirmPasswordError();
       expect(confirmError).toContain('match');
-      await captureScreenshot(page, 'A-07_password_mismatch');
+      await captureScreenshot(page, 'A-07_1_password_mismatch');
     });
 
     test('should show error when terms not checked', async ({ page }) => {
@@ -246,10 +246,10 @@ test.describe('Register Page', () => {
       });
 
       await registerPage.expectErrorVisible();
-      await captureScreenshot(page, 'A-02_duplicate_email');
+      await captureScreenshot(page, 'A-02_1_duplicate_email');
       await captureUserCountDbEvidence(
         page,
-        'A-02_db_user_count',
+        'A-02_2_db_user_count',
         user.email,
         'DB users count — still 1 row after duplicate email attempt'
       );
@@ -276,7 +276,7 @@ test.describe('Register Page', () => {
       await registerPage.clickSubmit();
 
       await registerPage.expectErrorVisible();
-      await captureScreenshot(page, 'A-11_no_license');
+      await captureScreenshot(page, 'A-11_1_no_license');
     });
 
     test('should show error for merchant without shop name', async ({ page }) => {
@@ -319,7 +319,7 @@ test.describe('Register Page', () => {
       await registerPage.checkTerms();
       await registerPage.clickSubmit();
       await registerPage.expectErrorVisible();
-      await captureScreenshot(page, 'A-12_non_pdf_license');
+      await captureScreenshot(page, 'A-12_1_non_pdf_license');
     });
 
     test('should show error for license file exceeding 10MB', async ({ page }) => {
@@ -341,7 +341,7 @@ test.describe('Register Page', () => {
       await registerPage.checkTerms();
       await registerPage.clickSubmit();
       await registerPage.expectErrorVisible();
-      await captureScreenshot(page, 'A-13_oversized_license');
+      await captureScreenshot(page, 'A-13_1_oversized_license');
     });
 
     test('should show error for incorrectly named license file', async ({ page }) => {
@@ -363,7 +363,7 @@ test.describe('Register Page', () => {
       await registerPage.checkTerms();
       await registerPage.clickSubmit();
       await registerPage.expectErrorVisible();
-      await captureScreenshot(page, 'A-14_bad_license_name');
+      await captureScreenshot(page, 'A-14_1_bad_license_name');
     });
   });
 
@@ -373,7 +373,7 @@ test.describe('Register Page', () => {
       await registerPage.loginLink.click();
       await registerPage.expectRedirectTo(ROUTES.LOGIN);
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
-      await captureScreenshot(page, 'N-10_navigated_to_login');
+      await captureScreenshot(page, 'N-10_1_navigated_to_login');
     });
   });
 
@@ -411,7 +411,7 @@ test.describe('Register Page', () => {
         await registerPage.togglePasswordVisibility();
         await expect(registerPage.passwordInput).toHaveAttribute('type', 'text');
         await expect(registerPage.passwordInput).toHaveValue('TestPass123!');
-        await captureScreenshot(page, 'N-06_password_visible');
+        await captureScreenshot(page, 'N-06_1_password_visible');
       }
     });
 
@@ -430,7 +430,7 @@ test.describe('Register Page', () => {
         await registerPage.toggleConfirmPasswordVisibility();
         await expect(registerPage.confirmPasswordInput).toHaveAttribute('type', 'text');
         await expect(registerPage.confirmPasswordInput).toHaveValue('TestPass123!');
-        await captureScreenshot(page, 'N-06_confirm_password_visible');
+        await captureScreenshot(page, 'N-06_2_confirm_password_visible');
       }
     });
   });
@@ -445,13 +445,13 @@ test.describe('Register Page', () => {
       await registerPage.fillConfirmPassword('TestPass123!');
       await registerPage.selectRole('buyer');
       await registerPage.checkTerms();
-      await captureScreenshot(page, 'B-01_name_min');
+      await captureScreenshot(page, 'B-01_1_name_min');
       await registerPage.clickSubmit();
       await registerPage.expectRedirectTo(ROUTES.LOGIN);
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
       await captureUserDbEvidence(
         page,
-        'B-01_db_user',
+        'B-01_2_db_user',
         email,
         'DB users row — name length 2 accepted'
       );
@@ -467,13 +467,13 @@ test.describe('Register Page', () => {
       await registerPage.fillConfirmPassword('TestPass123!');
       await registerPage.selectRole('buyer');
       await registerPage.checkTerms();
-      await captureScreenshot(page, 'B-02_name_max');
+      await captureScreenshot(page, 'B-02_1_name_max');
       await registerPage.clickSubmit();
       await registerPage.expectRedirectTo(ROUTES.LOGIN);
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
       await captureUserDbEvidence(
         page,
-        'B-02_db_user',
+        'B-02_2_db_user',
         email,
         'DB users row — name length 50 accepted'
       );
@@ -490,13 +490,13 @@ test.describe('Register Page', () => {
       await registerPage.fillConfirmPassword('Abcdef1!');
       await registerPage.selectRole('buyer');
       await registerPage.checkTerms();
-      await captureScreenshot(page, 'B-03_pw_min');
+      await captureScreenshot(page, 'B-03_1_pw_min');
       await registerPage.clickSubmit();
       await registerPage.expectRedirectTo(ROUTES.LOGIN);
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
       await captureUserDbEvidence(
         page,
-        'B-03_db_user',
+        'B-03_2_db_user',
         user.email,
         'DB users row — 8-char password accepted'
       );
@@ -512,13 +512,13 @@ test.describe('Register Page', () => {
       await registerPage.fillConfirmPassword(longPw);
       await registerPage.selectRole('buyer');
       await registerPage.checkTerms();
-      await captureScreenshot(page, 'B-04_pw_max');
+      await captureScreenshot(page, 'B-04_1_pw_max');
       await registerPage.clickSubmit();
       await registerPage.expectRedirectTo(ROUTES.LOGIN);
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
       await captureUserDbEvidence(
         page,
-        'B-04_db_user',
+        'B-04_2_db_user',
         user.email,
         'DB users row — 128-char password accepted'
       );
@@ -541,13 +541,13 @@ test.describe('Register Page', () => {
         buffer: pdfBuffer,
       });
       await registerPage.checkTerms();
-      await captureScreenshot(page, 'B-05_license_case');
+      await captureScreenshot(page, 'B-05_1_license_case');
       await registerPage.clickSubmit();
       await registerPage.expectRedirectTo(ROUTES.LOGIN);
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
       await captureUserWithMerchantDbEvidence(
         page,
-        'B-05_db_merchant',
+        'B-05_2_db_merchant',
         user.email,
         'DB users + merchants — License.PDF accepted (license_status)'
       );

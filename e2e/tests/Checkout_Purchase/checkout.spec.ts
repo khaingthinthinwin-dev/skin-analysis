@@ -20,13 +20,13 @@ test.describe('Buyer Checkout & Purchase', () => {
     test('should place an order successfully', async ({ page }) => {
       await checkoutPage.goto();
       // TODO: Fill address, select payment, place order
-      await checkoutPage.capture('checkout_place_order');
+      await checkoutPage.capture('N-01_1_checkout_place_order');
     });
 
     test('should display order confirmation after purchase', async ({ page }) => {
       await checkoutPage.goto();
       // TODO: Complete checkout, verify confirmation
-      await checkoutPage.capture('checkout_confirmation');
+      await checkoutPage.capture('N-02_1_checkout_confirmation');
     });
   });
 
@@ -34,13 +34,13 @@ test.describe('Buyer Checkout & Purchase', () => {
     test('should apply a valid promo code', async ({ page }) => {
       await checkoutPage.goto();
       // TODO: Enter promo code, apply, verify discount
-      await checkoutPage.capture('checkout_promo_apply');
+      await checkoutPage.capture('N-03_1_checkout_promo_apply');
     });
 
     test('should show error for invalid promo code', async ({ page }) => {
       await checkoutPage.goto();
       // TODO: Enter invalid promo code, verify error
-      await checkoutPage.capture('checkout_promo_invalid');
+      await checkoutPage.capture('N-04_1_checkout_promo_invalid');
     });
   });
 
@@ -48,7 +48,7 @@ test.describe('Buyer Checkout & Purchase', () => {
     test('should calculate correct total (subtotal - discount)', async ({ page }) => {
       await checkoutPage.goto();
       // TODO: Verify total calculation
-      await checkoutPage.capture('checkout_total');
+      await checkoutPage.capture('N-05_1_checkout_total');
     });
   });
 });

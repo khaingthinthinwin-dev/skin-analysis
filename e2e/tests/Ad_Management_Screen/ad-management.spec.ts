@@ -22,13 +22,13 @@ test.describe('Admin Ad Management', () => {
     test('should approve a pending ad', async ({ page }) => {
       await adPage.goto();
       // TODO: Select a pending ad and approve
-      await adPage.capture('ad_approve_action');
+      await adPage.capture('N-01_1_ad_approve_action');
     });
 
     test('should reject a pending ad', async ({ page }) => {
       await adPage.goto();
       // TODO: Select a pending ad and reject
-      await adPage.capture('ad_reject_action');
+      await adPage.capture('N-02_1_ad_reject_action');
     });
   });
 
@@ -36,7 +36,7 @@ test.describe('Admin Ad Management', () => {
     test('should export ad report as CSV', async ({ page }) => {
       await adPage.goto();
       // TODO: Click export and verify download
-      await adPage.capture('ad_export_action');
+      await adPage.capture('N-03_1_ad_export_action');
     });
   });
 });

@@ -20,10 +20,10 @@
 
 - [x] **N-01**: Register as buyer successfully
   - **Evidence**:
-    - Screenshot of the Register page with valid input values entered → `N-01_form_filled.png`
-    - Screenshot of the Login page after redirection to /login → `N-01_redirected_to_login.png`
-    - DB users row after successful buyer registration → `N-01_db_user.png`
-    - DB users row after successful buyer registration → `N-01_db_user.json`
+    - Screenshot of the Register page with valid input values entered → `N-01_1_form_filled.png`
+    - Screenshot of the Login page after redirection to /login → `N-01_2_redirected_to_login.png`
+    - DB users row after successful buyer registration → `N-01_3_db_user.png`
+    - DB users row after successful buyer registration → `N-01_3_db_user.json`
     - Test: register.spec.ts › "should register as buyer successfully" — passed
   - **Precondition**: User is not authenticated
   - **Steps**:
@@ -37,11 +37,11 @@
 
 - [x] **N-02**: Register as merchant with license upload
   - **Evidence**:
-    - `N-02_role_selected_merchant.png`
-    - `N-02_license_uploaded.png`
-    - `N-02_redirected_to_login.png`
-    - DB users + merchants after merchant registration with license → `N-02_db_merchant.png`
-    - DB users + merchants after merchant registration with license → `N-02_db_merchant.json`
+    - `N-02_1_role_selected_merchant.png`
+    - `N-02_2_license_uploaded.png`
+    - `N-02_3_redirected_to_login.png`
+    - DB users + merchants after merchant registration with license → `N-02_4_db_merchant.png`
+    - DB users + merchants after merchant registration with license → `N-02_4_db_merchant.json`
     - Test: auth.spec.ts › "should register as merchant with license file upload" — passed
   - **Precondition**: User is not authenticated, has valid license.pdf ready
   - **Steps**:
@@ -71,8 +71,8 @@
 
 - [x] **N-04**: Logout successfully
   - **Evidence**:
-    - Screenshot of buyer dashboard before logout → `N-04_dashboard_before_logout.png`
-    - Screenshot of home page after logout → `N-04_after_logout_redirect.png`
+    - Screenshot of buyer dashboard before logout → `N-04_1_dashboard_before_logout.png`
+    - Screenshot of home page after logout → `N-04_2_after_logout_redirect.png`
     - Test: auth.spec.ts › "should log out buyer and clear session" — passed
   - **Precondition**: User is authenticated
   - **Steps**:
@@ -84,9 +84,9 @@
 
 - [x] **N-05**: Password visibility toggle works on login page
   - **Evidence**:
-    - `N-05_password_masked.png`
-    - `N-05_password_revealed.png`
-    - `N-05_password_masked_again.png`
+    - `N-05_1_password_masked.png`
+    - `N-05_2_password_revealed.png`
+    - `N-05_3_password_masked_again.png`
     - Test: auth.spec.ts › "should toggle password visibility on login page" — passed
   - **Precondition**: User is on login page
   - **Steps**:
@@ -99,7 +99,7 @@
 
 - [x] **N-06**: Password visibility toggle works on register page
   - **Evidence**:
-    - `N-06_password_visible.png`
+    - `N-06_1_password_visible.png`
     - Test: register.spec.ts › "should toggle password visibility" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -112,9 +112,9 @@
 
 - [x] **N-07**: Language toggle works on auth pages
   - **Evidence**:
-    - `N-07_lang_initial.png`
-    - `N-07_lang_japanese.png`
-    - `N-07_lang_english.png`
+    - `N-07_1_lang_initial.png`
+    - `N-07_2_lang_japanese.png`
+    - `N-07_3_lang_english.png`
     - Test: auth.spec.ts › "should switch language on auth pages" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -128,9 +128,9 @@
 
 - [x] **N-08**: Theme toggle works on auth pages
   - **Evidence**:
-    - `N-08_theme_initial.png`
-    - `N-08_theme_toggled.png`
-    - `N-08_theme_toggled_back.png`
+    - `N-08_1_theme_initial.png`
+    - `N-08_2_theme_toggled.png`
+    - `N-08_3_theme_toggled_back.png`
     - Test: auth.spec.ts › "should toggle light and dark theme on auth pages" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -143,7 +143,7 @@
 
 - [x] **N-09**: Navigate from login to register page
   - **Evidence**:
-    - `N-09_navigated_to_register.png`
+    - `N-09_1_navigated_to_register.png`
     - Test: login.spec.ts › "should navigate to register page when clicking Create Account" — passed
   - **Precondition**: User is on login page
   - **Steps**:
@@ -153,7 +153,7 @@
 
 - [x] **N-10**: Navigate from register to login page
   - **Evidence**:
-    - `N-10_navigated_to_login.png`
+    - `N-10_1_navigated_to_login.png`
     - Test: register.spec.ts › "should navigate to login page when clicking Already have an account" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -163,8 +163,8 @@
 
 - [x] **N-11**: Navigate to forgot password page
   - **Evidence**:
-    - `N-11_forgot_password_link_visible.png`
-    - `N-11_navigated_to_forgot_password.png`
+    - `N-11_1_forgot_password_link_visible.png`
+    - `N-11_2_navigated_to_forgot_password.png`
     - Test: login.spec.ts › "should navigate to forgot password page" — passed
   - **Precondition**: User is on login page
   - **Steps**:
@@ -174,8 +174,8 @@
 
 - [x] **N-12**: Submit forgot password form and open verification-code page
   - **Evidence**:
-    - `N-12_page_loaded.png`
-    - `N-12_verify_code_page.png`
+    - `N-12_1_page_loaded.png`
+    - `N-12_2_verify_code_page.png`
     - Test: forgot-password.spec.ts › "should submit forgot password form and show success message" — passed
   - **Precondition**: User is on forgot password page
   - **Steps**:
@@ -187,8 +187,8 @@
 
 - [x] **N-13**: Navigate back to login from forgot password
   - **Evidence**:
-    - `N-13_forgot_password_page.png`
-    - `N-13_back_to_login_link.png`
+    - `N-13_1_forgot_password_page.png`
+    - `N-13_2_back_to_login_link.png`
     - Test: forgot-password.spec.ts › "should have back to login link on forgot password page" — passed
   - **Precondition**: User is on forgot password page
   - **Steps**:
@@ -197,9 +197,9 @@
 
 - [x] **N-14**: Reset password with valid token
   - **Evidence**:
-    - `N-14_reset_form_filled.png`
-    - `N-14_success_message.png`
-    - `N-14_login_with_new_password.png`
+    - `N-14_1_reset_form_filled.png`
+    - `N-14_2_success_message.png`
+    - `N-14_3_login_with_new_password.png`
     - Test: reset-password.spec.ts › "should reset password with valid verification code and login with new password" — passed
   - **Precondition**: User has valid reset token from email
   - **Steps**:
@@ -214,7 +214,7 @@
 
 - [x] **N-15**: Navigate back to login from reset password
   - **Evidence**:
-    - `N-15_redirect_to_forgot.png`
+    - `N-15_2_redirect_to_forgot.png`
     - Test: reset-password.spec.ts › "should navigate back to login page from reset password" — passed
   - **Precondition**: User is on reset password page
   - **Steps**:
@@ -223,7 +223,7 @@
 
 - [x] **N-16**: Responsive layout on desktop viewport
   - **Evidence**:
-    - `N-16_desktop_login.png`
+    - `N-16_1_desktop_login.png`
     - Test: auth.spec.ts › "should display login correctly on desktop viewport" — passed
   - **Precondition**: User is on any auth page (login / register / forgot-password / reset-password)
   - **Steps**:
@@ -236,7 +236,7 @@
 
 - [x] **N-17**: Responsive layout on mobile viewport
   - **Evidence**:
-    - `N-17_mobile_login.png`
+    - `N-17_1_mobile_login.png`
     - Test: auth.spec.ts › "should display login correctly on mobile viewport" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -249,7 +249,7 @@
 
 - [x] **N-18**: No horizontal scroll on auth pages at narrow width
   - **Evidence**:
-    - `N-18_320px_register.png`
+    - `N-18_1_320px_register.png`
     - Test: auth.spec.ts › "should have no horizontal overflow at 320px width" — passed
   - **Precondition**: User is on auth pages
   - **Steps**:
@@ -266,7 +266,7 @@
 
 - [x] **A-01**: Submit register form with empty fields
   - **Evidence**:
-    - `A-01_empty_form_errors.png`
+    - `A-01_1_empty_form_errors.png`
     - Test: register.spec.ts › "should show errors for empty form submission" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -278,9 +278,9 @@
 
 - [x] **A-02**: Register with duplicate email
   - **Evidence**:
-    - `A-02_duplicate_email.png`
-    - DB users count — still 1 row after duplicate email attempt → `A-02_db_user_count.png`
-    - DB users count — still 1 row after duplicate email attempt → `A-02_db_user_count.json`
+    - `A-02_1_duplicate_email.png`
+    - DB users count — still 1 row after duplicate email attempt → `A-02_2_db_user_count.png`
+    - DB users count — still 1 row after duplicate email attempt → `A-02_2_db_user_count.json`
     - Test: register.spec.ts › "should show error for duplicate email" — passed
   - **Precondition**: User is on register page, email already exists
   - **Steps**:
@@ -292,7 +292,7 @@
 
 - [x] **A-03**: Register with weak password (missing uppercase)
   - **Evidence**:
-    - `A-03_missing_uppercase.png`
+    - `A-03_1_missing_uppercase.png`
     - Test: register.spec.ts › "should show error for password missing uppercase" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -303,7 +303,7 @@
 
 - [x] **A-04**: Register with weak password (missing lowercase)
   - **Evidence**:
-    - `A-04_missing_lowercase.png`
+    - `A-04_1_missing_lowercase.png`
     - Test: register.spec.ts › "should show error for password missing lowercase" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -313,7 +313,7 @@
 
 - [x] **A-05**: Register with weak password (missing number)
   - **Evidence**:
-    - `A-05_missing_number.png`
+    - `A-05_1_missing_number.png`
     - Test: register.spec.ts › "should show error for password missing number" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -323,7 +323,7 @@
 
 - [x] **A-06**: Register with weak password (missing special character)
   - **Evidence**:
-    - `A-06_missing_special.png`
+    - `A-06_1_missing_special.png`
     - Test: register.spec.ts › "should show error for password missing special character" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -333,7 +333,7 @@
 
 - [x] **A-07**: Register with mismatched passwords
   - **Evidence**:
-    - `A-07_password_mismatch.png`
+    - `A-07_1_password_mismatch.png`
     - Test: register.spec.ts › "should show error for password mismatch" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -344,7 +344,7 @@
 
 - [x] **A-08**: Login with invalid email
   - **Evidence**:
-    - `A-08_invalid_email_error.png`
+    - `A-08_1_invalid_email_error.png`
     - Test: login.spec.ts › "should show error with invalid email" — passed
   - **Precondition**: User is on login page
   - **Steps**:
@@ -357,7 +357,7 @@
 
 - [x] **A-09**: Login with invalid password
   - **Evidence**:
-    - `A-09_invalid_password_error.png`
+    - `A-09_1_invalid_password_error.png`
     - Test: login.spec.ts › "should show error with invalid password" — passed
   - **Precondition**: User is on login page
   - **Steps**:
@@ -370,7 +370,7 @@
 
 - [x] **A-10**: Login with empty fields
   - **Evidence**:
-    - `A-10_empty_email.png`
+    - `A-10_1_empty_email.png`
     - Test: login.spec.ts › "should show validation error for empty fields" — passed
   - **Precondition**: User is on login page
   - **Steps**:
@@ -382,7 +382,7 @@
 
 - [x] **A-11**: Register as merchant without license file
   - **Evidence**:
-    - `A-11_no_license.png`
+    - `A-11_1_no_license.png`
     - Test: register.spec.ts › "should show error for merchant without license" — passed
   - **Precondition**: User is on register page, Merchant role selected
   - **Steps**:
@@ -395,7 +395,7 @@
 
 - [x] **A-12**: Register as merchant with non-PDF license file
   - **Evidence**:
-    - `A-12_non_pdf_license.png`
+    - `A-12_1_non_pdf_license.png`
     - Test: register.spec.ts › "should show error for non-PDF license file" — passed
   - **Precondition**: User is on register page, Merchant role selected
   - **Steps**:
@@ -406,7 +406,7 @@
 
 - [x] **A-13**: Register as merchant with license file exceeding 10MB
   - **Evidence**:
-    - `A-13_oversized_license.png`
+    - `A-13_1_oversized_license.png`
     - Test: register.spec.ts › "should show error for license file exceeding 10MB" — passed
   - **Precondition**: User is on register page, Merchant role selected
   - **Steps**:
@@ -417,7 +417,7 @@
 
 - [x] **A-14**: Register as merchant with incorrectly named license file
   - **Evidence**:
-    - `A-14_bad_license_name.png`
+    - `A-14_1_bad_license_name.png`
     - Test: register.spec.ts › "should show error for incorrectly named license file" — passed
   - **Precondition**: User is on register page, Merchant role selected
   - **Steps**:
@@ -428,8 +428,8 @@
 
 - [x] **A-15**: Submit forgot password with invalid email format
   - **Evidence**:
-    - `A-15_page_for_validation.png`
-    - `A-15_invalid_email_error.png`
+    - `A-15_1_page_for_validation.png`
+    - `A-15_2_invalid_email_error.png`
     - Test: forgot-password.spec.ts › "should show validation error for invalid email format" — passed
   - **Precondition**: User is on forgot password page
   - **Steps**:
@@ -441,7 +441,7 @@
 
 - [x] **A-16**: Access protected route without authentication
   - **Evidence**:
-    - `A-16_redirect_to_login.png`
+    - `A-16_1_redirect_to_login.png`
     - Test: auth.spec.ts › "should redirect to login when accessing protected route without authentication" — passed
   - **Precondition**: User is not authenticated
   - **Steps**:
@@ -476,7 +476,7 @@
 
 - [x] **A-19**: Submit reset password with invalid token
   - **Evidence**:
-    - `A-19_redirect_to_forgot.png`
+    - `A-19_2_redirect_to_forgot.png`
     - Test: reset-password.spec.ts › "should show error for invalid reset token" — passed
   - **Precondition**: User is on reset password page
   - **Steps**:
@@ -493,9 +493,9 @@
 
 - [x] **B-01**: Register with name at minimum length (2 chars)
   - **Evidence**:
-    - `B-01_name_min.png`
-    - DB users row — name length 2 accepted → `B-01_db_user.png`
-    - DB users row — name length 2 accepted → `B-01_db_user.json`
+    - `B-01_1_name_min.png`
+    - DB users row — name length 2 accepted → `B-01_2_db_user.png`
+    - DB users row — name length 2 accepted → `B-01_2_db_user.json`
     - Test: register.spec.ts › "should accept name at minimum length (2 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -507,9 +507,9 @@
 
 - [x] **B-02**: Register with name at reasonable length (50 chars)
   - **Evidence**:
-    - `B-02_name_max.png`
-    - DB users row — name length 50 accepted → `B-02_db_user.png`
-    - DB users row — name length 50 accepted → `B-02_db_user.json`
+    - `B-02_1_name_max.png`
+    - DB users row — name length 50 accepted → `B-02_2_db_user.png`
+    - DB users row — name length 50 accepted → `B-02_2_db_user.json`
     - Test: register.spec.ts › "should accept name at reasonable length (50 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -522,9 +522,9 @@
 
 - [x] **B-03**: Register with password at minimum length (8 chars)
   - **Evidence**:
-    - `B-03_pw_min.png`
-    - DB users row — 8-char password accepted → `B-03_db_user.png`
-    - DB users row — 8-char password accepted → `B-03_db_user.json`
+    - `B-03_1_pw_min.png`
+    - DB users row — 8-char password accepted → `B-03_2_db_user.png`
+    - DB users row — 8-char password accepted → `B-03_2_db_user.json`
     - Test: register.spec.ts › "should accept password at minimum length (8 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -536,9 +536,9 @@
 
 - [x] **B-04**: Register with password at maximum length (128 chars)
   - **Evidence**:
-    - `B-04_pw_max.png`
-    - DB users row — 128-char password accepted → `B-04_db_user.png`
-    - DB users row — 128-char password accepted → `B-04_db_user.json`
+    - `B-04_1_pw_max.png`
+    - DB users row — 128-char password accepted → `B-04_2_db_user.png`
+    - DB users row — 128-char password accepted → `B-04_2_db_user.json`
     - Test: register.spec.ts › "should accept password at maximum length (128 chars)" — passed
   - **Precondition**: User is on register page
   - **Steps**:
@@ -550,9 +550,9 @@
 
 - [x] **B-05**: Upload license file named "License.PDF" (case-insensitive)
   - **Evidence**:
-    - `B-05_license_case.png`
-    - DB users + merchants — License.PDF accepted (license_status) → `B-05_db_merchant.png`
-    - DB users + merchants — License.PDF accepted (license_status) → `B-05_db_merchant.json`
+    - `B-05_1_license_case.png`
+    - DB users + merchants — License.PDF accepted (license_status) → `B-05_2_db_merchant.png`
+    - DB users + merchants — License.PDF accepted (license_status) → `B-05_2_db_merchant.json`
     - Test: register.spec.ts › "should accept license file named License.PDF (uppercase)" — passed
   - **Precondition**: User is on register page, Merchant role selected
   - **Steps**:

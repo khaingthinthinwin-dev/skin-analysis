@@ -38,7 +38,7 @@ test.describe('N-02: Merchant Registration', () => {
     await registerPage.fillPassword(password);
     await registerPage.fillConfirmPassword(password);
     await registerPage.selectRole('merchant');
-    await captureScreenshot(page, 'N-02_role_selected_merchant');
+    await captureScreenshot(page, 'N-02_1_role_selected_merchant');
 
     const pdfBuffer = Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF');
     await registerPage.licenseFileInput.setInputFiles({
@@ -46,17 +46,17 @@ test.describe('N-02: Merchant Registration', () => {
       mimeType: 'application/pdf',
       buffer: pdfBuffer,
     });
-    await captureScreenshot(page, 'N-02_license_uploaded');
+    await captureScreenshot(page, 'N-02_2_license_uploaded');
 
     await registerPage.checkTerms();
     await registerPage.clickSubmit();
 
     await registerPage.expectRedirectTo(ROUTES.LOGIN);
     await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
-    await captureScreenshot(page, 'N-02_redirected_to_login');
+    await captureScreenshot(page, 'N-02_3_redirected_to_login');
     await captureUserWithMerchantDbEvidence(
       page,
-      'N-02_db_merchant',
+      'N-02_4_db_merchant',
       merchant.email,
       'DB users + merchants after merchant registration with license'
     );
@@ -97,7 +97,7 @@ test.describe('N-05: Password Visibility Toggle', () => {
     await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
     await expect(loginPage.passwordInput).toHaveValue('Cosmetics@123');
     await settlePaint(page);
-    await captureScreenshot(page, 'N-05_password_masked');
+    await captureScreenshot(page, 'N-05_1_password_masked');
 
     if (await loginPage.passwordToggle.isVisible()) {
       await loginPage.passwordToggle.click();
@@ -107,13 +107,13 @@ test.describe('N-05: Password Visibility Toggle', () => {
         .poll(() => loginPage.passwordInput.inputValue(), { timeout: 5_000 })
         .toBe('Cosmetics@123');
       await settlePaint(page);
-      await captureScreenshot(page, 'N-05_password_revealed');
+      await captureScreenshot(page, 'N-05_2_password_revealed');
 
       await loginPage.passwordToggle.click();
       await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
       await expect(loginPage.passwordInput).toHaveValue('Cosmetics@123');
       await settlePaint(page);
-      await captureScreenshot(page, 'N-05_password_masked_again');
+      await captureScreenshot(page, 'N-05_3_password_masked_again');
     }
   });
 });
@@ -144,7 +144,7 @@ test.describe('A-16: Access Protected Route Without Auth', () => {
 
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
     await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
-    await captureScreenshot(page, 'A-16_redirect_to_login');
+    await captureScreenshot(page, 'A-16_1_redirect_to_login');
   });
 
   test('should redirect to login when accessing buyer dashboard without authentication', async ({
@@ -154,7 +154,7 @@ test.describe('A-16: Access Protected Route Without Auth', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
-    await captureScreenshot(page, 'A-16_buyer_redirect_to_login');
+    await captureScreenshot(page, 'A-16_2_buyer_redirect_to_login');
   });
 });
 
@@ -173,7 +173,7 @@ test.describe('N-04: Logout', () => {
     await settlePaint(buyerPage);
     await captureScreenshot(
       buyerPage,
-      'N-04_dashboard_before_logout',
+      'N-04_1_dashboard_before_logout',
       'Screenshot of buyer dashboard before logout'
     );
 
@@ -189,7 +189,7 @@ test.describe('N-04: Logout', () => {
     await settlePaint(buyerPage);
     await captureScreenshot(
       buyerPage,
-      'N-04_after_logout_redirect',
+      'N-04_2_after_logout_redirect',
       'Screenshot of home page after logout'
     );
 
@@ -207,7 +207,7 @@ test.describe('N-07: Multi-language Toggle', () => {
     await loginPage.fillEmail('eem@gmail.com');
     await loginPage.fillPassword('Cosmetics@123');
     await settlePaint(page);
-    await loginPage.capture('N-07_lang_initial');
+    await loginPage.capture('N-07_1_lang_initial');
 
     const langToggle = page.getByRole('button', { name: /change language/i });
     if (await langToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -217,7 +217,7 @@ test.describe('N-07: Multi-language Toggle', () => {
         await jaOption.click();
         await page.waitForTimeout(500);
         await settlePaint(page);
-        await loginPage.capture('N-07_lang_japanese');
+        await loginPage.capture('N-07_2_lang_japanese');
       }
 
       await langToggle.click();
@@ -226,7 +226,7 @@ test.describe('N-07: Multi-language Toggle', () => {
         await enOption.click();
         await page.waitForTimeout(500);
         await settlePaint(page);
-        await loginPage.capture('N-07_lang_english');
+        await loginPage.capture('N-07_3_lang_english');
       }
     }
   });
@@ -241,19 +241,19 @@ test.describe('N-08: Theme Switching', () => {
     await loginPage.fillEmail('eem@gmail.com');
     await loginPage.fillPassword('Cosmetics@123');
     await settlePaint(page);
-    await loginPage.capture('N-08_theme_initial');
+    await loginPage.capture('N-08_1_theme_initial');
 
     const themeToggle = page.getByRole('button', { name: /toggle theme/i });
     if (await themeToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
       await themeToggle.click();
       await page.waitForTimeout(500);
       await settlePaint(page);
-      await loginPage.capture('N-08_theme_toggled');
+      await loginPage.capture('N-08_2_theme_toggled');
 
       await themeToggle.click();
       await page.waitForTimeout(500);
       await settlePaint(page);
-      await loginPage.capture('N-08_theme_toggled_back');
+      await loginPage.capture('N-08_3_theme_toggled_back');
     }
   });
 });
@@ -276,7 +276,7 @@ test.describe('N-16: Responsive Layout on Desktop Viewport', () => {
     );
     expect(noHScroll).toBe(true);
 
-    await captureScreenshot(page, 'N-16_desktop_login');
+    await captureScreenshot(page, 'N-16_1_desktop_login');
   });
 
   test('should display register correctly on desktop viewport', async ({ page }) => {
@@ -292,7 +292,7 @@ test.describe('N-16: Responsive Layout on Desktop Viewport', () => {
     );
     expect(noHScroll).toBe(true);
 
-    await captureScreenshot(page, 'N-16_desktop_register');
+    await captureScreenshot(page, 'N-16_2_desktop_register');
   });
 });
 
@@ -314,7 +314,7 @@ test.describe('N-17: Responsive Layout on Mobile Viewport', () => {
     );
     expect(noHScroll).toBe(true);
 
-    await captureScreenshot(page, 'N-17_mobile_login');
+    await captureScreenshot(page, 'N-17_1_mobile_login');
   });
 
   test('should display register correctly on mobile viewport', async ({ page }) => {
@@ -330,7 +330,7 @@ test.describe('N-17: Responsive Layout on Mobile Viewport', () => {
     );
     expect(noHScroll).toBe(true);
 
-    await captureScreenshot(page, 'N-17_mobile_register');
+    await captureScreenshot(page, 'N-17_2_mobile_register');
   });
 });
 
@@ -352,6 +352,6 @@ test.describe('N-18: No Horizontal Scroll at Narrow Width', () => {
     }));
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
 
-    await captureScreenshot(page, 'N-18_320px_register');
+    await captureScreenshot(page, 'N-18_1_320px_register');
   });
 });

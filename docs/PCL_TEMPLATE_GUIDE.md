@@ -108,7 +108,7 @@ Developers creating a PCL for any screen can copy this template directly into:
 
 - [ ] **N-01**: {Primary action success}
   - **Evidence**:
-    - Screenshots → `N-01_*.png`
+    - Screenshots → `N-01_1_*.png`
     - Test: {spec} › "{test title}" — passed
   - **Precondition**: {Precondition}
   - **Steps**:

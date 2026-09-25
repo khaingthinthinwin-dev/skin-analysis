@@ -17,13 +17,13 @@ test.describe('Wishlist & Cart', () => {
     test('should display wishlist items', async ({ page }) => {
       await wishlistCartPage.gotoWishlist();
       // TODO: Verify wishlist items are loaded
-      await wishlistCartPage.capture('wishlist_items');
+      await wishlistCartPage.capture('N-01_1_wishlist_items');
     });
 
     test('should remove item from wishlist', async ({ page }) => {
       await wishlistCartPage.gotoWishlist();
       // TODO: Click remove, verify item removed
-      await wishlistCartPage.capture('wishlist_remove');
+      await wishlistCartPage.capture('N-02_1_wishlist_remove');
     });
   });
 
@@ -36,25 +36,25 @@ test.describe('Wishlist & Cart', () => {
     test('should display cart items with correct total', async ({ page }) => {
       await wishlistCartPage.gotoCart();
       // TODO: Verify cart items and total calculation
-      await wishlistCartPage.capture('cart_items');
+      await wishlistCartPage.capture('N-03_1_cart_items');
     });
 
     test('should update cart quantity', async ({ page }) => {
       await wishlistCartPage.gotoCart();
       // TODO: Change quantity, verify total updates
-      await wishlistCartPage.capture('cart_update_quantity');
+      await wishlistCartPage.capture('N-04_1_cart_update_quantity');
     });
 
     test('should remove item from cart', async ({ page }) => {
       await wishlistCartPage.gotoCart();
       // TODO: Click remove, verify item removed
-      await wishlistCartPage.capture('cart_remove');
+      await wishlistCartPage.capture('N-05_1_cart_remove');
     });
 
     test('should proceed to checkout from cart', async ({ page }) => {
       await wishlistCartPage.gotoCart();
       // TODO: Click checkout, verify navigation
-      await wishlistCartPage.capture('cart_checkout');
+      await wishlistCartPage.capture('N-06_1_cart_checkout');
     });
   });
 
@@ -62,7 +62,7 @@ test.describe('Wishlist & Cart', () => {
     test('should show login prompt for guest users', async ({ page }) => {
       // TODO: Visit cart/wishlist as guest
       // TODO: Verify login modal/prompt appears
-      await wishlistCartPage.capture('guest_login_prompt');
+      await wishlistCartPage.capture('N-07_1_guest_login_prompt');
     });
   });
 });
