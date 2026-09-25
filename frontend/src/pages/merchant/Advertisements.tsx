@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
@@ -153,6 +154,7 @@ export default function Advertisements() {
   const [contentTarget, setContentTarget] = useState<Advertisement | null>(null)
   const [editTarget, setEditTarget] = useState<Advertisement | null>(null)
   const [payTarget, setPayTarget] = useState<Advertisement | null>(null)
+  const [viewTarget, setViewTarget] = useState<Advertisement | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Advertisement | null>(null)
   const [paymentReference, setPaymentReference] = useState('')
   const [confirmingSelection, setConfirmingSelection] = useState(false)
@@ -549,7 +551,30 @@ export default function Advertisements() {
                 onEdit={(target) => setEditTarget(target)}
                 onPay={(target) => setPayTarget(target)}
                 onDelete={(target) => setDeleteTarget(target)}
-                onToggle={(target, isActive) => toggle.mutate({ id: target.id, isActive })}
+                onView={(target) => setViewTarget(target)}
+                onToggle={(target) => {
+                  const next = !target.isActive
+                  toggle.mutate(
+                    { id: target.id, isActive: next },
+                    {
+                      onSuccess: () =>
+                        toast.success(
+                          next ? 'Advertisement activated' : 'Advertisement deactivated',
+                        ),
+                      onError: (error) => {
+                        const axiosError = error as {
+                          response?: { data?: { message?: string } }
+                        }
+                        toast.error(
+                          axiosError.response?.data?.message ||
+                            (error instanceof Error
+                              ? error.message
+                              : 'Unable to update advertisement status'),
+                        )
+                      },
+                    },
+                  )
+                }}
               />
             ))}
           </div>
@@ -648,6 +673,9 @@ export default function Advertisements() {
         </DialogContent>
       </Dialog>
 
+      {/* View Detail Dialog (read-only, follows btnViewAd read-only modal pattern) */}
+      <AdViewDialog ad={viewTarget} onClose={() => setViewTarget(null)} />
+
       {/* Delete Confirmation (soft delete, BR-AD-012) */}
       <DeleteConfirmDialog
         open={Boolean(deleteTarget)}
@@ -659,9 +687,13 @@ export default function Advertisements() {
             ? deleteTarget.title
               ? `Are you sure you want to delete "${deleteTarget.title}"? It has not been paid and will be permanently deleted from the system.`
               : 'Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.'
-            : deleteTarget?.title
-              ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
-              : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
+            : deleteTarget && displayState(deleteTarget) === 'expired'
+              ? deleteTarget.title
+                ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement has expired and will be permanently deleted from the system.`
+                : 'Are you sure you want to delete this advertisement? It has expired and will be permanently deleted from the system.'
+              : deleteTarget?.title
+                ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
+                : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
         }
         isLoading={remove.isPending}
       />
@@ -711,14 +743,15 @@ interface AdCardProps {
   onPay: (ad: Advertisement) => void
   onDelete: (ad: Advertisement) => void
   onToggle: (ad: Advertisement, isActive: boolean) => void
+  onView: (ad: Advertisement) => void
 }
 
-function AdCard({ ad, isDeactivated = false, onEdit, onPay, onDelete, onToggle }: AdCardProps) {
+function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
-  const canEdit = !isDeactivated && (state === 'draft' || state === 'content_uploaded')
-  const canDelete = !isDeactivated && (isRejected || state === 'draft' || state === 'content_uploaded')
-  const canToggle = !isDeactivated && state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
+  const canEdit = state === 'draft' || state === 'content_uploaded'
+  const canDelete = isRejected || state === 'draft' || state === 'content_uploaded' || state === 'expired'
+  const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const isScheduled = state === 'scheduled'
   const packageInfo = ad.package
   const expiresTomorrow =
@@ -754,6 +787,9 @@ function AdCard({ ad, isDeactivated = false, onEdit, onPay, onDelete, onToggle }
 
       <CardContent className="flex flex-1 flex-col gap-2 p-4">
         <h3 className="text-base font-semibold">{ad.title || 'Draft advertisement'}</h3>
+        {packageInfo && (
+          <p className="text-sm text-muted-foreground">Placement: {packageLabel(packageInfo.placement)}</p>
+        )}
         {packageInfo && (
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
@@ -828,45 +864,171 @@ function AdCard({ ad, isDeactivated = false, onEdit, onPay, onDelete, onToggle }
           </div>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-          <div>
-            {canToggle && !isScheduled ? (
-              <div className="flex items-center gap-2">
-                <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
-                <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
-              </div>
-            ) : isScheduled || state === 'expired' || state === 'pending_approval' ? (
-              <span className="text-sm text-muted-foreground">Inactive</span>
-            ) : (
-              <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
-            )}
+        {state === 'draft' ? (
+          <div className="mt-auto space-y-2 border-t pt-3">
+            <span className="block text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
+            <div className="flex flex-wrap justify-end gap-2">
+              {canEdit && !isRejected && (
+                <Button size="sm" variant="outline" className="w-9 px-0" aria-label="Edit advertisement" title="Edit" onClick={() => onEdit(ad)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {canDelete && (
+                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label="Delete advertisement" title="Delete" onClick={() => onDelete(ad)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="w-9 px-0" aria-label="View advertisement" title="View" onClick={() => onView(ad)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {state === 'content_uploaded' && !isDeactivated && (
-              <Button size="sm" onClick={() => onPay(ad)}>
-                <CreditCard className="mr-1.5 h-4 w-4" /> Pay Fee
-              </Button>
-            )}
-            {isRejected && !isDeactivated && (
-              <Button size="sm" onClick={() => onEdit(ad)}>
-                <Pencil className="mr-1.5 h-4 w-4" /> Edit &amp; Resubmit
-              </Button>
-            )}
-            {canEdit && !isRejected && (
-              <Button size="sm" variant="outline" onClick={() => onEdit(ad)}>
-                <Pencil className="mr-1.5 h-4 w-4" /> Edit
-              </Button>
-            )}
-            {canDelete && (
-              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => onDelete(ad)}>
-                <Trash2 className="mr-1.5 h-4 w-4" /> Delete
-              </Button>
-            )}
+        ) : (
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+            <div>
+              {canToggle && !isScheduled ? (
+                <div className="flex items-center gap-2">
+                  <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
+                  <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
+                </div>
+              ) : isScheduled || state === 'expired' || state === 'pending_approval' ? (
+                <span className="text-sm text-muted-foreground">Inactive</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {state === 'content_uploaded' && (
+                <Button size="sm" className="w-9 px-0" aria-label="Pay fee" title="Pay Fee" onClick={() => onPay(ad)}>
+                  <CreditCard className="h-4 w-4" />
+                </Button>
+              )}
+              {isRejected && (
+                <Button size="sm" className="w-9 px-0" aria-label="Edit and resubmit" title="Edit & Resubmit" onClick={() => onEdit(ad)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {canEdit && !isRejected && (
+                <Button size="sm" variant="outline" className="w-9 px-0" aria-label="Edit advertisement" title="Edit" onClick={() => onEdit(ad)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {canDelete && (
+                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label="Delete advertisement" title="Delete" onClick={() => onDelete(ad)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="w-9 px-0" aria-label="View advertisement" title="View" onClick={() => onView(ad)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )
+}
+
+interface AdViewDialogProps {
+  ad: Advertisement | null
+  onClose: () => void
+}
+
+// Read-only detail dialog (mirrors the admin btnViewAd read-only modal pattern).
+function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
+  if (!ad) return null
+  const state = displayState(ad)
+  const packageInfo = ad.package
+  const rows: Array<[string, string | null]> = [
+    ['Placement', packageInfo ? packageLabel(packageInfo.placement) : null],
+    ['Tier', packageInfo ? (tierLabels[packageInfo.tier] ?? packageInfo.tier) : null],
+    ['Status', stateLabels[state]],
+    ['Approval', approvalBadgeText(ad)],
+    ['Payment', paymentLabels[ad.paymentStatus] ?? ad.paymentStatus],
+    ['Start date', formatDate(ad.startsAt)],
+    ['End date', formatDate(ad.expiresAt)],
+    ['Created', formatDate(ad.createdAt)],
+  ]
+  return (
+    <Dialog open={Boolean(ad)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Advertisement Detail</DialogTitle>
+        </DialogHeader>
+
+        {ad.imageUrl && (
+          <img
+            src={getImageUrl(ad.imageUrl)}
+            alt={ad.title || 'Advertisement'}
+            className="aspect-video w-full rounded-lg object-cover"
+          />
+        )}
+
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">{ad.title || 'Draft advertisement'}</h3>
+          {ad.content && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{ad.content}</p>}
+          {ad.announcementMessage && (
+            <p className="whitespace-pre-wrap text-sm font-medium">{ad.announcementMessage}</p>
+          )}
+          {ad.linkUrl && (
+            <p className="text-sm">
+              <span className="text-muted-foreground">Link: </span>
+              <a href={ad.linkUrl} target="_blank" rel="noreferrer" className="break-all text-primary underline underline-offset-2">
+                {ad.linkUrl}
+              </a>
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2 rounded-lg border bg-muted/40 p-3 text-sm">
+          {rows
+            .filter(([, value]) => value)
+            .map(([label, value]) => (
+              <div key={label} className="flex justify-between gap-4">
+                <span className="text-muted-foreground">{label}</span>
+                <span className="text-right font-medium">{value}</span>
+              </div>
+            ))}
+          {packageInfo && (
+            <div className="flex justify-between gap-4 border-t pt-2">
+              <span className="text-muted-foreground">Daily Rate</span>
+              <span className="font-medium text-primary">{packageInfo.dailyRate} KS/day</span>
+            </div>
+          )}
+        </div>
+
+        {isRejectedReasonVisible(ad) && (
+          <div className="rounded-md border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{ad.rejectionReason}</span>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function isRejectedReasonVisible(ad: Advertisement) {
+  return ad.approvalStatus === 'rejected' && Boolean(ad.rejectionReason)
+}
+
+const stateLabels: Record<DisplayState, string> = {
+  active: 'Active',
+  scheduled: 'Scheduled',
+  pending_approval: 'Pending Approval',
+  expired: 'Expired',
+  inactive: 'Inactive',
+  rejected: 'Rejected',
+  content_uploaded: 'Content Uploaded',
+  draft: 'Draft',
 }
 
 const DRAFT_CACHE_PREFIX = 'ad-draft-cache:'

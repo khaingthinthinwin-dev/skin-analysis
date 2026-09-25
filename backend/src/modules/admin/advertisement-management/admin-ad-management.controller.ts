@@ -29,6 +29,7 @@ import {
   CreateAdFeeSettingDto,
   UpdateAdFeeSettingDto,
   DeactivateAdFeeSettingDto,
+  ReactivateAdFeeSettingDto,
   AdminAdFeeHistoryQueryDto,
   RevenueAnalyticsQueryDto,
   ExportAdPerformanceDto,
@@ -118,6 +119,15 @@ export class AdminAdManagementController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.adminAdManagementService.deactivateFeeSetting(id, dto, user.id);
+  }
+
+  @Patch('ad-fees/:id/reactivate')
+  async reactivateFeeSetting(
+    @Param('id') id: string,
+    @Body() dto: ReactivateAdFeeSettingDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminAdManagementService.reactivateFeeSetting(id, dto, user.id);
   }
 
   @Get('ad-fees/history')

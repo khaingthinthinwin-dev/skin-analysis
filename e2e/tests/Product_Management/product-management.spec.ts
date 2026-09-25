@@ -21,19 +21,19 @@ test.describe('Merchant Product Management', () => {
     test('should create a new product', async ({ page }) => {
       await productPage.goto();
       // TODO: Click create, fill product form, upload images, save
-      await productPage.capture('product_create');
+      await productPage.capture('N-01_1_product_create');
     });
 
     test('should edit an existing product', async ({ page }) => {
       await productPage.goto();
       // TODO: Click edit, modify fields, save
-      await productPage.capture('product_edit');
+      await productPage.capture('N-02_1_product_edit');
     });
 
     test('should delete a product', async ({ page }) => {
       await productPage.goto();
       // TODO: Click delete, confirm
-      await productPage.capture('product_delete');
+      await productPage.capture('N-03_1_product_delete');
     });
   });
 
@@ -41,13 +41,13 @@ test.describe('Merchant Product Management', () => {
     test('should search products by name', async ({ page }) => {
       await productPage.goto();
       // TODO: Type in search, verify filtered results
-      await productPage.capture('product_search');
+      await productPage.capture('N-04_1_product_search');
     });
 
     test('should filter products by category', async ({ page }) => {
       await productPage.goto();
       // TODO: Select category filter, verify results
-      await productPage.capture('product_filter');
+      await productPage.capture('N-05_1_product_filter');
     });
   });
 
@@ -55,7 +55,7 @@ test.describe('Merchant Product Management', () => {
     test('should hide CRUD buttons for pending merchants', async ({ page }) => {
       // TODO: Login as pending merchant
       // TODO: Verify CRUD buttons are hidden
-      await productPage.capture('product_pending_merchant');
+      await productPage.capture('N-06_1_product_pending_merchant');
     });
   });
 });

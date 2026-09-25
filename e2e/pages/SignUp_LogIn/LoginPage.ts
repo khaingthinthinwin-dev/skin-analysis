@@ -1,4 +1,5 @@
 import type { Page, Locator } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { captureScreenshot } from '../../utils/screenshot';
 
 export class LoginPage {
@@ -17,7 +18,10 @@ export class LoginPage {
     this.passwordInput = page.getByPlaceholder('Enter your password');
     this.submitButton = page.locator('button[type="submit"]');
     this.errorMessage = page.locator('[role="alert"]');
-    this.passwordToggle = page.locator('button').filter({ has: page.locator('svg.lucide-eye, svg.lucide-eye-off') });
+    this.passwordToggle = page
+      .locator('button')
+      .filter({ has: page.locator('svg.lucide-eye, svg.lucide-eye-off') })
+      .first();
     this.forgotPasswordLink = page.locator('a[href="/forgot-password"]');
     this.registerLink = page.locator('a[href="/register"]').first();
   }
@@ -26,7 +30,6 @@ export class LoginPage {
     await this.page.goto('/login');
     await this.page.waitForLoadState('domcontentloaded');
     await this.page.waitForTimeout(1000);
-    await this.capture('01_login_page_loaded');
   }
 
   async capture(stepName: string) {
@@ -47,11 +50,8 @@ export class LoginPage {
 
   async login(email: string, password: string) {
     await this.fillEmail(email);
-    await this.capture('02_email_filled');
     await this.fillPassword(password);
-    await this.capture('03_password_filled');
     await this.clickSubmit();
-    await this.capture('04_submit_clicked');
   }
 
   async togglePasswordVisibility() {
@@ -81,9 +81,9 @@ export class LoginPage {
   }
 
   async expectErrorVisible(message?: string) {
-    await this.errorMessage.first().waitFor({ state: 'visible' });
+    await expect(this.errorMessage.first()).toBeVisible();
     if (message) {
-      await this.errorMessage.first().waitFor({ text: message });
+      await expect(this.errorMessage.first()).toContainText(message);
     }
   }
 
@@ -92,6 +92,12 @@ export class LoginPage {
       (p) => window.location.pathname === p || window.location.pathname.startsWith(p + '/'),
       path,
       { timeout: 10_000 }
+    );
+    await this.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        })
     );
   }
 }

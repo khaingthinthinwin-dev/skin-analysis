@@ -1,0 +1,255 @@
+{
+  "N-02_1_role_selected_merchant.png": {
+    "test": "auth.spec.ts::should register as merchant with license file upload"
+  },
+  "N-02_2_license_uploaded.png": {
+    "test": "auth.spec.ts::should register as merchant with license file upload"
+  },
+  "N-12_1_page_loaded.png": {
+    "test": "forgot-password.spec.ts::should submit forgot password form and show success message"
+  },
+  "N-02_3_redirected_to_login.png": {
+    "test": "auth.spec.ts::should register as merchant with license file upload"
+  },
+  "N-02_4_db_merchant.png": {
+    "description": "DB users + merchants after merchant registration with license",
+    "test": "auth.spec.ts::should register as merchant with license file upload"
+  },
+  "N-02_4_db_merchant.json": {
+    "description": "DB users + merchants after merchant registration with license",
+    "test": "auth.spec.ts::should register as merchant with license file upload"
+  },
+  "N-12_2_verify_code_page.png": {
+    "test": "forgot-password.spec.ts::should submit forgot password form and show success message"
+  },
+  "N-14_1_reset_form_filled.png": {
+    "test": "reset-password.spec.ts::should reset password with valid verification code and login with new password"
+  },
+  "N-14_2_success_message.png": {
+    "test": "reset-password.spec.ts::should reset password with valid verification code and login with new password"
+  },
+  "N-14_3_login_with_new_password.png": {
+    "test": "reset-password.spec.ts::should reset password with valid verification code and login with new password"
+  },
+  "N-13_1_forgot_password_page.png": {
+    "test": "forgot-password.spec.ts::should have back to login link on forgot password page"
+  },
+  "N-13_2_back_to_login_link.png": {
+    "test": "forgot-password.spec.ts::should have back to login link on forgot password page"
+  },
+  "N-03_1_login_form_filled.png": {
+    "description": "Screenshot of the Login page with valid email and password entered (before Sign In)",
+    "test": "login.spec.ts::should login as buyer and redirect to buyer dashboard"
+  },
+  "A-15_1_page_for_validation.png": {
+    "test": "forgot-password.spec.ts::should show validation error for invalid email format"
+  },
+  "N-03_2_buyer_dashboard_after_login.png": {
+    "description": "Screenshot of the buyer dashboard after successful login",
+    "test": "login.spec.ts::should login as buyer and redirect to buyer dashboard"
+  },
+  "A-15_2_invalid_email_error.png": {
+    "test": "forgot-password.spec.ts::should show validation error for invalid email format"
+  },
+  "N-15_2_redirect_to_forgot.png": {
+    "test": "reset-password.spec.ts::should navigate back to login page from reset password"
+  },
+  "N-05_1_password_masked.png": {
+    "test": "auth.spec.ts::should toggle password visibility on login page"
+  },
+  "N-05_2_password_revealed.png": {
+    "test": "auth.spec.ts::should toggle password visibility on login page"
+  },
+  "N-05_3_password_masked_again.png": {
+    "test": "auth.spec.ts::should toggle password visibility on login page"
+  },
+  "N-01_1_form_filled.png": {
+    "description": "Screenshot of the Register page with valid input values entered",
+    "test": "register.spec.ts::should register as buyer successfully"
+  },
+  "N-01_2_redirected_to_login.png": {
+    "description": "Screenshot of the Login page after redirection to /login",
+    "test": "register.spec.ts::should register as buyer successfully"
+  },
+  "N-01_3_db_user.png": {
+    "description": "DB users row after successful buyer registration",
+    "test": "register.spec.ts::should register as buyer successfully"
+  },
+  "N-01_3_db_user.json": {
+    "description": "DB users row after successful buyer registration",
+    "test": "register.spec.ts::should register as buyer successfully"
+  },
+  "A-08_1_invalid_email_error.png": {
+    "test": "login.spec.ts::should show error with invalid email"
+  },
+  "A-16_1_redirect_to_login.png": {
+    "test": "auth.spec.ts::should redirect to login when accessing protected route without authentication"
+  },
+  "A-01_1_empty_form_errors.png": {
+    "test": "register.spec.ts::should show errors for empty form submission"
+  },
+  "A-09_1_invalid_password_error.png": {
+    "test": "login.spec.ts::should show error with invalid password"
+  },
+  "A-19_2_redirect_to_forgot.png": {
+    "test": "reset-password.spec.ts::should show error for invalid reset token"
+  },
+  "A-16_2_buyer_redirect_to_login.png": {
+    "test": "auth.spec.ts::should redirect to login when accessing buyer dashboard without authentication"
+  },
+  "A-10_1_empty_email.png": {
+    "test": "login.spec.ts::should show validation error for empty fields"
+  },
+  "N-04_1_dashboard_before_logout.png": {
+    "description": "Screenshot of buyer dashboard before logout",
+    "test": "auth.spec.ts::should log out buyer and clear session"
+  },
+  "A-03_1_missing_uppercase.png": {
+    "test": "register.spec.ts::should show error for password missing uppercase"
+  },
+  "N-04_2_after_logout_redirect.png": {
+    "description": "Screenshot of home page after logout",
+    "test": "auth.spec.ts::should log out buyer and clear session"
+  },
+  "N-09_1_navigated_to_register.png": {
+    "test": "login.spec.ts::should navigate to register page when clicking Create Account"
+  },
+  "A-04_1_missing_lowercase.png": {
+    "test": "register.spec.ts::should show error for password missing lowercase"
+  },
+  "N-07_1_lang_initial.png": {
+    "test": "auth.spec.ts::should switch language on auth pages"
+  },
+  "N-07_2_lang_japanese.png": {
+    "test": "auth.spec.ts::should switch language on auth pages"
+  },
+  "N-11_1_forgot_password_link_visible.png": {
+    "test": "login.spec.ts::should navigate to forgot password page"
+  },
+  "A-05_1_missing_number.png": {
+    "test": "register.spec.ts::should show error for password missing number"
+  },
+  "N-07_3_lang_english.png": {
+    "test": "auth.spec.ts::should switch language on auth pages"
+  },
+  "N-11_2_navigated_to_forgot_password.png": {
+    "test": "login.spec.ts::should navigate to forgot password page"
+  },
+  "A-06_1_missing_special.png": {
+    "test": "register.spec.ts::should show error for password missing special character"
+  },
+  "N-08_1_theme_initial.png": {
+    "test": "auth.spec.ts::should toggle light and dark theme on auth pages"
+  },
+  "N-08_2_theme_toggled.png": {
+    "test": "auth.spec.ts::should toggle light and dark theme on auth pages"
+  },
+  "N-08_3_theme_toggled_back.png": {
+    "test": "auth.spec.ts::should toggle light and dark theme on auth pages"
+  },
+  "N-16_1_desktop_login.png": {
+    "test": "auth.spec.ts::should display login correctly on desktop viewport"
+  },
+  "A-07_1_password_mismatch.png": {
+    "test": "register.spec.ts::should show error for password mismatch"
+  },
+  "N-16_2_desktop_register.png": {
+    "test": "auth.spec.ts::should display register correctly on desktop viewport"
+  },
+  "N-17_1_mobile_login.png": {
+    "test": "auth.spec.ts::should display login correctly on mobile viewport"
+  },
+  "A-02_1_duplicate_email.png": {
+    "test": "register.spec.ts::should show error for duplicate email"
+  },
+  "A-02_2_db_user_count.png": {
+    "description": "DB users count — still 1 row after duplicate email attempt",
+    "test": "register.spec.ts::should show error for duplicate email"
+  },
+  "A-02_2_db_user_count.json": {
+    "description": "DB users count — still 1 row after duplicate email attempt",
+    "test": "register.spec.ts::should show error for duplicate email"
+  },
+  "N-17_2_mobile_register.png": {
+    "test": "auth.spec.ts::should display register correctly on mobile viewport"
+  },
+  "N-18_1_320px_register.png": {
+    "test": "auth.spec.ts::should have no horizontal overflow at 320px width"
+  },
+  "A-11_1_no_license.png": {
+    "test": "register.spec.ts::should show error for merchant without license"
+  },
+  "A-12_1_non_pdf_license.png": {
+    "test": "register.spec.ts::should show error for non-PDF license file"
+  },
+  "A-13_1_oversized_license.png": {
+    "test": "register.spec.ts::should show error for license file exceeding 10MB"
+  },
+  "A-14_1_bad_license_name.png": {
+    "test": "register.spec.ts::should show error for incorrectly named license file"
+  },
+  "N-10_1_navigated_to_login.png": {
+    "test": "register.spec.ts::should navigate to login page when clicking Already have an account"
+  },
+  "N-06_1_password_visible.png": {
+    "test": "register.spec.ts::should toggle password visibility"
+  },
+  "N-06_2_confirm_password_visible.png": {
+    "test": "register.spec.ts::should toggle confirm password visibility"
+  },
+  "B-01_1_name_min.png": {
+    "test": "register.spec.ts::should accept name at minimum length (2 chars)"
+  },
+  "B-01_2_db_user.png": {
+    "description": "DB users row — name length 2 accepted",
+    "test": "register.spec.ts::should accept name at minimum length (2 chars)"
+  },
+  "B-01_2_db_user.json": {
+    "description": "DB users row — name length 2 accepted",
+    "test": "register.spec.ts::should accept name at minimum length (2 chars)"
+  },
+  "B-02_1_name_max.png": {
+    "test": "register.spec.ts::should accept name at reasonable length (50 chars)"
+  },
+  "B-02_2_db_user.png": {
+    "description": "DB users row — name length 50 accepted",
+    "test": "register.spec.ts::should accept name at reasonable length (50 chars)"
+  },
+  "B-02_2_db_user.json": {
+    "description": "DB users row — name length 50 accepted",
+    "test": "register.spec.ts::should accept name at reasonable length (50 chars)"
+  },
+  "B-03_1_pw_min.png": {
+    "test": "register.spec.ts::should accept password at minimum length (8 chars)"
+  },
+  "B-03_2_db_user.png": {
+    "description": "DB users row — 8-char password accepted",
+    "test": "register.spec.ts::should accept password at minimum length (8 chars)"
+  },
+  "B-03_2_db_user.json": {
+    "description": "DB users row — 8-char password accepted",
+    "test": "register.spec.ts::should accept password at minimum length (8 chars)"
+  },
+  "B-04_1_pw_max.png": {
+    "test": "register.spec.ts::should accept password at maximum length (128 chars)"
+  },
+  "B-04_2_db_user.png": {
+    "description": "DB users row — 128-char password accepted",
+    "test": "register.spec.ts::should accept password at maximum length (128 chars)"
+  },
+  "B-04_2_db_user.json": {
+    "description": "DB users row — 128-char password accepted",
+    "test": "register.spec.ts::should accept password at maximum length (128 chars)"
+  },
+  "B-05_1_license_case.png": {
+    "test": "register.spec.ts::should accept license file named License.PDF (uppercase)"
+  },
+  "B-05_2_db_merchant.png": {
+    "description": "DB users + merchants — License.PDF accepted (license_status)",
+    "test": "register.spec.ts::should accept license file named License.PDF (uppercase)"
+  },
+  "B-05_2_db_merchant.json": {
+    "description": "DB users + merchants — License.PDF accepted (license_status)",
+    "test": "register.spec.ts::should accept license file named License.PDF (uppercase)"
+  }
+}

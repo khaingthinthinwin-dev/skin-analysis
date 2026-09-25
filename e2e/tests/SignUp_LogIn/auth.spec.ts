@@ -3,9 +3,21 @@ import { LoginPage } from '../../pages/SignUp_LogIn/LoginPage';
 import { RegisterPage } from '../../pages/SignUp_LogIn/RegisterPage';
 import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import { captureScreenshot } from '../../utils/screenshot';
+import { captureUserWithMerchantDbEvidence } from '../../utils/db-evidence';
+import { person } from '../../utils/identity';
 
 let loginPage: LoginPage;
 let registerPage: RegisterPage;
+
+async function settlePaint(page: import('@playwright/test').Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      })
+  );
+  await page.waitForTimeout(200);
+}
 
 test.beforeEach(async ({ page }) => {
   loginPage = new LoginPage(page);
@@ -13,287 +25,189 @@ test.beforeEach(async ({ page }) => {
 });
 
 // ============================================
-// E2E-AUTH-01: Buyer Registration
+// N-02: Merchant Registration (canonical)
 // ============================================
-test.describe('E2E-AUTH-01: Buyer Registration', () => {
-  test('should register a new buyer and redirect to login', async ({ page }) => {
-    const email = `e2e.buyer.${Date.now()}@test.com`;
-    const password = 'SecurePass123!';
-
-    await registerPage.goto();
-    await registerPage.capture('01_buyer_reg_page_loaded');
-
-    await registerPage.register({
-      name: 'E2E Buyer User',
-      email,
-      password,
-      role: 'buyer',
-      agreeToTerms: true,
-    });
-    await registerPage.capture('01_buyer_reg_submitted');
-
-    await registerPage.expectRedirectTo(ROUTES.LOGIN);
-    await registerPage.capture('01_buyer_reg_redirected_to_login');
-
-    // Verify user can now log in
-    await loginPage.login(email, password);
-    await loginPage.expectRedirectTo(ROUTES.BUYER_DASHBOARD);
-    await loginPage.capture('01_buyer_login_after_registration');
-  });
-});
-
-// ============================================
-// E2E-AUTH-02: Merchant Registration
-// ============================================
-test.describe('E2E-AUTH-02: Merchant Registration', () => {
+test.describe('N-02: Merchant Registration', () => {
   test('should register as merchant with license file upload', async ({ page }) => {
-    const email = `e2e.merchant.${Date.now()}@test.com`;
+    const merchant = person('Marcus', 'Alonso');
     const password = 'SecurePass123!';
 
     await registerPage.goto();
-    await registerPage.fillName('E2E Test Merchant');
-    await registerPage.fillEmail(email);
+    await registerPage.fillName(merchant.name);
+    await registerPage.fillEmail(merchant.email);
     await registerPage.fillPassword(password);
     await registerPage.fillConfirmPassword(password);
     await registerPage.selectRole('merchant');
-    await registerPage.capture('02_merchant_reg_role_selected');
+    await captureScreenshot(page, 'N-02_1_role_selected_merchant');
 
-    // Upload mock PDF license
     const pdfBuffer = Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF');
     await registerPage.licenseFileInput.setInputFiles({
       name: 'license.pdf',
       mimeType: 'application/pdf',
       buffer: pdfBuffer,
     });
-    await registerPage.capture('02_merchant_reg_license_uploaded');
+    await captureScreenshot(page, 'N-02_2_license_uploaded');
 
     await registerPage.checkTerms();
     await registerPage.clickSubmit();
 
     await registerPage.expectRedirectTo(ROUTES.LOGIN);
-    await registerPage.capture('02_merchant_reg_redirected_to_login');
+    await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
+    await captureScreenshot(page, 'N-02_3_redirected_to_login');
+    await captureUserWithMerchantDbEvidence(
+      page,
+      'N-02_4_db_merchant',
+      merchant.email,
+      'DB users + merchants after merchant registration with license'
+    );
   });
 });
 
 // ============================================
-// E2E-AUTH-03: Registration Validation
+// Extra: Merchant Login (not in PCL)
 // ============================================
-test.describe('E2E-AUTH-03: Registration Validation', () => {
-  test('should show validation errors on empty submission', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.clickSubmit();
-
-    const errors = page.locator('p.text-destructive');
-    const errorCount = await errors.count();
-    expect(errorCount).toBeGreaterThan(0);
-    await registerPage.capture('03_reg_empty_errors');
-  });
-
-  test('should show error for duplicate email registration', async ({ page }) => {
-    const email = `e2e.duplicate.${Date.now()}@test.com`;
-
-    // Seed user first via API
-    await page.request.post(`${API_BASE_URL}/auth/register`, {
-      form: {
-        name: 'Existing User',
-        email,
-        password: 'TestPass123!',
-        role: 'buyer',
-      },
-    });
-
-    await registerPage.goto();
-    await registerPage.register({
-      name: 'Duplicate Register',
-      email,
-      password: 'TestPass123!',
-      role: 'buyer',
-      agreeToTerms: true,
-    });
-
-    await registerPage.expectErrorVisible();
-    await registerPage.capture('03_reg_duplicate_email_error');
-  });
-
-  test('should show error for password mismatch', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.fillName('Mismatch User');
-    await registerPage.fillEmail(`e2e.mismatch.${Date.now()}@test.com`);
-    await registerPage.fillPassword('Password123!');
-    await registerPage.fillConfirmPassword('DifferentPassword123!');
-    await registerPage.checkTerms();
-    await registerPage.clickSubmit();
-
-    const confirmError = await registerPage.getConfirmPasswordError();
-    expect(confirmError).toBeTruthy();
-    await registerPage.capture('03_reg_password_mismatch_error');
-  });
-});
-
-// ============================================
-// E2E-AUTH-04: Buyer Login & Redirect
-// ============================================
-test.describe('E2E-AUTH-04: Buyer Login & Redirect', () => {
-  test('should log in as buyer and navigate to buyer dashboard', async ({ page }) => {
-    const email = `e2e.buyer.login.${Date.now()}@test.com`;
-    const password = 'TestPass123!';
-
-    await page.request.post(`${API_BASE_URL}/auth/register`, {
-      form: {
-        name: 'Buyer Login User',
-        email,
-        password,
-        role: 'buyer',
-      },
-    });
-
-    await loginPage.goto();
-    await loginPage.login(email, password);
-    await loginPage.expectRedirectTo(ROUTES.BUYER_DASHBOARD);
-    await loginPage.capture('04_buyer_dashboard_loaded');
-  });
-});
-
-// ============================================
-// E2E-AUTH-05: Merchant Login & Redirect
-// ============================================
-test.describe('E2E-AUTH-05: Merchant Login & Redirect', () => {
+test.describe('Extra: Merchant Login', () => {
   test('should log in as merchant and navigate to merchant dashboard', async ({ page }) => {
     await loginPage.goto();
-    // Use pre-seeded merchant credentials
     await loginPage.login('smt@gmail.com', 'Cosmetics@123');
     await loginPage.expectRedirectTo(ROUTES.MERCHANT_DASHBOARD);
-    await loginPage.capture('05_merchant_dashboard_loaded');
+    await expect(page.getByText('Merchant Portal')).toBeVisible({ timeout: 10_000 });
   });
 });
 
 // ============================================
-// E2E-AUTH-06: Login Validation & Error Feedback
+// Extra: Generic login error (covered by A-08/A-09; kept for BR-AUTH-009 message shape)
 // ============================================
-test.describe('E2E-AUTH-06: Login Validation & Error Feedback', () => {
+test.describe('Extra: Login Error Feedback', () => {
   test('should show generic error for wrong credentials without leaking account existence', async ({ page }) => {
     await loginPage.goto();
-    await loginPage.login('nonexistent.user@test.com', 'WrongPassword123!');
+    await loginPage.login('tyler.nguyen@gmail.com', 'WrongPassword123!');
     await loginPage.expectErrorVisible();
-    await loginPage.capture('06_login_generic_error_alert');
-  });
-
-  test('should validate invalid email format inline', async ({ page }) => {
-    await loginPage.goto();
-    await loginPage.fillEmail('invalid-email-format');
-    await loginPage.fillPassword('SomePass123!');
-    await loginPage.clickSubmit();
-
-    const emailError = await loginPage.getEmailError();
-    expect(emailError).toBeTruthy();
-    await loginPage.capture('06_login_invalid_email_format');
   });
 });
 
 // ============================================
-// E2E-AUTH-07: Password Visibility Toggle
+// N-05: Password Visibility Toggle on login page (canonical)
 // ============================================
-test.describe('E2E-AUTH-07: Password Visibility Toggle', () => {
+test.describe('N-05: Password Visibility Toggle', () => {
   test('should toggle password visibility on login page', async ({ page }) => {
     await loginPage.goto();
+    await loginPage.fillEmail('eem@gmail.com');
+    await loginPage.fillPassword('Cosmetics@123');
     await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
-    await loginPage.capture('07_password_masked');
+    await expect(loginPage.passwordInput).toHaveValue('Cosmetics@123');
+    await settlePaint(page);
+    await captureScreenshot(page, 'N-05_1_password_masked');
 
     if (await loginPage.passwordToggle.isVisible()) {
-      await loginPage.togglePasswordVisibility();
+      await loginPage.passwordToggle.click();
       await expect(loginPage.passwordInput).toHaveAttribute('type', 'text');
-      await loginPage.capture('07_password_revealed');
+      await expect(loginPage.passwordInput).toHaveValue('Cosmetics@123');
+      await expect
+        .poll(() => loginPage.passwordInput.inputValue(), { timeout: 5_000 })
+        .toBe('Cosmetics@123');
+      await settlePaint(page);
+      await captureScreenshot(page, 'N-05_2_password_revealed');
 
-      await loginPage.togglePasswordVisibility();
+      await loginPage.passwordToggle.click();
       await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
-      await loginPage.capture('07_password_masked_again');
+      await expect(loginPage.passwordInput).toHaveValue('Cosmetics@123');
+      await settlePaint(page);
+      await captureScreenshot(page, 'N-05_3_password_masked_again');
     }
   });
 });
 
 // ============================================
-// E2E-AUTH-08: Forgot Password Flow
+// Extra: Reset password guard (N-14 valid-token success not covered)
 // ============================================
-test.describe('E2E-AUTH-08: Forgot Password Flow', () => {
-  test('should navigate to forgot password and submit email', async ({ page }) => {
-    const email = `e2e.forgot.${Date.now()}@test.com`;
-
-    // Ensure user exists
-    await page.request.post(`${API_BASE_URL}/auth/register`, {
-      form: {
-        name: 'Forgot Pass User',
-        email,
-        password: 'TestPass123!',
-        role: 'buyer',
-      },
-    });
-
-    await page.goto(ROUTES.FORGOT_PASSWORD);
-    await page.waitForLoadState('networkidle');
-    await captureScreenshot(page, '08_forgot_password_loaded');
-
-    const emailInput = page.locator('input[type="email"]');
-    await expect(emailInput).toBeVisible();
-
-    await emailInput.fill(email);
-    const submitBtn = page.locator('button[type="submit"]');
-    await submitBtn.click();
-
-    // Verifies navigation to verify-code page
-    await page.waitForURL(/\/verify-code/, { timeout: 15000 });
-    await captureScreenshot(page, '08_navigated_to_verify_code');
-    await expect(page).toHaveURL(/\/verify-code/);
-  });
-});
-
-// ============================================
-// E2E-AUTH-09: Reset Password Flow
-// ============================================
-test.describe('E2E-AUTH-09: Reset Password Flow', () => {
-  test('should display reset password form and validate match', async ({ page }) => {
-    // Navigate directly with state simulation
+test.describe('Extra: Reset Password Guard', () => {
+  test('should redirect to forgot password when reset page opened without code', async ({ page }) => {
     await page.goto(ROUTES.RESET_PASSWORD);
     await page.waitForLoadState('networkidle');
 
-    // When accessed without code, redirects to forgot-password safely
     if (page.url().includes(ROUTES.FORGOT_PASSWORD)) {
       await expect(page).toHaveURL(/\/forgot-password/);
-      await captureScreenshot(page, '09_reset_password_guard_redirect');
-    } else {
-      await captureScreenshot(page, '09_reset_password_page');
     }
   });
 });
 
 // ============================================
-// E2E-AUTH-10: Logout & Session Invalidation
+// A-16: Access protected route without authentication
 // ============================================
-test.describe('E2E-AUTH-10: Logout & Session Invalidation', () => {
+test.describe('A-16: Access Protected Route Without Auth', () => {
+  test('should redirect to login when accessing protected route without authentication', async ({
+    page,
+  }) => {
+    await page.goto(ROUTES.MERCHANT_PRODUCTS);
+    await page.waitForLoadState('domcontentloaded');
+
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+    await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
+    await captureScreenshot(page, 'A-16_1_redirect_to_login');
+  });
+
+  test('should redirect to login when accessing buyer dashboard without authentication', async ({
+    page,
+  }) => {
+    await page.goto(ROUTES.BUYER_DASHBOARD);
+    await page.waitForLoadState('domcontentloaded');
+
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+    await captureScreenshot(page, 'A-16_2_buyer_redirect_to_login');
+  });
+});
+
+// ============================================
+// N-04: Logout (canonical)
+// ============================================
+test.describe('N-04: Logout', () => {
   test('should log out buyer and clear session', async ({ buyerPage }) => {
     await buyerPage.goto(ROUTES.BUYER_DASHBOARD);
+    await expect(buyerPage).toHaveURL(/\/buyer/, { timeout: 10_000 });
+    await expect(buyerPage.getByText(/Welcome back/i)).toBeVisible({ timeout: 10_000 });
+    await expect(buyerPage.getByRole('button', { name: /log ?out/i })).toBeVisible({
+      timeout: 10_000,
+    });
     await buyerPage.waitForLoadState('networkidle');
-    await captureScreenshot(buyerPage, '10_dashboard_before_logout');
+    await settlePaint(buyerPage);
+    await captureScreenshot(
+      buyerPage,
+      'N-04_1_dashboard_before_logout',
+      'Screenshot of buyer dashboard before logout'
+    );
 
-    const userMenu = buyerPage.getByRole('button', { name: /user menu|avatar/i });
-    if (await userMenu.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await userMenu.click();
-      const logoutItem = buyerPage.getByRole('menuitem', { name: /log out|logout/i });
-      if (await logoutItem.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await logoutItem.click();
-        await buyerPage.waitForURL(/\/login|\//, { timeout: 10000 });
-        await captureScreenshot(buyerPage, '10_after_logout_redirect');
-      }
-    }
+    const logoutBtn = buyerPage.getByRole('button', { name: /log ?out/i }).first();
+    await expect(logoutBtn).toBeVisible({ timeout: 10_000 });
+    await logoutBtn.click();
+
+    await buyerPage.waitForFunction(() => window.location.pathname === '/', undefined, {
+      timeout: 10_000,
+    });
+    await expect(buyerPage.getByText(/Smart AI Analysis/i)).toBeVisible({ timeout: 10_000 });
+    await buyerPage.waitForLoadState('networkidle');
+    await settlePaint(buyerPage);
+    await captureScreenshot(
+      buyerPage,
+      'N-04_2_after_logout_redirect',
+      'Screenshot of home page after logout'
+    );
+
+    await buyerPage.goto(ROUTES.BUYER_DASHBOARD);
+    await expect(buyerPage).toHaveURL(/\/login/, { timeout: 10_000 });
   });
 });
 
 // ============================================
-// E2E-AUTH-11: Multi-language Toggle
+// N-07: Multi-language Toggle (canonical)
 // ============================================
-test.describe('E2E-AUTH-11: Multi-language Toggle', () => {
+test.describe('N-07: Multi-language Toggle', () => {
   test('should switch language on auth pages', async ({ page }) => {
     await loginPage.goto();
-    await loginPage.capture('11_lang_initial');
+    await loginPage.fillEmail('eem@gmail.com');
+    await loginPage.fillPassword('Cosmetics@123');
+    await settlePaint(page);
+    await loginPage.capture('N-07_1_lang_initial');
 
     const langToggle = page.getByRole('button', { name: /change language/i });
     if (await langToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -302,7 +216,8 @@ test.describe('E2E-AUTH-11: Multi-language Toggle', () => {
       if (await jaOption.isVisible({ timeout: 2000 }).catch(() => false)) {
         await jaOption.click();
         await page.waitForTimeout(500);
-        await loginPage.capture('11_lang_japanese');
+        await settlePaint(page);
+        await loginPage.capture('N-07_2_lang_japanese');
       }
 
       await langToggle.click();
@@ -310,57 +225,133 @@ test.describe('E2E-AUTH-11: Multi-language Toggle', () => {
       if (await enOption.isVisible({ timeout: 2000 }).catch(() => false)) {
         await enOption.click();
         await page.waitForTimeout(500);
-        await loginPage.capture('11_lang_english');
+        await settlePaint(page);
+        await loginPage.capture('N-07_3_lang_english');
       }
     }
   });
 });
 
 // ============================================
-// E2E-AUTH-12: Theme Switching
+// N-08: Theme Switching (canonical)
 // ============================================
-test.describe('E2E-AUTH-12: Theme Switching', () => {
+test.describe('N-08: Theme Switching', () => {
   test('should toggle light and dark theme on auth pages', async ({ page }) => {
     await loginPage.goto();
-    await loginPage.capture('12_theme_initial');
+    await loginPage.fillEmail('eem@gmail.com');
+    await loginPage.fillPassword('Cosmetics@123');
+    await settlePaint(page);
+    await loginPage.capture('N-08_1_theme_initial');
 
     const themeToggle = page.getByRole('button', { name: /toggle theme/i });
     if (await themeToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
       await themeToggle.click();
       await page.waitForTimeout(500);
-      await loginPage.capture('12_theme_toggled');
+      await settlePaint(page);
+      await loginPage.capture('N-08_2_theme_toggled');
 
       await themeToggle.click();
       await page.waitForTimeout(500);
-      await loginPage.capture('12_theme_toggled_back');
+      await settlePaint(page);
+      await loginPage.capture('N-08_3_theme_toggled_back');
     }
   });
 });
 
 // ============================================
-// E2E-AUTH-13: Responsive Layouts
+// N-16: Responsive Layout on Desktop Viewport
 // ============================================
-test.describe('E2E-AUTH-13: Responsive Layouts', () => {
-  test('should display correctly on desktop viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
+test.describe('N-16: Responsive Layout on Desktop Viewport', () => {
+  test('should display login correctly on desktop viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+
     await loginPage.goto();
-    await loginPage.capture('13_responsive_desktop');
+    await settlePaint(page);
+
     await expect(loginPage.submitButton).toBeVisible();
+    await expect(loginPage.emailInput).toBeVisible();
+
+    const noHScroll = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth
+    );
+    expect(noHScroll).toBe(true);
+
+    await captureScreenshot(page, 'N-16_1_desktop_login');
   });
 
-  test('should display correctly on mobile viewport', async ({ page }) => {
+  test('should display register correctly on desktop viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await registerPage.goto();
+    await settlePaint(page);
+
+    await expect(registerPage.submitButton).toBeVisible();
+
+    const noHScroll = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth
+    );
+    expect(noHScroll).toBe(true);
+
+    await captureScreenshot(page, 'N-16_2_desktop_register');
+  });
+});
+
+// ============================================
+// N-17: Responsive Layout on Mobile Viewport
+// ============================================
+test.describe('N-17: Responsive Layout on Mobile Viewport', () => {
+  test('should display login correctly on mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
+
     await loginPage.goto();
-    await loginPage.capture('13_responsive_mobile');
+    await settlePaint(page);
+
     await expect(loginPage.submitButton).toBeVisible();
+    await expect(loginPage.emailInput).toBeVisible();
+
+    const noHScroll = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth
+    );
+    expect(noHScroll).toBe(true);
+
+    await captureScreenshot(page, 'N-17_1_mobile_login');
   });
 
-  test('should display correctly on tablet viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto('/login');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
-    await loginPage.capture('13_responsive_tablet');
-    await expect(loginPage.submitButton).toBeVisible();
+  test('should display register correctly on mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+
+    await registerPage.goto();
+    await settlePaint(page);
+
+    await expect(registerPage.submitButton).toBeVisible();
+
+    const noHScroll = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth
+    );
+    expect(noHScroll).toBe(true);
+
+    await captureScreenshot(page, 'N-17_2_mobile_register');
+  });
+});
+
+// ============================================
+// N-18: No Horizontal Scroll at Narrow Width (320px)
+// ============================================
+test.describe('N-18: No Horizontal Scroll at Narrow Width', () => {
+  test('should have no horizontal overflow at 320px width', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+
+    await registerPage.goto();
+    await settlePaint(page);
+
+    await expect(registerPage.submitButton).toBeVisible();
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+
+    await captureScreenshot(page, 'N-18_1_320px_register');
   });
 });
