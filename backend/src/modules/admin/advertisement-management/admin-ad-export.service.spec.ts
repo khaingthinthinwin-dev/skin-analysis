@@ -15,7 +15,7 @@ describe('AdminAdExportService', () => {
     id: 'a1',
     shop: { name: 'Shop A' },
     title: 'Summer sale',
-    feeSetting: { placement: 'homepage_banner', tier: 'premium' },
+    feeSetting: { placement: 'search_page_banner', tier: 'premium' },
     approvalStatus: 'approved',
     paymentAmount: new Prisma.Decimal('50.00'),
     adPayments: [],
@@ -50,7 +50,7 @@ describe('AdminAdExportService', () => {
       'Shop,Title,Placement,Tier,Status,Impressions,Clicks,CTR (%),Fee Paid,Revenue',
     );
     expect(lines[1]).toBe(
-      'Shop A,Summer sale,homepage_banner,premium,approved,0,0,0.00,50.00,50.00',
+      'Shop A,Summer sale,search_page_banner,premium,approved,0,0,0.00,50.00,50.00',
     );
     expect(prisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -165,7 +165,7 @@ describe('AdminAdExportService', () => {
     prisma.adFeeHistory.findMany.mockResolvedValue([
       {
         id: 'h1',
-        setting: { placement: 'homepage_banner', tier: 'premium' },
+        setting: { placement: 'search_page_banner', tier: 'premium' },
         changedByAdmin: { name: 'Admin One' },
         oldDailyRate: new Prisma.Decimal('10.00'),
         newDailyRate: new Prisma.Decimal('12.50'),

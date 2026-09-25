@@ -35,10 +35,10 @@ const ACTIVE_ADS_CACHE_KEY = 'cache:ads:active';
 const PACKAGES_CACHE_KEY = 'cache:ads:packages';
 
 const PLACEMENT_NAMES: Record<string, string> = {
-  homepage_banner: 'Homepage Banner',
-  product_sidebar: 'Product Sidebar',
-  category_banner: 'Category Banner',
-  search_top: 'Search Top',
+  search_page_banner: 'Search Page Banner',
+  recommendation_page_banner: 'Recommendation Page Banner',
+  checkout_page_banner: 'Checkout Page Banner',
+  productDetail_page_banner: 'Product Detail Page Banner',
 };
 
 const TIER_NAMES: Record<string, string> = {

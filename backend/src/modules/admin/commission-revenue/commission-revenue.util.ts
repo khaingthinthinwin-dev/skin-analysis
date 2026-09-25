@@ -3,10 +3,10 @@
 // of the global shared/ folder.
 
 export function fmtDecimal(value: unknown): string {
-  if (value === null || value === undefined) return '0.00';
+  if (value === null || value === undefined) return '0';
   const num = typeof value === 'number' ? value : Number(value);
-  if (Number.isNaN(num)) return '0.00';
-  return num.toFixed(2);
+  if (Number.isNaN(num)) return '0';
+  return String(Number(num.toFixed(2)));
 }
 
 /**

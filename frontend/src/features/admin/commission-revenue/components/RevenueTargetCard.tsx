@@ -13,6 +13,7 @@ import {
   SaveRevenueTargetPayload,
 } from "../services/commission.service";
 import { EditTargetDialog } from "./EditTargetDialog";
+import { formatCurrency } from "../utils/format";
 
 interface RevenueTargetCardProps {
   target?: RevenueTarget | null;
@@ -73,13 +74,13 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
               <span className="text-xs text-muted-foreground">
                 Target Amount
               </span>
-              <p className="text-xl font-semibold">${target.targetAmount}</p>
+              <p className="text-xl font-semibold">{formatCurrency(target.targetAmount)} Ks</p>
             </div>
             <div className="space-y-1">
               <span className="text-xs text-muted-foreground">
                 Actual Revenue
               </span>
-              <p className="text-xl font-semibold">${actual}</p>
+              <p className="text-xl font-semibold">{formatCurrency(actual)} Ks</p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -117,6 +118,7 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
           onOpenChange={setDialogOpen}
           target={target}
           period={period}
+          onPeriodChange={onPeriodChange}
           onSave={(payload) => {
             onSaveTarget(payload);
             setDialogOpen(false);

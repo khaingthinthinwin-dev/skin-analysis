@@ -141,7 +141,7 @@ export default function MatchingRecommendations() {
 
   const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters)
   const { data: historyData } = useRecommendationHistory(1, 5)
-  const { data: adPanelData } = useAdPanel('category_banner')
+  const { data: adPanelData } = useAdPanel('recommendation_page_banner')
 
   const handlePageChange = (page: number) => {
     if (page === filters.page) return

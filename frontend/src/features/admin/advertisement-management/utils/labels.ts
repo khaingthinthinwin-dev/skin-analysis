@@ -1,10 +1,10 @@
 import type { Placement, Tier } from '@/types/admin-ad-management'
 
 export const PLACEMENT_LABELS: Record<Placement, string> = {
-  homepage_banner: 'Homepage Banner',
-  product_sidebar: 'Product Sidebar',
-  category_banner: 'Category Banner',
-  search_top: 'Search Top',
+  search_page_banner: 'Search Page Banner',
+  recommendation_page_banner: 'Recommendation Page Banner',
+  checkout_page_banner: 'Checkout Page Banner',
+  productDetail_page_banner: 'Product Detail Page Banner',
 }
 
 export const TIER_LABELS: Record<Tier, string> = {

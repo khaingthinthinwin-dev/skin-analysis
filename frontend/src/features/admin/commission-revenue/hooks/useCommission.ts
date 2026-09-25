@@ -23,12 +23,14 @@ export function useCommission(
     queryKey: ['admin', 'commission', 'reports', reportParams],
     queryFn: () => commissionService.getReports(reportParams),
     enabled: options.reports !== false,
+    placeholderData: (previousData) => previousData,
   });
 
   const payoutsQuery = useQuery({
     queryKey: ['admin', 'commission', 'payouts', payoutParams],
     queryFn: () => commissionService.getPayouts(payoutParams),
     enabled: options.payouts !== false,
+    placeholderData: (previousData) => previousData,
   });
 
   const updateSettingsMutation = useMutation({

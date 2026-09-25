@@ -194,11 +194,15 @@ function BuyerOrdersPageContent() {
         return /[",\n\r]/.test(field) ? `"${field.replaceAll('"', '""')}"` : field;
       };
       const headers = ['Order #', 'Date', 'Items', 'Total', 'Payment Status', 'Order Status'];
+      const formatExportAmount = (val: string | number) => {
+        const num = typeof val === 'number' ? val : Number(val);
+        return isNaN(num) ? val : String(num);
+      };
       const rows = detailedOrders.map(({ order, detail }) => [
         order.id,
         new Date(order.createdAt).toISOString().slice(0, 10),
         detail.items.map((item) => `${item.productName} (x${item.quantity})`).join(', '),
-        order.totalAmount,
+        formatExportAmount(order.totalAmount),
         order.paymentStatus,
         order.status,
       ]);
