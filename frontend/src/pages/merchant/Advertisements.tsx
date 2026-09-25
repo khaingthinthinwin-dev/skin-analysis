@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Link } from 'react-router'
 import {
   AlertTriangle,
   CalendarDays,
@@ -15,12 +16,13 @@ import {
   Pencil,
   RefreshCw,
   Search,
+  ShieldAlert,
   Trash2,
   Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -355,12 +357,17 @@ export default function Advertisements() {
           </AlertDescription>
         </Alert>
       )}
+      {/* Rejected Merchant Banner (§4.3 item 4 `bannerPendingMerchant` — rejected variant) */}
       {user?.licenseStatus === 'rejected' && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
-            shop is approved.
+            Your merchant account has been rejected. Advertisement management features are restricted. You can resubmit
+            your license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="font-medium underline underline-offset-2 hover:no-underline">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}
