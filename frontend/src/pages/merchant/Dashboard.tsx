@@ -3,10 +3,16 @@ import { Package, Tag, Megaphone, TrendingUp, Plus, Sparkles, ArrowRight, Shield
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function MerchantDashboard() {
   const { user } = useAuth()
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
 
   const stats = [
     { label: 'Total Products', value: '24', change: '4 new this week', icon: Package, color: 'text-purple-600' },
@@ -31,15 +37,20 @@ export default function MerchantDashboard() {
             Manage your skincare product catalog, active promotions, and advertising campaigns.
           </p>
         </div>
-        <Button asChild size="lg" className="bg-white text-purple-900 hover:bg-purple-50 font-bold shrink-0 shadow-md">
-          <Link to="/merchant/products">
-            <Plus className="mr-2 h-4 w-4" /> Add New Product
-          </Link>
-        </Button>
+        {!isDeactivated && (
+          <Button asChild size="lg" className="bg-white text-purple-900 hover:bg-purple-50 font-bold shrink-0 shadow-md">
+            <Link to="/merchant/products">
+              <Plus className="mr-2 h-4 w-4" /> Add New Product
+            </Link>
+          </Button>
+        )}
       </div>
 
+      {/* Deactivated Warning */}
+      {isDeactivated && <AccountDeactivatedBanner />}
+
       {/* Pending Approval Warning */}
-      {user?.licenseStatus === 'pending' && (
+      {!isDeactivated && user?.licenseStatus === 'pending' && (
         <Alert variant="destructive">
           <ShieldAlert className="h-4 w-4" />
           <AlertTitle>Pending Approval</AlertTitle>

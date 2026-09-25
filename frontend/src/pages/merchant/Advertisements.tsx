@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -158,7 +159,12 @@ export default function Advertisements() {
   const [paymentReference, setPaymentReference] = useState('')
   const [confirmingSelection, setConfirmingSelection] = useState(false)
   const [packagesPage, setPackagesPage] = useState(1)
-  const approvedMerchant = user?.licenseStatus === 'approved'
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const approvedMerchant = user?.licenseStatus === 'approved' && !isDeactivated
   const params = {
     page,
     limit: 3,
@@ -345,8 +351,11 @@ export default function Advertisements() {
         <p className="text-muted-foreground">Select an advertising package, upload your content, and manage your advertisements.</p>
       </div>
 
+      {/* Deactivated Banner */}
+      {isDeactivated && <AccountDeactivatedBanner />}
+
       {/* Pending Merchant Banner (§4.3) */}
-      {user?.licenseStatus === 'pending' && (
+      {!isDeactivated && user?.licenseStatus === 'pending' && (
         <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -355,7 +364,7 @@ export default function Advertisements() {
           </AlertDescription>
         </Alert>
       )}
-      {user?.licenseStatus === 'rejected' && (
+      {!isDeactivated && user?.licenseStatus === 'rejected' && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -442,7 +451,7 @@ export default function Advertisements() {
                     </ul>
                     <Button
                       className="mt-auto w-full bg-primary/10 text-primary hover:bg-primary/20"
-                      disabled={!approvedMerchant}
+                      disabled={!approvedMerchant || isDeactivated}
                       onClick={() => {
                         setSelectedPackage(pkg)
                         setConfirmingSelection(true)
@@ -538,6 +547,7 @@ export default function Advertisements() {
               <AdCard
                 key={ad.id}
                 ad={ad}
+                isDeactivated={isDeactivated}
                 onEdit={(target) => setEditTarget(target)}
                 onPay={(target) => setPayTarget(target)}
                 onDelete={(target) => setDeleteTarget(target)}
@@ -728,6 +738,7 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
 
 interface AdCardProps {
   ad: Advertisement
+  isDeactivated?: boolean
   onEdit: (ad: Advertisement) => void
   onPay: (ad: Advertisement) => void
   onDelete: (ad: Advertisement) => void
@@ -841,13 +852,15 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) 
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{ad.rejectionReason}</span>
             </div>
-            <button
-              type="button"
-              className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80"
-              onClick={() => onEdit(ad)}
-            >
-              Edit &amp; Resubmit
-            </button>
+            {!isDeactivated && (
+              <button
+                type="button"
+                className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80"
+                onClick={() => onEdit(ad)}
+              >
+                Edit &amp; Resubmit
+              </button>
+            )}
           </div>
         )}
 

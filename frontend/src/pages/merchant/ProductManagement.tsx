@@ -28,6 +28,7 @@ import {
 } from '@/hooks/useProducts'
 import { useAuth } from '@/hooks/useAuth'
 import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import type { ProductQueryParams } from '@/types/product.types'
 
 export default function ProductManagement() {
@@ -38,8 +39,15 @@ export default function ProductManagement() {
     user?.licenseStatus ||
     user?.license_status
   const isPending = guard.isPending || status === 'pending'
-  const showPendingBanner = guard.showPendingBanner || isPending
-  const showCrudActions = guard.showCrudActions && !isPending
+  const isDeactivated =
+    guard.isDeactivated ||
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const showPendingBanner = (guard.showPendingBanner || isPending) && !isDeactivated
+  const showDeactivatedBanner = guard.showDeactivatedBanner || isDeactivated
+  const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -285,6 +293,8 @@ export default function ProductManagement() {
           </Button>
         )}
       </div>
+
+      {showDeactivatedBanner && <AccountDeactivatedBanner />}
 
       {showPendingBanner && (
         <Alert variant="warning">

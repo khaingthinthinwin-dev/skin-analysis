@@ -335,21 +335,34 @@ export default function PromotionEdit() {
   const { id } = useParams<{ id: string }>()
 
   const status = user?.licenseStatus || user?.license_status
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
 
   const { data: promotion, isLoading: isLoadingPromo } = usePromotion(id || '')
 
   useEffect(() => {
+    if (isDeactivated) {
+      toast.error(
+        'Your merchant account is currently Deactivate. Some features may be restricted until an admin activates your account.',
+      )
+      navigate('/merchant/promotions', { replace: true })
+      return
+    }
     if (status === 'pending') {
       toast.error(t('merchant.promotions.pendingBanner'))
       navigate('/merchant/promotions', { replace: true })
+      return
     }
     if (status === 'rejected') {
       toast.error(t('merchant.promotions.rejectedBanner'))
       navigate('/merchant/promotions', { replace: true })
     }
-  }, [status, navigate, t])
+  }, [status, isDeactivated, navigate, t])
 
-  if (status === 'pending' || status === 'rejected') return null
+  if (isDeactivated || status === 'pending' || status === 'rejected') return null
 
   if (isLoadingPromo) {
     return <LoadingSpinner className="min-h-[400px]" />

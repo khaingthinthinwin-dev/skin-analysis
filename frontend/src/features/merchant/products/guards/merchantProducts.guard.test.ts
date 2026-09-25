@@ -98,4 +98,29 @@ describe('useMerchantProductsGuard', () => {
     expect(result.current.showRejectionBanner).toBe(true)
     expect(result.current.showCrudActions).toBe(false)
   })
+
+  it('handles deactivated merchant status with deactivation banner and restricted actions', () => {
+    vi.spyOn(authHook, 'useAuth').mockReturnValue({
+      user: {
+        id: 'user-1',
+        email: 'merchant@test.com',
+        name: 'Test Merchant',
+        role: 'merchant',
+        licenseStatus: 'approved',
+        isActive: false,
+        createdAt: '2026-01-01',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    })
+
+    const { result } = renderHook(() => useMerchantProductsGuard())
+    expect(result.current.isDeactivated).toBe(true)
+    expect(result.current.showDeactivatedBanner).toBe(true)
+    expect(result.current.showCrudActions).toBe(false)
+  })
 })
