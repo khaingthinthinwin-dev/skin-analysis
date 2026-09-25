@@ -34,7 +34,7 @@ export function DashboardLayout() {
         onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
       />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-md lg:px-6">
           <Button
             variant="ghost"
@@ -64,7 +64,7 @@ export function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-background p-4 lg:p-6">
+        <main className="min-w-0 flex-1 overflow-y-auto bg-background p-4 lg:p-6">
           <Outlet />
         </main>
       </div>
