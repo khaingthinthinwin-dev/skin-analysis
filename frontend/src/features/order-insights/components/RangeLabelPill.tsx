@@ -1,10 +1,10 @@
 import { Calendar, ChevronDown } from 'lucide-react';
 
 const pillClassName =
-  'inline-flex h-7 max-w-full items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 text-[12px] font-medium text-gray-600';
+  'inline-flex h-7 max-w-full items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 text-[12px] font-medium text-gray-600 oidark:border-outline-variant oidark:bg-surface-container oidark:text-on-surface-variant';
 
 const interactivePillClassName =
-  `${pillClassName} transition hover:border-[#7c3aed] hover:text-[#7c3aed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/40`;
+  `${pillClassName} transition hover:border-[#7c3aed] hover:text-[#7c3aed] oidark:hover:border-primary oidark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/40`;
 
 /**
  * Small pill shown next to the "Revenue Summary" title with the dates behind the
@@ -14,9 +14,9 @@ const interactivePillClassName =
 export function RangeLabelPill({ label, interactive, onClick }: { label: string; interactive?: boolean; onClick?: () => void }) {
   const content = (
     <>
-      <Calendar className="h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden="true" />
+      <Calendar className="h-3.5 w-3.5 shrink-0 text-gray-400 oidark:text-outline" aria-hidden="true" />
       <span className="truncate">{label}</span>
-      {interactive && <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden="true" />}
+      {interactive && <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400 oidark:text-outline" aria-hidden="true" />}
     </>
   );
 

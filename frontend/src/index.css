@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/**
+ * Order Insights dark-mode variant (dark-mode-only rule).
+ *
+ * The app switches theme by putting `.dark` on <html> (next-themes, attribute="class"),
+ * while Tailwind's built-in `dark:` variant only follows the OS `prefers-color-scheme`
+ * setting in this project. `oidark:` scopes a rule to the `.dark` class instead, so it is
+ * the variant that actually applies when a user picks Dark in the theme toggle.
+ *
+ * It is used by the Order Insights pages/components only, so no other screen is affected,
+ * and outside `.dark` the selector never matches — every unguarded (light-mode) class keeps
+ * working exactly as before. `:is()` (not `:where()`) keeps a higher specificity than the
+ * light utility it accompanies, so the dark value wins whenever `.dark` is present.
+ */
+@custom-variant oidark (&:is(.dark, .dark *));
+
 @theme {
   --radius: 0.5rem;
 

@@ -212,8 +212,8 @@ function OrderItemRow({ item }: { item: MerchantOrderItemDto }) {
   const image = getImageUrl(item.productImage);
 
   return (
-    <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-[10px] border border-[#f3f4f6] bg-[#fafafa] p-3 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:gap-4 sm:p-4">
-      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[10px] border border-[#f3f4f6] bg-[#f3f0ff]">
+    <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-[10px] border border-[#f3f4f6] bg-[#fafafa] p-3 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:gap-4 sm:p-4 oidark:border-outline-variant oidark:bg-surface-container-lowest">
+      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[10px] border border-[#f3f4f6] bg-[#f3f0ff] oidark:border-outline-variant oidark:bg-surface-container">
         {image && !imageFailed ? (
           <img
             src={image}
@@ -223,19 +223,19 @@ function OrderItemRow({ item }: { item: MerchantOrderItemDto }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[#7c3aed]" aria-hidden="true">
+          <div className="flex h-full w-full items-center justify-center text-[#7c3aed] oidark:text-primary" aria-hidden="true">
             <Package className="h-7 w-7" />
           </div>
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="break-words text-sm font-bold leading-5 text-[#111827]">{item.productName}</p>
-        <p className="mt-1 text-[13px] text-[#6b7280]">Quantity: {item.quantity}</p>
-        <p className="text-[13px] text-[#6b7280]">Unit price: {formatCurrencyAmount(item.unitPrice)}</p>
+        <p className="break-words text-sm font-bold leading-5 text-[#111827] oidark:text-foreground">{item.productName}</p>
+        <p className="mt-1 text-[13px] text-[#6b7280] oidark:text-muted-foreground">Quantity: {item.quantity}</p>
+        <p className="text-[13px] text-[#6b7280] oidark:text-muted-foreground">Unit price: {formatCurrencyAmount(item.unitPrice)}</p>
       </div>
       <div className="col-start-2 shrink-0 text-left sm:col-start-auto sm:text-right">
-        <p className="text-[11px] uppercase text-[#9ca3af]">Line total</p>
-        <p className="text-base font-bold text-[#111827]">{formatCurrencyAmount(item.totalPrice)}</p>
+        <p className="text-[11px] uppercase text-[#9ca3af] oidark:text-muted-foreground">Line total</p>
+        <p className="text-base font-bold text-[#111827] oidark:text-foreground">{formatCurrencyAmount(item.totalPrice)}</p>
       </div>
     </div>
   );
@@ -436,15 +436,15 @@ function MerchantOrderDetailContent() {
 
       {isInvoiceOpen && <MerchantInvoiceDialog order={order} onClose={() => setIsInvoiceOpen(false)} />}
 
-      <section className="rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:px-5">
+      <section className="rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:px-5 oidark:border-primary oidark:bg-surface-container-low">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3 sm:items-center">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white" aria-hidden="true">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white oidark:bg-primary oidark:text-primary-foreground" aria-hidden="true">
               ✓
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[#111827]">{copy.title}</h2>
-              <p className="text-[13px] text-[#6b7280]">{actionMessage}</p>
+              <h2 className="text-sm font-bold text-[#111827] oidark:text-foreground">{copy.title}</h2>
+              <p className="text-[13px] text-[#6b7280] oidark:text-muted-foreground">{actionMessage}</p>
             </div>
           </div>
           <StatusTransitionControl
@@ -459,14 +459,14 @@ function MerchantOrderDetailContent() {
         <div className="flex min-w-0 flex-col gap-4">
           <DeliveryProgress currentStatus={deliveryStatus} variant="merchant" timestamps={stepTimestamps} />
 
-          <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-300" aria-hidden="true">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-300 oidark:bg-violet-950 oidark:text-violet-300" aria-hidden="true">
                   <PackageSearch className="h-5 w-5" />
                 </span>
                 {translate('orders.detail.itemsTitle', 'Order Items')}
-                <span className="text-xs font-normal text-[#9ca3af]">{`(${itemCountLabel})`}</span>
+                <span className="text-xs font-normal text-[#9ca3af] oidark:text-muted-foreground">{`(${itemCountLabel})`}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -479,38 +479,38 @@ function MerchantOrderDetailContent() {
               )}
 
               {order.items.length > 0 && (
-                <div className="space-y-2 border-t border-[#f3f4f6] pt-3">
+                <div className="space-y-2 border-t border-[#f3f4f6] pt-3 oidark:border-outline-variant">
                   <div className="flex items-start justify-between gap-4">
-                    <span className="min-w-0 text-[#6b7280]">
+                    <span className="min-w-0 text-[#6b7280] oidark:text-muted-foreground">
                       {translate('orders.detail.subtotal', 'Subtotal')}
                     </span>
-                    <span className="shrink-0 font-medium text-[#111827]">
+                    <span className="shrink-0 font-medium text-[#111827] oidark:text-foreground">
                       {formatCurrencyAmount(subtotal)}
                     </span>
                   </div>
                   {hasDiscount && (
                     <div className="flex items-start justify-between gap-4">
-                      <span className="min-w-0 text-[#6b7280]">
+                      <span className="min-w-0 text-[#6b7280] oidark:text-muted-foreground">
                         {translate('orders.detail.discount', 'Discount')}
                       </span>
-                      <span className="shrink-0 font-medium text-[#10b981]">
+                      <span className="shrink-0 font-medium text-[#10b981] oidark:text-emerald-400">
                         -{formatCurrencyAmount(order.discountAmount)}
                       </span>
                     </div>
                   )}
-                  <div className="my-2 h-px bg-[#f3f4f6]" />
+                  <div className="my-2 h-px bg-[#f3f4f6] oidark:bg-outline-variant" />
                   <div className="flex items-center justify-between gap-4 text-lg">
-                    <span className="font-bold text-[#111827]">
+                    <span className="font-bold text-[#111827] oidark:text-foreground">
                       {translate('orders.detail.total', 'Total')}
                     </span>
-                    <span className="shrink-0 text-xl font-extrabold text-[#7c3aed]">
+                    <span className="shrink-0 text-xl font-extrabold text-[#7c3aed] oidark:text-primary">
                       {formatCurrencyAmount(order.totalAmount)}
                     </span>
                   </div>
                   {commission && commissionRate && (
-                    <div className="rounded-lg bg-[#f9f5ff] px-4 py-3 dark:bg-[#2a1f4d]">
+                    <div className="rounded-lg bg-[#f9f5ff] px-4 py-3 dark:bg-[#2a1f4d] oidark:bg-surface-container-highest">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-[#7c3aed] dark:text-[#c4b5fd]">
+                        <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-[#7c3aed] dark:text-[#c4b5fd] oidark:text-primary">
                           {translate(
                             'orders.detail.commissionLabel',
                             `Commission (${Number(commissionRate)}%)`,
@@ -522,7 +522,7 @@ function MerchantOrderDetailContent() {
                                   <button
                                     type="button"
                                     aria-label={rateNote}
-                                    className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[#7c3aed]/60 transition hover:text-[#7c3aed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/40"
+                                    className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[#7c3aed]/60 transition hover:text-[#7c3aed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/40 oidark:text-primary/70 oidark:hover:text-primary"
                                   >
                                     <Info className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
@@ -532,15 +532,15 @@ function MerchantOrderDetailContent() {
                             </TooltipProvider>
                           )}
                         </span>
-                        <span className="shrink-0 font-medium text-[#111827] dark:text-[#e5e7eb]">
+                        <span className="shrink-0 font-medium text-[#111827] dark:text-[#e5e7eb] oidark:text-foreground">
                           -{formatCurrencyAmount(commission.commission)}
                         </span>
                       </div>
                       <div className="mt-1.5 flex items-center justify-between gap-4">
-                        <span className="text-sm font-semibold text-[#7c3aed] dark:text-[#c4b5fd]">
+                        <span className="text-sm font-semibold text-[#7c3aed] dark:text-[#c4b5fd] oidark:text-primary">
                           {translate('orders.detail.youReceive', 'You receive')}
                         </span>
-                        <span className="text-lg font-extrabold text-[#7c3aed] dark:text-[#c4b5fd]">
+                        <span className="text-lg font-extrabold text-[#7c3aed] dark:text-[#c4b5fd] oidark:text-primary">
                           {formatCurrencyAmount(commission.net)}
                         </span>
                       </div>
@@ -555,10 +555,10 @@ function MerchantOrderDetailContent() {
         <div className="flex min-w-0 flex-col gap-4 min-[901px]:sticky min-[901px]:top-20">
           <CustomerInformationCard customer={order.customer} />
 
-          <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <section className="border-b border-[#f3f4f6] p-5">
-              <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827]">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-300" aria-hidden="true">
+          <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
+            <section className="border-b border-[#f3f4f6] p-5 oidark:border-outline-variant">
+              <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] oidark:text-foreground">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-300 oidark:bg-sky-950 oidark:text-sky-300" aria-hidden="true">
                   <MapPin className="h-5 w-5" />
                 </span>
                 {translate('orders.detail.shippingTitle', 'Shipping Address')}
@@ -566,13 +566,13 @@ function MerchantOrderDetailContent() {
                   <CopyButton
                     value={address.join('\n')}
                     label={translate('orders.detail.copyAddress', 'Copy shipping address')}
-                    className="ml-auto text-[#9ca3af] hover:bg-[#f3f0ff] hover:text-[#7c3aed] focus-visible:ring-[#7c3aed]/50"
+                    className="ml-auto text-[#9ca3af] hover:bg-[#f3f0ff] hover:text-[#7c3aed] focus-visible:ring-[#7c3aed]/50 oidark:text-muted-foreground oidark:hover:bg-muted oidark:hover:text-primary"
                   />
                 )}
               </h2>
               <div className="ml-0">
                 {address.length > 0 ? (
-                  <address className="text-sm not-italic leading-relaxed text-[#374151]">
+                  <address className="text-sm not-italic leading-relaxed text-[#374151] oidark:text-muted-foreground">
                     {address.map((line) => (
                       <span key={line} className="block">
                         {line}
@@ -580,25 +580,25 @@ function MerchantOrderDetailContent() {
                     ))}
                   </address>
                 ) : (
-                  <p className="text-sm text-[#6b7280]">
+                  <p className="text-sm text-[#6b7280] oidark:text-muted-foreground">
                     {translate('orders.detail.noAddress', 'Shipping address is not available for this order.')}
                   </p>
                 )}
               </div>
             </section>
             <section className="space-y-3 p-5 text-sm">
-              <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827]">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300" aria-hidden="true">
+              <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] oidark:text-foreground">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300 oidark:bg-emerald-950 oidark:text-emerald-300" aria-hidden="true">
                   <CreditCard className="h-5 w-5" />
                 </span>
                 {translate('orders.detail.paymentTitle', 'Payment')}
               </h2>
               <div className="flex items-center justify-between">
-                <span className="text-[#6b7280]">Method</span>
-                <span className="font-medium text-[#111827]">{paymentMethodLabel(order.paymentMethod)}</span>
+                <span className="text-[#6b7280] oidark:text-muted-foreground">Method</span>
+                <span className="font-medium text-[#111827] oidark:text-foreground">{paymentMethodLabel(order.paymentMethod)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[#6b7280]">Status</span>
+                <span className="text-[#6b7280] oidark:text-muted-foreground">Status</span>
                 <PaymentBadge status={order.paymentStatus} />
               </div>
             </section>

@@ -8,13 +8,16 @@ interface StatusBadgeProps {
   className?: string;
 }
 
+// Each status keeps its light palette unguarded and repeats the same dark palette behind
+// `oidark:` (the `.dark` class variant) so the badge also stays readable when the theme is
+// switched in-app, not only when the OS itself is dark.
 const STATUS_STYLES: Record<OrderStatus, string> = {
-  [OrderStatus.PLACED]: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
-  [OrderStatus.CONFIRMED]: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
-  [OrderStatus.PACKED]: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  [OrderStatus.SHIPPED]: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300',
-  [OrderStatus.OUT_FOR_DELIVERY]: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
-  [OrderStatus.DELIVERED]: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  [OrderStatus.PLACED]: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 oidark:bg-slate-800 oidark:text-slate-200',
+  [OrderStatus.CONFIRMED]: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 oidark:bg-blue-950 oidark:text-blue-300',
+  [OrderStatus.PACKED]: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 oidark:bg-amber-950 oidark:text-amber-300',
+  [OrderStatus.SHIPPED]: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300 oidark:bg-violet-950 oidark:text-violet-300',
+  [OrderStatus.OUT_FOR_DELIVERY]: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300 oidark:bg-orange-950 oidark:text-orange-300',
+  [OrderStatus.DELIVERED]: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 oidark:bg-emerald-950 oidark:text-emerald-300',
 };
 
 export function StatusBadge({ status, className = '' }: StatusBadgeProps) {

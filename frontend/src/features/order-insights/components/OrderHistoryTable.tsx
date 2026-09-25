@@ -38,7 +38,7 @@ export function OrderHistoryTable({
   if (loading) {
     return (
       <Table>
-        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff]">
+        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff] oidark:border-primary oidark:bg-muted">
           <TableRow className="border-b-0 hover:bg-transparent">
             <TableHead className="h-12 w-[180px]"><Skeleton className="h-4 w-24" /></TableHead>
             <TableHead className="h-12 w-[150px]"><Skeleton className="h-4 w-20" /></TableHead>
@@ -51,7 +51,7 @@ export function OrderHistoryTable({
         </TableHeader>
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
+            <TableRow key={i} className="oidark:border-surface-container-highest">
               <TableCell className="font-mono text-xs"><Skeleton className="h-4 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-24" /></TableCell>
               <TableCell className="text-center"><Skeleton className="h-4 w-12" /></TableCell>
@@ -76,10 +76,10 @@ export function OrderHistoryTable({
   };
 
   const renderSortableHeader = (label: string, field: OrderSortField, className = '') => (
-    <TableHead className={`h-12 font-bold uppercase tracking-wider text-gray-700 ${className}`} aria-sort={currentSort === field ? `${currentOrder === 'asc' ? 'ascending' : 'descending'}` : 'none'}>
+    <TableHead className={`h-12 font-bold uppercase tracking-wider text-gray-700 oidark:text-on-surface-variant ${className}`} aria-sort={currentSort === field ? `${currentOrder === 'asc' ? 'ascending' : 'descending'}` : 'none'}>
       <button
         type="button"
-        className="inline-flex items-center gap-1 rounded-sm text-left font-bold uppercase tracking-wider text-gray-700 hover:text-[#7c3aed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex items-center gap-1 rounded-sm text-left font-bold uppercase tracking-wider text-gray-700 hover:text-[#7c3aed] oidark:text-on-surface-variant oidark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => onSort(field)}
       >
         {label}
@@ -92,20 +92,20 @@ export function OrderHistoryTable({
     <>
       <div className="hidden min-h-0 max-w-full flex-1 self-stretch overflow-x-auto overflow-y-scroll overscroll-contain sm:block [&>div]:overflow-visible">
       <Table className="min-w-[980px]">
-        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff]">
+        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff] oidark:border-primary oidark:bg-muted">
           <TableRow className="border-b-0 hover:bg-transparent">
-            <TableHead className="h-12 w-[180px] font-bold uppercase tracking-wider text-gray-700">{t('orders.table.orderId', 'Order #')}</TableHead>
+            <TableHead className="h-12 w-[180px] font-bold uppercase tracking-wider text-gray-700 oidark:text-on-surface-variant">{t('orders.table.orderId', 'Order #')}</TableHead>
             {renderSortableHeader(t('orders.table.date', 'Date'), 'createdAt', 'w-[150px]')}
-            <TableHead className="h-12 w-[100px] text-center font-bold uppercase tracking-wider text-gray-700">{t('orders.table.items', 'Items')}</TableHead>
+            <TableHead className="h-12 w-[100px] text-center font-bold uppercase tracking-wider text-gray-700 oidark:text-on-surface-variant">{t('orders.table.items', 'Items')}</TableHead>
             {renderSortableHeader(t('orders.table.total', 'Total'), 'totalAmount', 'w-[150px] text-right pr-4 [&_button]:ml-auto')}
-            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700">{t('orders.table.payment', 'Payment')}</TableHead>
-            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700">{t('orders.table.status', 'Status')}</TableHead>
-            <TableHead className="h-12 w-[80px] text-right font-bold uppercase tracking-wider text-gray-700">{t('orders.table.track', 'Track')}</TableHead>
+            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700 oidark:text-on-surface-variant">{t('orders.table.payment', 'Payment')}</TableHead>
+            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700 oidark:text-on-surface-variant">{t('orders.table.status', 'Status')}</TableHead>
+            <TableHead className="h-12 w-[80px] text-right font-bold uppercase tracking-wider text-gray-700 oidark:text-on-surface-variant">{t('orders.table.track', 'Track')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} className="py-3 hover:bg-muted/50 transition-colors">
+            <TableRow key={row.id} className="py-3 hover:bg-muted/50 transition-colors oidark:border-surface-container-highest oidark:hover:bg-surface-container-high">
               <TableCell className="py-3 px-4 font-mono text-xs font-medium">
                 #{row.id.slice(0, 8).toUpperCase()}
               </TableCell>
@@ -147,7 +147,7 @@ export function OrderHistoryTable({
     </div>
       <div className="space-y-3 sm:hidden">
       {rows.map((row) => (
-        <div key={row.id} className="rounded-lg border bg-card p-4">
+        <div key={row.id} className="rounded-lg border bg-card p-4 oidark:border-outline-variant oidark:bg-surface-container-low">
           <div className="flex items-center justify-between gap-3">
             <span className="font-mono text-xs font-medium">
               #{row.id.slice(0, 8).toUpperCase()}

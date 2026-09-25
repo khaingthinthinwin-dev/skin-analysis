@@ -12,11 +12,11 @@ import { RangeLabelPill } from './RangeLabelPill';
 import { CustomRangeModal } from './CustomRangeModal';
 
 /** Operator circles ("−", "=") inside the formula box. */
-const operatorClassName = 'flex h-6 w-6 items-center justify-center self-center justify-self-center rounded-full bg-gray-100 text-sm leading-none text-gray-400';
-const metricLabelClassName = 'm-0 text-xs font-medium text-gray-500';
+const operatorClassName = 'flex h-6 w-6 items-center justify-center self-center justify-self-center rounded-full bg-gray-100 text-sm leading-none text-gray-400 oidark:bg-surface-container-high oidark:text-outline';
+const metricLabelClassName = 'm-0 text-xs font-medium text-gray-500 oidark:text-muted-foreground';
 // `sm:mt-1` keeps the desktop label/value stack while the mobile rows (BR-OI-026 vertical
 // stack) place label and value on one line, where the 4px top margin would misalign them.
-const metricValueClassName = 'm-0 whitespace-nowrap text-[20px] font-medium text-gray-900 sm:mt-1';
+const metricValueClassName = 'm-0 whitespace-nowrap text-[20px] font-medium text-gray-900 sm:mt-1 oidark:text-foreground';
 // One stat row: a label/value line inside the box below `sm`, the original stacked block from `sm` up.
 const metricRowClassName = 'flex min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2 sm:block sm:px-0 sm:py-1';
 
@@ -34,7 +34,7 @@ const metricRowClassName = 'flex min-w-0 items-center justify-between gap-3 roun
 export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodChange, onApply, error }: { data?: RevenueSummaryDto; loading?: boolean; period: SummaryPeriod; from?: string; to?: string; onPeriodChange: (period: SummaryPeriod, from?: string, to?: string) => void; onApply?: (from: string, to: string) => void; error?: string }) {
   const { t } = useTranslation();
   // Same surface recipe as the Buyer Order Insights cards: white, soft layered shadow.
-  const cardClassName = 'border-gray-200 bg-white shadow-[0_6px_18px_rgba(0,0,0,0.08)]';
+  const cardClassName = 'border-gray-200 bg-white shadow-[0_6px_18px_rgba(0,0,0,0.08)] oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none';
   const toggleRef = useRef<HTMLDivElement>(null);
   // Set on every close so the effect below can hand the focus back to the toggle.
   const refocusToggle = useRef(false);
@@ -102,7 +102,7 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
         row wraps onto two lines on narrow screens. */}
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <h2 className="m-0 text-[17px] font-bold text-gray-900">{t('merchant.revenue.title', 'Revenue Summary')}</h2>
+        <h2 className="m-0 text-[17px] font-bold text-gray-900 oidark:text-foreground">{t('merchant.revenue.title', 'Revenue Summary')}</h2>
         {rangeLabel && <RangeLabelPill label={rangeLabel} interactive={visiblePeriod === 'custom'} onClick={() => setCustomRangeOpen(true)} />}
       </div>
       <div ref={toggleRef} className="w-full sm:w-max"><PeriodSelector value={visiblePeriod} from={from} to={to} onChange={handlePeriodChange} /></div>
@@ -111,7 +111,7 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
     {/* Below `sm` the four figures stack vertically (BR-OI-026, DD §2.4) as label/value rows so the
         20px Ks amounts never collide with the operator chips; from `sm` up this is the original
         Sales − Commission = Revenue | AOV formula row. */}
-    <div className="grid grid-cols-1 gap-y-1 rounded-lg border border-gray-200 bg-white p-1.5 sm:grid-cols-[1fr_auto_1fr_auto_1fr_1px_1fr] sm:gap-x-3 sm:gap-y-3 sm:px-4 sm:py-3">
+    <div className="grid grid-cols-1 gap-y-1 rounded-lg border border-gray-200 bg-white p-1.5 oidark:border-outline-variant oidark:bg-surface-container-lowest sm:grid-cols-[1fr_auto_1fr_auto_1fr_1px_1fr] sm:gap-x-3 sm:gap-y-3 sm:px-4 sm:py-3">
       <div className={metricRowClassName}>
         <p className={metricLabelClassName}>{t('merchant.revenue.sales', 'Sales')}</p>
         <p className={metricValueClassName}>{metricText(displayData?.sales)}</p>
@@ -122,11 +122,11 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
         <p className={metricValueClassName}>{metricText(displayData?.commission)}</p>
       </div>
       <span aria-hidden="true" className={operatorClassName}>=</span>
-      <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[#f9f5ff] px-3 py-2 sm:block sm:py-1">
-        <p className="m-0 text-xs font-medium text-[#7c3aed]">{t('merchant.revenue.net', 'Revenue')}</p>
-        <p className="m-0 whitespace-nowrap text-[20px] font-medium text-[#7c3aed] sm:mt-1">{metricText(displayData?.revenue)}</p>
+      <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[#f9f5ff] px-3 py-2 oidark:bg-muted sm:block sm:py-1">
+        <p className="m-0 text-xs font-medium text-[#7c3aed] oidark:text-primary">{t('merchant.revenue.net', 'Revenue')}</p>
+        <p className="m-0 whitespace-nowrap text-[20px] font-medium text-[#7c3aed] sm:mt-1 oidark:text-primary">{metricText(displayData?.revenue)}</p>
       </div>
-      <div aria-hidden="true" className="h-px w-full self-center bg-gray-200 sm:h-auto sm:self-stretch" />
+      <div aria-hidden="true" className="h-px w-full self-center bg-gray-200 oidark:bg-surface-container-highest sm:h-auto sm:self-stretch" />
       <div className={metricRowClassName}>
         <p className={metricLabelClassName}>{t('merchant.revenue.aov', 'AOV')}</p>
         <p className={metricValueClassName}>{metricText(displayData?.aov)}</p>
@@ -135,11 +135,11 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
 
     <div>
       <TooltipProvider delayDuration={200}>
-        <p className="m-0 flex items-center gap-1.5 text-[12.5px] text-gray-500">
+        <p className="m-0 flex items-center gap-1.5 text-[12.5px] text-gray-500 oidark:text-muted-foreground">
           <span>{footerText}</span>
           {displayData && !displayData.commissionRateLocked && <Tooltip>
             <TooltipTrigger asChild>
-              <button type="button" aria-label={rateNote} className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/40">
+              <button type="button" aria-label={rateNote} className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:text-gray-500 oidark:text-outline oidark:hover:text-on-surface-variant focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/40">
                 <Info className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </TooltipTrigger>

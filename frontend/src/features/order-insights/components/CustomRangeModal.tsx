@@ -14,7 +14,7 @@ import {
 import { countRangeDays, formatRangeLabel, isIsoDate, toIsoDate } from '../utils/dateRangeLabel';
 
 /** Accent of the card metrics, reused for the picked range in the summary line. */
-const rangeHighlightClassName = 'font-semibold text-[#7c3aed]';
+const rangeHighlightClassName = 'font-semibold text-[#7c3aed] oidark:text-primary';
 
 interface CustomRangeModalProps {
   /** Applied range, prefilled when the modal is reopened. */
@@ -103,10 +103,10 @@ export function CustomRangeModal({ from, to, error, onApply, onClose }: CustomRa
         }}
       >
         <DialogHeader className="space-y-1 text-left">
-          <DialogTitle className="text-[18px] font-bold text-gray-900">
+          <DialogTitle className="text-[18px] font-bold text-gray-900 oidark:text-foreground">
             {t('merchant.revenue.customRangeTitle', 'Custom range')}
           </DialogTitle>
-          <DialogDescription className="text-[12.5px] text-gray-500">
+          <DialogDescription className="text-[12.5px] text-gray-500 oidark:text-muted-foreground">
             {t('merchant.revenue.customRangeSubtitle', 'Choose the period to calculate your revenue.')}
           </DialogDescription>
         </DialogHeader>
@@ -126,7 +126,7 @@ export function CustomRangeModal({ from, to, error, onApply, onClose }: CustomRa
                 clearError();
                 setStartDate(event.target.value);
               }}
-              className="h-10 bg-white"
+              className="h-10 bg-white oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
             />
           </div>
           <div className="min-w-0">
@@ -143,7 +143,7 @@ export function CustomRangeModal({ from, to, error, onApply, onClose }: CustomRa
                 clearError();
                 setEndDate(event.target.value);
               }}
-              className="h-10 bg-white"
+              className="h-10 bg-white oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
             />
           </div>
         </div>

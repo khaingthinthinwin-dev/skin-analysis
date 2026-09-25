@@ -100,7 +100,7 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
             <p className="text-sm font-medium text-foreground">{t('merchant.orders.exportScope', 'Export Scope')}</p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{t('merchant.orders.exportStatus', 'Status')}:</span>
-              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">
+              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 oidark:border-blue-900 oidark:bg-blue-950 oidark:text-blue-300">
                 {statusLabel}
               </span>
             </div>

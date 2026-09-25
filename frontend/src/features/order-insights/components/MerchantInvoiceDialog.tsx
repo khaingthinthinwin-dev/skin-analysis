@@ -66,14 +66,14 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
           <DialogDescription>{labels.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 rounded-xl border border-[#f3f4f6] bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-6">
-          <div className="flex flex-col gap-4 border-b-2 border-[#7c3aed] pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-5 rounded-xl border border-[#f3f4f6] bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-6 oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
+          <div className="flex flex-col gap-4 border-b-2 border-[#7c3aed] pb-4 sm:flex-row sm:items-start sm:justify-between oidark:border-primary">
             <div className="min-w-0">
-              <p className="m-0 text-xl font-extrabold tracking-[1px] text-[#7c3aed]">{labels.heading}</p>
-              <dl className="mt-2 space-y-0.5 text-[12.5px] text-[#6b7280]">
+              <p className="m-0 text-xl font-extrabold tracking-[1px] text-[#7c3aed] oidark:text-primary">{labels.heading}</p>
+              <dl className="mt-2 space-y-0.5 text-[12.5px] text-[#6b7280] oidark:text-muted-foreground">
                 <div className="flex flex-wrap gap-1">
                   <dt>{`${labels.orderNumber}:`}</dt>
-                  <dd className="m-0 font-semibold text-[#111827]">{data.reference}</dd>
+                  <dd className="m-0 font-semibold text-[#111827] oidark:text-foreground">{data.reference}</dd>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <dt>{`${labels.orderDate}:`}</dt>
@@ -90,23 +90,23 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
               </dl>
             </div>
             <div className="shrink-0 sm:text-right">
-              <p className="m-0 text-[13px] font-bold text-[#111827]">{data.sellerName}</p>
-              <p className="m-0 text-[12px] text-[#6b7280]">{labels.sellerFulfillmentNote}</p>
+              <p className="m-0 text-[13px] font-bold text-[#111827] oidark:text-foreground">{data.sellerName}</p>
+              <p className="m-0 text-[12px] text-[#6b7280] oidark:text-muted-foreground">{labels.sellerFulfillmentNote}</p>
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <section>
-              <h3 className="m-0 text-[13px] font-bold text-[#111827]">{labels.billedTo}</h3>
-              <div className="mt-2 space-y-0.5 text-[12.5px] text-[#374151]">
-                <p className="m-0 font-medium">{data.customer.name}</p>
+              <h3 className="m-0 text-[13px] font-bold text-[#111827] oidark:text-foreground">{labels.billedTo}</h3>
+              <div className="mt-2 space-y-0.5 text-[12.5px] text-[#374151] oidark:text-muted-foreground">
+                <p className="m-0 font-medium text-[#111827] oidark:text-foreground">{data.customer.name}</p>
                 {data.customer.email && <p className="m-0 break-all">{data.customer.email}</p>}
                 {data.customer.phone && <p className="m-0">{data.customer.phone}</p>}
               </div>
             </section>
             <section>
-              <h3 className="m-0 text-[13px] font-bold text-[#111827]">{labels.shippingAddress}</h3>
-              <div className="mt-2 space-y-0.5 text-[12.5px] text-[#374151]">
+              <h3 className="m-0 text-[13px] font-bold text-[#111827] oidark:text-foreground">{labels.shippingAddress}</h3>
+              <div className="mt-2 space-y-0.5 text-[12.5px] text-[#374151] oidark:text-muted-foreground">
                 {data.shippingAddressLines.length > 0 ? (
                   data.shippingAddressLines.map((line) => (
                     <p key={line} className="m-0 break-words">
@@ -114,18 +114,18 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
                     </p>
                   ))
                 ) : (
-                  <p className="m-0 text-[#6b7280]">{labels.addressUnavailable}</p>
+                  <p className="m-0 text-[#6b7280] oidark:text-muted-foreground">{labels.addressUnavailable}</p>
                 )}
               </div>
             </section>
           </div>
 
           <section>
-            <h3 className="m-0 text-[13px] font-bold text-[#111827]">{labels.itemsTitle}</h3>
+            <h3 className="m-0 text-[13px] font-bold text-[#111827] oidark:text-foreground">{labels.itemsTitle}</h3>
             <div className="mt-2 overflow-x-auto">
               <table className="w-full min-w-[420px] border-collapse text-[13px]">
                 <thead>
-                  <tr className="border-b border-[#e5e7eb] text-[10px] uppercase tracking-wide text-[#9ca3af]">
+                  <tr className="border-b border-[#e5e7eb] text-[10px] uppercase tracking-wide text-[#9ca3af] oidark:border-outline-variant oidark:text-muted-foreground">
                     <th scope="col" className="py-2 pr-2 text-left font-semibold">
                       {labels.columnProduct}
                     </th>
@@ -143,19 +143,19 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
                 <tbody>
                   {data.lines.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-6 text-center text-[#6b7280]">
+                      <td colSpan={4} className="py-6 text-center text-[#6b7280] oidark:text-muted-foreground">
                         {labels.noItems}
                       </td>
                     </tr>
                   ) : (
                     data.lines.map((line) => (
-                      <tr key={line.id} className="border-b border-[#f3f4f6] align-top">
-                        <td className="break-words py-2.5 pr-2 font-medium text-[#111827]">{line.name}</td>
-                        <td className="px-2 py-2.5 text-right text-[#374151]">{line.quantity}</td>
-                        <td className="px-2 py-2.5 text-right text-[#374151]">
+                      <tr key={line.id} className="border-b border-[#f3f4f6] align-top oidark:border-outline-variant">
+                        <td className="break-words py-2.5 pr-2 font-medium text-[#111827] oidark:text-foreground">{line.name}</td>
+                        <td className="px-2 py-2.5 text-right text-[#374151] oidark:text-muted-foreground">{line.quantity}</td>
+                        <td className="px-2 py-2.5 text-right text-[#374151] oidark:text-muted-foreground">
                           {formatCurrencyAmount(line.unitPrice)}
                         </td>
-                        <td className="py-2.5 pl-2 text-right font-semibold text-[#111827]">
+                        <td className="py-2.5 pl-2 text-right font-semibold text-[#111827] oidark:text-foreground">
                           {formatCurrencyAmount(line.lineTotal)}
                         </td>
                       </tr>
@@ -168,40 +168,40 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
 
           <section className="ml-auto w-full max-w-[320px] space-y-1 text-[13px]">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-[#6b7280]">{labels.subtotal}</span>
-              <span className="font-medium text-[#111827]">{formatCurrencyAmount(data.subtotal)}</span>
+              <span className="text-[#6b7280] oidark:text-muted-foreground">{labels.subtotal}</span>
+              <span className="font-medium text-[#111827] oidark:text-foreground">{formatCurrencyAmount(data.subtotal)}</span>
             </div>
             {data.hasDiscount && (
               <div className="flex items-center justify-between gap-4">
-                <span className="text-[#6b7280]">{labels.discount}</span>
-                <span className="font-medium text-[#10b981]">-{formatCurrencyAmount(data.discountAmount)}</span>
+                <span className="text-[#6b7280] oidark:text-muted-foreground">{labels.discount}</span>
+                <span className="font-medium text-[#10b981] oidark:text-emerald-400">-{formatCurrencyAmount(data.discountAmount)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between gap-4 border-t-2 border-[#e5e7eb] pt-2">
-              <span className="text-base font-bold text-[#111827]">{labels.total}</span>
-              <span className="text-lg font-extrabold text-[#7c3aed]">
+            <div className="flex items-center justify-between gap-4 border-t-2 border-[#e5e7eb] pt-2 oidark:border-outline-variant">
+              <span className="text-base font-bold text-[#111827] oidark:text-foreground">{labels.total}</span>
+              <span className="text-lg font-extrabold text-[#7c3aed] oidark:text-primary">
                 {formatCurrencyAmount(data.totalAmount)}
               </span>
             </div>
           </section>
 
-          <section className="space-y-2 rounded-lg border border-[#f3f4f6] bg-[#fafafa] p-4">
-            <h3 className="m-0 text-[13px] font-bold text-[#111827]">{labels.paymentTitle}</h3>
+          <section className="space-y-2 rounded-lg border border-[#f3f4f6] bg-[#fafafa] p-4 oidark:border-outline-variant oidark:bg-surface-container-lowest">
+            <h3 className="m-0 text-[13px] font-bold text-[#111827] oidark:text-foreground">{labels.paymentTitle}</h3>
             <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
-              <span className="text-[#6b7280]">{labels.paymentMethod}</span>
-              <span className="font-medium text-[#111827]">
+              <span className="text-[#6b7280] oidark:text-muted-foreground">{labels.paymentMethod}</span>
+              <span className="font-medium text-[#111827] oidark:text-foreground">
                 {data.paymentMethodLabel || labels.paymentUnavailable}
               </span>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
-              <span className="text-[#6b7280]">{labels.paymentStatus}</span>
+              <span className="text-[#6b7280] oidark:text-muted-foreground">{labels.paymentStatus}</span>
               <PaymentBadge status={data.paymentStatus} />
             </div>
             <p
               className={`m-0 rounded-md border-l-4 px-3 py-2 text-[12.5px] ${
                 data.isPaymentPending
-                  ? 'border-[#f59e0b] bg-[#fffbeb] text-[#92400e]'
-                  : 'border-[#10b981] bg-[#ecfdf5] text-[#047857]'
+                  ? 'border-[#f59e0b] bg-[#fffbeb] text-[#92400e] oidark:border-amber-600 oidark:bg-amber-950/40 oidark:text-amber-300'
+                  : 'border-[#10b981] bg-[#ecfdf5] text-[#047857] oidark:border-emerald-600 oidark:bg-emerald-950/40 oidark:text-emerald-300'
               }`}
             >
               {data.isPaymentPending ? labels.paymentPendingNotice : labels.paymentReceivedNotice}
@@ -210,7 +210,7 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
         </div>
 
         <DialogFooter className="gap-2">
-          <p className="m-0 w-full text-[11.5px] leading-snug text-[#6b7280] sm:mr-auto sm:max-w-[280px] sm:text-left">
+          <p className="m-0 w-full text-[11.5px] leading-snug text-[#6b7280] sm:mr-auto sm:max-w-[280px] sm:text-left oidark:text-muted-foreground">
             {labels.printHint}
           </p>
           <Button type="button" variant="outline" onClick={onClose}>

@@ -97,7 +97,7 @@ export function DeliveryProgress({
                 <Fragment key={status}>
                   {index > 0 && (
                     <div
-                      className={`mt-[17px] h-0.5 min-w-6 flex-1 rounded-full ${connectorIsActive ? 'bg-[#7c3aed]' : 'bg-[#e5e7eb]'}`}
+                      className={`mt-[17px] h-0.5 min-w-6 flex-1 rounded-full ${connectorIsActive ? 'bg-[#7c3aed]' : 'bg-[#e5e7eb] oidark:bg-outline-variant'}`}
                       aria-hidden="true"
                     />
                   )}
@@ -113,7 +113,7 @@ export function DeliveryProgress({
                         <Check className="h-4 w-4" strokeWidth={3} />
                       )}
                       {isMerchant && state === 'upcoming' && (
-                        <span className="text-xs font-bold text-[#4b5563] dark:text-[#d1d5db]">
+                        <span className="text-xs font-bold text-[#4b5563] dark:text-[#d1d5db] oidark:text-[#d1d5db]">
                           {index + 1}
                         </span>
                       )}

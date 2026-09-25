@@ -29,7 +29,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
   };
 
   return (
-    <form onSubmit={methods.handleSubmit(handleSubmit)} className="mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]">
+    <form onSubmit={methods.handleSubmit(handleSubmit)} className="mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]">
       <div className="flex-1 min-w-0 pb-5 sm:w-[130px]">
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground mb-1">
           {t('orders.filter.status', 'Status')}
@@ -83,7 +83,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
                       methods.handleSubmit(handleSubmit)();
                     }
                   }}
-                  className="h-10 pl-10"
+                  className="h-10 pl-10 oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
                   placeholder={t('orders.filter.dateRange.from', 'From')}
                 />
               )}
@@ -113,7 +113,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
                       methods.handleSubmit(handleSubmit)();
                     }
                   }}
-                  className="h-10 pl-10"
+                  className="h-10 pl-10 oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
                   placeholder={t('orders.filter.dateRange.to', 'To')}
                 />
               )}
@@ -147,7 +147,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
             type="button"
             onClick={onExport}
             disabled={exportDisabled || isDateRangeInvalid}
-            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] sm:-translate-y-4 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-4 disabled:cursor-not-allowed disabled:opacity-50"
           >
             &#x2193; {exportLabel ?? t('buyer.orders.exportCsv', 'Export CSV')}
           </Button>
