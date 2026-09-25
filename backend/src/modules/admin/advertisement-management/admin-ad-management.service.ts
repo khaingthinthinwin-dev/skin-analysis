@@ -16,6 +16,7 @@ import {
   CreateAdFeeSettingDto,
   UpdateAdFeeSettingDto,
   DeactivateAdFeeSettingDto,
+  ReactivateAdFeeSettingDto,
   AdminAdFeeHistoryQueryDto,
   RevenueAnalyticsQueryDto,
 } from './dto';
@@ -34,10 +35,10 @@ const ACTIVE_ADS_CACHE_KEY = 'cache:ads:active';
 const PACKAGES_CACHE_KEY = 'cache:ads:packages';
 
 const PLACEMENT_NAMES: Record<string, string> = {
-  homepage_banner: 'Homepage Banner',
-  product_sidebar: 'Product Sidebar',
-  category_banner: 'Category Banner',
-  search_top: 'Search Top',
+  search_page_banner: 'Search Page Banner',
+  recommendation_page_banner: 'Recommendation Page Banner',
+  checkout_page_banner: 'Checkout Page Banner',
+  productDetail_page_banner: 'Product Detail Page Banner',
 };
 
 const TIER_NAMES: Record<string, string> = {
@@ -686,6 +687,67 @@ export class AdminAdManagementService {
             newValue: {
               isActive: false,
               changeReason: dto.change_reason,
+            },
+          },
+          tx,
+        );
+
+        return setting;
+      },
+    );
+
+    await this.redis.del(PACKAGES_CACHE_KEY);
+    return this.toFeeSettingResponse(updated);
+  }
+
+  async reactivateFeeSetting(
+    id: string,
+    dto: ReactivateAdFeeSettingDto,
+    adminId: string,
+  ): Promise<AdminAdFeeSettingResponseDto> {
+    const existing = await this.prisma.adFeeSetting.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException('Fee setting not found');
+    if (existing.isActive) {
+      throw new ConflictException('Fee setting is already active');
+    }
+
+    const updated = await this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const setting = await tx.adFeeSetting.update({
+          where: { id },
+          data: { isActive: true },
+        });
+
+        // Adaptation: schema requires non-null new_* columns, so on
+        // reactivation we snapshot old = current values and new = unchanged
+        // values; the change reason explains the reactivation itself.
+        await tx.adFeeHistory.create({
+          data: {
+            adFeeSettingId: id,
+            oldDailyRate: existing.dailyRate,
+            newDailyRate: setting.dailyRate,
+            oldDurationDays: existing.durationDays,
+            newDurationDays: setting.durationDays,
+            oldMaxAds: existing.maxAds,
+            newMaxAds: setting.maxAds,
+            changedBy: adminId,
+            changeReason: dto.change_reason ?? 'Package reactivated',
+            effectiveFrom: new Date(),
+          },
+        });
+
+        await this.logAudit(
+          {
+            userId: adminId,
+            action: 'FEE_REACTIVATED',
+            entityType: 'AdFeeSetting',
+            entityId: id,
+            oldValue: { isActive: false },
+            newValue: {
+              isActive: true,
+              changeReason: dto.change_reason ?? null,
             },
           },
           tx,

@@ -1,3 +1,5 @@
+import { person } from './identity';
+
 export const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080/api/v1';
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
@@ -18,26 +20,26 @@ export const ROUTES = {
 
 export const TEST_USERS = {
   buyer: {
-    name: 'E2E Test Buyer',
-    email: `e2e.buyer.${Date.now()}@test.com`,
+    name: 'Alison Bennett',
+    email: person('Alison', 'Bennett').email,
     password: 'TestPass123!',
     role: 'buyer' as const,
   },
   merchant: {
-    name: 'E2E Test Merchant',
-    email: `e2e.merchant.${Date.now()}@test.com`,
+    name: 'Marcus Cole',
+    email: person('Marcus', 'Cole').email,
     password: 'TestPass123!',
     role: 'merchant' as const,
   },
   merchantPending: {
-    name: 'E2E Pending Merchant',
-    email: `e2e.pending.${Date.now()}@test.com`,
+    name: 'Daniel Reyes',
+    email: person('Daniel', 'Reyes').email,
     password: 'TestPass123!',
     role: 'merchant' as const,
   },
   merchantRejected: {
-    name: 'E2E Rejected Merchant',
-    email: `e2e.rejected.${Date.now()}@test.com`,
+    name: 'Emma Lawson',
+    email: person('Emma', 'Lawson').email,
     password: 'TestPass123!',
     role: 'merchant' as const,
   },

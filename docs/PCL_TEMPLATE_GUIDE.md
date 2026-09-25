@@ -8,9 +8,9 @@
 |-----------|-------|
 | **Document ID** | SKM-GUIDE-PCL-001 |
 | **Purpose** | Standard template for creating Test-Focused Program Checklists per screen/module |
-| **Version** | 3.0 (Test-Driven Architecture) |
+| **Version** | 3.1 (Test-Driven Architecture) |
 | **Created** | 2026-09-16 |
-| **Last Updated** | 2026-09-16 |
+| **Last Updated** | 2026-09-24 |
 | **Status** | Active |
 
 ---
@@ -50,18 +50,33 @@ Each test case item in the checklist must strictly follow this structure:
 
 ```markdown
 - [ ] **{CAT}-{NN}**: Title of the test scenario
+  - **Evidence**: (required once the item is checked / passed)
+    - Screenshots → `CAT-NN_descriptive_name.png`
+    - DB snapshot (if applicable) → `CAT-NN_db_table.json`
+    - Test: {spec-file} › "{exact Playwright test title}" — passed
   - **Precondition**: What state or data must exist before running
   - **Steps**: Step-by-step user or API actions
     1. First action
     2. Second action
   - **Expected Result**: What should happen visually or logically
-  - **Business Rules**: Rule IDs enforced (e.g. BR-AUTH-001)
+    (use **Expected Response** instead for Interface / API items)
+  - **Business Rules**: Rule IDs enforced (e.g. BR-AUTH-001), or `None (...)`
   - **API**: Relevant endpoint (if applicable)
+  - **Note**: Optional — clarify quirks, or why an item is left unchecked
 ```
+
+### Evidence rules (from `SignUp_Login_PCL.md`)
+
+| Item state | Evidence |
+|------------|----------|
+| `- [x]` (passed) | **Required** — screenshots / DB snapshots / `Test: {file} › "{title}" — passed` |
+| `- [ ]` (not yet tested) | **No Evidence** — add a **Note** explaining why it is unchecked |
+| Interface (I) API tests | Test title + status only — **no screenshots by design** |
 
 > [!IMPORTANT]
 > The line must start with `- [ ] **{CAT}-{NN}**: {Title}`.
 > The auto-update script (`scripts/update-pcl.cjs`) looks for this exact format to replace `- [ ]` with `- [x]`.
+> Evidence lines are added/maintained alongside the checkbox status (see reference PCL).
 
 ---
 
@@ -83,6 +98,8 @@ Developers creating a PCL for any screen can copy this template directly into:
 | **Target Screen** | {Screen Name} |
 | **Subsystem** | {Subsystem Name} |
 | **Version** | 1.0 |
+| **Created** | {YYYY-MM-DD} |
+| **Last Updated** | {YYYY-MM-DD} |
 | **Status** | Active |
 
 ---
@@ -90,6 +107,9 @@ Developers creating a PCL for any screen can copy this template directly into:
 ## 1. Normal Scenarios (N) — Happy Path
 
 - [ ] **N-01**: {Primary action success}
+  - **Evidence**:
+    - Screenshots → `N-01_1_*.png`
+    - Test: {spec} › "{test title}" — passed
   - **Precondition**: {Precondition}
   - **Steps**:
     1. Navigate to {URL}
@@ -242,6 +262,7 @@ Developers creating a PCL for any screen can copy this template directly into:
 | Test scenarios defined (N, A, B, I) | ☑️ |
 | E2E tests implemented | ☑️ |
 | PCL auto-update verified | ☑️ |
+| Next review date | {YYYY-MM-DD}
 ```
 
 ---
@@ -326,9 +347,12 @@ Verify that passed tests turned from `- [ ]` to `- [x]` in your PCL markdown fil
 
 | Screen Module | PCL File | Page Object | Spec File | PCL Map |
 |---------------|----------|-------------|-----------|---------|
-| **SignUp_LogIn** | `docs/screen/SignUp_LogIn/SignUp_LogIn_PCL.md` | `e2e/pages/SignUp_LogIn/LoginPage.ts` | `e2e/tests/SignUp_LogIn/*.spec.ts` | `e2e/pcl-map/SignUp_LogIn.json` |
+| **SignUp_LogIn** | `docs/screen/SignUp_LogIn/SignUp_Login_PCL.md` | `e2e/pages/SignUp_LogIn/LoginPage.ts` | `e2e/tests/SignUp_LogIn/*.spec.ts` | `e2e/pcl-map/SignUp_LogIn.json` |
 | **SearchAndFilter** | `docs/screen/SearchAndFilter/Search_And_Filter_PCL.md` | `e2e/pages/SearchAndFilter/SearchPage.ts` | `e2e/tests/SearchAndFilter/search-filter.spec.ts` | `e2e/pcl-map/SearchAndFilter.json` |
+
+> [!NOTE]
+> Canonical reference for Evidence / Note conventions: `docs/screen/SignUp_LogIn/SignUp_Login_PCL.md`.
 
 ---
 
-*Document maintained by the Engineering Division. Version 3.0.*
+*Document maintained by the Engineering Division. Version 3.1.*

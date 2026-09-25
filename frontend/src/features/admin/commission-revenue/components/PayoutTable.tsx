@@ -74,7 +74,7 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
             </TableRow>
           ) : (
             payouts.map((p) => (
-              <TableRow key={p.id}>
+              <TableRow key={p.id} className="transition-colors duration-150 ease-in-out hover:bg-muted/40">
                 <TableCell>
                   <input
                     type="checkbox"

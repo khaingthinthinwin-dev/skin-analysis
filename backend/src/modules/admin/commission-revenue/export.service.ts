@@ -22,6 +22,17 @@ interface ExportFile {
   content: string; // base64
 }
 
+interface PayoutExportItem {
+  commissionAmount: unknown;
+  order: { totalAmount: unknown; orderNumber: string };
+  payout: {
+    periodStart: Date;
+    status: string;
+    processedAt: Date | null;
+    merchant?: { shopName?: string | null } | null;
+  };
+}
+
 @Injectable()
 export class ExportService {
   constructor(private readonly prisma: PrismaService) {}
@@ -468,19 +479,25 @@ export class ExportService {
         'Status',
         'Payment Date',
       ];
-      const rows: (string | number)[][] = payoutItems.map((item) => {
-        const amount = toNumber(item.order.totalAmount);
+      const rows: (string | number)[][] = (
+        payoutItems as PayoutExportItem[]
+      ).map((item) => {
+        const order = item.order;
+        const payout = item.payout;
+        const amount = toNumber(order.totalAmount);
         const commission = toNumber(item.commissionAmount);
         return [
-          item.payout.periodStart.toISOString().slice(0, 7),
+          payout.periodStart.toISOString().slice(0, 7),
           merchantName,
-          item.order.orderNumber,
-          amount > 0 ? `${fmtDecimal((commission / amount) * 100)}%` : '0.00%',
+          order.orderNumber,
+          amount > 0 ? `${fmtDecimal((commission / amount) * 100)}%` : '0%',
           fmtExportCurrency(amount),
           fmtExportCurrency(commission),
           fmtExportCurrency(amount - commission),
-          item.payout.status,
-          item.payout.processedAt?.toISOString().slice(0, 10) ?? '-',
+          payout.status,
+          payout.processedAt
+            ? payout.processedAt.toISOString().slice(0, 10)
+            : '-',
         ];
       });
       if (payoutItems.length >= MAX_EXPORT_ROWS) {
@@ -555,21 +572,27 @@ export class ExportService {
       take: MAX_EXPORT_ROWS,
     });
 
-    const rows: (string | number)[][] = payoutItems.map((item) => {
-      const amount = toNumber(item.order.totalAmount);
-      const commission = toNumber(item.commissionAmount);
-      return [
-        item.payout.periodStart.toISOString().slice(0, 7),
-        item.payout.merchant?.shopName ?? 'Unknown',
-        item.order.orderNumber,
-        amount > 0 ? `${fmtDecimal((commission / amount) * 100)}%` : '0.00%',
-        fmtExportCurrency(amount),
-        fmtExportCurrency(commission),
-        fmtExportCurrency(amount - commission),
-        item.payout.status,
-        item.payout.processedAt?.toISOString().slice(0, 10) ?? '-',
-      ];
-    });
+    const rows: (string | number)[][] = (payoutItems as PayoutExportItem[]).map(
+      (item) => {
+        const order = item.order;
+        const payout = item.payout;
+        const amount = toNumber(order.totalAmount);
+        const commission = toNumber(item.commissionAmount);
+        return [
+          payout.periodStart.toISOString().slice(0, 7),
+          payout.merchant?.shopName ?? 'Unknown',
+          order.orderNumber,
+          amount > 0 ? `${fmtDecimal((commission / amount) * 100)}%` : '0%',
+          fmtExportCurrency(amount),
+          fmtExportCurrency(commission),
+          fmtExportCurrency(amount - commission),
+          payout.status,
+          payout.processedAt
+            ? payout.processedAt.toISOString().slice(0, 10)
+            : '-',
+        ];
+      },
+    );
 
     if (payoutItems.length >= MAX_EXPORT_ROWS) {
       rows.push([

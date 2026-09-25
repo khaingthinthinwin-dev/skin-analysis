@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class DeactivateAdFeeSettingDto {
   @IsString()
@@ -7,4 +7,13 @@ export class DeactivateAdFeeSettingDto {
     message: 'Change reason must not exceed 1000 characters',
   })
   change_reason: string;
+}
+
+export class ReactivateAdFeeSettingDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000, {
+    message: 'Change reason must not exceed 1000 characters',
+  })
+  change_reason?: string;
 }

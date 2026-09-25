@@ -21,14 +21,14 @@ test.describe('Search & Filter', () => {
       await searchPage.goto();
       await searchPage.search('moisturizer');
       // TODO: Verify search results contain the keyword
-      await searchPage.capture('search_results');
+      await searchPage.capture('N-01_1_search_results');
     });
 
     test('should display no results for invalid search', async ({ page }) => {
       await searchPage.goto();
       await searchPage.search('xyznonexistent123');
       // TODO: Verify empty state message
-      await searchPage.capture('search_no_results');
+      await searchPage.capture('N-02_1_search_no_results');
     });
   });
 
@@ -36,13 +36,13 @@ test.describe('Search & Filter', () => {
     test('should filter by category', async ({ page }) => {
       await searchPage.goto();
       // TODO: Select category filter, verify results
-      await searchPage.capture('search_filter_category');
+      await searchPage.capture('N-03_1_search_filter_category');
     });
 
     test('should filter by price range', async ({ page }) => {
       await searchPage.goto();
       // TODO: Set price range, verify results
-      await searchPage.capture('search_filter_price');
+      await searchPage.capture('N-04_1_search_filter_price');
     });
   });
 
@@ -50,13 +50,13 @@ test.describe('Search & Filter', () => {
     test('should sort results by price ascending', async ({ page }) => {
       await searchPage.goto();
       // TODO: Select sort by price low to high, verify order
-      await searchPage.capture('search_sort_price_asc');
+      await searchPage.capture('N-05_1_search_sort_price_asc');
     });
 
     test('should sort results by price descending', async ({ page }) => {
       await searchPage.goto();
       // TODO: Select sort by price high to low, verify order
-      await searchPage.capture('search_sort_price_desc');
+      await searchPage.capture('N-06_1_search_sort_price_desc');
     });
   });
 
@@ -64,7 +64,7 @@ test.describe('Search & Filter', () => {
     test('should display sponsored ads in search results', async ({ page }) => {
       await searchPage.goto();
       // TODO: Verify ad banner is visible in results
-      await searchPage.capture('search_ad_banner');
+      await searchPage.capture('N-07_1_search_ad_banner');
     });
   });
 
@@ -72,7 +72,7 @@ test.describe('Search & Filter', () => {
     test('should navigate between pages', async ({ page }) => {
       await searchPage.goto();
       // TODO: Click next page, verify page change
-      await searchPage.capture('search_pagination');
+      await searchPage.capture('N-08_1_search_pagination');
     });
   });
 });

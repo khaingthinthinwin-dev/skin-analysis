@@ -49,19 +49,47 @@ function sanitize(name: string): string {
   return name.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80);
 }
 
+type ScreenshotIndexEntry = {
+  description?: string;
+  test?: string;
+};
+
+type ScreenshotIndex = Record<string, string | ScreenshotIndexEntry>;
+
+function loadScreenshotIndex(screenshotDir: string): ScreenshotIndex {
+  const indexPath = path.join(screenshotDir, 'index.json');
+  if (!fs.existsSync(indexPath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveScreenshotIndex(screenshotDir: string, index: ScreenshotIndex): void {
+  const indexPath = path.join(screenshotDir, 'index.json');
+  fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+}
+
 export async function captureScreenshot(
   page: Page,
   stepName: string,
+  description?: string,
   testInfo?: { title: string; file: string }
 ): Promise<string> {
   let screenFolder = 'Other';
+  let testKey: string | undefined;
 
   try {
     const info = test.info();
     screenFolder = getScreenFromFilePath(info.file);
+    testKey = `${path.basename(info.file)}::${info.title}`;
   } catch {
     if (testInfo?.file) {
       screenFolder = getScreenFromFilePath(testInfo.file);
+    }
+    if (testInfo?.file && testInfo?.title) {
+      testKey = `${path.basename(testInfo.file)}::${testInfo.title}`;
     }
   }
 
@@ -72,7 +100,23 @@ export async function captureScreenshot(
   const filename = `${step}.png`;
   const filePath = path.join(screenshotDir, filename);
 
+  try {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(100);
+  } catch {}
+
   await page.screenshot({ path: filePath, fullPage: true });
+
+  const index = loadScreenshotIndex(screenshotDir);
+  const existing = index[filename];
+  const prev: ScreenshotIndexEntry =
+    typeof existing === 'string' ? { description: existing } : existing || {};
+  index[filename] = {
+    ...prev,
+    ...(description ? { description } : {}),
+    ...(testKey ? { test: testKey } : {}),
+  };
+  saveScreenshotIndex(screenshotDir, index);
 
   return filePath;
 }

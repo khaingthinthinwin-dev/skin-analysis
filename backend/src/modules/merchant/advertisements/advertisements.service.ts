@@ -218,11 +218,17 @@ export class AdvertisementsService {
       });
     } else if (query.status === 'inactive') {
       // "Inactive" shows every ad that is not currently on air and not gone:
-      // pending submissions (draft / content uploaded / pending approval) and
+      // pending submissions (draft / content uploaded / pending approval),
+      // approved+paid ads that have not reached their start date yet, and
       // merchant-toggled-off approved ads. Soft-deleted ads (isActive=false
       // while not approved) and expired ads stay excluded.
       where.OR = [
         { approvalStatus: 'pending' },
+        {
+          approvalStatus: 'approved',
+          paymentStatus: 'completed',
+          startsAt: { gt: now },
+        },
         { isActive: false, approvalStatus: 'approved' },
       ];
       where.AND = [{ OR: [{ expiresAt: { gte: now } }, { expiresAt: null }] }];
@@ -303,14 +309,19 @@ export class AdvertisementsService {
 
   async deleteAd(id: string, userId: string) {
     const ad = await this.getOwnedAd(id, userId);
-    if (ad.approvalStatus === 'approved' && ad.isActive) {
+    const isExpired = Boolean(
+      ad.expiresAt && new Date(ad.expiresAt) < new Date(),
+    );
+    if (ad.approvalStatus === 'approved' && ad.isActive && !isExpired) {
       throw new BadRequestException(
         'Active approved advertisements cannot be deleted',
       );
     }
-    if (ad.paymentStatus === 'pending') {
+    if (isExpired || ad.paymentStatus === 'pending') {
       // Draft ads (and unpaid rejected drafts) that were never paid hold no
       // campaign or payment history, so they are removed permanently.
+      // Expired advertisements no longer run a live campaign, so they too are
+      // removed permanently instead of being soft-deleted.
       await this.prisma.advertisement.delete({ where: { id } });
     } else {
       await this.prisma.advertisement.update({
@@ -324,7 +335,20 @@ export class AdvertisementsService {
   }
 
   async toggleActive(id: string, dto: ToggleAdActiveDto, userId: string) {
-    const ad = await this.getOwnedAd(id, userId);
+    // Toggle only needs ownership + approved/paid checks; the package
+    // (feeSetting) is optional here — ads whose package was deactivated by an
+    // admin must still be toggleable (design rule swtToggleActive only
+    // requires approval_status = 'approved' AND payment_status = 'completed').
+    const shop = await this.getShop(userId);
+    const ad = await this.prisma.advertisement.findUnique({
+      where: { id },
+      include: { feeSetting: true },
+    });
+    if (!ad) throw new NotFoundException('Advertisement not found');
+    if (ad.shopId !== shop.id)
+      throw new ForbiddenException(
+        'You do not have permission to manage this advertisement',
+      );
     if (ad.approvalStatus !== 'approved' || ad.paymentStatus !== 'completed') {
       throw new BadRequestException(
         'Only approved and paid advertisements can be toggled',

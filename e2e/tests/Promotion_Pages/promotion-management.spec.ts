@@ -20,19 +20,19 @@ test.describe('Merchant Promotion Management', () => {
     test('should create a new promotion', async ({ page }) => {
       await promotionPage.goto();
       // TODO: Click create, fill promotion form, set coupon code, save
-      await promotionPage.capture('promotion_create');
+      await promotionPage.capture('N-01_1_promotion_create');
     });
 
     test('should edit an existing promotion', async ({ page }) => {
       await promotionPage.goto();
       // TODO: Click edit, modify fields, save
-      await promotionPage.capture('promotion_edit');
+      await promotionPage.capture('N-02_1_promotion_edit');
     });
 
     test('should delete a promotion', async ({ page }) => {
       await promotionPage.goto();
       // TODO: Click delete, confirm
-      await promotionPage.capture('promotion_delete');
+      await promotionPage.capture('N-03_1_promotion_delete');
     });
   });
 
@@ -40,12 +40,12 @@ test.describe('Merchant Promotion Management', () => {
     test('should validate coupon code format', async ({ page }) => {
       await promotionPage.goto();
       // TODO: Enter invalid coupon code, verify error
-      await promotionPage.capture('promotion_coupon_invalid');
+      await promotionPage.capture('N-04_1_promotion_coupon_invalid');
     });
 
     test('should enforce one-coupon-per-order rule', async ({ page }) => {
       // TODO: Test that only one coupon can be applied per order
-      await promotionPage.capture('promotion_one_coupon_rule');
+      await promotionPage.capture('N-05_1_promotion_one_coupon_rule');
     });
   });
 });

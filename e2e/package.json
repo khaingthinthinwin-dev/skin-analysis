@@ -7,6 +7,7 @@
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
     "test:report": "npx playwright show-report",
+    "check:captures": "node ../scripts/check-capture-names.cjs",
     "update-pcl": "node ../scripts/update-pcl.cjs",
     "update-pcl:SignUp_LogIn": "node ../scripts/update-pcl.cjs SignUp_LogIn",
     "update-pcl:SearchAndFilter": "node ../scripts/update-pcl.cjs SearchAndFilter",
@@ -25,6 +26,9 @@
     "update-pcl:AuditLog": "node ../scripts/update-pcl.cjs Audit_Log"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52.0"
+    "@playwright/test": "^1.52.0",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.0",
+    "typescript": "^7.0.2"
   }
 }

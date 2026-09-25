@@ -9,6 +9,7 @@ import { CreateFeeModal } from '@/features/admin/advertisement-management/compon
 import { DeactivateFeeModal } from '@/features/admin/advertisement-management/components/DeactivateFeeModal'
 import { EditFeeModal } from '@/features/admin/advertisement-management/components/EditFeeModal'
 import { FeeSettingsTable } from '@/features/admin/advertisement-management/components/FeeSettingsTable'
+import { ReactivateFeeModal } from '@/features/admin/advertisement-management/components/ReactivateFeeModal'
 import type { AdminAdFeeSetting } from '@/types/admin-ad-management'
 import type { CreateFeeSettingInput, EditFeeSettingInput } from '@/types/admin-ad-management'
 
@@ -30,12 +31,14 @@ export default function PackageFeeManagementPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<AdminAdFeeSetting | null>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<AdminAdFeeSetting | null>(null)
+  const [reactivateTarget, setReactivateTarget] = useState<AdminAdFeeSetting | null>(null)
 
   const {
     feeSettingsQuery,
     createMutation,
     updateMutation,
     deactivateMutation,
+    reactivateMutation,
   } = useFeeSettings()
 
   const handleCreate = (input: CreateFeeSettingInput) => {
@@ -93,6 +96,26 @@ export default function PackageFeeManagementPage() {
     )
   }
 
+  const handleReactivate = (reason?: string) => {
+    if (!reactivateTarget) return
+    reactivateMutation.mutate(
+      { id: reactivateTarget.id, change_reason: reason },
+      {
+        onSuccess: () => {
+          toast({ title: 'Fee setting reactivated', variant: 'default' })
+          setReactivateTarget(null)
+        },
+        onError: (error) => {
+          toast({
+            title: 'Failed to reactivate fee setting',
+            description: apiErrorMessage(error),
+            variant: 'destructive',
+          })
+        },
+      },
+    )
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -124,6 +147,7 @@ export default function PackageFeeManagementPage() {
         feeSettings={feeSettingsQuery.data}
         onEdit={setEditTarget}
         onDeactivate={setDeactivateTarget}
+        onReactivate={setReactivateTarget}
         isLoading={feeSettingsQuery.isPending}
       />
 
@@ -131,6 +155,7 @@ export default function PackageFeeManagementPage() {
         <CreateFeeModal
           open
           isLoading={createMutation.isPending}
+          existingFeeSettings={feeSettingsQuery.data}
           onSubmit={handleCreate}
           onClose={() => setCreateOpen(false)}
         />
@@ -153,6 +178,16 @@ export default function PackageFeeManagementPage() {
           isLoading={deactivateMutation.isPending}
           onConfirm={handleDeactivate}
           onClose={() => setDeactivateTarget(null)}
+        />
+      )}
+
+      {reactivateTarget && (
+        <ReactivateFeeModal
+          open
+          feeSetting={reactivateTarget}
+          isLoading={reactivateMutation.isPending}
+          onConfirm={handleReactivate}
+          onClose={() => setReactivateTarget(null)}
         />
       )}
     </div>

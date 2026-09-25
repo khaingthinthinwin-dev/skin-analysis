@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { formatPrice } from '@/lib/format'
-import { ADMIN_AD_PLACEMENTS, ADMIN_AD_TIERS, type CreateFeeSettingInput } from '@/types/admin-ad-management'
+import { ADMIN_AD_PLACEMENTS, ADMIN_AD_TIERS, type AdminAdFeeSetting, type CreateFeeSettingInput } from '@/types/admin-ad-management'
 import type { Placement, Tier } from '@/types/admin-ad-management'
 import { PLACEMENT_LABELS, TIER_LABELS, todayIso } from '../utils/labels'
 
@@ -53,11 +53,18 @@ type CreateFeeFormValues = z.infer<typeof createFeeFormSchema>
 interface CreateFeeModalProps {
   open: boolean
   isLoading?: boolean
+  existingFeeSettings?: AdminAdFeeSetting[]
   onSubmit: (input: CreateFeeSettingInput) => void
   onClose: () => void
 }
 
-export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: CreateFeeModalProps) {
+export function CreateFeeModal({
+  open,
+  isLoading = false,
+  existingFeeSettings = [],
+  onSubmit,
+  onClose,
+}: CreateFeeModalProps) {
   const form = useForm<CreateFeeFormValues>({
     resolver: zodResolver(createFeeFormSchema),
     defaultValues: {
@@ -74,6 +81,31 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
   const dailyRate = Number(form.watch('daily_rate') || 0)
   const durationDays = Number(form.watch('duration_days') || 0)
   const totalFeePreview = dailyRate * durationDays
+
+  const selectedPlacement = form.watch('placement')
+  const selectedTier = form.watch('tier')
+
+  const isCombinationTaken = (placement: Placement, tier: Tier) =>
+    existingFeeSettings.some((s) => s.placement === placement && s.tier === tier)
+
+  const handlePlacementChange = (placement: Placement) => {
+    if (selectedTier && isCombinationTaken(placement, selectedTier)) {
+      form.resetField('tier')
+    }
+    form.setValue('placement', placement, { shouldValidate: true })
+  }
+
+  const handleTierChange = (tier: Tier) => {
+    if (selectedPlacement && isCombinationTaken(selectedPlacement, tier)) {
+      return
+    }
+    form.setValue('tier', tier, { shouldValidate: true })
+  }
+
+  const isTakenCombination =
+    selectedPlacement !== undefined &&
+    selectedTier !== undefined &&
+    isCombinationTaken(selectedPlacement, selectedTier)
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -106,7 +138,7 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Placement</FormLabel>
-                    <Select value={field.value ?? ''} onValueChange={(value) => field.onChange(value as Placement)}>
+                    <Select value={field.value ?? ''} onValueChange={(value) => handlePlacementChange(value as Placement)}>
                       <FormControl>
                         <SelectTrigger aria-label="Placement">
                           <SelectValue placeholder="Select placement" />
@@ -114,8 +146,15 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
                       </FormControl>
                       <SelectContent>
                         {ADMIN_AD_PLACEMENTS.map((placement) => (
-                          <SelectItem key={placement} value={placement}>
+                          <SelectItem
+                            key={placement}
+                            value={placement}
+                            disabled={selectedTier !== undefined && isCombinationTaken(placement, selectedTier)}
+                          >
                             {PLACEMENT_LABELS[placement]}
+                            {selectedTier !== undefined && isCombinationTaken(placement, selectedTier)
+                              ? ' (already exists)'
+                              : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -132,7 +171,7 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
                     <FormLabel>Tier</FormLabel>
                     <Select
                         value={field.value ?? ''}
-                        onValueChange={(value) => field.onChange(value as Tier)}
+                        onValueChange={(value) => handleTierChange(value as Tier)}
                       >
                         <FormControl>
                           <SelectTrigger aria-label="Tier">
@@ -141,8 +180,15 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
                         </FormControl>
                         <SelectContent>
                           {ADMIN_AD_TIERS.map((tier) => (
-                            <SelectItem key={tier} value={tier}>
+                            <SelectItem
+                              key={tier}
+                              value={tier}
+                              disabled={selectedPlacement !== undefined && isCombinationTaken(selectedPlacement, tier)}
+                            >
                               {TIER_LABELS[tier]}
+                              {selectedPlacement !== undefined && isCombinationTaken(selectedPlacement, tier)
+                                ? ' (already exists)'
+                                : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -232,7 +278,7 @@ export function CreateFeeModal({ open, isLoading = false, onSubmit, onClose }: C
               <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isTakenCombination}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

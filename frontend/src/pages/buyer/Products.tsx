@@ -289,7 +289,9 @@ export default function Products() {
             <SortSelect
               sort={params.sort}
               order={params.order}
-              onChange={(sort, order) => handleFilterUpdate({ sort, order })}
+              onChange={(sort, order) =>
+                handleFilterUpdate({ sort: sort === 'matchScore' ? 'createdAt' : sort, order })
+              }
             />
             <ViewToggle view={view} onChange={setView} />
           </div>
