@@ -1,8 +1,9 @@
-import { Link } from 'react-router'
-import { Star, ShoppingCart, Heart, Loader2 } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
+import { ShoppingCart, Heart, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { ProductSummary, ViewMode } from '@/types/search.types'
+import { StarRating } from './StarRating'
 
 interface ProductCardProps {
   product: ProductSummary
@@ -15,6 +16,12 @@ interface ProductCardProps {
   isCartLoading?: boolean
 }
 
+function formatKs(value: number | string | null | undefined): string {
+  const num = Number(value)
+  if (value == null || Number.isNaN(num)) return '0 Ks'
+  return `${num.toLocaleString('en-US')} Ks`
+}
+
 function getImageUrl(url: string | null | undefined): string {
   if (!url) return ''
   if (url.startsWith('http')) return url
@@ -25,6 +32,7 @@ function getImageUrl(url: string | null | undefined): string {
 }
 
 export function ProductCard({ product, view, productLink, isInWishlist = false, onWishlistToggle, onAddToCart, isWishlistLoading = false, isCartLoading = false }: ProductCardProps) {
+  const navigate = useNavigate()
   const imageUrl = getImageUrl(Array.isArray(product.images) ? product.images[0] : null)
 
   if (view === 'list') {
@@ -32,7 +40,7 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
       <Link
         to={productLink}
         onClick={(e) => e.stopPropagation()}
-        className="block rounded-lg border border-border bg-card transition-shadow hover:shadow-md"
+        className="block rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-[#181028]"
       >
         <div className="flex gap-4 p-4">
 <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -56,10 +64,10 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <span className="text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-400">
+                <span className="text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-300">
                   {product.category.name}
                 </span>
-                <h3 className="truncate text-sm font-semibold">{product.name}</h3>
+                <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white">{product.name}</h3>
               </div>
               <Button
                 variant="ghost"
@@ -80,18 +88,16 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
                 )}
               </Button>
             </div>
-            <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{product.shortDescription}</p>
-            <div className="mt-2 flex items-center gap-1 text-xs">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              <span className="font-medium">{product.avgRating}</span>
-              <span className="text-muted-foreground">({product.reviewCount})</span>
+            <p className="mt-1 line-clamp-1 text-xs text-gray-600 dark:text-gray-400">{product.shortDescription}</p>
+            <div className="mt-2">
+              <StarRating rating={Number(product.avgRating)} totalReviews={product.reviewCount} />
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-                <span className="text-base font-bold">${product.price}</span>
+                <span className="text-base font-bold text-purple-600 dark:text-purple-400">{formatKs(product.price)}</span>
                 {product.compareAtPrice && (
-                  <span className="text-xs text-muted-foreground line-through">
-                    ${product.compareAtPrice}
+                  <span className="text-xs line-through text-gray-400 dark:text-gray-500">
+                    {formatKs(product.compareAtPrice)}
                   </span>
                 )}
               </div>
@@ -106,7 +112,18 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
   }
 
   return (
-    <Card className="group overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-md">
+    <Card
+      className="group cursor-pointer overflow-hidden border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-purple-200 hover:shadow-md dark:border-white/10 dark:bg-[#181028] dark:hover:border-purple-500/40"
+      onClick={() => navigate(productLink)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          navigate(productLink)
+        }
+      }}
+      role="link"
+      tabIndex={0}
+    >
       <Link to={productLink} className="block">
         <div className="relative aspect-square bg-muted">
           {imageUrl ? (
@@ -167,17 +184,13 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
       </Link>
       <CardContent className="space-y-2 p-3 pt-2">
         {/* Category (brand) */}
-        <span className="text-[10px] font-semibold uppercase text-muted-foreground block">
+        <span className="block text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-300">
           {product.category.name}
         </span>
         {/* Title */}
-        <h3 className="line-clamp-1 text-sm font-semibold">{product.name}</h3>
+        <h3 className="line-clamp-1 text-sm font-semibold text-slate-900 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">{product.name}</h3>
         {/* Rating */}
-        <div className="flex items-center gap-1 text-xs">
-          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-          <span className="font-medium">{product.avgRating}</span>
-          <span className="text-muted-foreground">({product.reviewCount})</span>
-        </div>
+        <StarRating rating={Number(product.avgRating)} totalReviews={product.reviewCount} />
         {/* Skin type chips */}
         {product.skinTypes.length > 0 && (
           <div className="flex flex-wrap gap-1">
@@ -199,17 +212,18 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
         {/* Price and Add to Cart */}
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold">${product.price}</span>
+            <span className="text-base font-bold text-purple-600 dark:text-purple-400">{formatKs(product.price)}</span>
             {product.compareAtPrice && (
-              <span className="text-xs text-muted-foreground line-through">
-                ${product.compareAtPrice}
+              <span className="text-xs line-through text-gray-400 dark:text-gray-500">
+                {formatKs(product.compareAtPrice)}
               </span>
             )}
           </div>
           {product.isInStock && (
             <Button
-              size="sm"
-              className="gap-1 text-xs"
+              size="icon"
+              aria-label={`Add ${product.name} to cart`}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e8ff] p-0 text-[#9333ea] hover:bg-[#f0e6ff] hover:text-[#7e22ce]"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -218,10 +232,10 @@ export function ProductCard({ product, view, productLink, isInWishlist = false, 
               disabled={isCartLoading}
             >
               {isCartLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <ShoppingCart className="h-3.5 w-3.5" />
-              )} Add
+                <ShoppingCart className="h-4 w-4" />
+              )}
             </Button>
           )}
         </div>

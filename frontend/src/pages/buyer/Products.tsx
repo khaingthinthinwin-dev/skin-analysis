@@ -1,9 +1,8 @@
-import { useSearchParams, useNavigate } from 'react-router'
+import { useSearchParams, useNavigate, useLocation } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Search as SearchIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search as SearchIcon, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
-import { Pagination } from '@/components/Pagination'
 import { categoryService } from '@/features/search/services/category.service'
 import { SearchBar } from '@/features/search/components/SearchBar'
 import { FilterPanel } from '@/features/search/components/FilterPanel'
@@ -25,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import type { ViewMode } from '@/types/search.types'
 import type { ProductSummary } from '@/types/search.types'
@@ -41,6 +41,7 @@ function readInitialViewMode(): ViewMode {
 export default function Products() {
   const [, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [view, setView] = useState<ViewMode>(readInitialViewMode)
   const { isAuthenticated } = useAuth()
   const { items: wishlistItems, addToWishlist, removeFromWishlist } = useWishlist()
@@ -61,6 +62,7 @@ export default function Products() {
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
   const [guestLoginOpen, setGuestLoginOpen] = useState(false)
   const [guestLoginMessage, setGuestLoginMessage] = useState('')
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
 
   const handleWishlistToggle = useCallback(
     async (product: ProductSummary) => {
@@ -211,23 +213,6 @@ export default function Products() {
     })
   }
 
-  const handleResetFilters = () => {
-    serializeToUrl({
-      q: params.q,
-      categoryId: '',
-      skinTypes: [],
-      ingredients: [],
-      tags: [],
-      minPrice: undefined,
-      maxPrice: undefined,
-      rating: undefined,
-      sort: params.sort,
-      order: params.order,
-      page: 1,
-      limit: params.limit,
-    })
-  }
-
   const resolveCategoryName = (categories: CategoryNode[], id: string): string | null => {
     if (!id) return null
     for (const cat of categories) {
@@ -238,14 +223,20 @@ export default function Products() {
     return null
   }
 
+  const isGuestRoute = pathname === '/products'
+
   return (
-    <div className="space-y-6">
+    <div
+      className={isGuestRoute
+        ? 'mx-auto w-full max-w-[1400px] space-y-6 bg-[#faf8ff] px-6 py-6 text-slate-900 dark:bg-[#0f0f14] dark:text-white sm:px-8 lg:px-12'
+        : 'w-full min-w-0 space-y-6 bg-[#faf8ff] p-2 text-slate-900 dark:bg-[#0f0f14] dark:text-white lg:p-4'}
+    >
       {/* A. Page header */}
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           Cosmetics Search & Filter
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Find skincare products matched to your skin profile
         </p>
       </div>
@@ -267,24 +258,34 @@ export default function Products() {
         categoryName={resolveCategoryName(categories, params.categoryId)}
       />
 
-      {/* Main content area: Fixed left sidebar + Product grid on right */}
-      <div className="flex gap-6">
+      {/* Main content area: desktop sidebar + product grid */}
+      <div className="flex flex-col gap-6 lg:flex-row">
         {/* Left Sidebar - Filters */}
-        <aside className="w-72 flex-shrink-0">
-          <div className="lg:sticky lg:top-0 max-h-[calc(100vh-6rem)] overflow-y-auto border rounded-lg bg-card p-4">
+        <aside className="hidden w-full flex-shrink-0 lg:block lg:w-72">
+          <div className="max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#181028] lg:sticky lg:top-0">
             <FilterPanel
               params={params}
               onUpdate={handleFilterUpdate}
               categories={categories}
-              onReset={handleResetFilters}
+              onReset={handleClearAll}
             />
           </div>
         </aside>
 
-        {/* Right Content - Product Grid */}
+        {/* Product grid */}
         <div className="flex-1 min-w-0">
           {/* Toolbar above grid */}
-          <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
+          <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full border-slate-200 bg-white px-4 text-slate-700 shadow-sm hover:bg-slate-50 dark:border-white/10 dark:bg-[#181028] dark:text-slate-200 dark:hover:bg-white/10 lg:hidden"
+              onClick={() => setMobileFilterOpen(true)}
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Filters
+            </Button>
             <SortSelect
               sort={params.sort}
               order={params.order}
@@ -316,7 +317,7 @@ export default function Products() {
               <div
                 className={
                   view === 'grid'
-                    ? 'grid gap-4 grid-cols-3 min-w-0'
+                    ? 'grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3'
                     : 'space-y-4 min-w-0'
                 }
               >
@@ -373,16 +374,49 @@ export default function Products() {
                       <ChevronRight className="h-5 w-5" />
                     </Button>
                   </div>
-                  <Pagination
-                    meta={meta}
-                    onLimitChange={(limit) => updateParams({ ...params, limit, page: 1 })}
-                  />
                 </>
               )}
             </>
           )}
         </div>
       </div>
+
+      <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
+        <SheetContent side="right" className="flex flex-col overflow-hidden bg-[#f3f5f8] p-0 dark:bg-[#181028] sm:max-w-md">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-14">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-7 rounded-full bg-slate-200/80 dark:bg-white/10" />
+                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Filters</h2>
+              </div>
+            </div>
+            <FilterPanel
+              params={params}
+              onUpdate={(updates) => {
+                handleFilterUpdate(updates)
+              }}
+              categories={categories}
+              variant="mobile"
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-3 border-t border-slate-200 bg-white px-5 py-4 dark:border-white/10 dark:bg-[#100b18]">
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="shrink-0 text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+            >
+              Clear All
+            </button>
+            <Button
+              type="button"
+              onClick={() => setMobileFilterOpen(false)}
+              className="h-11 flex-1 rounded-full bg-slate-950 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
+            >
+              Show {meta?.total ?? products.length} Products
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Guest Login Modal */}
       <Dialog open={guestLoginOpen} onOpenChange={setGuestLoginOpen}>

@@ -29,8 +29,10 @@ export function FilterChips({ params, onRemove, onClearAll, categoryName }: Filt
     chips.push({ key: 'tags', label: tag, value: tag })
   })
 
-  if (params.minPrice !== undefined) chips.push({ key: 'minPrice', label: `Min: $${params.minPrice}` })
-  if (params.maxPrice !== undefined) chips.push({ key: 'maxPrice', label: `Max: $${params.maxPrice}` })
+  if (params.minPrice !== undefined)
+    chips.push({ key: 'minPrice', label: `Min: Ks ${Number(params.minPrice).toLocaleString('en-US')}` })
+  if (params.maxPrice !== undefined)
+    chips.push({ key: 'maxPrice', label: `Max: Ks ${Number(params.maxPrice).toLocaleString('en-US')}` })
   if (params.rating !== undefined) chips.push({ key: 'rating', label: `${params.rating}+ Stars` })
 
   if (chips.length === 0) return null
@@ -38,13 +40,13 @@ export function FilterChips({ params, onRemove, onClearAll, categoryName }: Filt
   return (
     <div className="flex flex-wrap items-center gap-2">
       {chips.map((chip, idx) => (
-        <Badge key={`${chip.key}-${chip.value ?? idx}`} variant="secondary" className="gap-1 pr-1">
+        <Badge key={`${chip.key}-${chip.value ?? idx}`} variant="secondary" className="gap-1 border border-purple-200 bg-purple-50 pr-1 text-purple-700 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-200">
           {chip.label}
           <button
             type="button"
             aria-label={`Remove ${chip.label}`}
             onClick={() => onRemove(chip.key, chip.value)}
-            className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
+            className="ml-0.5 rounded-full p-0.5 hover:bg-purple-100 dark:hover:bg-purple-500/20"
           >
             <X className="h-3 w-3" />
           </button>

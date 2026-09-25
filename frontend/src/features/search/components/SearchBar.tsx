@@ -72,7 +72,7 @@ export function SearchBar({ value, onChange, onSubmit, placeholder }: SearchBarP
           onFocus={() => setFocused(true)}
           onBlur={handleBlur}
           placeholder={placeholder ?? 'Search by product name, ingredient, or concern...'}
-          className="border-border bg-muted pl-9 pr-9 text-foreground placeholder:text-muted-foreground"
+          className="border border-purple-100 bg-purple-50 pl-9 pr-9 text-slate-800 placeholder:text-slate-500 dark:border-white/10 dark:bg-[#181028] dark:text-white dark:placeholder:text-gray-400"
         />
         {displayValue && (
           <button
