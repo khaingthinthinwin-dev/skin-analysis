@@ -219,6 +219,7 @@ export default function ReviewManagement() {
   const [reportAdminNote, setReportAdminNote] = useState('');
   const [reportAdminNoteError, setReportAdminNoteError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [reportDeleteTarget, setReportDeleteTarget] = useState<string | null>(null);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
 
   // ── Stats ────────────────────────────────────────────────────────────────
@@ -376,8 +377,17 @@ export default function ReviewManagement() {
 
   // ── Report Actions ───────────────────────────────────────────────────────
   const handleDeleteReport = (id: string) => {
-    deleteReportMutation.mutate(id, {
-      onSuccess: () => toast.success('Report deleted'),
+    setReportDeleteTarget(id);
+  };
+
+  const handleConfirmDeleteReport = () => {
+    if (!reportDeleteTarget) return;
+    deleteReportMutation.mutate(reportDeleteTarget, {
+      onSuccess: () => {
+        toast.success('Report deleted');
+        setReportDeleteTarget(null);
+        setDetailReport(null);
+      },
       onError: () => toast.error('Failed to delete report'),
     });
   };
@@ -1491,27 +1501,30 @@ export default function ReviewManagement() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Admin Note <span className="text-red-500">*</span>
-                </p>
-                <Textarea
-                  value={reportAdminNote}
-                  onChange={(e) => {
-                    setReportAdminNote(e.target.value);
-                    if (reportAdminNoteError) setReportAdminNoteError('');
-                  }}
-                  placeholder="Add internal resolution notes..."
-                  className={`min-h-[72px] rounded-md bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 ${
-                    reportAdminNoteError
-                      ? 'border-red-500 focus-visible:ring-red-300'
-                      : 'border-slate-200'
-                  }`}
-                />
-                {reportAdminNoteError && (
-                  <p className="mt-1 text-xs text-red-500">{reportAdminNoteError}</p>
+              {detailReport.status !== 'resolved' &&
+                detailReport.status !== 'rejected' && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      Admin Note <span className="text-red-500">*</span>
+                    </p>
+                    <Textarea
+                      value={reportAdminNote}
+                      onChange={(e) => {
+                        setReportAdminNote(e.target.value);
+                        if (reportAdminNoteError) setReportAdminNoteError('');
+                      }}
+                      placeholder="Add internal resolution notes..."
+                      className={`min-h-[72px] rounded-md bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 ${
+                        reportAdminNoteError
+                          ? 'border-red-500 focus-visible:ring-red-300'
+                          : 'border-slate-200'
+                      }`}
+                    />
+                    {reportAdminNoteError && (
+                      <p className="mt-1 text-xs text-red-500">{reportAdminNoteError}</p>
+                    )}
+                  </div>
                 )}
-              </div>
 
               <div className="flex justify-end gap-2 pt-1">
                 <Button
@@ -1520,59 +1533,96 @@ export default function ReviewManagement() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
-                  onClick={() => {
-                    if (!detailReport) return;
-                    if (!reportAdminNote.trim()) {
-                      setReportAdminNoteError('Admin note is required.');
-                      return;
-                    }
-                    updateStatusMutation.mutate(
-                      { id: detailReport.id, data: { status: 'resolved', adminNote: reportAdminNote.trim() } },
-                      {
-                        onSuccess: () => {
-                          if (detailReport.reviewId) {
-                            moderateMutation.mutate(
-                              { id: detailReport.reviewId, data: { action: 'reject', reason: 'Report resolved — review rejected' } },
-                              { onError: () => {} },
-                            );
+                {detailReport.status !== 'resolved' &&
+                  detailReport.status !== 'rejected' && (
+                    <>
+                      <Button
+                        className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
+                        onClick={() => {
+                          if (!detailReport) return;
+                          if (!reportAdminNote.trim()) {
+                            setReportAdminNoteError('Admin note is required.');
+                            return;
                           }
-                          toast.success('Report resolved');
-                          setDetailReport(null);
-                        },
-                        onError: () => toast.error('Failed to resolve report'),
-                      },
-                    );
-                  }}
-                >
-                  <CheckCircle className="h-4 w-4 mr-1" /> Resolve
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (!detailReport) return;
-                    if (!reportAdminNote.trim()) {
-                      setReportAdminNoteError('Admin note is required.');
-                      return;
-                    }
-                    updateStatusMutation.mutate(
-                      { id: detailReport.id, data: { status: 'rejected', adminNote: reportAdminNote.trim() } },
-                      {
-                        onSuccess: () => {
-                          toast.success('Report rejected');
-                          setDetailReport(null);
-                        },
-                        onError: () => toast.error('Failed to reject report'),
-                      },
-                    );
-                  }}
-                >
-                  <XCircle className="h-4 w-4 mr-1" /> Reject
-                </Button>
+                          updateStatusMutation.mutate(
+                            { id: detailReport.id, data: { status: 'resolved', adminNote: reportAdminNote.trim() } },
+                            {
+                              onSuccess: () => {
+                                if (detailReport.reviewId) {
+                                  moderateMutation.mutate(
+                                    { id: detailReport.reviewId, data: { action: 'reject', reason: 'Report resolved — review rejected' } },
+                                    { onError: () => {} },
+                                  );
+                                }
+                                toast.success('Report resolved');
+                                setDetailReport(null);
+                              },
+                              onError: () => toast.error('Failed to resolve report'),
+                            },
+                          );
+                        }}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" /> Resolve
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (!detailReport) return;
+                          if (!reportAdminNote.trim()) {
+                            setReportAdminNoteError('Admin note is required.');
+                            return;
+                          }
+                          updateStatusMutation.mutate(
+                            { id: detailReport.id, data: { status: 'rejected', adminNote: reportAdminNote.trim() } },
+                            {
+                              onSuccess: () => {
+                                toast.success('Report rejected');
+                                setDetailReport(null);
+                              },
+                              onError: () => toast.error('Failed to reject report'),
+                            },
+                          );
+                        }}
+                        disabled={!reportAdminNote.trim() || updateStatusMutation.isPending}
+                      >
+                        <XCircle className="h-4 w-4 mr-1" /> Reject
+                      </Button>
+                    </>
+                  )}
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Report Confirmation ─────────────────────────────────── */}
+      <Dialog
+        open={!!reportDeleteTarget}
+        onOpenChange={() => setReportDeleteTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Report</DialogTitle>
+          </DialogHeader>
+          <p>
+            Are you sure you want to permanently delete this report? This action
+            cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReportDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteReport}
+              disabled={deleteReportMutation.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

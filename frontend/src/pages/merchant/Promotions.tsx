@@ -30,6 +30,7 @@ import { useTranslation } from 'react-i18next'
 import { usePromotions, useDeletePromotion, useTogglePromotionActive, getPromotionErrorInfo } from '@/hooks/usePromotions'
 import { useAuth } from '@/hooks/useAuth'
 import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import type { PromotionQueryParams, Promotion } from '@/types/promotion.types'
 
 export default function Promotions() {
@@ -38,7 +39,15 @@ export default function Promotions() {
   const guard = useMerchantProductsGuard()
   const status = user?.licenseStatus || user?.license_status
   const isPending = guard.isPending || status === 'pending'
-  const showCrudActions = guard.showCrudActions && !isPending
+  const isDeactivated =
+    guard.isDeactivated ||
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const showPendingBanner = (guard.showPendingBanner || isPending) && !isDeactivated
+  const showDeactivatedBanner = guard.showDeactivatedBanner || isDeactivated
+  const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -164,8 +173,29 @@ export default function Promotions() {
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" /> {t('merchant.promotions.title')}
+          </h1>
+        </div>
+        {showCrudActions && (
+          <Button
+            size="lg"
+            className="font-bold bg-pink-600 hover:bg-pink-700 text-white w-full sm:w-auto"
+            onClick={() => navigate('/merchant/promotions/new')}
+          >
+            <Plus className="mr-2 h-4 w-4" /> {t('merchant.promotions.addNew')}
+          </Button>
+        )}
+      </div>
+
+      {/* Deactivated Banner */}
+      {showDeactivatedBanner && <AccountDeactivatedBanner />}
+
       {/* Pending/Rejected Banners */}
-      {guard.showPendingBanner && (
+      {showPendingBanner && (
         <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
           <AlertTitle>{t('merchant.promotions.pendingBannerTitle', 'Pending Approval')}</AlertTitle>
@@ -184,24 +214,6 @@ export default function Promotions() {
           </AlertDescription>
         </Alert>
       )}
-
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" /> {t('merchant.promotions.title')}
-          </h1>
-        </div>
-        {showCrudActions && (
-          <Button
-            size="lg"
-            className="font-bold bg-pink-600 hover:bg-pink-700 text-white w-full sm:w-auto"
-            onClick={() => navigate('/merchant/promotions/new')}
-          >
-            <Plus className="mr-2 h-4 w-4" /> {t('merchant.promotions.addNew')}
-          </Button>
-        )}
-      </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

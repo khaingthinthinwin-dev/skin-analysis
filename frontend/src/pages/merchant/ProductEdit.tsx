@@ -18,13 +18,26 @@ export default function ProductEdit() {
   const status =
     user?.licenseStatus ||
     user?.license_status
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
 
   useEffect(() => {
+    if (isDeactivated) {
+      toast.error(
+        'Your merchant account is currently Deactivate. Some features may be restricted until an admin activates your account.',
+      )
+      navigate('/merchant/products', { replace: true })
+      return
+    }
     if (status === 'pending') {
       toast.error(
         'Your merchant account is pending approval. This operation is restricted until your license is approved.',
       )
       navigate('/merchant/products', { replace: true })
+      return
     }
     if (status === 'rejected') {
       toast.error(
@@ -32,9 +45,9 @@ export default function ProductEdit() {
       )
       navigate('/merchant/products', { replace: true })
     }
-  }, [status, navigate])
+  }, [status, isDeactivated, navigate])
 
-  if (status === 'pending' || status === 'rejected') {
+  if (isDeactivated || status === 'pending' || status === 'rejected') {
     return null
   }
 

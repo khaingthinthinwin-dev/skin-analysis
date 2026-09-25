@@ -1,8 +1,17 @@
 import { PackageCheck, Truck, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useAuth } from '@/hooks/useAuth'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 
 export default function OrderInsights() {
+  const { user } = useAuth()
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+
   const orders = [
     { id: '#SKM-9482', date: 'Aug 24, 2026', items: 3, total: '$104.50', status: 'Shipped' },
     { id: '#SKM-9410', date: 'Aug 10, 2026', items: 2, total: '$66.00', status: 'Delivered' },
@@ -17,6 +26,8 @@ export default function OrderInsights() {
         </h1>
         <p className="text-sm text-muted-foreground">Track order status, delivery stages, and past receipts</p>
       </div>
+
+      {isDeactivated && <AccountDeactivatedBanner />}
 
       <Card className="border-border/80 shadow-xs">
         <CardHeader>
