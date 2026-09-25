@@ -95,26 +95,60 @@ export class MatchingService {
     const context = await this.determineSource(userId);
 
     // The filter panel sends `skinTypes=all` when the buyer clears every skin type
-    // checkbox, which means "no skin-type restriction". Feeding that sentinel to
+    // checkbox, which means "no skin-type selection". Feeding that sentinel to
     // `hasSome` matched no product at all and emptied the grid.
     const requestedSkinTypes = (skinTypesFilter ?? '')
       .split(',')
-      .map((type) => type.trim())
+      .map((type) => type.trim().toLowerCase())
       .filter((type) => type.length > 0 && type !== ALL_SKIN_TYPES);
 
-    const effectiveSkinTypes =
+    // The analysis result and the panel selection are two separate conditions.
+    // Each one is an OR inside itself (sharing at least one skin type is enough,
+    // a product never has to carry every analysed type), while the two are
+    // ANDed. So for an "oily" selection on a "combination" analysis a product
+    // tagged oily + combination stays visible, while a dry-only product does not
+    // match the analysis result and stays hidden.
+    const analysisSkinTypes = context.source === 'ai' ? context.skinTypes : [];
+
+    const skinTypeConditions: Prisma.ProductWhereInput[] = [];
+    if (analysisSkinTypes.length > 0) {
+      skinTypeConditions.push({
+        OR: [
+          { skinTypes: { hasSome: analysisSkinTypes } },
+          { skinTypes: { has: ALL_SKIN_TYPES } },
+        ],
+      });
+    }
+    if (requestedSkinTypes.length > 0) {
+      // Products tagged for every skin type stay compatible with the buyer's
+      // analysis result, so they also stay compatible with the selection.
+      skinTypeConditions.push(
+        context.source === 'ai'
+          ? {
+              OR: [
+                { skinTypes: { hasSome: requestedSkinTypes } },
+                { skinTypes: { has: ALL_SKIN_TYPES } },
+              ],
+            }
+          : { skinTypes: { hasSome: requestedSkinTypes } },
+      );
+    }
+
+    // Recommendations stay personalized even while a skin type is selected, so
+    // scoring falls back to the analysed skin type.
+    const scoringSkinType = requestedSkinTypes[0] ?? context.skinTypes[0] ?? '';
+
+    // `skinTypes=all` (no selection) still resolves through the analysis result,
+    // but keeps its own cache entry instead of sharing the no-parameter one.
+    const cacheSkinTypes =
       requestedSkinTypes.length > 0
         ? requestedSkinTypes
         : skinTypesFilter === undefined
           ? context.skinTypes
           : [];
 
-    // Recommendations stay personalized even when every skin type is requested,
-    // so scoring falls back to the analysed skin type.
-    const scoringSkinType = effectiveSkinTypes[0] ?? context.skinTypes[0] ?? '';
-
     const cacheKey = this.buildCacheKey(userId, {
-      skinTypes: effectiveSkinTypes,
+      skinTypes: cacheSkinTypes,
       ingredients: ingredientsFilter,
       minPrice,
       maxPrice,
@@ -135,8 +169,11 @@ export class MatchingService {
       merchant: { user: { shop: { isApproved: true } } },
     };
 
-    if (effectiveSkinTypes.length > 0) {
-      where.skinTypes = { hasSome: effectiveSkinTypes };
+    if (skinTypeConditions.length === 1) {
+      Object.assign(where, skinTypeConditions[0]);
+    } else if (skinTypeConditions.length > 1) {
+      // Analysis result AND panel selection, each one an OR inside itself.
+      where.AND = skinTypeConditions;
     }
 
     if (ingredientsFilter) {
@@ -389,9 +426,16 @@ export class MatchingService {
 
     const skinConcerns = latestAnalysis.conditions.map((c) => c.conditionName);
 
+    // An analysis can report more than one skin type ("oily,combination");
+    // keep them as a normalized list so filters can compare against each.
+    const skinTypes = (latestAnalysis.skinType ?? '')
+      .split(',')
+      .map((type) => type.trim().toLowerCase())
+      .filter((type) => type.length > 0);
+
     return {
       source: 'ai',
-      skinTypes: latestAnalysis.skinType ? [latestAnalysis.skinType] : [],
+      skinTypes,
       skinConcerns,
       analysisAge,
     };
