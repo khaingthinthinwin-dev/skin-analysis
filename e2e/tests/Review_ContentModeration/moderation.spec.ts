@@ -20,13 +20,13 @@ test.describe('Admin Review & Content Moderation', () => {
     test('should approve a pending review', async ({ page }) => {
       await moderationPage.goto();
       // TODO: Select a pending review and approve
-      await moderationPage.capture('moderation_approve');
+      await moderationPage.capture('N-01_1_moderation_approve');
     });
 
     test('should reject a pending review', async ({ page }) => {
       await moderationPage.goto();
       // TODO: Select a pending review and reject
-      await moderationPage.capture('moderation_reject');
+      await moderationPage.capture('N-02_1_moderation_reject');
     });
   });
 
@@ -34,7 +34,7 @@ test.describe('Admin Review & Content Moderation', () => {
     test('should view and resolve reported content', async ({ page }) => {
       await moderationPage.goto();
       // TODO: Click report button and resolve
-      await moderationPage.capture('moderation_report');
+      await moderationPage.capture('N-03_1_moderation_report');
     });
   });
 });

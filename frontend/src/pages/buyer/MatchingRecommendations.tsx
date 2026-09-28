@@ -21,6 +21,7 @@ import { HistoryAccordion } from '@/features/buyer/matching/components/HistoryAc
 import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
 import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
 import { getMatchingSortOptions, resolveMatchingSort } from '@/features/buyer/matching/utils/matchingSort'
+import { filterProductsBySkinType } from '@/features/buyer/matching/utils/skinTypeFilter'
 import { SortSelect } from '@/features/search/components/SortSelect'
 import { ViewToggle } from '@/features/search/components/ViewToggle'
 import { cn } from '@/lib/utils'
@@ -141,7 +142,7 @@ export default function MatchingRecommendations() {
 
   const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters)
   const { data: historyData } = useRecommendationHistory(1, 5)
-  const { data: adPanelData } = useAdPanel('category_banner')
+  const { data: adPanelData } = useAdPanel('recommendation_page_banner')
 
   const handlePageChange = (page: number) => {
     if (page === filters.page) return
@@ -161,12 +162,17 @@ export default function MatchingRecommendations() {
   // Keep the rendered list and pagination in sync with the selected page size
   // even while a refresh is in flight (placeholder data can still be from a
   // previous larger selection).
-  const products = (recData?.data ?? []).slice(0, filters.limit)
   const source = recData?.source ?? 'generic'
   const analysisAge = recData?.analysisAge ?? null
   const skinTypes = recData?.skinTypes ?? []
   const meta = recData?.meta ?? { page: 1, limit: 12, total: 0, totalPages: 0 }
   const history = historyData?.data ?? []
+
+  const products = filterProductsBySkinType(recData?.data ?? [], {
+    source,
+    analysisSkinTypes: skinTypes,
+    requestedSkinTypes: filters.skinTypes ? filters.skinTypes.split(',') : [],
+  }).slice(0, filters.limit)
 
   const pageNav =
     meta.total > 0 ? (

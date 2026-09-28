@@ -20,7 +20,7 @@ test.describe('Forgot Password Page', () => {
       await page.goto(ROUTES.FORGOT_PASSWORD);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
-      await captureScreenshot(page, 'N-12_page_loaded');
+      await captureScreenshot(page, 'N-12_1_page_loaded');
 
       const emailInput = page.locator('input[type="email"]');
       await expect(emailInput).toBeVisible();
@@ -37,7 +37,7 @@ test.describe('Forgot Password Page', () => {
         page.getByRole('heading', { name: 'Enter Verification Code' })
       ).toBeVisible();
       await expect(page.locator('input[autocomplete="one-time-code"]')).toBeVisible();
-      await captureScreenshot(page, 'N-12_verify_code_page');
+      await captureScreenshot(page, 'N-12_2_verify_code_page');
     });
   });
 
@@ -46,12 +46,12 @@ test.describe('Forgot Password Page', () => {
       await page.goto(ROUTES.FORGOT_PASSWORD);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
-      await captureScreenshot(page, 'N-13_forgot_password_page');
+      await captureScreenshot(page, 'N-13_1_forgot_password_page');
 
       const backLink = page.getByRole('link', { name: 'Back to login' });
       await expect(backLink).toBeVisible({ timeout: 5000 });
       await expect(backLink).toHaveAttribute('href', '/login');
-      await captureScreenshot(page, 'N-13_back_to_login_link');
+      await captureScreenshot(page, 'N-13_2_back_to_login_link');
     });
   });
 
@@ -60,7 +60,7 @@ test.describe('Forgot Password Page', () => {
       await page.goto(ROUTES.FORGOT_PASSWORD);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
-      await captureScreenshot(page, 'A-15_page_for_validation');
+      await captureScreenshot(page, 'A-15_1_page_for_validation');
 
       const emailInput = page.locator('input[type="email"]');
       await emailInput.fill('invalid-email-format');
@@ -70,7 +70,7 @@ test.describe('Forgot Password Page', () => {
 
       const emailError = page.locator('p.text-destructive, [role="alert"]').first();
       await expect(emailError).toBeVisible({ timeout: 5000 });
-      await captureScreenshot(page, 'A-15_invalid_email_error');
+      await captureScreenshot(page, 'A-15_2_invalid_email_error');
     });
   });
 });

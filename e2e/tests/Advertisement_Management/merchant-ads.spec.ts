@@ -20,7 +20,7 @@ test.describe('Merchant Advertisement Management', () => {
     test('should create a new advertisement', async ({ page }) => {
       await merchantAdPage.goto();
       // TODO: Click create, select package, upload content, submit
-      await merchantAdPage.capture('merchant_ad_create');
+      await merchantAdPage.capture('N-01_1_merchant_ad_create');
     });
   });
 
@@ -28,13 +28,13 @@ test.describe('Merchant Advertisement Management', () => {
     test('should edit an existing advertisement', async ({ page }) => {
       await merchantAdPage.goto();
       // TODO: Click edit on an ad, modify, save
-      await merchantAdPage.capture('merchant_ad_edit');
+      await merchantAdPage.capture('N-02_1_merchant_ad_edit');
     });
 
     test('should delete an advertisement', async ({ page }) => {
       await merchantAdPage.goto();
       // TODO: Click delete on an ad, confirm
-      await merchantAdPage.capture('merchant_ad_delete');
+      await merchantAdPage.capture('N-03_1_merchant_ad_delete');
     });
   });
 
@@ -42,7 +42,7 @@ test.describe('Merchant Advertisement Management', () => {
     test('should show ad status correctly', async ({ page }) => {
       await merchantAdPage.goto();
       // TODO: Verify DRAFT, CONTENT_UPLOADED, PENDING_APPROVAL states
-      await merchantAdPage.capture('merchant_ad_states');
+      await merchantAdPage.capture('N-04_1_merchant_ad_states');
     });
   });
 });
