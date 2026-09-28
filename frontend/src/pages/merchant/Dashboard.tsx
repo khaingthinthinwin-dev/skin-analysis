@@ -13,6 +13,10 @@ export default function MerchantDashboard() {
     user?.is_active === false ||
     user?.status === 'deactivated' ||
     user?.status === 'inactive'
+  const licenseStatus = user?.licenseStatus || user?.license_status
+  const isPending = licenseStatus === 'pending'
+  const isRejected = licenseStatus === 'rejected'
+  const canManageCatalog = !isDeactivated && !isPending && !isRejected
 
   const stats = [
     { label: 'Total Products', value: '24', change: '4 new this week', icon: Package, color: 'text-purple-600' },
@@ -37,7 +41,7 @@ export default function MerchantDashboard() {
             Manage your skincare product catalog, active promotions, and advertising campaigns.
           </p>
         </div>
-        {!isDeactivated && (
+        {canManageCatalog && (
           <Button asChild size="lg" className="bg-white text-purple-900 hover:bg-purple-50 font-bold shrink-0 shadow-md">
             <Link to="/merchant/products">
               <Plus className="mr-2 h-4 w-4" /> Add New Product
@@ -50,12 +54,28 @@ export default function MerchantDashboard() {
       {isDeactivated && <AccountDeactivatedBanner />}
 
       {/* Pending Approval Warning */}
-      {!isDeactivated && user?.licenseStatus === 'pending' && (
-        <Alert variant="destructive">
+      {!isDeactivated && isPending && (
+        <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            Your merchant account is currently pending approval. Some features may be restricted until an admin approves your request.
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Rejected Warning */}
+      {!isDeactivated && isRejected && (
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle>Account Rejected</AlertTitle>
+          <AlertDescription>
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your
+            license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-semibold">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}

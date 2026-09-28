@@ -16,7 +16,6 @@ import {
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ProductTable } from '@/components/merchant/ProductTable'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { useTranslation } from 'react-i18next'
 import {
   useProducts,
   useUpdateStock,
@@ -32,7 +31,6 @@ import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivat
 import type { ProductQueryParams } from '@/types/product.types'
 
 export default function ProductManagement() {
-  const { t } = useTranslation()
   const { user } = useAuth()
   const guard = useMerchantProductsGuard()
   const status =
@@ -299,12 +297,10 @@ export default function ProductManagement() {
       {showPendingBanner && (
         <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            {t(
-              'merchant.products.pendingBanner',
-              'Your merchant account is pending approval. Product management features are restricted until your license is approved.',
-            )}
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}

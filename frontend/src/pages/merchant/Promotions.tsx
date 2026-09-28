@@ -198,9 +198,10 @@ export default function Promotions() {
       {showPendingBanner && (
         <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>{t('merchant.promotions.pendingBannerTitle', 'Pending Approval')}</AlertTitle>
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            {t('merchant.promotions.pendingBanner')}
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}
@@ -208,7 +209,7 @@ export default function Promotions() {
       {guard.showRejectionBanner && (
         <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
           <ShieldAlert className="h-4 w-4 text-destructive" />
-          <AlertTitle>{t('merchant.promotions.rejectedBannerTitle', 'Account Rejected')}</AlertTitle>
+          <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
             Your merchant account has been rejected. Product management features are restricted. You can
             resubmit your license from your Profile page.{' '}

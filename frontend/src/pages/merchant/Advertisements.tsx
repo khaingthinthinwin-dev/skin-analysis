@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -15,12 +16,13 @@ import {
   Pencil,
   RefreshCw,
   Search,
+  ShieldAlert,
   Trash2,
   Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -164,7 +166,10 @@ export default function Advertisements() {
     user?.is_active === false ||
     user?.status === 'deactivated' ||
     user?.status === 'inactive'
-  const approvedMerchant = user?.licenseStatus === 'approved' && !isDeactivated
+  const licenseStatus = user?.licenseStatus || user?.license_status
+  const isPendingMerchant = licenseStatus === 'pending'
+  const isRejectedMerchant = licenseStatus === 'rejected'
+  const approvedMerchant = licenseStatus === 'approved' && !isDeactivated
   const params = {
     page,
     limit: 3,
@@ -354,22 +359,29 @@ export default function Advertisements() {
       {/* Deactivated Banner */}
       {isDeactivated && <AccountDeactivatedBanner />}
 
-      {/* Pending Merchant Banner (§4.3) */}
-      {!isDeactivated && user?.licenseStatus === 'pending' && (
+      {/* Pending Merchant Banner */}
+      {!isDeactivated && isPendingMerchant && (
         <Alert variant="warning">
-          <AlertTriangle className="h-4 w-4" />
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
-            shop is approved.
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}
-      {!isDeactivated && user?.licenseStatus === 'rejected' && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+
+      {/* Rejected Merchant Banner */}
+      {!isDeactivated && isRejectedMerchant && (
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
-            shop is approved.
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your
+            license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-semibold">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}
