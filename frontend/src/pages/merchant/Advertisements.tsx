@@ -746,7 +746,7 @@ interface AdCardProps {
   onView: (ad: Advertisement) => void
 }
 
-function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
+function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
