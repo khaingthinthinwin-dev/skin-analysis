@@ -18,11 +18,13 @@ import {
   DeactivateAdFeeSettingDto,
   ReactivateAdFeeSettingDto,
   AdminAdFeeHistoryQueryDto,
+  DeleteAdFeeHistoryDto,
   RevenueAnalyticsQueryDto,
 } from './dto';
 import {
   AdminAdApprovalResponseDto,
   AdminAdDetailResponseDto,
+  AdminAdFeeHistoryDeleteResponseDto,
   AdminAdFeeHistoryResponseDto,
   AdminAdFeeSettingResponseDto,
   AdminAdvertisementResponseDto,
@@ -33,6 +35,14 @@ import {
 
 const ACTIVE_ADS_CACHE_KEY = 'cache:ads:active';
 const PACKAGES_CACHE_KEY = 'cache:ads:packages';
+
+/**
+ * Fee change history created within the current calendar month is protected
+ * from deletion — only records from previous months may be removed.
+ * Dates are compared in UTC because `ad_fee_history.created_at` is stored in UTC.
+ */
+const currentMonthStartUtc = (now: Date = new Date()): Date =>
+  new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
 const PLACEMENT_NAMES: Record<string, string> = {
   search_page_banner: 'Search Page Banner',
@@ -765,8 +775,21 @@ export class AdminAdManagementService {
     query: AdminAdFeeHistoryQueryDto,
   ): Promise<PaginatedResponseDto<AdminAdFeeHistoryResponseDto>> {
     const where: Prisma.AdFeeHistoryWhereInput = {};
-    if (query.placement) where.setting = { placement: query.placement };
-    if (query.tier) where.setting = { tier: query.tier };
+    // Adaptation: placement and tier are combined into a single `setting` filter.
+    // Previously the tier filter overwrote the placement filter when both were set.
+    if (query.placement || query.tier) {
+      where.setting = {
+        ...(query.placement ? { placement: query.placement } : {}),
+        ...(query.tier ? { tier: query.tier } : {}),
+      };
+    }
+    if (query.month) {
+      const [year, month] = query.month.split('-').map(Number);
+      where.createdAt = {
+        gte: new Date(Date.UTC(year, month - 1, 1)),
+        lt: new Date(Date.UTC(year, month, 1)),
+      };
+    }
 
     const skip = (query.page - 1) * query.limit;
     const [items, total] = await Promise.all([
@@ -807,6 +830,61 @@ export class AdminAdManagementService {
         totalPages: Math.ceil(total / query.limit),
       },
     };
+  }
+
+  /**
+   * Deletes fee change history records.
+   *
+   * Business rule: history created in the current calendar month is protected and
+   * can never be deleted; only previous months are removable.
+   *
+   * All-or-nothing: when any requested record is protected or does not exist the
+   * whole request is rejected, so callers never deal with partial bulk results.
+   */
+  async deleteFeeHistory(
+    dto: DeleteAdFeeHistoryDto,
+    adminId: string,
+  ): Promise<AdminAdFeeHistoryDeleteResponseDto> {
+    const ids = [...new Set(dto.history_ids)];
+    if (ids.length === 0) {
+      throw new BadRequestException(
+        'At least one fee history record must be selected',
+      );
+    }
+
+    const rows = await this.prisma.adFeeHistory.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, createdAt: true },
+    });
+
+    if (rows.length !== ids.length) {
+      const found = new Set(rows.map((row) => row.id));
+      const missing = ids.filter((id) => !found.has(id));
+      throw new NotFoundException(
+        `Fee history record not found: ${missing.join(', ')}`,
+      );
+    }
+
+    const protectedRows = rows.filter(
+      (row) => row.createdAt.getTime() >= currentMonthStartUtc().getTime(),
+    );
+    if (protectedRows.length > 0) {
+      throw new BadRequestException(
+        'Fee change history from the current month cannot be deleted',
+      );
+    }
+
+    await this.prisma.adFeeHistory.deleteMany({ where: { id: { in: ids } } });
+
+    await this.logAudit({
+      userId: adminId,
+      action: 'FEE_HISTORY_DELETED',
+      entityType: 'AdFeeHistory',
+      entityId: ids.length === 1 ? ids[0] : undefined,
+      oldValue: { deletedIds: ids },
+    });
+
+    return { deletedCount: ids.length, deletedIds: ids };
   }
 
   // ─── Analytics ───────────────────────────────────────────────────────────
