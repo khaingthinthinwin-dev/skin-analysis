@@ -54,19 +54,19 @@ describe('AdminAdManagementService revenue analytics', () => {
       .mockResolvedValueOnce([
         {
           payment_amount: new Prisma.Decimal('50.00'),
-          placement: 'homepage_banner',
+          placement: 'search_page_banner',
           tier: 'premium',
           approved_at: new Date('2024-06-01T00:00:00.000Z'),
         },
         {
           payment_amount: new Prisma.Decimal('30.00'),
-          placement: 'product_sidebar',
+          placement: 'recommendation_page_banner',
           tier: 'basic',
           approved_at: new Date('2024-06-02T00:00:00.000Z'),
         },
         {
           payment_amount: new Prisma.Decimal('20.00'),
-          placement: 'homepage_banner',
+          placement: 'search_page_banner',
           tier: 'standard',
           approved_at: new Date('2024-06-01T00:00:00.000Z'),
         },
@@ -91,8 +91,8 @@ describe('AdminAdManagementService revenue analytics', () => {
     expect(result.byPlacement).toHaveLength(2);
     expect(result.byPlacement[0]).toEqual(
       expect.objectContaining({
-        placement: 'homepage_banner',
-        placementName: 'Homepage Banner',
+        placement: 'search_page_banner',
+        placementName: 'Search Page Banner',
         adCount: 2,
         revenue: 70,
         avgCtr: 0,

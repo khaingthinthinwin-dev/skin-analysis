@@ -12,7 +12,7 @@ function usePrefersReducedMotion() {
 }
 
 export function SponsoredAdSlider() {
-  const { data } = useSponsoredAds('search_top')
+  const { data } = useSponsoredAds('search_page_banner')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
   const [isFocused, setIsFocused] = useState(false)

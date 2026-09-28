@@ -17,7 +17,7 @@ describe('AdminAdManagementService fee settings', () => {
 
   const activeSetting = {
     id: 'fs1',
-    placement: 'homepage_banner',
+    placement: 'search_page_banner',
     tier: 'premium',
     dailyRate: new Prisma.Decimal('10.00'),
     durationDays: 5,
@@ -29,7 +29,7 @@ describe('AdminAdManagementService fee settings', () => {
 
   const createdSetting = {
     id: 'fs2',
-    placement: 'homepage_banner',
+    placement: 'search_page_banner',
     tier: 'standard',
     dailyRate: new Prisma.Decimal('12.50'),
     durationDays: 7,
@@ -110,7 +110,7 @@ describe('AdminAdManagementService fee settings', () => {
 
     const result = await service.createFeeSetting(
       {
-        placement: 'homepage_banner',
+        placement: 'search_page_banner',
         tier: 'standard',
         daily_rate: 12.5,
         duration_days: 7,
@@ -125,7 +125,7 @@ describe('AdminAdManagementService fee settings', () => {
     expect(result.totalFee).toBe('87.50');
     expect(prisma.adFeeSetting.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        placement: 'homepage_banner',
+        placement: 'search_page_banner',
         tier: 'standard',
         dailyRate: 12.5,
         durationDays: 7,
@@ -157,7 +157,7 @@ describe('AdminAdManagementService fee settings', () => {
     await expect(
       service.createFeeSetting(
         {
-          placement: 'homepage_banner',
+          placement: 'search_page_banner',
           tier: 'premium',
           daily_rate: 5,
           duration_days: 3,
@@ -181,7 +181,7 @@ describe('AdminAdManagementService fee settings', () => {
 
     const result = await service.createFeeSetting(
       {
-        placement: 'homepage_banner',
+        placement: 'search_page_banner',
         tier: 'standard',
         daily_rate: 12.5,
         duration_days: 7,
@@ -322,7 +322,7 @@ describe('AdminAdManagementService fee settings', () => {
     prisma.adFeeHistory.findMany.mockResolvedValue([
       {
         id: 'h1',
-        setting: { placement: 'homepage_banner', tier: 'premium' },
+        setting: { placement: 'search_page_banner', tier: 'premium' },
         changedByAdmin: { id: 'admin1', name: 'Admin One' },
         oldDailyRate: null,
         newDailyRate: new Prisma.Decimal('10.00'),
@@ -341,19 +341,19 @@ describe('AdminAdManagementService fee settings', () => {
     const result = await service.listFeeHistory({
       page: 1,
       limit: 20,
-      placement: 'homepage_banner',
+      placement: 'search_page_banner',
     });
 
     expect(prisma.adFeeHistory.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { setting: { placement: 'homepage_banner' } },
+        where: { setting: { placement: 'search_page_banner' } },
         orderBy: { createdAt: 'desc' },
       }),
     );
     expect(result.data[0]).toEqual(
       expect.objectContaining({
         id: 'h1',
-        placement: 'homepage_banner',
+        placement: 'search_page_banner',
         tier: 'premium',
         oldDailyRate: null,
         newDailyRate: '10.00',

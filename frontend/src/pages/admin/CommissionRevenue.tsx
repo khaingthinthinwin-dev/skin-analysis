@@ -129,7 +129,7 @@ export default function CommissionAndRevenue() {
                   Export
                 </Button>
               </div>
-              <CommissionReportsTable reports={reportsQuery.data?.reports} groupBy={groupBy} />
+              <CommissionReportsTable reports={reportsQuery.data?.reports} groupBy={groupBy} isFetching={reportsQuery.isFetching} />
               {reportsQuery.data?.pagination && (
                 <PaginationControls
                   page={reportsQuery.data.pagination.page}

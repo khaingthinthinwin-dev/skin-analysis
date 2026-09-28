@@ -83,14 +83,14 @@ test.describe('Login Page', () => {
       await loginPage.goto();
       await loginPage.login('nathan.fielding@gmail.com', testPassword);
       await loginPage.expectErrorVisible();
-      await captureScreenshot(page, 'A-08_invalid_email_error');
+      await captureScreenshot(page, 'A-08_1_invalid_email_error');
     });
 
     test('should show error with invalid password', async ({ page }) => {
       await loginPage.goto();
       await loginPage.login(testEmail, 'WrongPassword123!');
       await loginPage.expectErrorVisible();
-      await captureScreenshot(page, 'A-09_invalid_password_error');
+      await captureScreenshot(page, 'A-09_1_invalid_password_error');
     });
 
     test('should show validation error for empty fields', async ({ page }) => {
@@ -103,7 +103,7 @@ test.describe('Login Page', () => {
       const passwordError = await loginPage.getPasswordError();
       expect(emailError).toBeTruthy();
       expect(passwordError).toBeTruthy();
-      await captureScreenshot(page, 'A-10_empty_email');
+      await captureScreenshot(page, 'A-10_1_empty_email');
     });
 
     test('should show validation error for invalid email format', async ({ page }) => {
@@ -133,7 +133,7 @@ test.describe('Login Page', () => {
       await loginPage.registerLink.click();
       await loginPage.expectRedirectTo(ROUTES.REGISTER);
       await expect(page.getByPlaceholder('John Doe')).toBeVisible({ timeout: 10_000 });
-      await captureScreenshot(page, 'N-09_navigated_to_register');
+      await captureScreenshot(page, 'N-09_1_navigated_to_register');
     });
 
     test('should navigate to forgot password page', async ({ page }) => {
@@ -141,7 +141,7 @@ test.describe('Login Page', () => {
       const forgotLink = loginPage.forgotPasswordLink;
       await expect(forgotLink).toBeVisible();
       await expect(forgotLink).toHaveAttribute('href', '/forgot-password');
-      await captureScreenshot(page, 'N-11_forgot_password_link_visible');
+      await captureScreenshot(page, 'N-11_1_forgot_password_link_visible');
 
       await forgotLink.click();
       if (!/\/forgot-password$/.test(page.url())) {
@@ -151,7 +151,7 @@ test.describe('Login Page', () => {
       await expect(
         page.getByRole('heading', { name: 'Forgot Password?' })
       ).toBeVisible();
-      await captureScreenshot(page, 'N-11_navigated_to_forgot_password');
+      await captureScreenshot(page, 'N-11_2_navigated_to_forgot_password');
     });
   });
 

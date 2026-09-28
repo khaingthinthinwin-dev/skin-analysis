@@ -54,7 +54,7 @@ export function useRecommendationHistory(page = 1, limit = 20) {
   })
 }
 
-export function useAdPanel(placement = 'category_banner') {
+export function useAdPanel(placement = 'recommendation_page_banner') {
   // TODO: Implement TanStack Query hook
   return useQuery({
     queryKey: ['ads', 'panel', placement],

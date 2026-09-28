@@ -1,13 +1,10 @@
 # AGENTS.md
 
-## Scope restriction (group project — read carefully)
-I only own the Order Insights module. NEVER read, edit, or create files
-outside these paths without asking me first:
-frontend/src/pages/order-insights/BuyerOrdersPage.tsx
-frontend/src/features/order-insights/**
-
-If a task seems to require touching anything else, STOP and ask me instead
-of doing it.
+## Scope (group project)
+No file is off-limits. Read, edit, or create files anywhere in the repo
+for any screen (e.g. Matching & Recommendation, Order Insights, Search,
+Cart, Admin, Merchant). For screens owned by other team members, prefer
+minimal, surgical edits and describe what you changed.
 
 ## Source of truth
 Before implementing anything, read the relevant file(s) in:

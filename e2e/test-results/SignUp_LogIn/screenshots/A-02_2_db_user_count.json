@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-09-25T03:31:57.044Z",
+  "description": "DB users count — still 1 row after duplicate email attempt",
+  "results": [
+    {
+      "label": "users count by email",
+      "rowCount": 1,
+      "rows": [
+        {
+          "user_count": 1
+        }
+      ]
+    }
+  ]
+}

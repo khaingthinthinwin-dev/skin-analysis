@@ -1,10 +1,11 @@
 import React from 'react';
 import { CommissionGroupBy, CommissionReport } from '../services/commission.service';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, formatRate } from '../utils/format';
 
 interface CommissionReportsTableProps {
   reports?: CommissionReport[];
   groupBy?: CommissionGroupBy;
+  isFetching?: boolean;
 }
 
 // Merchant commission reports (GET /admin/commission/reports).
@@ -15,13 +16,14 @@ interface CommissionReportsTableProps {
 export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
   reports = [],
   groupBy = 'merchant',
+  isFetching = false,
 }) => {
   const thClass = "text-left py-2.5 px-2 sm:px-3.5 text-xs font-bold uppercase tracking-wide text-muted-foreground border-b border-border bg-primary/10 whitespace-nowrap";
 
   const tdClass = "py-3 px-2 sm:px-3.5 text-[13px] text-muted-foreground border-b border-border whitespace-nowrap bg-card";
 
   return (
-    <div className="overflow-x-auto rounded-md border bg-card">
+    <div className={`overflow-x-auto rounded-md border bg-card transition-opacity duration-200 ease-in-out ${isFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
         <table className="w-full border-separate border-spacing-0">
         <thead className="sticky top-0 z-10">
           <tr>
@@ -44,12 +46,12 @@ export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
             </tr>
           ) : (
             reports.map((r, idx) => (
-              <tr key={`${r.orderId ?? r.merchantId}-${r.date ?? ''}-${r.commissionRate}-${idx}`}>
+              <tr key={`${r.orderId ?? r.merchantId}-${r.date ?? ''}-${r.commissionRate}-${idx}`} className="transition-colors duration-150 ease-in-out hover:bg-muted/40">
                 {groupBy === 'day' && <td className={tdClass}>{r.date}</td>}
                 {groupBy === 'order' && <td className={`${tdClass} text-foreground font-medium`}>{r.orderNumber}</td>}
                 {groupBy === 'order' && <td className={tdClass}>{r.date ? new Date(r.date).toLocaleString() : '-'}</td>}
                 <td className={`${tdClass} text-foreground font-medium`}>{r.merchantName}</td>
-                <td className={`${tdClass} text-right tabular-nums`}>{r.commissionRate}%</td>
+                <td className={`${tdClass} text-right tabular-nums`}>{formatRate(r.commissionRate)}</td>
                 {groupBy !== 'order' && <td className={`${tdClass} text-right tabular-nums`}>{r.orders}</td>}
                 <td className={`${tdClass} text-right tabular-nums`}>{formatCurrency(r.revenue)} Ks</td>
                 <td className={`${tdClass} text-right text-primary font-semibold tabular-nums`}>{formatCurrency(r.commission)} Ks</td>

@@ -49,14 +49,14 @@ test.describe('Reset Password Page', () => {
 
       await passwordInput.fill(newPassword);
       await confirmInput.fill(newPassword);
-      await captureScreenshot(page, 'N-14_reset_form_filled');
+      await captureScreenshot(page, 'N-14_1_reset_form_filled');
 
       await page.locator('button[type="submit"]').click();
 
       await expect(page.getByText(/password reset successful/i)).toBeVisible({
         timeout: 15_000,
       });
-      await captureScreenshot(page, 'N-14_success_message');
+      await captureScreenshot(page, 'N-14_2_success_message');
 
       await page.goto(ROUTES.LOGIN);
       await page.waitForLoadState('domcontentloaded');
@@ -68,7 +68,7 @@ test.describe('Reset Password Page', () => {
       await page.waitForFunction(() => window.location.pathname !== '/login', undefined, {
         timeout: 15_000,
       });
-      await captureScreenshot(page, 'N-14_login_with_new_password');
+      await captureScreenshot(page, 'N-14_3_login_with_new_password');
     });
   });
 
@@ -84,7 +84,7 @@ test.describe('Reset Password Page', () => {
           await backLink.click();
           await page.waitForURL('**/login', { timeout: 15000 });
           await expect(page.getByPlaceholder('Enter your password')).toBeVisible({ timeout: 10_000 });
-          await captureScreenshot(page, 'N-15_back_to_login');
+          await captureScreenshot(page, 'N-15_1_back_to_login');
           expect(page.url()).toContain('/login');
         }
       } else {
@@ -92,7 +92,7 @@ test.describe('Reset Password Page', () => {
         await expect(page.getByRole('heading', { name: 'Forgot Password?' })).toBeVisible({
           timeout: 10_000,
         });
-        await captureScreenshot(page, 'N-15_redirect_to_forgot');
+        await captureScreenshot(page, 'N-15_2_redirect_to_forgot');
       }
     });
   });
@@ -116,7 +116,7 @@ test.describe('Reset Password Page', () => {
 
           const error = page.locator('p.text-destructive, [role="alert"]').first();
           await expect(error).toBeVisible({ timeout: 5000 });
-          await captureScreenshot(page, 'A-17_password_mismatch_error');
+          await captureScreenshot(page, 'A-17_1_password_mismatch_error');
         }
       }
     });
@@ -139,7 +139,7 @@ test.describe('Reset Password Page', () => {
           const submitBtn = page.locator('button[type="submit"]');
           await submitBtn.click();
 
-          await captureScreenshot(page, 'A-18_weak_password_error');
+          await captureScreenshot(page, 'A-18_1_weak_password_error');
         }
       }
     });
@@ -163,11 +163,11 @@ test.describe('Reset Password Page', () => {
           await submitBtn.click();
 
           await page.waitForTimeout(2000);
-          await captureScreenshot(page, 'A-19_invalid_token_error');
+          await captureScreenshot(page, 'A-19_1_invalid_token_error');
         }
       } else {
         await expect(page).toHaveURL(/\/forgot-password/);
-        await captureScreenshot(page, 'A-19_redirect_to_forgot');
+        await captureScreenshot(page, 'A-19_2_redirect_to_forgot');
       }
     });
   });

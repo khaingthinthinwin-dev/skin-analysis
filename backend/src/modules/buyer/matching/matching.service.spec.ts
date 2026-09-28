@@ -222,9 +222,176 @@ describe('MatchingService', () => {
 
         await service.getPersonalized(userId, {});
 
-        expect(getMockWhere(mockPrisma.product.findMany).skinTypes).toEqual({
-          hasSome: ['oily'],
+        expect(getMockWhere(mockPrisma.product.findMany).OR).toEqual([
+          { skinTypes: { hasSome: ['oily'] } },
+          { skinTypes: { has: 'all' } },
+        ]);
+      });
+
+      it('should apply the analysed skin types and the selection as two ANDed conditions', async () => {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily,combination',
+          completedAt: new Date(),
+          conditions: [],
         });
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, { skinTypes: 'oily' });
+
+        expect(getMockWhere(mockPrisma.product.findMany).AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily', 'combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+      });
+
+      it('should still query the database when the selected skin type is outside the analysis', async () => {
+        mockAiSource();
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, { skinTypes: 'dry' });
+
+        // A dry-only product cannot satisfy the analysis condition, but products
+        // tagged for every skin type still can, so the grid is not force-empty.
+        expect(mockPrisma.product.findMany).toHaveBeenCalled();
+        expect(getMockWhere(mockPrisma.product.findMany).AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['dry'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+      });
+
+      it('should keep a product tagged oily + combination for a combination analysis with an oily selection', async () => {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'combination',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'p1',
+            name: 'Oil Control Cleansing Gel',
+            slug: 'oil-control-cleansing-gel',
+            price: 13000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily', 'combination'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.4,
+            reviewCount: 12,
+            isFeatured: false,
+            stockQuantity: 5,
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(1);
+
+        const result = await service.getPersonalized(userId, {
+          skinTypes: 'oily',
+        });
+
+        // The product shares "combination" with the analysis result and "oily"
+        // with the selection, so both conditions are satisfied by one tag each.
+        expect(result.data).toHaveLength(1);
+        expect(getMockWhere(mockPrisma.product.findMany).AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+      });
+
+      it('should normalize a mixed-case analysed skin type list', async () => {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'Oily, Combination',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        const result = await service.getPersonalized(userId, {});
+
+        expect(result.skinTypes).toEqual(['oily', 'combination']);
+        // At least one analysed skin type has to match, and products tagged for
+        // every skin type stay compatible with the analysis result.
+        expect(getMockWhere(mockPrisma.product.findMany).OR).toEqual([
+          { skinTypes: { hasSome: ['oily', 'combination'] } },
+          { skinTypes: { has: 'all' } },
+        ]);
+      });
+
+      it('should AND the analysis skin type condition with the other filters', async () => {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily,combination',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, {
+          skinTypes: 'combination',
+          minPrice: 1000,
+          maxPrice: 5000,
+          rating: 4,
+          categoryId: 'cat-1',
+        });
+
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily', 'combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+        expect(where.price).toEqual({ gte: 1000, lte: 5000 });
+        expect(where.avgRating).toEqual({ gte: 4 });
+        expect(where.categoryId).toBe('cat-1');
       });
 
       it('should still score against the analysed skin type when all skin types are requested', async () => {

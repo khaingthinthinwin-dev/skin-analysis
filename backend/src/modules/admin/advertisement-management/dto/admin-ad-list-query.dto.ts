@@ -21,7 +21,12 @@ export class AdminAdListQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(
-    ['homepage_banner', 'product_sidebar', 'category_banner', 'search_top'],
+    [
+      'search_page_banner',
+      'recommendation_page_banner',
+      'checkout_page_banner',
+      'productDetail_page_banner',
+    ],
     {
       message: 'Invalid placement filter',
     },
