@@ -95,6 +95,11 @@ export interface AdminAdFeeHistory {
   createdAt: string
 }
 
+export interface AdminAdFeeHistoryDeleteResult {
+  deletedCount: number
+  deletedIds: string[]
+}
+
 export interface RevenueAnalytics {
   summary: {
     totalRevenue: number
@@ -239,6 +244,13 @@ export const reactivateFeeSchema = z.object({
   change_reason: z.string().max(1000, 'VAL-ADM-027').optional(),
 })
 
+export const deleteFeeHistorySchema = z.object({
+  history_ids: z
+    .array(z.string().uuid())
+    .min(1, 'Select at least one history record')
+    .max(50, 'Maximum 50 records per bulk operation'),
+})
+
 export const revenueAnalyticsSchema = z.object({
   dateFrom: z
     .string({ message: 'VAL-ADM-031' })
@@ -274,6 +286,7 @@ export type CreateFeeSettingInput = z.infer<typeof createFeeSettingSchema>
 export type EditFeeSettingInput = z.infer<typeof editFeeSettingSchema>
 export type DeactivateFeeInput = z.infer<typeof deactivateFeeSchema>
 export type ReactivateFeeInput = z.infer<typeof reactivateFeeSchema>
+export type DeleteFeeHistoryInput = z.infer<typeof deleteFeeHistorySchema>
 export type RevenueAnalyticsQuery = z.infer<typeof revenueAnalyticsSchema>
 export type AdminExportInput = z.infer<typeof exportSchema>
 

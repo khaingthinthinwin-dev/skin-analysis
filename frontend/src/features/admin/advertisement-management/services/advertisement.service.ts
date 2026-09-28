@@ -2,6 +2,7 @@ import { api } from '@/lib/api';
 import type {
   AdminAdApprovalResult,
   AdminAdDetail,
+  AdminAdFeeHistoryDeleteResult,
   AdminAdFeeSetting,
   AdminAdListQuery,
   AdminBulkApproveInput,
@@ -24,6 +25,8 @@ import type {
 export interface AdminAdFeeHistoryQuery {
   placement?: Placement;
   tier?: Tier;
+  /** Calendar month filter in `YYYY-MM` format. */
+  month?: string;
   page?: number;
   limit?: number;
 }
@@ -171,6 +174,15 @@ export const advertisementService = {
     const response = await api.get('/admin/ad-fees/history', {
       params,
       paramsSerializer: serializeParams,
+    });
+    return response.data.data;
+  },
+
+  deleteFeeHistory: async (
+    ids: string[],
+  ): Promise<AdminAdFeeHistoryDeleteResult> => {
+    const response = await api.delete('/admin/ad-fees/history', {
+      data: { history_ids: ids },
     });
     return response.data.data;
   },
