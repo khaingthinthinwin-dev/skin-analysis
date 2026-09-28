@@ -4,10 +4,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import type { Profile } from '@/types/profile.types'
+import { LicenseResubmissionButton } from './LicenseResubmissionCard'
 import { Mail, Calendar, Shield, FileCheck } from 'lucide-react'
 
 interface ProfileInfoCardProps {
   profile: Profile
+  onResubmitLicense?: (file: File) => Promise<unknown>
+  isResubmitting?: boolean
 }
 
 function getInitials(name: string): string {
@@ -40,10 +43,17 @@ function formatDate(dateString: string): string {
   })
 }
 
-export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
+export function ProfileInfoCard({
+  profile,
+  onResubmitLicense,
+  isResubmitting = false,
+}: ProfileInfoCardProps) {
   const { t } = useTranslation()
   const userRole = profile.role || profile.roleCode || 'buyer'
   const roleDefault = userRole === 'super_admin' ? 'Super Admin' : userRole.charAt(0).toUpperCase() + userRole.slice(1)
+  const isRejectedMerchant =
+    userRole === 'merchant' &&
+    (profile.licenseStatus === 'rejected' || profile.license_status === 'rejected')
 
   return (
     <Card>
@@ -95,28 +105,36 @@ export function ProfileInfoCard({ profile }: ProfileInfoCardProps) {
           </h4>
 
           {userRole === 'merchant' && (
-            <div className="flex items-center space-x-3">
-              <FileCheck className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">
-                  {t('profile.info.licenseStatus', 'License Status')}
-                </p>
-                <Badge
-                  variant={
-                    profile.licenseStatus === 'approved'
-                      ? 'default'
+            <div className="flex flex-wrap items-center gap-8">
+              <div className="flex items-center space-x-3">
+                <FileCheck className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">
+                    {t('profile.info.licenseStatus', 'License Status')}
+                  </p>
+                  <Badge
+                    variant={
+                      profile.licenseStatus === 'approved'
+                        ? 'default'
+                        : profile.licenseStatus === 'rejected'
+                          ? 'destructive'
+                          : 'secondary'
+                    }
+                  >
+                    {profile.licenseStatus === 'approved'
+                      ? t('profile.info.licenseApproved', 'Approved')
                       : profile.licenseStatus === 'rejected'
-                        ? 'destructive'
-                        : 'secondary'
-                  }
-                >
-                  {profile.licenseStatus === 'approved'
-                    ? t('profile.info.licenseApproved', 'Approved')
-                    : profile.licenseStatus === 'rejected'
-                      ? t('profile.info.licenseRejected', 'Rejected')
-                      : t('profile.info.licensePending', 'Pending')}
-                </Badge>
+                        ? t('profile.info.licenseRejected', 'Rejected')
+                        : t('profile.info.licensePending', 'Pending')}
+                  </Badge>
+                </div>
               </div>
+              {isRejectedMerchant && onResubmitLicense && (
+                <LicenseResubmissionButton
+                  onUpload={onResubmitLicense}
+                  isPending={isResubmitting}
+                />
+              )}
             </div>
           )}
 
