@@ -17,11 +17,13 @@ function toNum(v: unknown): number {
 
 function toNumOrUndefined(v: unknown): number | undefined {
   if (v == null) return undefined
-  if (typeof v === 'number') return Number.isNaN(v) ? undefined : v
   if (typeof v === 'string') {
-    const n = Number(v)
+    const trimmed = v.trim()
+    if (trimmed === '') return undefined
+    const n = Number(trimmed)
     return Number.isNaN(n) ? undefined : n
   }
+  if (typeof v === 'number') return Number.isNaN(v) ? undefined : v
   return undefined
 }
 
@@ -30,46 +32,57 @@ export function useProductForm(options: {
   product?: Product
 }): UseFormReturn<ProductFormData> {
   const { mode, product } = options
-  // Both schemas validate to the same ProductFormData shape at runtime, but
-  // their Zod types differ (create requires all fields, update is partial),
-  // and Zod 4's Standard Schema `input` type is `unknown`, which the
-  // standardSchemaResolver generics cannot express against FieldValues. The
-  // casts keep the hook's ProductFormData contract while accepting either
-  // schema.
-  const schema = mode === 'edit' ? updateProductSchema : createProductSchema
-  const resolver = standardSchemaResolver(
-    schema as Parameters<typeof standardSchemaResolver>[0],
-  ) as unknown as Resolver<ProductFormData>
   return useForm<ProductFormData>({
-    resolver,
+    // The edit schema's fields are optional, so its inferred input type
+    // doesn't satisfy standardSchemaResolver's FieldValues constraint, and
+    // validation output differs from ProductFormData at the type level only.
+    // Runtime behavior is identical, so casts on both the schema argument
+    // and the resulting resolver are safe.
+    resolver: standardSchemaResolver(
+      (mode === 'edit' ? updateProductSchema : createProductSchema) as never,
+    ) as unknown as Resolver<ProductFormData>,
     defaultValues:
       mode === 'edit' && product
-        ? {
-            name: product.name,
-            shortDescription: product.shortDescription,
-            description: product.description ?? '',
-            categoryId: product.category?.id ?? '',
-            sku: product.sku ?? '',
-            price: toNumOrUndefined(product.price),
-            compareAtPrice:
+        ? (() => {
+            // UI-only mapping (no backend change): backend stores selling price
+            // in `price` and nulls `compareAtPrice` when no discount. Map back
+            // so the edit form matches what was entered: regular price in
+            // Compare, discount in Price (empty when no sale).
+            const rawPrice = toNumOrUndefined(product.price)
+            const rawCompareValue =
               product.compareAtPrice != null
                 ? toNumOrUndefined(product.compareAtPrice)
-                : undefined,
-            stockQuantity: toNum(product.stockQuantity),
-            lowStockThreshold: toNum(product.lowStockThreshold),
-            skinTypes: (product.skinTypes ?? []).flatMap((s: string) => {
-              const lower = s.toLowerCase()
-              return lower === 'all'
-                ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
-                : lower
-            }),
-            ingredients: product.ingredients ?? [],
-            tags: product.tags ?? [],
-            isActive: product.isActive,
-            isFeatured: product.isFeatured,
-            retainedImageUrls: product.images ?? [],
-            images: [],
-          }
+                : undefined
+            const rawCompare =
+              rawCompareValue === 0 ? undefined : rawCompareValue
+            const hasDiscount =
+              rawPrice != null &&
+              rawCompare != null &&
+              rawCompare > rawPrice
+            return {
+              name: product.name,
+              shortDescription: product.shortDescription,
+              description: product.description ?? '',
+              categoryId: product.category?.id ?? '',
+              sku: product.sku ?? '',
+              price: hasDiscount ? rawPrice : undefined,
+              compareAtPrice: rawCompare ?? rawPrice,
+              stockQuantity: toNum(product.stockQuantity),
+              lowStockThreshold: toNum(product.lowStockThreshold),
+              skinTypes: (product.skinTypes ?? []).flatMap((s: string) => {
+                const lower = s.toLowerCase()
+                return lower === 'all'
+                  ? ['dry', 'oily', 'combination', 'sensitive', 'normal']
+                  : lower
+              }),
+              ingredients: product.ingredients ?? [],
+              tags: product.tags ?? [],
+              isActive: product.isActive,
+              isFeatured: product.isFeatured,
+              retainedImageUrls: product.images ?? [],
+              images: [],
+            }
+          })()
         : {
             name: '',
             shortDescription: '',

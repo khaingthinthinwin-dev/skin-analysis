@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { roleNavConfigs, type UserRole, type NavItem } from '@/lib/navConfig'
 import { useAuth } from '@/hooks/useAuth'
+import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
 
 export interface SidebarProps {
   isOpen: boolean
@@ -43,13 +44,29 @@ export function Sidebar({
   const activeRole: UserRole = overrideRole || user?.role || 'buyer'
   const handleLogout = overrideLogout || authLogout
   const config = roleNavConfigs[activeRole] || roleNavConfigs.buyer
+  const { unreadCount } = useNotifications()
 
   const handleLogoutClick = () => {
     handleLogout()
     onClose()
   }
 
+  const isNotificationItem = (item: NavItem) =>
+    item.href.endsWith('/notifications')
+
   const renderBadge = (item: NavItem) => {
+    if (isNotificationItem(item) && unreadCount > 0) {
+      return (
+        <span
+          className={cn(
+            'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-purple-600 px-1.5 text-[11px] font-bold text-white'
+          )}
+          aria-label={`${unreadCount} unread notifications`}
+        >
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )
+    }
     if (!item.badge) return null
 
     const variantStyles =
@@ -75,7 +92,7 @@ export function Sidebar({
     <aside
       className={cn(
         'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border/80 bg-background/95 backdrop-blur-md transition-all duration-300 ease-in-out lg:static lg:translate-x-0',
-        isCollapsed ? 'w-20' : 'w-64',
+        isCollapsed ? 'w-20' : 'w-full sm:w-64',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
@@ -182,8 +199,13 @@ export function Sidebar({
                   {!isCollapsed && renderBadge(item)}
 
                   {/* Badge for collapsed mode (small dot highlight) */}
-                  {isCollapsed && item.badge && (
+                  {isCollapsed && item.badge && !isNotificationItem(item) && (
                     <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-pink-500 animate-pulse" />
+                  )}
+                  {isCollapsed && isNotificationItem(item) && unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-purple-600 px-1 text-[10px] font-bold text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
                   )}
                 </Link>
               )

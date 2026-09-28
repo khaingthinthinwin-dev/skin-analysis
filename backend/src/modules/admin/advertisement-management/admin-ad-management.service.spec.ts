@@ -17,7 +17,7 @@ describe('AdminAdManagementService ad review', () => {
 
   const feeSetting = {
     id: 'fs1',
-    placement: 'homepage_banner',
+    placement: 'search_page_banner',
     tier: 'premium',
     dailyRate: new Prisma.Decimal('10.00'),
     durationDays: 5,
@@ -102,11 +102,11 @@ describe('AdminAdManagementService ad review', () => {
       page: 1,
       limit: 20,
       status: 'pending',
-      placement: 'homepage_banner',
+      placement: 'search_page_banner',
     });
 
     expect(result.data[0].shopName).toBe('Shop A');
-    expect(result.data[0].placement).toBe('homepage_banner');
+    expect(result.data[0].placement).toBe('search_page_banner');
     expect(result.data[0].tier).toBe('premium');
     expect(result.meta).toEqual({
       page: 1,
@@ -118,7 +118,7 @@ describe('AdminAdManagementService ad review', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           approvalStatus: 'pending',
-          feeSetting: { placement: 'homepage_banner' },
+          feeSetting: { placement: 'search_page_banner' },
         }),
       }),
     );

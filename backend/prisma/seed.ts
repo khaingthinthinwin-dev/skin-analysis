@@ -104,18 +104,18 @@ async function main() {
 
   // Ad Fee Settings
   const adFeeSettings = [
-    { placement: 'homepage_banner', tier: 'basic', dailyRate: 3.00, durationDays: 7, maxAds: 1 },
-    { placement: 'homepage_banner', tier: 'standard', dailyRate: 5.00, durationDays: 7, maxAds: 1 },
-    { placement: 'homepage_banner', tier: 'premium', dailyRate: 8.00, durationDays: 7, maxAds: 1 },
-    { placement: 'product_sidebar', tier: 'basic', dailyRate: 2.00, durationDays: 15, maxAds: 3 },
-    { placement: 'product_sidebar', tier: 'standard', dailyRate: 3.50, durationDays: 15, maxAds: 3 },
-    { placement: 'product_sidebar', tier: 'premium', dailyRate: 6.00, durationDays: 15, maxAds: 3 },
-    { placement: 'category_banner', tier: 'basic', dailyRate: 2.50, durationDays: 30, maxAds: 5 },
-    { placement: 'category_banner', tier: 'standard', dailyRate: 4.00, durationDays: 30, maxAds: 5 },
-    { placement: 'category_banner', tier: 'premium', dailyRate: 7.00, durationDays: 30, maxAds: 5 },
-    { placement: 'search_top', tier: 'basic', dailyRate: 1.50, durationDays: 7, maxAds: 6 },
-    { placement: 'search_top', tier: 'standard', dailyRate: 2.50, durationDays: 7, maxAds: 6 },
-    { placement: 'search_top', tier: 'premium', dailyRate: 5.00, durationDays: 7, maxAds: 6 },
+    { placement: 'search_page_banner', tier: 'basic', dailyRate: 3.00, durationDays: 7, maxAds: 1 },
+    { placement: 'search_page_banner', tier: 'standard', dailyRate: 5.00, durationDays: 7, maxAds: 1 },
+    { placement: 'search_page_banner', tier: 'premium', dailyRate: 8.00, durationDays: 7, maxAds: 1 },
+    { placement: 'recommendation_page_banner', tier: 'basic', dailyRate: 2.00, durationDays: 15, maxAds: 3 },
+    { placement: 'recommendation_page_banner', tier: 'standard', dailyRate: 3.50, durationDays: 15, maxAds: 3 },
+    { placement: 'recommendation_page_banner', tier: 'premium', dailyRate: 6.00, durationDays: 15, maxAds: 3 },
+    { placement: 'checkout_page_banner', tier: 'basic', dailyRate: 2.50, durationDays: 30, maxAds: 5 },
+    { placement: 'checkout_page_banner', tier: 'standard', dailyRate: 4.00, durationDays: 30, maxAds: 5 },
+    { placement: 'checkout_page_banner', tier: 'premium', dailyRate: 7.00, durationDays: 30, maxAds: 5 },
+    { placement: 'productDetail_page_banner', tier: 'basic', dailyRate: 1.50, durationDays: 7, maxAds: 6 },
+    { placement: 'productDetail_page_banner', tier: 'standard', dailyRate: 2.50, durationDays: 7, maxAds: 6 },
+    { placement: 'productDetail_page_banner', tier: 'premium', dailyRate: 5.00, durationDays: 7, maxAds: 6 },
   ];
 
   for (const setting of adFeeSettings) {
@@ -873,7 +873,7 @@ async function main() {
   // ============================================
   const advertisements: any[] = [];
   const adPayments: any[] = [];
-  const adPlacements = ['homepage_banner', 'product_sidebar', 'category_banner'];
+  const adPlacements = ['search_page_banner', 'recommendation_page_banner', 'checkout_page_banner', 'productDetail_page_banner'];
   const adTiers = ['basic', 'standard', 'premium'];
 
   for (let i = 0; i < months.length; i++) {
