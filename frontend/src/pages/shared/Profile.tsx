@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function Profile() {
   const { t } = useTranslation()
-  const { profile, isLoading, error } = useProfile()
+  const { profile, isLoading, error, resubmitLicense, isResubmitting } = useProfile()
 
   if (isLoading) {
     return <LoadingSpinner className="min-h-[400px]" />
@@ -57,7 +57,11 @@ export default function Profile() {
         </TabsList>
 
         <TabsContent value="info" className="space-y-6">
-          <ProfileInfoCard profile={profile} />
+          <ProfileInfoCard
+            profile={profile}
+            onResubmitLicense={(file) => resubmitLicense.mutateAsync(file)}
+            isResubmitting={isResubmitting}
+          />
         </TabsContent>
 
         <TabsContent value="edit" className="space-y-6">

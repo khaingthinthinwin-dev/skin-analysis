@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { BarChart3, Download, LayoutGrid } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,10 +13,21 @@ import { BulkApproveModal } from '@/features/admin/advertisement-management/comp
 import { BulkRejectModal } from '@/features/admin/advertisement-management/components/BulkRejectModal'
 import { FilterBar, type AdListFilters } from '@/features/admin/advertisement-management/components/FilterBar'
 import { Pagination } from '@/features/admin/advertisement-management/components/Pagination'
-import type { AdminAdListQuery } from '@/types/admin-ad-management'
+import { ADMIN_AD_STATUSES, type AdminAdListQuery, type ApprovalStatus } from '@/types/admin-ad-management'
+
+function toApprovalStatus(value: string | null): ApprovalStatus | undefined {
+  return ADMIN_AD_STATUSES.find((status) => status === value)
+}
 
 export default function AdminAdListPage() {
-  const [filters, setFilters] = useState<AdListFilters>({})
+  // Deep-linked from the AD_SUBMITTED notification, which points at the pending
+  // review queue the new submission just joined. Only the status filter is
+  // seeded from the URL; the rest stay local until the admin changes them.
+  const [searchParams] = useSearchParams()
+  const [filters, setFilters] = useState<AdListFilters>(() => {
+    const status = toApprovalStatus(searchParams.get('status'))
+    return status ? { status } : {}
+  })
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(5)
   const [selectedIds, setSelectedIds] = useState<string[]>([])

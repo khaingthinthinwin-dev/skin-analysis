@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Tag, Plus, Search, Filter, Trash2, Pencil, ShieldAlert, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -180,7 +180,11 @@ export default function Promotions() {
           <ShieldAlert className="h-4 w-4 text-destructive" />
           <AlertTitle>{t('merchant.promotions.rejectedBannerTitle', 'Account Rejected')}</AlertTitle>
           <AlertDescription>
-            {t('merchant.promotions.rejectedBanner')}
+            Your merchant account has been rejected. Product management features are restricted. You can
+            resubmit your license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-semibold">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}

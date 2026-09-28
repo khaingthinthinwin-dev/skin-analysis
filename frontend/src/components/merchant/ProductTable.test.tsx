@@ -442,5 +442,55 @@ describe('ProductTable', () => {
       const savedTexts = screen.getAllByText('Saved $10.00')
       expect(savedTexts.length).toBeGreaterThanOrEqual(1)
     })
+
+    it('shows regular price in Compare At Price and dash in Price when no discount', () => {
+      const productWithoutCompare: Product = {
+        ...mockProducts[0],
+        compareAtPrice: null,
+        price: 20000,
+      }
+      render(
+        <MemoryRouter>
+          <ProductTable
+            products={[productWithoutCompare]}
+            selectedIds={[]}
+            onSelectionChange={vi.fn()}
+            onStockUpdate={vi.fn()}
+            onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
+            showActions={true}
+          />
+        </MemoryRouter>,
+      )
+      // UI-only mapping: regular price falls back to Compare column,
+      // Price (discount) shows dash when there is no sale.
+      expect(screen.getByText('—')).toBeInTheDocument()
+      expect(screen.getByText('$20000.00')).toBeInTheDocument()
+      expect(screen.queryByText(/Saved/)).not.toBeInTheDocument()
+    })
+
+    it('shows dash in Price and regular price in Compare for string decimals without discount', () => {
+      const productStringPrice = {
+        ...mockProducts[0],
+        compareAtPrice: null,
+        price: '30000',
+      } as unknown as Product
+      render(
+        <MemoryRouter>
+          <ProductTable
+            products={[productStringPrice]}
+            selectedIds={[]}
+            onSelectionChange={vi.fn()}
+            onStockUpdate={vi.fn()}
+            onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
+            showActions={true}
+          />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('$30000.00')).toBeInTheDocument()
+      expect(screen.getByText('—')).toBeInTheDocument()
+      expect(screen.queryByText(/Saved/)).not.toBeInTheDocument()
+    })
   })
 })

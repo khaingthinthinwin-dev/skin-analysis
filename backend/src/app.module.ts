@@ -18,6 +18,7 @@ import { SearchModule } from './modules/catalog/search/search.module';
 import { AdvertisementsModule } from './modules/merchant/advertisements/advertisements.module';
 import { PromotionsModule } from './modules/merchant/promotions/promotions.module';
 import { AdsModule } from './modules/shared/ads/ads.module';
+import { NotificationsModule } from './modules/shared/notifications/notifications.module';
 import { MatchingModule } from './modules/buyer/matching/matching.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -44,6 +45,7 @@ import { AppService } from './app.service';
     AdvertisementsModule,
     PromotionsModule,
     AdsModule,
+    NotificationsModule,
     MatchingModule,
   ],
   controllers: [AppController],
