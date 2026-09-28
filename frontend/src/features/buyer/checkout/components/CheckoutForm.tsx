@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -73,6 +74,7 @@ const COUNTRIES = [
 ];
 
 export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormProps) {
+  const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [notes, setNotes] = useState('');
   const form = useForm<ShippingFormValues>({
@@ -287,22 +289,38 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
           </CardContent>
         </Card>
 
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full font-bold"
-          disabled={isSubmitting || !form.formState.isValid}
-          aria-label="Place Order"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Placing order...
-            </>
-          ) : (
-            'Place Order'
-          )}
-        </Button>
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:col-span-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full font-bold sm:w-48"
+            disabled={isSubmitting}
+            onClick={() => navigate('/buyer/cart')}
+            aria-label="Cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full font-bold sm:w-48"
+            disabled={isSubmitting || !form.formState.isValid}
+            aria-label="Place Order"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Placing order...
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Place Order
+              </>
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );

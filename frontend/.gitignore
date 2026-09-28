@@ -37,5 +37,3 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Lock files
-package-lock.json

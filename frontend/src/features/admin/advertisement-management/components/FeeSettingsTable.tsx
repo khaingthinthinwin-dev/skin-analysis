@@ -1,4 +1,4 @@
-import { Pencil, Ban } from 'lucide-react'
+import { Pencil, Ban, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -11,6 +11,7 @@ interface FeeSettingsTableProps {
   feeSettings?: AdminAdFeeSetting[]
   onEdit: (feeSetting: AdminAdFeeSetting) => void
   onDeactivate: (feeSetting: AdminAdFeeSetting) => void
+  onReactivate: (feeSetting: AdminAdFeeSetting) => void
   isLoading?: boolean
 }
 
@@ -18,6 +19,7 @@ export function FeeSettingsTable({
   feeSettings = [],
   onEdit,
   onDeactivate,
+  onReactivate,
   isLoading = false,
 }: FeeSettingsTableProps) {
   if (isLoading) {
@@ -94,16 +96,26 @@ export function FeeSettingsTable({
                       <Pencil className="mr-1 h-3.5 w-3.5" />
                       Edit
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:bg-destructive/10"
-                      disabled={!feeSetting.isActive}
-                      onClick={() => onDeactivate(feeSetting)}
-                    >
-                      <Ban className="mr-1 h-3.5 w-3.5" />
-                      Deactivate
-                    </Button>
+                    {feeSetting.isActive ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => onDeactivate(feeSetting)}
+                      >
+                        <Ban className="mr-1 h-3.5 w-3.5" />
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onReactivate(feeSetting)}
+                      >
+                        <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                        Reactivate
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

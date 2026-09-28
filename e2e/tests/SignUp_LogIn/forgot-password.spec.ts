@@ -1,16 +1,17 @@
 import { test, expect } from '../../fixtures/auth.fixture';
 import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import { captureScreenshot } from '../../utils/screenshot';
+import { person } from '../../utils/identity';
 
 test.describe('Forgot Password Page', () => {
   test.describe('N-12: Submit forgot password form successfully', () => {
     test('should submit forgot password form and show success message', async ({ page }) => {
-      const email = `e2e.forgot.${Date.now()}@test.com`;
+      const user = person('Priya', 'Sharma');
 
       await page.request.post(`${API_BASE_URL}/auth/register`, {
         form: {
-          name: 'Forgot Pass User',
-          email,
+          name: user.name,
+          email: user.email,
           password: 'TestPass123!',
           role: 'buyer',
         },
@@ -19,17 +20,24 @@ test.describe('Forgot Password Page', () => {
       await page.goto(ROUTES.FORGOT_PASSWORD);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
-      await captureScreenshot(page, 'forgot_password_page_loaded');
+      await captureScreenshot(page, 'N-12_1_page_loaded');
 
       const emailInput = page.locator('input[type="email"]');
       await expect(emailInput).toBeVisible();
-      await emailInput.fill(email);
+      await emailInput.fill(user.email);
+      await expect(emailInput).toHaveValue(user.email);
 
       const submitBtn = page.locator('button[type="submit"]');
       await submitBtn.click();
 
-      await page.waitForTimeout(2000);
-      await captureScreenshot(page, 'forgot_password_success_message');
+      await page.waitForURL(/\/verify-code/, { timeout: 15_000 });
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page).toHaveURL(/\/verify-code$/);
+      await expect(
+        page.getByRole('heading', { name: 'Enter Verification Code' })
+      ).toBeVisible();
+      await expect(page.locator('input[autocomplete="one-time-code"]')).toBeVisible();
+      await captureScreenshot(page, 'N-12_2_verify_code_page');
     });
   });
 
@@ -38,21 +46,21 @@ test.describe('Forgot Password Page', () => {
       await page.goto(ROUTES.FORGOT_PASSWORD);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
-      await captureScreenshot(page, 'forgot_password_page');
+      await captureScreenshot(page, 'N-13_1_forgot_password_page');
 
       const backLink = page.getByRole('link', { name: 'Back to login' });
       await expect(backLink).toBeVisible({ timeout: 5000 });
       await expect(backLink).toHaveAttribute('href', '/login');
-      await captureScreenshot(page, 'forgot_password_back_to_login');
+      await captureScreenshot(page, 'N-13_2_back_to_login_link');
     });
   });
 
-  test.describe('A-16: Submit forgot password with invalid email format', () => {
+  test.describe('A-15: Submit forgot password with invalid email format', () => {
     test('should show validation error for invalid email format', async ({ page }) => {
       await page.goto(ROUTES.FORGOT_PASSWORD);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
-      await captureScreenshot(page, 'forgot_password_page_for_validation');
+      await captureScreenshot(page, 'A-15_1_page_for_validation');
 
       const emailInput = page.locator('input[type="email"]');
       await emailInput.fill('invalid-email-format');
@@ -62,7 +70,7 @@ test.describe('Forgot Password Page', () => {
 
       const emailError = page.locator('p.text-destructive, [role="alert"]').first();
       await expect(emailError).toBeVisible({ timeout: 5000 });
-      await captureScreenshot(page, 'forgot_password_invalid_email_error');
+      await captureScreenshot(page, 'A-15_2_invalid_email_error');
     });
   });
 });

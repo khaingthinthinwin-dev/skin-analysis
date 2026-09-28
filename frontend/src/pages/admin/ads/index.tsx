@@ -18,7 +18,7 @@ import type { AdminAdListQuery } from '@/types/admin-ad-management'
 export default function AdminAdListPage() {
   const [filters, setFilters] = useState<AdListFilters>({})
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
+  const [limit, setLimit] = useState(5)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [review, setReview] = useState<{ id: string; viewOnly: boolean } | null>(null)
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false)

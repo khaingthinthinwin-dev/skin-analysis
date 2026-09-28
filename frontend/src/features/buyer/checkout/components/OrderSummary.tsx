@@ -101,6 +101,11 @@ export function OrderSummary({
 									)}
 									<div className="min-w-0 flex-1">
 										<p className="truncate text-sm font-medium">{item.productName}</p>
+										{item.merchantName && (
+											<p className="text-xs text-muted-foreground">
+												Sold by {item.merchantName}
+											</p>
+										)}
 										<p className="text-xs text-muted-foreground">
 											Qty: {item.quantity} x {formatPrice(item.unitPrice)}
 										</p>

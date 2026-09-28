@@ -23,12 +23,14 @@ export function useCommission(
     queryKey: ['admin', 'commission', 'reports', reportParams],
     queryFn: () => commissionService.getReports(reportParams),
     enabled: options.reports !== false,
+    placeholderData: (previousData) => previousData,
   });
 
   const payoutsQuery = useQuery({
     queryKey: ['admin', 'commission', 'payouts', payoutParams],
     queryFn: () => commissionService.getPayouts(payoutParams),
     enabled: options.payouts !== false,
+    placeholderData: (previousData) => previousData,
   });
 
   const updateSettingsMutation = useMutation({
@@ -47,6 +49,13 @@ export function useCommission(
     },
   });
 
+  const reviewPayoutMutation = useMutation({
+    mutationFn: (payoutId: string) => commissionService.reviewPayout(payoutId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'commission', 'payouts'] });
+    },
+  });
+
   const deletePayoutMutation = useMutation({
     mutationFn: (payoutIds: string[]) => commissionService.deletePayouts(payoutIds),
     onSuccess: () => {
@@ -60,6 +69,7 @@ export function useCommission(
     payoutsQuery,
     updateSettingsMutation,
     processPayoutMutation,
+    reviewPayoutMutation,
     deletePayoutMutation,
   };
 }

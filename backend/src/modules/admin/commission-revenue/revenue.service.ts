@@ -2,6 +2,7 @@
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import type { Prisma } from '@prisma/client';
@@ -53,12 +54,11 @@ type RevenuePayout = Prisma.PayoutGetPayload<{
         user: { select: { id: true; name: true; email: true } };
       };
     };
-    order: {
+    items: {
       select: {
-        id: true;
-        orderNumber: true;
-        createdAt: true;
-        totalAmount: true;
+        orderAmount: true;
+        commissionAmount: true;
+        order: { select: { orderNumber: true; createdAt: true } };
       };
     };
   };
@@ -71,17 +71,31 @@ export class RevenueService {
     private readonly forecastService: ForecastService,
   ) {}
 
-  private async getEffectiveRate(at: Date): Promise<number> {
-    const historyEntry = await this.prisma.commissionRateHistory.findFirst({
-      where: { effectiveFrom: { lte: at } },
-      orderBy: { effectiveFrom: 'desc' },
-    });
-    if (historyEntry) return toNumber(historyEntry.commissionRate);
-
-    const settings = await this.prisma.commissionSetting.findFirst({
-      orderBy: { updatedAt: 'desc' },
-    });
-    return settings ? toNumber(settings.commissionRate) : 0;
+  /**
+   * Batch-load commission rate history and return a lookup function.
+   * Avoids N+1 queries when computing rates for many orders.
+   */
+  private async buildRateLookup(): Promise<(at: Date) => number> {
+    const [history, settings] = await Promise.all([
+      this.prisma.commissionRateHistory.findMany({
+        orderBy: { effectiveFrom: 'asc' },
+      }),
+      this.prisma.commissionSetting.findFirst({
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
+    const fallbackRate = settings ? toNumber(settings.commissionRate) : 0;
+    return (at: Date): number => {
+      let rate = fallbackRate;
+      for (const entry of history) {
+        if (entry.effectiveFrom <= at) {
+          rate = toNumber(entry.commissionRate);
+        } else {
+          break;
+        }
+      }
+      return rate;
+    };
   }
 
   async getRevenueKPIs(range: string) {
@@ -101,9 +115,10 @@ export class RevenueService {
 
     let totalRevenue = 0;
     let totalCommission = 0;
+    const getRate = await this.buildRateLookup();
     for (const order of completedOrders) {
       const amount = toNumber(order.totalAmount);
-      const rate = await this.getEffectiveRate(order.createdAt);
+      const rate = getRate(order.createdAt);
       totalRevenue += amount;
       totalCommission += (amount * rate) / 100;
     }
@@ -148,11 +163,12 @@ export class RevenueService {
       }),
     ]);
 
+    const getRate = await this.buildRateLookup();
     for (const o of orders) {
       const b = buckets.get(formatBucket(o.createdAt, groupBy));
       if (b) {
         const amount = toNumber(o.totalAmount);
-        const rate = await this.getEffectiveRate(o.createdAt);
+        const rate = getRate(o.createdAt);
         b.revenue += amount;
         b.commission += (amount * rate) / 100;
       }
@@ -211,27 +227,32 @@ export class RevenueService {
     const now = new Date();
     const newAmount = Number(dto.targetAmount);
 
-    const existing = await this.prisma.revenueTarget.findFirst({
-      where: { period: dto.targetPeriod, isActive: true },
-    });
+    // Use transaction to prevent race condition (two concurrent creates)
+    const saved = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.revenueTarget.findFirst({
+        where: { period: dto.targetPeriod, isActive: true },
+      });
 
-    const saved = existing
-      ? await this.prisma.revenueTarget.update({
+      if (existing) {
+        return tx.revenueTarget.update({
           where: { id: existing.id },
           data: {
             targetAmount: newAmount,
             createdBy: adminId,
             updatedAt: now,
           },
-        })
-      : await this.prisma.revenueTarget.create({
-          data: {
-            targetAmount: newAmount,
-            period: dto.targetPeriod,
-            isActive: true,
-            createdBy: adminId,
-          },
         });
+      }
+
+      return tx.revenueTarget.create({
+        data: {
+          targetAmount: newAmount,
+          period: dto.targetPeriod,
+          isActive: true,
+          createdBy: adminId,
+        },
+      });
+    });
 
     await this.prisma.auditLog.create({
       data: {
@@ -240,7 +261,7 @@ export class RevenueService {
         entityType: 'RevenueTarget',
         entityId: saved.id,
         oldValue: {
-          targetAmount: existing ? fmtDecimal(existing.targetAmount) : null,
+          targetAmount: saved.id ? fmtDecimal(saved.targetAmount) : null,
         },
         newValue: {
           targetAmount: fmtDecimal(newAmount),
@@ -262,15 +283,18 @@ export class RevenueService {
 
   async getPaymentStatus(range: string) {
     const rangeStart = getRangeStart(range, new Date());
-    const [completed, pending] = await Promise.all([
-      this.prisma.order.count({
-        where: { paymentStatus: 'completed', createdAt: { gte: rangeStart } },
+    const [completed, processing, pending] = await Promise.all([
+      this.prisma.payout.count({
+        where: { status: 'completed', createdAt: { gte: rangeStart } },
       }),
-      this.prisma.order.count({
-        where: { paymentStatus: 'pending', createdAt: { gte: rangeStart } },
+      this.prisma.payout.count({
+        where: { status: 'processing', createdAt: { gte: rangeStart } },
+      }),
+      this.prisma.payout.count({
+        where: { status: 'pending', createdAt: { gte: rangeStart } },
       }),
     ]);
-    return { completed, pending };
+    return { completed, processing, pending };
   }
 
   async getAdFeeRevenue(range: string) {
@@ -311,9 +335,15 @@ export class RevenueService {
           expiresAt: { gte: now },
         },
       }),
-      this.prisma.adPayment.count({ where: { paymentStatus: 'pending' } }),
-      this.prisma.adPayment.count({ where: { paymentStatus: 'completed' } }),
-      this.prisma.adPayment.count({ where: { paymentStatus: 'refunded' } }),
+      this.prisma.adPayment.count({
+        where: { paymentStatus: 'pending', createdAt: { gte: rangeStart } },
+      }),
+      this.prisma.adPayment.count({
+        where: { paymentStatus: 'completed', createdAt: { gte: rangeStart } },
+      }),
+      this.prisma.adPayment.count({
+        where: { paymentStatus: 'refunded', createdAt: { gte: rangeStart } },
+      }),
     ]);
 
     return {
@@ -360,126 +390,191 @@ export class RevenueService {
     const where: Prisma.PayoutWhereInput = {};
     if (query.status) where.status = query.status;
     if (query.merchantId) where.merchantId = query.merchantId;
-    const now = new Date();
-    const periodStart = query.period
-      ? new Date(`${query.period}-01T00:00:00.000Z`)
-      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
-    const periodEnd = query.period
-      ? new Date(
-          Date.UTC(
-            periodStart.getUTCFullYear(),
-            periodStart.getUTCMonth() + 1,
-            0,
-            23,
-            59,
-            59,
-            999,
-          ),
-        )
-      : new Date(
-          Date.UTC(
-            now.getUTCFullYear(),
-            now.getUTCMonth() + 1,
-            0,
-            23,
-            59,
-            59,
-            999,
-          ),
-        );
 
-    if (query.from || query.to || query.period) {
-      where.order = {
-        createdAt: {
-          gte: query.from ? new Date(query.from) : periodStart,
-          lte: query.to ? new Date(`${query.to}T23:59:59.999Z`) : periodEnd,
-        },
-      };
+    if (query.period) {
+      const periodStart = new Date(`${query.period}-01T00:00:00.000Z`);
+      const periodEnd = new Date(
+        Date.UTC(
+          periodStart.getUTCFullYear(),
+          periodStart.getUTCMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        ),
+      );
+      where.periodStart = { gte: periodStart };
+      where.periodEnd = { lte: periodEnd };
+    } else if (query.from || query.to) {
+      const from = query.from ? new Date(query.from) : undefined;
+      const to = query.to ? new Date(`${query.to}T23:59:59.999Z`) : undefined;
+      const and: Prisma.PayoutWhereInput[] = [];
+      if (from) and.push({ periodEnd: { gte: from } });
+      if (to) and.push({ periodStart: { lte: to } });
+      if (and.length > 0) where.AND = and;
     }
 
-    // Each payout is now linked to a single order via orderId. Fetch all
-    // matching payouts (no skip/take) so we can build per-order rows, sort by
-    // order number descending, then paginate.
-    const allPayouts: RevenuePayout[] = await this.prisma.payout.findMany({
-      where,
-      include: {
-        merchant: {
-          select: {
-            id: true,
-            shopName: true,
-            user: { select: { id: true, name: true, email: true } },
+    const search = query.search?.trim();
+    if (search) {
+      const or: Prisma.PayoutWhereInput[] = [
+        {
+          merchant: {
+            shopName: { contains: search, mode: 'insensitive' },
           },
         },
-        order: {
-          select: {
-            id: true,
-            orderNumber: true,
-            createdAt: true,
-            totalAmount: true,
+        {
+          merchant: {
+            user: {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+              ],
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+      ];
 
-    const grouped = new Map<string, RevenuePayoutRow>();
-    for (const p of allPayouts) {
-      const rate = await this.getEffectiveRate(p.createdAt);
-      const orderAmount = toNumber(p.order?.totalAmount ?? p.totalAmount);
-      const commission = (orderAmount * rate) / 100;
-      const orderDate = p.order?.createdAt ?? p.createdAt;
-      const period = orderDate.toISOString().slice(0, 7);
-      const key = `${p.merchantId}:${period}`;
-      const existing = grouped.get(key);
-      if (existing) {
-        existing.payoutIds.push(p.id);
-        existing.totalAmount = fmtDecimal(
-          toNumber(existing.totalAmount) + orderAmount,
+      const yearOnly = search.match(/^(\d{4})$/);
+      const yearMonth = search.match(/^(\d{4})-(\d{1,2})$/);
+      const monthNames = [
+        'january',
+        'february',
+        'march',
+        'april',
+        'may',
+        'june',
+        'july',
+        'august',
+        'september',
+        'october',
+        'november',
+        'december',
+      ];
+      const monthIndex = (name: string) => {
+        const n = name.toLowerCase();
+        const full = monthNames.findIndex(
+          (m) => m.startsWith(n) && n.length >= 3,
         );
-        existing.commissionAmount = fmtDecimal(
-          toNumber(existing.commissionAmount) + commission,
-        );
-        existing.netAmount = fmtDecimal(
-          toNumber(existing.totalAmount) - toNumber(existing.commissionAmount),
-        );
-        existing.commissionRate = fmtDecimal(
-          toNumber(existing.totalAmount) > 0
-            ? (toNumber(existing.commissionAmount) /
-                toNumber(existing.totalAmount)) *
-                100
-            : 0,
-        );
-        if (p.status !== 'completed') existing.status = p.status;
-        if (
-          p.processedAt &&
-          (!existing.processedAt || p.processedAt > existing.processedAt)
-        ) {
-          existing.processedAt = p.processedAt;
+        return full;
+      };
+      const monthYear = search.match(/^([A-Za-z]{3,9})\s+(\d{4})$/);
+      const yearMonthName = search.match(/^(\d{4})\s+([A-Za-z]{3,9})$/);
+      const monthOnly = search.match(/^([A-Za-z]{3,9})$/);
+
+      if (yearOnly) {
+        const year = Number(yearOnly[1]);
+        or.push({
+          periodStart: {
+            gte: new Date(Date.UTC(year, 0, 1)),
+            lte: new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999)),
+          },
+        });
+      } else if (yearMonth) {
+        const year = Number(yearMonth[1]);
+        const month = Number(yearMonth[2]);
+        or.push({
+          periodStart: {
+            gte: new Date(Date.UTC(year, month - 1, 1)),
+            lte: new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)),
+          },
+        });
+      } else if (monthYear || yearMonthName) {
+        const monthStr = monthYear ? monthYear[1] : yearMonthName![2];
+        const yearStr = monthYear ? monthYear[2] : yearMonthName![1];
+        const m = monthIndex(monthStr);
+        const year = Number(yearStr);
+        if (m >= 0) {
+          or.push({
+            periodStart: {
+              gte: new Date(Date.UTC(year, m, 1)),
+              lte: new Date(Date.UTC(year, m + 1, 0, 23, 59, 59, 999)),
+            },
+          });
         }
-        existing.canDelete =
-          existing.canDelete && this.isPayoutDeletable(p.status, p.createdAt);
-        if (p.status === 'completed') {
-          existing.completedCount += 1;
-          existing.completedTotal = fmtDecimal(
-            toNumber(existing.completedTotal) + orderAmount,
-          );
-          existing.completedCommission = fmtDecimal(
-            toNumber(existing.completedCommission) + commission,
-          );
-        } else {
-          existing.pendingCount += 1;
-          existing.pendingTotal = fmtDecimal(
-            toNumber(existing.pendingTotal) + orderAmount,
-          );
-          existing.pendingCommission = fmtDecimal(
-            toNumber(existing.pendingCommission) + commission,
-          );
+      } else if (monthOnly) {
+        const m = monthIndex(monthOnly[1]);
+        if (m >= 0) {
+          // Prisma has no EXTRACT(month); OR year windows so "Apr"/"Dec" match any year.
+          for (let y = 2020; y <= 2035; y += 1) {
+            or.push({
+              periodStart: {
+                gte: new Date(Date.UTC(y, m, 1)),
+                lte: new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999)),
+              },
+            });
+          }
         }
-        continue;
       }
+
+      where.OR = or;
+    }
+
+    // Distinct period list ignores all filters so the dropdown always shows every payout period.
+    const [total, statusGroup, allPayouts, periodRows] = (await Promise.all([
+      this.prisma.payout.count({ where }),
+      this.prisma.payout.groupBy({
+        by: ['status'],
+        where,
+        _count: { _all: true },
+      }),
+      this.prisma.payout.findMany({
+        where,
+        include: {
+          merchant: {
+            select: {
+              id: true,
+              shopName: true,
+              user: { select: { id: true, name: true, email: true } },
+            },
+          },
+          items: {
+            select: {
+              orderAmount: true,
+              commissionAmount: true,
+              order: { select: { orderNumber: true, createdAt: true } },
+            },
+          },
+        },
+        orderBy: [{ periodStart: 'desc' }, { merchant: { shopName: 'asc' } }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.payout.findMany({
+        select: { periodStart: true },
+        distinct: ['periodStart'],
+        orderBy: { periodStart: 'desc' },
+      }),
+    ])) as [
+      number,
+      Array<{ status: string; _count: { _all: number } }>,
+      RevenuePayout[],
+      Array<{ periodStart: Date }>,
+    ];
+
+    const statusCounts = { completed: 0, processing: 0, pending: 0 };
+    for (const g of statusGroup) {
+      if (g.status === 'completed') statusCounts.completed = g._count._all;
+      else if (g.status === 'processing')
+        statusCounts.processing = g._count._all;
+      else if (g.status === 'pending') statusCounts.pending = g._count._all;
+    }
+
+    const getRate = await this.buildRateLookup();
+    const items: RevenuePayoutRow[] = allPayouts.map((p) => {
+      const period = p.periodStart.toISOString().slice(0, 7);
+      const totalAmount = toNumber(p.totalAmount);
+      const commissionAmount = toNumber(p.commissionAmount);
+      const netAmount = totalAmount - commissionAmount;
+      const rate =
+        totalAmount > 0
+          ? (commissionAmount / totalAmount) * 100
+          : getRate(p.createdAt);
       const isCompleted = p.status === 'completed';
-      grouped.set(key, {
-        id: key,
+      const orderCount = p.orderCount || p.items.length;
+
+      return {
+        id: p.id,
         payoutId: p.id,
         payoutIds: [p.id],
         merchantId: p.merchantId,
@@ -487,36 +582,30 @@ export class RevenueService {
         period,
         orderId: null,
         commissionRate: fmtDecimal(rate),
-        totalAmount: fmtDecimal(orderAmount),
-        commissionAmount: fmtDecimal(commission),
+        totalAmount: fmtDecimal(totalAmount),
+        commissionAmount: fmtDecimal(commissionAmount),
         adFeeAmount: '0.00',
-        netAmount: fmtDecimal(orderAmount - commission),
+        netAmount: fmtDecimal(netAmount),
         status: p.status,
-        failureReason: p.failureReason,
-        createdAt: orderDate,
+        failureReason: null,
+        createdAt: p.createdAt,
         processedAt: p.processedAt,
         canDelete: this.isPayoutDeletable(p.status, p.createdAt),
-        completedCount: isCompleted ? 1 : 0,
-        completedTotal: isCompleted ? fmtDecimal(orderAmount) : '0.00',
-        completedCommission: isCompleted ? fmtDecimal(commission) : '0.00',
-        pendingCount: isCompleted ? 0 : 1,
-        pendingTotal: isCompleted ? '0.00' : fmtDecimal(orderAmount),
-        pendingCommission: isCompleted ? '0.00' : fmtDecimal(commission),
-      });
-    }
-
-    const rows = [...grouped.values()];
-
-    // Sort by month descending, then merchant name.
-    rows.sort((a, b) => {
-      const periodCompare = b.period.localeCompare(a.period);
-      return periodCompare || a.merchantName.localeCompare(b.merchantName);
+        completedCount: isCompleted ? orderCount : 0,
+        completedTotal: isCompleted ? fmtDecimal(totalAmount) : '0.00',
+        completedCommission: isCompleted
+          ? fmtDecimal(commissionAmount)
+          : '0.00',
+        pendingCount: isCompleted ? 0 : orderCount,
+        pendingTotal: isCompleted ? '0.00' : fmtDecimal(totalAmount),
+        pendingCommission: isCompleted ? '0.00' : fmtDecimal(commissionAmount),
+      };
     });
 
-    const total = rows.length;
     const totalPages = Math.ceil(total / limit);
-    const start = (page - 1) * limit;
-    const items = rows.slice(start, start + limit);
+    const periods = periodRows.map((r) =>
+      r.periodStart.toISOString().slice(0, 7),
+    );
 
     return {
       items,
@@ -524,6 +613,47 @@ export class RevenueService {
       page,
       limit,
       totalPages,
+      statusCounts,
+      periods,
+    };
+  }
+
+  async reviewPayout(payoutId: string, adminId: string, ip?: string) {
+    const payout = await this.prisma.payout.findUnique({
+      where: { id: payoutId },
+    });
+    if (!payout) throw new NotFoundException('Payout not found');
+    if (payout.status !== 'pending') {
+      return {
+        payoutId: payout.id,
+        status: payout.status,
+      };
+    }
+
+    // Conditional update prevents race condition: only one request succeeds
+    const updated = await this.prisma.payout.update({
+      where: { id: payoutId, status: 'pending' },
+      data: {
+        status: 'processing',
+        processedBy: adminId,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: adminId,
+        action: 'PAYOUT_REVIEWED',
+        entityType: 'Payout',
+        entityId: payoutId,
+        oldValue: { status: payout.status },
+        newValue: { status: 'processing' },
+        ipAddress: ip,
+      },
+    });
+
+    return {
+      payoutId: updated.id,
+      status: updated.status,
     };
   }
 
@@ -533,26 +663,21 @@ export class RevenueService {
     });
     if (!payout) throw new NotFoundException('Payout not found');
     if (payout.status === 'completed') {
-      return {
-        payoutId: payout.id,
-        merchantId: payout.merchantId,
-        totalAmount: fmtDecimal(payout.totalAmount),
-        commissionAmount: fmtDecimal(payout.commissionAmount),
-        adFeeAmount: '0.00',
-        netAmount: fmtDecimal(
-          toNumber(payout.totalAmount) - toNumber(payout.commissionAmount),
-        ),
-        status: payout.status,
-        processedAt: payout.processedAt,
-        idempotencyKey: payout.idempotencyKey,
-      };
+      throw new ConflictException('Payout has already been processed');
+    }
+    if (payout.status === 'failed') {
+      throw new BadRequestException(
+        `Payout cannot be completed from 'failed' status`,
+      );
     }
 
     const now = new Date();
     const idempotencyKey = `payout-${payout.id}`;
 
+    // Conditional update prevents race condition: only one request succeeds
+    // (accepts pending or processing → completed; Process is only enabled for pending)
     const updated = await this.prisma.payout.update({
-      where: { id: payoutId },
+      where: { id: payoutId, status: { in: ['pending', 'processing'] } },
       data: {
         status: 'completed',
         processedBy: adminId,
@@ -567,7 +692,7 @@ export class RevenueService {
         action: 'PAYOUT_PROCESSED',
         entityType: 'Payout',
         entityId: payoutId,
-        oldValue: { status: 'pending' },
+        oldValue: { status: payout.status },
         newValue: {
           status: 'completed',
           amount: fmtDecimal(payout.totalAmount),
@@ -601,8 +726,8 @@ export class RevenueService {
     const payouts = await this.prisma.payout.findMany({
       where: { id: { in: payoutIds } },
       include: {
-        order: { select: { orderNumber: true, createdAt: true } },
         merchant: { select: { shopName: true } },
+        items: { select: { orderId: true } },
       },
     });
     const foundIds = new Set(payouts.map((payout) => payout.id));
@@ -617,9 +742,7 @@ export class RevenueService {
     if (ineligible.length > 0) {
       const merchantPeriods = ineligible.map((payout) => {
         const merchantName = payout.merchant?.shopName ?? 'Unknown';
-        const period = (payout.order?.createdAt ?? payout.createdAt)
-          .toISOString()
-          .slice(0, 7);
+        const period = payout.periodStart.toISOString().slice(0, 7);
         return `${merchantName} (${period})`;
       });
       const uniqueMerchantPeriods = [...new Set(merchantPeriods)];
@@ -640,7 +763,8 @@ export class RevenueService {
           oldValue: {
             status: payout.status,
             merchantId: payout.merchantId,
-            orderId: payout.orderId,
+            periodStart: payout.periodStart.toISOString(),
+            orderIds: payout.items.map((item) => item.orderId),
             totalAmount: fmtDecimal(payout.totalAmount),
           },
           ipAddress: ip,

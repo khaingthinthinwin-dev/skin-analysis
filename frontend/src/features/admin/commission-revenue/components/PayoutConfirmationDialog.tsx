@@ -9,12 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Payout } from '../services/commission.service';
+import { formatCurrency } from '../utils/format';
 
 interface PayoutConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   payout?: Payout | null;
   onConfirm: (id: string) => void;
+  onCancel?: () => void;
   processing?: boolean;
 }
 
@@ -26,6 +28,7 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
   onOpenChange,
   payout,
   onConfirm,
+  onCancel,
   processing,
 }) => {
   if (!payout) {
@@ -47,15 +50,16 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
         <div className="space-y-2 py-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Total Amount</span>
-            <span>${payout.totalAmount}</span>
+            <span>{formatCurrency(payout.totalAmount)} Ks</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Commission Fee</span>
-            <span>-${payout.commissionAmount}</span>
+            <span>-{formatCurrency(payout.commissionAmount)} Ks</span>
           </div>
+          <div className="border-t" />
           <div className="flex justify-between font-semibold">
             <span>Net Payout</span>
-            <span>${payout.netAmount}</span>
+            <span>{formatCurrency(payout.netAmount)} Ks</span>
           </div>
 
           {hasBreakdown && (
@@ -67,7 +71,7 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
                   <span className="text-green-600">
                     {payout.completedCount} completed order{payout.completedCount > 1 ? 's' : ''}
                   </span>
-                  <span className="text-green-600">${payout.completedTotal}</span>
+                  <span className="text-green-600">{formatCurrency(payout.completedTotal)} Ks</span>
                 </div>
               )}
               {payout.pendingCount > 0 && (
@@ -75,14 +79,14 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
                   <span className="text-amber-600">
                     {payout.pendingCount} pending order{payout.pendingCount > 1 ? 's' : ''}
                   </span>
-                  <span className="text-amber-600">${payout.pendingTotal}</span>
+                  <span className="text-amber-600">{formatCurrency(payout.pendingTotal)} Ks</span>
                 </div>
               )}
             </>
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
+          <Button variant="outline" onClick={() => { onCancel?.(); onOpenChange(false); }} disabled={processing}>
             Cancel
           </Button>
           <Button variant="default" onClick={() => onConfirm(payout.payoutId)} disabled={processing}>

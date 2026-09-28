@@ -18,7 +18,7 @@ export function RecommendationCard({ product, source }: RecommendationCardProps)
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
         <div className="aspect-square bg-muted relative">
           {source === 'ai' && product.matchScore !== null && (
-            <Badge className="absolute top-2 right-2 bg-emerald-100 text-emerald-800">
+            <Badge className="absolute top-2 right-2 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {product.matchScore}% match
             </Badge>
           )}
@@ -38,7 +38,7 @@ export function RecommendationCard({ product, source }: RecommendationCardProps)
             ))}
           </div>
           <div className="flex items-center justify-between">
-            <span className="font-bold">Ks {product.price}</span>
+            <span className="font-bold text-foreground">{Number(product.price).toLocaleString()}Ks</span>
             {!product.isInStock && (
               <Badge variant="destructive">Out of Stock</Badge>
             )}

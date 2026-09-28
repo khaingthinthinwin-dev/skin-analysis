@@ -8,12 +8,21 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+const toDate = ({ value }: { value: unknown }): unknown =>
+  value instanceof Date ? value : new Date(value as string);
 
 export class CreateAdFeeSettingDto {
   @IsString()
   @IsNotEmpty({ message: 'Placement is required' })
   @IsIn(
-    ['homepage_banner', 'product_sidebar', 'category_banner', 'search_top'],
+    [
+      'search_page_banner',
+      'recommendation_page_banner',
+      'checkout_page_banner',
+      'productDetail_page_banner',
+    ],
     {
       message: 'Invalid placement value',
     },
@@ -39,6 +48,7 @@ export class CreateAdFeeSettingDto {
   @Min(1, { message: 'Max ads must be at least 1' })
   max_ads: number;
 
+  @Transform(toDate, { toClassOnly: true })
   @IsDate({ message: 'Effective from must be a valid date' })
   effective_from: Date;
 

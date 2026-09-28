@@ -17,7 +17,7 @@ export class UpdateCommissionSettingsDto {
 }
 
 export class GetPayoutsDto {
-  @IsEnum(['pending', 'processing', 'completed', 'failed'])
+  @IsEnum(['pending', 'processing', 'completed'])
   @IsOptional()
   status?: string;
 

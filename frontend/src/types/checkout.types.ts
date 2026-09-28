@@ -22,6 +22,7 @@ export interface CheckoutItem {
   stockQuantity: number;
   isAvailable: boolean;
   merchantId: string;
+  merchantName: string | null;
 }
 
 export interface CheckoutData {
@@ -68,9 +69,10 @@ export interface CreateOrderPayload {
   notes?: string;
 }
 
-export interface OrderConfirmation {
+export interface PlacedOrder {
   orderId: string;
   orderNumber: string;
+  merchantId: string;
   status: string;
   subtotal: string;
   discountAmount: string;
@@ -79,6 +81,10 @@ export interface OrderConfirmation {
   shippingAddress: ShippingAddress;
   createdAt: string;
   estimatedDelivery: string;
+}
+
+export interface OrderConfirmation {
+  orders: PlacedOrder[];
 }
 
 export interface OrderListItem {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft, History, Plus } from 'lucide-react'
+import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useFeeSettings } from '@/features/admin/advertisement-management/hooks/useFeeSettings'
@@ -8,19 +9,36 @@ import { CreateFeeModal } from '@/features/admin/advertisement-management/compon
 import { DeactivateFeeModal } from '@/features/admin/advertisement-management/components/DeactivateFeeModal'
 import { EditFeeModal } from '@/features/admin/advertisement-management/components/EditFeeModal'
 import { FeeSettingsTable } from '@/features/admin/advertisement-management/components/FeeSettingsTable'
+import { ReactivateFeeModal } from '@/features/admin/advertisement-management/components/ReactivateFeeModal'
 import type { AdminAdFeeSetting } from '@/types/admin-ad-management'
 import type { CreateFeeSettingInput, EditFeeSettingInput } from '@/types/admin-ad-management'
+
+function apiErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as
+      | { message?: string | string[] }
+      | undefined
+    const message = Array.isArray(data?.message)
+      ? data.message[0]
+      : data?.message
+    if (message) return message
+    return error.message
+  }
+  return error instanceof Error ? error.message : 'Unknown error'
+}
 
 export default function PackageFeeManagementPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<AdminAdFeeSetting | null>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<AdminAdFeeSetting | null>(null)
+  const [reactivateTarget, setReactivateTarget] = useState<AdminAdFeeSetting | null>(null)
 
   const {
     feeSettingsQuery,
     createMutation,
     updateMutation,
     deactivateMutation,
+    reactivateMutation,
   } = useFeeSettings()
 
   const handleCreate = (input: CreateFeeSettingInput) => {
@@ -29,8 +47,12 @@ export default function PackageFeeManagementPage() {
         toast({ title: 'Fee setting created', variant: 'default' })
         setCreateOpen(false)
       },
-      onError: () => {
-        toast({ title: 'Failed to create fee setting', variant: 'destructive' })
+      onError: (error) => {
+        toast({
+          title: 'Failed to create fee setting',
+          description: apiErrorMessage(error),
+          variant: 'destructive',
+        })
       },
     })
   }
@@ -43,8 +65,12 @@ export default function PackageFeeManagementPage() {
           toast({ title: 'Fee setting updated', variant: 'default' })
           setEditTarget(null)
         },
-        onError: () => {
-          toast({ title: 'Failed to update fee setting', variant: 'destructive' })
+        onError: (error) => {
+          toast({
+            title: 'Failed to update fee setting',
+            description: apiErrorMessage(error),
+            variant: 'destructive',
+          })
         },
       },
     )
@@ -59,8 +85,32 @@ export default function PackageFeeManagementPage() {
           toast({ title: 'Fee setting deactivated', variant: 'default' })
           setDeactivateTarget(null)
         },
-        onError: () => {
-          toast({ title: 'Failed to deactivate fee setting', variant: 'destructive' })
+        onError: (error) => {
+          toast({
+            title: 'Failed to deactivate fee setting',
+            description: apiErrorMessage(error),
+            variant: 'destructive',
+          })
+        },
+      },
+    )
+  }
+
+  const handleReactivate = (reason?: string) => {
+    if (!reactivateTarget) return
+    reactivateMutation.mutate(
+      { id: reactivateTarget.id, change_reason: reason },
+      {
+        onSuccess: () => {
+          toast({ title: 'Fee setting reactivated', variant: 'default' })
+          setReactivateTarget(null)
+        },
+        onError: (error) => {
+          toast({
+            title: 'Failed to reactivate fee setting',
+            description: apiErrorMessage(error),
+            variant: 'destructive',
+          })
         },
       },
     )
@@ -97,6 +147,7 @@ export default function PackageFeeManagementPage() {
         feeSettings={feeSettingsQuery.data}
         onEdit={setEditTarget}
         onDeactivate={setDeactivateTarget}
+        onReactivate={setReactivateTarget}
         isLoading={feeSettingsQuery.isPending}
       />
 
@@ -104,6 +155,7 @@ export default function PackageFeeManagementPage() {
         <CreateFeeModal
           open
           isLoading={createMutation.isPending}
+          existingFeeSettings={feeSettingsQuery.data}
           onSubmit={handleCreate}
           onClose={() => setCreateOpen(false)}
         />
@@ -126,6 +178,16 @@ export default function PackageFeeManagementPage() {
           isLoading={deactivateMutation.isPending}
           onConfirm={handleDeactivate}
           onClose={() => setDeactivateTarget(null)}
+        />
+      )}
+
+      {reactivateTarget && (
+        <ReactivateFeeModal
+          open
+          feeSetting={reactivateTarget}
+          isLoading={reactivateMutation.isPending}
+          onConfirm={handleReactivate}
+          onClose={() => setReactivateTarget(null)}
         />
       )}
     </div>

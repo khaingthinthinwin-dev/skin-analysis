@@ -35,8 +35,8 @@ export const AdvertisementsTable: React.FC<AdvertisementsTableProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            ads.map((ad) => (
-              <TableRow key={ad.id}>
+            ads.map((ad, index) => (
+              <TableRow key={ad.id} className={index % 2 === 1 ? 'bg-muted/50' : undefined}>
                 <TableCell className="font-medium">{ad.title}</TableCell>
                 <TableCell className="max-w-xs truncate">{ad.announcementMessage}</TableCell>
                 <TableCell>

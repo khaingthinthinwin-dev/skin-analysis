@@ -47,16 +47,11 @@ export class OrdersService {
       );
     }
 
-    let discountAmount = 0;
     const voucherBreakdown: Record<
       string,
       { code: string; discountAmount: number }
     > = {};
     const voucherCodesMap = payload.voucherCodes || {};
-
-    if (!payload.couponCode && Object.keys(voucherCodesMap).length > 0) {
-      payload.couponCode = Object.values(voucherCodesMap).join(', ');
-    }
 
     // Per-shop voucher calculation
     if (Object.keys(voucherCodesMap).length > 0) {
@@ -95,7 +90,6 @@ export class OrdersService {
             } else {
               shopDiscount = Math.min(discountValue, shopSubtotal);
             }
-            discountAmount += shopDiscount;
             voucherBreakdown[merchantId] = {
               code,
               discountAmount: shopDiscount,
@@ -103,49 +97,30 @@ export class OrdersService {
           }
         }
       }
-    } else if (payload.couponCode) {
-      // Legacy single coupon fallback
-      const subtotal = cart.items.reduce(
-        (sum, item) =>
-          sum + parseFloat(item.product.price.toString()) * item.quantity,
-        0,
-      );
-
-      const promotion = await this.prisma.promotion.findUnique({
-        where: { code: payload.couponCode },
-        include: { discountType: true },
-      });
-
-      if (promotion && promotion.isActive) {
-        const now = new Date();
-        if (now >= promotion.startsAt && now <= promotion.expiresAt) {
-          const discountValue = parseFloat(promotion.discountValue.toString());
-          if (promotion.discountType.typeCode === 'percentage') {
-            discountAmount = (subtotal * discountValue) / 100;
-          } else {
-            discountAmount = Math.min(discountValue, subtotal);
-          }
-        }
-      }
     }
 
-    const subtotal = cart.items.reduce(
-      (sum, item) =>
-        sum + parseFloat(item.product.price.toString()) * item.quantity,
-      0,
-    );
-    const totalAmount = Math.max(subtotal - discountAmount, 0);
-
-    const merchantMap = new Map<string, typeof cart.items>();
+    // Group cart items by merchant_id (one orders row per merchant group)
+    const merchantMap = new Map<
+      string,
+      { items: typeof cart.items; subtotal: number }
+    >();
     for (const item of cart.items) {
       const merchantId = item.product.merchantId;
-      if (!merchantMap.has(merchantId)) {
-        merchantMap.set(merchantId, []);
+      const lineTotal =
+        parseFloat(item.product.price.toString()) * item.quantity;
+      const existing = merchantMap.get(merchantId);
+      if (existing) {
+        existing.items.push(item);
+        existing.subtotal += lineTotal;
+      } else {
+        merchantMap.set(merchantId, { items: [item], subtotal: lineTotal });
       }
-      merchantMap.get(merchantId)!.push(item);
     }
 
-    const firstMerchantId = cart.items[0].product.merchantId;
+    // Resolve the commission rate locked at order creation time: the most
+    // recent commission_rate_history entry (by effective_from <= now), falling
+    // back to the singleton commission_settings row, then the platform default.
+    const commissionRate = await this.resolveCommissionRate();
 
     const placedStatus = await this.prisma.orderStatus.findUnique({
       where: { statusCode: 'placed' },
@@ -156,27 +131,8 @@ export class OrdersService {
       );
     }
 
-    const order = await this.prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
-        data: {
-          buyerId: userId,
-          merchantId: firstMerchantId,
-          totalAmount: totalAmount.toFixed(2),
-          discountAmount: discountAmount.toFixed(2),
-          shippingAddress: payload.shippingAddress,
-          paymentMethod: payload.paymentMethod,
-          couponCode: payload.couponCode || null,
-          voucherCodes:
-            Object.keys(voucherBreakdown).length > 0
-              ? (voucherBreakdown as Prisma.InputJsonValue)
-              : undefined,
-          notes: payload.notes || null,
-          statusCode: 'placed',
-          paymentStatus: 'pending',
-        },
-      });
-
-      // Increment usage for applied promotions
+    const createdOrders = await this.prisma.$transaction(async (tx) => {
+      // Increment usage for applied promotions (once per unique code)
       const codesToIncrement = new Set<string>();
       for (const info of Object.values(voucherBreakdown)) {
         codesToIncrement.add(info.code);
@@ -191,28 +147,105 @@ export class OrdersService {
         });
       }
 
-      for (const item of cart.items) {
-        const unitPriceNum = parseFloat(item.product.price.toString());
-        const lineTotal = (unitPriceNum * item.quantity).toFixed(2);
+      const orders: {
+        id: string;
+        statusCode: string;
+        paymentMethod: string;
+        createdAt: Date;
+        merchantId: string;
+        subtotal: number;
+        discountAmount: number;
+        totalAmount: number;
+      }[] = [];
 
-        await tx.orderItem.create({
+      for (const [merchantId, group] of merchantMap) {
+        const groupSubtotal = group.subtotal;
+        let groupDiscount = voucherBreakdown[merchantId]?.discountAmount ?? 0;
+        let groupCouponCode: string | null = null;
+
+        if (!voucherBreakdown[merchantId] && payload.couponCode) {
+          // Legacy single coupon fallback — recompute per merchant group
+          groupCouponCode = payload.couponCode;
+          groupDiscount = await this.computeLegacyCouponDiscount(
+            payload.couponCode,
+            group.items,
+            tx,
+          );
+        } else if (voucherBreakdown[merchantId]) {
+          groupCouponCode = voucherBreakdown[merchantId].code;
+        }
+
+        const groupTotalAmount = Math.max(groupSubtotal - groupDiscount, 0);
+        if (groupTotalAmount <= 0) {
+          throw new BadRequestException(
+            'Coupon discount cannot reduce the order total to zero or below.',
+          );
+        }
+
+        const newOrder = await tx.order.create({
           data: {
-            orderId: newOrder.id,
-            productId: item.productId,
-            merchantId: item.product.merchantId,
-            quantity: item.quantity,
-            unitPrice: unitPriceNum.toFixed(2),
-            totalPrice: lineTotal,
+            buyerId: userId,
+            merchantId,
+            totalAmount: groupTotalAmount.toFixed(2),
+            discountAmount: groupDiscount.toFixed(2),
+            commissionRate: commissionRate.toFixed(2),
+            shippingAddress: payload.shippingAddress,
+            paymentMethod: payload.paymentMethod,
+            couponCode: groupCouponCode,
+            voucherCodes:
+              voucherBreakdown[merchantId] !== undefined
+                ? {
+                    [merchantId]: voucherBreakdown[merchantId],
+                  }
+                : undefined,
+            notes: payload.notes || null,
+            statusCode: 'placed',
+            paymentStatus: 'pending',
           },
         });
 
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQuantity: {
-              decrement: item.quantity,
+        for (const item of group.items) {
+          const unitPriceNum = parseFloat(item.product.price.toString());
+          const lineTotal = (unitPriceNum * item.quantity).toFixed(2);
+
+          await tx.orderItem.create({
+            data: {
+              orderId: newOrder.id,
+              productId: item.productId,
+              merchantId: item.product.merchantId,
+              quantity: item.quantity,
+              unitPrice: unitPriceNum.toFixed(2),
+              totalPrice: lineTotal,
             },
+          });
+
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stockQuantity: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }
+
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: newOrder.id,
+            statusId: placedStatus.id,
+            note: 'Order placed',
           },
+        });
+
+        orders.push({
+          id: newOrder.id,
+          statusCode: newOrder.statusCode,
+          paymentMethod: newOrder.paymentMethod,
+          createdAt: newOrder.createdAt,
+          merchantId: newOrder.merchantId,
+          subtotal: groupSubtotal,
+          discountAmount: groupDiscount,
+          totalAmount: groupTotalAmount,
         });
       }
 
@@ -220,32 +253,85 @@ export class OrdersService {
         where: { cartId: cart.id },
       });
 
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: newOrder.id,
-          statusId: placedStatus.id,
-          note: 'Order placed',
-        },
-      });
-
-      return newOrder;
+      return orders;
     });
 
-    const estimatedDelivery = new Date();
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
-
     return {
-      orderId: order.id,
-      orderNumber: `ORD-${order.id.slice(0, 8).toUpperCase()}`,
-      status: order.statusCode,
-      subtotal: subtotal.toFixed(2),
-      discountAmount: discountAmount.toFixed(2),
-      total: totalAmount.toFixed(2),
-      paymentMethod: order.paymentMethod,
-      shippingAddress: payload.shippingAddress,
-      createdAt: order.createdAt.toISOString(),
-      estimatedDelivery: estimatedDelivery.toISOString(),
+      orders: createdOrders.map((order) => {
+        const estimatedDelivery = new Date(order.createdAt);
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
+
+        return {
+          orderId: order.id,
+          orderNumber: `ORD-${order.id.slice(0, 8).toUpperCase()}`,
+          merchantId: order.merchantId,
+          status: order.statusCode,
+          subtotal: order.subtotal.toFixed(2),
+          discountAmount: order.discountAmount.toFixed(2),
+          total: order.totalAmount.toFixed(2),
+          paymentMethod: order.paymentMethod,
+          shippingAddress: payload.shippingAddress,
+          createdAt: order.createdAt.toISOString(),
+          estimatedDelivery: estimatedDelivery.toISOString(),
+        };
+      }),
     };
+  }
+
+  /**
+   * Computes the coupon discount for a set of cart items using the BR-COUPON-007
+   * formula (percentage vs fixed, capped at the subtotal).
+   */
+  private async computeLegacyCouponDiscount(
+    couponCode: string,
+    items: Array<{
+      quantity: number;
+      product: { price: { toString(): string } };
+    }>,
+    db: Prisma.TransactionClient,
+  ): Promise<number> {
+    const subtotal = items.reduce(
+      (sum, item) =>
+        sum + parseFloat(item.product.price.toString()) * item.quantity,
+      0,
+    );
+
+    const promotion = await db.promotion.findUnique({
+      where: { code: couponCode },
+      include: { discountType: true },
+    });
+
+    if (promotion && promotion.isActive) {
+      const now = new Date();
+      if (now >= promotion.startsAt && now <= promotion.expiresAt) {
+        const discountValue = parseFloat(promotion.discountValue.toString());
+        if (promotion.discountType.typeCode === 'percentage') {
+          return (subtotal * discountValue) / 100;
+        }
+        return Math.min(discountValue, subtotal);
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Returns the commission rate effective at order creation time — the latest
+   * commission_rate_history entry whose effective_from <= now, falling back to
+   * the singleton commission_settings row, then the platform default 12.00.
+   */
+  private async resolveCommissionRate(): Promise<number> {
+    const historyEntry = await this.prisma.commissionRateHistory.findFirst({
+      where: { effectiveFrom: { lte: new Date() } },
+      orderBy: { effectiveFrom: 'desc' },
+    });
+    if (historyEntry) return Number(historyEntry.commissionRate);
+
+    const settings = await this.prisma.commissionSetting.findFirst({
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (settings) return Number(settings.commissionRate);
+
+    return 12;
   }
 
   async getOrderHistory(

@@ -36,10 +36,26 @@ export class AdvertisementsService {
     if (cached) return JSON.parse(cached) as unknown;
 
     const settings = await this.prisma.adFeeSetting.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        history: {
+          some: { effectiveFrom: { lte: new Date() } },
+        },
+      },
+      include: {
+        history: {
+          orderBy: { effectiveFrom: 'desc' },
+          take: 1,
+        },
+      },
       orderBy: [{ placement: 'asc' }, { tier: 'asc' }],
     });
-    const result = settings.map((setting) => ({
+    // Hide packages whose latest effective_from date has not been reached yet.
+    const visibleSettings = settings.filter(
+      (setting) =>
+        setting.history[0] && setting.history[0].effectiveFrom <= new Date(),
+    );
+    const result = visibleSettings.map((setting) => ({
       id: setting.id,
       placement: setting.placement,
       tier: setting.tier,
@@ -59,7 +75,11 @@ export class AdvertisementsService {
     }
 
     const setting = await this.prisma.adFeeSetting.findFirst({
-      where: { id: feeSettingId, isActive: true },
+      where: {
+        id: feeSettingId,
+        isActive: true,
+        history: { some: { effectiveFrom: { lte: new Date() } } },
+      },
     });
     if (!setting) throw new NotFoundException('AD_PACKAGE_INVALID');
 
@@ -198,11 +218,17 @@ export class AdvertisementsService {
       });
     } else if (query.status === 'inactive') {
       // "Inactive" shows every ad that is not currently on air and not gone:
-      // pending submissions (draft / content uploaded / pending approval) and
+      // pending submissions (draft / content uploaded / pending approval),
+      // approved+paid ads that have not reached their start date yet, and
       // merchant-toggled-off approved ads. Soft-deleted ads (isActive=false
       // while not approved) and expired ads stay excluded.
       where.OR = [
         { approvalStatus: 'pending' },
+        {
+          approvalStatus: 'approved',
+          paymentStatus: 'completed',
+          startsAt: { gt: now },
+        },
         { isActive: false, approvalStatus: 'approved' },
       ];
       where.AND = [{ OR: [{ expiresAt: { gte: now } }, { expiresAt: null }] }];
@@ -247,12 +273,21 @@ export class AdvertisementsService {
     userId: string,
   ) {
     const ad = await this.getOwnedAd(id, userId);
+    if (!ad.feeSetting)
+      throw new ConflictException('Advertisement package is unavailable');
     if (
       ad.approvalStatus !== 'rejected' &&
       (ad.approvalStatus !== 'pending' || ad.paymentStatus !== 'pending')
     ) {
       throw new BadRequestException('Advertisement cannot be edited');
     }
+    // A rejected ad being resubmitted may re-pick its start date (its
+    // original window may already have started or passed). expires_at is
+    // derived from the package duration; the 3-day lead time applies, same
+    // as new uploads.
+    const schedule = dto.startsAt
+      ? this.getSchedule(dto.startsAt, ad.feeSetting.durationDays)
+      : null;
     const updated = await this.prisma.advertisement.update({
       where: { id },
       data: {
@@ -261,6 +296,9 @@ export class AdvertisementsService {
         imageUrl: file ? await this.saveImage(file) : undefined,
         linkUrl: dto.linkUrl || null,
         announcementMessage: dto.announcementMessage,
+        ...(schedule
+          ? { startsAt: schedule.startsAt, expiresAt: schedule.expiresAt }
+          : {}),
       },
       include: { feeSetting: true },
     });
@@ -271,14 +309,19 @@ export class AdvertisementsService {
 
   async deleteAd(id: string, userId: string) {
     const ad = await this.getOwnedAd(id, userId);
-    if (ad.approvalStatus === 'approved' && ad.isActive) {
+    const isExpired = Boolean(
+      ad.expiresAt && new Date(ad.expiresAt) < new Date(),
+    );
+    if (ad.approvalStatus === 'approved' && ad.isActive && !isExpired) {
       throw new BadRequestException(
         'Active approved advertisements cannot be deleted',
       );
     }
-    if (ad.paymentStatus === 'pending') {
+    if (isExpired || ad.paymentStatus === 'pending') {
       // Draft ads (and unpaid rejected drafts) that were never paid hold no
       // campaign or payment history, so they are removed permanently.
+      // Expired advertisements no longer run a live campaign, so they too are
+      // removed permanently instead of being soft-deleted.
       await this.prisma.advertisement.delete({ where: { id } });
     } else {
       await this.prisma.advertisement.update({
@@ -292,7 +335,20 @@ export class AdvertisementsService {
   }
 
   async toggleActive(id: string, dto: ToggleAdActiveDto, userId: string) {
-    const ad = await this.getOwnedAd(id, userId);
+    // Toggle only needs ownership + approved/paid checks; the package
+    // (feeSetting) is optional here — ads whose package was deactivated by an
+    // admin must still be toggleable (design rule swtToggleActive only
+    // requires approval_status = 'approved' AND payment_status = 'completed').
+    const shop = await this.getShop(userId);
+    const ad = await this.prisma.advertisement.findUnique({
+      where: { id },
+      include: { feeSetting: true },
+    });
+    if (!ad) throw new NotFoundException('Advertisement not found');
+    if (ad.shopId !== shop.id)
+      throw new ForbiddenException(
+        'You do not have permission to manage this advertisement',
+      );
     if (ad.approvalStatus !== 'approved' || ad.paymentStatus !== 'completed') {
       throw new BadRequestException(
         'Only approved and paid advertisements can be toggled',
@@ -352,12 +408,22 @@ export class AdvertisementsService {
     return ad;
   }
 
-  private getSchedule(startsAtValue: string, durationDays: number) {
+  private getSchedule(
+    startsAtValue: string,
+    durationDays: number,
+    minDaysFromToday = 3,
+  ) {
     const startsAt = new Date(startsAtValue);
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    if (Number.isNaN(startsAt.getTime()) || startsAt < today) {
-      throw new BadRequestException('Start date must be today or later');
+    // Earliest selectable start date is today + 3 days (UTC day granularity):
+    // today, tomorrow, and the day after tomorrow are not allowed. Applies to
+    // both new uploads and resubmission of rejected ads.
+    const minDate = new Date();
+    minDate.setUTCHours(0, 0, 0, 0);
+    minDate.setUTCDate(minDate.getUTCDate() + minDaysFromToday);
+    if (Number.isNaN(startsAt.getTime()) || startsAt < minDate) {
+      throw new BadRequestException(
+        'Start date must be at least 3 days from today',
+      );
     }
     const expiresAt = new Date(startsAt);
     expiresAt.setUTCDate(expiresAt.getUTCDate() + durationDays);

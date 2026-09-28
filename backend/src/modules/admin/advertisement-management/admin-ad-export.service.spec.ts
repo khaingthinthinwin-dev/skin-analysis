@@ -15,7 +15,7 @@ describe('AdminAdExportService', () => {
     id: 'a1',
     shop: { name: 'Shop A' },
     title: 'Summer sale',
-    feeSetting: { placement: 'homepage_banner', tier: 'premium' },
+    feeSetting: { placement: 'search_page_banner', tier: 'premium' },
     approvalStatus: 'approved',
     paymentAmount: new Prisma.Decimal('50.00'),
     adPayments: [],
@@ -26,7 +26,7 @@ describe('AdminAdExportService', () => {
     prisma = {
       advertisement: { findMany: jest.fn() },
       adFeeHistory: { findMany: jest.fn() },
-      auditLog: { create: jest.fn() },
+      auditLog: { create: jest.fn(), findMany: jest.fn() },
     };
 
     service = new AdminAdExportService(prisma as unknown as PrismaService);
@@ -50,7 +50,7 @@ describe('AdminAdExportService', () => {
       'Shop,Title,Placement,Tier,Status,Impressions,Clicks,CTR (%),Fee Paid,Revenue',
     );
     expect(lines[1]).toBe(
-      'Shop A,Summer sale,homepage_banner,premium,approved,0,0,0.00,50.00,50.00',
+      'Shop A,Summer sale,search_page_banner,premium,approved,0,0,0.00,50.00,50.00',
     );
     expect(prisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -84,6 +84,7 @@ describe('AdminAdExportService', () => {
         ],
       },
     ]);
+    prisma.auditLog.findMany.mockResolvedValue([]);
     prisma.auditLog.create.mockResolvedValue({});
 
     const csv = await service.exportSubmissionHistory(
@@ -106,11 +107,65 @@ describe('AdminAdExportService', () => {
     });
   });
 
+  it('exports submission history with separate reject and approve rows per review event', async () => {
+    prisma.advertisement.findMany.mockResolvedValue([
+      {
+        ...completedAd,
+        id: 'a1',
+        paymentAmount: new Prisma.Decimal('50.00'),
+        adPayments: [
+          {
+            amount: new Prisma.Decimal('50.00'),
+            paymentStatus: 'refunded',
+            refundAmount: new Prisma.Decimal('50.00'),
+          },
+        ],
+      },
+    ]);
+    // Ad was rejected on Jun 02, resubmitted, then approved on Jun 10.
+    prisma.auditLog.findMany.mockResolvedValue([
+      {
+        action: 'AD_REJECTED',
+        entityType: 'Advertisement',
+        entityId: 'a1',
+        createdAt: new Date('2024-06-02T00:00:00.000Z'),
+        user: { name: 'Admin One' },
+      },
+      {
+        action: 'AD_APPROVED',
+        entityType: 'Advertisement',
+        entityId: 'a1',
+        createdAt: new Date('2024-06-10T00:00:00.000Z'),
+        user: { name: 'Admin Two' },
+      },
+    ]);
+    prisma.auditLog.create.mockResolvedValue({});
+
+    const csv = await service.exportSubmissionHistory(
+      { dateFrom: '2024-06-01', dateTo: '2024-06-30', format: 'csv' },
+      'admin1',
+    );
+
+    const lines = csv.split('\r\n');
+    expect(lines).toHaveLength(3); // header + 2 review-event rows
+    expect(lines[1]).toContain('rejected');
+    expect(lines[1]).toContain('Admin One');
+    expect(lines[1]).toContain('2024-06-02T00:00:00.000Z');
+    expect(lines[2]).toContain('approved');
+    expect(lines[2]).toContain('Admin Two');
+    expect(lines[2]).toContain('2024-06-10T00:00:00.000Z');
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        newValue: expect.objectContaining({ rowCount: 2 }),
+      }),
+    });
+  });
+
   it('exports fee history, quoting cells with commas and quotes', async () => {
     prisma.adFeeHistory.findMany.mockResolvedValue([
       {
         id: 'h1',
-        setting: { placement: 'homepage_banner', tier: 'premium' },
+        setting: { placement: 'search_page_banner', tier: 'premium' },
         changedByAdmin: { name: 'Admin One' },
         oldDailyRate: new Prisma.Decimal('10.00'),
         newDailyRate: new Prisma.Decimal('12.50'),

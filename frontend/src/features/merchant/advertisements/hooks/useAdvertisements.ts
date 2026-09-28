@@ -59,6 +59,36 @@ export function useAdvertisements(params?: {
   const toggle = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       merchantAdService.toggle(id, isActive),
+    // Optimistically flip the switch so the UI reacts immediately; the
+    // invalidate below confirms with fresh server data.
+    onMutate: async ({ id, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: ['merchant', 'ads'] });
+      const previous = queryClient.getQueriesData({
+        queryKey: ['merchant', 'ads'],
+      });
+      queryClient.setQueriesData(
+        { queryKey: ['merchant', 'ads'] },
+        (old: unknown) => {
+          if (!old || typeof old !== 'object') return old;
+          const cached = old as { data?: Array<{ id: string; isActive: boolean }> };
+          if (!Array.isArray(cached.data)) return old;
+          return {
+            ...cached,
+            data: cached.data.map((ad) =>
+              ad.id === id ? { ...ad, isActive } : ad,
+            ),
+          };
+        },
+      );
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) {
+        for (const [key, value] of context.previous) {
+          queryClient.setQueryData(key, value);
+        }
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
     },

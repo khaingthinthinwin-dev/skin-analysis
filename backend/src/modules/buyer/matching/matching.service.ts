@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
@@ -32,8 +33,25 @@ type ProductWithMerchant = Product & {
   merchant: Pick<Merchant, 'shopName'> | null;
 };
 
+/** Normalized filter values a cached recommendation response depends on. */
+interface RecommendationCacheFilters {
+  skinTypes: string[];
+  ingredients?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  rating?: number;
+  categoryId?: string;
+  sort?: string;
+  order?: string;
+  page?: number;
+  limit?: number;
+}
+
 const CACHE_TTL = 5 * 60;
 const SIMILAR_LIMIT_DEFAULT = 8;
+
+/** Sentinel the filter panel sends when no skin type is selected. */
+const ALL_SKIN_TYPES = 'all';
 
 const INGREDIENT_KEY_MAP: Record<string, string> = {
   hyaluronic_acid: 'Hyaluronic Acid',
@@ -62,18 +80,85 @@ export class MatchingService {
       ingredients: ingredientsFilter,
       minPrice,
       maxPrice,
+      rating,
       sort = 'matchScore',
       order = 'desc',
       page = 1,
       limit = 20,
+      categoryId,
+      category,
     } = query;
 
-    const context = await this.determineSource(userId);
-    const effectiveSkinTypes = skinTypesFilter
-      ? skinTypesFilter.split(',').filter(Boolean)
-      : context.skinTypes;
+    // Support both categoryId and category for frontend compatibility
+    const effectiveCategoryId = categoryId || category;
 
-    const cacheKey = this.buildCacheKey(userId, query);
+    const context = await this.determineSource(userId);
+
+    // The filter panel sends `skinTypes=all` when the buyer clears every skin type
+    // checkbox, which means "no skin-type selection". Feeding that sentinel to
+    // `hasSome` matched no product at all and emptied the grid.
+    const requestedSkinTypes = (skinTypesFilter ?? '')
+      .split(',')
+      .map((type) => type.trim().toLowerCase())
+      .filter((type) => type.length > 0 && type !== ALL_SKIN_TYPES);
+
+    // The analysis result and the panel selection are two separate conditions.
+    // Each one is an OR inside itself (sharing at least one skin type is enough,
+    // a product never has to carry every analysed type), while the two are
+    // ANDed. So for an "oily" selection on a "combination" analysis a product
+    // tagged oily + combination stays visible, while a dry-only product does not
+    // match the analysis result and stays hidden.
+    const analysisSkinTypes = context.source === 'ai' ? context.skinTypes : [];
+
+    const skinTypeConditions: Prisma.ProductWhereInput[] = [];
+    if (analysisSkinTypes.length > 0) {
+      skinTypeConditions.push({
+        OR: [
+          { skinTypes: { hasSome: analysisSkinTypes } },
+          { skinTypes: { has: ALL_SKIN_TYPES } },
+        ],
+      });
+    }
+    if (requestedSkinTypes.length > 0) {
+      // Products tagged for every skin type stay compatible with the buyer's
+      // analysis result, so they also stay compatible with the selection.
+      skinTypeConditions.push(
+        context.source === 'ai'
+          ? {
+              OR: [
+                { skinTypes: { hasSome: requestedSkinTypes } },
+                { skinTypes: { has: ALL_SKIN_TYPES } },
+              ],
+            }
+          : { skinTypes: { hasSome: requestedSkinTypes } },
+      );
+    }
+
+    // Recommendations stay personalized even while a skin type is selected, so
+    // scoring falls back to the analysed skin type.
+    const scoringSkinType = requestedSkinTypes[0] ?? context.skinTypes[0] ?? '';
+
+    // `skinTypes=all` (no selection) still resolves through the analysis result,
+    // but keeps its own cache entry instead of sharing the no-parameter one.
+    const cacheSkinTypes =
+      requestedSkinTypes.length > 0
+        ? requestedSkinTypes
+        : skinTypesFilter === undefined
+          ? context.skinTypes
+          : [];
+
+    const cacheKey = this.buildCacheKey(userId, {
+      skinTypes: cacheSkinTypes,
+      ingredients: ingredientsFilter,
+      minPrice,
+      maxPrice,
+      rating,
+      categoryId: effectiveCategoryId,
+      sort,
+      order,
+      page,
+      limit,
+    });
     const cached = await this.getCachedRecommendations(cacheKey);
     if (cached) {
       return cached;
@@ -84,8 +169,11 @@ export class MatchingService {
       merchant: { user: { shop: { isApproved: true } } },
     };
 
-    if (effectiveSkinTypes.length > 0) {
-      where.skinTypes = { hasSome: effectiveSkinTypes };
+    if (skinTypeConditions.length === 1) {
+      Object.assign(where, skinTypeConditions[0]);
+    } else if (skinTypeConditions.length > 1) {
+      // Analysis result AND panel selection, each one an OR inside itself.
+      where.AND = skinTypeConditions;
     }
 
     if (ingredientsFilter) {
@@ -104,7 +192,16 @@ export class MatchingService {
       if (maxPrice !== undefined) where.price.lte = maxPrice;
     }
 
-    const orderBy = this.buildOrderBy(sort, order, context.source);
+    if (effectiveCategoryId) {
+      where.categoryId = effectiveCategoryId;
+    }
+
+    // Rating filter (minimum avgRating)
+    if (rating !== undefined) {
+      where.avgRating = { gte: rating };
+    }
+
+    const orderBy = this.buildOrderBy(sort, order);
 
     const skip = (page - 1) * limit;
 
@@ -130,7 +227,7 @@ export class MatchingService {
         context.source === 'ai'
           ? this.computeMatchScore(
               product,
-              effectiveSkinTypes[0] || '',
+              scoringSkinType,
               context.skinConcerns,
             ).total
           : null;
@@ -329,9 +426,16 @@ export class MatchingService {
 
     const skinConcerns = latestAnalysis.conditions.map((c) => c.conditionName);
 
+    // An analysis can report more than one skin type ("oily,combination");
+    // keep them as a normalized list so filters can compare against each.
+    const skinTypes = (latestAnalysis.skinType ?? '')
+      .split(',')
+      .map((type) => type.trim().toLowerCase())
+      .filter((type) => type.length > 0);
+
     return {
       source: 'ai',
-      skinTypes: latestAnalysis.skinType ? [latestAnalysis.skinType] : [],
+      skinTypes,
       skinConcerns,
       analysisAge,
     };
@@ -390,38 +494,66 @@ export class MatchingService {
     return null;
   }
 
+  /**
+   * Resolve the DB-level `orderBy` for the requested sort field.
+   *
+   * BR-MATCH-025: `sort` is an allowlist (matchScore | price | rating | createdAt)
+   * and the requested field must be honoured for BOTH sources. Previously the
+   * `generic` branch returned early, so every sort option silently did nothing
+   * for buyers without an AI analysis, and `rating` was never implemented at all
+   * (the DTO accepted it, the ordering ignored it).
+   *
+   * `matchScore` is not a database column — it is computed per product after the
+   * rows are fetched — so it (and an absent `sort`) falls back to the per-source
+   * default candidate window from BR-MATCH-024: featured, then rating. AI results
+   * are re-sorted by score in memory below.
+   */
   private buildOrderBy(
     sort: string,
     order: string,
-    source: string,
   ):
     | Prisma.ProductOrderByWithRelationInput
     | Prisma.ProductOrderByWithRelationInput[] {
     const direction = order === 'asc' ? ('asc' as const) : ('desc' as const);
 
-    if (source === 'generic') {
-      return [{ isFeatured: 'desc' as const }, { avgRating: 'desc' as const }];
-    }
-
     if (sort === 'price') return { price: direction };
+    if (sort === 'rating') return { avgRating: direction };
     if (sort === 'createdAt') return { createdAt: direction };
 
-    // Default for AI source: matchScore descending (will be sorted in-memory after scoring)
     return [{ isFeatured: 'desc' as const }, { avgRating: 'desc' as const }];
   }
 
-  private buildCacheKey(userId: string, query: MatchQueryDto): string {
+  /**
+   * Cache key for a recommendation response.
+   *
+   * EVERY input that changes the result set has to be part of the key: a missing
+   * field makes a freshly selected filter return the previously cached, unfiltered
+   * page — which looks exactly like "the filter does nothing". `rating` was missing
+   * from the key, and the raw `skinTypes` string was used, so `skinTypes=all`
+   * (no restriction) and an omitted `skinTypes` (analysis skin type) collided.
+   */
+  private buildCacheKey(
+    userId: string,
+    filters: RecommendationCacheFilters,
+  ): string {
     const params = JSON.stringify({
-      s: query.skinTypes,
-      i: query.ingredients,
-      mn: query.minPrice,
-      mx: query.maxPrice,
-      so: query.sort,
-      o: query.order,
-      p: query.page,
-      l: query.limit,
+      // Sorted so `oily,dry` and `dry,oily` share one entry (same filter).
+      s: [...filters.skinTypes].sort(),
+      i: filters.ingredients,
+      mn: filters.minPrice,
+      mx: filters.maxPrice,
+      r: filters.rating,
+      c: filters.categoryId,
+      so: filters.sort,
+      o: filters.order,
+      p: filters.page,
+      l: filters.limit,
     });
-    const hash = Buffer.from(params).toString('base64url').slice(0, 32);
+    // Full SHA-256 digest of the serialized query. Do NOT truncate: a short
+    // key would drop the trailing `p` (page) / `l` (limit) fields whenever the
+    // filter JSON exceeds the captured window, making every page collide on
+    // the same Redis key and returning the first page for all pagination.
+    const hash = createHash('sha256').update(params).digest('hex');
     return `cache:recommendations:user:${userId}:${hash}`;
   }
 

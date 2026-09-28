@@ -58,4 +58,11 @@ export class MatchQueryDto {
   @Min(1)
   @Max(50)
   limit?: number;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+  @IsOptional()
+  @IsString()
+  category?: string; // alias for frontend compatibility
 }

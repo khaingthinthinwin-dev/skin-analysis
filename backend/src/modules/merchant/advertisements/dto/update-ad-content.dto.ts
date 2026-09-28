@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -26,4 +27,12 @@ export class UpdateAdContentDto {
   @IsNotEmpty()
   @MaxLength(500)
   announcementMessage: string;
+
+  // Optional reschedule for the resubmission flow: a rejected ad's original
+  // window may already have started or passed, so the merchant may re-pick
+  // the start date when editing before resubmitting. `expires_at` is derived
+  // server-side from the package duration (see getSchedule).
+  @IsOptional()
+  @IsDateString()
+  startsAt?: string;
 }
