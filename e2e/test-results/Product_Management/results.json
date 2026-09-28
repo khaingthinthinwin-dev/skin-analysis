@@ -1,0 +1,365 @@
+{
+  "module": "Product_Management",
+  "timestamp": "2026-09-23T06:33:08.915Z",
+  "total": 59,
+  "passed": 59,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 346006,
+  "tests": [
+    {
+      "title": "should display product management page with product list",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\product-management.spec.ts",
+      "status": "passed",
+      "duration": 5727
+    },
+    {
+      "title": "N-01: should view product list as approved merchant",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5822
+    },
+    {
+      "title": "should create a new product",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\product-management.spec.ts",
+      "status": "passed",
+      "duration": 4582
+    },
+    {
+      "title": "N-02: should create a new product with valid data",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6128
+    },
+    {
+      "title": "should edit an existing product",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\product-management.spec.ts",
+      "status": "passed",
+      "duration": 4580
+    },
+    {
+      "title": "N-03: should edit an existing product",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6153
+    },
+    {
+      "title": "should delete a product",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\product-management.spec.ts",
+      "status": "passed",
+      "duration": 4740
+    },
+    {
+      "title": "N-04: should delete a product (soft delete)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5810
+    },
+    {
+      "title": "should search products by name",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\product-management.spec.ts",
+      "status": "passed",
+      "duration": 4971
+    },
+    {
+      "title": "should filter products by category",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\product-management.spec.ts",
+      "status": "passed",
+      "duration": 4727
+    },
+    {
+      "title": "N-05: should toggle product active status",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5556
+    },
+    {
+      "title": "N-06: should toggle product featured status",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5580
+    },
+    {
+      "title": "should hide CRUD buttons for pending merchants",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\product-management.spec.ts",
+      "status": "passed",
+      "duration": 7917
+    },
+    {
+      "title": "N-07: should update stock quantity inline",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5440
+    },
+    {
+      "title": "N-08: should search products by name",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5578
+    },
+    {
+      "title": "N-09: should filter products by status",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6333
+    },
+    {
+      "title": "N-10: should sort products by price",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7232
+    },
+    {
+      "title": "N-11: should bulk select and activate products",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6967
+    },
+    {
+      "title": "N-12: should bulk delete products",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6529
+    },
+    {
+      "title": "N-13: should save product as draft",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6860
+    },
+    {
+      "title": "N-14: should toggle language on screen",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5179
+    },
+    {
+      "title": "N-15: should toggle theme on screen",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5076
+    },
+    {
+      "title": "N-16: should display responsive layout on desktop viewport",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6334
+    },
+    {
+      "title": "N-17: should display responsive layout on mobile viewport",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6106
+    },
+    {
+      "title": "A-01: should show validation errors when submitting empty product form",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5407
+    },
+    {
+      "title": "A-02: should show validation error for price <= 0",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4885
+    },
+    {
+      "title": "A-03: should show validation error for compareAtPrice <= price",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5852
+    },
+    {
+      "title": "A-04: should show error when uploading image exceeding 5MB",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7121
+    },
+    {
+      "title": "A-05: should show error when uploading unsupported image format",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5900
+    },
+    {
+      "title": "A-06: should show error when uploading more than 10 images",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6136
+    },
+    {
+      "title": "A-07: should redirect to login when accessing product management without authentication",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 3127
+    },
+    {
+      "title": "A-08: should show pending banner and hide CRUD buttons for pending merchant",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6128
+    },
+    {
+      "title": "A-09: should show rejected banner and hide CRUD buttons for rejected merchant",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6589
+    },
+    {
+      "title": "A-10: should show error when deleting product with active orders",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7208
+    },
+    {
+      "title": "A-11: should show error when updating stock to negative value",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7711
+    },
+    {
+      "title": "B-01: should accept product name at minimum length (1 character)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 8441
+    },
+    {
+      "title": "B-02: should accept product name at maximum length (255 characters)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 8506
+    },
+    {
+      "title": "B-03: should reject product name exceeding maximum length (256 characters)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6714
+    },
+    {
+      "title": "B-04: should accept SKU at maximum length (100 characters)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 8375
+    },
+    {
+      "title": "B-05: should accept short description at maximum length (500 characters)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7449
+    },
+    {
+      "title": "B-06: should display empty state when merchant has no products",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5972
+    },
+    {
+      "title": "B-07: should show low stock warning at threshold",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6678
+    },
+    {
+      "title": "B-08: should show out of stock indicator at zero stock",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6738
+    },
+    {
+      "title": "B-09: should accept discount percentage at maximum (100%)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7106
+    },
+    {
+      "title": "B-10: should show validation error for discount exceeding 100%",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6362
+    },
+    {
+      "title": "B-11: should handle pagination at last page boundary",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 6299
+    },
+    {
+      "title": "B-12: should accept exactly 10 images (max allowed)",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7745
+    },
+    {
+      "title": "I-01: GET /api/v1/products should return 200 with product list",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5250
+    },
+    {
+      "title": "I-02: GET /api/v1/products/:slug should return 200 with product detail",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4967
+    },
+    {
+      "title": "I-03: GET /api/v1/products/:slug should return 404 for non-existent slug",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 5373
+    },
+    {
+      "title": "I-04: POST /api/v1/products should return 201 with created product",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4050
+    },
+    {
+      "title": "I-05: POST /api/v1/products should return 400 for validation failure",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4757
+    },
+    {
+      "title": "I-06: PATCH /api/v1/products/:id should return 200 with updated product",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4215
+    },
+    {
+      "title": "I-07: DELETE /api/v1/products/:id should return 200 on success",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 3671
+    },
+    {
+      "title": "I-08: PATCH /api/v1/products/:id/stock should return 200 with stock update",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4391
+    },
+    {
+      "title": "I-09: GET /api/v1/categories should return 200 with category tree",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 3976
+    },
+    {
+      "title": "I-10: error response should follow standard API format",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4498
+    },
+    {
+      "title": "I-11: POST /api/v1/products should return 403 for pending merchant",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 4677
+    },
+    {
+      "title": "I-12: DELETE /api/v1/products/:id should return 409 for product with active orders",
+      "file": "C:\\AITesting\\AITestingProject\\skin-analysis_zsls\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 3805
+    }
+  ]
+}

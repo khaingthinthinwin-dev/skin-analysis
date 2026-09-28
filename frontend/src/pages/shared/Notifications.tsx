@@ -6,6 +6,9 @@ import {
   Tag,
   ShoppingBag,
   Sparkles,
+  Megaphone,
+  CircleCheck,
+  CircleX,
 } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router'
 import { useMemo, useState } from 'react'
@@ -74,6 +77,18 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'AD_EXPIRED',
 ])
 
+// Advertisement review decisions the admin makes, and the submission that
+// triggers them. AD_SUBMITTED goes to admins, AD_APPROVED / AD_REJECTED go back
+// to the shop owner (written by AdminAdManagementService).
+const AD_SUBMISSION_TYPES = new Set(['AD_SUBMITTED'])
+
+const AD_DECISION_TYPES = new Set([
+  'AD_APPROVED',
+  'AD_REJECTED',
+  'AD_ACTIVE',
+  'AD_EXPIRED',
+])
+
 const MERCHANT_REJECTION_TEXT = 'Your business license has been rejected'
 
 function normalizeNotificationType(rawType: string): string {
@@ -123,6 +138,31 @@ function adminNotificationKey(item: NotificationItem): string {
   return item.id
 }
 
+function isAdSubmission(item: NotificationItem): boolean {
+  return AD_SUBMISSION_TYPES.has(normalizeNotificationType(item.type))
+}
+
+function isAdRejected(item: NotificationItem): boolean {
+  const type = normalizeNotificationType(item.type)
+  if (type === 'AD_REJECTED') return true
+  if (!AD_DECISION_TYPES.has(type)) return false
+  const text = `${item.title || ''} ${item.message || ''}`.toLowerCase()
+  return text.includes('reject')
+}
+
+// Trailing hint on ad notifications pointing at where the action happens:
+// admins review the submission, merchants see the decision on their ads.
+function adActionHint(item: NotificationItem): string | null {
+  if (isAdSubmission(item)) return 'Review in Advertisement Management →'
+  const type = normalizeNotificationType(item.type)
+  if (AD_DECISION_TYPES.has(type)) {
+    return isAdRejected(item)
+      ? 'Edit & Resubmit from Advertisements →'
+      : 'View in Advertisements →'
+  }
+  return null
+}
+
 function iconForType(rawType: string, title?: string, message?: string) {
   const type = (rawType || '').toUpperCase()
   if (type === 'MERCHANT_STATUS_CHANGED' || type.includes('MERCHANT_STATUS')) {
@@ -134,6 +174,16 @@ function iconForType(rawType: string, title?: string, message?: string) {
   }
   if (type === 'MERCHANT_REGISTERED' || type.includes('MERCHANT')) {
     return { Icon: Store, color: 'text-sky-500' }
+  }
+  if (type.includes('AD_')) {
+    const haystack = `${type} ${title ?? ''} ${message ?? ''}`.toLowerCase()
+    if (haystack.includes('reject')) {
+      return { Icon: CircleX, color: 'text-red-500' }
+    }
+    if (haystack.includes('approve') || haystack.includes('active')) {
+      return { Icon: CircleCheck, color: 'text-emerald-500' }
+    }
+    return { Icon: Megaphone, color: 'text-purple-600' }
   }
   if (type === 'ORDER' || type.includes('ORDER')) {
     return { Icon: ShoppingBag, color: 'text-emerald-500' }
@@ -158,6 +208,7 @@ function NotificationCard({
   const isMerchantReg = MERCHANT_ADMIN_ACTION_TYPES.has(
     normalizeNotificationType(item.type),
   )
+  const adHint = adActionHint(item)
   const displayMessage = isMerchantRejectedNotification(item)
     ? MERCHANT_REJECTION_TEXT
     : item.message
@@ -194,6 +245,9 @@ function NotificationCard({
               <p className="text-xs font-semibold text-purple-600">
                 View in Merchant Management →
               </p>
+            )}
+            {adHint && (
+              <p className="text-xs font-semibold text-purple-600">{adHint}</p>
             )}
           </div>
         </CardContent>
@@ -259,6 +313,17 @@ export default function Notifications() {
       return
     }
     const type = normalizeNotificationType(item.type)
+    if (AD_SUBMISSION_TYPES.has(type)) {
+      // Admins act here: jump straight to the review queue, pre-filtered to the
+      // pending ads the submission just joined.
+      navigate('/admin/ads?status=pending')
+      return
+    }
+    if (AD_DECISION_TYPES.has(type)) {
+      // Decisions are only ever addressed to the merchant who owns the ad.
+      navigate('/merchant/advertisements')
+      return
+    }
     if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
       navigate('/admin/merchants')
     }
