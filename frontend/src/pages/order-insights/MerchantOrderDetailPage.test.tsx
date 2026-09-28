@@ -63,13 +63,13 @@ const revenueSummary = {
   period: { code: 'this_month', from: '', to: '' },
 };
 
-function mockApi({ order = detail, timeline = tracking } = {}) {
+function mockApi({ order = detail, timeline = tracking, summary = revenueSummary } = {}) {
   getMock.mockImplementation((url: string) => {
     if (url === '/merchant/orders/order-1/tracking') {
       return Promise.resolve({ data: { data: timeline } });
     }
     if (url.startsWith('/order-insights/merchant/revenue-summary')) {
-      return Promise.resolve({ data: { revenueSummary } });
+      return Promise.resolve({ data: { revenueSummary: summary } });
     }
     return Promise.resolve({ data: { data: order } });
   });
@@ -246,6 +246,9 @@ describe('MerchantOrderDetailPage', () => {
 
     await screen.findByText('Order ORD-ORDER-1');
     expect(screen.getByText('Commission (12%)')).toBeInTheDocument();
+    // The order carries no rate of its own, so the figure is the platform's
+    // current rate and says so — the same marker the Revenue Summary footer shows.
+    expect(screen.getByText('(current rate)')).toBeInTheDocument();
     // 12% of the 5.00 total (after discount), not of the 10.00 subtotal: 0.60 -> 1 Ks
     // and 5.00 - 0.60 = 4.40 -> 4 Ks, because amounts are shown as whole Ks.
     expect(screen.getByText('-1 Ks')).toBeInTheDocument();
@@ -253,6 +256,33 @@ describe('MerchantOrderDetailPage', () => {
     expect(screen.getByText('Subtotal')).toBeInTheDocument();
     expect(screen.getByText('Discount')).toBeInTheDocument();
     expect(screen.queryByText('Order Summary')).not.toBeInTheDocument();
+  });
+
+  it('prefers the rate stored on the order over the current platform rate', async () => {
+    // The order was placed at 10% while the platform now charges 12%: the block must
+    // use the order's own rate and must NOT present it as the current rate.
+    mockApi({ order: { ...detail, totalAmount: '100.00', commissionRate: '10.00' } });
+
+    renderPage();
+
+    await screen.findByText('Order ORD-ORDER-1');
+    expect(screen.getByText('Commission (10%)')).toBeInTheDocument();
+    // 10% of 100.00 = 10.00 -> 10 Ks, and 100.00 - 10.00 = 90.00 -> 90 Ks.
+    expect(screen.getByText('-10 Ks')).toBeInTheDocument();
+    expect(screen.getByText('90 Ks')).toBeInTheDocument();
+    expect(screen.queryByText('(current rate)')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /historical rate locking is pending/i })).not.toBeInTheDocument();
+  });
+
+  it('drops the current-rate marker and its note once the summary rate is locked', async () => {
+    mockApi({ summary: { ...revenueSummary, commissionRateSource: 'order_snapshot', commissionRateLocked: true } });
+
+    renderPage();
+
+    await screen.findByText('Order ORD-ORDER-1');
+    expect(screen.getByText('Commission (12%)')).toBeInTheDocument();
+    expect(screen.queryByText('(current rate)')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /historical rate locking is pending/i })).not.toBeInTheDocument();
   });
 
   it('restores validated list filters on the back link from navigation state', async () => {

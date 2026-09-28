@@ -13,7 +13,7 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, fal
 vi.mock('../services/merchantOrderService', () => ({ getAllMerchantOrders: vi.fn() }));
 // The dialog reads the current platform rate from the cached Revenue Summary;
 // the query itself is covered by useRevenueSummary.test.tsx. Tests that need the
-// "columns skipped" state set `mockCommissionRate` to undefined/''.
+// "platform rate unavailable" notice set `mockCommissionRate` to undefined/''.
 let mockCommissionRate: string | undefined = '12.00';
 vi.mock('../hooks/useRevenueSummary', () => ({
   useRevenueSummary: vi.fn(() => ({ data: mockCommissionRate === undefined ? undefined : { commissionRate: mockCommissionRate } })),
@@ -157,11 +157,13 @@ describe('ExportMerchantOrdersDialog', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Exporting...' })).not.toBeInTheDocument());
   });
 
-  it('warns that the commission columns are skipped while the rate is unavailable', () => {
+  it('points at the orders that carry their own rate while the platform rate is unavailable', () => {
     mockCommissionRate = undefined;
     renderDialog();
 
-    expect(dialogText()).toContain('Commission and You receive columns are not included — commission rate unavailable.');
+    expect(dialogText()).toContain(
+      'Commission rate, Commission and You receive columns are included for orders that report their own rate — commission rate unavailable, and left out entirely when no order reports one. Other rows leave those cells blank.',
+    );
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

@@ -22,6 +22,16 @@ export interface MerchantOrderDetailResponseDto {
   items: MerchantOrderItemDto[];
   discountAmount: string;
   totalAmount: string;
+  /**
+   * `orders.commission_rate` — the platform rate this order was charged, i.e. the
+   * rate in force when the order was placed (BR-OI-023), as a fixed 2-decimal
+   * percentage string ("12.00"), matching the Revenue Summary's `commissionRate`.
+   *
+   * Always present: the column is `DECIMAL(5,2) NOT NULL DEFAULT 12.00`, so the
+   * frontend can prefer the order's own rate over the current platform rate and
+   * label the fallback "(current rate)" only when this field is missing.
+   */
+  commissionRate: string;
   paymentMethod: string;
   paymentStatus: string;
   shippingAddress: Record<string, string>;

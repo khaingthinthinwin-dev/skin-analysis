@@ -36,6 +36,6 @@ TTL: `OI_SUMMARY_CACHE_TTL_SECONDS` (default **300**), via `ORDER_INSIGHTS_CONFI
 
 ## Known gaps
 
-- **`orders.commission_rate` does not exist.** Rate is the latest `commission_settings` row (fallback `'12.00'`). Responses always send `commissionRateSource: "current_settings"` and `commissionRateLocked: false` (`BR-OI-023`).
+- **Per-order rate snapshots are not used by the summary.** `orders.commission_rate` exists (`DECIMAL(5,2) NOT NULL DEFAULT 12.00`, written at checkout) and the merchant order list (`GET /orders`) and merchant order detail (`GET /merchant/orders/:id`) expose it per order, but the Revenue Summary aggregates a period that may mix rates, so it keeps resolving a single rate from the latest `commission_settings` row (fallback `'12.00'`) and still sends `commissionRateSource: "current_settings"` / `commissionRateLocked: false` (`BR-OI-023`).
 - **Admin `all` cache** is not dropped by `invalidateMerchantSummaryCache` (pattern is per merchant id). Stale all-platform totals expire with TTL.
 - **Module registration** requires adding `OrderInsightsModule` to `backend/src/app.module.ts` (not applied in this change).

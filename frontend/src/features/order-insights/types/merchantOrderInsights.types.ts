@@ -5,6 +5,17 @@ export type SummaryPeriod = RevenuePeriodFormData['period'];
 
 export interface MerchantOrderListRowDto extends OrderListRowDto {
   customerName: string;
+  /**
+   * The rate the platform charged on THIS order — `orders.commission_rate`, the
+   * rate in force when the order was placed (BR-OI-023) — as a DECIMAL string
+   * (e.g. "12.00").
+   *
+   * Optional on purpose: the merchant projection of `GET /orders` sends it, but a
+   * cached or older payload can predate it, so consumers resolve it through
+   * `resolveRowCommissionRate` and fall back to the Revenue Summary's platform
+   * rate (never a fabricated rate).
+   */
+  commissionRate?: string;
 }
 
 export interface MerchantOrderListResponseDto {

@@ -36,7 +36,13 @@ import {
   getServerErrorMessage,
 } from '@/features/order-insights/types/merchantOrderInsights.types';
 import type { MerchantOrderDetailDto, MerchantOrderItemDto } from '@/features/order-insights/types/merchantOrderFulfillment.types';
-import { computeOrderCommission } from '@/features/order-insights/utils/orderCommission';
+import {
+  computeOrderCommission,
+  formatCommissionRatePercent,
+  needsCurrentRateMarker,
+  normalizeCommissionRate,
+  resolveOrderCommissionRate,
+} from '@/features/order-insights/utils/orderCommission';
 import { sanitizeListSearch } from '@/features/order-insights/utils/orderListSearch';
 import { formatStatusLabel } from '@/features/order-insights/utils/orderStatusLabel';
 
@@ -284,8 +290,11 @@ function MerchantOrderDetailContent() {
   // The invoice is a view of the order already in memory — it opens in a dialog
   // instead of adding a section to this page, so the detail layout stays focused.
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
-  // The Revenue Summary endpoint is the merchant's only source for the current
-  // platform commission rate — the order detail DTO carries no commission fields.
+  // The rate stored on the order itself is the merchant's first source; the Revenue
+  // Summary's current platform rate is the documented BR-OI-023 fallback while the
+  // order detail DTO still carries no commission fields. Either way the block marks
+  // a platform rate as "(current rate)" so this figure is never mistaken for the
+  // rate the order was actually placed at.
   const revenueQuery = useRevenueSummary({ period: 'this_month' });
 
   const advanceStatus = (nextStatus: string) => {
@@ -381,9 +390,19 @@ function MerchantOrderDetailContent() {
       : translate('orders.detail.itemsCountOther', `${order.items.length} items`);
   const discountAmount = Number(order.discountAmount);
   const hasDiscount = Number.isFinite(discountAmount) && discountAmount > 0;
-  // One frontend commission formula — see utils/orderCommission.ts (BR-OI-022/028).
-  const commissionRate = revenueQuery.data?.commissionRate || null;
+  // The rate this order was charged: the rate stored on the order itself when the
+  // API reports it, otherwise the current platform rate (BR-OI-023). One frontend
+  // commission formula — see utils/orderCommission.ts (BR-OI-022/028). The platform
+  // rate is labelled "(current rate)", the order's own rate is not — the same
+  // marker the Revenue Summary footer uses, from the same helper.
+  const commissionRate = resolveOrderCommissionRate(order.commissionRate, revenueQuery.data?.commissionRate);
+  const rateIsOrderOwn = normalizeCommissionRate(order.commissionRate) !== null;
   const commission = commissionRate ? computeOrderCommission(order.totalAmount, commissionRate) : null;
+  const commissionRatePercent = formatCommissionRatePercent(commissionRate);
+  const rateCurrentMarker = translate('merchant.revenue.rateCurrent', '(current rate)');
+  const showCurrentRateMarker = needsCurrentRateMarker(
+    rateIsOrderOwn || Boolean(revenueQuery.data?.commissionRateLocked),
+  );
   const rateNote = translate(
     'merchant.revenue.rateNote',
     'Commission is calculated with the current platform rate; historical rate locking is pending.',
@@ -513,9 +532,14 @@ function MerchantOrderDetailContent() {
                         <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-[#7c3aed] dark:text-[#c4b5fd] oidark:text-primary">
                           {translate(
                             'orders.detail.commissionLabel',
-                            `Commission (${Number(commissionRate)}%)`,
+                            `Commission (${commissionRatePercent})`,
                           )}
-                          {!revenueQuery.data?.commissionRateLocked && (
+                          {showCurrentRateMarker && (
+                            <span className="text-xs font-normal opacity-70">
+                              {rateCurrentMarker}
+                            </span>
+                          )}
+                          {showCurrentRateMarker && (
                             <TooltipProvider delayDuration={200}>
                               <Tooltip>
                                 <TooltipTrigger asChild>

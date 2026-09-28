@@ -35,6 +35,7 @@ Responses are returned directly; the global `TransformInterceptor` wraps them in
   "items": [{ "id": "…", "productName": "…", "productImage": "…",
               "quantity": 2, "unitPrice": "25.00", "totalPrice": "50.00" }],
   "discountAmount": "5.00", "totalAmount": "95.00",
+  "commissionRate": "12.00",
   "paymentMethod": "cod", "paymentStatus": "pending",
   "shippingAddress": { … }, "notes": "…",
   "customer": { "name": "…", "email": "…", "phone": "…" },
@@ -44,6 +45,12 @@ Responses are returned directly; the global `TransformInterceptor` wraps them in
 
 - Item `unitPrice` / `totalPrice` are the values **stored on `order_items`** at
   checkout — never recomputed from the product's current price.
+- `commissionRate` is `orders.commission_rate` — the platform rate in force when
+  the order was placed (BR-OI-023), rendered as a fixed 2-decimal string like the
+  Revenue Summary's `commissionRate`. The merchant UI prefers it over the current
+  platform rate and only labels a rate "(current rate)" when this field is absent.
+  The refreshed detail returned by `PATCH /merchant/orders/:id/status` carries it
+  too.
 - The `customer` block (name/email/phone) is merchant-only, projected from the
   buyer's `users` row.
 - `availableTransitions` is the single next `statusCode` this merchant may set

@@ -1,20 +1,33 @@
 import { roundToWholeKs, type MerchantOrderListRowDto } from '../types/merchantOrderInsights.types';
 import type { OrderListFilterFormData } from '../schemas/orderFilters.schema';
-import { computeOrderCommission } from './orderCommission';
+import {
+  computeOrderCommission,
+  formatCommissionRateValue,
+  normalizeCommissionRate,
+  resolveOrderCommissionRate,
+} from './orderCommission';
 import { formatStatusLabel } from './orderStatusLabel';
 
 /**
  * Everything a column may read beyond the row itself. Only the commission rate
- * qualifies today; it comes from the Revenue Summary (the same source the order
- * detail page uses) — never from a per-order detail request.
+ * qualifies today: the rate stored on the order itself is read from the row
+ * (`orders.commission_rate`), and the current platform rate from the Revenue
+ * Summary — the same source the order detail page uses — is the documented
+ * BR-OI-023 fallback. Never a per-order detail request, and never a rate derived
+ * from commission ÷ order total.
  */
 export interface MerchantOrderExportContext {
   /** Current platform commission rate (e.g. "12.00"), or null when it is not available. */
   commissionRate: string | null;
+  /**
+   * True when at least one exported row carries its own stored rate, so the
+   * commission columns can be written even without a platform rate.
+   */
+  hasPerOrderRates: boolean;
 }
 
 export interface MerchantOrderExportColumn {
-  /** Heading; a function when it depends on the export context (the commission rate). */
+  /** Heading; a function when it needs the export context (the current commission rate). */
   header: string | ((context: MerchantOrderExportContext) => string);
   /**
    * Marks a planned column the order list data cannot fill yet. Such a column is
@@ -38,17 +51,35 @@ export const NOT_ON_ORDER_LIST_DATA = 'not on the order list data';
 export const COMMISSION_RATE_UNAVAILABLE = 'commission rate unavailable';
 
 /**
- * Normalizes a commission rate for export: the rate as-is when usable, or null
- * when it is missing/empty/non-numeric — never a fake 0. The export dialog
- * reuses this rule for its "commission columns skipped" notice.
+ * The usable commission rate of the export context, or null when unusable. The
+ * normalization rule lives in utils/orderCommission.ts and is shared with the
+ * Revenue Summary and the order detail block; the export dialog reuses that same
+ * rule for its "columns skipped" notice.
  */
-export function normalizeCommissionRate(rate: string | null | undefined): string | null {
-  return rate !== null && rate !== undefined && rate !== '' && Number.isFinite(Number(rate)) ? rate : null;
-}
-
-/** The usable commission rate of the export context, or null when unusable. */
 function usableCommissionRate(context: MerchantOrderExportContext): string | null {
   return normalizeCommissionRate(context.commissionRate);
+}
+
+/**
+ * The rate that applies to ONE exported order: the rate the row itself reports
+ * (`orders.commission_rate`, the rate in force when the order was placed) when it
+ * is there, otherwise the current platform rate from the Revenue Summary — the
+ * documented BR-OI-023 fallback the export has always used, and the exact rule the
+ * merchant order detail block applies. Never derived from commission ÷ order total.
+ */
+export function resolveRowCommissionRate(
+  row: MerchantOrderListRowDto,
+  context: MerchantOrderExportContext,
+): string | null {
+  return resolveOrderCommissionRate(row.commissionRate, context.commissionRate);
+}
+
+/**
+ * True when neither the rows nor the platform rate can supply a rate, so the
+ * commission columns are skipped entirely instead of exported blank.
+ */
+function commissionRateUnavailable(context: MerchantOrderExportContext): boolean {
+  return !context.hasPerOrderRates && usableCommissionRate(context) === null;
 }
 
 /**
@@ -69,7 +100,7 @@ function toPlainMoney(value: string): string {
 }
 
 /**
- * The single source of truth for the export layout: the 8 columns exported
+ * The single source of truth for the export layout: the 9 columns exported
  * today, in order, followed by the 7 columns documented as not available on
  * the order list data. Enabling a skipped column later is a one-line change:
  * drop `notAvailableReason` and add a `value` accessor.
@@ -88,21 +119,29 @@ export const MERCHANT_ORDER_EXPORT_COLUMNS: readonly MerchantOrderExportColumn[]
   { header: 'Customer name', value: (row) => row.customerName },
   { header: 'Order total (Ks)', value: (row) => toPlainMoney(row.totalAmount) },
   {
-    header: (context) => {
-      const rate = usableCommissionRate(context);
-      return rate === null ? 'Commission (Ks)' : `Commission (${Number(rate)}%) (Ks)`;
-    },
-    skipReason: (context) => (usableCommissionRate(context) === null ? COMMISSION_RATE_UNAVAILABLE : null),
+    // Its own column rather than part of the Commission header, so a file that
+    // spans a rate change stays readable: 12% and 10% rows sit next to each other,
+    // each carrying the rate that was actually charged on it.
+    header: 'Commission rate (%)',
+    skipReason: (context) => (commissionRateUnavailable(context) ? COMMISSION_RATE_UNAVAILABLE : null),
     value: (row, context) => {
-      const rate = usableCommissionRate(context);
+      const rate = resolveRowCommissionRate(row, context);
+      return rate === null ? '' : formatCommissionRateValue(rate) ?? '';
+    },
+  },
+  {
+    header: 'Commission (Ks)',
+    skipReason: (context) => (commissionRateUnavailable(context) ? COMMISSION_RATE_UNAVAILABLE : null),
+    value: (row, context) => {
+      const rate = resolveRowCommissionRate(row, context);
       return rate === null ? '' : toPlainMoney(computeOrderCommission(row.totalAmount, rate)?.commission ?? '');
     },
   },
   {
     header: 'You receive (Ks)',
-    skipReason: (context) => (usableCommissionRate(context) === null ? COMMISSION_RATE_UNAVAILABLE : null),
+    skipReason: (context) => (commissionRateUnavailable(context) ? COMMISSION_RATE_UNAVAILABLE : null),
     value: (row, context) => {
-      const rate = usableCommissionRate(context);
+      const rate = resolveRowCommissionRate(row, context);
       return rate === null ? '' : toPlainMoney(computeOrderCommission(row.totalAmount, rate)?.net ?? '');
     },
   },
@@ -161,7 +200,12 @@ export function buildMerchantOrdersCsv(
   rows: MerchantOrderListRowDto[],
   commissionRate: string | null = null,
 ): MerchantOrdersCsv {
-  const context: MerchantOrderExportContext = { commissionRate };
+  // A single row carrying its own rate is enough to write the commission columns,
+  // also when the Revenue Summary rate is unavailable.
+  const context: MerchantOrderExportContext = {
+    commissionRate,
+    hasPerOrderRates: rows.some((row) => normalizeCommissionRate(row.commissionRate) !== null),
+  };
   const included: MerchantOrderExportColumn[] = [];
   const skippedColumns: MerchantOrdersSkippedColumn[] = [];
 
@@ -201,15 +245,20 @@ export function buildMerchantOrdersExportFilename(
 
 export interface ExportMerchantOrdersCsvOptions {
   filename: string;
-  /** Commission rate from the Revenue Summary; null omits the Commission/You receive columns. */
+  /**
+   * Platform rate from the Revenue Summary; it fills the rows that cannot report
+   * their own rate. Null omits the commission columns unless a row carries its own
+   * stored rate.
+   */
   commissionRate?: string | null;
 }
 
 /**
  * Downloads the supplied merchant list rows as a UTF-8 CSV (BOM + RFC 4180
- * quoting + formula guard, money as plain whole-Ks integers). Reads ONLY the
- * list rows — no order detail request is made, so large exports stay a single
- * list fetch. Returns what was written and what was skipped.
+ * quoting + formula guard, money as plain whole-Ks integers, the rate as a plain
+ * number). Reads ONLY the list rows — no order detail request is made, so large
+ * exports stay a single list fetch. Returns what was written and what was
+ * skipped.
  */
 export function exportMerchantOrdersCsv(
   rows: MerchantOrderListRowDto[],

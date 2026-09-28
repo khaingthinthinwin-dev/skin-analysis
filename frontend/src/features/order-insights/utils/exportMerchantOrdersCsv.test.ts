@@ -5,7 +5,7 @@ import {
   buildMerchantOrdersCsv,
   buildMerchantOrdersExportFilename,
   exportMerchantOrdersCsv,
-  normalizeCommissionRate,
+  resolveRowCommissionRate,
 } from './exportMerchantOrdersCsv';
 import { OrderStatus } from '../types/orderInsights.types';
 import type { MerchantOrderListRowDto } from '../types/merchantOrderInsights.types';
@@ -23,9 +23,14 @@ function row(overrides: Partial<MerchantOrderListRowDto> = {}): MerchantOrderLis
   };
 }
 
-/** The cells of the single data row (index 0 of `csv` is the header line). */
+/** The cells of every data line (index 0 of `csv` is the header line). */
+function dataRows(built: { csv: string }): string[][] {
+  return built.csv.split('\r\n').slice(1).map((line) => line.split(','));
+}
+
+/** The cells of the single data row. */
 function cells(built: { csv: string }): string[] {
-  return built.csv.split('\r\n')[1].split(',');
+  return dataRows(built)[0];
 }
 
 describe('exportMerchantOrdersCsv', () => {
@@ -48,7 +53,7 @@ describe('exportMerchantOrdersCsv', () => {
 });
 
 describe('buildMerchantOrdersCsv', () => {
-  it('writes the eight available columns in order when the rate is known', () => {
+  it('writes the nine available columns in order, with the applied rate, when only the platform rate is known', () => {
     const built = buildMerchantOrdersCsv([row()], '12.00');
 
     expect(built.headers).toEqual([
@@ -56,7 +61,8 @@ describe('buildMerchantOrdersCsv', () => {
       'Order date',
       'Customer name',
       'Order total (Ks)',
-      'Commission (12%) (Ks)',
+      'Commission rate (%)',
+      'Commission (Ks)',
       'You receive (Ks)',
       'Payment status',
       'Order status',
@@ -66,6 +72,8 @@ describe('buildMerchantOrdersCsv', () => {
       '2026-09-01',
       'Customer',
       '10000',
+      // The rate is a plain number: the header already carries the %.
+      '12',
       '1200',
       '8800',
       'Completed',
@@ -73,11 +81,53 @@ describe('buildMerchantOrdersCsv', () => {
     ]);
   });
 
+  it('writes the rate stored on each order and computes that row from it', () => {
+    const built = buildMerchantOrdersCsv([row({ commissionRate: '10.00' })], null);
+
+    expect(cells(built).slice(3, 7)).toEqual(['10000', '10', '1000', '9000']);
+  });
+
+  it('keeps a mixed-rate file row-accurate instead of applying one rate to every row', () => {
+    // Deliberately unsorted rates: the oldest order was placed at 12%, the newer
+    // ones at 10%, and the row that cannot report its own rate falls back to the
+    // platform rate. Order total, rate, commission, net.
+    const built = buildMerchantOrdersCsv(
+      [
+        row({ id: 'older', commissionRate: '12.00' }),
+        row({ id: 'newer', commissionRate: '10.00' }),
+        row({ id: 'no-own-rate' }),
+      ],
+      '10.00',
+    );
+
+    expect(dataRows(built).map((line) => line.slice(3, 7))).toEqual([
+      ['10000', '12', '1200', '8800'],
+      ['10000', '10', '1000', '9000'],
+      ['10000', '10', '1000', '9000'],
+    ]);
+  });
+
+  it('leaves the commission figures unchanged when a row reports the same rate as the platform', () => {
+    const fromRowRate = buildMerchantOrdersCsv([row({ commissionRate: '12.00' })], null);
+    const fromPlatformRate = buildMerchantOrdersCsv([row()], '12.00');
+
+    expect(fromRowRate.csv).toBe(fromPlatformRate.csv);
+  });
+
+  it('keeps the header row identical for a zero-order export', () => {
+    const empty = buildMerchantOrdersCsv([], '12.00');
+    const populated = buildMerchantOrdersCsv([row()], '12.00');
+
+    expect(empty.headers).toEqual(populated.headers);
+    expect(empty.csv).toBe(populated.headers.join(','));
+    expect(empty.skippedColumns.map((column) => column.reason)).not.toContain(COMMISSION_RATE_UNAVAILABLE);
+  });
+
   it('rounds every money cell to whole Ks so the file matches the screen', () => {
     // 12000.60 -> 12001 Ks; 12% commission (1440.07) -> 1440 Ks; net (10560.53) -> 10561 Ks.
     const built = buildMerchantOrdersCsv([row({ totalAmount: '12000.60' })], '12.00');
 
-    expect(cells(built).slice(3, 6)).toEqual(['12001', '1440', '10561']);
+    expect([cells(built)[3], cells(built)[5], cells(built)[6]]).toEqual(['12001', '1440', '10561']);
   });
 
   it('keeps a negative amount a plain number so Excel can still sum it', () => {
@@ -89,9 +139,11 @@ describe('buildMerchantOrdersCsv', () => {
   it('skips the commission columns with their reason when the rate is unavailable', () => {
     const built = buildMerchantOrdersCsv([row()], null);
 
+    expect(built.headers).not.toContain('Commission rate (%)');
     expect(built.headers).not.toContain('Commission (Ks)');
     expect(built.headers).not.toContain('You receive (Ks)');
     expect(built.skippedColumns.map((column) => column.header)).toEqual([
+      'Commission rate (%)',
       'Commission (Ks)',
       'You receive (Ks)',
       'Customer email',
@@ -102,7 +154,7 @@ describe('buildMerchantOrdersCsv', () => {
       'Subtotal',
       'Payment method',
     ]);
-    expect(built.skippedColumns.filter((column) => column.reason === COMMISSION_RATE_UNAVAILABLE)).toHaveLength(2);
+    expect(built.skippedColumns.filter((column) => column.reason === COMMISSION_RATE_UNAVAILABLE)).toHaveLength(3);
     expect(built.skippedColumns.filter((column) => column.reason === NOT_ON_ORDER_LIST_DATA)).toHaveLength(7);
   });
 
@@ -115,14 +167,21 @@ describe('buildMerchantOrdersCsv', () => {
   });
 });
 
-describe('normalizeCommissionRate', () => {
-  it('keeps a usable rate and drops everything else', () => {
-    expect(normalizeCommissionRate('12.00')).toBe('12.00');
-    expect(normalizeCommissionRate('0')).toBe('0');
-    expect(normalizeCommissionRate(null)).toBeNull();
-    expect(normalizeCommissionRate(undefined)).toBeNull();
-    expect(normalizeCommissionRate('')).toBeNull();
-    expect(normalizeCommissionRate('not-a-rate')).toBeNull();
+describe('resolveRowCommissionRate', () => {
+  const context = { commissionRate: '12.00', hasPerOrderRates: true };
+
+  it('prefers the rate stored on the order over the platform rate', () => {
+    expect(resolveRowCommissionRate(row({ commissionRate: '10.00' }), context)).toBe('10.00');
+  });
+
+  it('falls back to the platform rate when the row cannot report its own', () => {
+    expect(resolveRowCommissionRate(row(), context)).toBe('12.00');
+    expect(resolveRowCommissionRate(row({ commissionRate: '' }), context)).toBe('12.00');
+    expect(resolveRowCommissionRate(row({ commissionRate: 'nonsense' }), context)).toBe('12.00');
+  });
+
+  it('returns null instead of inventing a rate when neither source has one', () => {
+    expect(resolveRowCommissionRate(row(), { commissionRate: null, hasPerOrderRates: false })).toBeNull();
   });
 });
 

@@ -7,6 +7,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuthUser } from '../../../common/decorators/current-user.decorator';
 import { OrderFulfillmentService } from './order-fulfillment.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -82,6 +83,8 @@ const dateValues = {
   paymentStatus: 'pending',
   discountAmount: { toString: () => '5.00' },
   totalAmount: { toString: () => '95.00' },
+  // Real Decimal: the detail projection formats the rate with `toFixed(2)`.
+  commissionRate: new Prisma.Decimal('12.00'),
   shippingAddress: { line1: 'A Street' },
   notes: 'Leave at door',
   items: [
@@ -221,6 +224,7 @@ describe('OrderFulfillmentService', () => {
           ],
           discountAmount: '5.00',
           totalAmount: '95.00',
+          commissionRate: '12.00',
           paymentMethod: 'cod',
           paymentStatus: 'pending',
           shippingAddress: { line1: 'A Street' },
@@ -244,6 +248,40 @@ describe('OrderFulfillmentService', () => {
           buyer: { select: { name: true, email: true, phone: true } },
         },
       });
+    });
+
+    it.each([
+      ['12.00', '12.00'],
+      ['12.5', '12.50'],
+      ['10', '10.00'],
+    ])(
+      'projects the order-stored rate %s as the fixed 2-decimal string %s',
+      async (stored, expected) => {
+        prisma.order.findUnique.mockResolvedValue(
+          makeDetailOrder('confirmed', {
+            commissionRate: new Prisma.Decimal(stored),
+          }),
+        );
+
+        const result = await service.getOrderDetail(merchantUser, 'order-1');
+
+        expect(result.commissionRate).toBe(expected);
+      },
+    );
+
+    it('takes the rate from the order itself instead of the current platform rate', async () => {
+      prisma.order.findUnique.mockResolvedValue(
+        makeDetailOrder('confirmed', {
+          commissionRate: new Prisma.Decimal('10.00'),
+        }),
+      );
+
+      const result = await service.getOrderDetail(merchantUser, 'order-1');
+
+      // 10.00 comes from `orders.commission_rate`; the platform default is 12.00
+      // and `commission_settings` is not even mocked, so a "current rate"
+      // fallback inside the detail projection would surface here (BR-OI-023).
+      expect(result.commissionRate).toBe('10.00');
     });
 
     it('renders item prices as stored in order_items, never product prices', async () => {
@@ -503,6 +541,9 @@ describe('OrderFulfillmentService', () => {
       expect(result.status).toBe('packed');
       expect(result.statusName).toBe('Packed');
       expect(result.availableTransitions).toEqual(['shipped']);
+      // The refreshed detail re-sends the order's stored rate, so a status change
+      // never makes the merchant UI lose the order-accurate commission figure.
+      expect(result.commissionRate).toBe('12.00');
     });
 
     it('loads the requested status as an order_statuses row by statusCode', async () => {

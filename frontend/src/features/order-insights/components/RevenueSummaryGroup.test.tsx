@@ -28,13 +28,28 @@ describe('RevenueSummaryGroup', () => {
 
   it('summarises the basis of the figures in the footer with a singular order noun', () => {
     render(<RevenueSummaryGroup data={summary} period="this_month" onPeriodChange={vi.fn()} />);
+    expect(screen.getByText('Based on 1 order · Commission at 12% (current rate)')).toBeInTheDocument();
+  });
+
+  it('drops the info button and the current-rate marker once the rate is locked', () => {
+    render(<RevenueSummaryGroup data={{ ...summary, commissionRateSource: 'order_snapshot', commissionRateLocked: true }} period="this_month" onPeriodChange={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /historical rate locking is pending/i })).not.toBeInTheDocument();
+    // The rate now belongs to the orders, so it is no longer "the current rate".
     expect(screen.getByText('Based on 1 order · Commission at 12%')).toBeInTheDocument();
   });
 
-  it('drops the info button once the rate is locked', () => {
-    render(<RevenueSummaryGroup data={{ ...summary, commissionRateSource: 'order_snapshot', commissionRateLocked: true }} period="this_month" onPeriodChange={vi.fn()} />);
+  it('shows no rate at all while the period holds no orders', () => {
+    render(
+      <RevenueSummaryGroup
+        data={{ ...summary, sales: '0.00', commission: '0.00', revenue: '0.00', aov: '0.00', orderCount: 0 }}
+        period="this_month"
+        onPeriodChange={vi.fn()}
+      />,
+    );
+
+    // No percentage and no sourcing note: there is nothing to quote a rate for.
+    expect(screen.getByText('Based on 0 orders · Commission at —')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /historical rate locking is pending/i })).not.toBeInTheDocument();
-    expect(screen.getByText('Based on 1 order · Commission at 12%')).toBeInTheDocument();
   });
 
   it('renders the period pill toggle next to the card title', () => {
@@ -61,6 +76,7 @@ describe('RevenueSummaryGroup', () => {
     expect(screen.getByRole('button', { name: 'Custom', hidden: true })).toHaveAttribute('aria-pressed', 'true');
     expect(onPeriodChange).not.toHaveBeenCalled();
     expect(screen.queryByText('Sep 1 – Sep 30, 2026')).not.toBeInTheDocument();
+    // The four figure placeholders; the footer dash is part of its sentence.
     expect(screen.getAllByText('—')).toHaveLength(4);
   });
 
@@ -84,6 +100,7 @@ describe('RevenueSummaryGroup', () => {
 
     expect(screen.getByText('Revenue Summary')).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Period' })).toBeInTheDocument();
+    // The four figure placeholders; the footer dash is part of its sentence.
     expect(screen.getAllByText('—')).toHaveLength(4);
 
     fireEvent.click(screen.getByRole('button', { name: 'Custom' }));
@@ -130,8 +147,9 @@ describe('RevenueSummaryGroup', () => {
 
   it('renders placeholder figures instead of an empty formula box when no data is available', () => {
     render(<RevenueSummaryGroup period="custom" onPeriodChange={vi.fn()} />);
+    // The four figure placeholders; the footer dash is part of its sentence.
     expect(screen.getAllByText('—')).toHaveLength(4);
-    expect(screen.getByText('Based on 0 orders · Commission at 0%')).toBeInTheDocument();
+    expect(screen.getByText('Based on 0 orders · Commission at —')).toBeInTheDocument();
   });
 
   it('stacks the four figures vertically below sm and keeps the formula row from sm up (BR-OI-026)', () => {

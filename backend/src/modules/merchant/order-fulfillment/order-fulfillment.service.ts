@@ -285,6 +285,10 @@ export class OrderFulfillmentService {
       })),
       discountAmount: order.discountAmount.toString(),
       totalAmount: order.totalAmount.toString(),
+      // `orders.commission_rate` — the platform rate in force when the order was
+      // placed (BR-OI-023). DECIMAL(5,2) → fixed 2-decimal string, the same wire
+      // shape the Revenue Summary returns for `commissionRate` (§6.1).
+      commissionRate: order.commissionRate.toFixed(2),
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       shippingAddress: order.shippingAddress as Record<string, string>,

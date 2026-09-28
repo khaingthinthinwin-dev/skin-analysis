@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { OrdersService } from './orders.service';
 import { OrderListQueryDto } from './dto/order-list-query.dto';
 
@@ -12,6 +13,8 @@ const order = {
   statusCode: 'shipped',
   totalAmount: { toString: () => '120.00' },
   paymentStatus: 'completed',
+  // Real Decimal: the merchant row is formatted with `toFixed(2)`, not `toString()`.
+  commissionRate: new Prisma.Decimal('12.00'),
   items: [{ id: 'item-1' }, { id: 'item-2' }],
   buyer: { name: 'Aye Aye' },
   merchant: { shopName: 'Lotus Glow Shop' },
@@ -88,7 +91,7 @@ describe('OrdersService getOrderHistory', () => {
     });
   });
 
-  it('scopes approved merchant users and projects customerName only', async () => {
+  it('scopes approved merchant users and projects customerName plus the order rate', async () => {
     prisma.merchant.findUnique.mockResolvedValue({
       id: 'merchant-1',
       licenseStatus: 'approved',
@@ -97,11 +100,44 @@ describe('OrdersService getOrderHistory', () => {
     await expect(
       service.getOrderHistory('merchant-user-1', 'merchant', makeQuery()),
     ).resolves.toMatchObject({
-      orders: [{ customerName: 'Aye Aye' }],
+      orders: [{ customerName: 'Aye Aye', commissionRate: '12.00' }],
     });
     expect(prisma.order.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { merchantId: 'merchant-1' } }),
     );
+  });
+
+  it("projects each merchant row's own stored rate, never one shared value", async () => {
+    prisma.merchant.findUnique.mockResolvedValue({
+      id: 'merchant-1',
+      licenseStatus: 'approved',
+    });
+    prisma.order.findMany.mockResolvedValue([
+      { ...order, commissionRate: new Prisma.Decimal('10.00') },
+      { ...order, id: 'order-2', commissionRate: new Prisma.Decimal('12.5') },
+    ]);
+    prisma.order.count.mockResolvedValue(2);
+
+    await expect(
+      service.getOrderHistory('merchant-user-1', 'merchant', makeQuery()),
+    ).resolves.toMatchObject({
+      orders: [
+        { id: 'order-1', commissionRate: '10.00' },
+        // DECIMAL(5,2) is always rendered with two decimals, so 12.5 → '12.50'
+        // and the CSV/UI never sees a mixed-precision rate.
+        { id: 'order-2', commissionRate: '12.50' },
+      ],
+    });
+  });
+
+  it.each([
+    ['buyer', 'buyer-1'],
+    ['admin', 'admin-1'],
+    ['super_admin', 'admin-1'],
+  ])('keeps the stored order rate out of %s rows', async (roleCode, userId) => {
+    const result = await service.getOrderHistory(userId, roleCode, makeQuery());
+
+    expect(result.orders[0]).not.toHaveProperty('commissionRate');
   });
 
   it('rejects unapproved merchants', async () => {

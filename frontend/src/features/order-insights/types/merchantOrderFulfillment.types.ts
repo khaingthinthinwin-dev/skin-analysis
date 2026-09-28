@@ -24,6 +24,18 @@ export interface MerchantOrderDetailDto {
   items: MerchantOrderItemDto[];
   discountAmount: string;
   totalAmount: string;
+  /**
+   * The rate the platform charged on THIS order — `orders.commission_rate`, the
+   * rate in force when the order was placed (BR-OI-023) — as a DECIMAL string
+   * (e.g. "12.00").
+   *
+   * Optional on purpose: `GET /merchant/orders/:id` sends it (the status-change
+   * response re-sends the refreshed detail), but a cached or older payload can
+   * predate it. Every consumer resolves it through `resolveOrderCommissionRate`,
+   * which falls back to the current platform rate from the Revenue Summary and
+   * labels that fallback as the current rate.
+   */
+  commissionRate?: string;
   paymentMethod: string;
   paymentStatus: PaymentStatus;
   shippingAddress: OrderShippingAddress;

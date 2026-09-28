@@ -6,6 +6,7 @@ import { Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrencyAmount } from '../types/merchantOrderInsights.types';
 import type { RevenueSummaryDto, SummaryPeriod } from '../types/merchantOrderInsights.types';
+import { formatCommissionRateLabel } from '../utils/orderCommission';
 import { formatRangeLabel, resolveActiveRange } from '../utils/dateRangeLabel';
 import { PeriodSelector } from './PeriodSelector';
 import { RangeLabelPill } from './RangeLabelPill';
@@ -25,7 +26,9 @@ const metricRowClassName = 'flex min-w-0 items-center justify-between gap-3 roun
  * pill toggle that opens the custom range modal, the Sales − Commission =
  * Revenue formula box with AOV after a divider, and the footer carrying the
  * BR-OI-032 disclaimer inside an info-icon tooltip while the commission rate is
- * not locked.
+ * not locked and the period holds at least one order. The caption quotes the rate
+ * with a "(current rate)" marker (BR-OI-023), and drops to "Commission at —" with
+ * no marker at all for an empty period (BR-OI-032) — never a fabricated "0%".
  *
  * The v2 revenue trend chart is deliberately not rendered here: the API contract
  * (RevenueSummaryDto) exposes period aggregates only, so there is no weekly series
@@ -87,9 +90,18 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
   // While a custom range is being picked the figures stay pending instead of showing stale numbers.
   const displayData = customPending ? undefined : data;
   const metricText = (value?: string) => (value === undefined ? '—' : formatCurrencyAmount(value));
-  // `commissionRate` is a DECIMAL string, so drop insignificant trailing zeros (12.00 -> 12).
-  const rateLabel = `${Number(displayData?.commissionRate ?? 0)}%`;
   const orderCount = displayData?.orderCount ?? 0;
+  // BR-OI-032: with no orders in scope there is no rate to quote, so the caption
+  // reads "Commission at —" instead of a fabricated "0% (current rate)". With
+  // orders, orderCommission owns the wording: "12% (current rate)" while the rate
+  // is not locked to the orders, plain "12%" once it is (BR-OI-023).
+  const rateLabel = orderCount === 0
+    ? '—'
+    : formatCommissionRateLabel(
+        displayData?.commissionRate,
+        t('merchant.revenue.rateCurrent', '(current rate)'),
+        displayData?.commissionRateLocked ?? false,
+      ) ?? '—';
   const ordersWord = orderCount === 1
     ? t('merchant.revenue.orderOne', 'order')
     : t('merchant.revenue.orderOther', 'orders');
@@ -137,7 +149,7 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
       <TooltipProvider delayDuration={200}>
         <p className="m-0 flex items-center gap-1.5 text-[12.5px] text-gray-500 oidark:text-muted-foreground">
           <span>{footerText}</span>
-          {displayData && !displayData.commissionRateLocked && <Tooltip>
+          {displayData && orderCount > 0 && !displayData.commissionRateLocked && <Tooltip>
             <TooltipTrigger asChild>
               <button type="button" aria-label={rateNote} className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:text-gray-500 oidark:text-outline oidark:hover:text-on-surface-variant focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/40">
                 <Info className="h-3.5 w-3.5" aria-hidden="true" />

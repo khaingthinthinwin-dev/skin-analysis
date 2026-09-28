@@ -334,6 +334,13 @@ export class OrdersService {
     return 12;
   }
 
+  /**
+   * Role-scoped order history (DD_OI_03 §2.1). Merchant rows also carry the rate
+   * this order was charged — `orders.commission_rate`, the rate in force when the
+   * order was placed (BR-OI-023) — so the merchant surfaces can show the order's
+   * own rate instead of the platform's current one. Buyer and admin rows do not
+   * carry it: commission is merchant-scoped data.
+   */
   async getOrderHistory(
     userId: string,
     roleCode: string,
@@ -442,7 +449,13 @@ export class OrdersService {
         };
 
         if (roleCode === 'merchant') {
-          return { ...row, customerName: order.buyer.name };
+          return {
+            ...row,
+            customerName: order.buyer.name,
+            // DECIMAL(5,2) → fixed 2-decimal string, the same wire shape the
+            // Revenue Summary returns for `commissionRate` (§6.1).
+            commissionRate: order.commissionRate.toFixed(2),
+          };
         }
 
         if (roleCode === 'admin' || roleCode === 'super_admin') {
