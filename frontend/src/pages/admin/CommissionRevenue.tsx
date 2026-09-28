@@ -118,8 +118,6 @@ export default function CommissionAndRevenue() {
                 </span>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="bg-muted text-muted-foreground border-border text-xs py-1 px-3"
                   onClick={() => {
                     setExportType("commission");
                     setExportOpen(true);

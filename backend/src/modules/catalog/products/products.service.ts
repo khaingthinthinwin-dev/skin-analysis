@@ -895,7 +895,11 @@ export class ProductsService {
     };
   }
 
-  async findReviews(idOrSlug: string, query: ReviewQueryDto) {
+  async findReviews(
+    idOrSlug: string,
+    query: ReviewQueryDto,
+    viewerId?: string,
+  ) {
     const product = await this.resolveProduct(idOrSlug);
 
     const { page = 1, limit = 20, sortBy = 'newest' } = query;
@@ -916,9 +920,18 @@ export class ProductsService {
 
     const skip = (page - 1) * limit;
 
+    // Approved reviews are public; a signed-in buyer additionally sees their
+    // own review while it is still waiting for moderation (status = pending).
+    const where: Prisma.ReviewWhereInput = viewerId
+      ? {
+          productId: product.id,
+          OR: [{ status: 'approved' }, { status: 'pending', userId: viewerId }],
+        }
+      : { productId: product.id, status: 'approved' };
+
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
-        where: { productId: product.id, status: 'approved' },
+        where,
         orderBy,
         skip,
         take: limit,
@@ -929,15 +942,14 @@ export class ProductsService {
           body: true,
           images: true,
           isVerifiedPurchase: true,
+          status: true,
           createdAt: true,
           user: {
             select: { id: true, name: true },
           },
         },
       }),
-      this.prisma.review.count({
-        where: { productId: product.id, status: 'approved' },
-      }),
+      this.prisma.review.count({ where }),
     ]);
 
     return {
@@ -981,8 +993,54 @@ export class ProductsService {
     return similar;
   }
 
+  async canReview(
+    idOrSlug: string,
+    userId: string,
+  ): Promise<{ canReview: boolean; reason: string | null }> {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const deliveredOrderItem = await this.prisma.orderItem.findFirst({
+      where: {
+        productId: product.id,
+        order: { buyerId: userId, statusCode: 'delivered' },
+      },
+      select: { id: true },
+    });
+
+    if (!deliveredOrderItem) {
+      return { canReview: false, reason: 'not_delivered' };
+    }
+
+    const existingReview = await this.prisma.review.findUnique({
+      where: { userId_productId: { userId, productId: product.id } },
+      select: { id: true },
+    });
+
+    if (existingReview) {
+      return { canReview: false, reason: 'already_reviewed' };
+    }
+
+    return { canReview: true, reason: null };
+  }
+
   async createReview(idOrSlug: string, userId: string, dto: CreateReviewDto) {
     const product = await this.resolveProduct(idOrSlug);
+
+    // Rule 4.4.1 / BR-PROD-005: only buyers with a delivered order for this
+    // product may review it.
+    const deliveredOrderItem = await this.prisma.orderItem.findFirst({
+      where: {
+        productId: product.id,
+        order: { buyerId: userId, statusCode: 'delivered' },
+      },
+      select: { id: true },
+    });
+
+    if (!deliveredOrderItem) {
+      throw new BadRequestException(
+        'You can only review products you have purchased and received.',
+      );
+    }
 
     const existingReview = await this.prisma.review.findUnique({
       where: { userId_productId: { userId, productId: product.id } },
@@ -1000,6 +1058,8 @@ export class ProductsService {
         title: dto.title,
         body: dto.body,
         images: dto.images || [],
+        isVerifiedPurchase: true,
+        status: 'pending',
       },
       select: {
         id: true,
