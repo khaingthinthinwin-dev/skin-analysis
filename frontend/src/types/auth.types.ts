@@ -13,6 +13,10 @@ export interface User {
   licenseUrl?: string | null
   licenseStatus?: LicenseStatus
   license_status?: LicenseStatus
+  isActive?: boolean
+  is_active?: boolean
+  status?: string
+  deactivationReason?: string | null
   createdAt: string
 }
 

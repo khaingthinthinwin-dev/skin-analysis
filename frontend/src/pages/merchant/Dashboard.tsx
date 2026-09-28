@@ -1,15 +1,22 @@
 import { Link } from 'react-router'
-import { Package, Tag, Megaphone, TrendingUp, Plus, Sparkles, ArrowRight, ShieldAlert, BadgeCheck, ShieldX } from 'lucide-react'
+import { Package, Tag, Megaphone, TrendingUp, Plus, Sparkles, ArrowRight, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import { useAuth } from '@/hooks/useAuth'
-import { useMerchantStatusAlerts } from '@/features/shared/notifications/hooks/useMerchantStatusAlerts'
 
 export default function MerchantDashboard() {
   const { user } = useAuth()
-  const { latestStatusChange } = useMerchantStatusAlerts()
-  const licenseStatus = user?.licenseStatus ?? user?.license_status ?? null
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const licenseStatus = user?.licenseStatus || user?.license_status
+  const isPending = licenseStatus === 'pending'
+  const isRejected = licenseStatus === 'rejected'
+  const canManageCatalog = !isDeactivated && !isPending && !isRejected
 
   const stats = [
     { label: 'Total Products', value: '24', change: '4 new this week', icon: Package, color: 'text-purple-600' },
@@ -34,44 +41,38 @@ export default function MerchantDashboard() {
             Manage your skincare product catalog, active promotions, and advertising campaigns.
           </p>
         </div>
-        <Button asChild size="lg" className="bg-white text-purple-900 hover:bg-purple-50 font-bold shrink-0 shadow-md">
-          <Link to="/merchant/products">
-            <Plus className="mr-2 h-4 w-4" /> Add New Product
-          </Link>
-        </Button>
+        {canManageCatalog && (
+          <Button asChild size="lg" className="bg-white text-purple-900 hover:bg-purple-50 font-bold shrink-0 shadow-md">
+            <Link to="/merchant/products">
+              <Plus className="mr-2 h-4 w-4" /> Add New Product
+            </Link>
+          </Button>
+        )}
       </div>
 
-      {/* Account status alerts (approval / rejection via in-app notifications) */}
-      {licenseStatus === 'pending' && (
-        <Alert variant="destructive">
+      {/* Deactivated Warning */}
+      {isDeactivated && <AccountDeactivatedBanner />}
+
+      {/* Pending Approval Warning */}
+      {!isDeactivated && isPending && (
+        <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            Your merchant account is currently pending approval. Some features may be restricted until an admin approves your request.
-            {latestStatusChange ? '' : ' New updates will appear here and under Notifications.'}
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}
-      {licenseStatus === 'approved' && (
-        <Alert className="border-emerald-500/40 bg-emerald-500/5">
-          <BadgeCheck className="h-4 w-4 text-emerald-600" />
-          <AlertTitle>Account Approved</AlertTitle>
-          <AlertDescription>
-            {latestStatusChange?.message ??
-              'Your merchant account has been approved. You can now list products.'}{' '}
-            <Link to="/merchant/notifications" className="underline font-semibold">
-              View notification
-            </Link>
-          </AlertDescription>
-        </Alert>
-      )}
-      {licenseStatus === 'rejected' && (
-        <Alert variant="destructive">
-          <ShieldX className="h-4 w-4" />
+
+      {/* Rejected Warning */}
+      {!isDeactivated && isRejected && (
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
           <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            Your merchant account has been rejected. Product management features are restricted. You can
-            resubmit your license from your Profile page.{' '}
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your
+            license from your Profile page.{' '}
             <Link to="/merchant/profile" className="underline font-semibold">
               Go to Profile
             </Link>

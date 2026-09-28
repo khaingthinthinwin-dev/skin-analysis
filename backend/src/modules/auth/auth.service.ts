@@ -94,6 +94,10 @@ export class AuthService {
       merchantId: null,
       licenseStatus: null,
       licenseUrl: null,
+      isActive: user.isActive,
+      is_active: user.isActive,
+      status: user.isActive ? 'active' : 'deactivated',
+      createdAt: user.createdAt,
     };
 
     if (role === 'merchant') {
@@ -213,6 +217,11 @@ export class AuthService {
       merchantId: null,
       licenseStatus: null,
       licenseUrl: null,
+      isActive: user.isActive,
+      is_active: user.isActive,
+      status: user.isActive ? 'active' : 'deactivated',
+      deactivationReason: user.deactivationReason ?? null,
+      createdAt: user.createdAt,
     };
 
     if (user.roleCode === 'merchant') {
@@ -334,6 +343,12 @@ export class AuthService {
       licenseStatus: user.licenseStatus ?? null,
       license_status: user.license_status ?? null,
       licenseUrl: user.licenseUrl ?? null,
+      isActive: user.isActive,
+      is_active: user.isActive,
+      status: user.isActive ? 'active' : 'deactivated',
+      deactivationReason:
+        ((user as Record<string, unknown>).deactivationReason as
+          string | null) ?? null,
       createdAt: user.createdAt,
     };
   }
