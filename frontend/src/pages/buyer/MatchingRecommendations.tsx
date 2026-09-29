@@ -44,6 +44,21 @@ function ProductImage({ src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement
   return <img src={getImageUrl(src)} alt={alt} onError={() => setError(true)} {...props} />
 }
 
+const RECOMMENDATION_AD_PLACEMENT = 'recommendation_page_banner'
+
+function isAdInSchedule(ad: { startsAt?: string | null; expiresAt?: string | null }): boolean {
+  const now = Date.now()
+  if (ad.startsAt) {
+    const start = Date.parse(ad.startsAt)
+    if (Number.isNaN(start) || start > now) return false
+  }
+  if (ad.expiresAt) {
+    const end = Date.parse(ad.expiresAt)
+    if (Number.isNaN(end) || end <= now) return false
+  }
+  return true
+}
+
 const BADGE_STYLES: Record<string, string> = {
   topRated: 'bg-teal-100 text-teal-700',
   bestSeller: 'bg-orange-100 text-orange-700',
@@ -142,7 +157,19 @@ export default function MatchingRecommendations() {
 
   const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters)
   const { data: historyData } = useRecommendationHistory(1, 5)
-  const { data: adPanelData } = useAdPanel('recommendation_page_banner')
+  const { data: adPanelData } = useAdPanel(RECOMMENDATION_AD_PLACEMENT)
+
+  // Client-side guard for placement + date condition:
+  // placement must equal recommendation_page_banner (or be absent for legacy rows),
+  // and startsAt <= now < expiresAt. Backend already filters the same way.
+  const sidebarAds = useMemo(
+    () =>
+      (adPanelData?.data ?? []).filter((ad) => {
+        if (ad.placement && ad.placement !== RECOMMENDATION_AD_PLACEMENT) return false
+        return isAdInSchedule(ad)
+      }),
+    [adPanelData],
+  )
 
   const handlePageChange = (page: number) => {
     if (page === filters.page) return
@@ -245,7 +272,7 @@ export default function MatchingRecommendations() {
 
       {/* Ad Carousel */}
       <AdSlidePanel
-        ads={adPanelData?.data ?? []}
+        ads={sidebarAds}
         onImpression={(adIds) => matchingService.trackImpression(adIds)}
         onClick={(adId) => matchingService.trackClick(adId)}
       />

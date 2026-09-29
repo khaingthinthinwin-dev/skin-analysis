@@ -57,6 +57,9 @@ export interface AdSlide {
   ctaText: string
   priorityAmount: string | null
   shopName: string
+  placement?: string | null
+  startsAt?: string | null
+  expiresAt?: string | null
 }
 
 export interface AdPanelResponse {
