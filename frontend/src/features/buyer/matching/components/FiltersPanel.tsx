@@ -117,10 +117,10 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
         <div>
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</h4>
           <CategorySelect
+            variant="nav"
             categories={categories}
             selectedCategoryId={filters.categoryId ?? ''}
             onSelect={(categoryId) => onUpdate({ categoryId: categoryId || undefined })}
-            activeClassName="rounded-lg bg-gradient-to-r from-purple-100/80 to-purple-50/50 pr-4 font-semibold text-purple-900 shadow-xs dark:from-purple-950/60 dark:to-purple-900/30 dark:text-purple-200"
             noIndent
           />
         </div>
