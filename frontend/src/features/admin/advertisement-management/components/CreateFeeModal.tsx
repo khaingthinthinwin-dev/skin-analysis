@@ -21,7 +21,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { formatPrice } from '@/lib/format'
 import { ADMIN_AD_PLACEMENTS, ADMIN_AD_TIERS, type AdminAdFeeSetting, type CreateFeeSettingInput } from '@/types/admin-ad-management'
 import type { Placement, Tier } from '@/types/admin-ad-management'
@@ -42,11 +41,12 @@ const createFeeFormSchema = z.object({
   effective_from: z
     .string({ message: 'Effective date is required' })
     .refine((v) => !isNaN(Date.parse(v)), 'Effective date is required'),
-  change_reason: z
-    .string({ message: 'Change reason is required' })
-    .min(1, 'Change reason is required')
-    .max(1000, 'Change reason must not exceed 1000 characters'),
 })
+
+// Creating a package does not collect a change reason, but POST /admin/ad-fees
+// still requires a non-empty `change_reason` so the fee-history audit row can be
+// written, so a default reason is submitted on the admin's behalf.
+const DEFAULT_CREATE_CHANGE_REASON = 'Initial fee setting'
 
 type CreateFeeFormValues = z.infer<typeof createFeeFormSchema>
 
@@ -74,7 +74,6 @@ export function CreateFeeModal({
       duration_days: '',
       max_ads: '',
       effective_from: todayIso(),
-      change_reason: '',
     },
   })
 
@@ -109,7 +108,7 @@ export function CreateFeeModal({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl sm:gap-6 sm:p-8">
         <DialogHeader>
           <DialogTitle>Create Fee Setting</DialogTitle>
           <DialogDescription>
@@ -126,12 +125,12 @@ export function CreateFeeModal({
                 duration_days: Number(values.duration_days),
                 max_ads: Number(values.max_ads),
                 effective_from: values.effective_from,
-                change_reason: values.change_reason,
+                change_reason: DEFAULT_CREATE_CHANGE_REASON,
               }),
             )}
-            className="space-y-4"
+            className="space-y-6"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="placement"
@@ -140,7 +139,7 @@ export function CreateFeeModal({
                     <FormLabel>Placement</FormLabel>
                     <Select value={field.value ?? ''} onValueChange={(value) => handlePlacementChange(value as Placement)}>
                       <FormControl>
-                        <SelectTrigger aria-label="Placement">
+                        <SelectTrigger aria-label="Placement" className="h-11">
                           <SelectValue placeholder="Select placement" />
                         </SelectTrigger>
                       </FormControl>
@@ -174,7 +173,7 @@ export function CreateFeeModal({
                         onValueChange={(value) => handleTierChange(value as Tier)}
                       >
                         <FormControl>
-                          <SelectTrigger aria-label="Tier">
+                          <SelectTrigger aria-label="Tier" className="h-11">
                             <SelectValue placeholder="Select tier" />
                           </SelectTrigger>
                         </FormControl>
@@ -199,7 +198,7 @@ export function CreateFeeModal({
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-3">
               <FormField
                 control={form.control}
                 name="daily_rate"
@@ -207,7 +206,7 @@ export function CreateFeeModal({
                   <FormItem>
                     <FormLabel>Daily rate</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
+                      <Input type="number" step="0.01" min="0.01" placeholder="0.00" className="h-11" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -220,7 +219,7 @@ export function CreateFeeModal({
                   <FormItem>
                     <FormLabel>Duration (days)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="1" min="1" placeholder="7" {...field} />
+                      <Input type="number" step="1" min="1" placeholder="7" className="h-11" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -233,7 +232,7 @@ export function CreateFeeModal({
                   <FormItem>
                     <FormLabel>Max ads</FormLabel>
                     <FormControl>
-                      <Input type="number" step="1" min="1" placeholder="5" {...field} />
+                      <Input type="number" step="1" min="1" placeholder="5" className="h-11" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -241,7 +240,7 @@ export function CreateFeeModal({
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3 text-sm">
+            <div className="flex items-center justify-between rounded-md border bg-muted/30 p-4 text-sm">
               <span>Total fee (Daily rate x Duration)</span>
               <span className="font-semibold">{formatPrice(totalFeePreview)}</span>
             </div>
@@ -253,21 +252,7 @@ export function CreateFeeModal({
                 <FormItem>
                   <FormLabel>Effective from</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="change_reason"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Change reason</FormLabel>
-                  <FormControl>
-                    <Textarea rows={3} maxLength={1000} placeholder="Why is this fee setting added?" {...field} />
+                    <Input type="date" className="h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

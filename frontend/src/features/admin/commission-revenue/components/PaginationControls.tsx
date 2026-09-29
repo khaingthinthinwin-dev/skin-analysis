@@ -4,14 +4,20 @@ interface PaginationControlsProps {
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  limit?: number;
+  onLimitChange?: (limit: number) => void;
+  pageSizeOptions?: number[];
 }
 
-// Simple prev/next pagination used for the commission reports table and
+// Simple prev/next & page size pagination used for the commission reports table and
 // the revenue payouts table (DD_02 §4 [F1] / [M2]).
 export const PaginationControls: React.FC<PaginationControlsProps> = ({
   page,
   totalPages,
   onPageChange,
+  limit = 10,
+  onLimitChange,
+  pageSizeOptions = [10, 20, 50, 100],
 }) => {
   const safeTotal = Math.max(totalPages || 1, 1);
   const prevDisabled = page <= 1;
@@ -34,11 +40,32 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
-      <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
-        Showing page <span className="font-semibold text-foreground">{page}</span> of{' '}
-        <span className="font-semibold text-foreground">{safeTotal}</span>
-      </span>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 select-none">
+      <div className="flex items-center gap-3">
+        {onLimitChange && (
+          <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <span className="hidden sm:inline">Rows:</span>
+            <select
+              aria-label="Rows per page"
+              value={limit}
+              onChange={(e) => onLimitChange(Number(e.target.value))}
+              className="h-8 rounded-md border border-border bg-card px-2.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+            >
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
+          Showing page <span className="font-semibold text-foreground">{page}</span> of{' '}
+          <span className="font-semibold text-foreground">{safeTotal}</span>
+        </span>
+      </div>
+
       <div className="flex items-center gap-1.5">
         <button
           aria-label="Previous page"

@@ -19,7 +19,7 @@ function formatDiscountText(promo: MerchantPromotion): string {
   if (promo.discountType === 'percentage') {
     return `-${promo.discountValue}%`;
   }
-  return `${Number(promo.discountValue).toLocaleString()} MMK`;
+  return `-${Math.round(Number(promo.discountValue)).toLocaleString('en-US')}Ks`;
 }
 
 export function ShopVoucherRow({
@@ -43,7 +43,10 @@ export function ShopVoucherRow({
       if (matchedPromo) {
         return { label: formatDiscountText(matchedPromo), hasDiscount: true };
       }
-      return { label: `-${appliedCoupon.discountAmount}`, hasDiscount: true };
+      return {
+        label: `-${Math.round(Number(appliedCoupon.discountAmount)).toLocaleString('en-US')}Ks`,
+        hasDiscount: true,
+      };
     }
     if (promotions.length > 0) {
       return { label: 'Select', hasDiscount: false };

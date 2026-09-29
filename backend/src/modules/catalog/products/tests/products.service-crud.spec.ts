@@ -691,6 +691,37 @@ describe('ProductsService', () => {
       ).resolves.toBeDefined();
     });
 
+    it('allows clearing compareAtPrice by sending null', async () => {
+      prisma.merchant.findUnique.mockResolvedValue({ id: mockMerchantId });
+      prisma.product.findFirst.mockResolvedValue(mockProduct);
+      prisma.product.update.mockResolvedValue({
+        ...mockProduct,
+        compareAtPrice: null,
+        category: mockCategory,
+      });
+
+      await expect(
+        service.update(
+          mockProductId,
+          mockUserId,
+          {
+            price: 20000,
+            compareAtPrice: null,
+            retainedImageUrls: ['/uploads/products/img1.jpg'],
+          },
+          [],
+        ),
+      ).resolves.toBeDefined();
+
+      expect(prisma.product.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            compareAtPrice: null,
+          }),
+        }),
+      );
+    });
+
     it('retains old images and adds new ones', async () => {
       prisma.merchant.findUnique.mockResolvedValue({ id: mockMerchantId });
       prisma.product.findFirst.mockResolvedValue(mockProduct);

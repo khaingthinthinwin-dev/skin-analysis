@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
@@ -26,6 +27,8 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 @Injectable()
 export class AdvertisementsService {
+  private readonly logger = new Logger(AdvertisementsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -198,6 +201,7 @@ export class AdvertisementsService {
       amount: amount.toFixed(2),
       reference: dto.paymentReference || null,
     });
+    await this.notifyAdminsOfNewSubmission(result);
     return this.toResponse(result);
   }
 
@@ -525,5 +529,46 @@ export class AdvertisementsService {
         newValue: JSON.stringify(value),
       },
     });
+  }
+
+  // Fans out an AD_SUBMITTED notification to every admin so a paid ad landing
+  // in the review queue is visible without polling /admin/ads. The reverse
+  // direction (AD_APPROVED / AD_REJECTED back to the shop owner) is handled by
+  // AdminAdManagementService. This is the only place a submission enters the
+  // review queue, so it also covers resubmission of a rejected ad — admins are
+  // notified again each time the merchant re-pays. Notification writes are
+  // best-effort: a failure here must never roll back a completed payment.
+  private async notifyAdminsOfNewSubmission(
+    ad: Prisma.AdvertisementGetPayload<{ include: { feeSetting: true } }>,
+  ) {
+    try {
+      const [admins, shop] = await Promise.all([
+        this.prisma.user.findMany({
+          where: { roleCode: { in: ['admin', 'super_admin'] } },
+          select: { id: true },
+        }),
+        this.prisma.shop.findUnique({
+          where: { id: ad.shopId },
+          select: { name: true },
+        }),
+      ]);
+      if (admins.length === 0) return;
+      await this.prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: 'AD_SUBMITTED',
+          title: 'New advertisement submitted',
+          message: `${shop?.name ?? 'A shop'} submitted "${ad.title || 'Untitled advertisement'}" and it is pending approval.`,
+          entityType: 'Advertisement',
+          entityId: ad.id,
+        })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to notify admins of advertisement submission ${ad.id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
   }
 }

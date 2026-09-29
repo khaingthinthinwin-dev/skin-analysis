@@ -18,7 +18,7 @@ export const CommissionReportsTable: React.FC<CommissionReportsTableProps> = ({
   groupBy = 'merchant',
   isFetching = false,
 }) => {
-  const thClass = "text-left py-2.5 px-2 sm:px-3.5 text-xs font-bold uppercase tracking-wide text-muted-foreground border-b border-border bg-primary/10 whitespace-nowrap";
+  const thClass = "text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-primary/10 whitespace-nowrap";
 
   const tdClass = "py-3 px-2 sm:px-3.5 text-[13px] text-muted-foreground border-b border-border whitespace-nowrap bg-card";
 

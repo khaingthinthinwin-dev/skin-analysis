@@ -5,6 +5,7 @@ interface CategorySelectProps {
   categories: CategoryNode[]
   selectedCategoryId: string
   onSelect: (categoryId: string) => void
+  variant?: 'default' | 'pills' | 'nav'
   activeClassName?: string
   noIndent?: boolean
 }
@@ -26,8 +27,9 @@ export function CategorySelect({
   categories,
   selectedCategoryId,
   onSelect,
+  variant = 'default',
   activeClassName,
-  noIndent,
+  noIndent = false,
 }: CategorySelectProps) {
   const [expanded, setExpanded] = useState(false)
   const safeCategories = Array.isArray(categories) ? categories : []
@@ -40,8 +42,30 @@ export function CategorySelect({
   const defaultActiveClass =
     'bg-gradient-to-r from-purple-200/80 to-purple-100/60 border border-purple-500 font-semibold text-purple-700 dark:from-purple-950 dark:to-purple-900/70 dark:border-purple-600 dark:text-purple-300'
 
+  const isNav = variant === 'nav'
+
+  const baseClass = isNav
+    ? 'block w-full rounded-lg border-r-4 px-3 py-1.5 text-left text-[13px] transition-all duration-200'
+    : variant === 'pills'
+      ? 'rounded-full border px-3 py-1.5 text-sm font-medium'
+      : 'block w-full text-left text-sm transition-colors'
+
+  const stateClass = (isActive: boolean) => {
+    if (isNav) {
+      return isActive
+        ? 'border-purple-600 bg-gradient-to-r from-purple-100/80 to-purple-50/50 font-semibold text-purple-900 shadow-xs dark:from-purple-950/60 dark:to-purple-900/30 dark:text-purple-200'
+        : 'border-transparent text-muted-foreground hover:bg-purple-50/50 hover:text-purple-700 dark:hover:bg-purple-950/30 dark:hover:text-purple-300'
+    }
+    if (variant === 'pills') {
+      return isActive
+        ? 'border-violet-200 bg-violet-100 text-violet-700 dark:border-violet-400/40 dark:bg-violet-400/15 dark:text-violet-200'
+        : 'border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'
+    }
+    return isActive ? activeClassName ?? defaultActiveClass : 'text-gray-600 hover:text-orange-500'
+  }
+
   return (
-    <div className="space-y-1">
+    <div className={variant === 'pills' ? 'flex flex-wrap gap-2' : 'space-y-1'}>
       {visibleItems.map((item) => {
         const isActive = item.id === selectedCategoryId
         return (
@@ -49,12 +73,14 @@ export function CategorySelect({
             key={item.id}
             type="button"
             onClick={() => onSelect(item.id)}
-            className={`flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors cursor-pointer ${
-              isActive
-                ? activeClassName ?? defaultActiveClass
-                : 'text-foreground hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-300'
-            }`}
-            style={{ paddingLeft: noIndent ? (isActive ? '0.5rem' : 0) : `${item.depth * 1}rem` }}
+            className={`${baseClass} ${stateClass(isActive)}`}
+            style={
+              variant === 'pills' || isNav
+                ? undefined
+                : {
+                    paddingLeft: noIndent ? (isActive ? '0.5rem' : '0') : `${(item.depth + 1).toString()}rem`,
+                  }
+            }
           >
             {item.name}
           </button>
@@ -65,7 +91,11 @@ export function CategorySelect({
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-1 pl-4 text-cyan-600 font-bold text-xs uppercase dark:text-cyan-400"
+          className={
+            variant === 'pills'
+              ? 'w-full text-left text-xs font-bold uppercase text-slate-500'
+              : 'mt-1 pl-4 text-xs font-bold uppercase text-cyan-600 dark:text-cyan-400'
+          }
         >
           {expanded ? 'View Less' : 'View More'}
         </button>

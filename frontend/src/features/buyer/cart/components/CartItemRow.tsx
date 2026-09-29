@@ -34,7 +34,7 @@ export function CartItemRow({
 
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
-    return `$${num.toFixed(2)}`;
+    return `${Math.round(num).toLocaleString('en-US')}Ks`;
   };
 
   return (
