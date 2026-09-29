@@ -110,6 +110,9 @@ export interface SidebarAdvertisement {
   announcementMessage: string | null;
   imageUrl: string | null;
   linkUrl: string | null;
+  placement: string | null;
+  startsAt: string | null;
+  expiresAt: string | null;
   shopId: string;
   shopName: string;
   shopSlug: string;

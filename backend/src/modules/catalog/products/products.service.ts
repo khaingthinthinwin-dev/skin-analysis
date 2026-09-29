@@ -895,6 +895,74 @@ export class ProductsService {
     };
   }
 
+  async getSidebarAds(idOrSlug: string) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    if (product.merchant?.licenseStatus !== 'approved') {
+      throw new NotFoundException('Product not found');
+    }
+
+    const now = new Date();
+    const TIER_PRIORITY: Record<string, number> = {
+      premium: 3,
+      standard: 2,
+      basic: 1,
+    };
+
+    const ads = await this.prisma.advertisement.findMany({
+      where: {
+        isActive: true,
+        approvalStatus: 'approved',
+        paymentStatus: 'completed',
+        startsAt: { lte: now },
+        expiresAt: { gte: now },
+        feeSetting: {
+          placement: 'productDetail_page_banner',
+          isActive: true,
+        },
+      },
+      include: {
+        feeSetting: { select: { placement: true, tier: true } },
+        shop: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      },
+    });
+
+    const ordered = ads
+      .filter(
+        (
+          ad,
+        ): ad is typeof ad & {
+          feeSetting: { placement: string; tier: string };
+        } => Boolean(ad.feeSetting),
+      )
+      .sort(
+        (a, b) =>
+          (TIER_PRIORITY[b.feeSetting.tier] ?? 0) -
+          (TIER_PRIORITY[a.feeSetting.tier] ?? 0),
+      )
+      .slice(0, 5);
+
+    return ordered.map((ad) => ({
+      id: ad.id,
+      title: ad.title,
+      announcementMessage: ad.announcementMessage,
+      imageUrl: ad.imageUrl,
+      linkUrl: ad.linkUrl,
+      placement: ad.feeSetting.placement,
+      startsAt: ad.startsAt,
+      expiresAt: ad.expiresAt,
+      planTier: ad.feeSetting.tier,
+      shopId: ad.shop.id,
+      shopName: ad.shop.name,
+      shopSlug: ad.shop.slug,
+      shop: {
+        name: ad.shop.name,
+        slug: ad.shop.slug,
+        logoUrl: ad.shop.logoUrl,
+      },
+    }));
+  }
+
   async findReviews(idOrSlug: string, query: ReviewQueryDto) {
     const product = await this.resolveProduct(idOrSlug);
 
