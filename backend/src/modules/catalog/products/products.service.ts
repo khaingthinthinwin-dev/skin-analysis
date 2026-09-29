@@ -239,7 +239,7 @@ export class ProductsService {
     const baseSlug = generateSlug(dto.name);
     const slug = await this.ensureSlugUnique(baseSlug, merchantId);
 
-    const price = dto.price ?? dto.compareAtPrice;
+    const price = dto.price ?? dto.compareAtPrice ?? undefined;
     if (price === undefined) {
       throw new BadRequestException('Price or compare at price is required');
     }
@@ -1049,8 +1049,49 @@ export class ProductsService {
     return similar;
   }
 
+  private async findDeliveredOrderItem(productId: string, buyerId: string) {
+    return this.prisma.orderItem.findFirst({
+      where: {
+        productId,
+        order: { buyerId, statusCode: 'delivered' },
+      },
+      select: { id: true },
+    });
+  }
+
+  async canReview(
+    idOrSlug: string,
+    userId: string,
+  ): Promise<{
+    canReview: boolean;
+    reason: 'not_delivered' | 'already_reviewed' | null;
+  }> {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const delivered = await this.findDeliveredOrderItem(product.id, userId);
+    if (!delivered) {
+      return { canReview: false, reason: 'not_delivered' };
+    }
+
+    const existingReview = await this.prisma.review.findUnique({
+      where: { userId_productId: { userId, productId: product.id } },
+    });
+    if (existingReview) {
+      return { canReview: false, reason: 'already_reviewed' };
+    }
+
+    return { canReview: true, reason: null };
+  }
+
   async createReview(idOrSlug: string, userId: string, dto: CreateReviewDto) {
     const product = await this.resolveProduct(idOrSlug);
+
+    const delivered = await this.findDeliveredOrderItem(product.id, userId);
+    if (!delivered) {
+      throw new BadRequestException(
+        'You can only review products from a delivered order',
+      );
+    }
 
     const existingReview = await this.prisma.review.findUnique({
       where: { userId_productId: { userId, productId: product.id } },
