@@ -243,6 +243,8 @@ export class ProductsService {
     if (price === undefined) {
       throw new BadRequestException('Price or compare at price is required');
     }
+    // TypeScript doesn't narrow the type after the throw, so we assert non-null
+    const finalPrice: number = price!;
 
     const product = await this.prisma.product.create({
       data: {
@@ -251,7 +253,7 @@ export class ProductsService {
         slug,
         description: dto.description,
         shortDescription: dto.shortDescription,
-        price,
+        price: finalPrice,
         compareAtPrice:
           dto.price !== undefined ? dto.compareAtPrice : undefined,
         sku,
