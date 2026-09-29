@@ -246,7 +246,7 @@ function BuyerOrdersPageContent() {
       style={{ height: '100%' }}
     >
       <div className="mb-2 shrink-0">
-        <h1 className="m-0 text-[22px] font-bold text-gray-900 oidark:text-foreground">
+        <h1 className="m-0 text-[22px] font-bold text-gray-900 dark:text-slate-100 oidark:text-foreground">
           {t('buyer.orders.title', 'My Orders')}
         </h1>
       </div>
@@ -254,13 +254,13 @@ function BuyerOrdersPageContent() {
       {data && (
         <div className="mb-[18px] grid grid-cols-1 shrink-0 gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 oidark:text-muted-foreground">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.orders.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 oidark:text-foreground">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.orders)}
               </p>
             </div>
@@ -270,13 +270,13 @@ function BuyerOrdersPageContent() {
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 oidark:text-muted-foreground">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.value.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 oidark:text-foreground">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.value)}
               </p>
             </div>
@@ -286,13 +286,13 @@ function BuyerOrdersPageContent() {
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 oidark:text-muted-foreground">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.progress.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 oidark:text-foreground">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.progress)}
               </p>
             </div>
@@ -302,13 +302,13 @@ function BuyerOrdersPageContent() {
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 oidark:text-muted-foreground">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.completed.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 oidark:text-foreground">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.completed)}
               </p>
             </div>
@@ -319,7 +319,7 @@ function BuyerOrdersPageContent() {
         </div>
       )}
 
-      <Card className="flex flex-col overflow-visible border-border/80 shadow-xs sm:min-h-0 sm:flex-1 sm:overflow-hidden oidark:border-outline-variant oidark:bg-surface-container-low">
+      <Card className="flex flex-col overflow-visible border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014] sm:min-h-0 sm:flex-1 sm:overflow-hidden oidark:border-outline-variant oidark:bg-surface-container-low">
         <CardContent className="flex min-w-0 flex-col space-y-0 overflow-visible p-3 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-hidden sm:p-4">
           <div className="shrink-0">
             <OrderFilterBar

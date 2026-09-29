@@ -22,14 +22,14 @@ const CIRCLE_STYLES: Record<StepState, string> = {
   current: 'border-[#7c3aed] bg-[#7c3aed] text-white shadow-[0_0_0_6px_rgba(124,58,237,0.15)]',
   // Dashed outline marks the upcoming "Next" step in the merchant variant.
   next: 'border-2 border-dashed border-[#7c3aed] bg-transparent text-[#7c3aed]',
-  upcoming: 'border-border bg-muted text-muted-foreground',
+  upcoming: 'border-border bg-muted text-muted-foreground dark:border-[#514b5a] dark:bg-[#211a29] dark:text-slate-300',
 };
 
 const LABEL_STYLES: Record<StepState, string> = {
-  done: 'text-foreground',
-  current: 'text-foreground',
-  next: 'text-foreground',
-  upcoming: 'text-muted-foreground',
+  done: 'text-foreground dark:text-slate-100',
+  current: 'text-foreground dark:text-slate-100',
+  next: 'text-foreground dark:text-slate-100',
+  upcoming: 'text-muted-foreground dark:text-slate-300',
 };
 
 interface DeliveryProgressProps {
@@ -66,10 +66,10 @@ export function DeliveryProgress({
   };
 
   return (
-    <Card className="border-border/80 shadow-xs">
+    <Card className="border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container-low">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Truck className="h-4 w-4 text-purple-600" aria-hidden="true" />
+        <CardTitle className="flex items-center gap-2 text-base dark:text-slate-100 oidark:text-slate-100">
+          <Truck className="h-4 w-4 text-purple-600 oidark:text-primary" aria-hidden="true" />
           {t('orders.detail.deliveryProgress', 'Delivery progress')}
         </CardTitle>
       </CardHeader>

@@ -29,9 +29,9 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
   };
 
   return (
-    <form onSubmit={methods.handleSubmit(handleSubmit)} className="mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]">
+    <form onSubmit={methods.handleSubmit(handleSubmit)} className="mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]">
       <div className="flex-1 min-w-0 pb-5 sm:w-[130px]">
-        <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground mb-1">
+        <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300 mb-1">
           {t('orders.filter.status', 'Status')}
         </label>
 <Controller
@@ -39,7 +39,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
           control={control}
           render={({ field }) => (
             <Select value={field.value ?? 'all'} onValueChange={field.onChange}>
-              <SelectTrigger id="filter-status" className="h-10 w-full">
+              <SelectTrigger id="filter-status" className="h-10 w-full dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100">
                 <SelectValue placeholder={t('orders.filter.status', 'Status')} />
               </SelectTrigger>
               <SelectContent>
@@ -60,14 +60,14 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
 
       <div className="flex w-full flex-col items-end gap-2 sm:contents">
         <div className="relative w-full pb-5 sm:min-w-0">
-          <span className="mb-1 block text-sm font-medium text-muted-foreground">
+          <span className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
             {t('orders.filter.dateRange.label', 'Order date')}
           </span>
           <label htmlFor="filter-from" className="sr-only">
             {t('orders.filter.dateRange.from', 'From')}
           </label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
             <Controller
               name="from"
               control={control}
@@ -83,7 +83,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
                       methods.handleSubmit(handleSubmit)();
                     }
                   }}
-                  className="h-10 pl-10 oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
+                  className="h-10 pl-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 dark:[color-scheme:dark] oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
                   placeholder={t('orders.filter.dateRange.from', 'From')}
                 />
               )}
@@ -97,7 +97,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
             {t('orders.filter.dateRange.to', 'To')}
           </label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
             <Controller
               name="to"
               control={control}
@@ -113,7 +113,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
                       methods.handleSubmit(handleSubmit)();
                     }
                   }}
-                  className="h-10 pl-10 oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
+                  className="h-10 pl-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 dark:[color-scheme:dark] oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
                   placeholder={t('orders.filter.dateRange.to', 'To')}
                 />
               )}
@@ -147,7 +147,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
             type="button"
             onClick={onExport}
             disabled={exportDisabled || isDateRangeInvalid}
-            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-4 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-4 disabled:cursor-not-allowed disabled:opacity-50"
           >
             &#x2193; {exportLabel ?? t('buyer.orders.exportCsv', 'Export CSV')}
           </Button>
