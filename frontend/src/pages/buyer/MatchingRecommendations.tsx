@@ -195,17 +195,28 @@ export default function MatchingRecommendations() {
   const meta = recData?.meta ?? { page: 1, limit: 12, total: 0, totalPages: 0 }
   const history = historyData?.data ?? []
 
-  const products = filterProductsBySkinType(recData?.data ?? [], {
+  // Apply client-side skin type filter (counterpart of API filter for cache consistency)
+  const filteredProducts = filterProductsBySkinType(recData?.data ?? [], {
     source,
     analysisSkinTypes: skinTypes,
     requestedSkinTypes: filters.skinTypes ? filters.skinTypes.split(',') : [],
-  }).slice(0, filters.limit)
+  })
+
+  // Use filtered products for display, respecting page limit
+  const products = filteredProducts.slice(0, filters.limit)
+
+  // Calculate display range based on actually shown products (after client-side filter)
+  const displayedStart = (meta.page - 1) * meta.limit + 1
+  const displayedEnd = displayedStart + products.length - 1
+  const hasFilteredProducts = filteredProducts.length > 0
 
   const pageNav =
     meta.total > 0 ? (
       <div className="flex items-center justify-between mt-4">
         <span className="text-[13px] text-muted-foreground">
-          Showing {(meta.page - 1) * meta.limit + 1}-{Math.min(meta.page * meta.limit, meta.total)} of {meta.total} products
+          {hasFilteredProducts
+            ? `Showing ${displayedStart}-${displayedEnd} of ${meta.total} products`
+            : `Showing 0 of ${meta.total} products`}
         </span>
         <div className="flex gap-1">
           <button
@@ -288,7 +299,15 @@ export default function MatchingRecommendations() {
           <div className="lg:sticky lg:top-4">
             <MatchingFilterChips
               filters={filters}
-              onRemove={(key) => updateFilters({ [key]: undefined })}
+              onRemove={(key, value) => {
+                if (key === 'skinTypes' && value) {
+                  const current = filters.skinTypes ? filters.skinTypes.split(',') : []
+                  const next = current.filter((t) => t !== value)
+                  updateFilters({ skinTypes: next.join(',') || undefined })
+                } else {
+                  updateFilters({ [key]: undefined })
+                }
+              }}
               onClearAll={resetFilters}
             />
             <FiltersPanel filters={filters} onUpdate={updateFilters} onReset={resetFilters} className="mt-4" />
