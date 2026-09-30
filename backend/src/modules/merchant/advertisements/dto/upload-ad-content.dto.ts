@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   MaxLength,
 } from 'class-validator';
 
@@ -18,10 +17,14 @@ export class UploadAdContentDto {
   @MaxLength(5000)
   content?: string;
 
-  @IsOptional()
-  @IsUrl({ require_tld: false })
+  // The advertisement image must be one of the merchant's own product images.
+  // This is a stored upload path (e.g. /uploads/products/<file>) rather than a
+  // free-form URL; the service rejects any value that does not belong to one
+  // of the merchant's products, so no new file is accepted here.
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(2048)
-  linkUrl?: string;
+  imageUrl: string;
 
   @IsString()
   @IsNotEmpty()
