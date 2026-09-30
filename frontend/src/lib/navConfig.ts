@@ -102,7 +102,7 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
         items: [
           { label: 'Skin Analysis', href: '/buyer/skin-analysis', icon: Sparkles, badge: 'AI', badgeVariant: 'pink' },
           { label: 'Recommendations', href: '/buyer/recommendations', icon: Wand2 },
-          { label: 'Analysis History', href: '/buyer/recommendation-history', icon: History },
+          { label: 'Analysis History', href: '/buyer/skin-analysis/history', icon: History },
         ],
       },
       {

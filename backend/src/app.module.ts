@@ -19,6 +19,7 @@ import { AdvertisementsModule } from './modules/merchant/advertisements/advertis
 import { PromotionsModule } from './modules/merchant/promotions/promotions.module';
 import { AdsModule } from './modules/shared/ads/ads.module';
 import { MatchingModule } from './modules/buyer/matching/matching.module';
+import { SkinAnalysisModule } from './modules/buyer/skin-analysis/skin-analysis.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -45,6 +46,7 @@ import { AppService } from './app.service';
     PromotionsModule,
     AdsModule,
     MatchingModule,
+    SkinAnalysisModule,
   ],
   controllers: [AppController],
   providers: [AppService],
