@@ -29,7 +29,8 @@ export default function AdminAdListPage() {
     return status ? { status } : {}
   })
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(5)
+  // Page size selector (20/50/100) as in the design doc; changing it resets to page 1.
+  const [limit, setLimit] = useState(20)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [review, setReview] = useState<{ id: string; viewOnly: boolean } | null>(null)
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false)
