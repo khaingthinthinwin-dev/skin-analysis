@@ -2,11 +2,10 @@ import { Eye, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatPrice } from '@/lib/format'
 import type { AdminAdvertisement } from '@/types/admin-ad-management'
 import { PaymentBadge, StatusBadge, TierBadge } from './badges'
-import { PLACEMENT_LABELS, formatDate } from '../utils/labels'
+import { PLACEMENT_LABELS, formatIsoDate, formatScheduleRange } from '../utils/labels'
 
 interface AdTableProps {
   ads?: AdminAdvertisement[]
@@ -17,6 +16,40 @@ interface AdTableProps {
   onView: (id: string) => void
   isLoading?: boolean
 }
+
+// Table styling follows the admin ads mock: uppercase muted header on a
+// neutral band, comfortable 14px rows, and muted supporting text with the
+// key columns (shop, fee) emphasized in foreground.
+//
+// Horizontal fit: cells use tight horizontal padding, long text is truncated
+// through inner wrappers, and the lower-priority Placement/Submitted columns
+// collapse below xl/2xl so every remaining column (especially Actions) fits
+// within the card on laptop viewports. The wrapper's overflow-x-auto only
+// remains as a fallback for narrower screens, where the Actions column pins
+// to the right edge so its buttons stay reachable.
+const TH_BASE =
+  'text-left align-middle h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
+
+const TH_CLASS = `${TH_BASE} bg-muted/40`
+
+// Pinned (sticky) Actions cells must be opaque, otherwise content scrolling
+// underneath would show through them. bg-card is the opaque base and the
+// before: overlay re-applies the same token-based tints the rest of the table
+// uses (header band, row hover, row selection), so the pinned cells stay
+// visually identical to their neighbours.
+const TH_STICKY_CLASS = `${TH_BASE} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-[''] before:bg-muted/40`
+
+const TD_CLASS = 'py-4 px-2 text-sm text-muted-foreground border-b border-border'
+
+const TD_STICKY_CLASS = `${TD_CLASS} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-['']`
+
+const ROW_CLASS =
+  'group transition-colors duration-150 ease-in-out hover:bg-muted/40'
+
+// Responsive column visibility — shared by header, body, and skeleton rows
+// so they always line up.
+const PLACEMENT_COL_CLASS = 'hidden xl:table-cell'
+const SUBMITTED_COL_CLASS = 'hidden 2xl:table-cell'
 
 export function AdTable({
   ads = [],
@@ -31,47 +64,12 @@ export function AdTable({
   const allSelectableSelected =
     selectableAds.length > 0 && selectableAds.every((ad) => selectedIds.includes(ad.id))
 
-  if (isLoading) {
-    return (
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10" />
-              <TableHead>Shop</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Placement</TableHead>
-              <TableHead>Tier</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead className="text-right">Fee</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead>Schedule</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 5 }, (_, i) => (
-              <TableRow key={i}>
-                {Array.from({ length: 11 }, (_, j) => (
-                  <TableCell key={j}>
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    )
-  }
-
   return (
-    <div className="rounded-md border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-10">
+    <div className="overflow-x-auto rounded-lg border bg-card">
+      <table className="w-full border-separate border-spacing-0">
+        <thead className="sticky top-0 z-10">
+          <tr>
+            <th scope="col" className={`${TH_CLASS} w-10`}>
               {selectableAds.length > 0 && (
                 <Checkbox
                   checked={allSelectableSelected}
@@ -80,83 +78,123 @@ export function AdTable({
                   aria-label="Select all pending advertisements"
                 />
               )}
-            </TableHead>
-            <TableHead>Shop</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Placement</TableHead>
-            <TableHead>Tier</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Payment</TableHead>
-            <TableHead className="text-right">Fee</TableHead>
-            <TableHead>Submitted</TableHead>
-            <TableHead>Schedule</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {ads.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={11} className="py-10 text-center text-muted-foreground">
+            </th>
+            <th scope="col" className={TH_CLASS}>Shop</th>
+            <th scope="col" className={TH_CLASS}>Title</th>
+            <th scope="col" className={`${TH_CLASS} ${PLACEMENT_COL_CLASS}`}>Placement</th>
+            <th scope="col" className={TH_CLASS}>Tier</th>
+            <th scope="col" className={TH_CLASS}>Status</th>
+            <th scope="col" className={TH_CLASS}>Payment</th>
+            <th scope="col" className={`${TH_CLASS} text-right`}>Fee</th>
+            <th scope="col" className={`${TH_CLASS} ${SUBMITTED_COL_CLASS}`}>Submitted</th>
+            <th scope="col" className={TH_CLASS}>Schedule</th>
+            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {isLoading ? (
+            Array.from({ length: 8 }, (_, i) => (
+              <tr key={i}>
+                {Array.from({ length: 11 }, (_, j) => {
+                  const extra =
+                    j === 3
+                      ? ` ${PLACEMENT_COL_CLASS}`
+                      : j === 8
+                        ? ` ${SUBMITTED_COL_CLASS}`
+                        : j === 10
+                          ? ' sticky right-0 z-10 bg-card'
+                          : ''
+                  return (
+                    <td key={j} className={`${TD_CLASS}${extra}`}>
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  )
+                })}
+              </tr>
+            ))
+          ) : ads.length === 0 ? (
+            <tr>
+              <td colSpan={11} className={`${TD_CLASS} text-center py-6 text-muted-foreground`}>
                 No advertisements found.
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ) : (
-            ads.map((ad, index) => {
+            ads.map((ad) => {
               const selectable = ad.approvalStatus === 'pending'
               const selected = selectedIds.includes(ad.id)
               return (
-                <TableRow
-                  key={ad.id}
-                  className={selected ? 'bg-secondary/40' : index % 2 === 1 ? 'bg-muted/50' : undefined}
-                >
-                  <TableCell>
+                <tr key={ad.id} className={`${ROW_CLASS}${selected ? ' bg-secondary/40' : ''}`}>
+                  <td className={TD_CLASS}>
                     <Checkbox
                       checked={selected}
                       onCheckedChange={(checked) => onSelectAd(ad.id, checked)}
                       disabled={!selectable}
                       aria-label={`Select advertisement ${ad.title}`}
                     />
-                  </TableCell>
-                  <TableCell className="font-medium">{ad.shopName}</TableCell>
-                  <TableCell className="max-w-[180px] truncate" title={ad.title}>
-                    {ad.title}
-                  </TableCell>
-                  <TableCell>{PLACEMENT_LABELS[ad.placement]}</TableCell>
-                  <TableCell>
+                  </td>
+                  <td className={`${TD_CLASS} text-foreground font-semibold`}>
+                    <div className="max-w-[110px] truncate" title={ad.shopName}>
+                      {ad.shopName}
+                    </div>
+                  </td>
+                  <td className={`${TD_CLASS} text-foreground`}>
+                    <div className="max-w-[120px] truncate" title={ad.title}>
+                      {ad.title}
+                    </div>
+                  </td>
+                  <td className={`${TD_CLASS} ${PLACEMENT_COL_CLASS}`}>
+                    <div
+                      className="max-w-[120px] truncate"
+                      title={PLACEMENT_LABELS[ad.placement]}
+                    >
+                      {PLACEMENT_LABELS[ad.placement]}
+                    </div>
+                  </td>
+                  <td className={TD_CLASS}>
                     <TierBadge tier={ad.tier} />
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className={TD_CLASS}>
                     <StatusBadge status={ad.approvalStatus} />
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className={TD_CLASS}>
                     <PaymentBadge status={ad.paymentStatus} />
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </td>
+                  <td className={`${TD_CLASS} text-right text-foreground font-semibold tabular-nums`}>
                     {ad.paymentAmount ? formatPrice(Number(ad.paymentAmount)) : '\u2014'}
-                  </TableCell>
-                  <TableCell>{formatDate(ad.createdAt)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(ad.startsAt)} - {formatDate(ad.expiresAt)}
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </td>
+                  <td className={`${TD_CLASS} tabular-nums whitespace-nowrap ${SUBMITTED_COL_CLASS}`}>
+                    {formatIsoDate(ad.createdAt)}
+                  </td>
+                  <td className={TD_CLASS}>{formatScheduleRange(ad.startsAt, ad.expiresAt)}</td>
+                  <td
+                    className={`${TD_STICKY_CLASS} text-right${selected ? ' before:bg-secondary/40' : ''} group-hover:before:bg-muted/40`}
+                  >
                     {ad.approvalStatus === 'pending' ? (
-                      <Button size="sm" variant="outline" onClick={() => onReview(ad.id)}>
-                        <ShieldCheck className="mr-1 h-4 w-4" />
-                        Review
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onReview(ad.id)}
+                        aria-label={`Review ${ad.title}`}
+                      >
+                        <ShieldCheck className="h-4 w-4" />
                       </Button>
                     ) : (
-                      <Button size="sm" variant="ghost" onClick={() => onView(ad.id)}>
-                        <Eye className="mr-1 h-4 w-4" />
-                        View
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onView(ad.id)}
+                        aria-label={`View ${ad.title}`}
+                      >
+                        <Eye className="h-4 w-4" />
                       </Button>
                     )}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               )
             })
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   )
 }
