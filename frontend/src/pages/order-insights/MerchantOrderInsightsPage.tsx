@@ -21,7 +21,7 @@ import { revenuePeriodSchema, type OrderListFilterFormData } from '@/features/or
 import { getPanelErrorMessage, getServerErrorMessage, isHttpErrorStatus } from '@/features/order-insights/types/merchantOrderInsights.types';
 import type { SummaryPeriod } from '@/features/order-insights/types/merchantOrderInsights.types';
 
-const DEFAULT_FILTERS: OrderListFilterFormData = { status: 'all', from: '', to: '', page: 1, limit: 10, sort: 'createdAt', order: 'desc' };
+const DEFAULT_FILTERS: OrderListFilterFormData = { status: 'all', paymentStatus: 'all', from: '', to: '', page: 1, limit: 10, sort: 'createdAt', order: 'desc' };
 
 function PanelError({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t } = useTranslation();
@@ -33,7 +33,7 @@ function MerchantOrderInsightsPageContent() {
   const translate = (key: string, fallback?: string) => t(key, { defaultValue: fallback });
   const navigate = useNavigate();
   const location = useLocation();
-  const { methods, filters } = useOrderListFilters(DEFAULT_FILTERS.limit);
+  const { methods, filters } = useOrderListFilters(DEFAULT_FILTERS.limit, true);
   const { patch } = useOrderQueryParams();
   const listRef = useRef<HTMLDivElement>(null);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -46,6 +46,8 @@ function MerchantOrderInsightsPageContent() {
 
   const resetFilters = () => { methods.reset(DEFAULT_FILTERS); patch(DEFAULT_FILTERS); };
   const applyFilters = (values: OrderListFilterFormData) => { methods.setValue('page', 1, { shouldValidate: false }); patch({ ...values, page: 1 }); };
+  const changeStatus = (status: OrderListFilterFormData['status']) => { methods.setValue('page', 1, { shouldValidate: false }); patch({ status, page: 1 }); };
+  const changePaymentStatus = (paymentStatus: NonNullable<OrderListFilterFormData['paymentStatus']>) => { methods.setValue('page', 1, { shouldValidate: false }); patch({ paymentStatus, page: 1 }); };
   const changeSort = (field: 'createdAt' | 'totalAmount' | 'status') => { const order = methods.getValues('sort') === field && methods.getValues('order') === 'desc' ? 'asc' : 'desc'; methods.setValue('sort', field); methods.setValue('order', order); methods.setValue('page', 1); patch({ sort: field, order, page: 1 }); };
   const changePage = (page: number) => { methods.setValue('page', page); patch({ page }); };
   const changeLimit = (limit: number) => { methods.setValue('limit', limit); methods.setValue('page', 1); patch({ limit, page: 1 }); };
@@ -61,7 +63,7 @@ function MerchantOrderInsightsPageContent() {
     {salesQuery.isLoading ? <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-3"><Skeleton className="h-[72px] rounded-xl" /><Skeleton className="h-[72px] rounded-xl" /><Skeleton className="h-[72px] rounded-xl" /></div> : salesQuery.error ? <PanelError message={getPanelErrorMessage(salesQuery.error, translate, 'merchant.orders.error.loadFailed', 'Unable to load sales summary.')} onRetry={() => void salesQuery.refetch()} /> : <SalesSummaryTiles data={salesQuery.data} onCompletedClick={completedClick} />}
     {revenueServerError && <PanelError message={revenueServerError} onRetry={() => void revenueQuery.refetch()} />}
     <RevenueSummaryGroup data={revenueQuery.data} loading={revenueQuery.isLoading} period={period} from={periodDates.from} to={periodDates.to} onPeriodChange={changePeriod} onApply={applyCustomDates} error={revenueDateError} />
-    <div ref={listRef}><Card className="border-border/80 shadow-xs oidark:border-outline-variant oidark:bg-surface-container-low"><CardContent className="p-3 sm:p-4"><OrderFilterBar methods={methods} onApply={applyFilters} onReset={resetFilters} onExport={() => setIsExportDialogOpen(true)} exportLabel="Export CSV" />{ordersQuery.error ? <PanelError message={getPanelErrorMessage(ordersQuery.error, translate, 'merchant.orders.error.loadFailed', 'Unable to load orders.')} onRetry={() => void ordersQuery.refetch()} /> : ordersQuery.data?.meta.total === 0 ? <MerchantEmptyOrderState onReset={resetFilters} /> : <MerchantOrderTable rows={ordersQuery.data?.orders ?? []} loading={ordersQuery.isLoading} onView={(id) => navigate(`/merchant/orders/${id}`, { state: { listSearch: location.search } })} onSort={changeSort} currentSort={filters.sort} currentOrder={filters.order} />}</CardContent></Card></div>
+    <div ref={listRef}><Card className="border-border/80 shadow-xs oidark:border-outline-variant oidark:bg-surface-container-low"><CardContent className="p-3 sm:p-4"><OrderFilterBar methods={methods} onApply={applyFilters} onStatusChange={changeStatus} showPaymentStatusFilter onPaymentStatusChange={changePaymentStatus} onReset={resetFilters} onExport={() => setIsExportDialogOpen(true)} exportDisabled={ordersQuery.isLoading || !ordersQuery.data?.meta.total} exportLabel="Export CSV" />{ordersQuery.error ? <PanelError message={getPanelErrorMessage(ordersQuery.error, translate, 'merchant.orders.error.loadFailed', 'Unable to load orders.')} onRetry={() => void ordersQuery.refetch()} /> : ordersQuery.data?.meta.total === 0 ? <MerchantEmptyOrderState onReset={resetFilters} /> : <MerchantOrderTable rows={ordersQuery.data?.orders ?? []} loading={ordersQuery.isLoading} onView={(id) => navigate(`/merchant/orders/${id}`, { state: { listSearch: location.search } })} onSort={changeSort} currentSort={filters.sort} currentOrder={filters.order} />}</CardContent></Card></div>
     {ordersQuery.data && ordersQuery.data.meta.total > 0 && <OrderPagination meta={ordersQuery.data.meta} onPageChange={changePage} onLimitChange={changeLimit} sizes={[10, 20, 50]} />}
     {isExportDialogOpen && <ExportMerchantOrdersDialog filters={filters} total={ordersQuery.data?.meta.total ?? 0} onClose={() => setIsExportDialogOpen(false)} />}
   </main>;

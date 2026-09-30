@@ -22,6 +22,8 @@ export async function getAdminOrders(
     ...(filters.to ? { to: filters.to } : {}),
     ...(filters.merchantId ? { merchantId: filters.merchantId } : {}),
     ...(filters.shopId ? { shopId: filters.shopId } : {}),
+    ...(filters.shopSearch?.trim() ? { shopSearch: filters.shopSearch.trim() } : {}),
+    ...(filters.paymentStatus !== 'all' ? { paymentStatus: filters.paymentStatus } : {}),
     page: filters.page,
     limit: filters.limit,
     sort: filters.sort,
@@ -42,4 +44,20 @@ export async function searchAdminMerchants(search: string): Promise<AdminMerchan
 export async function getAdminOrderDetail(orderId: string): Promise<AdminOrderDetailDto> {
   const response = await apiClient.get(`/orders/${orderId}`);
   return unwrapData<AdminOrderDetailDto>(response.data);
+}
+
+export async function getAllAdminOrders(
+  filters: AdminOrderFilterFormData,
+): Promise<AdminOrderListResponseDto['orders']> {
+  const orders: AdminOrderListResponseDto['orders'] = [];
+  let page = 1;
+
+  for (;;) {
+    const response = await getAdminOrders({ ...filters, page, limit: 100 });
+    orders.push(...response.orders);
+    if (response.orders.length === 0 || orders.length >= response.meta.total) break;
+    page += 1;
+  }
+
+  return orders;
 }

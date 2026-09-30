@@ -40,6 +40,7 @@ export async function getMerchantOrders(
 ): Promise<MerchantOrderListResponseDto> {
   const params = {
     ...(filters.status !== 'all' ? { status: filters.status } : {}),
+    ...(filters.paymentStatus && filters.paymentStatus !== 'all' ? { paymentStatus: filters.paymentStatus } : {}),
     ...(filters.from ? { from: filters.from } : {}),
     ...(filters.to ? { to: filters.to } : {}),
     page: filters.page,

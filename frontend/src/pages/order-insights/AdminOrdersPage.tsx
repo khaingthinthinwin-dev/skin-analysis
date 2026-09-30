@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,16 +7,20 @@ import { AdminOrderTable } from '@/features/order-insights/components/AdminOrder
 import { OrderPagination } from '@/features/order-insights/components/OrderPagination';
 import { useAdminOrderFilters } from '@/features/order-insights/hooks/useAdminOrderFilters';
 import { useAdminOrders } from '@/features/order-insights/hooks/useAdminOrders';
+import { getAllAdminOrders } from '@/features/order-insights/services/adminOrderService';
+import { buildAdminOrdersExportFilename, exportAdminOrdersCsv } from '@/features/order-insights/utils/exportAdminOrdersCsv';
 import type { AdminOrderFilterFormData } from '@/features/order-insights/schemas/orderFilters.schema';
 import type { OrderSortField } from '@/features/order-insights/types/orderInsights.types';
 
 const DEFAULT_FILTERS: AdminOrderFilterFormData = {
-  status: 'all', from: '', to: '', page: 1, limit: 20, sort: 'createdAt', order: 'desc',
+  status: 'all', paymentStatus: 'all', shopSearch: '', from: '', to: '', page: 1, limit: 20, sort: 'createdAt', order: 'desc',
 };
 
 export default function AdminOrdersPage() {
   const { methods, filters, patch } = useAdminOrderFilters();
   const ordersQuery = useAdminOrders(filters);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState(false);
 
   const resetFilters = () => {
     methods.reset(DEFAULT_FILTERS);
@@ -24,6 +29,14 @@ export default function AdminOrdersPage() {
   const applyFilters = (values: AdminOrderFilterFormData) => {
     methods.setValue('page', 1, { shouldValidate: false });
     patch({ ...values, page: 1 });
+  };
+  const changeStatus = (status: AdminOrderFilterFormData['status']) => {
+    methods.setValue('page', 1, { shouldValidate: false });
+    patch({ status, page: 1 });
+  };
+  const changePaymentStatus = (paymentStatus: AdminOrderFilterFormData['paymentStatus']) => {
+    methods.setValue('page', 1, { shouldValidate: false });
+    patch({ paymentStatus, page: 1 });
   };
   const changePage = (page: number) => {
     methods.setValue('page', page, { shouldValidate: false });
@@ -41,6 +54,27 @@ export default function AdminOrdersPage() {
     methods.setValue('page', 1);
     patch({ sort: field, order, page: 1 });
   };
+  const changeShopSearch = (shopSearch: string) => {
+    methods.setValue('page', 1, { shouldValidate: false });
+    patch({
+      shopSearch,
+      merchantId: methods.getValues('merchantId'),
+      shopId: methods.getValues('shopId'),
+      page: 1,
+    });
+  };
+  const exportOrders = async () => {
+    setIsExporting(true);
+    setExportError(false);
+    try {
+      const rows = await getAllAdminOrders(filters);
+      if (rows.length) exportAdminOrdersCsv(rows, buildAdminOrdersExportFilename(filters));
+    } catch {
+      setExportError(true);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <main className="flex min-w-0 flex-col gap-4 p-2 lg:p-4">
@@ -51,7 +85,24 @@ export default function AdminOrdersPage() {
 
       <Card className="border-border/80 shadow-xs oidark:border-outline-variant oidark:bg-surface-container-low">
         <CardContent className="p-3 sm:p-4">
-          <AdminOrderFilterBar methods={methods} onApply={applyFilters} onReset={resetFilters} />
+          <AdminOrderFilterBar
+            methods={methods}
+            onApply={applyFilters}
+            onReset={resetFilters}
+            onShopSearchChange={changeShopSearch}
+            onStatusChange={changeStatus}
+            onPaymentStatusChange={changePaymentStatus}
+            onExport={() => void exportOrders()}
+            exportDisabled={isExporting || ordersQuery.isLoading || !ordersQuery.data?.meta.total}
+            exporting={isExporting}
+          />
+
+          {exportError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Unable to export orders</AlertTitle>
+              <AlertDescription>Please try again.</AlertDescription>
+            </Alert>
+          )}
 
           {ordersQuery.error ? (
             <Alert variant="destructive">

@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { orderListFilterSchema, type OrderListFilterFormData } from '../schemas/orderFilters.schema';
 import { useOrderQueryParams } from './useOrderQueryParams';
 
-export function useOrderListFilters(defaultLimit?: number) {
-  const { filters } = useOrderQueryParams(defaultLimit);
+export function useOrderListFilters(defaultLimit?: number, includePaymentStatus = false) {
+  const { filters } = useOrderQueryParams(defaultLimit, includePaymentStatus);
   const methods = useForm<OrderListFilterFormData>({
     resolver: zodResolver(orderListFilterSchema) as Resolver<OrderListFilterFormData>,
     mode: 'onChange',

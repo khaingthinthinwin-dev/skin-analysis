@@ -11,13 +11,16 @@ import { type OrderListFilterFormData } from '../schemas/orderFilters.schema';
 interface OrderFilterBarProps {
   methods: UseFormReturn<OrderListFilterFormData, unknown, OrderListFilterFormData>;
   onApply: (values: OrderListFilterFormData) => void;
+  onStatusChange?: (status: OrderListFilterFormData['status']) => void;
+  showPaymentStatusFilter?: boolean;
+  onPaymentStatusChange?: (status: NonNullable<OrderListFilterFormData['paymentStatus']>) => void;
   onReset: () => void;
   onExport: () => void;
   exportDisabled?: boolean;
   exportLabel?: string;
 }
 
-export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisabled = false, exportLabel }: OrderFilterBarProps) {
+export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentStatusFilter = false, onPaymentStatusChange, onReset, onExport, exportDisabled = false, exportLabel }: OrderFilterBarProps) {
   const { t } = useTranslation();
   const { control, formState: { errors } } = methods;
   const from = methods.watch('from');
@@ -29,7 +32,7 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
   };
 
   return (
-    <form onSubmit={methods.handleSubmit(handleSubmit)} className="mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]">
+    <form onSubmit={methods.handleSubmit(handleSubmit)} className={`mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 ${showPaymentStatusFilter ? 'sm:grid-cols-2 md:grid-cols-[120px_130px_minmax(130px,1fr)_minmax(130px,1fr)_auto_auto_auto_auto] xl:grid-cols-[130px_140px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]' : 'sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]'}`}>
       <div className="flex-1 min-w-0 pb-5 sm:w-[130px]">
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300 mb-1">
           {t('orders.filter.status', 'Status')}
@@ -38,7 +41,10 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
           name="status"
           control={control}
           render={({ field }) => (
-            <Select value={field.value ?? 'all'} onValueChange={field.onChange}>
+            <Select value={field.value ?? 'all'} onValueChange={(status) => {
+              field.onChange(status);
+              onStatusChange?.(status as OrderListFilterFormData['status']);
+            }}>
               <SelectTrigger id="filter-status" className="h-10 w-full dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100">
                 <SelectValue placeholder={t('orders.filter.status', 'Status')} />
               </SelectTrigger>
@@ -57,6 +63,33 @@ export function OrderFilterBar({ methods, onApply, onReset, onExport, exportDisa
           <p className="text-sm text-destructive mt-1" role="alert">{errors.status.message}</p>
         )}
       </div>
+
+      {showPaymentStatusFilter && (
+        <div className="min-w-0 pb-5 sm:w-[130px]">
+          <label htmlFor="filter-payment-status" className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
+            {t('orders.table.payment', 'Payment')}
+          </label>
+          <Controller
+            name="paymentStatus"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value ?? 'all'} onValueChange={(status) => {
+                field.onChange(status);
+                onPaymentStatusChange?.(status as NonNullable<OrderListFilterFormData['paymentStatus']>);
+              }}>
+                <SelectTrigger id="filter-payment-status" className="h-10 w-full dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100">
+                  <SelectValue placeholder={t('orders.table.payment', 'Payment')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.filters.all', 'All')}</SelectItem>
+                  <SelectItem value="pending">{t('common.payment.pending', 'Pending')}</SelectItem>
+                  <SelectItem value="completed">{t('common.payment.completed', 'Completed')}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+      )}
 
       <div className="flex w-full flex-col items-end gap-2 sm:contents">
         <div className="relative w-full pb-5 sm:min-w-0">

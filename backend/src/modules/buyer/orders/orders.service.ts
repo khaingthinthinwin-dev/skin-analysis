@@ -383,8 +383,26 @@ export class OrdersService {
     } else if (roleCode === 'admin' || roleCode === 'super_admin') {
       const merchantId = query.merchantId ?? shopMerchantId;
       where = merchantId ? { merchantId } : {};
+      const shopSearch = query.shopSearch?.trim();
+      if (shopSearch) {
+        where.merchant = {
+          OR: [
+            { shopName: { contains: shopSearch, mode: 'insensitive' } },
+            { user: { name: { contains: shopSearch, mode: 'insensitive' } } },
+          ],
+        };
+      }
     } else {
       throw new ForbiddenException('Insufficient permissions');
+    }
+
+    if (
+      query.paymentStatus &&
+      (roleCode === 'merchant' ||
+        roleCode === 'admin' ||
+        roleCode === 'super_admin')
+    ) {
+      where.paymentStatus = query.paymentStatus;
     }
 
     if (query.status) {

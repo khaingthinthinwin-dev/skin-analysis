@@ -94,7 +94,7 @@ describe('ExportMerchantOrdersDialog', () => {
   it('disables the export and warns when nothing matches the filters', () => {
     renderDialog({ total: 0 });
 
-    expect(screen.getByRole('alert')).toHaveTextContent('No orders to export.');
+    expect(screen.getByRole('status')).toHaveTextContent('No matching orders. The CSV will contain column headers only.');
     expect(screen.getByRole('button', { name: 'Export CSV' })).toBeDisabled();
   });
 

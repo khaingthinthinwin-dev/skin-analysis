@@ -107,6 +107,12 @@ function BuyerOrdersPageContent() {
     methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
   };
 
+  const handleStatusChange = (status: OrderListFilterFormData['status']) => {
+    setExportMessage('');
+    methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+    patch({ status, page: 1 });
+  };
+
   const handleReset = () => {
     setExportMessage('');
     methods.reset({
@@ -325,6 +331,7 @@ function BuyerOrdersPageContent() {
             <OrderFilterBar
               methods={methods}
               onApply={handleApply}
+              onStatusChange={handleStatusChange}
               onReset={handleReset}
               onExport={handleOpenExportModal}
               exportDisabled={isExporting}

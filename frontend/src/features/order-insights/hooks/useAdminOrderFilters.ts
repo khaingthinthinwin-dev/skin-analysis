@@ -17,6 +17,8 @@ const DEFAULT_FILTERS: AdminOrderFilterFormData = {
   order: 'desc',
   merchantId: undefined,
   shopId: undefined,
+  shopSearch: '',
+  paymentStatus: 'all',
 };
 
 function parseFilters(params: URLSearchParams): AdminOrderFilterFormData {
@@ -30,6 +32,8 @@ function parseFilters(params: URLSearchParams): AdminOrderFilterFormData {
     order: params.get('order') ?? 'desc',
     merchantId: params.get('merchantId') ?? undefined,
     shopId: params.get('shopId') ?? undefined,
+    shopSearch: params.get('shopSearch') ?? '',
+    paymentStatus: params.get('paymentStatus') ?? 'all',
   });
   return parsed.success ? { ...DEFAULT_FILTERS, ...parsed.data } : DEFAULT_FILTERS;
 }

@@ -12,9 +12,10 @@ export const DEFAULT_ORDER_LIST_FILTERS: OrderListFilterFormData = {
   order: 'desc',
 };
 
-export function parseOrderListFilters(searchParams: URLSearchParams, defaultLimit: number = DEFAULT_ORDER_LIST_FILTERS.limit): OrderListFilterFormData {
+export function parseOrderListFilters(searchParams: URLSearchParams, defaultLimit: number = DEFAULT_ORDER_LIST_FILTERS.limit, includePaymentStatus = false): OrderListFilterFormData {
   const parsed = orderListFilterSchema.safeParse({
     status: searchParams.get('status') ?? DEFAULT_ORDER_LIST_FILTERS.status,
+    ...(includePaymentStatus ? { paymentStatus: searchParams.get('paymentStatus') ?? undefined } : {}),
     from: searchParams.get('from') ?? DEFAULT_ORDER_LIST_FILTERS.from,
     to: searchParams.get('to') ?? DEFAULT_ORDER_LIST_FILTERS.to,
     page: searchParams.get('page') ?? DEFAULT_ORDER_LIST_FILTERS.page,
@@ -33,12 +34,12 @@ export function parseOrderListFilters(searchParams: URLSearchParams, defaultLimi
   };
 }
 
-export function useOrderQueryParams(defaultLimit?: number) {
+export function useOrderQueryParams(defaultLimit?: number, includePaymentStatus = false) {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryString = searchParams.toString();
   const filters = useMemo(
-    () => parseOrderListFilters(new URLSearchParams(queryString), defaultLimit),
-    [queryString, defaultLimit],
+    () => parseOrderListFilters(new URLSearchParams(queryString), defaultLimit, includePaymentStatus),
+    [queryString, defaultLimit, includePaymentStatus],
   );
 
   function patch(values: Record<string, string | number | undefined>) {

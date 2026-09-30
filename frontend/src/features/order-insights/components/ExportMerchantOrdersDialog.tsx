@@ -67,11 +67,6 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
     : t('merchant.orders.exportAllDates', 'All dates');
 
   const handleExport = async () => {
-    if (isEmpty) {
-      setErrorMessage(t('merchant.orders.exportEmpty', 'No orders to export.'));
-      return;
-    }
-
     setIsExporting(true);
     setErrorMessage(undefined);
 
@@ -108,6 +103,14 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
                 {statusLabel}
               </span>
             </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{t('orders.table.payment', 'Payment')}:</span>
+              <span className="font-medium text-foreground">
+                {filters.paymentStatus && filters.paymentStatus !== 'all'
+                  ? t(`common.payment.${filters.paymentStatus}`, filters.paymentStatus)
+                  : t('common.filters.all', 'All')}
+              </span>
+            </div>
             <p className="text-sm text-muted-foreground">
               {t('merchant.orders.exportDateRange', 'Date Range')}:{' '}
               <span className="font-medium text-foreground">{scopeDateLabel}</span>
@@ -128,8 +131,8 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
             </p>
           )}
           {isEmpty ? (
-            <p className="text-sm text-destructive" role="alert">
-              {t('merchant.orders.exportEmpty', 'No orders to export.')}
+            <p className="text-sm text-muted-foreground" role="status">
+              {t('merchant.orders.exportEmptyCsv', 'No matching orders. The CSV will contain column headers only.')}
             </p>
           ) : errorMessage && (
             <p className="text-sm text-destructive" role="alert">{errorMessage}</p>
