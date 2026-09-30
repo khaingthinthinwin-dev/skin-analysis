@@ -355,7 +355,15 @@ export class OrdersService {
       );
     }
 
-    if (query.merchantId && query.shopId && query.merchantId !== query.shopId) {
+    const shopMerchantId = query.shopId
+      ? await this.resolveShopMerchantId(query.shopId)
+      : undefined;
+
+    if (
+      query.merchantId &&
+      shopMerchantId &&
+      query.merchantId !== shopMerchantId
+    ) {
       throw new BadRequestException('Conflicting merchant/shop filter');
     }
 
@@ -373,7 +381,7 @@ export class OrdersService {
 
       where = { merchantId: merchant.id };
     } else if (roleCode === 'admin' || roleCode === 'super_admin') {
-      const merchantId = query.merchantId ?? query.shopId;
+      const merchantId = query.merchantId ?? shopMerchantId;
       where = merchantId ? { merchantId } : {};
     } else {
       throw new ForbiddenException('Insufficient permissions');
@@ -481,6 +489,21 @@ export class OrdersService {
     };
   }
 
+  private async resolveShopMerchantId(shopId: string): Promise<string> {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+      select: { userId: true },
+    });
+    if (!shop) throw new NotFoundException('Shop not found');
+
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { userId: shop.userId },
+      select: { id: true },
+    });
+    if (!merchant) throw new NotFoundException('Shop merchant not found');
+    return merchant.id;
+  }
+
   private orderBy(
     sort: OrderListQueryDto['sort'],
     order: OrderListQueryDto['order'],
@@ -508,11 +531,15 @@ export class OrdersService {
     return date;
   }
 
-  async getOrderDetail(userId: string, orderId: string) {
+  async getOrderDetail(userId: string, roleCode: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
         status: true,
+        buyer: { select: { name: true, email: true, phone: true } },
+        merchant: {
+          include: { user: { select: { name: true } } },
+        },
         items: {
           include: {
             product: {
@@ -532,11 +559,10 @@ export class OrdersService {
       },
     });
 
-    if (!order || order.buyerId !== userId) {
-      throw new NotFoundException('Order not found');
-    }
+    if (!order) throw new NotFoundException('Order not found');
+    await this.assertOrderReadAccess(order, userId, roleCode);
 
-    return {
+    const detail = {
       id: order.id,
       orderNumber: `ORD-${order.id.slice(0, 8).toUpperCase()}`,
       status: order.statusCode,
@@ -576,9 +602,38 @@ export class OrdersService {
         createdAt: h.createdAt.toISOString(),
       })),
     };
+
+    if (roleCode === 'admin' || roleCode === 'super_admin') {
+      return {
+        ...detail,
+        customer: {
+          name: order.buyer.name,
+          email: order.buyer.email,
+          phone: order.buyer.phone,
+        },
+        shop: {
+          name: order.merchant.shopName,
+          merchantId: order.merchant.id,
+          merchantName: order.merchant.user.name,
+        },
+      };
+    }
+
+    if (roleCode === 'merchant') {
+      return {
+        ...detail,
+        customer: {
+          name: order.buyer.name,
+          email: order.buyer.email,
+          phone: order.buyer.phone,
+        },
+      };
+    }
+
+    return { ...detail, shop: { name: order.merchant.shopName } };
   }
 
-  async getOrderTracking(userId: string, orderId: string) {
+  async getOrderTracking(userId: string, roleCode: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -595,9 +650,8 @@ export class OrdersService {
       },
     });
 
-    if (!order || order.buyerId !== userId) {
-      throw new NotFoundException('Order not found');
-    }
+    if (!order) throw new NotFoundException('Order not found');
+    await this.assertOrderReadAccess(order, userId, roleCode);
 
     const estimatedDelivery = new Date(order.createdAt);
     estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
@@ -631,5 +685,30 @@ export class OrdersService {
             : null,
       })),
     };
+  }
+
+  private async assertOrderReadAccess(
+    order: { buyerId: string; merchantId: string },
+    userId: string,
+    roleCode: string,
+  ): Promise<void> {
+    if (roleCode === 'admin' || roleCode === 'super_admin') return;
+
+    if (roleCode === 'buyer') {
+      if (order.buyerId === userId) return;
+      throw new NotFoundException('Order not found');
+    }
+
+    if (roleCode === 'merchant') {
+      const merchant = await this.prisma.merchant.findUnique({
+        where: { userId },
+      });
+      if (!merchant || merchant.licenseStatus !== 'approved') {
+        throw new ForbiddenException('Your merchant account is not approved');
+      }
+      if (order.merchantId === merchant.id) return;
+    }
+
+    throw new NotFoundException('Order not found');
   }
 }

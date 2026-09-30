@@ -35,6 +35,8 @@ const AdminContentModeration = lazy(() => import('@/pages/admin/ContentModeratio
 const AdminCommissionRevenue = lazy(() => import('@/pages/admin/CommissionRevenue'))
 const CreateAdminAccount = lazy(() => import('@/pages/admin/CreateAdminAccount'))
 const AdminAuditLog = lazy(() => import('@/pages/admin/AuditLog'))
+const AdminOrdersPage = lazy(() => import('@/pages/order-insights/AdminOrdersPage'))
+const AdminOrderDetailPage = lazy(() => import('@/pages/order-insights/AdminOrderDetailPage'))
 
 const BuyerDashboard = lazy(() => import('@/pages/buyer/Dashboard'))
 const BuyerSearchFilter = lazy(() => import('@/pages/buyer/Products'))
@@ -161,6 +163,22 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <AdminUserManagement />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'orders',
+                element: (
+                  <SuspenseWrapper>
+                    <AdminOrdersPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'orders/:id',
+                element: (
+                  <SuspenseWrapper>
+                    <AdminOrderDetailPage />
                   </SuspenseWrapper>
                 ),
               },
