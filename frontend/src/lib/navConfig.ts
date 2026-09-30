@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Store,
   ShieldCheck,
+  Database,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -72,6 +73,7 @@ const adminNavConfig: RoleNavConfig = {
       items: [
         { label: 'Commission & Revenue', href: '/admin/commission-revenue', icon: DollarSign },
         { label: 'Audit Logs', href: '/admin/audit-logs', icon: ClipboardList },
+        { label: 'Master Data', href: '/admin/master-data', icon: Database },
       ],
     },
     {
