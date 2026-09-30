@@ -29,13 +29,13 @@ export default function SkinAnalysis() {
         <Card className="border-border/80 shadow-xs flex flex-col justify-between">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Camera className="h-5 w-5 text-purple-600" /> Facial Skin Scan
+              <Camera className="h-5 w-5 text-violet-600" /> Facial Skin Scan
             </CardTitle>
             <CardDescription>Position your face in good lighting for high accuracy</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-purple-200 dark:border-purple-800 rounded-2xl p-8 text-center bg-purple-50/40 dark:bg-purple-950/20 flex flex-col items-center justify-center space-y-3">
-              <div className="p-4 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-600">
+            <div className="border-2 border-dashed border-violet-200 dark:border-violet-800 rounded-2xl p-8 text-center bg-violet-50/40 dark:bg-violet-950/20 flex flex-col items-center justify-center space-y-3">
+              <div className="p-4 rounded-full bg-violet-100 dark:bg-violet-900 text-violet-600">
                 <Upload className="h-8 w-8" />
               </div>
               <div>
@@ -48,7 +48,7 @@ export default function SkinAnalysis() {
               onClick={handleStartScan}
               disabled={analyzing}
               size="lg"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold"
+              className="w-full bg-gradient-to-r bg-violet-600 hover:bg-violet-700 text-white font-bold"
             >
               {analyzing ? (
                 <>
@@ -64,7 +64,7 @@ export default function SkinAnalysis() {
         </Card>
 
         {/* Latest Results Summary */}
-        <Card className="border-border/80 shadow-xs">
+        <Card className="rounded-2xl border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Latest Scan Results
@@ -76,7 +76,7 @@ export default function SkinAnalysis() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
                   <span className="text-xs font-semibold text-muted-foreground">Detected Skin Type</span>
-                  <span className="text-sm font-extrabold text-purple-700 dark:text-purple-300">Combination Skin</span>
+                  <span className="text-sm font-extrabold text-violet-700 dark:text-violet-300">Combination Skin</span>
                 </div>
 
                 <div className="space-y-2">
@@ -99,8 +99,8 @@ export default function SkinAnalysis() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-purple-100/60 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs space-y-1">
-                  <div className="font-bold text-purple-800 dark:text-purple-200 flex items-center gap-1">
+                <div className="p-3 rounded-xl bg-violet-100/60 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-xs space-y-1">
+                  <div className="font-bold text-violet-800 dark:text-violet-200 flex items-center gap-1">
                     <ShieldCheck className="h-4 w-4 text-pink-500" /> Recommended Action Routine
                   </div>
                   <p className="text-muted-foreground">

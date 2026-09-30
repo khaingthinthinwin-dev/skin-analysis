@@ -155,9 +155,6 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
         )}
       </Card>
 
-      <p className="text-xs text-muted-foreground text-center mt-2 italic">
-        Sponsored products are paid placements from merchants
-      </p>
-    </div>
+      </div>
   )
 }

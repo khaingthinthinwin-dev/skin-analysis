@@ -1,0 +1,313 @@
+{
+  "page": {
+    "title": "Clinical Skin Analysis",
+    "subtitle": "Review diagnostic imaging and AI-driven dermatological insights.",
+    "newScan": "New Scan"
+  },
+  "tabs": {
+    "scan": "New Scan",
+    "history": "History",
+    "trends": "Trends"
+  },
+  "ready": {
+    "noScan": "No scan performed yet",
+    "noScanDesc": "Upload or capture a photo to analyze your skin health and track changes over time.",
+    "startScan": "Start AI Scan"
+  },
+  "upload": {
+    "title": "Upload Facial Image",
+    "description": "Upload a clear photo of your face for AI analysis",
+    "dragDrop": "Drag & drop photo or click to browse",
+    "supportedFormats": "Supports {{formats}}",
+    "consent": "I consent to AI facial analysis processing",
+    "consentRequired": "Consent is required before uploading facial images",
+    "noFile": "Please select a file to upload",
+    "uploading": "Uploading...",
+    "analyzing": "Analyzing...",
+    "uploadFile": "Upload File",
+    "selectFile": "Select File",
+    "removeFile": "Remove file",
+    "previewAlt": "Uploaded facial image preview",
+    "guidelinesTitle": "Capture Guidelines",
+    "guidelines": {
+      "1": "Use natural, even lighting - avoid harsh shadows or direct flash",
+      "2": "Face the camera directly with a neutral expression",
+      "3": "Remove glasses, heavy makeup, and hair from your face",
+      "4": "Hold the camera at eye level, about arm's length away"
+    },
+    "error": {
+      "invalidFormat": "Unsupported file format. Please use {{types}}.",
+      "fileTooLarge": "File is too large. Maximum size is {{maxSize}}.",
+      "noFile": "Please select a file to upload",
+      "consentRequired": "Consent is required before uploading facial images",
+      "generic": "Upload failed. Please try again."
+    }
+  },
+  "camera": {
+    "title": "Camera Capture",
+    "description": "Take a live photo using your device camera",
+    "ready": "Camera ready",
+    "readyDesc": "Position your face in the frame and tap the shutter button",
+    "takePhoto": "Take Photo",
+    "retake": "Retake",
+    "usePhoto": "Use Photo",
+    "switch": "Switch Camera",
+    "capturedAlt": "Captured photo preview"
+  },
+  "processing": {
+    "title": "AI Analysis in Progress",
+    "steps": {
+      "uploading": "Uploading image",
+      "validating": "Validating image quality",
+      "processing": "Running AI analysis",
+      "completed": "Analysis complete"
+    },
+    "estimatedTime": "Estimated time: {{time}}",
+    "cancel": "Cancel",
+    "cancelled": "Analysis cancelled",
+    "cancelledDesc": "You can start a new scan anytime",
+    "failed": "Analysis failed",
+    "failedDesc": "Please try again with a different image",
+    "tryAgain": "Try Again",
+    "completed": "Analysis complete"
+  },
+  "summary": {
+    "title": "Latest Scan Summary",
+    "noScan": "No recent scan",
+    "noScanDesc": "Your latest scan results will appear here",
+    "healthScore": "Health Score",
+    "hydration": "Hydration",
+    "skinTypeLabel": "Skin Type: {{type}}",
+    "quotaRemaining": "{{count}} scans remaining today",
+    "confidence": "AI Confidence: {{value}}%",
+    "viewHistory": "View History",
+    "viewTrends": "View Trends",
+    "years": "{{age}} years",
+    "lastAnalyzed": "Last analyzed: {{date}}",
+    "skinAge": "Skin age: {{age}} years"
+  },
+  "results": {
+    "title": "Analysis Results",
+    "badge": "AI Skin Report",
+    "reportSubtitle": "A personalized assessment of your latest scan.",
+    "keyMetrics": "Key Metrics",
+    "healthScore": "Health Score",
+    "hydration": "Hydration",
+    "skinType": "Skin Type",
+    "skinAge": "Skin Age",
+    "confidence": "Confidence",
+    "recommendations": "Recommended Products",
+    "viewMore": "View more",
+    "processed": "PROCESSED"
+  },
+  "conditions": {
+    "title": "Condition Severity",
+    "severityScore": "Severity Score",
+    "none": "None",
+    "mild": "Mild",
+    "moderate": "Moderate",
+    "severe": "Severe"
+  },
+  "findings": {
+    "title": "Clinical Findings",
+    "overallAssessment": "Overall Assessment",
+    "primaryConcerns": "Primary Concerns",
+    "secondaryConcerns": "Secondary Concerns",
+    "noFindings": "No significant findings detected",
+    "affectedArea": "Area: {{area}}"
+  },
+  "routine": {
+    "title": "Daily Routine",
+    "badge": "AM · PM",
+    "tip": "Introduce one new product at a time and patch test before full use.",
+    "morning": {
+      "label": "Morning",
+      "desc": "Protect and hydrate for the day ahead",
+      "steps": {
+        "cleanser": {
+          "name": "Gentle Cleanser",
+          "desc": "Rinse away overnight oil with a mild, sulfate-free wash."
+        },
+        "serum": {
+          "name": "Antioxidant Serum",
+          "desc": "Apply 2–3 drops of vitamin C to brighten and even skin tone."
+        },
+        "moisturizer": {
+          "name": "Light Moisturizer",
+          "desc": "Lock in hydration with a lightweight gel-cream."
+        },
+        "sunscreen": {
+          "name": "Sunscreen SPF 50",
+          "desc": "Reapply every 2 hours when you are outdoors."
+        }
+      }
+    },
+    "evening": {
+      "label": "Evening",
+      "desc": "Cleanse, treat and repair overnight",
+      "steps": {
+        "doubleCleanse": {
+          "name": "Double Cleanse",
+          "desc": "Start with an oil cleanser, then a gentle foaming wash."
+        },
+        "exfoliate": {
+          "name": "Exfoliate 2–3× a week",
+          "desc": "Use BHA on the T-zone to keep pores clear."
+        },
+        "treatment": {
+          "name": "Treatment Serum",
+          "desc": "Apply niacinamide or retinoid to target areas."
+        },
+        "nightCream": {
+          "name": "Night Cream",
+          "desc": "Seal in moisture with a ceramide-rich cream."
+        }
+      }
+    }
+  },
+  "recommendations": {
+    "title": "Recommended Products",
+    "viewProduct": "View Product",
+    "matchScore": "{{score}}% match",
+    "priority": {
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority"
+    },
+    "feedback": {
+      "wasHelpful": "Was this recommendation helpful?",
+      "helpful": "Helpful",
+      "notHelpful": "Not Helpful"
+    }
+  },
+  "mesh": {
+    "title": "Facial Mesh Overlay",
+    "showMesh": "Show Mesh",
+    "hideMesh": "Hide Mesh",
+    "download": "Download",
+    "scanAlt": "Facial scan image",
+    "capturedAlt": "Captured photo",
+    "loadError": "Failed to load scan image",
+    "meshLoadError": "Failed to load mesh overlay",
+    "meshUnavailable": "Mesh overlay unavailable",
+    "scanMissingDesc": "The scan image could not be loaded. Try a new scan.",
+    "active": "Diagnostic Overlay Active",
+    "fullscreen": "Full screen"
+  },
+  "history": {
+    "title": "Analysis History",
+    "subtitle": "Track your skin health journey over time",
+    "filters": "Filters",
+    "dateFrom": "From Date",
+    "dateTo": "To Date",
+    "pageSize": "Page Size",
+    "exportAll": "Export Full History",
+    "exporting": "Exporting...",
+    "columns": {
+      "date": "Date",
+      "healthScore": "Health Score",
+      "hydration": "Hydration",
+      "skinType": "Skin Type",
+      "skinAge": "Skin Age",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "noRecords": "No analysis records found",
+    "loadError": "Failed to load history",
+    "retry": "Retry",
+    "viewDetails": "View Details",
+    "exportSingle": "Export Report",
+    "export": "Export Report"
+  },
+  "trends": {
+    "title": "Trend Visualization",
+    "insufficientData": "Insufficient data for trends",
+    "needTwoScans": "At least 2 completed scans are required to view trends",
+    "healthScore": "Health Score",
+    "hydration": "Hydration"
+  },
+  "compare": {
+    "title": "Analysis Comparison",
+    "baseline": "Baseline",
+    "current": "Current",
+    "metrics": "Metrics Comparison",
+    "healthScore": "Health Score",
+    "hydration": "Hydration",
+    "skinAge": "Skin Age",
+    "daysBetween": "Days Between",
+    "days": "days",
+    "conditionChanges": "Condition Changes",
+    "condition": "Condition",
+    "direction": "Direction",
+    "directions": {
+      "improved": "Improved",
+      "regressed": "Regressed",
+      "stable": "Stable"
+    },
+    "loadError": "Failed to load comparison",
+    "metric": "Metric",
+    "delta": "Delta"
+  },
+  "export": {
+    "single": "Export Report",
+    "history": "Export Full History"
+  },
+  "metrics": {
+    "totalAnalyses": "Total Analyses",
+    "bestScore": "Best Score",
+    "avgHydration": "Average Hydration",
+    "improvement": "Improvement"
+  },
+  "common": {
+    "back": "Back",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "close": "Close",
+    "exporting": "Exporting...",
+    "pageSize": "Items per page: {{size}}",
+    "clearFilters": "Clear Filters",
+    "clear": "Clear",
+    "years": "years",
+    "days": "days",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{total}}",
+    "yrs": "Yrs"
+  },
+  "severity": {
+    "none": "None",
+    "mild": "Mild",
+    "moderate": "Moderate",
+    "severe": "Severe"
+  },
+  "priority": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "feedback": {
+    "helpful": "Helpful",
+    "notHelpful": "Not Helpful",
+    "wasHelpful": "Was this recommendation helpful?"
+  },
+  "guidelines": {
+    "title": "Capture Guidelines",
+    "lighting": "Lighting",
+    "lightingDesc": "Use natural, even lighting - avoid harsh shadows or direct flash",
+    "background": "Background",
+    "backgroundDesc": "Use a plain, neutral background",
+    "noGlasses": "No Glasses",
+    "noGlassesDesc": "Remove glasses and accessories",
+    "expression": "Expression",
+    "expressionDesc": "Maintain a neutral, relaxed expression",
+    "distance": "Distance",
+    "distanceDesc": "Hold camera at eye level, arm's length away",
+    "consent": "Consent",
+    "consentDesc": "I understand my facial image will be analyzed by AI"
+  },
+  "severityTag": {
+    "low": "LOW",
+    "moderate": "MODERATE",
+    "high": "HIGH"
+  }
+}

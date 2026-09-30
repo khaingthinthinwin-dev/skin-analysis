@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { merchantAdService } from '../services/advertisement.service';
+import { AdContentPayload, merchantAdService } from '../services/advertisement.service';
 
 export function useAdvertisements(params?: {
   status?: 'active' | 'inactive' | 'expired';
@@ -39,16 +39,16 @@ export function useAdvertisements(params?: {
   });
 
   const uploadContent = useMutation({
-    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
-      merchantAdService.uploadContent(id, formData),
+    mutationFn: ({ id, payload }: { id: string; payload: AdContentPayload }) =>
+      merchantAdService.uploadContent(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
     },
   });
 
   const updateContent = useMutation({
-    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
-      merchantAdService.updateContent(id, formData),
+    mutationFn: ({ id, payload }: { id: string; payload: AdContentPayload }) =>
+      merchantAdService.updateContent(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
     },

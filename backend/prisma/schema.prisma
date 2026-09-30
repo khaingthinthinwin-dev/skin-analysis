@@ -89,6 +89,7 @@ model User {
   revenueTargets        RevenueTarget[]
   processedPayouts      Payout[]
   skinAnalyses          SkinAnalysis[]
+  skinAnalysisFeedback  SkinAnalysisFeedback[]
   cart                  Cart?
   orderStatusHistory    OrderStatusHistory[]    @relation("OrderStatusHistoryChangedBy")
   inventoryTransactions InventoryTransaction[]  @relation("InventoryTransactionCreator")
@@ -614,25 +615,33 @@ model PayoutItem {
 // ============================================
 
 model SkinAnalysis {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String    @map("user_id") @db.Uuid
-  imageUrl       String    @map("image_url")
-  skinType       String?   @map("skin_type")
-  estimatedAge   Int?      @map("estimated_age")
-  analysisStatus String    @default("pending") @map("analysis_status")
-  aiModel        String?   @map("ai_model")
-  aiModelVersion String?   @map("ai_model_version")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  completedAt    DateTime? @map("completed_at")
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  imageUrl          String    @map("image_url")
+  skinType          String?   @map("skin_type")
+  estimatedAge      Int?      @map("estimated_age")
+  analysisStatus    String    @default("pending") @map("analysis_status")
+  aiModel           String?   @map("ai_model")
+  aiModelVersion    String?   @map("ai_model_version")
+  analysisDate      DateTime  @default(now()) @map("analysis_date")
+  healthScore       Int?      @map("health_score")
+  hydration         Int?
+  confidence        Int?
+  meshOverlayUrl    String?   @map("mesh_overlay_url")
+  overallAssessment String?   @map("overall_assessment")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  completedAt       DateTime? @map("completed_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   user            User                         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   conditions      SkinAnalysisCondition[]
+  findings        SkinAnalysisFinding[]
   recommendations SkinAnalysisRecommendation[]
 
   @@index([userId])
   @@index([analysisStatus])
+  @@index([userId, analysisDate])
   @@map("skin_analyses")
 }
 
@@ -641,32 +650,74 @@ model SkinAnalysisCondition {
   analysisId    String   @map("analysis_id") @db.Uuid
   conditionName String   @map("condition_name")
   severity      String
+  severityScore Int?     @map("severity_score")
+  affectedArea  String?  @map("affected_area")
+  description   String?
   confidence    Decimal  @db.Decimal(5, 2)
   createdAt     DateTime @default(now()) @map("created_at")
 
   // Relations
   analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
+  @@unique([analysisId, conditionName])
   @@index([analysisId])
   @@map("skin_analysis_conditions")
+}
+
+model SkinAnalysisFinding {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisId   String   @map("analysis_id") @db.Uuid
+  findingType  String   @map("finding_type")
+  title        String
+  description  String
+  affectedArea String?  @map("affected_area")
+  severity     String   @default("NONE")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([analysisId])
+  @@map("skin_analysis_findings")
 }
 
 model SkinAnalysisRecommendation {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   analysisId   String   @map("analysis_id") @db.Uuid
   productId    String   @map("product_id") @db.Uuid
+  productName  String?  @map("product_name")
+  productType  String?  @map("product_type")
+  priority     String   @default("MEDIUM")
   reason       String
   matchScore   Int      @map("match_score")
   displayOrder Int      @default(0) @map("display_order")
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
-  analysis SkinAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  product  Product      @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  analysis SkinAnalysis            @relation(fields: [analysisId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product  Product                 @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  feedback SkinAnalysisFeedback[]
 
   @@index([analysisId])
   @@index([productId])
   @@map("skin_analysis_recommendations")
+}
+
+model SkinAnalysisFeedback {
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recommendationId String                   @map("recommendation_id") @db.Uuid
+  userId           String                   @map("user_id") @db.Uuid
+  isHelpful        Boolean                  @map("is_helpful")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  recommendation SkinAnalysisRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([recommendationId, userId])
+  @@index([userId])
+  @@map("skin_analysis_feedback")
 }
 
 // ============================================
