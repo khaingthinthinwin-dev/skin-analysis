@@ -224,12 +224,12 @@ export function AnalysisHistoryTable({ initialParams = {} }: AnalysisHistoryTabl
             </div>
           ) : data ? (
             <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+              <div className="overflow-x-auto rounded-md border bg-card">
+                <Table className="w-full">
+                  <TableHeader className="sticky top-0 z-10 bg-primary/10">
                     <TableRow>
                       {/* Select-all checkbox */}
-                      <TableHead className="w-[48px]">
+                      <TableHead className="w-12 bg-primary/10">
                         <Checkbox
                           id="chk-select-all"
                           checked={allSelected}
@@ -241,19 +241,33 @@ export function AnalysisHistoryTable({ initialParams = {} }: AnalysisHistoryTabl
                           }
                         />
                       </TableHead>
-                      <TableHead className="w-[80px]">{t('history.columns.date')}</TableHead>
-                      <TableHead className="w-[100px]">{t('history.columns.healthScore')}</TableHead>
-                      <TableHead className="w-[100px]">{t('history.columns.hydration')}</TableHead>
-                      <TableHead className="w-[120px]">{t('history.columns.skinType')}</TableHead>
-                      <TableHead className="w-[80px]">{t('history.columns.skinAge')}</TableHead>
-                      <TableHead className="w-[120px]">{t('history.columns.status')}</TableHead>
-                      <TableHead className="w-[140px]">{t('history.columns.actions')}</TableHead>
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                        {t('history.columns.date')}
+                      </TableHead>
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                        {t('history.columns.healthScore')}
+                      </TableHead>
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                        {t('history.columns.hydration')}
+                      </TableHead>
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                        {t('history.columns.skinType')}
+                      </TableHead>
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                        {t('history.columns.skinAge')}
+                      </TableHead>
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                        {t('history.columns.status')}
+                      </TableHead>
+                      <TableHead className="text-right bg-primary/10 whitespace-nowrap font-bold">
+                        {t('history.columns.actions')}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.items.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                           {t('history.noRecords')}
                         </TableCell>
                       </TableRow>
@@ -263,7 +277,7 @@ export function AnalysisHistoryTable({ initialParams = {} }: AnalysisHistoryTabl
                         return (
                           <TableRow
                             key={item.analysisId}
-                            className={`hover:bg-muted/50 transition-colors ${
+                            className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${
                               isSelected ? 'bg-violet-50/50 dark:bg-violet-900/10' : ''
                             }`}
                           >
@@ -275,53 +289,54 @@ export function AnalysisHistoryTable({ initialParams = {} }: AnalysisHistoryTabl
                                 aria-label={`Select analysis from ${formatDate(item.analysisDate)}`}
                               />
                             </TableCell>
-                            <TableCell className="text-sm">
+                            <TableCell className="font-medium">
                               {formatDate(item.analysisDate)}
                             </TableCell>
-                            <TableCell className="text-sm font-medium">
-                              {item.healthScore}/100
+                            <TableCell className="font-semibold">
+                              {item.healthScore}
+                              <span className="text-xs font-normal text-muted-foreground">/100</span>
                             </TableCell>
-                            <TableCell className="text-sm">{item.hydration}%</TableCell>
-                            <TableCell className="text-sm">
-                              {SKIN_TYPE_LABELS[item.skinType]}
-                            </TableCell>
-                            <TableCell className="text-sm">{item.skinAge} yrs</TableCell>
+                            <TableCell>{item.hydration}%</TableCell>
+                            <TableCell>{SKIN_TYPE_LABELS[item.skinType]}</TableCell>
+                            <TableCell>{item.skinAge} yrs</TableCell>
                             <TableCell>{getStatusBadge(item.status)}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-7 w-7 border border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                                   onClick={() =>
                                     (window.location.href = `/buyer/skin-analysis/${item.analysisId}`)
                                   }
                                   aria-label={t('history.viewDetails')}
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Eye className="h-3.5 w-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-7 w-7 border border-green-300 bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 disabled:opacity-50"
                                   onClick={() => handleExportSingle(item.analysisId)}
                                   disabled={exportSingle.isPending}
                                   aria-label={t('history.exportSingle')}
                                 >
                                   {exportSingle.isPending ? (
-                                    <div className="animate-spin h-4 w-4 rounded-full border-2 border-current border-t-transparent" />
+                                    <div className="animate-spin h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent" />
                                   ) : (
-                                    <Download className="h-4 w-4" />
+                                    <Download className="h-3.5 w-3.5" />
                                   )}
                                 </Button>
                                 <Button
                                   id={`btn-delete-${item.analysisId}`}
                                   variant="ghost"
                                   size="icon"
+                                  className="h-7 w-7 border border-red-300 bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800 disabled:opacity-50"
                                   onClick={() => requestDeleteSingle(item.analysisId)}
                                   disabled={isDeleting}
                                   aria-label="Delete this analysis"
-                                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             </TableCell>
