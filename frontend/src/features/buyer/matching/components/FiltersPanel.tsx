@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { RotateCcw, SlidersHorizontal, Star } from 'lucide-react'
+import { RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { CategorySelect } from '@/features/search/components/CategorySelect'
 import { useCategoryTree } from '@/features/search/hooks/useCategoryTree'
 import type { MatchQueryParams } from '@/schemas/matching.schema'
@@ -193,16 +193,9 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
             {RATING_OPTIONS.map((rating) => (
               <label key={rating.value} className="flex cursor-pointer items-center gap-2">
                 <RadioGroupItem value={rating.value.toString()} className="mt-0.5" />
-                <span className="text-sm text-foreground flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
-                  {rating.label}
-                </span>
+                <span className="text-sm text-foreground">{rating.label}</span>
               </label>
             ))}
-            <label className="flex cursor-pointer items-center gap-2">
-              <RadioGroupItem value="" className="mt-0.5" />
-              <span className="text-sm text-foreground">All Ratings</span>
-            </label>
           </RadioGroup>
         </div>
 

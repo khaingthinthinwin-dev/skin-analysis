@@ -244,7 +244,7 @@ export class ProductsService {
       throw new BadRequestException('Price or compare at price is required');
     }
     // TypeScript doesn't narrow the type after the throw, so we assert non-null
-    const finalPrice: number = price!;
+    const finalPrice: number = price;
 
     const product = await this.prisma.product.create({
       data: {
