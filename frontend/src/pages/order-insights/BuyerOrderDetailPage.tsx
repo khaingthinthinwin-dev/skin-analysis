@@ -269,6 +269,11 @@ function BuyerOrderDetailContent() {
             📦 Order Details
           </p>
           <h1 className="mt-1 text-xl font-bold">Order {orderReference(order)}</h1>
+          {order.shop?.name && (
+            <p className="mt-1 text-sm font-medium opacity-95">
+              {t("orders.detail.shopName", "Shop")}: {order.shop.name}
+            </p>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-90">
             <span>
               Placed {formatDate(order.createdAt, dateLocale)}, {formatTime(order.createdAt, dateLocale)}
