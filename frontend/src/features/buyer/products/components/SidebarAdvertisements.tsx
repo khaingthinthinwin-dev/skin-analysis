@@ -12,6 +12,31 @@ function getImageUrl(url: string | null): string {
   return base + url;
 }
 
+const PRODUCT_DETAIL_AD_PLACEMENT = 'productDetail_page_banner';
+
+function isSidebarAdInSchedule(ad: {
+  startsAt?: string | Date | null;
+  expiresAt?: string | Date | null;
+}): boolean {
+  const now = Date.now();
+  const parseDate = (value: string | Date | null | undefined): number | null => {
+    if (value === null || value === undefined) return null;
+    const time = value instanceof Date ? value.getTime() : Date.parse(value);
+    return Number.isNaN(time) ? null : time;
+  };
+  // Date condition: startsAt <= now < expiresAt. Missing bound = no bound.
+  // Invalid bound = not eligible (fail safe, hide the ad).
+  if (ad.startsAt !== null && ad.startsAt !== undefined) {
+    const start = parseDate(ad.startsAt);
+    if (start === null || start > now) return false;
+  }
+  if (ad.expiresAt !== null && ad.expiresAt !== undefined) {
+    const end = parseDate(ad.expiresAt);
+    if (end === null || end <= now) return false;
+  }
+  return true;
+}
+
 interface SidebarAdvertisementsProps {
   idOrSlug: string;
 }
@@ -29,7 +54,14 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
   const [current, setCurrent] = useState(0);
   const pausedRef = useRef(false);
 
-  const total = ads.length > 0 ? ads.length : sampleAds.length;
+  // Placement + date condition (productDetail_page_banner, startsAt <= now < expiresAt).
+  // Backend getSidebarAds() already filters the same way; this guards legacy/stale payloads.
+  const eligibleAds = ads.filter((ad) => {
+    if (ad.placement && ad.placement !== PRODUCT_DETAIL_AD_PLACEMENT) return false;
+    return isSidebarAdInSchedule(ad);
+  });
+
+  const total = eligibleAds.length > 0 ? eligibleAds.length : sampleAds.length;
 
   useEffect(() => {
     if (total <= 1) {
@@ -61,9 +93,9 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
     );
   }
 
-  const useFallback = isError || ads.length === 0;
+  const useFallback = isError || eligibleAds.length === 0;
   const sampleAd = sampleAds[current % sampleAds.length];
-  const realAd = useFallback ? null : (ads[current % ads.length] as SidebarAdvertisement | undefined);
+  const realAd = useFallback ? null : (eligibleAds[current % eligibleAds.length] as SidebarAdvertisement | undefined);
 
   const title = useFallback ? sampleAd.title : (realAd?.title ?? '');
   const description = useFallback ? sampleAd.desc : (realAd?.announcementMessage ?? null);

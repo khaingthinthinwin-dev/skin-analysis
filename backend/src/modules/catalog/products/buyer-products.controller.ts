@@ -67,6 +67,14 @@ export class BuyerProductsController {
     return this.productsService.findSimilar(idOrSlug, limit);
   }
 
+  @Get(':idOrSlug/advertisements')
+  @ApiOperation({
+    summary: 'Get eligible sidebar advertisements for product detail (public)',
+  })
+  async getAdvertisements(@Param('idOrSlug') idOrSlug: string) {
+    return this.productsService.getSidebarAds(idOrSlug);
+  }
+
   @Post(':idOrSlug/reviews')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a review (buyer only, one per product)' })

@@ -6,6 +6,7 @@ export * from './admin-bulk-reject.dto';
 export * from './create-ad-fee-setting.dto';
 export * from './update-ad-fee-setting.dto';
 export * from './deactivate-ad-fee-setting.dto';
+export * from './delete-ad-fee-history.dto';
 export * from './admin-ad-fee-history-query.dto';
 export * from './revenue-analytics-query.dto';
 export * from './export-ad-performance.dto';

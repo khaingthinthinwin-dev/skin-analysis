@@ -31,7 +31,7 @@ export class AdsController {
     @Query('sessionId') sessionId?: string,
   ) {
     return this.adsService.getAdsByPlacement(
-      placement || 'category_banner',
+      placement || 'recommendation_page_banner',
       sessionId,
     );
   }

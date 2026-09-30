@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -15,12 +16,14 @@ import {
   Pencil,
   RefreshCw,
   Search,
+  ShieldAlert,
   Trash2,
   Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -158,7 +161,15 @@ export default function Advertisements() {
   const [paymentReference, setPaymentReference] = useState('')
   const [confirmingSelection, setConfirmingSelection] = useState(false)
   const [packagesPage, setPackagesPage] = useState(1)
-  const approvedMerchant = user?.licenseStatus === 'approved'
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const licenseStatus = user?.licenseStatus || user?.license_status
+  const isPendingMerchant = licenseStatus === 'pending'
+  const isRejectedMerchant = licenseStatus === 'rejected'
+  const approvedMerchant = licenseStatus === 'approved' && !isDeactivated
   const params = {
     page,
     limit: 3,
@@ -345,22 +356,32 @@ export default function Advertisements() {
         <p className="text-muted-foreground">Select an advertising package, upload your content, and manage your advertisements.</p>
       </div>
 
-      {/* Pending Merchant Banner (§4.3) */}
-      {user?.licenseStatus === 'pending' && (
+      {/* Deactivated Banner */}
+      {isDeactivated && <AccountDeactivatedBanner />}
+
+      {/* Pending Merchant Banner */}
+      {!isDeactivated && isPendingMerchant && (
         <Alert variant="warning">
-          <AlertTriangle className="h-4 w-4" />
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
-            shop is approved.
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}
-      {user?.licenseStatus === 'rejected' && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+
+      {/* Rejected Merchant Banner */}
+      {!isDeactivated && isRejectedMerchant && (
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
-            shop is approved.
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your
+            license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-semibold">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}
@@ -442,7 +463,7 @@ export default function Advertisements() {
                     </ul>
                     <Button
                       className="mt-auto w-full bg-primary/10 text-primary hover:bg-primary/20"
-                      disabled={!approvedMerchant}
+                      disabled={!approvedMerchant || isDeactivated}
                       onClick={() => {
                         setSelectedPackage(pkg)
                         setConfirmingSelection(true)
@@ -538,6 +559,7 @@ export default function Advertisements() {
               <AdCard
                 key={ad.id}
                 ad={ad}
+                isDeactivated={isDeactivated}
                 onEdit={(target) => setEditTarget(target)}
                 onPay={(target) => setPayTarget(target)}
                 onDelete={(target) => setDeleteTarget(target)}
@@ -728,6 +750,7 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
 
 interface AdCardProps {
   ad: Advertisement
+  isDeactivated?: boolean
   onEdit: (ad: Advertisement) => void
   onPay: (ad: Advertisement) => void
   onDelete: (ad: Advertisement) => void
@@ -735,7 +758,7 @@ interface AdCardProps {
   onView: (ad: Advertisement) => void
 }
 
-function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
+function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
@@ -841,13 +864,15 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) 
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{ad.rejectionReason}</span>
             </div>
-            <button
-              type="button"
-              className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80"
-              onClick={() => onEdit(ad)}
-            >
-              Edit &amp; Resubmit
-            </button>
+            {!isDeactivated && (
+              <button
+                type="button"
+                className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80"
+                onClick={() => onEdit(ad)}
+              >
+                Edit &amp; Resubmit
+              </button>
+            )}
           </div>
         )}
 

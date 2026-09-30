@@ -14,6 +14,12 @@ function getImageUrl(url: string | null | undefined): string {
   return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
+function formatPrice(price: string | null | undefined): string {
+  const num = Number.parseFloat(price ?? '');
+  if (Number.isNaN(num)) return '0Ks';
+  return `${Math.round(num).toLocaleString('en-US')}Ks`;
+}
+
 interface WishlistItemCardProps {
   item: WishlistItem;
   onMoveToCart: (productId: string) => void;
@@ -86,12 +92,12 @@ export function WishlistItemCard({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-0.5">
           <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="text-sm sm:text-base font-extrabold text-foreground">
-              {item.productPrice}
+              {formatPrice(item.productPrice)}
             </span>
             {item.compareAtPrice &&
               parseFloat(item.compareAtPrice) > parseFloat(item.productPrice) && (
                 <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
-                  {item.compareAtPrice}
+                  {formatPrice(item.compareAtPrice)}
                 </span>
               )}
           </div>

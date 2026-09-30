@@ -62,15 +62,16 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
             role="button"
             aria-pressed={groupBy === value}
             onClick={() => handleGroupByChange(value)}
-            className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+            className={`rounded-md border px-3 py-2 text-xs font-semibold transition-all duration-200 ease-in-out ${
               groupBy === value
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-transparent text-muted-foreground'
+                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                : 'border-border bg-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-muted'
             }`}
           >
             {label}
           </button>
         ))}
+
         </div>
         <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
           <span className="text-sm text-muted-foreground font-medium">From</span>

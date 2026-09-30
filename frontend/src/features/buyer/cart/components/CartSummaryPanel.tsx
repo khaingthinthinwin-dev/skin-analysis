@@ -18,7 +18,7 @@ export function CartSummaryPanel({
 
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
-    return `$${num.toFixed(2)}`;
+    return `${Math.round(num).toLocaleString('en-US')}Ks`;
   };
 
   const shippingAmount = parseFloat(summary.shippingEstimate || '0');

@@ -5,6 +5,7 @@ export interface MerchantProductsGuardResult {
   isApproved: boolean
   isPending: boolean
   isRejected: boolean
+  isDeactivated: boolean
   rejectionReason: string | null
   isLoading: boolean
   /** Whether to show CRUD buttons (Add, Edit, Delete, Bulk Actions) */
@@ -13,6 +14,8 @@ export interface MerchantProductsGuardResult {
   showPendingBanner: boolean
   /** Whether to show rejection banner */
   showRejectionBanner: boolean
+  /** Whether to show deactivated banner */
+  showDeactivatedBanner: boolean
 }
 
 export function useMerchantProductsGuard(): MerchantProductsGuardResult {
@@ -30,11 +33,13 @@ export function useMerchantProductsGuard(): MerchantProductsGuardResult {
         isApproved: false,
         isPending: false,
         isRejected: false,
+        isDeactivated: false,
         rejectionReason: null,
         isLoading: true,
         showCrudActions: false,
         showPendingBanner: false,
         showRejectionBanner: false,
+        showDeactivatedBanner: false,
       }
     }
 
@@ -44,16 +49,23 @@ export function useMerchantProductsGuard(): MerchantProductsGuardResult {
     const isApproved = status === 'approved'
     const isPending = status === 'pending'
     const isRejected = status === 'rejected'
+    const isDeactivated =
+      user?.isActive === false ||
+      user?.is_active === false ||
+      user?.status === 'deactivated' ||
+      user?.status === 'inactive'
 
     return {
       isApproved,
       isPending,
       isRejected,
+      isDeactivated,
       rejectionReason: null,
       isLoading: false,
-      showCrudActions: isApproved,
+      showCrudActions: isApproved && !isDeactivated,
       showPendingBanner: isPending,
       showRejectionBanner: isRejected,
+      showDeactivatedBanner: isDeactivated,
     }
   }, [user, isLoading])
 }

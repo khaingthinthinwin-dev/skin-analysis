@@ -231,13 +231,13 @@ export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
           >
             <defs>
               <linearGradient id="revenueTrendFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10B981" stopOpacity="0.55" />
-                <stop offset="100%" stopColor="#10B981" stopOpacity="0.02" />
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.55" />
+                <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.02" />
               </linearGradient>
             </defs>
 
             <path d={areaPath} fill="url(#revenueTrendFill)" />
-            <path d={linePath} fill="none" stroke="#10B981" strokeWidth="2.5" />
+            <path d={linePath} fill="none" stroke="#3B82F6" strokeWidth="2.5" />
 
             {points.map((point, i) => (
               <g key={point.date}>
@@ -245,8 +245,8 @@ export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
                   cx={point.x}
                   cy={point.y}
                   r={hovered === i ? 5 : 3}
-                  fill={hovered === i ? '#10B981' : '#ffffff'}
-                  stroke="#10B981"
+                  fill={hovered === i ? '#3B82F6' : '#ffffff'}
+                  stroke="#3B82F6"
                   strokeWidth="2"
                 >
                   <title>{`${point.label}: ${formatPrice(point.revenue)}`}</title>
@@ -269,7 +269,7 @@ export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
                 y1={padTop - 6}
                 x2={active.x}
                 y2={padTop + innerH}
-                stroke="#10B981"
+                stroke="#3B82F6"
                 strokeWidth="1"
                 strokeDasharray="4 3"
               />

@@ -94,6 +94,11 @@ export interface AdminAdFeeHistoryResponseDto {
   createdAt: string;
 }
 
+export interface AdminAdFeeHistoryDeleteResponseDto {
+  deletedCount: number;
+  deletedIds: string[];
+}
+
 export interface RevenueAnalyticsResponseDto {
   summary: {
     totalRevenue: number;

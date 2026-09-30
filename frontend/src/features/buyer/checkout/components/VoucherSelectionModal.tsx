@@ -30,12 +30,12 @@ function formatDiscount(promo: MerchantPromotion): string {
   if (promo.discountType === 'percentage') {
     return `${promo.discountValue}% OFF`;
   }
-  return `${Number(promo.discountValue).toLocaleString()} MMK OFF`;
+  return `${Math.round(Number(promo.discountValue)).toLocaleString('en-US')}Ks OFF`;
 }
 
 function formatMinOrder(amount: string | null): string {
   if (!amount) return '';
-  return `Min. order ${Number(amount).toLocaleString()} MMK`;
+  return `Min. order ${Math.round(Number(amount)).toLocaleString('en-US')}Ks`;
 }
 
 function getExpiryLabel(expiresAt: string): string {

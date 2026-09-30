@@ -27,7 +27,8 @@ function getImageUrl(url: string | null | undefined): string {
 }
 
 function formatPrice(value: string | number) {
-	return `$${Number.parseFloat(String(value) || '0').toFixed(2)}`;
+	const rounded = Math.round(Number.parseFloat(String(value) || '0'));
+	return `${rounded.toLocaleString('en-US')}Ks`;
 }
 
 interface ShopGroup {

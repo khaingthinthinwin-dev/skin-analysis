@@ -8,6 +8,7 @@ const MAX_ADS_PER_PANEL = 5;
 
 type AdvertisementWithShop = Advertisement & {
   shop: { id: string; name: string };
+  feeSetting?: { placement: string; tier: string; isActive: boolean } | null;
 };
 
 @Injectable()
@@ -21,6 +22,11 @@ export class AdsService {
 
   async getAdsByPlacement(placement: string, sessionId?: string) {
     const now = new Date();
+    // DD_MATCH_05 §6.1 (BR-MATCH-037) + DD_MATCH_03 §2.4:
+    // placement condition comes from feeSetting.placement,
+    // date condition is startsAt <= now < expiresAt.
+    const isBannerPlacement =
+      typeof placement === 'string' && placement.endsWith('_banner');
 
     try {
       // Get all eligible ads sorted by payment amount (desc) then createdAt (desc)
@@ -31,8 +37,14 @@ export class AdsService {
           paymentStatus: 'completed',
           startsAt: { lte: now },
           expiresAt: { gt: now },
+          ...(isBannerPlacement
+            ? { feeSetting: { placement, isActive: true } }
+            : {}),
         },
         include: {
+          feeSetting: {
+            select: { placement: true, tier: true, isActive: true },
+          },
           shop: {
             select: {
               id: true,
@@ -70,6 +82,9 @@ export class AdsService {
           ctaText: ad.announcementMessage || 'Shop Now',
           priorityAmount: ad.paymentAmount?.toString() || null,
           shopName: ad.shop.name,
+          placement: ad.feeSetting?.placement ?? null,
+          startsAt: ad.startsAt ? ad.startsAt.toISOString() : null,
+          expiresAt: ad.expiresAt ? ad.expiresAt.toISOString() : null,
         })),
         placement,
         meta: {
