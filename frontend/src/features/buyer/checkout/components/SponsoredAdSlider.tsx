@@ -1,169 +1,101 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { checkoutService } from '../services/checkout.service';
-import type { SponsoredAd } from '@/types/checkout.types';
+import { Card, CardContent } from '@/components/ui/card';
+import { useSponsoredAds } from '../hooks/useCheckout'
+import { getImageUrl } from '@/lib/image-url';
 
-interface SponsoredAdSliderProps {
-  ads: SponsoredAd[];
+const AUTO_SLIDE_MS = 5000
+
+function usePrefersReducedMotion() {
+  const [reduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  return reduced
 }
 
-export function SponsoredAdSlider({ ads }: SponsoredAdSliderProps) {
-  const [current, setCurrent] = useState(0);
-  const [dismissed, setDismissed] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
+export function SponsoredAdSlider() {
+  const { data } = useSponsoredAds()
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isHovered, setIsHovered] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const reducedMotion = usePrefersReducedMotion()
+
+  const ads = data?.data ?? []
+  const displayIndex = ads.length > 0 ? currentIndex % ads.length : 0
+
+  const paused = isHovered || isFocused || reducedMotion
 
   const next = useCallback(() => {
-    setIsAnimating(true);
-    setTimeout(() => {
-      setCurrent((prev) => (prev + 1) % ads.length);
-      setIsAnimating(false);
-    }, 300);
-  }, [ads.length]);
+    if (ads.length <= 1) return
+    setCurrentIndex((prev) => (prev + 1) % ads.length)
+  }, [ads.length])
 
   const prev = useCallback(() => {
-    setIsAnimating(true);
-    setTimeout(() => {
-      setCurrent((prev) => (prev - 1 + ads.length) % ads.length);
-      setIsAnimating(false);
-    }, 300);
-  }, [ads.length]);
+    if (ads.length <= 1) return
+    setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length)
+  }, [ads.length])
 
   useEffect(() => {
-    if (ads.length <= 1 || dismissed) return;
-    const timer = setInterval(next, 5000);
-    return () => clearInterval(timer);
-  }, [ads.length, next, dismissed]);
+    if (paused || ads.length <= 1) return
+    const timer = setInterval(next, AUTO_SLIDE_MS)
+    return () => clearInterval(timer)
+  }, [paused, ads.length, next])
 
-  if (!ads.length || dismissed) return null;
+  if (!ads.length) return null
 
-  const ad = ads[current];
-
-  const handleClick = async () => {
-    try {
-      await checkoutService.trackAdClick(ad.id);
-    } catch {
-      // silent
-    }
-    if (ad.ctaUrl) {
-      window.open(ad.ctaUrl, '_blank', 'noopener,noreferrer');
-    }
-  };
+  const ad = ads[displayIndex]
 
   return (
-    <div
-      className="w-full overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 shadow-sm"
-      style={{
-        animation: 'slideDown 0.4s ease-out forwards',
-      }}
+    <Card
+      className="relative overflow-hidden border-border bg-muted"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      aria-roledescription="carousel"
+      aria-label="Sponsored advertisements"
     >
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-16px);
-            max-height: 0;
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-            max-height: 200px;
-          }
-        }
-      `}</style>
+      <CardContent
+        className="p-4"
+        onFocusCapture={() => setIsFocused(true)}
+        onBlurCapture={() => setIsFocused(false)}
+      >
+        <span className="mb-2 inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+          <Megaphone className="h-3 w-3" /> Sponsored
+        </span>
 
-      <div className="relative flex items-center gap-3 p-3 sm:p-4">
-        {/* Sponsored label */}
-        <div className="absolute left-0 top-0 rounded-br-md rounded-tl-md bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-          Sponsored
-        </div>
-
-        {/* Dismiss button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-1 top-1 h-6 w-6 text-muted-foreground hover:text-foreground"
-          onClick={() => setDismissed(true)}
-          aria-label="Dismiss ad"
-        >
-          <X className="h-3 w-3" />
-        </Button>
-
-        {/* Previous button */}
-        {ads.length > 1 && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={prev}
-            aria-label="Previous ad"
-          >
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="ghost" size="icon" onClick={prev} disabled={ads.length <= 1} aria-label="Previous advertisement" className="shrink-0">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-        )}
 
-        {/* Ad content */}
-        <div
-          className={`flex flex-1 min-w-0 items-center gap-4 transition-all duration-300 ${
-            isAnimating ? 'opacity-0 translate-x-2' : 'opacity-100 translate-x-0'
-          }`}
-        >
-          {ad.imageUrl && (
-            <img
-              src={ad.imageUrl}
-              alt={ad.title}
-              className="h-14 w-auto shrink-0 rounded object-contain sm:h-16"
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">
-              {ad.title}
-            </p>
-            {ad.description && (
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {ad.description}
-              </p>
+          <div className="flex flex-1 items-center gap-4 px-2">
+            {ad.imageUrl && (
+              <img src={getImageUrl(ad.imageUrl)} alt={ad.title} className="h-24 w-36 shrink-0 object-cover rounded-md" />
             )}
-            {ad.ctaText && (
-              <button
-                onClick={handleClick}
-                className="mt-1 text-xs font-bold text-primary underline-offset-2 hover:underline"
-              >
-                {ad.ctaText} →
-              </button>
-            )}
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-sm font-semibold">{ad.title}</h3>
+              {ad.description && (
+                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{ad.description}</p>
+              )}
+              {ad.linkUrl && (
+                <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                  Learn more <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Next button */}
-        {ads.length > 1 && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={next}
-            aria-label="Next ad"
-          >
+          <Button variant="ghost" size="icon" onClick={next} disabled={ads.length <= 1} aria-label="Next advertisement" className="shrink-0">
             <ChevronRight className="h-4 w-4" />
           </Button>
-        )}
+        </div>
 
-        {/* Dot indicators */}
         {ads.length > 1 && (
-          <div className="absolute bottom-1.5 left-0 right-0 flex justify-center gap-1.5">
-            {ads.map((_, i) => (
-              <span
-                key={i}
-                className={`block rounded-full transition-all duration-300 ${
-                  i === current
-                    ? 'h-1.5 w-4 bg-primary'
-                    : 'h-1.5 w-1.5 bg-primary/30'
-                }`}
-              />
+          <div className="mt-2 flex items-center justify-center gap-1.5">
+            {ads.map((_, idx) => (
+              <button key={idx} type="button" aria-label={`Go to advertisement ${idx + 1}`} aria-current={idx === displayIndex ? 'true' : undefined} onClick={() => setCurrentIndex(idx)} className={`h-1.5 rounded-full transition-all ${idx === displayIndex ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'}`} />
             ))}
           </div>
         )}
-      </div>
-    </div>
-  );
+      </CardContent>
+    </Card>
+  )
 }

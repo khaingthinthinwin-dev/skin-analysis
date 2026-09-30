@@ -34,14 +34,13 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Check,
   Trash2,
   Search,
   Eye,
   Flag,
-  ChevronLeft,
-  ChevronRight,
   FileText,
   Clock,
   CheckCircle,
@@ -54,6 +53,16 @@ import type {
   AdminReview,
   AdminReport,
 } from '@/features/admin/content-moderation/services/moderation.service';
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  const message = (error as { response?: { data?: { message?: unknown } } })
+    ?.response?.data?.message;
+  if (Array.isArray(message)) return message.join(', ');
+  if (typeof message === 'string' && message.trim()) return message;
+  return fallback;
+}
 
 // ─── Stats Fetcher Hook ─────────────────────────────────────────────────────
 
@@ -218,9 +227,12 @@ export default function ReviewManagement() {
   const [detailReport, setDetailReport] = useState<AdminReport | null>(null);
   const [reportAdminNote, setReportAdminNote] = useState('');
   const [reportAdminNoteError, setReportAdminNoteError] = useState('');
+  const [reportRejectOpen, setReportRejectOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [reportDeleteTarget, setReportDeleteTarget] = useState<string | null>(null);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkApproveOpen, setBulkApproveOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // ── Stats ────────────────────────────────────────────────────────────────
   const { stats, refreshStats } = useReviewStats();
@@ -290,7 +302,8 @@ export default function ReviewManagement() {
           setDetailReview(null);
           refreshStats();
         },
-        onError: () => toast.error('Failed to approve review'),
+        onError: (error: unknown) =>
+          toast.error(apiErrorMessage(error, 'Failed to approve review')),
       },
     );
   };
@@ -308,7 +321,8 @@ export default function ReviewManagement() {
           setDetailReview(null);
           refreshStats();
         },
-        onError: () => toast.error('Failed to reject review'),
+        onError: (error: unknown) =>
+          toast.error(apiErrorMessage(error, 'Failed to reject review')),
       },
     );
   };
@@ -326,51 +340,94 @@ export default function ReviewManagement() {
         setDetailReview(null);
         refreshStats();
       },
-      onError: () => toast.error('Failed to delete review'),
+        onError: (error: unknown) =>
+          toast.error(apiErrorMessage(error, 'Failed to delete review')),
     });
   };
 
-  // ── Bulk Actions ─────────────────────────────────────────────────────────
+  // ── Bulk Actions (only reachable from the confirmation dialogs) ───────────
   const handleBulkApprove = () => {
-    if (selectedReviews.length === 0) return;
+    if (!bulkApproveOpen || selectedReviews.length === 0) return;
     bulkModerateMutation.mutate(
       { ids: selectedReviews, action: 'approve' },
       {
-        onSuccess: () => {
-          toast.success(`${selectedReviews.length} reviews approved`);
-          setSelectedReviews([]);
+        onSuccess: (result) => {
+          if (result.failed > 0) {
+            toast.error(
+              `${result.processed} of ${selectedReviews.length} approved, ${result.failed} failed`,
+            );
+            setSelectedReviews(
+              result.results
+                .filter((r) => r.status === 'failed')
+                .map((r) => r.id),
+            );
+          } else {
+            toast.success(`${selectedReviews.length} reviews approved`);
+            setSelectedReviews([]);
+          }
+          setBulkApproveOpen(false);
           refreshStats();
         },
+        onError: (error: unknown) =>
+          toast.error(apiErrorMessage(error, 'Failed to approve reviews')),
       },
     );
   };
 
   const handleBulkReject = () => {
-    if (selectedReviews.length === 0 || !rejectReason.trim()) return;
+    if (!bulkRejectOpen || selectedReviews.length === 0 || !rejectReason.trim())
+      return;
     bulkModerateMutation.mutate(
       { ids: selectedReviews, action: 'reject', reason: rejectReason },
       {
-        onSuccess: () => {
-          toast.success(`${selectedReviews.length} reviews rejected`);
-          setSelectedReviews([]);
+        onSuccess: (result) => {
+          if (result.failed > 0) {
+            toast.error(
+              `${result.processed} of ${selectedReviews.length} rejected, ${result.failed} failed`,
+            );
+            setSelectedReviews(
+              result.results
+                .filter((r) => r.status === 'failed')
+                .map((r) => r.id),
+            );
+          } else {
+            toast.success(`${selectedReviews.length} reviews rejected`);
+            setSelectedReviews([]);
+          }
           setBulkRejectOpen(false);
           setRejectReason('');
           refreshStats();
         },
+        onError: (error: unknown) =>
+          toast.error(apiErrorMessage(error, 'Failed to reject reviews')),
       },
     );
   };
 
   const handleBulkDelete = () => {
-    if (selectedReviews.length === 0) return;
+    if (!bulkDeleteOpen || selectedReviews.length === 0) return;
     bulkDeleteMutation.mutate(
       { ids: selectedReviews },
       {
-        onSuccess: () => {
-          toast.success(`${selectedReviews.length} reviews deleted`);
-          setSelectedReviews([]);
+        onSuccess: (result) => {
+          if (result.failed > 0) {
+            toast.error(
+              `${result.processed} of ${selectedReviews.length} deleted, ${result.failed} failed`,
+            );
+            setSelectedReviews(
+              result.results
+                .filter((r) => r.status === 'failed')
+                .map((r) => r.id),
+            );
+          } else {
+            toast.success(`${selectedReviews.length} reviews deleted`);
+            setSelectedReviews([]);
+          }
+          setBulkDeleteOpen(false);
           refreshStats();
         },
+        onError: (error: unknown) =>
+          toast.error(apiErrorMessage(error, 'Failed to delete reviews')),
       },
     );
   };
@@ -390,6 +447,24 @@ export default function ReviewManagement() {
       },
       onError: () => toast.error('Failed to delete report'),
     });
+  };
+
+  const handleRejectReport = () => {
+    if (!detailReport || !reportAdminNote.trim()) return;
+    updateStatusMutation.mutate(
+      {
+        id: detailReport.id,
+        data: { status: 'rejected', adminNote: reportAdminNote.trim() },
+      },
+      {
+        onSuccess: () => {
+          toast.success('Report rejected');
+          setReportRejectOpen(false);
+          setDetailReport(null);
+        },
+        onError: () => toast.error('Failed to reject report'),
+      },
+    );
   };
 
   // ── Selection Helpers ────────────────────────────────────────────────────
@@ -435,20 +510,6 @@ export default function ReviewManagement() {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
     return avatarColors[Math.abs(hash) % avatarColors.length];
-  };
-
-  // ── Helper: Page numbers ─────────────────────────────────────────────────
-  const getPageNumbers = (current: number, total: number) => {
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    const pages: (number | string)[] = [];
-    if (current <= 3) {
-      pages.push(1, 2, 3, 4, '...', total);
-    } else if (current >= total - 2) {
-      pages.push(1, '...', total - 3, total - 2, total - 1, total);
-    } else {
-      pages.push(1, '...', current - 1, current, current + 1, '...', total);
-    }
-    return pages;
   };
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -597,231 +658,168 @@ export default function ReviewManagement() {
             </Select>
           </div>
 
-          {/* ── Bulk Actions ───────────────────────────────────────────── */}
-          {selectedReviews.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted rounded-md">
-              <span className="text-sm font-medium">
-                {selectedReviews.length} selected
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" onClick={handleBulkApprove}>
-                  <Check className="h-4 w-4 mr-1" /> Approve All
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => setBulkRejectOpen(true)}
-                >
-                  <Flag className="h-4 w-4 mr-1" /> Reject All
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Permanently delete ${selectedReviews.length} selected reviews? This cannot be undone.`,
-                      )
-                    )
-                      handleBulkDelete();
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" /> Delete All
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* ── [F] Reviews Table ──────────────────────────────────────── */}
-          <div className="overflow-x-auto rounded-md border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={
-                        reviews.length > 0 &&
-                        selectedReviews.length === reviews.length
-                      }
-                      onCheckedChange={toggleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reviews.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-5">
+            {/* ── Bulk Actions ───────────────────────────────────────────── */}
+            {selectedReviews.length > 0 && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted p-3">
+                <span className="text-sm font-medium">
+                  {selectedReviews.length} selected
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" onClick={() => setBulkApproveOpen(true)}>
+                    <Check className="h-4 w-4 mr-1" /> Approve All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setBulkRejectOpen(true)}
+                  >
+                    <Flag className="h-4 w-4 mr-1" /> Reject All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setBulkDeleteOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete All
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto rounded-md border border-border bg-card">
+              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center py-12 text-muted-foreground"
-                    >
-                      No reviews found.
-                    </TableCell>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={
+                          reviews.length > 0 &&
+                          selectedReviews.length === reviews.length
+                        }
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Rating</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  reviews.map((review) => (
-                    <TableRow key={review.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedReviews.includes(review.id)}
-                          onCheckedChange={() =>
-                            toggleSelectReview(review.id)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium text-white ${getAvatarColor(
-                              review.user?.name || '',
-                            )}`}
-                          >
-                            {getInitials(review.user?.name || '?')}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {review.user?.name || 'N/A'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {review.user?.email || ''}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {review.product?.images?.[0] && (
-                            <img
-                              src={getImageUrl(review.product.images[0])}
-                              alt=""
-                              className="h-8 w-8 rounded object-cover"
-                            />
-                          )}
-                          <div>
-                            <p className="text-sm font-medium max-w-[140px] truncate">
-                              {review.product?.name || 'N/A'}
-                            </p>
-                            {review.product?.price != null && (
-                              <p className="text-xs text-muted-foreground">
-                                ${Number(review.product.price).toFixed(2)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <StarRating rating={review.rating} />
-                      </TableCell>
-                      <TableCell className="max-w-[180px] truncate text-sm">
-                        {review.title || review.body || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <ReviewStatusBadge status={review.status} />
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {new Date(review.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => setDetailReview(review)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => openDeleteDialog(review.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {reviews.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="text-center py-12 text-muted-foreground"
+                      >
+                        No reviews found.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* ── [G] Pagination ─────────────────────────────────────────── */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm text-muted-foreground">
-              Showing {reviews.length > 0 ? (reviewPage - 1) * reviewLimit + 1 : 0}-
-              {Math.min(reviewPage * reviewLimit, reviewTotal)} of {reviewTotal}{' '}
-              reviews
-            </span>
-            <div className="flex items-center gap-2">
-              <Select
-                value={String(reviewLimit)}
-                onValueChange={(v) => {
-                  setReviewLimit(Number(v));
-                  setReviewPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[70px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex gap-1">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-8 w-8"
-                  disabled={reviewPage <= 1}
-                  onClick={() => setReviewPage(reviewPage - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {getPageNumbers(reviewPage, reviewTotalPages).map(
-                  (page, idx) =>
-                    typeof page === 'number' ? (
-                      <Button
-                        key={idx}
-                        size="icon"
-                        variant={page === reviewPage ? 'default' : 'outline'}
-                        className="h-8 w-8"
-                        onClick={() => setReviewPage(page)}
-                      >
-                        {page}
-                      </Button>
-                    ) : (
-                      <span
-                        key={idx}
-                        className="flex items-center px-1 text-muted-foreground"
-                      >
-                        ...
-                      </span>
-                    ),
-                )}
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-8 w-8"
-                  disabled={reviewPage >= reviewTotalPages}
-                  onClick={() => setReviewPage(reviewPage + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+                  ) : (
+                    reviews.map((review) => (
+                      <TableRow key={review.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedReviews.includes(review.id)}
+                            onCheckedChange={() =>
+                              toggleSelectReview(review.id)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium text-white ${getAvatarColor(
+                                review.user?.name || '',
+                              )}`}
+                            >
+                              {getInitials(review.user?.name || '?')}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {review.user?.name || 'N/A'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {review.user?.email || ''}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {review.product?.images?.[0] && (
+                              <img
+                                src={getImageUrl(review.product.images[0])}
+                                alt=""
+                                className="h-8 w-8 rounded object-cover"
+                              />
+                            )}
+                            <div>
+                              <p className="text-sm font-medium max-w-[140px] truncate">
+                                {review.product?.name || 'N/A'}
+                              </p>
+                              {review.product?.price != null && (
+                                <p className="text-xs text-muted-foreground">
+                                  ${Number(review.product.price).toFixed(2)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <StarRating rating={review.rating} />
+                        </TableCell>
+                        <TableCell className="max-w-[180px] truncate text-sm">
+                          {review.title || review.body || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <ReviewStatusBadge status={review.status} />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="h-8 w-8"
+                              onClick={() => setDetailReview(review)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="h-8 w-8"
+                              onClick={() => openDeleteDialog(review.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
+
+            {/* ── [G] Pagination ─────────────────────────────────────────── */}
+            <TablePagination
+              page={reviewPage}
+              totalPages={reviewTotalPages}
+              onPageChange={setReviewPage}
+              limit={reviewLimit}
+              onLimitChange={setReviewLimit}
+              total={reviewTotal}
+              itemLabel="reviews"
+            />
           </div>
         </TabsContent>
 
@@ -930,169 +928,113 @@ export default function ReviewManagement() {
           </div>
 
           {/* ── Reports Table ──────────────────────────────────────────── */}
-          <div className="overflow-x-auto rounded-md border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Reporter</TableHead>
-                  <TableHead>Review</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reports.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="overflow-x-auto rounded-md border border-border bg-card">
+              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-6 text-muted-foreground"
-                    >
-                      No reports found.
-                    </TableCell>
+                    <TableHead>Reporter</TableHead>
+                    <TableHead>Review</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  reports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium text-white ${getAvatarColor(
-                              report.reporter?.name || '',
-                            )}`}
-                          >
-                            {getInitials(report.reporter?.name || '?')}
+                </TableHeader>
+                <TableBody>
+                  {reports.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-6 text-muted-foreground"
+                      >
+                        No reports found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    reports.map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium text-white ${getAvatarColor(
+                                report.reporter?.name || '',
+                              )}`}
+                            >
+                              {getInitials(report.reporter?.name || '?')}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {report.reporter?.name || 'N/A'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {report.reporter?.email || ''}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {report.reporter?.name || 'N/A'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {report.reporter?.email || ''}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[250px] truncate">
-                        {report.review?.body || report.review?.title || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <ReasonBadge reason={report.reason} />
-                      </TableCell>
-                      <TableCell>
-                        <ReportStatusBadge status={report.status} />
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(report.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => {
-                              setReportAdminNote('');
-                              if (report.status === 'pending') {
-                                updateStatusMutation.mutate(
-                                  { id: report.id, data: { status: 'reviewed' } },
-                                  {
-                                    onError: () => toast.error('Failed to update report'),
-                                  },
-                                );
-                              }
-                              setDetailReport(report);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {report.status !== 'resolved' && (
+                        </TableCell>
+                        <TableCell className="max-w-[250px] truncate">
+                          {report.review?.body || report.review?.title || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <ReasonBadge reason={report.reason} />
+                        </TableCell>
+                        <TableCell>
+                          <ReportStatusBadge status={report.status} />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(report.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <Button
                               size="icon"
                               variant="outline"
                               className="h-8 w-8"
-                              onClick={() => handleDeleteReport(report.id)}
+                              onClick={() => {
+                                setReportAdminNote('');
+                                if (report.status === 'pending') {
+                                  updateStatusMutation.mutate(
+                                    { id: report.id, data: { status: 'reviewed' } },
+                                    {
+                                      onError: () => toast.error('Failed to update report'),
+                                    },
+                                  );
+                                }
+                                setDetailReport(report);
+                              }}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Eye className="h-4 w-4" />
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* ── Reports Pagination ─────────────────────────────────────── */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm text-muted-foreground">
-              Showing {reports.length > 0 ? (reportPage - 1) * reportLimit + 1 : 0}-
-              {Math.min(reportPage * reportLimit, reportTotal)} of {reportTotal}{' '}
-              reports
-            </span>
-            <div className="flex items-center gap-2">
-              <Select
-                value={String(reportLimit)}
-                onValueChange={(v) => {
-                  setReportLimit(Number(v));
-                  setReportPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[70px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex gap-1">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-8 w-8"
-                  disabled={reportPage <= 1}
-                  onClick={() => setReportPage(reportPage - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {getPageNumbers(reportPage, reportTotalPages).map(
-                  (page, idx) =>
-                    typeof page === 'number' ? (
-                      <Button
-                        key={idx}
-                        size="icon"
-                        variant={page === reportPage ? 'default' : 'outline'}
-                        className="h-8 w-8"
-                        onClick={() => setReportPage(page)}
-                      >
-                        {page}
-                      </Button>
-                    ) : (
-                      <span
-                        key={idx}
-                        className="flex items-center px-1 text-muted-foreground"
-                      >
-                        ...
-                      </span>
-                    ),
-                )}
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-8 w-8"
-                  disabled={reportPage >= reportTotalPages}
-                  onClick={() => setReportPage(reportPage + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+                            {report.status !== 'resolved' && (
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-8 w-8"
+                                onClick={() => handleDeleteReport(report.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
+
+            {/* ── Reports Pagination ─────────────────────────────────────── */}
+            <TablePagination
+              page={reportPage}
+              totalPages={reportTotalPages}
+              onPageChange={setReportPage}
+              limit={reportLimit}
+              onLimitChange={setReportLimit}
+              total={reportTotal}
+              itemLabel="reports"
+            />
           </div>
         </TabsContent>
       </Tabs>
@@ -1103,7 +1045,7 @@ export default function ReviewManagement() {
 
       {/* ── Review Detail Modal ─────────────────────────────────────────── */}
       <Dialog open={!!detailReview} onOpenChange={() => setDetailReview(null)}>
-        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
               Review Detail
@@ -1262,7 +1204,7 @@ export default function ReviewManagement() {
                     placeholder="Enter rejection reason (required)..."
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    className="min-h-[72px] rounded-md border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300"
+                    className="min-h-[72px] rounded-md border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 dark:border-border dark:bg-secondary/50 dark:text-foreground dark:placeholder:text-muted-foreground dark:focus-visible:ring-ring"
                   />
                 </div>
               )}
@@ -1360,6 +1302,35 @@ export default function ReviewManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Bulk Approve Dialog ────────────────────────────────────────── */}
+      <Dialog open={bulkApproveOpen} onOpenChange={() => setBulkApproveOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve {selectedReviews.length} Reviews</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to approve the selected{' '}
+            {selectedReviews.length === 1 ? 'review' : 'reviews'}? Their status
+            will change to Approved.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBulkApproveOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
+              onClick={handleBulkApprove}
+              disabled={bulkModerateMutation.isPending}
+            >
+              Approve All
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Bulk Reject Dialog ──────────────────────────────────────────── */}
       <Dialog
         open={bulkRejectOpen}
@@ -1389,7 +1360,7 @@ export default function ReviewManagement() {
             </Button>
             <Button
               variant="destructive"
-              disabled={!rejectReason.trim()}
+              disabled={!rejectReason.trim() || bulkModerateMutation.isPending}
               onClick={handleBulkReject}
             >
               Reject All
@@ -1398,9 +1369,38 @@ export default function ReviewManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Bulk Delete Dialog ──────────────────────────────────────────── */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={() => setBulkDeleteOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedReviews.length} Reviews</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to permanently delete the selected{' '}
+            {selectedReviews.length === 1 ? 'review' : 'reviews'}? This action
+            cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBulkDeleteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              Delete All
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Report Detail Modal ─────────────────────────────────────────── */}
       <Dialog open={!!detailReport} onOpenChange={() => { setDetailReport(null); setReportAdminNoteError(''); }}>
-        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
               Report Detail
@@ -1514,7 +1514,7 @@ export default function ReviewManagement() {
                         if (reportAdminNoteError) setReportAdminNoteError('');
                       }}
                       placeholder="Add internal resolution notes..."
-                      className={`min-h-[72px] rounded-md bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 ${
+                      className={`min-h-[72px] rounded-md bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 dark:bg-secondary/50 dark:text-foreground dark:placeholder:text-muted-foreground dark:focus-visible:ring-ring ${
                         reportAdminNoteError
                           ? 'border-red-500 focus-visible:ring-red-300'
                           : 'border-slate-200'
@@ -1566,23 +1566,7 @@ export default function ReviewManagement() {
                       </Button>
                       <Button
                         variant="destructive"
-                        onClick={() => {
-                          if (!detailReport) return;
-                          if (!reportAdminNote.trim()) {
-                            setReportAdminNoteError('Admin note is required.');
-                            return;
-                          }
-                          updateStatusMutation.mutate(
-                            { id: detailReport.id, data: { status: 'rejected', adminNote: reportAdminNote.trim() } },
-                            {
-                              onSuccess: () => {
-                                toast.success('Report rejected');
-                                setDetailReport(null);
-                              },
-                              onError: () => toast.error('Failed to reject report'),
-                            },
-                          );
-                        }}
+                        onClick={() => setReportRejectOpen(true)}
                         disabled={!reportAdminNote.trim() || updateStatusMutation.isPending}
                       >
                         <XCircle className="h-4 w-4 mr-1" /> Reject
@@ -1592,6 +1576,34 @@ export default function ReviewManagement() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Reject Report Confirmation ──────────────────────────────────── */}
+      <Dialog open={reportRejectOpen} onOpenChange={() => setReportRejectOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Report</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to reject this report? Its status will change
+            to Rejected.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReportRejectOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectReport}
+              disabled={updateStatusMutation.isPending}
+            >
+              Reject
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
