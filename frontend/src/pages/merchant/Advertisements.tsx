@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -147,6 +147,7 @@ function toFormData(values: ContentForm, includeSchedule: boolean) {
 
 export default function Advertisements() {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
   const [approvalStatus, setApprovalStatus] = useState('')
@@ -161,6 +162,7 @@ export default function Advertisements() {
   const [paymentReference, setPaymentReference] = useState('')
   const [confirmingSelection, setConfirmingSelection] = useState(false)
   const [packagesPage, setPackagesPage] = useState(1)
+  const [highlightedPackageId, setHighlightedPackageId] = useState<string | null>(null)
   const isDeactivated =
     user?.isActive === false ||
     user?.is_active === false ||
@@ -195,6 +197,27 @@ export default function Advertisements() {
     }, 300)
     return () => window.clearTimeout(timer)
   }, [search])
+
+  useEffect(() => {
+    const updatedPackageId = searchParams.get('updatedPackage')
+    if (!updatedPackageId) return
+
+    const timer = window.setTimeout(() => {
+      setHighlightedPackageId(updatedPackageId)
+      setPackagesPage(1)
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('updatedPackage')
+          return next
+        },
+        { replace: true }
+      )
+      document.getElementById('available-packages')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [searchParams, setSearchParams])
 
   // Stats per 画面項目設計書 §4.4: active / pending approval / expired counts.
   const stats = useMemo(
@@ -414,7 +437,7 @@ export default function Advertisements() {
       </div>
 
       {/* Package Catalog (§4.5) */}
-      <section className="space-y-4">
+      <section id="available-packages" className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold">Available Packages</h2>
           <p className="text-sm text-muted-foreground">Admin-created packages with fixed campaign durations.</p>
@@ -435,13 +458,25 @@ export default function Advertisements() {
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {visiblePackages.map((pkg) => (
-                <Card key={pkg.id} className="flex flex-col">
+                <Card
+                  key={pkg.id}
+                  className={`flex flex-col transition-all duration-300 ${
+                    highlightedPackageId === pkg.id
+                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] shadow-lg shadow-primary/20'
+                      : ''
+                  }`}
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base">{packageLabel(pkg.placement)}</CardTitle>
-                      <Badge variant="secondary" className="capitalize">
-                        {tierLabels[pkg.tier] ?? pkg.tier}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        {highlightedPackageId === pkg.id && (
+                          <Badge className="bg-primary text-primary-foreground">Updated</Badge>
+                        )}
+                        <Badge variant="secondary" className="capitalize">
+                          {tierLabels[pkg.tier] ?? pkg.tier}
+                        </Badge>
+                      </div>
                     </div>
                     <div className="mt-2 flex items-baseline gap-1">
                       <span className="text-3xl font-bold text-primary">{pkg.dailyRate} KS</span>

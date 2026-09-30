@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 export interface Advertisement {
   id: string;
   shopId: string;
+  shopName: string;
   title: string;
   content: string | null;
   announcementMessage: string;

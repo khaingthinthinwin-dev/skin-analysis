@@ -13,16 +13,22 @@ export function useAdvertisements(params?: {
   const adsQuery = useQuery({
     queryKey: ['merchant', 'ads', params],
     queryFn: () => merchantAdService.getAds(params),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const allAdsQuery = useQuery({
     queryKey: ['merchant', 'ads', 'all'],
     queryFn: () => merchantAdService.getAllAds(),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const packagesQuery = useQuery({
     queryKey: ['merchant', 'ads', 'packages'],
     queryFn: () => merchantAdService.getPackages(),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const selectPackage = useMutation({
