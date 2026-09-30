@@ -3,7 +3,11 @@ import { z } from 'zod'
 const contentFields = {
   title: z.string().min(1, 'Title is required').max(200, 'Title must not exceed 200 characters'),
   content: z.string().max(5000, 'Content must not exceed 5000 characters'),
-  linkUrl: z.union([z.string().url('Invalid URL format').max(2048, 'Link URL must not exceed 2048 characters'), z.literal('')]),
+  // The image is not uploaded: the merchant picks one of the images already
+  // attached to one of their own products, so the value is a stored product
+  // image path (e.g. /uploads/products/<file>) and is validated server-side
+  // against the merchant's catalogue.
+  imageUrl: z.string().max(2048, 'Image path must not exceed 2048 characters'),
   announcementMessage: z.string().min(1, 'Announcement message is required').max(500, 'Announcement message must not exceed 500 characters'),
   // Required-only here: the plain Edit dialog keeps the previously saved
   // schedule (field disabled), which may predate the 3-day rule. The
@@ -32,23 +36,22 @@ export const uploadContentSchema = z.object({
   startsAt: contentFields.startsAt.refine(isSelectableStartDate, {
     message: 'Start date must be at least 3 days from today',
   }),
-  image: z.custom<File>((val) => val instanceof File, { message: 'Advertisement image is required' }),
+  imageUrl: contentFields.imageUrl.min(1, 'Advertisement image is required'),
 })
 
 // Edit / Resubmit dialog for rejected ads: content fields plus a re-pickable
 // schedule. The same 3-day lead time as new uploads applies; the backend
-// derives expires_at from the package duration.
+// derives expires_at from the package duration. An empty imageUrl keeps the
+// currently saved image, so it stays optional here.
 export const resubmitContentSchema = z.object({
   ...contentFields,
   startsAt: contentFields.startsAt.refine(isSelectableStartDate, {
     message: 'Start date must be at least 3 days from today',
   }),
-  image: z.custom<File | null>().nullable().optional(),
 })
 
 export const contentSchema = z.object({
   ...contentFields,
-  image: z.custom<File | null>().nullable().optional(),
 })
 
 export const paymentSchema = z.object({

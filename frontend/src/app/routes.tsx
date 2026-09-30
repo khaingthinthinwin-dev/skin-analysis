@@ -52,7 +52,8 @@ const BuyerOrderDetailPage = lazy(() => import('@/pages/order-insights/BuyerOrde
 // const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
 // const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
 // const BuyerOrderTracking = lazy(() => import('@/pages/buyer/OrderTracking'))
-const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysis'))
+const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysisPage'))
+const BuyerSkinAnalysisHistory = lazy(() => import('@/pages/buyer/SkinAnalysisHistoryPage'))
 const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRecommendations'))
 
 const MerchantDashboard = lazy(() => import('@/pages/merchant/Dashboard'))
@@ -391,6 +392,22 @@ export const router = createBrowserRouter([
               // },
               {
                 path: 'skin-analysis',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerSkinAnalysis />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'skin-analysis/history',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerSkinAnalysisHistory />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'skin-analysis/:id',
                 element: (
                   <SuspenseWrapper>
                     <BuyerSkinAnalysis />

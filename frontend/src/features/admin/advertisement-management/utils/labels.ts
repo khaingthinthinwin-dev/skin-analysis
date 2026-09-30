@@ -20,6 +20,36 @@ export function formatDate(value: string | null | undefined): string {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+/** ISO-style local date (YYYY-MM-DD), e.g. "2026-08-28". */
+export function formatIsoDate(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+/**
+ * Ads table schedule column: "Sep 1 ~ Sep 14" (month + day, no year),
+ * "—" when either bound is missing or invalid.
+ */
+export function formatScheduleRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string {
+  const toShort = (value: string | null | undefined) => {
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+  const from = toShort(start)
+  const to = toShort(end)
+  if (!from || !to) return '—'
+  return `${from} ~ ${to}`
+}
+
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return '\u2014'
   const date = new Date(value)
