@@ -44,8 +44,8 @@ export function RichTextEditor({
   }, [value, editor])
 
   return (
-    <div className="rounded-md border border-input bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 min-h-[120px]">
-      <EditorContent editor={editor} className="p-3 min-h-[120px] prose prose-sm max-w-none" />
+    <div className="rounded-md border border-border bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 min-h-[120px]">
+      <EditorContent editor={editor} className="p-3 min-h-[120px] prose prose-sm max-w-none outline-none focus:outline-none [&_.tiptap]:outline-none [&_.tiptap]:border-none" />
     </div>
   )
 }

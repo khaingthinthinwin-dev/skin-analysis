@@ -75,6 +75,8 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'AD_REJECTED',
   'AD_ACTIVE',
   'AD_EXPIRED',
+  'NEW_ADS_PACKAGE',
+  'ADS_PACKAGE_UPDATED',
 ])
 
 // Advertisement review decisions the admin makes, and the submission that
@@ -175,13 +177,16 @@ function iconForType(rawType: string, title?: string, message?: string) {
   if (type === 'MERCHANT_REGISTERED' || type.includes('MERCHANT')) {
     return { Icon: Store, color: 'text-sky-500' }
   }
-  if (type.includes('AD_')) {
+  if (type.includes('AD_') || type.includes('ADS_')) {
     const haystack = `${type} ${title ?? ''} ${message ?? ''}`.toLowerCase()
     if (haystack.includes('reject')) {
       return { Icon: CircleX, color: 'text-red-500' }
     }
     if (haystack.includes('approve') || haystack.includes('active')) {
       return { Icon: CircleCheck, color: 'text-emerald-500' }
+    }
+    if (haystack.includes('package') || haystack.includes('available')) {
+      return { Icon: Sparkles, color: 'text-purple-600' }
     }
     return { Icon: Megaphone, color: 'text-purple-600' }
   }
@@ -322,6 +327,11 @@ export default function Notifications() {
     if (AD_DECISION_TYPES.has(type)) {
       // Decisions are only ever addressed to the merchant who owns the ad.
       navigate('/merchant/advertisements')
+      return
+    }
+    if (type === 'NEW_ADS_PACKAGE' || type === 'ADS_PACKAGE_UPDATED') {
+      const params = item.entityId ? `?updatedPackage=${item.entityId}` : ''
+      navigate(`/merchant/advertisements${params}`)
       return
     }
     if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
