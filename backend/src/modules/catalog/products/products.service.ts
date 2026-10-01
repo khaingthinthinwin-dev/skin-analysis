@@ -1111,6 +1111,10 @@ export class ProductsService {
         title: dto.title,
         body: dto.body,
         images: dto.images || [],
+        // Buyer reviews enter the moderation queue; only an admin action
+        // (POST /admin/reviews/:id/moderate) can make them public.
+        status: 'pending',
+        isVerifiedPurchase: true,
       },
       select: {
         id: true,
@@ -1118,6 +1122,7 @@ export class ProductsService {
         title: true,
         body: true,
         images: true,
+        status: true,
         isVerifiedPurchase: true,
         createdAt: true,
       },

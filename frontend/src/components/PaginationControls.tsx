@@ -9,8 +9,8 @@ interface PaginationControlsProps {
   pageSizeOptions?: number[];
 }
 
-// Simple prev/next & page size pagination used for the commission reports table and
-// the revenue payouts table (DD_02 §4 [F1] / [M2]).
+// Shared prev/next, numbered pages & page-size pagination used across tables
+// (commission reports, revenue payouts, buyer analysis history).
 export const PaginationControls: React.FC<PaginationControlsProps> = ({
   page,
   totalPages,

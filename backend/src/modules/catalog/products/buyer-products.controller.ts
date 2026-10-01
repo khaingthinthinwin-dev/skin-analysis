@@ -28,17 +28,18 @@ import { ReviewQueryDto } from './dto/product-query.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 
 @ApiTags('Buyer Products')
-@Public()
 @Controller('products')
 export class BuyerProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @Public()
   @Get(':idOrSlug')
   @ApiOperation({ summary: 'Get product detail by id or slug (public)' })
   async getDetail(@Param('idOrSlug') idOrSlug: string) {
     return this.productsService.getDetail(idOrSlug);
   }
 
+  @Public()
   @Get(':idOrSlug/reviews')
   @ApiOperation({ summary: 'List approved reviews for a product (public)' })
   async findReviews(
@@ -55,6 +56,7 @@ export class BuyerProductsController {
     };
   }
 
+  @Public()
   @Get(':idOrSlug/similar')
   @ApiOperation({
     summary: 'List similar products in the same category (public)',
@@ -67,12 +69,28 @@ export class BuyerProductsController {
     return this.productsService.findSimilar(idOrSlug, limit);
   }
 
+  @Public()
   @Get(':idOrSlug/advertisements')
   @ApiOperation({
     summary: 'Get eligible sidebar advertisements for product detail (public)',
   })
   async getAdvertisements(@Param('idOrSlug') idOrSlug: string) {
     return this.productsService.getSidebarAds(idOrSlug);
+  }
+
+  @Get(':idOrSlug/can-review')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Check whether the current buyer may review a product (buyer only)',
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('buyer')
+  async canReview(
+    @Param('idOrSlug') idOrSlug: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.productsService.canReview(idOrSlug, user.id);
   }
 
   @Post(':idOrSlug/reviews')

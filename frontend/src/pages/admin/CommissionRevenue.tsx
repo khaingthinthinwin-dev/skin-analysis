@@ -8,7 +8,7 @@ import { useCommission } from "@/features/admin/commission-revenue/hooks/useComm
 import { CommissionTable } from "@/features/admin/commission-revenue/components/CommissionTable";
 import { CommissionReportsTable } from "@/features/admin/commission-revenue/components/CommissionReportsTable";
 import { ReportFilterPanel } from "@/features/admin/commission-revenue/components/ReportFilterPanel";
-import { PaginationControls } from "@/features/admin/commission-revenue/components/PaginationControls";
+import { PaginationControls } from "@/components/PaginationControls";
 import { ExportDialog } from "@/features/admin/commission-revenue/components/ExportDialog";
 import { RevenueTab } from "@/features/admin/commission-revenue/components/RevenueTab";
 import {
