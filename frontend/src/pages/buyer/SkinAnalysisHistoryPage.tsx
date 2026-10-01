@@ -318,19 +318,19 @@ export default function SkinAnalysisHistoryPage() {
           </div>
         )}
 
-        <CardContent className="p-0">
+        <CardContent className="p-5">
           {isLoading ? (
             <div className="py-16 flex flex-col items-center gap-3">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-500 border-t-transparent" />
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-500 border-t-transparent mx-auto" />
               <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
             </div>
           ) : data ? (
             <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-b border-border/60">
-                      <TableHead className="w-[48px] pl-5">
+              <div className="overflow-x-auto rounded-md border bg-card">
+                <Table className="w-full">
+                  <TableHeader className="sticky top-0 z-10 bg-primary/10">
+                    <TableRow>
+                      <TableHead className="w-12 bg-primary/10">
                         <Checkbox
                           id="chk-select-all"
                           checked={allSelected}
@@ -339,25 +339,25 @@ export default function SkinAnalysisHistoryPage() {
                           data-state={allSelected ? 'checked' : someSelected ? 'indeterminate' : 'unchecked'}
                         />
                       </TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
                         {t('history.columns.date')}
                       </TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
                         {t('history.columns.healthScore')}
                       </TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
                         {t('history.columns.hydration')}
                       </TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
                         {t('history.columns.skinType')}
                       </TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
                         {t('history.columns.skinAge')}
                       </TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
                         {t('history.columns.status')}
                       </TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pr-5 text-right w-[90px]">
+                      <TableHead className="text-right bg-primary/10 whitespace-nowrap font-bold">
                         {t('history.columns.actions')}
                       </TableHead>
                     </TableRow>
@@ -365,11 +365,8 @@ export default function SkinAnalysisHistoryPage() {
                   <TableBody>
                     {data.items.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="py-16 text-center">
-                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                            <FileText className="h-8 w-8 opacity-30" />
-                            <p className="text-sm">{t('history.noRecords')}</p>
-                          </div>
+                        <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                          {t('history.noRecords')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -378,13 +375,11 @@ export default function SkinAnalysisHistoryPage() {
                         return (
                           <TableRow
                             key={item.analysisId}
-                            className={`border-b border-border/40 transition-colors ${
-                              isSelected
-                                ? 'bg-violet-50/60 dark:bg-violet-900/10'
-                                : 'hover:bg-muted/40'
+                            className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${
+                              isSelected ? 'bg-violet-50/60 dark:bg-violet-900/10' : ''
                             }`}
                           >
-                            <TableCell className="pl-5">
+                            <TableCell>
                               <Checkbox
                                 id={`chk-${item.analysisId}`}
                                 checked={isSelected}
@@ -392,20 +387,18 @@ export default function SkinAnalysisHistoryPage() {
                                 aria-label={`Select ${formatDate(item.analysisDate)}`}
                               />
                             </TableCell>
-                            <TableCell className="text-sm font-medium">
+                            <TableCell className="font-medium">
                               {formatDate(item.analysisDate)}
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm font-semibold text-violet-600 dark:text-violet-400">
-                                {item.healthScore}
-                                <span className="text-xs font-normal text-muted-foreground">/100</span>
-                              </span>
+                            <TableCell className="font-semibold">
+                              {item.healthScore}
+                              <span className="text-xs font-normal text-muted-foreground">/100</span>
                             </TableCell>
-                            <TableCell className="text-sm">{item.hydration}%</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
+                            <TableCell>{item.hydration}%</TableCell>
+                            <TableCell>
                               {SKIN_TYPE_LABELS[item.skinType as keyof typeof SKIN_TYPE_LABELS]}
                             </TableCell>
-                            <TableCell className="text-sm">{item.skinAge} yrs</TableCell>
+                            <TableCell>{item.skinAge} yrs</TableCell>
                             <TableCell>
                               <Badge
                                 variant="outline"
@@ -414,18 +407,18 @@ export default function SkinAnalysisHistoryPage() {
                                 {item.status}
                               </Badge>
                             </TableCell>
-                            <TableCell className="pr-4 w-[90px]">
+                            <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                                 {/* View */}
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  className="h-7 w-7 border border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                                   onClick={() => navigate(`/buyer/skin-analysis/${item.analysisId}`)}
                                   aria-label={t('history.viewDetails')}
                                   title={t('history.viewDetails')}
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Eye className="h-3.5 w-3.5" />
                                 </Button>
 
                                 {/* Export single */}
@@ -433,6 +426,7 @@ export default function SkinAnalysisHistoryPage() {
                                   analysisId={item.analysisId}
                                   variant="single"
                                   iconOnly
+                                  className="h-7 w-7 border border-green-300 bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 disabled:opacity-50"
                                 />
                               </div>
                             </TableCell>
@@ -446,7 +440,8 @@ export default function SkinAnalysisHistoryPage() {
 
               {/* Pagination */}
               {data.meta.totalPages > 1 && (
-                <div className="flex items-center justify-between px-5 py-4 border-t border-border/40">
+                <div className="mt-5 flex items-center justify-between border-t border-border/40 pt-4">
+
                   <p className="text-xs text-muted-foreground">
                     Showing {(data.meta.page - 1) * data.meta.pageSize + 1}–
                     {Math.min(data.meta.page * data.meta.pageSize, data.meta.totalItems)} of{' '}

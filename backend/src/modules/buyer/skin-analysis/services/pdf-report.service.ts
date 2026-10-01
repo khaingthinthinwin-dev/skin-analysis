@@ -7,6 +7,72 @@ import {
   TrendPointDto,
 } from '../types/skin-analysis.types';
 
+const PAGE_MARGIN = 50;
+const PAGE_RIGHT_EDGE = 545;
+const CONTENT_WIDTH = PAGE_RIGHT_EDGE - PAGE_MARGIN;
+
+const SEVERITY_COLORS: Record<string, string> = {
+  NONE: '#16a34a',
+  MILD: '#ca8a04',
+  MODERATE: '#ea580c',
+  SEVERE: '#dc2626',
+};
+
+const DAILY_ROUTINE = {
+  badge: 'AM · PM',
+  tip: 'Introduce one new product at a time and patch test before full use.',
+  morning: {
+    label: 'Morning',
+    desc: 'Protect and hydrate for the day ahead',
+    steps: [
+      {
+        name: 'Gentle Cleanser',
+        desc: 'Rinse away overnight oil with a mild, sulfate-free wash.',
+      },
+      {
+        name: 'Antioxidant Serum',
+        desc: 'Apply 2–3 drops of vitamin C to brighten and even skin tone.',
+      },
+      {
+        name: 'Light Moisturizer',
+        desc: 'Lock in hydration with a lightweight gel-cream.',
+      },
+      {
+        name: 'Sunscreen SPF 50',
+        desc: 'Reapply every 2 hours when you are outdoors.',
+      },
+    ],
+  },
+  evening: {
+    label: 'Evening',
+    desc: 'Cleanse, treat and repair overnight',
+    steps: [
+      {
+        name: 'Double Cleanse',
+        desc: 'Start with an oil cleanser, then a gentle foaming wash.',
+      },
+      {
+        name: 'Exfoliate 2–3× a week',
+        desc: 'Use BHA on the T-zone to keep pores clear.',
+      },
+      {
+        name: 'Treatment Serum',
+        desc: 'Apply niacinamide or retinoid to target areas.',
+      },
+      {
+        name: 'Night Cream',
+        desc: 'Seal in moisture with a ceramide-rich cream.',
+      },
+    ],
+  },
+} as const;
+
+type RoutinePeriod = {
+  label: string;
+  desc: string;
+  steps: ReadonlyArray<{ name: string; desc: string }>;
+};
+
 export interface PdfReportData {
   reportId: string;
   generatedAt: Date;
@@ -30,13 +96,6 @@ export interface PdfHistoryReportData {
   healthScoreTrend: TrendPointDto[];
   hydrationTrend: TrendPointDto[];
 }
-
-const SEVERITY_COLORS: Record<string, string> = {
-  NONE: '#16a34a',
-  MILD: '#ca8a04',
-  MODERATE: '#ea580c',
-  SEVERE: '#dc2626',
-};
 
 @Injectable()
 export class PdfReportService {
@@ -74,40 +133,8 @@ export class PdfReportService {
     // Conditions table
     this.renderConditions(doc, analysis.conditions);
 
-    doc.moveDown();
-    doc
-      .fillColor('#111827')
-      .font('Helvetica-Bold')
-      .fontSize(12)
-      .text('Clinical Findings');
-    doc.moveDown(0.4);
-    const allFindings = [
-      ...analysis.findings.primaryConcerns,
-      ...analysis.findings.secondaryConcerns,
-    ];
-    if (allFindings.length === 0) {
-      doc
-        .font('Helvetica')
-        .fontSize(10)
-        .fillColor('#374151')
-        .text('No clinical findings to report.');
-    } else {
-      for (const finding of allFindings) {
-        doc
-          .fillColor('#111827')
-          .font('Helvetica-Bold')
-          .fontSize(10)
-          .text(finding.title);
-        doc
-          .font('Helvetica')
-          .fontSize(9.5)
-          .fillColor('#374151')
-          .text(`${finding.severity} · ${finding.affectedArea}`);
-        doc.moveDown(0.2);
-        doc.text(finding.description);
-        doc.moveDown(0.6);
-      }
-    }
+    // Daily routine
+    this.renderDailyRoutine(doc);
 
     doc.moveDown();
     if (analysis.findings.overallAssessment) {
@@ -169,12 +196,122 @@ export class PdfReportService {
       );
     doc.moveDown(0.25);
     doc.text(
-      'Cosmetics Finder · AI Skin Analysis. This report is generated for informational purposes and is not a medical diagnosis.',
+      'This report is generated for informational purposes and is not a medical diagnosis.',
     );
 
     doc.end();
     await finished;
     return Buffer.concat(chunks);
+  }
+
+  private uniqueBy<T>(items: T[], key: (item: T) => string): T[] {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const k = key(item);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }
+
+  /**
+   * Renders the daily skincare routine (morning + evening) with a tip box.
+   */
+  private renderDailyRoutine(doc: PDFKit.PDFDocument) {
+    if (doc.y + 250 > doc.page.maxY()) doc.addPage();
+    doc.moveDown();
+    doc
+      .fillColor('#111827')
+      .font('Helvetica-Bold')
+      .fontSize(12)
+      .text('Daily Routine');
+    const titleWidth = doc.widthOfString('Daily Routine');
+    doc
+      .fillColor('#7c3aed')
+      .font('Helvetica-Bold')
+      .fontSize(7.5)
+      .text(DAILY_ROUTINE.badge, PAGE_MARGIN + titleWidth + 8, doc.y);
+    doc.moveDown(0.5);
+
+    const colGap = 20;
+    const colW = (CONTENT_WIDTH - colGap) / 2;
+    const startY = doc.y;
+    const morningEnd = this.renderRoutinePeriod(
+      doc,
+      PAGE_MARGIN,
+      colW,
+      startY,
+      DAILY_ROUTINE.morning,
+    );
+    const eveningEnd = this.renderRoutinePeriod(
+      doc,
+      PAGE_MARGIN + colW + colGap,
+      colW,
+      startY,
+      DAILY_ROUTINE.evening,
+    );
+
+    doc.x = PAGE_MARGIN;
+    doc.y = Math.max(morningEnd, eveningEnd) + 4;
+
+    const tipY = doc.y;
+    const tipH = doc.heightOfString(DAILY_ROUTINE.tip, {
+      width: CONTENT_WIDTH - 12,
+    });
+    doc.rect(PAGE_MARGIN, tipY - 3, CONTENT_WIDTH, tipH + 10).fill('#f5f3ff');
+    doc
+      .fillColor('#6d28d9')
+      .font('Helvetica-Oblique')
+      .fontSize(8)
+      .text(DAILY_ROUTINE.tip, PAGE_MARGIN + 6, tipY + 1, {
+        width: CONTENT_WIDTH - 12,
+      });
+    doc.x = PAGE_MARGIN;
+    doc.y = tipY + tipH + 10;
+  }
+
+  private renderRoutinePeriod(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    width: number,
+    startY: number,
+    period: RoutinePeriod,
+  ): number {
+    let y = startY;
+    doc
+      .fillColor('#111827')
+      .font('Helvetica-Bold')
+      .fontSize(10)
+      .text(period.label, x, y);
+    y += 13;
+    doc.fillColor('#6b7280').font('Helvetica').fontSize(8);
+    const descH = doc.heightOfString(period.desc, { width });
+    doc.text(period.desc, x, y, { width });
+    y += descH + 7;
+
+    period.steps.forEach((step, index) => {
+      doc.circle(x + 5, y + 4, 4.5).fill('#7c3aed');
+      doc
+        .fillColor('#ffffff')
+        .font('Helvetica-Bold')
+        .fontSize(6)
+        .text(String(index + 1), x + 0.5, y + 2.2, {
+          width: 9,
+          align: 'center',
+        });
+      doc
+        .fillColor('#111827')
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .text(step.name, x + 14, y);
+      y += 12;
+      doc.fillColor('#6b7280').font('Helvetica').fontSize(8);
+      const stepH = doc.heightOfString(step.desc, { width: width - 14 });
+      doc.text(step.desc, x + 14, y, { width: width - 14 });
+      y += stepH + 7;
+    });
+
+    return y;
   }
 
   /**
@@ -221,7 +358,8 @@ export class PdfReportService {
       .fontSize(12)
       .text('History');
     doc.moveDown(0.4);
-    if (data.items.length === 0) {
+    const items = this.uniqueBy(data.items, (item) => item.analysisId);
+    if (items.length === 0) {
       doc
         .font('Helvetica')
         .fontSize(10)
@@ -231,7 +369,7 @@ export class PdfReportService {
       this.table(
         doc,
         ['Date', 'Health Score', 'Hydration', 'Skin Type', 'Status'],
-        data.items.map((item) => [
+        items.map((item) => [
           new Date(item.analysisDate).toISOString().slice(0, 10),
           String(item.healthScore),
           `${item.hydration}%`,
@@ -268,7 +406,7 @@ export class PdfReportService {
       );
     doc.moveDown(0.25);
     doc.text(
-      'Cosmetics Finder · AI Skin Analysis. This report is generated for informational purposes and is not a medical diagnosis.',
+      'This report is generated for informational purposes and is not a medical diagnosis.',
     );
 
     doc.end();
@@ -347,6 +485,7 @@ export class PdfReportService {
         .fontSize(11)
         .text(value, x + 8, startY + 22, { width: colW - 16 });
     });
+    doc.x = PAGE_MARGIN;
     doc.moveDown(colH / 28 + 1);
   }
 
@@ -356,6 +495,8 @@ export class PdfReportService {
     _type: string,
   ) {
     try {
+      const size = 200;
+      if (doc.y + 40 + size > doc.page.maxY()) doc.addPage();
       doc.moveDown(0.5);
       doc
         .fillColor('#111827')
@@ -363,12 +504,28 @@ export class PdfReportService {
         .fontSize(12)
         .text('Facial Scan');
       doc.moveDown(0.4);
-      doc.image(buffer, 50, doc.y, { width: 200, fit: [200, 200] });
-      doc.moveDown(5.5);
+      const x = PAGE_MARGIN;
+      const y = Math.round(doc.y);
+      doc
+        .roundedRect(x, y, size, size, 4)
+        .lineWidth(1)
+        .strokeColor('#e5e7eb')
+        .stroke();
+      doc.image(buffer, x, y, {
+        width: size,
+        height: size,
+        fit: [size, size],
+        align: 'center',
+        valign: 'center',
+      });
+      doc.x = PAGE_MARGIN;
+      doc.y = y + size;
+      doc.moveDown(0.6);
     } catch (err) {
       this.logger.warn(
         `Could not embed scan image in PDF: ${(err as Error).message}`,
       );
+      doc.x = PAGE_MARGIN;
     }
   }
 
@@ -376,6 +533,10 @@ export class PdfReportService {
     doc: PDFKit.PDFDocument,
     conditions: ConditionDto[],
   ) {
+    const unique = this.uniqueBy(
+      conditions,
+      (c) => c.conditionId || `${c.conditionName}|${c.affectedArea}`,
+    );
     doc
       .fillColor('#111827')
       .font('Helvetica-Bold')
@@ -385,17 +546,20 @@ export class PdfReportService {
     this.table(
       doc,
       ['Condition', 'Severity', 'Score', 'Affected Area'],
-      conditions.map((c) => [
+      unique.map((c) => [
         c.conditionName,
         c.severity,
         String(c.severityScore),
         c.affectedArea,
       ]),
-      (row, colIndex, rowIndex) => {
-        if (colIndex === 1 && conditions[rowIndex]) {
-          const severity = conditions[rowIndex].severity;
-          doc.fillColor(SEVERITY_COLORS[severity] ?? '#374151');
-        }
+      {
+        cellColor: (row, colIndex, rowIndex) => {
+          if (colIndex === 1 && unique[rowIndex]) {
+            const severity = unique[rowIndex].severity;
+            doc.fillColor(SEVERITY_COLORS[severity] ?? '#374151');
+          }
+        },
+        rowDetail: (_row, rowIndex) => unique[rowIndex]?.description ?? '',
       },
     );
   }
@@ -404,37 +568,66 @@ export class PdfReportService {
     doc: PDFKit.PDFDocument,
     headers: string[],
     rows: string[][],
-    cellColor?: (row: string[], colIndex: number, rowIndex: number) => void,
+    options?: {
+      cellColor?: (row: string[], colIndex: number, rowIndex: number) => void;
+      rowDetail?: (row: string[], rowIndex: number) => string;
+    },
   ) {
-    const colW = 495 / headers.length;
-    const topY = doc.y;
-    const rowH = 20;
+    const colW = CONTENT_WIDTH / headers.length;
+    const headerH = 20;
+    const pageBottom = doc.page.maxY() - 12;
+    let y = doc.y;
 
-    doc.rect(50, topY, colW * headers.length, rowH).fill('#f1f5f9');
-    headers.forEach((h, i) => {
-      doc
-        .fillColor('#0f172a')
-        .font('Helvetica-Bold')
-        .fontSize(8)
-        .text(h, 54 + i * colW, topY + 6, { width: colW - 8 });
-    });
+    const drawHeader = (topY: number) => {
+      doc.rect(PAGE_MARGIN, topY, CONTENT_WIDTH, headerH).fill('#f1f5f9');
+      headers.forEach((h, i) => {
+        doc
+          .fillColor('#0f172a')
+          .font('Helvetica-Bold')
+          .fontSize(8)
+          .text(h, PAGE_MARGIN + 4 + i * colW, topY + 6, { width: colW - 8 });
+      });
+    };
+
+    drawHeader(y);
+    y += headerH;
 
     rows.forEach((row, rIdx) => {
-      const y = topY + rowH + rIdx * rowH;
-      if (rIdx % 2 === 0) {
-        doc.rect(50, y, colW * headers.length, rowH).fill('#ffffff');
+      const detail = options?.rowDetail?.(row, rIdx).trim() ?? '';
+      const detailLines = detail ? Math.ceil(detail.length / 130) : 0;
+      const rowH = 20 + detailLines * 10;
+
+      if (y + rowH > pageBottom) {
+        doc.addPage();
+        y = doc.page.margins.top;
+        drawHeader(y);
+        y += headerH;
       }
-      if (rIdx % 2 === 1) {
-        doc.rect(50, y, colW * headers.length, rowH).fill('#f8fafc');
-      }
+
+      doc
+        .rect(PAGE_MARGIN, y, CONTENT_WIDTH, rowH)
+        .fill(rIdx % 2 === 0 ? '#ffffff' : '#f8fafc');
       row.forEach((cell, cIdx) => {
         doc.fillColor('#374151').font('Helvetica').fontSize(8);
-        if (cellColor) cellColor(row, cIdx, rIdx);
-        doc.text(cell, 54 + cIdx * colW, y + 6, { width: colW - 8 });
+        options?.cellColor?.(row, cIdx, rIdx);
+        doc.text(cell, PAGE_MARGIN + 4 + cIdx * colW, y + 6, {
+          width: colW - 8,
+        });
       });
+      if (detail) {
+        doc
+          .fillColor('#6b7280')
+          .font('Helvetica')
+          .fontSize(7.5)
+          .text(detail, PAGE_MARGIN + 4, y + 21, {
+            width: CONTENT_WIDTH - 8,
+          });
+      }
+      y += rowH;
     });
 
-    doc.moveDown((rows.length * rowH) / 28 + 1);
+    doc.x = PAGE_MARGIN;
+    doc.y = y + 10;
   }
 
   private renderLineChart(
@@ -451,10 +644,12 @@ export class PdfReportService {
       return;
     }
 
-    const chartX = 60;
-    const chartY = doc.y;
-    const chartW = 220;
+    const chartX = PAGE_MARGIN;
+    const chartW = CONTENT_WIDTH;
     const chartH = 110;
+    const labelBand = 16;
+    if (doc.y + chartH + labelBand + 8 > doc.page.maxY()) doc.addPage();
+    const chartY = doc.y;
 
     const values = points.map((p) => p.value);
     const min = Math.min(...values, 0);
@@ -481,15 +676,26 @@ export class PdfReportService {
       doc.circle(c.x, c.y, 2.5).fill();
     }
 
-    doc.fillColor('#6b7280').font('Helvetica').fontSize(7);
+    doc.fillColor('#94a3b8').font('Helvetica').fontSize(6.5);
+    doc.text(String(max), chartX + 4, chartY + 3, { width: 40 });
+    doc.text(String(min), chartX + 4, chartY + chartH - 10, { width: 40 });
+
+    const labelStep = Math.ceil(points.length / 12);
     coords.forEach((c, i) => {
-      doc.text(points[i].date.slice(0, 6), c.x - 10, chartY + chartH + 4, {
-        width: 30,
-        align: 'center',
-      });
+      if (i % labelStep !== 0 && i !== coords.length - 1) return;
+      const lx = Math.max(chartX, Math.min(c.x - 17, PAGE_RIGHT_EDGE - 34));
+      doc
+        .fillColor('#6b7280')
+        .font('Helvetica')
+        .fontSize(7)
+        .text(points[i].date.slice(5), lx, chartY + chartH + 5, {
+          width: 34,
+          align: 'center',
+        });
     });
 
-    doc.moveDown(chartH / 28 + 1.5);
+    doc.x = PAGE_MARGIN;
+    doc.y = chartY + chartH + labelBand + 6;
   }
 
   private priorityColor(priority: string): string {
