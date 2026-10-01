@@ -9,7 +9,7 @@ import {
 } from '../utils/image-metadata.util';
 
 /**
- * Local-disk storage for facial scan images and mesh overlays.
+ * Local-disk storage for facial scan images.
  *
  * Blob URLs are relative paths (e.g. `/uploads/skin-scans/...`) served by
  * `app.useStaticAssets(uploadsPath, { prefix: '/uploads' })` in main.ts and
@@ -53,17 +53,6 @@ export class SkinScanStorageService {
 
     const blobUrl = `/uploads/skin-scans/${userId}/${filename}`;
     return { blobUrl, metadata, fileSize: file.buffer.length };
-  }
-
-  /**
-   * Persists a generated SVG mesh overlay and returns its public URL.
-   */
-  saveMeshSvg(analysisId: string, svg: string): string {
-    const meshesDir = join(this.baseDir, 'meshes');
-    this.ensureDir(meshesDir);
-    const filename = `${analysisId}.svg`;
-    writeFileSync(join(meshesDir, filename), svg, 'utf8');
-    return `/uploads/skin-scans/meshes/${filename}`;
   }
 
   /**

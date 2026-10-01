@@ -377,19 +377,34 @@ export class MatchingService {
       }),
     ]);
 
-    const data: HistorySessionDto[] = analyses.map((analysis) => ({
-      sessionId: analysis.id,
-      sessionDate: analysis.completedAt!.toISOString(),
-      skinTypesUsed: analysis.skinType ? [analysis.skinType] : [],
-      products: analysis.recommendations.map((rec) => ({
-        id: rec.product.id,
-        name: rec.product.name,
-        slug: rec.product.slug,
-        price: rec.product.price.toString(),
-        images: rec.product.images,
-        matchScore: rec.matchScore,
-      })),
-    }));
+    const data: HistorySessionDto[] = analyses.map((analysis) => {
+      // Score with the same formula as the recommendations-page badges
+      // (computeMatchScore) so history % matches what buyers see there.
+      const scoringSkinType =
+        (analysis.skinType ?? '')
+          .split(',')
+          .map((type) => type.trim().toLowerCase())
+          .filter((type) => type.length > 0)[0] ?? '';
+      const concerns = analysis.conditions.map((c) => c.conditionName);
+
+      return {
+        sessionId: analysis.id,
+        sessionDate: analysis.completedAt!.toISOString(),
+        skinTypesUsed: analysis.skinType ? [analysis.skinType] : [],
+        products: analysis.recommendations.map((rec) => ({
+          id: rec.product.id,
+          name: rec.product.name,
+          slug: rec.product.slug,
+          price: rec.product.price.toString(),
+          images: rec.product.images,
+          matchScore: this.computeMatchScore(
+            rec.product,
+            scoringSkinType,
+            concerns,
+          ).total,
+        })),
+      };
+    });
 
     const totalPages = Math.ceil(total / limit);
 

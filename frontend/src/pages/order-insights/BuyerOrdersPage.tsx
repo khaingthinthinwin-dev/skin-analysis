@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Package, Wallet, Truck, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,7 @@ import { EmptyOrderState } from '@/features/order-insights/components/EmptyOrder
 import { useOrderListFilters } from '@/features/order-insights/hooks/useOrderListFilters';
 import { useOrderQueryParams } from '@/features/order-insights/hooks/useOrderQueryParams';
 import { orderService } from '@/features/order-insights/services/orderService';
+import { formatCurrencyAmount } from '@/features/order-insights/types/merchantOrderInsights.types';
 import { toast } from 'sonner';
 import type { OrderListFilterFormData } from '@/features/order-insights/schemas/orderFilters.schema';
 import type { OrderListRowDto } from '@/features/order-insights/types/orderInsights.types';
@@ -57,11 +59,6 @@ const FIXED_KPIS: Partial<Record<'all' | 'placed' | 'delivered', BuyerKpiSet>> =
   },
 };
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
-
 function formatStatusLabel(status: OrderListFilterFormData['status']): string {
   if (status === 'all') return 'All';
 
@@ -99,7 +96,7 @@ function BuyerOrdersPageContent() {
   };
 
   const formatKpiValue = (kpi: BuyerKpi) =>
-    kpi.isCurrency ? currencyFormatter.format(kpi.value) : kpi.value;
+    kpi.isCurrency ? formatCurrencyAmount(kpi.value) : kpi.value;
 
   const formatFilterDate = (date: string | undefined) =>
     date ? date.slice(0, 10).replaceAll('-', '/') : 'All dates';
@@ -108,6 +105,12 @@ function BuyerOrdersPageContent() {
     setExportMessage('');
     patch({ ...values, page: 1 });
     methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+  };
+
+  const handleStatusChange = (status: OrderListFilterFormData['status']) => {
+    setExportMessage('');
+    methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+    patch({ status, page: 1 });
   };
 
   const handleReset = () => {
@@ -231,7 +234,7 @@ function BuyerOrdersPageContent() {
     return (
       <div className="space-y-6 p-2 lg:p-4">
         <div className="text-center py-12">
-          <p className="text-destructive">{t('buyer.orders.error.loadFailed', 'Unable to load orders.')}</p>
+          <p className="text-destructive oidark:text-error">{t('buyer.orders.error.loadFailed', 'Unable to load orders.')}</p>
           <button
             className="mt-4 text-sm text-primary underline"
             onClick={() => refetch()}
@@ -249,7 +252,7 @@ function BuyerOrdersPageContent() {
       style={{ height: '100%' }}
     >
       <div className="mb-2 shrink-0">
-        <h1 className="m-0 text-[22px] font-bold text-gray-900">
+        <h1 className="m-0 text-[22px] font-bold text-gray-900 dark:text-slate-100 oidark:text-foreground">
           {t('buyer.orders.title', 'My Orders')}
         </h1>
       </div>
@@ -257,77 +260,78 @@ function BuyerOrdersPageContent() {
       {data && (
         <div className="mb-[18px] grid grid-cols-1 shrink-0 gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.orders.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.orders)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F4E6;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-300 oidark:bg-violet-950 oidark:text-violet-300">
+              <Package className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.value.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.value)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F4B0;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300 oidark:bg-emerald-950 oidark:text-emerald-300">
+              <Wallet className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.progress.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.progress)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F69A;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-300 oidark:bg-sky-950 oidark:text-sky-300">
+              <Truck className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
 
           <div
-            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)]"
+            className="flex min-h-[72px] items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-[0_6px_18px_rgba(0,0,0,0.08)] dark:border-[#29252f] dark:bg-[#0b0a0d] dark:text-slate-100 dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:text-foreground oidark:shadow-none"
           >
             <div>
-              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500">
+              <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
                 {kpis.completed.label}
               </p>
-              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900">
+              <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.completed)}
               </p>
             </div>
-            <div className="shrink-0 text-[28px] leading-none" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.45))' }}>
-              &#x1F3C6;
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300 oidark:bg-amber-950 oidark:text-amber-300">
+              <Trophy className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </span>
           </div>
         </div>
       )}
 
-      <Card className="flex flex-col overflow-visible border-border/80 shadow-xs sm:min-h-0 sm:flex-1 sm:overflow-hidden">
+      <Card className="flex flex-col overflow-visible border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014] sm:min-h-0 sm:flex-1 sm:overflow-hidden oidark:border-outline-variant oidark:bg-surface-container-low">
         <CardContent className="flex min-w-0 flex-col space-y-0 overflow-visible p-3 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-hidden sm:p-4">
           <div className="shrink-0">
             <OrderFilterBar
               methods={methods}
               onApply={handleApply}
+              onStatusChange={handleStatusChange}
               onReset={handleReset}
               onExport={handleOpenExportModal}
               exportDisabled={isExporting}
@@ -378,7 +382,7 @@ function BuyerOrdersPageContent() {
               <p className="text-sm font-medium text-foreground">Export Scope</p>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Status:</span>
-                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">
+                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 oidark:border-blue-900 oidark:bg-blue-950 oidark:text-blue-300">
                   {formatStatusLabel(filters.status)}
                 </span>
               </div>
@@ -399,7 +403,7 @@ function BuyerOrdersPageContent() {
               <p className="text-sm text-destructive" role="alert">No orders to export.</p>
             )}
             {exportMessage === 'Export successful!' && (
-              <p className="text-sm font-medium text-green-600" role="status">{exportMessage}</p>
+              <p className="text-sm font-medium text-green-600 oidark:text-green-400" role="status">{exportMessage}</p>
             )}
           </div>
 

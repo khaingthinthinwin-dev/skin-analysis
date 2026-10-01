@@ -93,7 +93,7 @@ export class AdvertisementsService {
         expiresAt: null,
         weekNumber: null,
       },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.audit(userId, 'AD_SELECTED', ad.id, {
       shopId: shop.id,
@@ -123,7 +123,7 @@ export class AdvertisementsService {
         startsAt: schedule.startsAt,
         expiresAt: schedule.expiresAt,
       },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_CONTENT_UPLOADED', id, {
@@ -177,7 +177,7 @@ export class AdvertisementsService {
           paymentReference: dto.paymentReference || null,
           weekNumber,
         },
-        include: { feeSetting: true },
+        include: { feeSetting: true, shop: true },
       });
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
@@ -186,7 +186,10 @@ export class AdvertisementsService {
       amount: amount.toFixed(2),
       reference: dto.paymentReference || null,
     });
-    await this.notifyAdminsOfNewSubmission(result);
+    await this.notifyAdminsOfNewSubmission(
+      result,
+      ad.approvalStatus === 'rejected',
+    );
     return this.toResponse(result);
   }
 
@@ -240,7 +243,7 @@ export class AdvertisementsService {
         skip,
         take: query.limit,
         orderBy: { createdAt: 'desc' },
-        include: { feeSetting: true },
+        include: { feeSetting: true, shop: true },
       }),
       this.prisma.advertisement.count({ where }),
     ]);
@@ -288,7 +291,7 @@ export class AdvertisementsService {
           ? { startsAt: schedule.startsAt, expiresAt: schedule.expiresAt }
           : {}),
       },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_UPDATED', id, { shopId: ad.shopId });
@@ -330,7 +333,7 @@ export class AdvertisementsService {
     const shop = await this.getShop(userId);
     const ad = await this.prisma.advertisement.findUnique({
       where: { id },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     if (!ad) throw new NotFoundException('Advertisement not found');
     if (ad.shopId !== shop.id)
@@ -345,7 +348,7 @@ export class AdvertisementsService {
     const updated = await this.prisma.advertisement.update({
       where: { id },
       data: { isActive: dto.isActive },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_TOGGLED', id, {
@@ -455,11 +458,14 @@ export class AdvertisementsService {
   }
 
   private toResponse(
-    ad: Prisma.AdvertisementGetPayload<{ include: { feeSetting: true } }>,
+    ad: Prisma.AdvertisementGetPayload<{
+      include: { feeSetting: true; shop: true };
+    }>,
   ) {
     return {
       id: ad.id,
       shopId: ad.shopId,
+      shopName: ad.shop.name,
       title: ad.title,
       content: ad.content,
       announcementMessage: ad.announcementMessage,
@@ -527,10 +533,12 @@ export class AdvertisementsService {
   // direction (AD_APPROVED / AD_REJECTED back to the shop owner) is handled by
   // AdminAdManagementService. This is the only place a submission enters the
   // review queue, so it also covers resubmission of a rejected ad — admins are
-  // notified again each time the merchant re-pays. Notification writes are
-  // best-effort: a failure here must never roll back a completed payment.
+  // notified again each time the merchant re-pays, with a distinct title and
+  // message for resubmissions. Notification writes are best-effort: a failure
+  // here must never roll back a completed payment.
   private async notifyAdminsOfNewSubmission(
     ad: Prisma.AdvertisementGetPayload<{ include: { feeSetting: true } }>,
+    isResubmission: boolean,
   ) {
     try {
       const [admins, shop] = await Promise.all([
@@ -544,12 +552,19 @@ export class AdvertisementsService {
         }),
       ]);
       if (admins.length === 0) return;
+      const shopName = shop?.name ?? 'A shop';
+      const title = isResubmission
+        ? 'Advertisement resubmitted'
+        : 'New advertisement submitted';
+      const message = isResubmission
+        ? `${shopName} resubmitted advertisement "${ad.title || 'Untitled advertisement'}" and it is pending approval.`
+        : `${shopName} submitted "${ad.title || 'Untitled advertisement'}" and it is pending approval.`;
       await this.prisma.notification.createMany({
         data: admins.map((admin) => ({
           userId: admin.id,
           type: 'AD_SUBMITTED',
-          title: 'New advertisement submitted',
-          message: `${shop?.name ?? 'A shop'} submitted "${ad.title || 'Untitled advertisement'}" and it is pending approval.`,
+          title,
+          message,
           entityType: 'Advertisement',
           entityId: ad.id,
         })),

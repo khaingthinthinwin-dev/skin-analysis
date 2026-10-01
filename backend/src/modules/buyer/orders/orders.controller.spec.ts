@@ -5,8 +5,12 @@ import { OrderListQueryDto } from './dto/order-list-query.dto';
 
 describe('OrdersController getOrderHistory', () => {
   const getOrderHistory = jest.fn();
+  const getOrderDetail = jest.fn();
+  const getOrderTracking = jest.fn();
   const ordersService = {
     getOrderHistory,
+    getOrderDetail,
+    getOrderTracking,
   } as unknown as OrdersService;
   const controller = new OrdersController(ordersService);
   const query = new OrderListQueryDto();
@@ -38,4 +42,32 @@ describe('OrdersController getOrderHistory', () => {
       ).rejects.toThrow(ForbiddenException);
     },
   );
+
+  it('passes the authenticated role to detail and tracking reads', async () => {
+    const user = {
+      id: 'admin-1',
+      email: 'admin@example.com',
+      roleCode: 'super_admin',
+    };
+    getOrderDetail.mockResolvedValue({ id: 'order-1' });
+    getOrderTracking.mockResolvedValue({ orderId: 'order-1' });
+
+    await expect(controller.getOrderDetail(user, 'order-1')).resolves.toEqual({
+      data: { id: 'order-1' },
+    });
+    await expect(controller.getOrderTracking(user, 'order-1')).resolves.toEqual(
+      { data: { orderId: 'order-1' } },
+    );
+
+    expect(getOrderDetail).toHaveBeenCalledWith(
+      'admin-1',
+      'super_admin',
+      'order-1',
+    );
+    expect(getOrderTracking).toHaveBeenCalledWith(
+      'admin-1',
+      'super_admin',
+      'order-1',
+    );
+  });
 });

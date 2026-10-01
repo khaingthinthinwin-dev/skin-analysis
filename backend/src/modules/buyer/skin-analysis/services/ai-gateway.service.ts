@@ -33,7 +33,6 @@ export interface AiAnalysisPayload {
   conditions: AiConditionResult[];
   findings: AiFindingResult[];
   overallAssessment: string;
-  meshSvg: string;
 }
 
 const CONDITION_ORDER: ConditionName[] = [
@@ -124,32 +123,6 @@ const OVERALL_TEMPLATES = [
   'Skin shows solid elasticity; near-term care should prioritise {top} support and UV defence.',
 ];
 
-const MESH_SVG_TEMPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
-  <rect width="640" height="640" fill="none"/>
-  <g fill="none" stroke="#00e5ff" stroke-opacity="0.85" stroke-width="1.4">
-    <ellipse cx="320" cy="340" rx="185" ry="240"/>
-    <ellipse cx="320" cy="330" rx="120" ry="155"/>
-    <ellipse cx="320" cy="120" rx="56" ry="46"/>
-    <ellipse cx="320" cy="470" rx="86" ry="66"/>
-  </g>
-  <g stroke="#00e5ff" stroke-opacity="0.55" stroke-width="0.8">
-    <path d="M135 340 H505"/> <path d="M148 280 H492"/> <path d="M172 400 H468"/>
-    <path d="M240 620 V70"/> <path d="M400 620 V70"/> <path d="M320 620 V70"/>
-    <path d="M148 220 H492"/> <path d="M320 100 C220 220 220 460 320 590"/>
-    <path d="M320 100 C420 220 420 460 320 590"/>
-  </g>
-  <g fill="#00e5ff">
-    <circle cx="320" cy="120" r="4" fill-opacity="0.9"/>
-    <circle cx="268" cy="260" r="3" fill-opacity="0.9"/>
-    <circle cx="372" cy="260" r="3" fill-opacity="0.9"/>
-    <circle cx="268" cy="300" r="3" fill-opacity="0.9"/>
-    <circle cx="372" cy="300" r="3" fill-opacity="0.9"/>
-    <circle cx="320" cy="292" r="3" fill-opacity="0.9"/>
-    <circle cx="210" cy="320" r="3" fill-opacity="0.9"/>
-    <circle cx="430" cy="320" r="3" fill-opacity="0.9"/>
-  </g>
-</svg>`;
-
 /**
  * Local deterministic AI diagnostic simulator.
  *
@@ -208,7 +181,6 @@ export class AiGatewayService {
       conditions,
       findings,
       overallAssessment,
-      meshSvg: MESH_SVG_TEMPLATE,
     };
   }
 
