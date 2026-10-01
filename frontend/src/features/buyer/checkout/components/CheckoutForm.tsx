@@ -29,7 +29,11 @@ const shippingSchema = z.object({
   phone: z
     .string()
     .min(1, 'Phone number is required')
-    .max(20, 'Phone must not exceed 20 characters'),
+    .regex(/^\d*$/, 'Phone number must contain digits only')
+    .refine(
+      (val) => val.length === 0 || (val.startsWith('0') && (val.length === 9 || val.length === 11)),
+      'Phone must start with 0 and be 9 or 11 digits',
+    ),
   addressLine1: z
     .string()
     .min(1, 'Address is required')
@@ -46,7 +50,11 @@ const shippingSchema = z.object({
   postalCode: z
     .string()
     .min(1, 'Postal code is required')
-    .max(20, 'Postal code must not exceed 20 characters'),
+    .regex(/^\d*$/, 'Postal code must contain digits only')
+    .refine(
+      (val) => val.length === 0 || (val.length >= 4 && val.length <= 7),
+      'Postal code must be between 4 and 7 digits',
+    ),
   country: z.string().min(1, 'Country is required'),
 });
 
@@ -130,7 +138,16 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Phone number" type="tel" {...field} />
+                    <Input
+                      placeholder="Phone number"
+                      type="tel"
+                      maxLength={11}
+                      {...field}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, '');
+                        field.onChange(digitsOnly);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -201,7 +218,15 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                   <FormItem>
                     <FormLabel>Postal Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="Postal code" {...field} />
+                      <Input
+                        placeholder="Postal code"
+                        maxLength={7}
+                        {...field}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '');
+                          field.onChange(digitsOnly);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
