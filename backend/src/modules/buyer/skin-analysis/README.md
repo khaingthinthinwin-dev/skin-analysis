@@ -7,7 +7,7 @@ Local, self-contained implementation of the AI Skin Analysis feature for buyers.
 - `POST /api/v1/skin-analysis/upload` — validate + store a facial scan (JPG/PNG/WebP, ≤10MB) on local disk under `uploads/skin-scans/{userId}/`.
 - `POST /api/v1/skin-analysis/analyze` — start an analysis (5 scans/day quota per `BR-SKIN-005`), run the inference, mark `PROCESSING → COMPLETED` synchronously.
 - `GET /api/v1/skin-analysis/latest` — dashboard summary of the latest completed scan.
-- `GET /api/v1/skin-analysis/:id` — full result: conditions, findings, recommendations, mesh overlay.
+- `GET /api/v1/skin-analysis/:id` — full result: conditions, findings, recommendations.
 - `GET /api/v1/skin-analysis/history` — paginated history + summary KPIs.
 - `GET /api/v1/skin-analysis/trends` — health/hydration time series (`30d|90d|1y|all`).
 - `POST /api/v1/skin-analysis/compare` — side-by-side delta between two completed scans.

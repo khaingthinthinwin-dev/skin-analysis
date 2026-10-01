@@ -33,7 +33,6 @@ export interface AiAnalysisPayload {
   conditions: AiConditionResult[];
   findings: AiFindingResult[];
   overallAssessment: string;
-  meshSvg: string;
 }
 
 const CONDITION_ORDER: ConditionName[] = [
@@ -124,35 +123,6 @@ const OVERALL_TEMPLATES = [
   'Skin shows solid elasticity; near-term care should prioritise {top} support and UV defence.',
 ];
 
-// Clean face wireframe mesh: a single-weight outline that follows forehead →
-// cheekbones → jaw → chin and stops at the chin, so the overlay sits on the
-// face only and never spills onto the neck, body or photo background. Vertical
-// and horizontal wires follow the face contour; eyes, nose and mouth are drawn
-// as simple feature guides with landmark dots.
-const MESH_SVG_TEMPLATE = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
-  <rect width="640" height="640" fill="none"/>
-  <g fill="none" stroke="#006064" stroke-opacity="1" stroke-width="1.6">
-    <path d="M320 70 C232 84 192 180 192 268 C192 352 250 424 320 466 C390 424 448 352 448 268 C448 180 408 84 320 70 Z"/>
-    <path d="M252 92 C234 200 234 340 268 436"/>
-    <path d="M320 70 L320 466"/>
-    <path d="M388 92 C406 200 406 340 372 436"/>
-    <path d="M214 156 C268 142 372 142 426 156"/>
-    <path d="M196 268 C264 254 376 254 444 268"/>
-    <path d="M224 352 C278 340 362 340 416 352"/>
-    <path d="M236 208 C260 196 290 196 310 208"/>
-    <path d="M330 208 C350 196 380 196 404 208"/>
-    <path d="M320 214 L316 288"/>
-    <path d="M278 366 C304 356 336 356 362 366"/>
-  </g>
-  <g fill="#006064">
-    <circle cx="266" cy="206" r="4" fill-opacity="1"/>
-    <circle cx="374" cy="206" r="4" fill-opacity="1"/>
-    <circle cx="318" cy="290" r="3.5" fill-opacity="1"/>
-    <circle cx="320" cy="366" r="3.5" fill-opacity="1"/>
-    <circle cx="320" cy="462" r="4" fill-opacity="1"/>
-  </g>
-</svg>`;
-
 /**
  * Local deterministic AI diagnostic simulator.
  *
@@ -211,7 +181,6 @@ export class AiGatewayService {
       conditions,
       findings,
       overallAssessment,
-      meshSvg: MESH_SVG_TEMPLATE,
     };
   }
 

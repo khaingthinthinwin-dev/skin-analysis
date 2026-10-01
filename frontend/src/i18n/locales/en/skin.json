@@ -98,7 +98,9 @@
     "confidence": "Confidence",
     "recommendations": "Recommended Products",
     "viewMore": "View more",
-    "processed": "PROCESSED"
+    "processed": "PROCESSED",
+    "analysisComplete": "Analysis Complete",
+    "scanImage": "Facial scan image"
   },
   "conditions": {
     "title": "Condition Severity",
@@ -179,20 +181,6 @@
       "helpful": "Helpful",
       "notHelpful": "Not Helpful"
     }
-  },
-  "mesh": {
-    "title": "Facial Mesh Overlay",
-    "showMesh": "Show Mesh",
-    "hideMesh": "Hide Mesh",
-    "download": "Download",
-    "scanAlt": "Facial scan image",
-    "capturedAlt": "Captured photo",
-    "loadError": "Failed to load scan image",
-    "meshLoadError": "Failed to load mesh overlay",
-    "meshUnavailable": "Mesh overlay unavailable",
-    "scanMissingDesc": "The scan image could not be loaded. Try a new scan.",
-    "active": "Diagnostic Overlay Active",
-    "fullscreen": "Full screen"
   },
   "history": {
     "title": "Analysis History",
