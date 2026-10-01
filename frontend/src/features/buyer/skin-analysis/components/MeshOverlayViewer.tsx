@@ -62,7 +62,7 @@ export function MeshOverlayViewer({
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(scanImg, 0, 0)
-      ctx.globalAlpha = 0.7
+      ctx.globalAlpha = 0.9
       ctx.drawImage(meshImg, 0, 0, canvas.width, canvas.height)
       ctx.globalAlpha = 1
     }
