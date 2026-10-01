@@ -1,6 +1,4 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const PAGE_SIZES = [5, 20, 50, 100] as const
 
@@ -13,22 +11,22 @@ interface PaginationProps {
   onLimitChange?: (limit: number) => void
 }
 
-function buildPageItems(page: number, totalPages: number): Array<number | 'gap'> {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1)
+function getPageNumbers(page: number, safeTotal: number): Array<number | 'gap'> {
+  if (safeTotal <= 7) {
+    return Array.from({ length: safeTotal }, (_, i) => i + 1)
   }
-  const candidates = new Set([1, 2, totalPages - 1, totalPages, page - 1, page, page + 1])
-  const sorted = [...candidates].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b)
-  const items: Array<number | 'gap'> = []
-  let prev = 0
-  for (const p of sorted) {
-    if (p - prev > 1) items.push('gap')
-    items.push(p)
-    prev = p
-  }
-  return items
+  const pages: Array<number | 'gap'> = [1]
+  if (page > 3) pages.push('gap')
+  const start = Math.max(2, page - 1)
+  const end = Math.min(safeTotal - 1, page + 1)
+  for (let i = start; i <= end; i++) pages.push(i)
+  if (page < safeTotal - 2) pages.push('gap')
+  pages.push(safeTotal)
+  return pages
 }
 
+// Table footer: record count on the left, numbered page navigation on the
+// right (prev/next chevrons + page chips) as in the admin ads mock.
 export function Pagination({
   page,
   limit,
@@ -37,76 +35,100 @@ export function Pagination({
   onPageChange,
   onLimitChange,
 }: PaginationProps) {
-  if (totalPages <= 1) return null
-
+  const safeTotal = Math.max(totalPages || 1, 1)
+  const prevDisabled = page <= 1
+  const nextDisabled = page >= safeTotal
   const from = total === 0 ? 0 : (page - 1) * limit + 1
   const to = Math.min(page * limit, total)
-  const items = buildPageItems(page, totalPages)
 
   return (
-    <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-      <span className="text-sm text-muted-foreground">
-        Showing {from}-{to} of {total}
-      </span>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 select-none">
+      <div className="flex items-center gap-3">
+        {onLimitChange && (
+          <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <span className="hidden sm:inline">Rows:</span>
+            <select
+              aria-label="Rows per page"
+              value={limit}
+              onChange={(e) => onLimitChange(Number(e.target.value))}
+              className="h-8 rounded-md border border-border bg-card px-2.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+            >
+              {PAGE_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
+          Showing <span className="font-medium text-foreground">{from}–{to}</span> of{' '}
+          <span className="font-medium text-foreground">{total}</span> ads
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
           aria-label="Previous page"
+          className={`h-8 w-8 rounded-md flex items-center justify-center border
+            transition-all duration-200 ease-in-out active:scale-95
+            ${prevDisabled
+              ? 'bg-card border-border text-muted-foreground/40 cursor-not-allowed opacity-50 active:scale-100'
+              : 'bg-card border-border text-muted-foreground cursor-pointer hover:bg-primary/10 hover:border-primary/50 hover:text-primary'
+            }`}
+          disabled={prevDisabled}
+          onClick={() => onPageChange(page - 1)}
         >
           <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        {items.map((item, index) =>
-          item === 'gap' ? (
-            <span key={`gap-${index}`} className="px-1 text-sm text-muted-foreground">
-              ...
-            </span>
-          ) : (
-            <Button
-              key={item}
-              size="sm"
-              variant={item === page ? 'default' : 'outline'}
-              onClick={() => onPageChange(item)}
-              aria-label={`Go to page ${item}`}
-              aria-current={item === page ? 'page' : undefined}
-            >
-              {item}
-            </Button>
-          ),
-        )}
-        <Button
-          size="sm"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
-          aria-label="Next page"
-        >
-          Next
-          <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
-      </div>
-      {onLimitChange && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page</span>
-          <Select
-            value={String(limit)}
-            onValueChange={(value) => onLimitChange(Number(value))}
-          >
-            <SelectTrigger className="h-8 w-20" aria-label="Rows per page">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        </button>
+
+        <div className="flex items-center gap-1">
+          {getPageNumbers(page, safeTotal).map((p, idx) => {
+            if (p === 'gap') {
+              return (
+                <span key={`gap-${idx}`} className="px-1 text-xs text-muted-foreground select-none">
+                  …
+                </span>
+              )
+            }
+            const isCurrent = p === page
+            return (
+              <button
+                key={p}
+                type="button"
+                aria-current={isCurrent ? 'page' : undefined}
+                aria-label={`Go to page ${p}`}
+                className={`h-8 w-8 rounded-md flex items-center justify-center text-[13px] font-medium border
+                  transition-all duration-200 ease-in-out active:scale-95
+                  ${isCurrent
+                    ? 'bg-primary border-primary text-primary-foreground font-semibold shadow-sm scale-105'
+                    : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-muted/50 cursor-pointer'
+                  }`}
+                onClick={() => onPageChange(p)}
+              >
+                {p}
+              </button>
+            )
+          })}
         </div>
-      )}
+
+        <button
+          type="button"
+          aria-label="Next page"
+          className={`h-8 w-8 rounded-md flex items-center justify-center border
+            transition-all duration-200 ease-in-out active:scale-95
+            ${nextDisabled
+              ? 'bg-card border-border text-muted-foreground/40 cursor-not-allowed opacity-50 active:scale-100'
+              : 'bg-card border-border text-muted-foreground cursor-pointer hover:bg-primary/10 hover:border-primary/50 hover:text-primary'
+            }`}
+          disabled={nextDisabled}
+          onClick={() => onPageChange(page + 1)}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   )
 }

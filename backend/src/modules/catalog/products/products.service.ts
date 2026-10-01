@@ -239,15 +239,12 @@ export class ProductsService {
     const baseSlug = generateSlug(dto.name);
     const slug = await this.ensureSlugUnique(baseSlug, merchantId);
 
-    const price =
-      dto.price !== undefined && dto.price !== null
-        ? dto.price
-        : dto.compareAtPrice !== undefined && dto.compareAtPrice !== null
-          ? dto.compareAtPrice
-          : undefined;
+    const price = dto.price ?? dto.compareAtPrice ?? undefined;
     if (price === undefined) {
       throw new BadRequestException('Price or compare at price is required');
     }
+    // TypeScript doesn't narrow the type after the throw, so we assert non-null
+    const finalPrice: number = price;
 
     const product = await this.prisma.product.create({
       data: {
@@ -256,11 +253,9 @@ export class ProductsService {
         slug,
         description: dto.description,
         shortDescription: dto.shortDescription,
-        price,
+        price: finalPrice,
         compareAtPrice:
-          dto.price !== undefined && dto.price !== null
-            ? (dto.compareAtPrice ?? null)
-            : undefined,
+          dto.price !== undefined ? dto.compareAtPrice : undefined,
         sku,
         stockQuantity: dto.stockQuantity,
         lowStockThreshold: dto.lowStockThreshold,
@@ -326,7 +321,6 @@ export class ProductsService {
       dto.price !== null &&
       dto.compareAtPrice !== undefined &&
       dto.compareAtPrice !== null &&
-      dto.compareAtPrice > 0 &&
       dto.compareAtPrice <= effectivePrice
     ) {
       throw new BadRequestException(
@@ -903,11 +897,75 @@ export class ProductsService {
     };
   }
 
-  async findReviews(
-    idOrSlug: string,
-    query: ReviewQueryDto,
-    viewerId?: string,
-  ) {
+  async getSidebarAds(idOrSlug: string) {
+    const product = await this.resolveProduct(idOrSlug);
+
+    if (product.merchant?.licenseStatus !== 'approved') {
+      throw new NotFoundException('Product not found');
+    }
+
+    const now = new Date();
+    const TIER_PRIORITY: Record<string, number> = {
+      premium: 3,
+      standard: 2,
+      basic: 1,
+    };
+
+    const ads = await this.prisma.advertisement.findMany({
+      where: {
+        isActive: true,
+        approvalStatus: 'approved',
+        paymentStatus: 'completed',
+        startsAt: { lte: now },
+        expiresAt: { gte: now },
+        feeSetting: {
+          placement: 'productDetail_page_banner',
+          isActive: true,
+        },
+      },
+      include: {
+        feeSetting: { select: { placement: true, tier: true } },
+        shop: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      },
+    });
+
+    const ordered = ads
+      .filter(
+        (
+          ad,
+        ): ad is typeof ad & {
+          feeSetting: { placement: string; tier: string };
+        } => Boolean(ad.feeSetting),
+      )
+      .sort(
+        (a, b) =>
+          (TIER_PRIORITY[b.feeSetting.tier] ?? 0) -
+          (TIER_PRIORITY[a.feeSetting.tier] ?? 0),
+      )
+      .slice(0, 5);
+
+    return ordered.map((ad) => ({
+      id: ad.id,
+      title: ad.title,
+      announcementMessage: ad.announcementMessage,
+      imageUrl: ad.imageUrl,
+      linkUrl: ad.linkUrl,
+      placement: ad.feeSetting.placement,
+      startsAt: ad.startsAt,
+      expiresAt: ad.expiresAt,
+      planTier: ad.feeSetting.tier,
+      shopId: ad.shop.id,
+      shopName: ad.shop.name,
+      shopSlug: ad.shop.slug,
+      shop: {
+        name: ad.shop.name,
+        slug: ad.shop.slug,
+        logoUrl: ad.shop.logoUrl,
+      },
+    }));
+  }
+
+  async findReviews(idOrSlug: string, query: ReviewQueryDto) {
     const product = await this.resolveProduct(idOrSlug);
 
     const { page = 1, limit = 20, sortBy = 'newest' } = query;
@@ -928,18 +986,9 @@ export class ProductsService {
 
     const skip = (page - 1) * limit;
 
-    // Approved reviews are public; a signed-in buyer additionally sees their
-    // own review while it is still waiting for moderation (status = pending).
-    const where: Prisma.ReviewWhereInput = viewerId
-      ? {
-          productId: product.id,
-          OR: [{ status: 'approved' }, { status: 'pending', userId: viewerId }],
-        }
-      : { productId: product.id, status: 'approved' };
-
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
-        where,
+        where: { productId: product.id, status: 'approved' },
         orderBy,
         skip,
         take: limit,
@@ -950,14 +999,15 @@ export class ProductsService {
           body: true,
           images: true,
           isVerifiedPurchase: true,
-          status: true,
           createdAt: true,
           user: {
             select: { id: true, name: true },
           },
         },
       }),
-      this.prisma.review.count({ where }),
+      this.prisma.review.count({
+        where: { productId: product.id, status: 'approved' },
+      }),
     ]);
 
     return {
@@ -1001,29 +1051,33 @@ export class ProductsService {
     return similar;
   }
 
-  async canReview(
-    idOrSlug: string,
-    userId: string,
-  ): Promise<{ canReview: boolean; reason: string | null }> {
-    const product = await this.resolveProduct(idOrSlug);
-
-    const deliveredOrderItem = await this.prisma.orderItem.findFirst({
+  private async findDeliveredOrderItem(productId: string, buyerId: string) {
+    return this.prisma.orderItem.findFirst({
       where: {
-        productId: product.id,
-        order: { buyerId: userId, statusCode: 'delivered' },
+        productId,
+        order: { buyerId, statusCode: 'delivered' },
       },
       select: { id: true },
     });
+  }
 
-    if (!deliveredOrderItem) {
+  async canReview(
+    idOrSlug: string,
+    userId: string,
+  ): Promise<{
+    canReview: boolean;
+    reason: 'not_delivered' | 'already_reviewed' | null;
+  }> {
+    const product = await this.resolveProduct(idOrSlug);
+
+    const delivered = await this.findDeliveredOrderItem(product.id, userId);
+    if (!delivered) {
       return { canReview: false, reason: 'not_delivered' };
     }
 
     const existingReview = await this.prisma.review.findUnique({
       where: { userId_productId: { userId, productId: product.id } },
-      select: { id: true },
     });
-
     if (existingReview) {
       return { canReview: false, reason: 'already_reviewed' };
     }
@@ -1034,19 +1088,10 @@ export class ProductsService {
   async createReview(idOrSlug: string, userId: string, dto: CreateReviewDto) {
     const product = await this.resolveProduct(idOrSlug);
 
-    // Rule 4.4.1 / BR-PROD-005: only buyers with a delivered order for this
-    // product may review it.
-    const deliveredOrderItem = await this.prisma.orderItem.findFirst({
-      where: {
-        productId: product.id,
-        order: { buyerId: userId, statusCode: 'delivered' },
-      },
-      select: { id: true },
-    });
-
-    if (!deliveredOrderItem) {
+    const delivered = await this.findDeliveredOrderItem(product.id, userId);
+    if (!delivered) {
       throw new BadRequestException(
-        'You can only review products you have purchased and received.',
+        'You can only review products from a delivered order',
       );
     }
 
@@ -1066,8 +1111,6 @@ export class ProductsService {
         title: dto.title,
         body: dto.body,
         images: dto.images || [],
-        isVerifiedPurchase: true,
-        status: 'pending',
       },
       select: {
         id: true,
