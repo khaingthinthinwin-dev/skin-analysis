@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+
 import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 import type { NotificationItem } from '@/types/notification.types'
@@ -319,9 +320,9 @@ export default function Notifications() {
     }
     const type = normalizeNotificationType(item.type)
     if (AD_SUBMISSION_TYPES.has(type)) {
-      // Admins act here: jump straight to the review queue, pre-filtered to the
-      // pending ads the submission just joined.
-      navigate('/admin/ads?status=pending')
+      // Navigate to all advertisements and highlight the specific ad
+      const params = item.entityId ? `?status=all&highlightAdId=${item.entityId}` : '?status=all'
+      navigate(`/admin/ads${params}`)
       return
     }
     if (AD_DECISION_TYPES.has(type)) {
