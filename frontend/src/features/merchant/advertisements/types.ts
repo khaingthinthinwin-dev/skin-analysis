@@ -14,6 +14,7 @@ export interface AdPackage {
 export interface Advertisement {
   id: string
   shopId: string
+  shopName: string
   title: string
   content: string | null
   announcementMessage: string
