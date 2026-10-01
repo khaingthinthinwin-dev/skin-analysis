@@ -168,6 +168,7 @@ export default function Advertisements() {
   const [confirmingSelection, setConfirmingSelection] = useState(false)
   const [packagesPage, setPackagesPage] = useState(1)
   const [highlightedPackageId, setHighlightedPackageId] = useState<string | null>(null)
+  const [navigateToPackageId, setNavigateToPackageId] = useState<string | null>(null)
   const isDeactivated =
     user?.isActive === false ||
     user?.is_active === false ||
@@ -208,8 +209,15 @@ export default function Advertisements() {
     if (!updatedPackageId) return
 
     const timer = window.setTimeout(() => {
-      setHighlightedPackageId(updatedPackageId)
-      setPackagesPage(1)
+      const packagesList = packagesQuery.data ?? []
+      const pkgIndex = packagesList.findIndex((p) => p.id === updatedPackageId)
+      if (pkgIndex >= 0) {
+        const pageForPkg = Math.floor(pkgIndex / PACKAGES_PER_PAGE) + 1
+        setPackagesPage(pageForPkg)
+      } else {
+        setPackagesPage(1)
+      }
+
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -219,10 +227,38 @@ export default function Advertisements() {
         { replace: true }
       )
       document.getElementById('available-packages')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+      // Trigger highlight after page state is updated
+      setNavigateToPackageId(updatedPackageId)
     }, 0)
 
     return () => window.clearTimeout(timer)
-  }, [searchParams, setSearchParams])
+  }, [searchParams, setSearchParams, packagesQuery.data])
+
+  useEffect(() => {
+    if (!navigateToPackageId) return
+    const timer = window.setTimeout(() => {
+      setHighlightedPackageId(navigateToPackageId)
+      setNavigateToPackageId(null)
+    }, 50)
+    return () => window.clearTimeout(timer)
+  }, [navigateToPackageId, packagesPage])
+
+  useEffect(() => {
+    if (!highlightedPackageId) return
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(`ad-package-${highlightedPackageId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      // Auto-clear highlight after 5 seconds
+      const clearTimer = window.setTimeout(() => {
+        setHighlightedPackageId(null)
+      }, 5000)
+      return () => window.clearTimeout(clearTimer)
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [highlightedPackageId])
 
   // Stats per 画面項目設計書 §4.4: active / pending approval / expired counts.
   const stats = useMemo(
@@ -465,9 +501,10 @@ export default function Advertisements() {
               {visiblePackages.map((pkg) => (
                 <Card
                   key={pkg.id}
+                  id={`ad-package-${pkg.id}`}
                   className={`flex flex-col transition-all duration-300 ${
                     highlightedPackageId === pkg.id
-                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] shadow-lg shadow-primary/20'
+                      ? 'ring-4 ring-purple-500 ring-offset-4 ring-offset-background scale-[1.02] shadow-2xl shadow-purple-500/30 animate-pulse'
                       : ''
                   }`}
                 >
@@ -476,7 +513,7 @@ export default function Advertisements() {
                       <CardTitle className="text-base">{packageLabel(pkg.placement)}</CardTitle>
                       <div className="flex items-center gap-1">
                         {highlightedPackageId === pkg.id && (
-                          <Badge className="bg-primary text-primary-foreground">Updated</Badge>
+                          <Badge className="bg-purple-600 text-white">Updated</Badge>
                         )}
                         <Badge variant="secondary" className="capitalize">
                           {tierLabels[pkg.tier] ?? pkg.tier}
