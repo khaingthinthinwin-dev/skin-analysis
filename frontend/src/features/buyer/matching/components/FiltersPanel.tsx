@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { CategorySelect } from '@/features/search/components/CategorySelect'
 import { useCategoryTree } from '@/features/search/hooks/useCategoryTree'
@@ -78,10 +79,6 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
     onUpdate({ skinTypes: updated.length > 0 ? updated.join(',') : 'all' })
   }
 
-  const toggleRating = (rating: number) => {
-    onUpdate({ rating: filters.rating === rating ? undefined : rating })
-  }
-
   const commitPrice = () => {
     const validationError = validatePriceRange(priceMin, priceMax)
     if (validationError) {
@@ -117,10 +114,10 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
         <div>
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</h4>
           <CategorySelect
+            variant="nav"
             categories={categories}
             selectedCategoryId={filters.categoryId ?? ''}
             onSelect={(categoryId) => onUpdate({ categoryId: categoryId || undefined })}
-            activeClassName="rounded-lg bg-gradient-to-r from-purple-100/80 to-purple-50/50 pr-4 font-semibold text-purple-900 shadow-xs dark:from-purple-950/60 dark:to-purple-900/30 dark:text-purple-200"
             noIndent
           />
         </div>
@@ -188,17 +185,18 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
 
         <div>
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rating</h4>
-          <div className="space-y-1.5">
+          <RadioGroup
+            value={filters.rating?.toString() ?? ''}
+            onValueChange={(value) => onUpdate({ rating: value ? Number(value) : undefined })}
+            className="space-y-1.5"
+          >
             {RATING_OPTIONS.map((rating) => (
               <label key={rating.value} className="flex cursor-pointer items-center gap-2">
-                <Checkbox
-                  checked={filters.rating === rating.value}
-                  onCheckedChange={() => toggleRating(rating.value)}
-                />
+                <RadioGroupItem value={rating.value.toString()} className="mt-0.5" />
                 <span className="text-sm text-foreground">{rating.label}</span>
               </label>
             ))}
-          </div>
+          </RadioGroup>
         </div>
 
         {hasActiveFilters && (

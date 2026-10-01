@@ -32,7 +32,7 @@ import { PayoutTable } from "./PayoutTable";
 import { PayoutConfirmationDialog } from "./PayoutConfirmationDialog";
 import { PayoutDetailDialog } from "./PayoutDetailDialog";
 import { ExportDialog } from "./ExportDialog";
-import { PaginationControls } from "./PaginationControls";
+import { PaginationControls } from "@/components/PaginationControls";
 
 import { useRevenue } from "../hooks/useRevenue";
 import { useCommission } from "../hooks/useCommission";
@@ -52,6 +52,7 @@ type PayoutFilterState = {
   searchInput: string;
   searchTerm: string;
   page: number;
+  limit: number;
 };
 
 type PayoutFilterAction =
@@ -61,6 +62,7 @@ type PayoutFilterAction =
   | { type: "SET_SEARCH_INPUT"; value: string }
   | { type: "APPLY_SEARCH"; value: string }
   | { type: "SET_PAGE"; value: number }
+  | { type: "SET_LIMIT"; value: number }
   | { type: "RESET" };
 
 const initialPayoutFilter: PayoutFilterState = {
@@ -70,6 +72,7 @@ const initialPayoutFilter: PayoutFilterState = {
   searchInput: "",
   searchTerm: "",
   page: 1,
+  limit: 10,
 };
 
 function payoutFilterReducer(state: PayoutFilterState, action: PayoutFilterAction): PayoutFilterState {
@@ -86,6 +89,8 @@ function payoutFilterReducer(state: PayoutFilterState, action: PayoutFilterActio
       return { ...state, searchTerm: action.value, page: 1 };
     case "SET_PAGE":
       return { ...state, page: action.value };
+    case "SET_LIMIT":
+      return { ...state, limit: action.value, page: 1 };
     case "RESET":
       return initialPayoutFilter;
   }
@@ -161,7 +166,7 @@ export const RevenueTab: React.FC = () => {
   const { payoutsQuery, processPayoutMutation, reviewPayoutMutation, deletePayoutMutation } = useCommission(
     {
       page: filter.page,
-      limit: 5,
+      limit: filter.limit,
       ...(filter.status ? { status: filter.status } : {}),
       ...(filter.merchantId ? { merchantId: filter.merchantId } : {}),
       ...(filter.period ? { period: filter.period } : {}),
@@ -391,6 +396,9 @@ export const RevenueTab: React.FC = () => {
             page={payoutsQuery.data.page}
             totalPages={payoutsQuery.data.totalPages}
             onPageChange={(p) => dispatchFilter({ type: "SET_PAGE", value: p })}
+            limit={payoutsQuery.data.limit || filter.limit}
+            onLimitChange={(l) => dispatchFilter({ type: "SET_LIMIT", value: l })}
+            pageSizeOptions={[10, 20, 50, 100]}
           />
         )}
       </div>

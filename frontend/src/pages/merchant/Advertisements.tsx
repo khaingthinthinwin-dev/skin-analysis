@@ -1,7 +1,7 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from 'react-router'
 import {
   AlertTriangle,
   CalendarDays,
@@ -22,7 +22,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,6 +49,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
 import { contentSchema, resubmitContentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
 import { useAdvertisements } from '@/features/merchant/advertisements/hooks/useAdvertisements'
+import { ProductImagePicker } from '@/features/merchant/advertisements/components/ProductImagePicker'
+import type { AdContentPayload } from '@/features/merchant/advertisements/services/advertisement.service'
 import type { AdPackage, Advertisement } from '@/features/merchant/advertisements/types'
 
 type AdPackageInfo = NonNullable<Advertisement['package']>
@@ -133,19 +136,23 @@ function scrollToAdvertisements() {
   }, 60)
 }
 
-function toFormData(values: ContentForm, includeSchedule: boolean) {
-  const formData = new FormData()
-  formData.append('title', values.title)
-  formData.append('announcementMessage', values.announcementMessage)
-  if (values.content) formData.append('content', values.content)
-  if (values.linkUrl) formData.append('linkUrl', values.linkUrl)
-  if (includeSchedule) formData.append('startsAt', new Date(`${values.startsAt}T00:00:00.000Z`).toISOString())
-  if (values.image instanceof File) formData.append('image', values.image)
-  return formData
+function toContentPayload(values: ContentForm, includeSchedule: boolean): AdContentPayload {
+  return {
+    title: values.title,
+    announcementMessage: values.announcementMessage,
+    ...(values.content ? { content: values.content } : {}),
+    // Advertisement images are picked from the merchant's own products, so the
+    // path is sent as-is; the backend verifies it belongs to their catalogue.
+    ...(values.imageUrl ? { imageUrl: values.imageUrl } : {}),
+    ...(includeSchedule
+      ? { startsAt: new Date(`${values.startsAt}T00:00:00.000Z`).toISOString() }
+      : {}),
+  }
 }
 
 export default function Advertisements() {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
   const [approvalStatus, setApprovalStatus] = useState('')
@@ -160,7 +167,16 @@ export default function Advertisements() {
   const [paymentReference, setPaymentReference] = useState('')
   const [confirmingSelection, setConfirmingSelection] = useState(false)
   const [packagesPage, setPackagesPage] = useState(1)
-  const approvedMerchant = user?.licenseStatus === 'approved'
+  const [highlightedPackageId, setHighlightedPackageId] = useState<string | null>(null)
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const licenseStatus = user?.licenseStatus || user?.license_status
+  const isPendingMerchant = licenseStatus === 'pending'
+  const isRejectedMerchant = licenseStatus === 'rejected'
+  const approvedMerchant = licenseStatus === 'approved' && !isDeactivated
   const params = {
     page,
     limit: 3,
@@ -186,6 +202,27 @@ export default function Advertisements() {
     }, 300)
     return () => window.clearTimeout(timer)
   }, [search])
+
+  useEffect(() => {
+    const updatedPackageId = searchParams.get('updatedPackage')
+    if (!updatedPackageId) return
+
+    const timer = window.setTimeout(() => {
+      setHighlightedPackageId(updatedPackageId)
+      setPackagesPage(1)
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('updatedPackage')
+          return next
+        },
+        { replace: true }
+      )
+      document.getElementById('available-packages')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [searchParams, setSearchParams])
 
   // Stats per 画面項目設計書 §4.4: active / pending approval / expired counts.
   const stats = useMemo(
@@ -265,7 +302,7 @@ export default function Advertisements() {
       const needsUpload =
         Boolean(contentTarget) || (target.approvalStatus === 'pending' && target.paymentStatus === 'pending' && !target.startsAt)
       if (needsUpload) {
-        const updatedAd = await uploadContent.mutateAsync({ id: target.id, formData: toFormData(values, true) })
+        const updatedAd = await uploadContent.mutateAsync({ id: target.id, payload: toContentPayload(values, true) })
         setContentTarget(null)
         setEditTarget(null)
         toast.success('Advertisement content saved')
@@ -275,7 +312,7 @@ export default function Advertisements() {
         // start date; rejected ads are rescheduled on resubmit. In both cases
         // the backend derives a fresh expires_at from the package duration.
         const includeSchedule = target.approvalStatus === 'rejected' || target.paymentStatus === 'pending'
-        await updateContent.mutateAsync({ id: target.id, formData: toFormData(values, includeSchedule) })
+        await updateContent.mutateAsync({ id: target.id, payload: toContentPayload(values, includeSchedule) })
         setEditTarget(null)
         toast.success('Advertisement content saved')
       }
@@ -291,7 +328,7 @@ export default function Advertisements() {
     try {
       const updatedAd = await updateContent.mutateAsync({
         id: target.id,
-        formData: toFormData(values, target.approvalStatus === 'rejected'),
+        payload: toContentPayload(values, target.approvalStatus === 'rejected'),
       })
       setEditTarget(null)
       toast.success('Advertisement saved. Payment required to resubmit.')
@@ -347,25 +384,30 @@ export default function Advertisements() {
         <p className="text-muted-foreground">Select an advertising package, upload your content, and manage your advertisements.</p>
       </div>
 
-      {/* Pending Merchant Banner (§4.3) */}
-      {user?.licenseStatus === 'pending' && (
+      {/* Deactivated Banner */}
+      {isDeactivated && <AccountDeactivatedBanner />}
+
+      {/* Pending Merchant Banner */}
+      {!isDeactivated && isPendingMerchant && (
         <Alert variant="warning">
-          <AlertTriangle className="h-4 w-4" />
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            Your shop is pending approval. You can browse packages and view your ads, but you cannot select a package until your
-            shop is approved.
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}
-      {/* Rejected Merchant Banner (§4.3 item 4 `bannerPendingMerchant` — rejected variant) */}
-      {user?.licenseStatus === 'rejected' && (
+
+      {/* Rejected Merchant Banner */}
+      {!isDeactivated && isRejectedMerchant && (
         <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
           <ShieldAlert className="h-4 w-4 text-destructive" />
           <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            Your merchant account has been rejected. Advertisement management features are restricted. You can resubmit
-            your license from your Profile page.{' '}
-            <Link to="/merchant/profile" className="font-medium underline underline-offset-2 hover:no-underline">
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your
+            license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-semibold">
               Go to Profile
             </Link>
           </AlertDescription>
@@ -400,7 +442,7 @@ export default function Advertisements() {
       </div>
 
       {/* Package Catalog (§4.5) */}
-      <section className="space-y-4">
+      <section id="available-packages" className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold">Available Packages</h2>
           <p className="text-sm text-muted-foreground">Admin-created packages with fixed campaign durations.</p>
@@ -421,13 +463,25 @@ export default function Advertisements() {
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {visiblePackages.map((pkg) => (
-                <Card key={pkg.id} className="flex flex-col">
+                <Card
+                  key={pkg.id}
+                  className={`flex flex-col transition-all duration-300 ${
+                    highlightedPackageId === pkg.id
+                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] shadow-lg shadow-primary/20'
+                      : ''
+                  }`}
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base">{packageLabel(pkg.placement)}</CardTitle>
-                      <Badge variant="secondary" className="capitalize">
-                        {tierLabels[pkg.tier] ?? pkg.tier}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        {highlightedPackageId === pkg.id && (
+                          <Badge className="bg-primary text-primary-foreground">Updated</Badge>
+                        )}
+                        <Badge variant="secondary" className="capitalize">
+                          {tierLabels[pkg.tier] ?? pkg.tier}
+                        </Badge>
+                      </div>
                     </div>
                     <div className="mt-2 flex items-baseline gap-1">
                       <span className="text-3xl font-bold text-primary">{pkg.dailyRate} KS</span>
@@ -449,7 +503,7 @@ export default function Advertisements() {
                     </ul>
                     <Button
                       className="mt-auto w-full bg-primary/10 text-primary hover:bg-primary/20"
-                      disabled={!approvedMerchant}
+                      disabled={!approvedMerchant || isDeactivated}
                       onClick={() => {
                         setSelectedPackage(pkg)
                         setConfirmingSelection(true)
@@ -545,6 +599,7 @@ export default function Advertisements() {
               <AdCard
                 key={ad.id}
                 ad={ad}
+                isDeactivated={isDeactivated}
                 onEdit={(target) => setEditTarget(target)}
                 onPay={(target) => setPayTarget(target)}
                 onDelete={(target) => setDeleteTarget(target)}
@@ -735,6 +790,7 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
 
 interface AdCardProps {
   ad: Advertisement
+  isDeactivated?: boolean
   onEdit: (ad: Advertisement) => void
   onPay: (ad: Advertisement) => void
   onDelete: (ad: Advertisement) => void
@@ -742,7 +798,7 @@ interface AdCardProps {
   onView: (ad: Advertisement) => void
 }
 
-function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
+function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
@@ -848,13 +904,15 @@ function AdCard({ ad, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) 
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{ad.rejectionReason}</span>
             </div>
-            <button
-              type="button"
-              className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80"
-              onClick={() => onEdit(ad)}
-            >
-              Edit &amp; Resubmit
-            </button>
+            {!isDeactivated && (
+              <button
+                type="button"
+                className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80"
+                onClick={() => onEdit(ad)}
+              >
+                Edit &amp; Resubmit
+              </button>
+            )}
           </div>
         )}
 
@@ -1038,9 +1096,8 @@ function loadDraftCache(adId: string): ContentForm | null {
 
 function persistDraftCache(adId: string, values: ContentForm) {
   try {
-    const rest: Record<string, unknown> = { ...values }
-    delete rest.image
-    localStorage.setItem(DRAFT_CACHE_PREFIX + adId, JSON.stringify(rest))
+    // Every field is a plain string now, so the whole draft is serializable.
+    localStorage.setItem(DRAFT_CACHE_PREFIX + adId, JSON.stringify(values))
   } catch {
     // Ignore storage failures (private mode, quota, etc.).
   }
@@ -1091,28 +1148,17 @@ function ContentDialog({
     defaultValues: {
       title: '',
       content: '',
-      linkUrl: '',
       announcementMessage: '',
       startsAt: minStartsAt,
-      image: null,
+      imageUrl: '',
     },
   })
   const startsAt = form.watch('startsAt')
-  const imageFile = form.watch('image')
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const imageUrl = form.watch('imageUrl')
   // Preserves unsaved typed content per ad across cancel/reopen (and across
   // logout/login via localStorage) so edits are not lost before a successful
-  // save. The uploaded File cannot be serialized, so only text fields persist.
+  // save.
   const draftCache = useRef<Record<string, ContentForm>>({})
-
-  useEffect(() => {
-    if (imageFile instanceof File) {
-      const url = URL.createObjectURL(imageFile)
-      setPreviewUrl(url)
-      return () => URL.revokeObjectURL(url)
-    }
-    setPreviewUrl(null)
-  }, [imageFile])
 
   useEffect(() => {
     if (target) {
@@ -1121,10 +1167,9 @@ function ContentDialog({
         cached ?? {
           title: target.title,
           content: target.content ?? '',
-          linkUrl: target.linkUrl ?? '',
           announcementMessage: target.announcementMessage,
           startsAt: target.startsAt?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
-          image: null,
+          imageUrl: target.imageUrl ?? '',
         },
       )
     }
@@ -1142,7 +1187,7 @@ function ContentDialog({
   const feeSummary = adPackage
     ? `Advertising Fee: ${formatMoney(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${adPackage.dailyRate} KS/day`
     : null
-  const currentPreview = imageFile instanceof File ? previewUrl : target.imageUrl ? getImageUrl(target.imageUrl) : null
+  const currentPreview = imageUrl ? getImageUrl(imageUrl) : null
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
@@ -1191,42 +1236,20 @@ function ContentDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ad-image">Advertisement image{isNewUpload && ' (Required)'}</Label>
-            <Input
-              id="ad-image"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null
-                if (file && file.size > 5 * 1024 * 1024) {
-                  form.setError('image', { message: 'Image file must not exceed 5MB' })
-                  return
-                }
-                if (file && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-                  form.setError('image', { message: 'Image must be JPG, PNG, or WebP' })
-                  return
-                }
-                form.clearErrors('image')
-                form.setValue('image', file)
+            <Label>Advertisement image{isNewUpload && ' (Required)'}</Label>
+            <p className="text-xs text-muted-foreground">
+              Choose an image from one of your products. Custom image uploads are not accepted.
+            </p>
+            <ProductImagePicker
+              value={imageUrl}
+              onChange={(next) => {
+                form.clearErrors('imageUrl')
+                form.setValue('imageUrl', next)
               }}
+              error={form.formState.errors.imageUrl?.message as string | undefined}
             />
             {currentPreview && (
               <img src={currentPreview} alt="Advertisement preview" className="mt-2 aspect-video w-full rounded-lg object-cover" />
-            )}
-            {form.formState.errors.image && (
-              <p role="alert" className="text-sm text-destructive">
-                {form.formState.errors.image.message as string}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="ad-link">Link URL</Label>
-            <Input id="ad-link" type="url" maxLength={2048} placeholder="https://example.com" {...form.register('linkUrl')} />
-            {form.formState.errors.linkUrl && (
-              <p role="alert" className="text-sm text-destructive">
-                {form.formState.errors.linkUrl.message}
-              </p>
             )}
           </div>
 

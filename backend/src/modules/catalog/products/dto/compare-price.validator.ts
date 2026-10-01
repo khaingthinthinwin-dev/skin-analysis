@@ -10,6 +10,9 @@ export class ComparePriceGreaterThanPriceValidator implements ValidatorConstrain
     if (compareAtPrice === undefined || compareAtPrice === null) {
       return true;
     }
+    if (compareAtPrice === 0) {
+      return true;
+    }
     const price = (args.object as Record<string, unknown>).price;
     if (price === undefined || price === null) {
       return true;

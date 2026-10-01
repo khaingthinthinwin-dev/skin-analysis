@@ -55,7 +55,7 @@ export class MerchantsService {
   async approve(id: string, adminId: string) {
     const merchant = await this.findOne(id);
 
-    return this.prisma.merchant.update({
+    const updated = await this.prisma.merchant.update({
       where: { id: merchant.id },
       data: {
         licenseStatus: 'approved',
@@ -64,12 +64,31 @@ export class MerchantsService {
         rejectionReason: null,
       },
     });
+
+    // In-app notification so the merchant is alerted of approval.
+    // Failures must never break the approval flow.
+    try {
+      await this.prisma.notification.create({
+        data: {
+          userId: merchant.userId,
+          type: 'MERCHANT_STATUS_CHANGED',
+          title: 'Merchant Approved',
+          message: `Your shop "${merchant.shopName}" has been approved. You can now list products.`,
+          entityType: 'merchant',
+          entityId: merchant.id,
+        },
+      });
+    } catch {
+      // noop: notification is best-effort
+    }
+
+    return updated;
   }
 
   async reject(id: string, adminId: string, reason: string) {
     const merchant = await this.findOne(id);
 
-    return this.prisma.merchant.update({
+    const updated = await this.prisma.merchant.update({
       where: { id: merchant.id },
       data: {
         licenseStatus: 'rejected',
@@ -78,5 +97,23 @@ export class MerchantsService {
         rejectionReason: reason,
       },
     });
+
+    // In-app notification so the merchant is alerted of rejection.
+    try {
+      await this.prisma.notification.create({
+        data: {
+          userId: merchant.userId,
+          type: 'MERCHANT_STATUS_CHANGED',
+          title: 'Merchant Rejected',
+          message: `Your business license has been rejected.${reason ? ` Reason: ${reason}` : ''}`,
+          entityType: 'merchant',
+          entityId: merchant.id,
+        },
+      });
+    } catch {
+      // noop: notification is best-effort
+    }
+
+    return updated;
   }
 }

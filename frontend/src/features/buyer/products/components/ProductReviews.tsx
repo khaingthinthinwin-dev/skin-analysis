@@ -51,6 +51,11 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
             </div>
             <div className="flex items-center gap-2">
               <StarRating rating={review.rating} size="sm" />
+              {review.status === 'pending' && (
+                <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-medium text-amber-700">
+                  Pending
+                </span>
+              )}
               {review.isVerifiedPurchase && (
                 <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-medium text-green-700">
                   Verified

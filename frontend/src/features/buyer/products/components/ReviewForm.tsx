@@ -14,7 +14,8 @@ interface ReviewFormProps {
 export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   const { user } = useAuth();
   const { mutate: createReview, isPending: isSubmitting } = useCreateReview(idOrSlug);
-  const { data: canReviewData } = useCanReview(idOrSlug);
+  const { data: canReviewData, isPending: isCheckingEligibility, isError: isEligibilityError } =
+    useCanReview(idOrSlug);
 
   const [draftRating, setDraftRating] = useState(0);
   const [draftTitle, setDraftTitle] = useState('');
@@ -30,8 +31,15 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
       newErrors.submit = 'Please sign in to write a review.';
     } else if (!isBuyer) {
       newErrors.submit = 'Only buyers who purchased this product can leave a review.';
+    } else if (isCheckingEligibility) {
+      newErrors.submit = 'Checking your purchase... please try again in a moment.';
+    } else if (isEligibilityError) {
+      newErrors.submit = 'We could not verify your purchase. Please refresh and try again.';
     } else if (!canReview) {
-      newErrors.submit = 'You can only review products you have purchased and received.';
+      newErrors.submit =
+        canReviewData?.reason === 'already_reviewed'
+          ? 'You have already reviewed this product.'
+          : 'You can only review products you have purchased and received.';
     } else {
       if (draftRating === 0) {
         newErrors.rating = 'Please select a rating.';
@@ -86,7 +94,7 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
       </div>
       {errors.body && <p className="text-sm text-red-500">{errors.body}</p>}
       {errors.submit && <p className="text-sm text-red-500">{errors.submit}</p>}
-      <Button onClick={handleReviewSubmit} disabled={isSubmitting}>
+      <Button onClick={handleReviewSubmit} disabled={isSubmitting || isCheckingEligibility}>
         {isSubmitting ? 'Submitting...' : 'Submit Review'}
       </Button>
     </div>

@@ -1,5 +1,5 @@
 import { ProductsService } from './products.service';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 const mockPrisma = {
   product: {
@@ -12,6 +12,10 @@ const mockPrisma = {
     delete: jest.fn(),
     deleteMany: jest.fn(),
     updateMany: jest.fn(),
+  },
+  orderItem: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
   },
   review: {
     findMany: jest.fn(),
@@ -182,6 +186,7 @@ describe('ProductsService', () => {
         id: '1',
         merchantId: 'merchant-1',
       });
+      mockPrisma.orderItem.findFirst.mockResolvedValue({ id: 'order-item-1' });
       mockPrisma.review.findUnique.mockResolvedValue(null);
       mockPrisma.review.create.mockResolvedValue({
         id: 'r1',
@@ -223,6 +228,7 @@ describe('ProductsService', () => {
 
     it('should throw ConflictException if user already reviewed', async () => {
       mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
+      mockPrisma.orderItem.findFirst.mockResolvedValue({ id: 'order-item-1' });
       mockPrisma.review.findUnique.mockResolvedValue({ id: 'existing-review' });
 
       await expect(

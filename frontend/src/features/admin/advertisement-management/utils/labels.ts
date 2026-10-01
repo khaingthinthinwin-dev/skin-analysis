@@ -20,6 +20,36 @@ export function formatDate(value: string | null | undefined): string {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+/** ISO-style local date (YYYY-MM-DD), e.g. "2026-08-28". */
+export function formatIsoDate(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+/**
+ * Ads table schedule column: "Sep 1 ~ Sep 14" (month + day, no year),
+ * "—" when either bound is missing or invalid.
+ */
+export function formatScheduleRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string {
+  const toShort = (value: string | null | undefined) => {
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+  const from = toShort(start)
+  const to = toShort(end)
+  if (!from || !to) return '—'
+  return `${from} ~ ${to}`
+}
+
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return '\u2014'
   const date = new Date(value)
@@ -39,4 +69,54 @@ export function todayIso(): string {
 
 export function daysAgoIso(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+}
+
+// ---------------------------------------------------------------------------
+// Fee change history: month filter + deletion protection
+// ---------------------------------------------------------------------------
+
+export interface MonthOption {
+  value: string
+  label: string
+}
+
+/**
+ * Fee change history created in the current calendar month is protected and can
+ * never be deleted — only records from previous months can be removed. Months are
+ * compared in UTC because `ad_fee_history.created_at` is stored in UTC and the API
+ * enforces the same calendar-month rule.
+ */
+export function isHistoryDeletable(createdAt: string | null | undefined): boolean {
+  if (!createdAt) return false
+  const created = new Date(createdAt)
+  if (Number.isNaN(created.getTime())) return false
+  const now = new Date()
+  const currentMonthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  return created.getTime() < currentMonthStart
+}
+
+/**
+ * Formats a `YYYY-MM` month filter value, e.g. `2026-09` → `September 2026`.
+ */
+export function formatMonthLabel(monthIso: string): string {
+  const [year, month] = monthIso.split('-').map(Number)
+  if (!year || !month) return monthIso
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  })
+}
+
+/**
+ * Builds the month filter options, starting with the current month.
+ */
+export function recentMonthOptions(count = 12, now: Date = new Date()): MonthOption[] {
+  const options: MonthOption[] = []
+  for (let offset = 0; offset < count; offset += 1) {
+    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1))
+    const value = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+    options.push({ value, label: formatMonthLabel(value) })
+  }
+  return options
 }

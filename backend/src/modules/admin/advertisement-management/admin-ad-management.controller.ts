@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -31,6 +33,7 @@ import {
   DeactivateAdFeeSettingDto,
   ReactivateAdFeeSettingDto,
   AdminAdFeeHistoryQueryDto,
+  DeleteAdFeeHistoryDto,
   RevenueAnalyticsQueryDto,
   ExportAdPerformanceDto,
   ExportSubmissionHistoryDto,
@@ -133,6 +136,25 @@ export class AdminAdManagementController {
   @Get('ad-fees/history')
   async listFeeHistory(@Query() query: AdminAdFeeHistoryQueryDto) {
     return this.adminAdManagementService.listFeeHistory(query);
+  }
+
+  @Delete('ad-fees/history/:id')
+  async deleteFeeHistoryRecord(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminAdManagementService.deleteFeeHistory(
+      { history_ids: [id] },
+      user.id,
+    );
+  }
+
+  @Delete('ad-fees/history')
+  async deleteFeeHistory(
+    @Body() dto: DeleteAdFeeHistoryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminAdManagementService.deleteFeeHistory(dto, user.id);
   }
 
   // ─── Analytics ──────────────────────────────────────────────────────────

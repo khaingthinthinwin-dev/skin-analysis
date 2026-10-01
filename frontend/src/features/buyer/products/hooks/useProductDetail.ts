@@ -57,6 +57,7 @@ export function useCreateReview(idOrSlug: string) {
     mutationFn: (data) => productService.createReview(idOrSlug, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', idOrSlug, 'reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['product', idOrSlug, 'can-review'] });
       queryClient.invalidateQueries({ queryKey: ['product', idOrSlug] });
       toast.success('Your review has been submitted and is awaiting approval.');
     },
@@ -85,11 +86,13 @@ export function useSidebarAds(idOrSlug: string) {
 }
 
 export function useCanReview(idOrSlug: string) {
-  return useQuery<{ canReview: boolean }>({
+  return useQuery<{ canReview: boolean; reason: string | null }>({
     queryKey: ['product', idOrSlug, 'can-review'],
     queryFn: () => productService.canReview(idOrSlug),
     enabled: !!idOrSlug,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    retry: false,
   });
 }
 

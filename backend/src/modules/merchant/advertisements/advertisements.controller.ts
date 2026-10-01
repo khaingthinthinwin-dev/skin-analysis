@@ -8,11 +8,8 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import {
   CurrentUser,
   AuthUser,
@@ -70,20 +67,13 @@ export class AdvertisementsController {
 
   @Patch(':id/content')
   @Roles('merchant')
-  @UseInterceptors(FileInterceptor('image'))
   async uploadContent(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UploadAdContentDto,
-    @UploadedFile() file: Express.Multer.File | undefined,
     @CurrentUser() user: AuthUser,
   ) {
     return {
-      data: await this.advertisementsService.uploadContent(
-        id,
-        dto,
-        file,
-        user.id,
-      ),
+      data: await this.advertisementsService.uploadContent(id, dto, user.id),
     };
   }
 
@@ -99,20 +89,13 @@ export class AdvertisementsController {
 
   @Patch(':id')
   @Roles('merchant')
-  @UseInterceptors(FileInterceptor('image'))
   async updateContent(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAdContentDto,
-    @UploadedFile() file: Express.Multer.File | undefined,
     @CurrentUser() user: AuthUser,
   ) {
     return {
-      data: await this.advertisementsService.updateContent(
-        id,
-        dto,
-        file,
-        user.id,
-      ),
+      data: await this.advertisementsService.updateContent(id, dto, user.id),
     };
   }
 
