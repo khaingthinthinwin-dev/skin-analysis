@@ -36,7 +36,7 @@ Responses are returned directly; the global `TransformInterceptor` wraps them in
               "quantity": 2, "unitPrice": "25.00", "totalPrice": "50.00" }],
   "discountAmount": "5.00", "totalAmount": "95.00",
   "commissionRate": "12.00",
-  "paymentMethod": "cod", "paymentStatus": "pending",
+  "paymentMethod": "cod", "paymentStatus": "pending", "shopName": "Skin Pure Store",
   "shippingAddress": { … }, "notes": "…",
   "customer": { "name": "…", "email": "…", "phone": "…" },
   "availableTransitions": ["packed"]
@@ -53,6 +53,9 @@ Responses are returned directly; the global `TransformInterceptor` wraps them in
   too.
 - The `customer` block (name/email/phone) is merchant-only, projected from the
   buyer's `users` row.
+- `shopName` is projected from the order's own `merchant.shop_name`. The invoice
+  displays this alongside Cosmetics Finder so customers can identify the
+  marketplace and the shop that fulfilled the order.
 - `availableTransitions` is the single next `statusCode` this merchant may set
   right now; `['confirmed']` for a `placed` order (reviewed below) and `[]` when
   the current status is `delivered` (terminal).
@@ -104,9 +107,12 @@ Checks run in this order:
   Order Detail page (TR-OI-01); it follows the normal `display_order + 1` rule
   like any other step.
 - No skips, no backward moves, no re-setting the same status.
-- **`paymentStatus` is deliberately out of scope** — status transitions are
-  independent of payment state (cash-on-delivery orders can be packed/shipped
-  while `paymentStatus` is still `pending`).
+- Payment remains `pending` while a COD order is packed or shipped. Because this
+  workflow defines `delivered` as handover to the customer with COD cash
+  collected, the final `out_for_delivery` → `delivered` transition also sets
+  `paymentStatus` to `completed` for `cod` / `cash_on_delivery` orders. The order
+  update and tracking-history insert happen in the same transaction; non-COD
+  payment status is unchanged.
 - Ownership: on a missing order or a `merchant_id` mismatch the API returns
   `404 Order not found` (never `403`, order IDs cannot be enumerated) and writes a
   fire-and-forget `CROSS_SCOPE_ACCESS_DENIED` audit row.
@@ -147,4 +153,4 @@ here (the global `RateLimitInterceptor` still applies).
 - `orderStatusHistory.changedBy` is `null` for rows written by checkout
   (`placeOrder` writes history without `changedBy`), so the timeline's `changedBy`
   can be null for the initial `placed` step.
-- No stale `orders.paymentStatus` coupling by design (see transition rule above).
+- COD payment completion is coupled to delivery per the workflow definition above.

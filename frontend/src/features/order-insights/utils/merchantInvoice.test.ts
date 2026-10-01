@@ -36,6 +36,7 @@ function order(overrides: Partial<MerchantOrderDetailDto> = {}): MerchantOrderDe
     totalAmount: '10000.00',
     paymentMethod: 'cash_on_delivery',
     paymentStatus: 'pending',
+    shopName: 'Skin Pure Store',
     shippingAddress: {
       recipientName: 'Aye Aye',
       addressLine1: '1 Main St',
@@ -90,6 +91,7 @@ describe('buildMerchantInvoiceData', () => {
     const data = buildMerchantInvoiceData(order(), NOW);
 
     expect(data.paymentMethodLabel).toBe('Cash On Delivery');
+    expect(data.shopName).toBe('Skin Pure Store');
     expect(data.statusLabel).toBe('Confirmed');
     expect(data.sellerName).toBe('Cosmetics Finder');
     expect(data.shippingAddressLines).toEqual([
@@ -139,6 +141,7 @@ describe('buildMerchantInvoiceHtml', () => {
       '10,000 Ks',
       'Cash On Delivery',
       'Cosmetics Finder',
+      'Shop: Skin Pure Store',
     ]) {
       expect(html).toContain(expected);
     }

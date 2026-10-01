@@ -36,6 +36,7 @@ type DetailOrder = Prisma.OrderGetPayload<{
       };
     };
     buyer: { select: { name: true; email: true; phone: true } };
+    merchant: { select: { shopName: true } };
   };
 }>;
 
@@ -70,6 +71,7 @@ export class OrderFulfillmentService {
           },
         },
         buyer: { select: { name: true, email: true, phone: true } },
+        merchant: { select: { shopName: true } },
       },
     });
 
@@ -206,9 +208,16 @@ export class OrderFulfillmentService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      const isCodPaymentCollected =
+        targetStatus.statusCode === 'delivered' &&
+        ['cod', 'cash_on_delivery'].includes(order.paymentMethod.toLowerCase());
+
       await tx.order.update({
         where: { id: orderId },
-        data: { statusCode: targetStatus.statusCode },
+        data: {
+          statusCode: targetStatus.statusCode,
+          ...(isCodPaymentCollected ? { paymentStatus: 'completed' } : {}),
+        },
       });
 
       await tx.orderStatusHistory.create({
@@ -236,6 +245,7 @@ export class OrderFulfillmentService {
             },
           },
           buyer: { select: { name: true, email: true, phone: true } },
+          merchant: { select: { shopName: true } },
         },
       });
     });
@@ -291,6 +301,7 @@ export class OrderFulfillmentService {
       commissionRate: order.commissionRate.toFixed(2),
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
+      shopName: order.merchant.shopName,
       shippingAddress: order.shippingAddress as Record<string, string>,
       notes: order.notes,
       customer: {

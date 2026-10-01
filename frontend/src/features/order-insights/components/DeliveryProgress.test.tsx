@@ -17,11 +17,13 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('DeliveryProgress', () => {
-  it('keeps the default variant unchanged: no Next caption, no step numbers, no timestamps', () => {
+  it('buyer variant highlights the current step and numbers upcoming steps without timestamps', () => {
     const { container } = render(<DeliveryProgress currentStatus={OrderStatus.PLACED} />);
 
     expect(screen.queryByText('Next')).not.toBeInTheDocument();
-    expect(screen.queryAllByText('3')).toHaveLength(0);
+    expect(screen.getByText('Step 1 of 6')).toBeInTheDocument();
+    expect(screen.getByText('Current')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
     expect(container.textContent).not.toContain('Sep');
     const current = container.querySelector('li[aria-current="step"]');
     expect(current).not.toBeNull();

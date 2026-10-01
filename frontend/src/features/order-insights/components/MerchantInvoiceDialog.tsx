@@ -92,6 +92,11 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
             <div className="shrink-0 sm:text-right">
               <p className="m-0 text-[13px] font-bold text-[#111827] oidark:text-foreground">{data.sellerName}</p>
               <p className="m-0 text-[12px] text-[#6b7280] oidark:text-muted-foreground">{labels.sellerFulfillmentNote}</p>
+              {data.shopName && (
+                <p className="m-0 text-[12px] text-[#6b7280] oidark:text-muted-foreground">
+                  {labels.shop}: {data.shopName}
+                </p>
+              )}
             </div>
           </div>
 

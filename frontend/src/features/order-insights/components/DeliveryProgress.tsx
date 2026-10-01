@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Truck } from 'lucide-react';
+import { Check, PackageCheck, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OrderStatus } from '../types/orderInsights.types';
 
@@ -35,11 +35,10 @@ const LABEL_STYLES: Record<StepState, string> = {
 interface DeliveryProgressProps {
   currentStatus: OrderStatus;
   /**
-   * Merchant variant: the reached step renders as done, the following step as a
-   * dashed "Next" outline, and later steps show their step number. The default
-   * variant keeps the original rendering so the buyer page is unchanged.
+   * The buyer gets a prominent current step and overall progress count. The
+   * merchant gets history timestamps and an explicit upcoming "Next" step.
    */
-  variant?: 'default' | 'merchant';
+  variant?: 'buyer' | 'merchant';
   /**
    * ISO timestamps keyed by status from `order_status_history` (tracking
    * endpoint). Steps without an entry simply hide the caption — timestamps are
@@ -50,11 +49,12 @@ interface DeliveryProgressProps {
 
 export function DeliveryProgress({
   currentStatus,
-  variant = 'default',
+  variant = 'buyer',
   timestamps,
 }: DeliveryProgressProps) {
   const { t, i18n } = useTranslation();
   const isMerchant = variant === 'merchant';
+  const isBuyer = variant === 'buyer';
   const dateLocale = i18n.resolvedLanguage || i18n.language || 'en-US';
 
   const currentIndex = STEP_ORDER.indexOf(currentStatus);
@@ -68,18 +68,24 @@ export function DeliveryProgress({
   return (
     <Card className="border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container-low">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base dark:text-slate-100 oidark:text-slate-100">
-          <Truck className="h-4 w-4 text-purple-600 oidark:text-primary" aria-hidden="true" />
-          {t('orders.detail.deliveryProgress', 'Delivery progress')}
-        </CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base dark:text-slate-100 oidark:text-slate-100">
+            <Truck className="h-4 w-4 text-purple-600 oidark:text-primary" aria-hidden="true" />
+            {t('orders.detail.deliveryProgress', 'Delivery progress')}
+          </CardTitle>
+          {isBuyer && currentIndex >= 0 && (
+            <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+              {t('orders.detail.progressStepCount', `Step ${currentIndex + 1} of ${STEP_ORDER.length}`)}
+            </span>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pb-5 pt-2">
         <div className="overflow-x-auto">
           <ol className="mx-auto flex min-w-[620px] items-start px-2">
             {STEP_ORDER.map((status, index) => {
               const state = stepState(index);
-              // A connector turns purple once it leads into a reached step —
-              // identical to the original rule for the default variant.
+              // A connector turns purple once it leads into a reached step.
               const connectorIsActive = index <= currentIndex;
               const timestamp = timestamps?.[status];
               const stampDate =
@@ -109,10 +115,13 @@ export function DeliveryProgress({
                       className={`flex h-9 w-9 items-center justify-center rounded-full border-2 ${CIRCLE_STYLES[state]}`}
                       aria-hidden="true"
                     >
-                      {(state === 'done' || state === 'current') && (
+                      {(state === 'done' || (state === 'current' && isMerchant)) && (
                         <Check className="h-4 w-4" strokeWidth={3} />
                       )}
-                      {isMerchant && state === 'upcoming' && (
+                      {isBuyer && state === 'current' && (
+                        <PackageCheck className="h-5 w-5" strokeWidth={2.5} />
+                      )}
+                      {state === 'upcoming' && (
                         <span className="text-xs font-bold text-[#4b5563] dark:text-[#d1d5db] oidark:text-[#d1d5db]">
                           {index + 1}
                         </span>
@@ -131,7 +140,12 @@ export function DeliveryProgress({
                         {t('orders.detail.nextStep', 'Next')}
                       </span>
                     )}
-                    {state === 'done' && stampDate && stampTime && (
+                    {isBuyer && state === 'current' && (
+                      <span className="mt-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                        {t('orders.detail.currentStep', 'Current')}
+                      </span>
+                    )}
+                    {(state === 'done' || (isBuyer && state === 'current')) && stampDate && stampTime && (
                       <span className="mt-1 text-center text-[11px] font-normal leading-tight text-muted-foreground">
                         {stampDate}
                         <br />

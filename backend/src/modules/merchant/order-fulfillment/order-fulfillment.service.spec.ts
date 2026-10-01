@@ -97,6 +97,7 @@ const dateValues = {
     },
   ],
   buyer: { name: 'Aye Aye', email: 'buyer@example.com', phone: '09123456789' },
+  merchant: { shopName: 'Skin Pure Store' },
 };
 
 const makeStatusOrder = (
@@ -246,6 +247,7 @@ describe('OrderFulfillmentService', () => {
             },
           },
           buyer: { select: { name: true, email: true, phone: true } },
+          merchant: { select: { shopName: true } },
         },
       });
     });

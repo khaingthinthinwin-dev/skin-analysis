@@ -34,6 +34,7 @@ export interface MerchantOrderDetailResponseDto {
   commissionRate: string;
   paymentMethod: string;
   paymentStatus: string;
+  shopName: string;
   shippingAddress: Record<string, string>;
   notes: string | null;
   customer: CustomerInfoDto;

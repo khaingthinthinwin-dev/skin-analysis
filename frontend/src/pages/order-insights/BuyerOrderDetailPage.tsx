@@ -260,6 +260,10 @@ function BuyerOrderDetailContent() {
     .reduce((sum, item) => sum + parseFloat(item.totalPrice), 0)
     .toFixed(2);
   const address = addressLines(order.shippingAddress);
+  const stepTimestamps: Partial<Record<OrderStatus, string>> = {};
+  for (const entry of order.timeline ?? []) {
+    if (entry.createdAt) stepTimestamps[entry.status] = entry.createdAt;
+  }
 
   return (
     <div className="w-full max-w-full space-y-6 p-2 lg:p-4">
@@ -308,7 +312,11 @@ function BuyerOrderDetailContent() {
 
       <div className="grid items-start gap-5 min-[901px]:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <DeliveryProgress currentStatus={order.status} />
+          <DeliveryProgress
+            currentStatus={order.status}
+            variant="buyer"
+            timestamps={stepTimestamps}
+          />
 
           <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
             <CardHeader className="pb-3">

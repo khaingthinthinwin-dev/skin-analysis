@@ -21,6 +21,7 @@ const detailPayload: MerchantOrderDetailDto = {
   totalAmount: '10.00',
   paymentMethod: 'cod',
   paymentStatus: 'pending',
+  shopName: 'Skin Pure Store',
   shippingAddress: { recipientName: 'Aye Aye', addressLine1: '1 Main St', country: 'MM' },
   notes: null,
   customer: { name: 'Aye Aye', email: 'aye@example.com', phone: null },

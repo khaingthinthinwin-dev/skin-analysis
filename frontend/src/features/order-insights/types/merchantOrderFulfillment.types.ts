@@ -38,6 +38,8 @@ export interface MerchantOrderDetailDto {
   commissionRate?: string;
   paymentMethod: string;
   paymentStatus: PaymentStatus;
+  /** Merchant storefront name, supplied by the server for customer invoices. */
+  shopName?: string;
   shippingAddress: OrderShippingAddress;
   notes: string | null;
   customer: MerchantCustomerInfoDto;

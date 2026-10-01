@@ -3,13 +3,7 @@ import type { PaymentStatus, OrderShippingAddress } from '../types/orderInsights
 import type { MerchantOrderDetailDto } from '../types/merchantOrderFulfillment.types';
 import { formatStatusLabel } from './orderStatusLabel';
 
-/**
- * Storefront printed as the invoice issuer. The merchant order detail DTO
- * (`merchant-order-detail-response.dto.ts`) exposes no shop name, so the invoice
- * cannot name the individual shop without inventing data or calling an endpoint
- * this screen does not own — it names the marketplace the order was sold on and
- * states that the order is fulfilled by the merchant's own shop.
- */
+/** Marketplace identity shown separately from the shop that fulfilled the order. */
 const INVOICE_SELLER_NAME = 'Cosmetics Finder';
 
 const PURPLE = '#7c3aed';
@@ -34,6 +28,7 @@ export interface MerchantInvoiceData {
   /** Human readable order status (e.g. "Out For Delivery"). */
   statusLabel: string;
   sellerName: string;
+  shopName: string | null;
   customer: { name: string; email: string; phone: string | null };
   shippingAddressLines: string[];
   lines: MerchantInvoiceLine[];
@@ -65,6 +60,7 @@ export interface MerchantInvoiceLabels {
   issueDate: string;
   orderStatus: string;
   seller: string;
+  shop: string;
   sellerFulfillmentNote: string;
   billedTo: string;
   shippingAddress: string;
@@ -118,6 +114,7 @@ export function merchantInvoiceLabels(translate: MerchantInvoiceTranslate): Merc
     issueDate: translate('merchant.orders.invoice.issueDate', 'Invoice date'),
     orderStatus: translate('merchant.orders.invoice.orderStatus', 'Order status'),
     seller: translate('merchant.orders.invoice.seller', 'Seller'),
+    shop: translate('merchant.orders.invoice.shop', 'Shop'),
     sellerFulfillmentNote: translate(
       'merchant.orders.invoice.sellerFulfillmentNote',
       'Marketplace order fulfilled by your shop',
@@ -240,6 +237,7 @@ export function buildMerchantInvoiceData(
     issueDate: now.toISOString(),
     statusLabel: order.statusName?.trim() || formatStatusLabel(order.status),
     sellerName: INVOICE_SELLER_NAME,
+    shopName: order.shopName?.trim() || null,
     customer: {
       name: order.customer.name,
       email: order.customer.email,
@@ -355,6 +353,7 @@ export function buildMerchantInvoiceHtml(
         <div class="brand">
           <div class="brand-name">${escapeHtml(data.sellerName)}</div>
           <div class="tagline">${escapeHtml(labels.sellerFulfillmentNote)}</div>
+          ${data.shopName ? `<div class="tagline">${escapeHtml(labels.shop)}: ${escapeHtml(data.shopName)}</div>` : ''}
         </div>
       </header>
 
