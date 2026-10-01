@@ -180,6 +180,7 @@ export interface OrderListRowDto {
   itemCount: number;            // COUNT(order_items) per order (機能設計書 §7.4)
   totalAmount: string;          // orders.total_amount — DECIMAL(10,2) → string (§6.1)
   paymentStatus: PaymentStatus; // orders.payment_status ('pending' | 'completed')
+  commissionRate?: string;      // orders.commission_rate (DECIMAL(5,2) → '12.00') — merchant rows only (BR-OI-023)
   customerName?: string;        // users.name via orders.buyer_id — merchant/admin only (BR-OI-015)
   shopName?: string;            // merchants.shop_name via orders.merchant_id — admin only
 }
@@ -190,7 +191,7 @@ export interface OrderListResponseDto {
 }
 ```
 
-> Buyer rows omit `customerName` and `shopName` entirely; merchant rows add `customerName`; admin rows add both (BR-OI-015, DD_OI_03 §2.1).
+> Buyer rows omit `customerName` and `shopName` entirely; merchant rows add `customerName`; admin rows add both (BR-OI-015, DD_OI_03 §2.1). `commissionRate` is merchant-only: it is the rate that order was actually charged, so buyer and admin rows never carry platform commission data.
 
 ### 3.2 OrderDetailResponseDto
 
@@ -339,6 +340,7 @@ export interface RevenueSummaryEnvelopeDto {
 | DTO field | Buyer | Merchant | Admin | Rule |
 |-----------|:-----:|:--------:|:-----:|------|
 | `customerName` (list row) | — | ✓ | ✓ | BR-OI-015 |
+| `commissionRate` (list row, merchant detail) | — | ✓ | — | BR-OI-023 — `orders.commission_rate`, the rate that order was charged |
 | `shopName` (list row) | — | — | ✓ | 機能設計書 §7.4 |
 | `customer` (detail) | — | ✓ | ✓ | BR-OI-015/033 (fulfilment-required PII only) |
 | `shop` (detail) | name only | — | name + `merchantId` | 機能設計書 §7.5, DD_OI_03 §2.2 |
@@ -575,6 +577,7 @@ Every DTO field is traceable to a source column, following DATABASE_SPEC §6.1 (
 | | `itemCount` | `number` | derived — `COUNT(order_items)` | — |
 | | `totalAmount` | `string` | `orders.total_amount` | `DECIMAL(10,2)` |
 | | `paymentStatus` | `PaymentStatus` | `orders.payment_status` | `VARCHAR(20)` CHECK |
+| | `commissionRate` | `string` | `orders.commission_rate` (merchant rows only) | `DECIMAL(5,2)` |
 | | `customerName` | `string` | `users.name` via `orders.buyer_id` | `VARCHAR(255)` |
 | | `shopName` | `string` | `merchants.shop_name` via `orders.merchant_id` | `VARCHAR(255)` |
 | `OrderItemDto` | `productName` | `string` | `products.name` via `order_items.product_id` | `VARCHAR(255)` |

@@ -32,7 +32,7 @@ import { PayoutTable } from "./PayoutTable";
 import { PayoutConfirmationDialog } from "./PayoutConfirmationDialog";
 import { PayoutDetailDialog } from "./PayoutDetailDialog";
 import { ExportDialog } from "./ExportDialog";
-import { PaginationControls } from "./PaginationControls";
+import { PaginationControls } from "@/components/PaginationControls";
 
 import { useRevenue } from "../hooks/useRevenue";
 import { useCommission } from "../hooks/useCommission";

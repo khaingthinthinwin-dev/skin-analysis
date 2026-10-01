@@ -24,6 +24,8 @@ import { MatchingModule } from './modules/buyer/matching/matching.module';
 import { SkinAnalysisModule } from './modules/buyer/skin-analysis/skin-analysis.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { OrderInsightsModule } from './modules/shared/order-insights/order-insights.module';
+import { OrderFulfillmentModule } from './modules/merchant/order-fulfillment/order-fulfillment.module';
 
 @Module({
   imports: [
@@ -50,7 +52,8 @@ import { AppService } from './app.service';
     AdsModule,
     NotificationsModule,
     MatchingModule,
-    SkinAnalysisModule,
+    OrderInsightsModule,
+    OrderFulfillmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

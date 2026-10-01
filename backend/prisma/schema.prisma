@@ -255,7 +255,9 @@ model Review {
   body               String?
   images             String[]
   isVerifiedPurchase Boolean  @default(false) @map("is_verified_purchase")
-  status             String   @default("approved") @map("status")
+  // Moderation queue: buyer submissions start as 'pending' and become public
+  // only after an admin action (approved | rejected).
+  status             String   @default("pending") @map("status")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 

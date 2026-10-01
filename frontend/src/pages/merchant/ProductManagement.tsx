@@ -28,7 +28,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
 import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
-import { PaginationControls } from '@/features/admin/commission-revenue/components/PaginationControls'
+import { PaginationControls } from '@/components/PaginationControls'
 import type { ProductQueryParams } from '@/types/product.types'
 
 export default function ProductManagement() {
