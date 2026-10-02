@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Store,
   ShieldCheck,
+  Database,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -62,6 +63,7 @@ const adminNavConfig: RoleNavConfig = {
       items: [
         { label: 'Users', href: '/admin/users', icon: Users },
         { label: 'Merchants', href: '/admin/merchants', icon: UserCheck },
+        { label: 'Order Insights', href: '/admin/orders', icon: PackageCheck },
         { label: 'Advertisements', href: '/admin/ads', icon: Megaphone },
         { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
         { label: 'Content', href: '/admin/content', icon: FileText },
@@ -72,6 +74,7 @@ const adminNavConfig: RoleNavConfig = {
       items: [
         { label: 'Commission & Revenue', href: '/admin/commission-revenue', icon: DollarSign },
         { label: 'Audit Logs', href: '/admin/audit-logs', icon: ClipboardList },
+        { label: 'Master Data', href: '/admin/master-data', icon: Database },
       ],
     },
     {
@@ -102,7 +105,7 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
         items: [
           { label: 'Skin Analysis', href: '/buyer/skin-analysis', icon: Sparkles, badge: 'AI', badgeVariant: 'pink' },
           { label: 'Recommendations', href: '/buyer/recommendations', icon: Wand2 },
-          { label: 'Analysis History', href: '/buyer/recommendation-history', icon: History },
+          { label: 'Analysis History', href: '/buyer/skin-analysis/history', icon: History },
         ],
       },
       {

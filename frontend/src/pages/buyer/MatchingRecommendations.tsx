@@ -44,6 +44,21 @@ function ProductImage({ src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement
   return <img src={getImageUrl(src)} alt={alt} onError={() => setError(true)} {...props} />
 }
 
+const RECOMMENDATION_AD_PLACEMENT = 'recommendation_page_banner'
+
+function isAdInSchedule(ad: { startsAt?: string | null; expiresAt?: string | null }): boolean {
+  const now = Date.now()
+  if (ad.startsAt) {
+    const start = Date.parse(ad.startsAt)
+    if (Number.isNaN(start) || start > now) return false
+  }
+  if (ad.expiresAt) {
+    const end = Date.parse(ad.expiresAt)
+    if (Number.isNaN(end) || end <= now) return false
+  }
+  return true
+}
+
 const BADGE_STYLES: Record<string, string> = {
   topRated: 'bg-teal-100 text-teal-700',
   bestSeller: 'bg-orange-100 text-orange-700',
@@ -142,7 +157,19 @@ export default function MatchingRecommendations() {
 
   const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters)
   const { data: historyData } = useRecommendationHistory(1, 5)
-  const { data: adPanelData } = useAdPanel('recommendation_page_banner')
+  const { data: adPanelData } = useAdPanel(RECOMMENDATION_AD_PLACEMENT)
+
+  // Client-side guard for placement + date condition:
+  // placement must equal recommendation_page_banner (or be absent for legacy rows),
+  // and startsAt <= now < expiresAt. Backend already filters the same way.
+  const sidebarAds = useMemo(
+    () =>
+      (adPanelData?.data ?? []).filter((ad) => {
+        if (ad.placement && ad.placement !== RECOMMENDATION_AD_PLACEMENT) return false
+        return isAdInSchedule(ad)
+      }),
+    [adPanelData],
+  )
 
   const handlePageChange = (page: number) => {
     if (page === filters.page) return
@@ -168,54 +195,82 @@ export default function MatchingRecommendations() {
   const meta = recData?.meta ?? { page: 1, limit: 12, total: 0, totalPages: 0 }
   const history = historyData?.data ?? []
 
-  const products = filterProductsBySkinType(recData?.data ?? [], {
+  // Apply client-side skin type filter (counterpart of API filter for cache consistency)
+  const filteredProducts = filterProductsBySkinType(recData?.data ?? [], {
     source,
     analysisSkinTypes: skinTypes,
     requestedSkinTypes: filters.skinTypes ? filters.skinTypes.split(',') : [],
-  }).slice(0, filters.limit)
+  })
+
+  // Use filtered products for display, respecting page limit
+  const products = filteredProducts.slice(0, filters.limit)
+
+  const getPageItems = (page: number, totalPages: number): Array<number | 'ellipsis'> => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    if (page <= 2) return [1, 2, 'ellipsis', totalPages]
+    if (page >= totalPages - 1) return [1, 'ellipsis', totalPages - 1, totalPages]
+    return [1, 'ellipsis', page - 1, page, page + 1, 'ellipsis', totalPages]
+  }
 
   const pageNav =
-    meta.total > 0 ? (
-      <div className="flex items-center justify-between mt-4">
-        <span className="text-[13px] text-muted-foreground">
-          Showing {(meta.page - 1) * meta.limit + 1}-{Math.min(meta.page * meta.limit, meta.total)} of {meta.total} products
-        </span>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            aria-label="Previous page"
-            className={`w-8 h-8 rounded-md flex items-center justify-center text-[13px] border cursor-pointer ${
-              meta.page <= 1
-                ? 'opacity-50 cursor-not-allowed bg-card border-border text-muted-foreground'
-                : 'bg-card border-border text-muted-foreground'
-            }`}
-            disabled={meta.page <= 1}
-            onClick={() => handlePageChange(meta.page - 1)}
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            className="w-8 h-8 rounded-md flex items-center justify-center text-[13px] border bg-primary border-primary text-primary-foreground cursor-default"
-            aria-current="page"
-          >
-            {meta.page}
-          </button>
-          <button
-            type="button"
-            aria-label="Next page"
-            className={`w-8 h-8 rounded-md flex items-center justify-center text-[13px] border cursor-pointer ${
-              meta.page >= meta.totalPages
-                ? 'opacity-50 cursor-not-allowed bg-card border-border text-muted-foreground'
-                : 'bg-card border-border text-muted-foreground'
-            }`}
-            disabled={meta.page >= meta.totalPages}
-            onClick={() => handlePageChange(meta.page + 1)}
-          >
-            ›
-          </button>
-        </div>
-      </div>
+    meta.total > 0 && meta.totalPages > 1 ? (
+      <nav aria-label="Pagination" className="mt-6 flex items-center justify-center gap-2">
+        <button
+          type="button"
+          aria-label="Previous page"
+          disabled={meta.page <= 1}
+          onClick={() => handlePageChange(meta.page - 1)}
+          className={`flex h-10 items-center gap-1 rounded-lg border px-3 text-sm font-medium transition-colors ${
+            meta.page <= 1
+              ? 'cursor-not-allowed border-border bg-muted/50 text-muted-foreground/50'
+              : 'border-border bg-background text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          <span aria-hidden="true">‹</span>
+          <span>Prev</span>
+        </button>
+        {getPageItems(meta.page, meta.totalPages).map((item, idx) =>
+          item === 'ellipsis' ? (
+            <span
+              key={`ellipsis-${idx}`}
+              aria-hidden="true"
+              className="flex h-10 w-8 items-center justify-center text-sm font-bold tracking-widest text-muted-foreground"
+            >
+              ...
+            </span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              aria-label={`Go to page ${item}`}
+              aria-current={item === meta.page ? 'page' : undefined}
+              disabled={item === meta.page}
+              onClick={() => handlePageChange(item)}
+              className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
+                item === meta.page
+                  ? 'bg-violet-600 text-white'
+                  : 'border border-border bg-background text-foreground hover:bg-muted'
+              }`}
+            >
+              {item}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          aria-label="Next page"
+          disabled={meta.page >= meta.totalPages}
+          onClick={() => handlePageChange(meta.page + 1)}
+          className={`flex h-10 items-center gap-1 rounded-lg border px-3 text-sm font-medium transition-colors ${
+            meta.page >= meta.totalPages
+              ? 'cursor-not-allowed border-border bg-muted/50 text-muted-foreground/50'
+              : 'border-border bg-background text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          <span>Next</span>
+          <span aria-hidden="true">›</span>
+        </button>
+      </nav>
     ) : null
 
   const skinTypeLabel = skinTypes.length > 0 ? skinTypes.join(', ') : 'All Types'
@@ -245,7 +300,7 @@ export default function MatchingRecommendations() {
 
       {/* Ad Carousel */}
       <AdSlidePanel
-        ads={adPanelData?.data ?? []}
+        ads={sidebarAds}
         onImpression={(adIds) => matchingService.trackImpression(adIds)}
         onClick={(adId) => matchingService.trackClick(adId)}
       />
@@ -261,7 +316,15 @@ export default function MatchingRecommendations() {
           <div className="lg:sticky lg:top-4">
             <MatchingFilterChips
               filters={filters}
-              onRemove={(key) => updateFilters({ [key]: undefined })}
+              onRemove={(key, value) => {
+                if (key === 'skinTypes' && value) {
+                  const current = filters.skinTypes ? filters.skinTypes.split(',') : []
+                  const next = current.filter((t) => t !== value)
+                  updateFilters({ skinTypes: next.join(',') || undefined })
+                } else {
+                  updateFilters({ [key]: undefined })
+                }
+              }}
               onClearAll={resetFilters}
             />
             <FiltersPanel filters={filters} onUpdate={updateFilters} onReset={resetFilters} className="mt-4" />

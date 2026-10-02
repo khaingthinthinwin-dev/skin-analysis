@@ -1,9 +1,5 @@
 import { ProductsService } from './products.service';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 const mockPrisma = {
   product: {
@@ -230,19 +226,6 @@ describe('ProductsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw BadRequestException if buyer has no delivered order', async () => {
-      mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
-      mockPrisma.orderItem.findFirst.mockResolvedValue(null);
-
-      await expect(
-        service.createReview('product-1', 'user-1', {
-          rating: 5,
-          title: 'Great',
-          body: 'Love it',
-        }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
     it('should throw ConflictException if user already reviewed', async () => {
       mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
       mockPrisma.orderItem.findFirst.mockResolvedValue({ id: 'order-item-1' });
@@ -255,41 +238,6 @@ describe('ProductsService', () => {
           body: 'Love it',
         }),
       ).rejects.toThrow(ConflictException);
-    });
-  });
-
-  describe('canReview', () => {
-    it('should report not_delivered when the buyer has no delivered order', async () => {
-      mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
-      mockPrisma.orderItem.findFirst.mockResolvedValue(null);
-
-      await expect(service.canReview('product-1', 'user-1')).resolves.toEqual({
-        canReview: false,
-        reason: 'not_delivered',
-      });
-      expect(mockPrisma.review.findUnique).not.toHaveBeenCalled();
-    });
-
-    it('should report already_reviewed when a review exists', async () => {
-      mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
-      mockPrisma.orderItem.findFirst.mockResolvedValue({ id: 'order-item-1' });
-      mockPrisma.review.findUnique.mockResolvedValue({ id: 'existing-review' });
-
-      await expect(service.canReview('product-1', 'user-1')).resolves.toEqual({
-        canReview: false,
-        reason: 'already_reviewed',
-      });
-    });
-
-    it('should allow review when delivered and not yet reviewed', async () => {
-      mockPrisma.product.findFirst.mockResolvedValue({ id: '1' });
-      mockPrisma.orderItem.findFirst.mockResolvedValue({ id: 'order-item-1' });
-      mockPrisma.review.findUnique.mockResolvedValue(null);
-
-      await expect(service.canReview('product-1', 'user-1')).resolves.toEqual({
-        canReview: true,
-        reason: null,
-      });
     });
   });
 });

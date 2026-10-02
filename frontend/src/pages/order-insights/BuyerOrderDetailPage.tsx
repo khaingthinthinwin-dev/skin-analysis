@@ -260,6 +260,10 @@ function BuyerOrderDetailContent() {
     .reduce((sum, item) => sum + parseFloat(item.totalPrice), 0)
     .toFixed(2);
   const address = addressLines(order.shippingAddress);
+  const stepTimestamps: Partial<Record<OrderStatus, string>> = {};
+  for (const entry of order.timeline ?? []) {
+    if (entry.createdAt) stepTimestamps[entry.status] = entry.createdAt;
+  }
 
   return (
     <div className="w-full max-w-full space-y-6 p-2 lg:p-4">
@@ -269,6 +273,11 @@ function BuyerOrderDetailContent() {
             📦 Order Details
           </p>
           <h1 className="mt-1 text-xl font-bold">Order {orderReference(order)}</h1>
+          {order.shop?.name && (
+            <p className="mt-1 text-sm font-medium opacity-95">
+              {t("orders.detail.shopName", "Shop")}: {order.shop.name}
+            </p>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-90">
             <span>
               Placed {formatDate(order.createdAt, dateLocale)}, {formatTime(order.createdAt, dateLocale)}
@@ -290,13 +299,12 @@ function BuyerOrderDetailContent() {
       {(() => {
         const copy = statusCopy(order.status);
         return (
-          <section className="flex items-start gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:items-center sm:px-5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white">
-              ✓
-            </div>
+      <section className="flex items-start gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:items-center sm:px-5 dark:border-violet-500 dark:bg-[#18131f] oidark:border-primary oidark:bg-surface-container-low">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white oidark:bg-primary oidark:text-primary-foreground">
+              ✁E            </div>
             <div>
-              <h2 className="text-sm font-bold text-[#111827]">{copy.title}</h2>
-              <p className="text-[13px] text-[#6b7280]">{copy.message}</p>
+              <h2 className="text-sm font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">{copy.title}</h2>
+              <p className="text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">{copy.message}</p>
             </div>
           </section>
         );
@@ -304,13 +312,17 @@ function BuyerOrderDetailContent() {
 
       <div className="grid items-start gap-5 min-[901px]:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <DeliveryProgress currentStatus={order.status} />
+          <DeliveryProgress
+            currentStatus={order.status}
+            variant="buyer"
+            timestamps={stepTimestamps}
+          />
 
-          <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
             <CardHeader className="pb-3">
-              <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+              <CardTitle className="flex flex-wrap items-center gap-2 text-base dark:text-slate-100">
                 📦 {t("orders.detail.itemsTitle", "Order Items")}
-                <span className="text-xs font-normal text-[#9ca3af]">({order.items.length} items)</span>
+                <span className="text-xs font-normal text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">({order.items.length} items)</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -321,22 +333,22 @@ function BuyerOrderDetailContent() {
               ) : order.items.map((item) => {
                 const image = getImageUrl(item.productImage);
                 return (
-                  <div key={item.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-[10px] border border-[#f3f4f6] bg-[#fafafa] p-3 sm:gap-4 sm:p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+                  <div key={item.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-[10px] border border-[#f3f4f6] bg-[#fafafa] p-3 sm:gap-4 sm:p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] dark:border-[#29252f] dark:bg-[#0b0a0d] oidark:border-outline-variant oidark:bg-surface-container-lowest">
                     {image ? (
                       <img src={image} alt={item.productName} className="h-20 w-20 shrink-0 rounded-[10px] object-cover" />
                     ) : (
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#f3f0ff] to-[#fce7f3] text-2xl">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#f3f0ff] to-[#fce7f3] text-2xl dark:from-[#241638] dark:to-[#2b1c32] oidark:from-surface-container oidark:to-surface-container-high">
                         💄
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="break-words text-sm font-bold leading-5 text-[#111827]">{item.productName}</p>
-                      <p className="mt-1 text-[13px] text-[#6b7280]">Quantity: {item.quantity}</p>
-                      <p className="text-[13px] text-[#6b7280]">Unit price: {formatMoney(item.unitPrice)}</p>
+                      <p className="break-words text-sm font-bold leading-5 text-[#111827] dark:text-slate-100 oidark:text-foreground">{item.productName}</p>
+                      <p className="mt-1 text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Quantity: {item.quantity}</p>
+                      <p className="text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Unit price: {formatMoney(item.unitPrice)}</p>
                     </div>
                     <div className="col-start-2 shrink-0 text-left sm:col-start-auto sm:text-right">
-                      <p className="text-[11px] uppercase text-[#9ca3af]">Line total</p>
-                      <p className="text-base font-bold text-[#111827]">{formatMoney(item.totalPrice)}</p>
+                      <p className="text-[11px] uppercase text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">Line total</p>
+                      <p className="text-base font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">{formatMoney(item.totalPrice)}</p>
                     </div>
                   </div>
                 );
@@ -345,12 +357,12 @@ function BuyerOrderDetailContent() {
           </Card>
         </div>
 
-        <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[901px]:sticky min-[901px]:top-20">
-          <section className="border-b border-[#f3f4f6] p-5">
-            <h2 className="mb-3 text-[13px] font-bold text-[#111827]">📍 Shipping Address</h2>
+        <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[901px]:sticky min-[901px]:top-20 dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
+          <section className="border-b border-[#f3f4f6] p-5 dark:border-[#29252f] oidark:border-outline-variant">
+            <h2 className="mb-3 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">📍 Shipping Address</h2>
             <div>
               {address.length > 0 ? (
-                <address className="text-sm not-italic leading-relaxed text-[#374151]">
+                <address className="text-sm not-italic leading-relaxed text-[#374151] dark:text-slate-200 oidark:text-muted-foreground">
                   {address.map((line) => (
                     <span key={line} className="block">
                       {line}
@@ -358,7 +370,7 @@ function BuyerOrderDetailContent() {
                   ))}
                 </address>
               ) : (
-                <p className="text-sm text-[#6b7280]">
+                <p className="text-sm text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">
                   {t(
                     "orders.detail.noAddress",
                     "Shipping address is not available for this order.",
@@ -367,21 +379,21 @@ function BuyerOrderDetailContent() {
               )}
             </div>
           </section>
-          <section className="space-y-3 border-b border-[#f3f4f6] p-5 text-sm">
-            <h2 className="text-[13px] font-bold text-[#111827]">💳 Payment</h2>
-            <div className="flex items-center justify-between"><span className="text-[#6b7280]">Method</span><span className="font-medium text-[#111827]">{paymentMethodLabel(order.paymentMethod)}</span></div>
-            <div className="flex items-center justify-between"><span className="text-[#6b7280]">Status</span><PaymentBadge status={order.paymentStatus} /></div>
+          <section className="space-y-3 border-b border-[#f3f4f6] p-5 text-sm dark:border-[#29252f] oidark:border-outline-variant">
+            <h2 className="text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">💳 Payment</h2>
+            <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Method</span><span className="font-medium text-[#111827] dark:text-slate-100 oidark:text-foreground">{paymentMethodLabel(order.paymentMethod)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Status</span><PaymentBadge status={order.paymentStatus} /></div>
           </section>
           <section className="space-y-2 p-5 text-sm">
-            <h2 className="mb-3 text-[13px] font-bold text-[#111827]">🧾 Order Summary</h2>
+            <h2 className="mb-3 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">🧾 Order Summary</h2>
               <div className="flex items-start justify-between gap-4">
-                <span className="min-w-0 text-[#6b7280]">
+                <span className="min-w-0 text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">
                   {t("orders.detail.subtotal", "Subtotal")}
                 </span>
-                <span className="shrink-0 font-medium text-[#111827]">{formatMoney(subtotal)}</span>
+                <span className="shrink-0 font-medium text-[#111827] dark:text-slate-100 oidark:text-foreground">{formatMoney(subtotal)}</span>
               </div>
               {parseFloat(order.discountAmount) > 0 && <div className="flex items-start justify-between gap-4">
-                <span className="min-w-0 break-words text-[#6b7280]">
+                <span className="min-w-0 break-words text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">
                   {order.couponCode
                     ? t(
                         "orders.detail.discountWithCoupon",
@@ -390,21 +402,21 @@ function BuyerOrderDetailContent() {
                       )
                     : t("orders.detail.discount", "Discount")}
                 </span>
-                <span className="shrink-0 font-medium text-[#10b981]">
+                <span className="shrink-0 font-medium text-[#10b981] oidark:text-emerald-400">
                   -{formatMoney(order.discountAmount)}
                 </span>
               </div>}
               {parseFloat(order.discountAmount) > 0 && (
-                <p className="text-xs font-semibold text-[#10b981]">
+                <p className="text-xs font-semibold text-[#10b981] oidark:text-emerald-400">
                   You saved {formatMoney(order.discountAmount)}
                 </p>
               )}
-              <div className="my-3 h-px bg-[#f3f4f6]" />
+              <div className="my-3 h-px bg-[#f3f4f6] oidark:bg-outline-variant" />
               <div className="flex items-center justify-between gap-4 text-lg">
-                <span className="font-bold text-[#111827]">
+                <span className="font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">
                   {t("orders.detail.total", "Total")}
                 </span>
-                <span className="shrink-0 text-xl font-extrabold text-[#7c3aed]">
+                <span className="shrink-0 text-xl font-extrabold text-[#7c3aed] oidark:text-primary">
                   {formatMoney(order.totalAmount)}
                 </span>
               </div>
@@ -413,9 +425,9 @@ function BuyerOrderDetailContent() {
       </div>
 
       {order.notes && (
-        <Card className="border-border/80 shadow-xs">
+        <Card className="border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014]">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex items-center gap-2 text-base dark:text-slate-100">
               <StickyNote
                 className="h-4 w-4 text-purple-600"
                 aria-hidden="true"
@@ -424,20 +436,20 @@ function BuyerOrderDetailContent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <p className="whitespace-pre-line text-sm text-foreground">
+            <p className="whitespace-pre-line text-sm text-foreground dark:text-slate-200">
               {order.notes}
             </p>
           </CardContent>
         </Card>
       )}
 
-      <div className="flex flex-col gap-3 rounded-xl border border-[#f3f4f6] bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:flex-row sm:p-4 sm:px-5">
+      <div className="flex flex-col gap-3 rounded-xl border border-[#f3f4f6] bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:flex-row sm:p-4 sm:px-5 dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
         <Button asChild className="w-full justify-center gap-2 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-[18px] text-[13.5px] font-semibold shadow-[0_4px_12px_rgba(124,58,237,0.25)] hover:opacity-90 sm:w-auto">
           <Link to="/buyer/search"><RotateCcw className="h-4 w-4" aria-hidden="true" /> Buy Again</Link>
         </Button>
         <Button
           variant="outline"
-          className="w-full justify-center gap-2 rounded-lg border-[#e5e7eb] bg-white px-[18px] text-[13.5px] font-semibold text-[#374151] hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] active:bg-[#7c3aed] active:text-white sm:w-auto"
+          className="w-full justify-center gap-2 rounded-lg border-[#e5e7eb] bg-white px-[18px] text-[13.5px] font-semibold text-[#374151] hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] active:bg-[#7c3aed] active:text-white sm:w-auto dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary"
           onClick={() => printInvoice(order)}
         >
           <Download className="h-4 w-4" aria-hidden="true" />

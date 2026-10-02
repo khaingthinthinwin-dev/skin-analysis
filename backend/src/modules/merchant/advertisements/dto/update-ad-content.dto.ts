@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   MaxLength,
 } from 'class-validator';
 
@@ -18,10 +17,14 @@ export class UpdateAdContentDto {
   @MaxLength(5000)
   content?: string;
 
+  // Optional so an edit that does not touch the image keeps the currently saved
+  // one. When present it must still be one of the merchant's own product images
+  // (see UploadAdContentDto.imageUrl).
   @IsOptional()
-  @IsUrl({ require_tld: false })
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(2048)
-  linkUrl?: string;
+  imageUrl?: string;
 
   @IsString()
   @IsNotEmpty()

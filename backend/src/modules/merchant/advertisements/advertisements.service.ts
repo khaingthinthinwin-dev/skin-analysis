@@ -5,12 +5,8 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  PayloadTooLargeException,
-  UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
@@ -22,8 +18,6 @@ import { UploadAdContentDto } from './dto/upload-ad-content.dto';
 
 const ACTIVE_ADS_CACHE_KEY = 'cache:ads:active';
 const PACKAGES_CACHE_KEY = 'cache:ads:packages';
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 @Injectable()
 export class AdvertisementsService {
@@ -99,7 +93,7 @@ export class AdvertisementsService {
         expiresAt: null,
         weekNumber: null,
       },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.audit(userId, 'AD_SELECTED', ad.id, {
       shopId: shop.id,
@@ -110,22 +104,14 @@ export class AdvertisementsService {
     return this.toResponse(ad);
   }
 
-  async uploadContent(
-    id: string,
-    dto: UploadAdContentDto,
-    file: Express.Multer.File | undefined,
-    userId: string,
-  ) {
+  async uploadContent(id: string, dto: UploadAdContentDto, userId: string) {
     const ad = await this.getOwnedAd(id, userId);
     if (!ad.feeSetting)
       throw new ConflictException('Advertisement package is unavailable');
     if (ad.paymentStatus !== 'pending' || ad.approvalStatus !== 'pending') {
       throw new BadRequestException('Advertisement cannot accept content');
     }
-    if (!file) {
-      throw new BadRequestException('Advertisement image is required');
-    }
-    const imageUrl = await this.saveImage(file);
+    const imageUrl = await this.resolveProductImage(dto.imageUrl, userId);
     const schedule = this.getSchedule(dto.startsAt, ad.feeSetting.durationDays);
     const updated = await this.prisma.advertisement.update({
       where: { id },
@@ -133,12 +119,11 @@ export class AdvertisementsService {
         title: dto.title,
         content: dto.content || null,
         imageUrl,
-        linkUrl: dto.linkUrl || null,
         announcementMessage: dto.announcementMessage,
         startsAt: schedule.startsAt,
         expiresAt: schedule.expiresAt,
       },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_CONTENT_UPLOADED', id, {
@@ -192,7 +177,7 @@ export class AdvertisementsService {
           paymentReference: dto.paymentReference || null,
           weekNumber,
         },
-        include: { feeSetting: true },
+        include: { feeSetting: true, shop: true },
       });
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
@@ -201,7 +186,10 @@ export class AdvertisementsService {
       amount: amount.toFixed(2),
       reference: dto.paymentReference || null,
     });
-    await this.notifyAdminsOfNewSubmission(result);
+    await this.notifyAdminsOfNewSubmission(
+      result,
+      ad.approvalStatus === 'rejected',
+    );
     return this.toResponse(result);
   }
 
@@ -255,7 +243,7 @@ export class AdvertisementsService {
         skip,
         take: query.limit,
         orderBy: { createdAt: 'desc' },
-        include: { feeSetting: true },
+        include: { feeSetting: true, shop: true },
       }),
       this.prisma.advertisement.count({ where }),
     ]);
@@ -270,12 +258,7 @@ export class AdvertisementsService {
     };
   }
 
-  async updateContent(
-    id: string,
-    dto: UpdateAdContentDto,
-    file: Express.Multer.File | undefined,
-    userId: string,
-  ) {
+  async updateContent(id: string, dto: UpdateAdContentDto, userId: string) {
     const ad = await this.getOwnedAd(id, userId);
     if (!ad.feeSetting)
       throw new ConflictException('Advertisement package is unavailable');
@@ -285,6 +268,11 @@ export class AdvertisementsService {
     ) {
       throw new BadRequestException('Advertisement cannot be edited');
     }
+    // Omitting imageUrl keeps the currently saved image; when present it must
+    // still be one of the merchant's own product images.
+    const imageUrl = dto.imageUrl
+      ? await this.resolveProductImage(dto.imageUrl, userId)
+      : undefined;
     // A rejected ad being resubmitted may re-pick its start date (its
     // original window may already have started or passed). expires_at is
     // derived from the package duration; the 3-day lead time applies, same
@@ -297,14 +285,13 @@ export class AdvertisementsService {
       data: {
         title: dto.title,
         content: dto.content || null,
-        imageUrl: file ? await this.saveImage(file) : undefined,
-        linkUrl: dto.linkUrl || null,
+        imageUrl,
         announcementMessage: dto.announcementMessage,
         ...(schedule
           ? { startsAt: schedule.startsAt, expiresAt: schedule.expiresAt }
           : {}),
       },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_UPDATED', id, { shopId: ad.shopId });
@@ -346,7 +333,7 @@ export class AdvertisementsService {
     const shop = await this.getShop(userId);
     const ad = await this.prisma.advertisement.findUnique({
       where: { id },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     if (!ad) throw new NotFoundException('Advertisement not found');
     if (ad.shopId !== shop.id)
@@ -361,7 +348,7 @@ export class AdvertisementsService {
     const updated = await this.prisma.advertisement.update({
       where: { id },
       data: { isActive: dto.isActive },
-      include: { feeSetting: true },
+      include: { feeSetting: true, shop: true },
     });
     await this.redis.del(ACTIVE_ADS_CACHE_KEY);
     await this.audit(userId, 'AD_TOGGLED', id, {
@@ -436,19 +423,26 @@ export class AdvertisementsService {
     return { startsAt, expiresAt };
   }
 
-  private async saveImage(file: Express.Multer.File) {
-    if (!ALLOWED_IMAGE_TYPES.has(file.mimetype))
-      throw new UnsupportedMediaTypeException(
-        'Image must be JPG, PNG, or WebP',
+  // Advertisement images are never uploaded: the merchant picks one of the
+  // images already attached to one of their own products. The value is
+  // therefore a stored upload path, and ownership is verified against the
+  // merchant's catalogue before it is persisted.
+  private async resolveProductImage(imageUrl: string, userId: string) {
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!merchant) throw new NotFoundException('Merchant profile not found');
+    const product = await this.prisma.product.findFirst({
+      where: { merchantId: merchant.id, images: { has: imageUrl } },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new BadRequestException(
+        'Advertisement image must be selected from your products',
       );
-    if (file.size > MAX_IMAGE_SIZE)
-      throw new PayloadTooLargeException('Image file must not exceed 5MB');
-    const extension = file.mimetype.split('/')[1].replace('jpeg', 'jpg');
-    const directory = process.env.AD_IMAGE_STORAGE_PATH || './uploads/ads';
-    await mkdir(directory, { recursive: true });
-    const filename = `${randomUUID()}.${extension}`;
-    await writeFile(join(directory, filename), file.buffer);
-    return `/uploads/ads/${filename}`;
+    }
+    return imageUrl;
   }
 
   private getIsoWeek(date: Date) {
@@ -464,11 +458,14 @@ export class AdvertisementsService {
   }
 
   private toResponse(
-    ad: Prisma.AdvertisementGetPayload<{ include: { feeSetting: true } }>,
+    ad: Prisma.AdvertisementGetPayload<{
+      include: { feeSetting: true; shop: true };
+    }>,
   ) {
     return {
       id: ad.id,
       shopId: ad.shopId,
+      shopName: ad.shop.name,
       title: ad.title,
       content: ad.content,
       announcementMessage: ad.announcementMessage,
@@ -536,10 +533,12 @@ export class AdvertisementsService {
   // direction (AD_APPROVED / AD_REJECTED back to the shop owner) is handled by
   // AdminAdManagementService. This is the only place a submission enters the
   // review queue, so it also covers resubmission of a rejected ad — admins are
-  // notified again each time the merchant re-pays. Notification writes are
-  // best-effort: a failure here must never roll back a completed payment.
+  // notified again each time the merchant re-pays, with a distinct title and
+  // message for resubmissions. Notification writes are best-effort: a failure
+  // here must never roll back a completed payment.
   private async notifyAdminsOfNewSubmission(
     ad: Prisma.AdvertisementGetPayload<{ include: { feeSetting: true } }>,
+    isResubmission: boolean,
   ) {
     try {
       const [admins, shop] = await Promise.all([
@@ -553,12 +552,19 @@ export class AdvertisementsService {
         }),
       ]);
       if (admins.length === 0) return;
+      const shopName = shop?.name ?? 'A shop';
+      const title = isResubmission
+        ? 'Advertisement resubmitted'
+        : 'New advertisement submitted';
+      const message = isResubmission
+        ? `${shopName} resubmitted advertisement "${ad.title || 'Untitled advertisement'}" and it is pending approval.`
+        : `${shopName} submitted "${ad.title || 'Untitled advertisement'}" and it is pending approval.`;
       await this.prisma.notification.createMany({
         data: admins.map((admin) => ({
           userId: admin.id,
           type: 'AD_SUBMITTED',
-          title: 'New advertisement submitted',
-          message: `${shop?.name ?? 'A shop'} submitted "${ad.title || 'Untitled advertisement'}" and it is pending approval.`,
+          title,
+          message,
           entityType: 'Advertisement',
           entityId: ad.id,
         })),

@@ -38,7 +38,7 @@ export function OrderHistoryTable({
   if (loading) {
     return (
       <Table>
-        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff]">
+        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff] dark:border-violet-500 dark:bg-[#211a29] oidark:border-primary oidark:bg-muted">
           <TableRow className="border-b-0 hover:bg-transparent">
             <TableHead className="h-12 w-[180px]"><Skeleton className="h-4 w-24" /></TableHead>
             <TableHead className="h-12 w-[150px]"><Skeleton className="h-4 w-20" /></TableHead>
@@ -51,7 +51,7 @@ export function OrderHistoryTable({
         </TableHeader>
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
+            <TableRow key={i} className="oidark:border-surface-container-highest">
               <TableCell className="font-mono text-xs"><Skeleton className="h-4 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-24" /></TableCell>
               <TableCell className="text-center"><Skeleton className="h-4 w-12" /></TableCell>
@@ -76,10 +76,10 @@ export function OrderHistoryTable({
   };
 
   const renderSortableHeader = (label: string, field: OrderSortField, className = '') => (
-    <TableHead className={`h-12 font-bold uppercase tracking-wider text-gray-700 ${className}`} aria-sort={currentSort === field ? `${currentOrder === 'asc' ? 'ascending' : 'descending'}` : 'none'}>
+    <TableHead className={`h-12 font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 oidark:text-on-surface-variant ${className}`} aria-sort={currentSort === field ? `${currentOrder === 'asc' ? 'ascending' : 'descending'}` : 'none'}>
       <button
         type="button"
-        className="inline-flex items-center gap-1 rounded-sm text-left font-bold uppercase tracking-wider text-gray-700 hover:text-[#7c3aed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex items-center gap-1 rounded-sm text-left font-bold uppercase tracking-wider text-gray-700 hover:text-[#7c3aed] dark:text-slate-200 dark:hover:text-violet-300 oidark:text-on-surface-variant oidark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => onSort(field)}
       >
         {label}
@@ -92,34 +92,34 @@ export function OrderHistoryTable({
     <>
       <div className="hidden min-h-0 max-w-full flex-1 self-stretch overflow-x-auto overflow-y-scroll overscroll-contain sm:block [&>div]:overflow-visible">
       <Table className="min-w-[980px]">
-        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff]">
+        <TableHeader className="sticky top-0 z-10 border-b-2 border-[#7c3aed] bg-[#f3f0ff] dark:border-violet-500 dark:bg-[#211a29] oidark:border-primary oidark:bg-muted">
           <TableRow className="border-b-0 hover:bg-transparent">
-            <TableHead className="h-12 w-[180px] font-bold uppercase tracking-wider text-gray-700">{t('orders.table.orderId', 'Order #')}</TableHead>
+            <TableHead className="h-12 w-[180px] font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 oidark:text-on-surface-variant">{t('orders.table.orderId', 'Order #')}</TableHead>
             {renderSortableHeader(t('orders.table.date', 'Date'), 'createdAt', 'w-[150px]')}
-            <TableHead className="h-12 w-[100px] text-center font-bold uppercase tracking-wider text-gray-700">{t('orders.table.items', 'Items')}</TableHead>
+            <TableHead className="h-12 w-[100px] text-center font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 oidark:text-on-surface-variant">{t('orders.table.items', 'Items')}</TableHead>
             {renderSortableHeader(t('orders.table.total', 'Total'), 'totalAmount', 'w-[150px] text-right pr-4 [&_button]:ml-auto')}
-            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700">{t('orders.table.payment', 'Payment')}</TableHead>
-            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700">{t('orders.table.status', 'Status')}</TableHead>
-            <TableHead className="h-12 w-[80px] text-right font-bold uppercase tracking-wider text-gray-700">{t('orders.table.track', 'Track')}</TableHead>
+            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 oidark:text-on-surface-variant">{t('orders.table.payment', 'Payment')}</TableHead>
+            <TableHead className="h-12 w-[160px] text-center font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 oidark:text-on-surface-variant">{t('orders.table.status', 'Status')}</TableHead>
+            <TableHead className="h-12 w-[80px] text-right font-bold uppercase tracking-wider text-gray-700 dark:text-slate-200 oidark:text-on-surface-variant">{t('orders.table.track', 'Track')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} className="py-3 hover:bg-muted/50 transition-colors">
-              <TableCell className="py-3 px-4 font-mono text-xs font-medium">
+            <TableRow key={row.id} className="py-3 transition-colors hover:bg-muted/50 dark:border-[#29252f] dark:text-slate-100 dark:hover:bg-[#17151b] oidark:border-surface-container-highest oidark:hover:bg-surface-container-high">
+              <TableCell className="py-3 px-4 font-mono text-xs font-medium dark:text-slate-100">
                 #{row.id.slice(0, 8).toUpperCase()}
               </TableCell>
-              <TableCell className="py-3 px-4 text-sm text-muted-foreground">
+              <TableCell className="py-3 px-4 text-sm text-muted-foreground dark:text-slate-300">
                 {new Date(row.createdAt).toLocaleDateString(dateLocale, {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
                 })}
               </TableCell>
-              <TableCell className="py-3 px-4 text-center text-sm font-medium">
+              <TableCell className="py-3 px-4 text-center text-sm font-medium dark:text-slate-100">
                 {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
               </TableCell>
-              <TableCell className="py-3 text-right font-semibold text-foreground pr-4">
+              <TableCell className="py-3 text-right font-semibold text-foreground pr-4 dark:text-slate-100">
                 ${parseFloat(row.totalAmount).toFixed(2)}
               </TableCell>
               <TableCell className="py-3 px-4 text-center text-sm">
@@ -132,7 +132,7 @@ export function OrderHistoryTable({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 px-0"
+                  className="h-7 w-7 px-0 dark:text-slate-200 dark:hover:bg-[#29252f] dark:hover:text-white"
                   title={t('orders.track', 'Track')}
                   aria-label={t('orders.track', 'Track')}
                   onClick={() => onTrack(row.id)}
@@ -147,7 +147,7 @@ export function OrderHistoryTable({
     </div>
       <div className="space-y-3 sm:hidden">
       {rows.map((row) => (
-        <div key={row.id} className="rounded-lg border bg-card p-4">
+        <div key={row.id} className="rounded-lg border bg-card p-4 dark:border-[#29252f] dark:bg-[#111014] dark:text-slate-100 oidark:border-outline-variant oidark:bg-surface-container-low">
           <div className="flex items-center justify-between gap-3">
             <span className="font-mono text-xs font-medium">
               #{row.id.slice(0, 8).toUpperCase()}
@@ -156,7 +156,7 @@ export function OrderHistoryTable({
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-xs text-muted-foreground">{t('orders.table.date', 'Date')}</p>
+              <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.date', 'Date')}</p>
               <p className="mt-1">
                 {new Date(row.createdAt).toLocaleDateString(dateLocale, {
                   year: 'numeric',
@@ -166,17 +166,17 @@ export function OrderHistoryTable({
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">{t('orders.table.total', 'Total')}</p>
+              <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.total', 'Total')}</p>
               <p className="mt-1 font-semibold">${parseFloat(row.totalAmount).toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">{t('orders.table.items', 'Items')}</p>
+              <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.items', 'Items')}</p>
               <p className="mt-1">
                 {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
               </p>
             </div>
             <div>
-              <p className="text-right text-xs text-muted-foreground">{t('orders.table.payment', 'Payment')}</p>
+              <p className="text-right text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.payment', 'Payment')}</p>
               <div className="mt-1 flex justify-end">
                 <PaymentBadge status={row.paymentStatus} />
               </div>
@@ -185,7 +185,7 @@ export function OrderHistoryTable({
           <Button
             variant="outline"
             size="sm"
-            className="mt-4 w-full"
+            className="mt-4 w-full dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100"
             onClick={() => onTrack(row.id)}
           >
             <Truck className="h-4 w-4" aria-hidden="true" />

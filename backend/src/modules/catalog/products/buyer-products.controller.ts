@@ -16,7 +16,6 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../../../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
@@ -40,22 +39,14 @@ export class BuyerProductsController {
     return this.productsService.getDetail(idOrSlug);
   }
 
-  @UseGuards(OptionalJwtAuthGuard)
+  @Public()
   @Get(':idOrSlug/reviews')
-  @ApiOperation({
-    summary:
-      'List approved reviews for a product (public; signed-in buyers also see their own pending review)',
-  })
+  @ApiOperation({ summary: 'List approved reviews for a product (public)' })
   async findReviews(
     @Param('idOrSlug') idOrSlug: string,
     @Query() query: ReviewQueryDto,
-    @CurrentUser() user?: AuthUser,
   ) {
-    const result = await this.productsService.findReviews(
-      idOrSlug,
-      query,
-      user?.id,
-    );
+    const result = await this.productsService.findReviews(idOrSlug, query);
     return {
       items: result.items,
       total: result.meta.total,
@@ -78,9 +69,21 @@ export class BuyerProductsController {
     return this.productsService.findSimilar(idOrSlug, limit);
   }
 
+  @Public()
+  @Get(':idOrSlug/advertisements')
+  @ApiOperation({
+    summary: 'Get eligible sidebar advertisements for product detail (public)',
+  })
+  async getAdvertisements(@Param('idOrSlug') idOrSlug: string) {
+    return this.productsService.getSidebarAds(idOrSlug);
+  }
+
   @Get(':idOrSlug/can-review')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Check if the current buyer can review a product' })
+  @ApiOperation({
+    summary:
+      'Check whether the current buyer may review a product (buyer only)',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('buyer')
   async canReview(

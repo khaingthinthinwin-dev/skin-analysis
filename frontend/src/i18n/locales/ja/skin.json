@@ -1,0 +1,301 @@
+{
+  "page": {
+    "title": "クリニカル 皮膚分析",
+    "subtitle": "診断画像とAIによる皮膚科学のインサイトを確認できます。",
+    "newScan": "新規スキャン"
+  },
+  "tabs": {
+    "scan": "新規スキャン",
+    "history": "履歴",
+    "trends": "トレンド"
+  },
+  "ready": {
+    "noScan": "スキャンはまだ実施されていません",
+    "noScanDesc": "写真をアップロードまたは撮影して、肌の健康状態を分析し、時間経過による変化を追跡しましょう。",
+    "startScan": "AIスキャンを開始"
+  },
+  "upload": {
+    "title": "顔画像をアップロード",
+    "description": "AI分析のために顔の鮮明な写真をアップロードしてください",
+    "dragDrop": "写真をドラッグ＆ドロップ、またはクリックして選択",
+    "supportedFormats": "対応形式: {{formats}}",
+    "consent": "AIによる顔画像解析処理に同意します",
+    "consentRequired": "顔画像のアップロード前に同意が必要です",
+    "noFile": "アップロードするファイルを選択してください",
+    "uploading": "アップロード中...",
+    "analyzing": "分析中...",
+    "uploadFile": "ファイルをアップロード",
+    "selectFile": "ファイルを選択",
+    "removeFile": "ファイルを削除",
+    "previewAlt": "アップロードされた顔画像のプレビュー",
+    "guidelinesTitle": "撮影ガイドライン",
+    "guidelines": {
+      "1": "自然で均一な照明を使用し、強い影や直接フラッシュを避けてください",
+      "2": "カメラを正面に向け、無表情で撮影してください",
+      "3": "眼鏡、濃いメイク、顔にかかる髪を外してください",
+      "4": "カメラを目線の高さに、腕を伸ばした程度の距離で保ってください"
+    },
+    "error": {
+      "invalidFormat": "対応していないファイル形式です。{{types}} をご利用ください。",
+      "fileTooLarge": "ファイルが大きすぎます。最大サイズは {{maxSize}} です。",
+      "noFile": "アップロードするファイルを選択してください",
+      "consentRequired": "顔画像のアップロード前に同意が必要です",
+      "generic": "アップロードに失敗しました。もう一度お試しください。"
+    }
+  },
+  "camera": {
+    "title": "カメラ撮影",
+    "description": "デバイスのカメラでライブ写真を撮影します",
+    "ready": "カメラの準備完了",
+    "readyDesc": "顔をフレームに収め、シャッターボタンをタップしてください",
+    "takePhoto": "写真を撮る",
+    "retake": "撮り直す",
+    "usePhoto": "この写真を使用",
+    "switch": "カメラを切り替え",
+    "capturedAlt": "撮影した写真のプレビュー"
+  },
+  "processing": {
+    "title": "AI分析を実行中",
+    "steps": {
+      "uploading": "画像をアップロード中",
+      "validating": "画像品質を検証中",
+      "processing": "AI分析を実行中",
+      "completed": "分析が完了しました"
+    },
+    "estimatedTime": "推定時間: {{time}}",
+    "cancel": "キャンセル",
+    "cancelled": "分析がキャンセルされました",
+    "cancelledDesc": "いつでも新しいスキャンを開始できます",
+    "failed": "分析に失敗しました",
+    "failedDesc": "別の画像でもう一度お試しください",
+    "tryAgain": "再試行",
+    "completed": "分析が完了しました"
+  },
+  "summary": {
+    "title": "最新スキャン概要",
+    "noScan": "最近のスキャンはありません",
+    "noScanDesc": "最新のスキャン結果がここに表示されます",
+    "healthScore": "健康スコア",
+    "hydration": "水分量",
+    "skinTypeLabel": "肌タイプ: {{type}}",
+    "quotaRemaining": "本日残り {{count}} 回スキャン可能",
+    "confidence": "AI信頼度: {{value}}%",
+    "viewHistory": "履歴を見る",
+    "viewTrends": "トレンドを見る",
+    "years": "{{age}} 歳",
+    "lastAnalyzed": "最終分析日: {{date}}",
+    "skinAge": "肌年齢: {{age}} 歳"
+  },
+  "results": {
+    "title": "分析結果",
+    "badge": "AIスキンレポート",
+    "reportSubtitle": "最新のスキャンに基づくパーソナル評価です。",
+    "keyMetrics": "主要指標",
+    "healthScore": "健康スコア",
+    "hydration": "水分量",
+    "skinType": "肌タイプ",
+    "skinAge": "肌年齢",
+    "confidence": "信頼度",
+    "recommendations": "おすすめ製品",
+    "viewMore": "もっと見る",
+    "processed": "解析済み",
+    "analysisComplete": "分析完了",
+    "scanImage": "顔スキャン画像"
+  },
+  "conditions": {
+    "title": "症状の重症度",
+    "severityScore": "重症度スコア",
+    "none": "なし",
+    "mild": "軽度",
+    "moderate": "中等度",
+    "severe": "重度"
+  },
+  "findings": {
+    "title": "臨床所見",
+    "overallAssessment": "総合評価",
+    "primaryConcerns": "主要な懸念事項",
+    "secondaryConcerns": "副次的な懸念事項",
+    "noFindings": "特記すべき所見は検出されませんでした",
+    "affectedArea": "部位: {{area}}"
+  },
+  "routine": {
+    "title": "デイリールーチン",
+    "badge": "AM・PM",
+    "tip": "新しい製品は1つずつ試し、使用前にパッチテストを行ってください。",
+    "morning": {
+      "label": "朝",
+      "desc": "日中のケアと保護のルーチン",
+      "steps": {
+        "cleanser": {
+          "name": "やさしい洗顔料",
+          "desc": "低刺激の洗浄料で一晩分の皮脂をやさしく洗い流します。"
+        },
+        "serum": {
+          "name": "アンチオキシダントセラム",
+          "desc": "ビタミンCを2〜3滴使い、トーンを均一に整えます。"
+        },
+        "moisturizer": {
+          "name": "軽い保湿クリーム",
+          "desc": "ジェルクリームでうるおいを閉じ込めます。"
+        },
+        "sunscreen": {
+          "name": "日焼け止め SPF 50",
+          "desc": "外出時は2時間ごとに塗り直してください。"
+        }
+      }
+    },
+    "evening": {
+      "label": "夜",
+      "desc": "落として、ケアして、夜間に整える",
+      "steps": {
+        "doubleCleanse": {
+          "name": "ダブルクレンジング",
+          "desc": "クレンジングオイルのあと、やさしい泡洗顔で洗います。"
+        },
+        "exfoliate": {
+          "name": "角質ケア（週2〜3回）",
+          "desc": "TゾーンにBHAを使用して毛穴をすっきり保ちます。"
+        },
+        "treatment": {
+          "name": "トリートメントセラム",
+          "desc": "ナイアシンアミドやレチノールを気になる部位に使います。"
+        },
+        "nightCream": {
+          "name": "ナイトクリーム",
+          "desc": "セラミド配合のクリームでうるおいを守ります。"
+        }
+      }
+    }
+  },
+  "recommendations": {
+    "title": "おすすめ製品",
+    "viewProduct": "製品を見る",
+    "matchScore": "{{score}}% 一致",
+    "priority": {
+      "high": "高優先度",
+      "medium": "中優先度",
+      "low": "低優先度"
+    },
+    "feedback": {
+      "wasHelpful": "このおすすめは役に立ちましたか？",
+      "helpful": "役に立った",
+      "notHelpful": "役に立たなかった"
+    }
+  },
+  "history": {
+    "title": "分析履歴",
+    "subtitle": "スキンヘルスの変化を時間経過で追跡します",
+    "filters": "フィルター",
+    "dateFrom": "開始日",
+    "dateTo": "終了日",
+    "pageSize": "ページサイズ",
+    "exportAll": "全履歴をエクスポート",
+    "exporting": "エクスポート中...",
+    "columns": {
+      "date": "日付",
+      "healthScore": "健康スコア",
+      "hydration": "水分量",
+      "skinType": "肌タイプ",
+      "skinAge": "肌年齢",
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "noRecords": "分析記録が見つかりません",
+    "loadError": "履歴の読み込みに失敗しました",
+    "retry": "再試行",
+    "viewDetails": "詳細を見る",
+    "exportSingle": "レポートをエクスポート",
+    "export": "レポートをエクスポート"
+  },
+  "trends": {
+    "title": "トレンド可視化",
+    "insufficientData": "トレンド表示に必要なデータが不足しています",
+    "needTwoScans": "トレンドの表示には完了したスキャンが2回以上必要です",
+    "healthScore": "健康スコア",
+    "hydration": "水分量"
+  },
+  "compare": {
+    "title": "分析の比較",
+    "baseline": "基準",
+    "current": "現在",
+    "metrics": "指標の比較",
+    "healthScore": "健康スコア",
+    "hydration": "水分量",
+    "skinAge": "肌年齢",
+    "daysBetween": "経過日数",
+    "days": "日",
+    "conditionChanges": "症状の変化",
+    "condition": "症状",
+    "direction": "変化方向",
+    "directions": {
+      "improved": "改善",
+      "regressed": "悪化",
+      "stable": "変化なし"
+    },
+    "loadError": "比較データの読み込みに失敗しました",
+    "metric": "指標",
+    "delta": "差分"
+  },
+  "export": {
+    "single": "レポートをエクスポート",
+    "history": "全履歴をエクスポート"
+  },
+  "metrics": {
+    "totalAnalyses": "総分析回数",
+    "bestScore": "最高スコア",
+    "avgHydration": "平均水分量",
+    "improvement": "改善率"
+  },
+  "common": {
+    "back": "戻る",
+    "loading": "読み込み中...",
+    "retry": "再試行",
+    "close": "閉じる",
+    "exporting": "エクスポート中...",
+    "pageSize": "1ページの件数: {{size}}",
+    "clearFilters": "フィルターをクリア",
+    "clear": "クリア",
+    "years": "歳",
+    "days": "日",
+    "previous": "前へ",
+    "next": "次へ",
+    "pageOf": "{{page}} / {{total}} ページ",
+    "yrs": "歳"
+  },
+  "severity": {
+    "none": "なし",
+    "mild": "軽度",
+    "moderate": "中等度",
+    "severe": "重度"
+  },
+  "priority": {
+    "high": "高",
+    "medium": "中",
+    "low": "低"
+  },
+  "feedback": {
+    "helpful": "役に立った",
+    "notHelpful": "役に立たなかった",
+    "wasHelpful": "このおすすめは役に立ちましたか？"
+  },
+  "guidelines": {
+    "title": "撮影ガイドライン",
+    "lighting": "照明",
+    "lightingDesc": "自然で均一な照明を使用し、強い影や直接フラッシュを避けてください",
+    "background": "背景",
+    "backgroundDesc": "無地で中性色の背景を使用してください",
+    "noGlasses": "眼鏡を外す",
+    "noGlassesDesc": "眼鏡やアクセサリーを外してください",
+    "expression": "表情",
+    "expressionDesc": "自然でリラックスした表情を保ってください",
+    "distance": "距離",
+    "distanceDesc": "カメラを目線の高さに、腕を伸ばした距離で保ってください",
+    "consent": "同意",
+    "consentDesc": "顔画像がAIによって解析されることを理解しています"
+  },
+  "severityTag": {
+    "low": "低",
+    "moderate": "中",
+    "high": "高"
+  }
+}
