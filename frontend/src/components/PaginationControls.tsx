@@ -79,7 +79,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
           disabled={prevDisabled}
           onClick={() => onPageChange(page - 1)}
         >
-          ‹ Prev
+          {'<'} Prev
         </button>
 
         <div className="flex items-center gap-1">
@@ -123,7 +123,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
           disabled={nextDisabled}
           onClick={() => onPageChange(page + 1)}
         >
-          Next ›
+          Next {'>'}
         </button>
       </div>
     </div>

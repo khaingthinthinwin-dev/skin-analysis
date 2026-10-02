@@ -36,7 +36,7 @@ export default function FeeHistoryPage() {
   const [tier, setTier] = useState<Tier | undefined>(undefined)
   const [month, setMonth] = useState<string | undefined>(undefined)
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
+  const [limit, setLimit] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null)
 
@@ -103,10 +103,10 @@ export default function FeeHistoryPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fee Change History</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fee Change History</h1>
           <p className="text-muted-foreground">Audit trail of fee setting changes</p>
         </div>
         <Button asChild size="sm" variant="outline">
@@ -118,7 +118,7 @@ export default function FeeHistoryPage() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-3">
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Month</span>
           <Select
             value={month ?? 'all'}
@@ -128,7 +128,7 @@ export default function FeeHistoryPage() {
               clearSelection()
             }}
           >
-            <SelectTrigger className="h-9 w-44" aria-label="Month filter">
+            <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Month filter">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -141,7 +141,7 @@ export default function FeeHistoryPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Placement</span>
           <Select
             value={placement ?? 'all'}
@@ -151,7 +151,7 @@ export default function FeeHistoryPage() {
               clearSelection()
             }}
           >
-            <SelectTrigger className="h-9 w-44" aria-label="Placement filter">
+            <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Placement filter">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -164,7 +164,7 @@ export default function FeeHistoryPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Tier</span>
           <Select
             value={tier ?? 'all'}
@@ -174,7 +174,7 @@ export default function FeeHistoryPage() {
               clearSelection()
             }}
           >
-            <SelectTrigger className="h-9 w-36" aria-label="Tier filter">
+            <SelectTrigger className="h-9 w-full sm:w-36" aria-label="Tier filter">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -188,7 +188,7 @@ export default function FeeHistoryPage() {
           </Select>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto">
           {selectedIds.length > 0 && (
             <span className="text-sm text-muted-foreground">
               {selectedIds.length} selected
@@ -220,8 +220,7 @@ export default function FeeHistoryPage() {
             onClick={requestDeleteSelected}
             aria-label="Delete selected fee change history"
           >
-            <Trash2 className="mr-1 h-4 w-4" />
-            Delete
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>

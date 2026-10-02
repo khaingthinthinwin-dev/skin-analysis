@@ -9,6 +9,8 @@ export interface AdPackage {
   durationDays: number
   maxAds: number
   totalFee: string
+  /** ISO 8601 timestamp of the last admin change (create / rate / activation). */
+  updatedAt?: string
 }
 
 export interface Advertisement {

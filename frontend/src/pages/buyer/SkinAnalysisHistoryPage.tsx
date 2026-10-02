@@ -233,7 +233,7 @@ export default function SkinAnalysisHistoryPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[5, 10, 20, 50].map((n) => (
+                    {[10, 20, 50].map((n) => (
                       <SelectItem key={n} value={String(n)}>
                         {t('common.pageSize', { size: n })}
                       </SelectItem>
@@ -443,7 +443,7 @@ export default function SkinAnalysisHistoryPage() {
             onPageChange={(page) => setParams((p) => ({ ...p, page }))}
             limit={data.meta.pageSize}
             onLimitChange={(pageSize) => setParams((p) => ({ ...p, pageSize, page: 1 }))}
-            pageSizeOptions={[5, 10, 20, 50]}
+            pageSizeOptions={[10, 20, 50]}
           />
         </>
       ) : null}

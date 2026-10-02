@@ -1,4 +1,4 @@
-import { Eye, ShieldCheck } from 'lucide-react'
+import { Eye, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -22,11 +22,13 @@ interface AdTableProps {
 // key columns (shop, fee) emphasized in foreground.
 //
 // Horizontal fit: cells use tight horizontal padding, long text is truncated
-// through inner wrappers, and the lower-priority Placement/Submitted columns
-// collapse below xl/2xl so every remaining column (especially Actions) fits
-// within the card on laptop viewports. The wrapper's overflow-x-auto only
-// remains as a fallback for narrower screens, where the Actions column pins
-// to the right edge so its buttons stay reachable.
+// through inner wrappers, and the lower-priority Placement column collapses
+// below xl so every remaining column (especially Actions and Submitted)
+// fits within the card on laptop viewports. Submitted is never hidden by a
+// breakpoint: browser zoom shrinks the effective viewport and made it
+// disappear at Zoom +. The wrapper's overflow-x-auto only remains as a
+// fallback for narrower screens, where the Actions column pins to the right
+// edge so its buttons stay reachable.
 const TH_BASE =
   'text-left align-middle h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
 
@@ -49,7 +51,6 @@ const ROW_CLASS =
 // Responsive column visibility — shared by header, body, and skeleton rows
 // so they always line up.
 const PLACEMENT_COL_CLASS = 'hidden xl:table-cell'
-const SUBMITTED_COL_CLASS = 'hidden 2xl:table-cell'
 
 export function AdTable({
   ads = [],
@@ -86,7 +87,7 @@ export function AdTable({
             <th scope="col" className={TH_CLASS}>Status</th>
             <th scope="col" className={TH_CLASS}>Payment</th>
             <th scope="col" className={`${TH_CLASS} text-right`}>Fee</th>
-            <th scope="col" className={`${TH_CLASS} ${SUBMITTED_COL_CLASS}`}>Submitted</th>
+            <th scope="col" className={TH_CLASS}>Submitted</th>
             <th scope="col" className={TH_CLASS}>Schedule</th>
             <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
           </tr>
@@ -99,11 +100,9 @@ export function AdTable({
                   const extra =
                     j === 3
                       ? ` ${PLACEMENT_COL_CLASS}`
-                      : j === 8
-                        ? ` ${SUBMITTED_COL_CLASS}`
-                        : j === 10
-                          ? ' sticky right-0 z-10 bg-card'
-                          : ''
+                      : j === 10
+                        ? ' sticky right-0 z-10 bg-card'
+                        : ''
                   return (
                     <td key={j} className={`${TD_CLASS}${extra}`}>
                       <Skeleton className="h-4 w-full" />
@@ -162,7 +161,7 @@ export function AdTable({
                   <td className={`${TD_CLASS} text-right text-foreground font-semibold tabular-nums`}>
                     {ad.paymentAmount ? formatPrice(Number(ad.paymentAmount)) : '\u2014'}
                   </td>
-                  <td className={`${TD_CLASS} tabular-nums whitespace-nowrap ${SUBMITTED_COL_CLASS}`}>
+                  <td className={`${TD_CLASS} tabular-nums whitespace-nowrap`}>
                     {formatIsoDate(ad.createdAt)}
                   </td>
                   <td className={TD_CLASS}>{formatScheduleRange(ad.startsAt, ad.expiresAt)}</td>
@@ -176,7 +175,7 @@ export function AdTable({
                         onClick={() => onReview(ad.id)}
                         aria-label={`Review ${ad.title}`}
                       >
-                        <ShieldCheck className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                     ) : (
                       <Button

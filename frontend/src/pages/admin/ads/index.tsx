@@ -29,8 +29,8 @@ export default function AdminAdListPage() {
     return status ? { status } : {}
   })
   const [page, setPage] = useState(1)
-  // Page size selector (20/50/100) as in the design doc; changing it resets to page 1.
-  const [limit, setLimit] = useState(20)
+  // Page size selector (10/20/50/100), default 10; changing it resets to page 1.
+  const [limit, setLimit] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [review, setReview] = useState<{ id: string; viewOnly: boolean } | null>(null)
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false)
@@ -137,13 +137,13 @@ export default function AdminAdListPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Advertisement Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Advertisement Management</h1>
           <p className="text-muted-foreground">Review merchant ads and manage advertising fees</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Badge variant="secondary" className="bg-amber-100 text-amber-800">
             {pendingCount} pending
           </Badge>
