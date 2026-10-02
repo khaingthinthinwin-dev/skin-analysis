@@ -21,7 +21,11 @@
     "licenseStatus": "License Status",
     "licenseApproved": "Approved",
     "licenseRejected": "Rejected",
-    "licensePending": "Pending"
+    "licensePending": "Pending",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
   },
   "form": {
     "title": "Edit Profile",

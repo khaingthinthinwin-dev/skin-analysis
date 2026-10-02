@@ -1,0 +1,89 @@
+import { Outlet, Link, useLocation } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Menu, Bell, ShoppingCart } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { UserNav } from '@/components/common/UserNav'
+import { Sidebar } from '@/components/layout/Sidebar'
+import { useCart } from '@/features/buyer/cart/hooks/useCart'
+import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
+import { useMerchantStatusAlerts } from '@/features/shared/notifications/hooks/useMerchantStatusAlerts'
+import { BuyerAccountDeactivatedBanner } from '@/components/buyer/AccountDeactivatedBanner'
+
+export function BuyerDashboardLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { summary } = useCart()
+  const cartCount = summary.totalItems
+  const { unreadCount } = useNotifications()
+  const location = useLocation()
+  const isNotificationsPage = location.pathname === '/buyer/notifications'
+  // Global in-app alert: toasts merchant on approval/rejection + refreshes licenseStatus
+  useMerchantStatusAlerts()
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-md lg:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="icon" asChild aria-label="Notifications">
+              <Link to="notifications" className="relative">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-purple-600 px-1 text-[10px] font-bold text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild aria-label="Cart">
+              <Link to="/buyer/cart" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
+            <UserNav />
+          </div>
+        </header>
+
+        <main className="min-w-0 flex-1 overflow-y-auto bg-background p-4 lg:p-6">
+          {!isNotificationsPage && <BuyerAccountDeactivatedBanner />}
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}

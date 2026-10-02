@@ -78,7 +78,7 @@ export function AdReviewModal({
             </section>
 
             <section aria-label="Advertisement preview" className="space-y-3 rounded-md border p-4">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="text-sm font-medium">{ad.title}</p>
                 <StatusBadge status={ad.approvalStatus} />
               </div>
@@ -128,24 +128,24 @@ export function AdReviewModal({
             </section>
 
             <section aria-label="Fee and payment" className="space-y-2 rounded-md border p-4">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Daily rate</span>
                 <span className="font-medium">{formatPrice(Number(ad.feeInfo.dailyRate))}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Duration</span>
                 <span className="font-medium">{ad.feeInfo.durationDays} days</span>
               </div>
               <Separator />
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Total fee</span>
                 <span className="font-medium">{formatPrice(Number(ad.feeInfo.totalFee))}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Fee paid</span>
                 <span className="font-medium">{formatPrice(Number(ad.paymentInfo.amount))}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Payment status</span>
                 <PaymentBadge status={ad.paymentInfo.paymentStatus} />
               </div>
