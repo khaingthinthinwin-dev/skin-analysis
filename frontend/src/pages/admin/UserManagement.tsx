@@ -277,7 +277,7 @@ export default function UserManagement() {
   const handleDeactivate = (user: User) => {
     if (!deactivateReason.trim()) return;
     toggleUserStatusMutation.mutate(
-      { userId: user.id, isActive: false },
+      { userId: user.id, isActive: false, reason: deactivateReason },
       {
         onSuccess: () => {
           toast.success('User deactivated');

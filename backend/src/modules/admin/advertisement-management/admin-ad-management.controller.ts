@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -29,7 +31,9 @@ import {
   CreateAdFeeSettingDto,
   UpdateAdFeeSettingDto,
   DeactivateAdFeeSettingDto,
+  ReactivateAdFeeSettingDto,
   AdminAdFeeHistoryQueryDto,
+  DeleteAdFeeHistoryDto,
   RevenueAnalyticsQueryDto,
   ExportAdPerformanceDto,
   ExportSubmissionHistoryDto,
@@ -120,9 +124,37 @@ export class AdminAdManagementController {
     return this.adminAdManagementService.deactivateFeeSetting(id, dto, user.id);
   }
 
+  @Patch('ad-fees/:id/reactivate')
+  async reactivateFeeSetting(
+    @Param('id') id: string,
+    @Body() dto: ReactivateAdFeeSettingDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminAdManagementService.reactivateFeeSetting(id, dto, user.id);
+  }
+
   @Get('ad-fees/history')
   async listFeeHistory(@Query() query: AdminAdFeeHistoryQueryDto) {
     return this.adminAdManagementService.listFeeHistory(query);
+  }
+
+  @Delete('ad-fees/history/:id')
+  async deleteFeeHistoryRecord(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminAdManagementService.deleteFeeHistory(
+      { history_ids: [id] },
+      user.id,
+    );
+  }
+
+  @Delete('ad-fees/history')
+  async deleteFeeHistory(
+    @Body() dto: DeleteAdFeeHistoryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminAdManagementService.deleteFeeHistory(dto, user.id);
   }
 
   // ─── Analytics ──────────────────────────────────────────────────────────
@@ -144,7 +176,11 @@ export class AdminAdManagementController {
       dto,
       user.id,
     );
-    this.sendCsv(res, 'ad_performance_report.csv', csv);
+    this.sendCsv(
+      res,
+      this.exportFilename('ad_performance', dto.dateFrom, dto.dateTo),
+      csv,
+    );
   }
 
   @Post('ads/export/submission-history')
@@ -157,7 +193,11 @@ export class AdminAdManagementController {
       dto,
       user.id,
     );
-    this.sendCsv(res, 'submission_history_report.csv', csv);
+    this.sendCsv(
+      res,
+      this.exportFilename('submission_history', dto.dateFrom, dto.dateTo),
+      csv,
+    );
   }
 
   @Post('ads/export/fee-history')
@@ -167,7 +207,11 @@ export class AdminAdManagementController {
     @Res() res: Response,
   ) {
     const csv = await this.adminAdExportService.exportFeeHistory(dto, user.id);
-    this.sendCsv(res, 'fee_history_report.csv', csv);
+    this.sendCsv(
+      res,
+      this.exportFilename('fee_history', dto.dateFrom, dto.dateTo),
+      csv,
+    );
   }
 
   // ─── Private Helpers ───────────────────────────────────────────────────
@@ -178,5 +222,9 @@ export class AdminAdManagementController {
       'Content-Disposition': `attachment; filename="${filename}"`,
     });
     res.status(HttpStatus.OK).send(csv);
+  }
+
+  private exportFilename(prefix: string, from: string, to: string): string {
+    return `${prefix}_from${from}_to${to}.csv`;
   }
 }

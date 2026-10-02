@@ -77,7 +77,7 @@ export class AdminCommissionController {
     @Body() dto: ExportRequestDto,
     @CurrentUser() user: AuthUser,
     @Ip() ip: string,
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
   ) {
     await this.exportService.streamCommissionReport(dto, user.id, ip, res);
   }

@@ -92,5 +92,10 @@ export interface OrderDetailResponseDto {
   paymentStatus: PaymentStatus;
   shippingAddress: OrderShippingAddress;
   notes: string | null;
+  /** Reached status timestamps returned by GET /orders/:id. */
+  timeline?: Array<{
+    status: OrderStatus;
+    createdAt: string;
+  }>;
   shop?: ShopInfoDto;
 }

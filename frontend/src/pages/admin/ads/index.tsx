@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { BarChart3, Download, LayoutGrid } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,16 +13,31 @@ import { BulkApproveModal } from '@/features/admin/advertisement-management/comp
 import { BulkRejectModal } from '@/features/admin/advertisement-management/components/BulkRejectModal'
 import { FilterBar, type AdListFilters } from '@/features/admin/advertisement-management/components/FilterBar'
 import { Pagination } from '@/features/admin/advertisement-management/components/Pagination'
-import type { AdminAdListQuery } from '@/types/admin-ad-management'
+import { ADMIN_AD_STATUSES, type AdminAdListQuery, type ApprovalStatus } from '@/types/admin-ad-management'
+
+function toApprovalStatus(value: string | null): ApprovalStatus | undefined {
+  return ADMIN_AD_STATUSES.find((status) => status === value)
+}
 
 export default function AdminAdListPage() {
-  const [filters, setFilters] = useState<AdListFilters>({})
+  // Deep-linked from the AD_SUBMITTED notification, which points at the pending
+  // review queue the new submission just joined. Only the status filter is
+  // seeded from the URL; the rest stay local until the admin changes them.
+  const [searchParams] = useSearchParams()
+  const [filters, setFilters] = useState<AdListFilters>(() => {
+    const status = toApprovalStatus(searchParams.get('status'))
+    return status ? { status } : {}
+  })
   const [page, setPage] = useState(1)
+  // Page size selector (20/50/100) as in the design doc; changing it resets to page 1.
   const [limit, setLimit] = useState(20)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [review, setReview] = useState<{ id: string; viewOnly: boolean } | null>(null)
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false)
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false)
+  const [highlightAdId, setHighlightAdId] = useState<string | null>(() =>
+    searchParams.get('highlightAdId')
+  )
 
   const params: AdminAdListQuery = useMemo(
     () => ({ ...filters, page, limit }),
@@ -124,6 +139,26 @@ export default function AdminAdListPage() {
     )
   }
 
+  // Handle highlightAdId from URL (e.g., from AD_SUBMITTED notification)
+  useEffect(() => {
+    const adId = searchParams.get('highlightAdId')
+    if (adId && adId !== highlightAdId) {
+      // Defer state update to avoid synchronous setState in effect
+      window.setTimeout(() => {
+        setHighlightAdId(adId)
+        // Auto-clear highlight after 8 seconds
+        const timer = window.setTimeout(() => {
+          setHighlightAdId(null)
+          // Clean up URL
+          const params = new URLSearchParams(searchParams)
+          params.delete('highlightAdId')
+          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
+        }, 8000)
+        return () => window.clearTimeout(timer)
+      }, 0)
+    }
+  }, [searchParams, highlightAdId])
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -173,6 +208,7 @@ export default function AdminAdListPage() {
         onReview={(id) => setReview({ id, viewOnly: false })}
         onView={(id) => setReview({ id, viewOnly: true })}
         isLoading={adsQuery.isPending}
+        highlightAdId={highlightAdId}
       />
 
       <Pagination

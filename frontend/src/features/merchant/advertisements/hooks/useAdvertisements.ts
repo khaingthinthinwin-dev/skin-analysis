@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { merchantAdService } from '../services/advertisement.service';
+import { AdContentPayload, merchantAdService } from '../services/advertisement.service';
 
 export function useAdvertisements(params?: {
   status?: 'active' | 'inactive' | 'expired';
@@ -13,16 +13,22 @@ export function useAdvertisements(params?: {
   const adsQuery = useQuery({
     queryKey: ['merchant', 'ads', params],
     queryFn: () => merchantAdService.getAds(params),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const allAdsQuery = useQuery({
     queryKey: ['merchant', 'ads', 'all'],
     queryFn: () => merchantAdService.getAllAds(),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const packagesQuery = useQuery({
     queryKey: ['merchant', 'ads', 'packages'],
     queryFn: () => merchantAdService.getPackages(),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const selectPackage = useMutation({
@@ -33,16 +39,16 @@ export function useAdvertisements(params?: {
   });
 
   const uploadContent = useMutation({
-    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
-      merchantAdService.uploadContent(id, formData),
+    mutationFn: ({ id, payload }: { id: string; payload: AdContentPayload }) =>
+      merchantAdService.uploadContent(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
     },
   });
 
   const updateContent = useMutation({
-    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
-      merchantAdService.updateContent(id, formData),
+    mutationFn: ({ id, payload }: { id: string; payload: AdContentPayload }) =>
+      merchantAdService.updateContent(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
     },
@@ -59,6 +65,36 @@ export function useAdvertisements(params?: {
   const toggle = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       merchantAdService.toggle(id, isActive),
+    // Optimistically flip the switch so the UI reacts immediately; the
+    // invalidate below confirms with fresh server data.
+    onMutate: async ({ id, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: ['merchant', 'ads'] });
+      const previous = queryClient.getQueriesData({
+        queryKey: ['merchant', 'ads'],
+      });
+      queryClient.setQueriesData(
+        { queryKey: ['merchant', 'ads'] },
+        (old: unknown) => {
+          if (!old || typeof old !== 'object') return old;
+          const cached = old as { data?: Array<{ id: string; isActive: boolean }> };
+          if (!Array.isArray(cached.data)) return old;
+          return {
+            ...cached,
+            data: cached.data.map((ad) =>
+              ad.id === id ? { ...ad, isActive } : ad,
+            ),
+          };
+        },
+      );
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) {
+        for (const [key, value] of context.previous) {
+          queryClient.setQueryData(key, value);
+        }
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant', 'ads'] });
     },

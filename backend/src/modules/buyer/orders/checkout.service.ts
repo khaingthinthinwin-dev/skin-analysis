@@ -29,6 +29,11 @@ export class CheckoutService {
             stockQuantity: true,
             isActive: true,
             merchantId: true,
+            merchant: {
+              select: {
+                shopName: true,
+              },
+            },
           },
         },
       },
@@ -52,6 +57,7 @@ export class CheckoutService {
       isAvailable:
         item.product.isActive && item.product.stockQuantity >= item.quantity,
       merchantId: item.product.merchantId,
+      merchantName: item.product.merchant?.shopName ?? null,
     }));
 
     const subtotal = checkoutItems

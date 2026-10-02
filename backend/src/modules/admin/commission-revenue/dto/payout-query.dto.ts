@@ -3,7 +3,9 @@ import {
   IsEnum,
   IsInt,
   IsDateString,
+  IsString,
   Matches,
+  MaxLength,
   Min,
   Max,
 } from 'class-validator';
@@ -13,7 +15,6 @@ export enum PayoutStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
   COMPLETED = 'completed',
-  FAILED = 'failed',
 }
 
 export class PayoutQueryDto {
@@ -35,6 +36,11 @@ export class PayoutQueryDto {
   @IsOptional()
   @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'Invalid period' })
   period?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
 
   @IsOptional()
   @Type(() => Number)

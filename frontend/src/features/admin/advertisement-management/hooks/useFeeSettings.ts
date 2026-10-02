@@ -14,6 +14,7 @@ export function useFeeSettings() {
     queryKey: ['fee-settings'],
     queryFn: advertisementService.listFeeSettings,
     staleTime: 30_000,
+    refetchOnMount: 'always',
   })
 
   const createMutation = useMutation({
@@ -33,11 +34,18 @@ export function useFeeSettings() {
     onSuccess: refreshFeeData,
   })
 
+  const reactivateMutation = useMutation({
+    mutationFn: ({ id, change_reason }: { id: string; change_reason?: string }) =>
+      advertisementService.reactivateFeeSetting(id, { change_reason }),
+    onSuccess: refreshFeeData,
+  })
+
   return {
     feeSettingsQuery,
     createMutation,
     updateMutation,
     deactivateMutation,
+    reactivateMutation,
     refreshFeeData,
   }
 }

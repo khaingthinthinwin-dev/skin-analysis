@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Package, Plus, Search, Filter, Trash2, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,6 @@ import {
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ProductTable } from '@/components/merchant/ProductTable'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { useTranslation } from 'react-i18next'
 import {
   useProducts,
   useUpdateStock,
@@ -28,24 +27,33 @@ import {
 } from '@/hooks/useProducts'
 import { useAuth } from '@/hooks/useAuth'
 import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
+import { PaginationControls } from '@/components/PaginationControls'
 import type { ProductQueryParams } from '@/types/product.types'
 
 export default function ProductManagement() {
-  const { t } = useTranslation()
   const { user } = useAuth()
   const guard = useMerchantProductsGuard()
   const status =
     user?.licenseStatus ||
     user?.license_status
   const isPending = guard.isPending || status === 'pending'
-  const showPendingBanner = guard.showPendingBanner || isPending
-  const showCrudActions = guard.showCrudActions && !isPending
+  const isDeactivated =
+    guard.isDeactivated ||
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const showPendingBanner = (guard.showPendingBanner || isPending) && !isDeactivated
+  const showDeactivatedBanner = guard.showDeactivatedBanner || isDeactivated
+  const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<ProductQueryParams['sortBy']>('newest')
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [deleteAllOpen, setDeleteAllOpen] = useState(false)
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
@@ -57,7 +65,7 @@ export default function ProductManagement() {
     isActive: statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined,
     sortBy,
     page,
-    limit: 10,
+    limit,
   }
 
   const { data, isLoading, error } = useProducts(queryParams)
@@ -265,36 +273,15 @@ export default function ProductManagement() {
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <Package className="h-6 w-6 text-purple-600" /> Product Management
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Manage inventory, prices, and product details
-          </p>
-        </div>
-        {showCrudActions && (
-          <Button
-            size="lg"
-            className="font-bold bg-primary shrink-0 w-full sm:w-auto"
-            onClick={() => navigate('/merchant/products/new')}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add New Product
-          </Button>
-        )}
-      </div>
+      {showDeactivatedBanner && <AccountDeactivatedBanner />}
 
       {showPendingBanner && (
         <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Pending Approval</AlertTitle>
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            {t(
-              'merchant.products.pendingBanner',
-              'Your merchant account is pending approval. Product management features are restricted until your license is approved.',
-            )}
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}
@@ -304,137 +291,138 @@ export default function ProductManagement() {
           <ShieldAlert className="h-4 w-4 text-destructive" />
           <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            Your merchant account has been rejected. Product management features are restricted.
+            Your merchant account has been rejected. Product management features are restricted. You can
+            resubmit your license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-semibold">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Filter Bar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-0 w-full sm:min-w-[200px] sm:max-w-sm">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
+      <Card>
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 pb-0">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+              <Package className="h-6 w-6 text-purple-600" /> Product Management
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Manage inventory, prices, and product details
+            </p>
+          </div>
+          {showCrudActions && (
+            <Button
+              size="lg"
+              className="font-bold bg-primary shrink-0 w-full sm:w-auto"
+              onClick={() => navigate('/merchant/products/new')}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New Product
+            </Button>
+          )}
+        </div>
+
+        {/* Filter Bar */}
+        <div className="flex items-center gap-3 flex-wrap p-5">
+          <div className="relative flex-1 min-w-0 w-full sm:min-w-[200px] sm:max-w-sm">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+              className="pl-9 w-full"
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val)
               setPage(1)
             }}
-            className="pl-9 w-full"
-          />
-        </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(val) => {
-            setStatusFilter(val)
-            setPage(1)
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-[140px]">
-            <Filter className="mr-2 h-3 w-3" />
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={sortBy}
-          onValueChange={(val) => setSortBy(val as ProductQueryParams['sortBy'])}
-        >
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest</SelectItem>
-            <SelectItem value="price">Price</SelectItem>
-            <SelectItem value="rating">Rating</SelectItem>
-            <SelectItem value="name">Name</SelectItem>
-          </SelectContent>
-        </Select>
-        {showCrudActions && products.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground w-full sm:w-auto"
-            onClick={() => setDeleteAllOpen(true)}
           >
-            <Trash2 className="mr-2 h-4 w-4" /> Delete
-          </Button>
-        )}
-      </div>
+            <SelectTrigger className="w-full sm:w-[140px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={sortBy}
+            onValueChange={(val) => setSortBy(val as ProductQueryParams['sortBy'])}
+          >
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="price">Price</SelectItem>
+              <SelectItem value="rating">Rating</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+            </SelectContent>
+          </Select>
+          {showCrudActions && products.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground w-full sm:w-auto"
+              onClick={() => setDeleteAllOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </Button>
+          )}
+        </div>
 
-      {/* Table */}
-      {isLoading ? (
-        <LoadingSpinner className="min-h-[400px]" />
-      ) : error ? (
-        <Card>
+        {/* Table */}
+        {isLoading ? (
+          <LoadingSpinner className="min-h-[400px]" />
+        ) : error ? (
           <CardContent className="py-10 text-center">
             <p className="text-destructive">Failed to load products. Please try again.</p>
             <Button className="mt-4" onClick={() => window.location.reload()}>
               Retry
             </Button>
           </CardContent>
-        </Card>
-      ) : (
-        <div className="overflow-x-auto -mx-2 px-2 lg:mx-0 lg:px-0">
-          <ProductTable
-            products={products}
-            selectedIds={selectedIds}
-            onSelectionChange={setSelectedIds}
-            onStockUpdate={handleStockUpdate}
-            onToggleFeatured={handleToggleFeatured}
-            onToggleActive={handleToggleActive}
-            isTogglingFeatured={toggleFeatured.isPending}
-            isTogglingActive={bulkUpdate.isPending}
-            showActions={showCrudActions}
-          />
-        </div>
-      )}
-
-      {/* Pagination */}
-      {meta && meta.totalPages > 1 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {page} of {meta.totalPages} ({meta.total} products)
-          </p>
-          <div className="flex items-center gap-2 flex-wrap justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Previous
-            </Button>
-            {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
-              const startPage = Math.max(1, Math.min(page - 2, meta.totalPages - 4))
-              const pageNum = startPage + i
-              if (pageNum > meta.totalPages) return null
-              return (
-                <Button
-                  key={pageNum}
-                  variant={page === pageNum ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setPage(pageNum)}
-                >
-                  {pageNum}
-                </Button>
-              )
-            })}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-              disabled={page === meta.totalPages}
-            >
-              Next
-            </Button>
+        ) : (
+          <div
+            className={`overflow-x-auto rounded-md border bg-card mx-5 ${meta && !error ? '' : 'mb-5'}`}
+          >
+            <ProductTable
+              products={products}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+              onStockUpdate={handleStockUpdate}
+              onToggleFeatured={handleToggleFeatured}
+              onToggleActive={handleToggleActive}
+              isTogglingFeatured={toggleFeatured.isPending}
+              isTogglingActive={bulkUpdate.isPending}
+              showActions={showCrudActions}
+            />
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Pagination */}
+        {meta && !error && (
+          <div className="px-5 pb-5">
+            <PaginationControls
+              page={page}
+              totalPages={meta.totalPages}
+              onPageChange={setPage}
+              limit={limit}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit)
+                setPage(1)
+              }}
+            />
+          </div>
+        )}
+      </Card>
 
       {/* Delete All Confirmation Dialog */}
       <DeleteConfirmDialog

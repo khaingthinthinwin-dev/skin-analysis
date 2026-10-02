@@ -20,13 +20,13 @@ test.describe('AI Skin Analysis', () => {
     test('should upload a skin image for analysis', async ({ page }) => {
       await skinPage.goto();
       // TODO: Upload test image, wait for analysis
-      await skinPage.capture('skin_upload_image');
+      await skinPage.capture('N-01_1_skin_upload_image');
     });
 
     test('should show error for invalid file type', async ({ page }) => {
       await skinPage.goto();
       // TODO: Upload non-image file, verify error
-      await skinPage.capture('skin_invalid_file');
+      await skinPage.capture('N-02_1_skin_invalid_file');
     });
   });
 
@@ -34,13 +34,13 @@ test.describe('AI Skin Analysis', () => {
     test('should display skin analysis results', async ({ page }) => {
       await skinPage.goto();
       // TODO: After analysis, verify skin type and recommendations
-      await skinPage.capture('skin_results');
+      await skinPage.capture('N-03_1_skin_results');
     });
 
     test('should display product recommendations', async ({ page }) => {
       await skinPage.goto();
       // TODO: Verify recommended products section
-      await skinPage.capture('skin_recommendations');
+      await skinPage.capture('N-04_1_skin_recommendations');
     });
   });
 
@@ -48,7 +48,7 @@ test.describe('AI Skin Analysis', () => {
     test('should display analysis history', async ({ page }) => {
       await skinPage.goto();
       // TODO: Verify history list with previous analyses
-      await skinPage.capture('skin_history');
+      await skinPage.capture('N-05_1_skin_history');
     });
   });
 
@@ -56,7 +56,7 @@ test.describe('AI Skin Analysis', () => {
     test('should export analysis report', async ({ page }) => {
       await skinPage.goto();
       // TODO: Click export, verify download
-      await skinPage.capture('skin_export');
+      await skinPage.capture('N-06_1_skin_export');
     });
   });
 });

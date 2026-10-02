@@ -8,7 +8,7 @@ import { useCommission } from "@/features/admin/commission-revenue/hooks/useComm
 import { CommissionTable } from "@/features/admin/commission-revenue/components/CommissionTable";
 import { CommissionReportsTable } from "@/features/admin/commission-revenue/components/CommissionReportsTable";
 import { ReportFilterPanel } from "@/features/admin/commission-revenue/components/ReportFilterPanel";
-import { PaginationControls } from "@/features/admin/commission-revenue/components/PaginationControls";
+import { PaginationControls } from "@/components/PaginationControls";
 import { ExportDialog } from "@/features/admin/commission-revenue/components/ExportDialog";
 import { RevenueTab } from "@/features/admin/commission-revenue/components/RevenueTab";
 import {
@@ -23,6 +23,7 @@ export default function CommissionAndRevenue() {
     {},
   );
   const [reportPage, setReportPage] = useState(1);
+  const [reportLimit, setReportLimit] = useState(10);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportType, setExportType] = useState<ExportReportType>("commission");
   const groupBy: CommissionGroupBy = reportFilters.groupBy ?? "merchant";
@@ -31,7 +32,7 @@ export default function CommissionAndRevenue() {
   // the Revenue tab and are skipped here to avoid duplicate requests.
   const { settingsQuery, reportsQuery, updateSettingsMutation } = useCommission(
     undefined,
-    { ...reportFilters, page: reportPage, limit: 10 },
+    { ...reportFilters, page: reportPage, limit: reportLimit },
     { payouts: false },
   );
 
@@ -118,8 +119,6 @@ export default function CommissionAndRevenue() {
                 </span>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="bg-muted text-muted-foreground border-border text-xs py-1 px-3"
                   onClick={() => {
                     setExportType("commission");
                     setExportOpen(true);
@@ -129,12 +128,18 @@ export default function CommissionAndRevenue() {
                   Export
                 </Button>
               </div>
-              <CommissionReportsTable reports={reportsQuery.data?.reports} groupBy={groupBy} />
+              <CommissionReportsTable reports={reportsQuery.data?.reports} groupBy={groupBy} isFetching={reportsQuery.isFetching} />
               {reportsQuery.data?.pagination && (
                 <PaginationControls
                   page={reportsQuery.data.pagination.page}
                   totalPages={reportsQuery.data.pagination.totalPages}
                   onPageChange={setReportPage}
+                  limit={reportsQuery.data.pagination.limit || reportLimit}
+                  onLimitChange={(l) => {
+                    setReportLimit(l);
+                    setReportPage(1);
+                  }}
+                  pageSizeOptions={[10, 20, 50, 100]}
                 />
               )}
             </div>

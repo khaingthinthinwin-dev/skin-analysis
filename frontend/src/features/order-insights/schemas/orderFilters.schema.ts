@@ -7,6 +7,7 @@ export const orderStatusCodes = [
 
 export const orderListFilterSchema = z.object({
   status: z.enum(['all', ...orderStatusCodes]),
+  paymentStatus: z.enum(['all', 'pending', 'completed']).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   page: z.coerce.number().int().min(1, 'Invalid page number').default(1),
@@ -18,9 +19,11 @@ export const orderListFilterSchema = z.object({
   path: ['to'],
 });
 
-export const adminOrderFilterSchema = orderListFilterSchema.extend({
+export const adminOrderFilterSchema = orderListFilterSchema.safeExtend({
   merchantId: z.string().uuid().optional(),
   shopId: z.string().uuid().optional(),
+  shopSearch: z.string().max(100).optional(),
+  paymentStatus: z.enum(['all', 'pending', 'completed']).default('all'),
 });
 
 export const revenuePeriodSchema = z.object({
@@ -42,6 +45,7 @@ export const revenuePeriodSchema = z.object({
 // Explicitly define the form data type to avoid inference issues with .default()
 export type OrderListFilterFormData = {
   status: 'all' | 'placed' | 'confirmed' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered';
+  paymentStatus?: 'all' | 'pending' | 'completed';
   from?: string;
   to?: string;
   page: number;
@@ -53,6 +57,8 @@ export type OrderListFilterFormData = {
 export type AdminOrderFilterFormData = OrderListFilterFormData & {
   merchantId?: string;
   shopId?: string;
+  shopSearch?: string;
+  paymentStatus?: 'all' | 'pending' | 'completed';
 };
 
 export type RevenuePeriodFormData = {

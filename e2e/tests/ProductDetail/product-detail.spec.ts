@@ -22,7 +22,7 @@ test.describe('Product Detail', () => {
     test('should add product to cart', async ({ page }) => {
       await productDetailPage.goto();
       // TODO: Set quantity, click add to cart
-      await productDetailPage.capture('product_add_to_cart');
+      await productDetailPage.capture('N-01_1_product_add_to_cart');
     });
   });
 
@@ -30,7 +30,7 @@ test.describe('Product Detail', () => {
     test('should toggle product in wishlist', async ({ page }) => {
       await productDetailPage.goto();
       // TODO: Click wishlist button, verify state change
-      await productDetailPage.capture('product_wishlist_toggle');
+      await productDetailPage.capture('N-02_1_product_wishlist_toggle');
     });
   });
 
@@ -38,7 +38,7 @@ test.describe('Product Detail', () => {
     test('should display product image gallery', async ({ page }) => {
       await productDetailPage.goto();
       // TODO: Verify image gallery navigation
-      await productDetailPage.capture('product_gallery');
+      await productDetailPage.capture('N-03_1_product_gallery');
     });
   });
 
@@ -46,7 +46,7 @@ test.describe('Product Detail', () => {
     test('should display product reviews section', async ({ page }) => {
       await productDetailPage.goto();
       // TODO: Verify reviews are loaded
-      await productDetailPage.capture('product_reviews');
+      await productDetailPage.capture('N-04_1_product_reviews');
     });
   });
 
@@ -54,7 +54,7 @@ test.describe('Product Detail', () => {
     test('should display related products', async ({ page }) => {
       await productDetailPage.goto();
       // TODO: Verify related products section
-      await productDetailPage.capture('product_related');
+      await productDetailPage.capture('N-05_1_product_related');
     });
   });
 });

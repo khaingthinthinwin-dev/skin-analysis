@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-09-25T03:32:49.411Z",
+  "description": "DB users row — 8-char password accepted",
+  "results": [
+    {
+      "label": "users by email",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "c6ab80b9-fadc-4768-b333-13b16bccbcba",
+          "email": "ruby.cartwright.mugentxf25@gmail.com",
+          "name": "Ruby Cartwright",
+          "role_code": "buyer",
+          "is_active": true,
+          "email_verified": false,
+          "created_at": "2026-09-24T21:02:49.184Z"
+        }
+      ]
+    }
+  ]
+}

@@ -22,8 +22,15 @@ export function useAdmin(params?: {
   });
 
   const toggleUserStatusMutation = useMutation({
-    mutationFn: ({ userId, isActive }: { userId: string; isActive: boolean }) =>
-      adminService.toggleUserStatus(userId, isActive),
+    mutationFn: ({
+      userId,
+      isActive,
+      reason,
+    }: {
+      userId: string;
+      isActive: boolean;
+      reason?: string;
+    }) => adminService.toggleUserStatus(userId, isActive, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard-stats'] });

@@ -270,12 +270,16 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price (Discount Price)</Label>
+                <Label htmlFor="price">
+                  Price (Discount Price){' '}
+                  <span className="font-normal text-muted-foreground">(Optional)</span>
+                </Label>
                 <Input
                   id="price"
                   type="number"
                   step="0.01"
                   min="0"
+                  placeholder="Optional sale price"
                   {...register('price', {
                     setValueAs: (value) => (value === '' ? null : Number(value)),
                   })}
@@ -286,14 +290,15 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="compareAtPrice">Compare at Price *</Label>
+                <Label htmlFor="compareAtPrice">Compare At Price *</Label>
                 <Input
                   id="compareAtPrice"
                   type="number"
                   step="0.01"
                   min="0"
+                  placeholder="e.g., 25000"
                   {...register('compareAtPrice', {
-                    setValueAs: (value) => (value === '' ? undefined : Number(value)),
+                    setValueAs: (value) => (value === '' ? null : Number(value)),
                   })}
                 />
                 {errors.compareAtPrice && (

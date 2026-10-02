@@ -43,6 +43,8 @@
       "title": "アカウント作成",
       "fullName": "氏名",
       "fullNamePlaceholder": "田中太郎",
+      "shopName": "店舗名",
+      "shopNamePlaceholder": "店舗名を入力",
       "email": "メールアドレス",
       "emailPlaceholder": "user@example.com",
       "password": "パスワード",

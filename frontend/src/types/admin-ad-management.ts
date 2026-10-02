@@ -7,18 +7,18 @@ import { z } from 'zod'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 export type PaymentStatus = 'pending' | 'completed' | 'refunded'
 export type Placement =
-  | 'homepage_banner'
-  | 'product_sidebar'
-  | 'category_banner'
-  | 'search_top'
+  | 'search_page_banner'
+  | 'recommendation_page_banner'
+  | 'checkout_page_banner'
+  | 'productDetail_page_banner'
 export type Tier = 'basic' | 'standard' | 'premium'
 export type ReportType = 'ad_performance' | 'submission_history' | 'fee_history'
 
 export const ADMIN_AD_PLACEMENTS = [
-  'homepage_banner',
-  'product_sidebar',
-  'category_banner',
-  'search_top',
+  'search_page_banner',
+  'recommendation_page_banner',
+  'checkout_page_banner',
+  'productDetail_page_banner',
 ] as const
 export const ADMIN_AD_TIERS = ['basic', 'standard', 'premium'] as const
 export const ADMIN_AD_STATUSES = ['pending', 'approved', 'rejected'] as const
@@ -93,6 +93,11 @@ export interface AdminAdFeeHistory {
   changeReason: string | null
   effectiveFrom: string
   createdAt: string
+}
+
+export interface AdminAdFeeHistoryDeleteResult {
+  deletedCount: number
+  deletedIds: string[]
 }
 
 export interface RevenueAnalytics {
@@ -235,6 +240,17 @@ export const deactivateFeeSchema = z.object({
     .max(1000, 'VAL-ADM-027'),
 })
 
+export const reactivateFeeSchema = z.object({
+  change_reason: z.string().max(1000, 'VAL-ADM-027').optional(),
+})
+
+export const deleteFeeHistorySchema = z.object({
+  history_ids: z
+    .array(z.string().uuid())
+    .min(1, 'Select at least one history record')
+    .max(50, 'Maximum 50 records per bulk operation'),
+})
+
 export const revenueAnalyticsSchema = z.object({
   dateFrom: z
     .string({ message: 'VAL-ADM-031' })
@@ -269,6 +285,8 @@ export type AdminBulkRejectInput = z.infer<typeof adminBulkRejectSchema>
 export type CreateFeeSettingInput = z.infer<typeof createFeeSettingSchema>
 export type EditFeeSettingInput = z.infer<typeof editFeeSettingSchema>
 export type DeactivateFeeInput = z.infer<typeof deactivateFeeSchema>
+export type ReactivateFeeInput = z.infer<typeof reactivateFeeSchema>
+export type DeleteFeeHistoryInput = z.infer<typeof deleteFeeHistorySchema>
 export type RevenueAnalyticsQuery = z.infer<typeof revenueAnalyticsSchema>
 export type AdminExportInput = z.infer<typeof exportSchema>
 

@@ -314,11 +314,15 @@ describe('ProductsController', () => {
 
   describe('POST /products/bulk-delete', () => {
     it('calls bulkDelete', async () => {
-      service.bulkDelete.mockResolvedValue({ deleted: 2 });
+      service.bulkDelete.mockResolvedValue({
+        permanentlyDeleted: 2,
+        deactivated: 0,
+        skippedIds: [],
+      });
       const result = await controller.bulkDelete(mockUser, {
         ids: ['p1', 'p2'],
       });
-      expect(result.deleted).toBe(2);
+      expect(result.permanentlyDeleted).toBe(2);
     });
 
     it('throws ConflictException for products with active orders', async () => {
@@ -333,12 +337,12 @@ describe('ProductsController', () => {
     it('calls deleteAll', async () => {
       service.deleteAll.mockResolvedValue({
         deactivated: 3,
-        deleted: 2,
-        skipped: 0,
+        permanentlyDeleted: 2,
+        skippedActiveOrders: 0,
       });
       const result = await controller.deleteAll(mockUser, {});
       expect(result.deactivated).toBe(3);
-      expect(result.deleted).toBe(2);
+      expect(result.permanentlyDeleted).toBe(2);
     });
   });
 });

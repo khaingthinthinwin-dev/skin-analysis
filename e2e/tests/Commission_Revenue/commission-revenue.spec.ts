@@ -21,7 +21,7 @@ test.describe('Admin Commission & Revenue', () => {
       await commissionPage.goto();
       await commissionPage.commissionTab.click();
       // TODO: Verify commission rate input and save functionality
-      await commissionPage.capture('commission_tab');
+      await commissionPage.capture('N-01_1_commission_tab');
     });
   });
 
@@ -30,7 +30,7 @@ test.describe('Admin Commission & Revenue', () => {
       await commissionPage.goto();
       await commissionPage.revenueTab.click();
       // TODO: Verify KPI cards and chart canvas
-      await commissionPage.capture('revenue_tab');
+      await commissionPage.capture('N-02_1_revenue_tab');
     });
   });
 
@@ -38,7 +38,7 @@ test.describe('Admin Commission & Revenue', () => {
     test('should export revenue report', async ({ page }) => {
       await commissionPage.goto();
       // TODO: Click export and verify download
-      await commissionPage.capture('commission_export');
+      await commissionPage.capture('N-03_1_commission_export');
     });
   });
 });

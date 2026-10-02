@@ -2,6 +2,13 @@ import apiClient from '@/lib/api-client'
 import type { Profile, UpdateProfileData, ChangePasswordData } from '@/types/profile.types'
 import type { UserRole, LicenseStatus } from '@/types/auth.types'
 
+interface ResubmitLicenseResponse {
+  id: string
+  licenseStatus: LicenseStatus
+  licenseUrl: string
+  updatedAt: string
+}
+
 interface ProfileResponseData {
   id: string
   email: string
@@ -33,6 +40,13 @@ export const profileService = {
   updateProfile: async (data: UpdateProfileData): Promise<Profile> => {
     const response = await apiClient.patch<{ data: ProfileResponseData }>('/users/me', data)
     return normalizeProfile(response.data.data)
+  },
+
+  resubmitLicense: async (file: File): Promise<ResubmitLicenseResponse> => {
+    const formData = new FormData()
+    formData.append('license', file)
+    const response = await apiClient.patch<{ data: ResubmitLicenseResponse }>('/auth/resubmit-license', formData)
+    return response.data.data
   },
 
   changePassword: async (data: ChangePasswordData): Promise<{ message: string }> => {

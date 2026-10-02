@@ -18,7 +18,6 @@ const VerifyCode = lazy(() => import('@/pages/auth/VerifyCode'))
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'))
 const Profile = lazy(() => import('@/pages/shared/Profile'))
 const Notifications = lazy(() => import('@/pages/shared/Notifications'))
-const OrderInsights = lazy(() => import('@/pages/shared/OrderInsights'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const Unauthorized = lazy(() => import('@/pages/Unauthorized'))
@@ -36,6 +35,9 @@ const AdminContentModeration = lazy(() => import('@/pages/admin/ContentModeratio
 const AdminCommissionRevenue = lazy(() => import('@/pages/admin/CommissionRevenue'))
 const CreateAdminAccount = lazy(() => import('@/pages/admin/CreateAdminAccount'))
 const AdminAuditLog = lazy(() => import('@/pages/admin/AuditLog'))
+const AdminOrdersPage = lazy(() => import('@/pages/order-insights/AdminOrdersPage'))
+const AdminOrderDetailPage = lazy(() => import('@/pages/order-insights/AdminOrderDetailPage'))
+const AdminMasterData = lazy(() => import('@/pages/admin/MasterData'))
 
 const BuyerDashboard = lazy(() => import('@/pages/buyer/Dashboard'))
 const BuyerSearchFilter = lazy(() => import('@/pages/buyer/Products'))
@@ -45,13 +47,16 @@ const BuyerCart = lazy(() => import('@/pages/buyer/Cart'))
 const BuyerCheckout = lazy(() => import('@/pages/buyer/Checkout'))
 const BuyerOrderConfirmation = lazy(() => import('@/pages/buyer/OrderConfirmation'))
 const BuyerOrdersPage = lazy(() => import('@/pages/order-insights/BuyerOrdersPage'))
+const MerchantOrderInsightsPage = lazy(() => import('@/pages/order-insights/MerchantOrderInsightsPage'))
+const MerchantOrderDetailPage = lazy(() => import('@/pages/order-insights/MerchantOrderDetailPage'))
 const BuyerOrderDetailPage = lazy(() => import('@/pages/order-insights/BuyerOrderDetailPage'))
 
 // TODO: Uncomment when pages are implemented
 // const BuyerOrderHistory = lazy(() => import('@/pages/buyer/OrderHistory'))
 // const BuyerOrderDetail = lazy(() => import('@/pages/buyer/OrderDetail'))
 // const BuyerOrderTracking = lazy(() => import('@/pages/buyer/OrderTracking'))
-const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysis'))
+const BuyerSkinAnalysis = lazy(() => import('@/pages/buyer/SkinAnalysisPage'))
+const BuyerSkinAnalysisHistory = lazy(() => import('@/pages/buyer/SkinAnalysisHistoryPage'))
 const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRecommendations'))
 
 const MerchantDashboard = lazy(() => import('@/pages/merchant/Dashboard'))
@@ -164,6 +169,22 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'orders',
+                element: (
+                  <SuspenseWrapper>
+                    <AdminOrdersPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'orders/:id',
+                element: (
+                  <SuspenseWrapper>
+                    <AdminOrderDetailPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'merchants',
                 element: (
                   <SuspenseWrapper>
@@ -245,6 +266,14 @@ export const router = createBrowserRouter([
                 element: (
                   <SuspenseWrapper>
                     <AdminAuditLog />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'master-data',
+                element: (
+                  <SuspenseWrapper>
+                    <AdminMasterData />
                   </SuspenseWrapper>
                 ),
               },
@@ -389,6 +418,22 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'skin-analysis/history',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerSkinAnalysisHistory />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'skin-analysis/:id',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerSkinAnalysis />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'recommendations',
                 element: (
                   <SuspenseWrapper>
@@ -493,7 +538,15 @@ export const router = createBrowserRouter([
                 path: 'order-insights',
                 element: (
                   <SuspenseWrapper>
-                    <OrderInsights />
+                    <MerchantOrderInsightsPage />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'orders/:id',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantOrderDetailPage />
                   </SuspenseWrapper>
                 ),
               },

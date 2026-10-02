@@ -27,7 +27,8 @@ function getImageUrl(url: string | null | undefined): string {
 }
 
 function formatPrice(value: string | number) {
-	return `$${Number.parseFloat(String(value) || '0').toFixed(2)}`;
+	const rounded = Math.round(Number.parseFloat(String(value) || '0'));
+	return `${rounded.toLocaleString('en-US')}Ks`;
 }
 
 interface ShopGroup {
@@ -101,6 +102,11 @@ export function OrderSummary({
 									)}
 									<div className="min-w-0 flex-1">
 										<p className="truncate text-sm font-medium">{item.productName}</p>
+										{item.merchantName && (
+											<p className="text-xs text-muted-foreground">
+												Sold by {item.merchantName}
+											</p>
+										)}
 										<p className="text-xs text-muted-foreground">
 											Qty: {item.quantity} x {formatPrice(item.unitPrice)}
 										</p>

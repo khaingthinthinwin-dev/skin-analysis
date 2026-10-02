@@ -12,7 +12,7 @@ function usePrefersReducedMotion() {
 }
 
 export function SponsoredAdSlider() {
-  const { data } = useSponsoredAds('search_top')
+  const { data } = useSponsoredAds('search_page_banner')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
@@ -45,7 +45,7 @@ export function SponsoredAdSlider() {
 
   return (
     <Card
-      className="relative overflow-hidden border-border/60 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent"
+      className="relative overflow-hidden border-border bg-muted"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       aria-roledescription="carousel"

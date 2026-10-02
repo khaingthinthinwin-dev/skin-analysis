@@ -16,12 +16,15 @@ import {
   CreateAdFeeSettingDto,
   UpdateAdFeeSettingDto,
   DeactivateAdFeeSettingDto,
+  ReactivateAdFeeSettingDto,
   AdminAdFeeHistoryQueryDto,
+  DeleteAdFeeHistoryDto,
   RevenueAnalyticsQueryDto,
 } from './dto';
 import {
   AdminAdApprovalResponseDto,
   AdminAdDetailResponseDto,
+  AdminAdFeeHistoryDeleteResponseDto,
   AdminAdFeeHistoryResponseDto,
   AdminAdFeeSettingResponseDto,
   AdminAdvertisementResponseDto,
@@ -33,11 +36,19 @@ import {
 const ACTIVE_ADS_CACHE_KEY = 'cache:ads:active';
 const PACKAGES_CACHE_KEY = 'cache:ads:packages';
 
+/**
+ * Fee change history created within the current calendar month is protected
+ * from deletion — only records from previous months may be removed.
+ * Dates are compared in UTC because `ad_fee_history.created_at` is stored in UTC.
+ */
+const currentMonthStartUtc = (now: Date = new Date()): Date =>
+  new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
 const PLACEMENT_NAMES: Record<string, string> = {
-  homepage_banner: 'Homepage Banner',
-  product_sidebar: 'Product Sidebar',
-  category_banner: 'Category Banner',
-  search_top: 'Search Top',
+  search_page_banner: 'Search Page Banner',
+  recommendation_page_banner: 'Recommendation Page Banner',
+  checkout_page_banner: 'Checkout Page Banner',
+  productDetail_page_banner: 'Product Detail Page Banner',
 };
 
 const TIER_NAMES: Record<string, string> = {
@@ -570,6 +581,29 @@ export class AdminAdManagementService {
     );
 
     await this.redis.del(PACKAGES_CACHE_KEY);
+
+    try {
+      const merchants = await this.prisma.user.findMany({
+        where: { roleCode: 'merchant' },
+        select: { id: true },
+      });
+      if (merchants.length > 0) {
+        await this.prisma.notification.createMany({
+          data: merchants.map((m) => ({
+            userId: m.id,
+            type: 'NEW_ADS_PACKAGE',
+            title: 'New Ads Package Available',
+            message: `A new ad package is now available: ${created.placement} (${created.tier}) — ${created.durationDays} days at $${Number(created.dailyRate)}/day.`,
+            entityType: 'AdFeeSetting',
+            entityId: created.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    } catch {
+      // noop: notification is best-effort
+    }
+
     return this.toFeeSettingResponse(created);
   }
 
@@ -635,6 +669,31 @@ export class AdminAdManagementService {
     );
 
     await this.redis.del(PACKAGES_CACHE_KEY);
+
+    if (updated.isActive) {
+      try {
+        const merchants = await this.prisma.user.findMany({
+          where: { roleCode: 'merchant', isActive: true },
+          select: { id: true },
+        });
+        if (merchants.length > 0) {
+          await this.prisma.notification.createMany({
+            data: merchants.map((m) => ({
+              userId: m.id,
+              type: 'ADS_PACKAGE_UPDATED',
+              title: 'Ads Package is updated',
+              message: `An ad package has been updated: ${updated.placement} (${updated.tier}) — ${updated.durationDays} days at $${Number(updated.dailyRate)}/day.`,
+              entityType: 'AdFeeSetting',
+              entityId: updated.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      } catch {
+        // noop: notification is best-effort
+      }
+    }
+
     return this.toFeeSettingResponse(updated);
   }
 
@@ -699,12 +758,86 @@ export class AdminAdManagementService {
     return this.toFeeSettingResponse(updated);
   }
 
+  async reactivateFeeSetting(
+    id: string,
+    dto: ReactivateAdFeeSettingDto,
+    adminId: string,
+  ): Promise<AdminAdFeeSettingResponseDto> {
+    const existing = await this.prisma.adFeeSetting.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException('Fee setting not found');
+    if (existing.isActive) {
+      throw new ConflictException('Fee setting is already active');
+    }
+
+    const updated = await this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const setting = await tx.adFeeSetting.update({
+          where: { id },
+          data: { isActive: true },
+        });
+
+        // Adaptation: schema requires non-null new_* columns, so on
+        // reactivation we snapshot old = current values and new = unchanged
+        // values; the change reason explains the reactivation itself.
+        await tx.adFeeHistory.create({
+          data: {
+            adFeeSettingId: id,
+            oldDailyRate: existing.dailyRate,
+            newDailyRate: setting.dailyRate,
+            oldDurationDays: existing.durationDays,
+            newDurationDays: setting.durationDays,
+            oldMaxAds: existing.maxAds,
+            newMaxAds: setting.maxAds,
+            changedBy: adminId,
+            changeReason: dto.change_reason ?? 'Package reactivated',
+            effectiveFrom: new Date(),
+          },
+        });
+
+        await this.logAudit(
+          {
+            userId: adminId,
+            action: 'FEE_REACTIVATED',
+            entityType: 'AdFeeSetting',
+            entityId: id,
+            oldValue: { isActive: false },
+            newValue: {
+              isActive: true,
+              changeReason: dto.change_reason ?? null,
+            },
+          },
+          tx,
+        );
+
+        return setting;
+      },
+    );
+
+    await this.redis.del(PACKAGES_CACHE_KEY);
+    return this.toFeeSettingResponse(updated);
+  }
+
   async listFeeHistory(
     query: AdminAdFeeHistoryQueryDto,
   ): Promise<PaginatedResponseDto<AdminAdFeeHistoryResponseDto>> {
     const where: Prisma.AdFeeHistoryWhereInput = {};
-    if (query.placement) where.setting = { placement: query.placement };
-    if (query.tier) where.setting = { tier: query.tier };
+    // Adaptation: placement and tier are combined into a single `setting` filter.
+    // Previously the tier filter overwrote the placement filter when both were set.
+    if (query.placement || query.tier) {
+      where.setting = {
+        ...(query.placement ? { placement: query.placement } : {}),
+        ...(query.tier ? { tier: query.tier } : {}),
+      };
+    }
+    if (query.month) {
+      const [year, month] = query.month.split('-').map(Number);
+      where.createdAt = {
+        gte: new Date(Date.UTC(year, month - 1, 1)),
+        lt: new Date(Date.UTC(year, month, 1)),
+      };
+    }
 
     const skip = (query.page - 1) * query.limit;
     const [items, total] = await Promise.all([
@@ -745,6 +878,61 @@ export class AdminAdManagementService {
         totalPages: Math.ceil(total / query.limit),
       },
     };
+  }
+
+  /**
+   * Deletes fee change history records.
+   *
+   * Business rule: history created in the current calendar month is protected and
+   * can never be deleted; only previous months are removable.
+   *
+   * All-or-nothing: when any requested record is protected or does not exist the
+   * whole request is rejected, so callers never deal with partial bulk results.
+   */
+  async deleteFeeHistory(
+    dto: DeleteAdFeeHistoryDto,
+    adminId: string,
+  ): Promise<AdminAdFeeHistoryDeleteResponseDto> {
+    const ids = [...new Set(dto.history_ids)];
+    if (ids.length === 0) {
+      throw new BadRequestException(
+        'At least one fee history record must be selected',
+      );
+    }
+
+    const rows = await this.prisma.adFeeHistory.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, createdAt: true },
+    });
+
+    if (rows.length !== ids.length) {
+      const found = new Set(rows.map((row) => row.id));
+      const missing = ids.filter((id) => !found.has(id));
+      throw new NotFoundException(
+        `Fee history record not found: ${missing.join(', ')}`,
+      );
+    }
+
+    const protectedRows = rows.filter(
+      (row) => row.createdAt.getTime() >= currentMonthStartUtc().getTime(),
+    );
+    if (protectedRows.length > 0) {
+      throw new BadRequestException(
+        'Fee change history from the current month cannot be deleted',
+      );
+    }
+
+    await this.prisma.adFeeHistory.deleteMany({ where: { id: { in: ids } } });
+
+    await this.logAudit({
+      userId: adminId,
+      action: 'FEE_HISTORY_DELETED',
+      entityType: 'AdFeeHistory',
+      entityId: ids.length === 1 ? ids[0] : undefined,
+      oldValue: { deletedIds: ids },
+    });
+
+    return { deletedCount: ids.length, deletedIds: ids };
   }
 
   // ─── Analytics ───────────────────────────────────────────────────────────
@@ -803,9 +991,9 @@ export class AdminAdManagementService {
       rows.reduce((sum, row) => sum + Number(row.payment_amount ?? 0), 0),
     );
     const totalAdsApproved = rows.length;
-    const totalRefunds = refundAgg?.refund_count ?? 0;
-    const refundAmount = Number(refundAgg?.refund_amount ?? 0);
-    const totalFeesCollected = round2(totalRevenue - refundAmount);
+    // Refunds from rejected ads must NOT reduce the collected fees.
+    const totalRefunds = round2(Number(refundAgg?.refund_amount ?? 0));
+    const totalFeesCollected = totalRevenue;
     const avgRevenuePerAd =
       totalAdsApproved > 0 ? round2(totalRevenue / totalAdsApproved) : 0;
 

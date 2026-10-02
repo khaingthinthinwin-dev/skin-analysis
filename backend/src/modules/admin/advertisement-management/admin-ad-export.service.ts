@@ -137,7 +137,29 @@ export class AdminAdExportService {
       },
     });
 
-    const rows = ads.map((ad) => {
+    // Emit one row per review event (AD_APPROVED / AD_REJECTED) so that an ad
+    // which was rejected and resubmitted shows separate reject and approve rows.
+    const adIds = ads.map((ad) => ad.id);
+    const reviewEvents =
+      adIds.length > 0
+        ? await this.prisma.auditLog.findMany({
+            where: {
+              action: { in: ['AD_APPROVED', 'AD_REJECTED'] },
+              entityType: 'Advertisement',
+              entityId: { in: adIds },
+              createdAt: { gte: start, lte: end },
+            },
+            orderBy: { createdAt: 'asc' },
+            include: { user: { select: { name: true } } },
+          })
+        : [];
+    const adsById = new Map(ads.map((ad) => [ad.id, ad]));
+
+    const rows: string[][] = [];
+    for (const event of reviewEvents) {
+      const ad = event.entityId ? adsById.get(event.entityId) : undefined;
+      if (!ad) continue;
+      const status = event.action === 'AD_APPROVED' ? 'approved' : 'rejected';
       const paid = ad.paymentAmount ?? undefined;
       const refunded = ad.adPayments.reduce(
         (sum, payment) =>
@@ -147,7 +169,38 @@ export class AdminAdExportService {
             : 0),
         0,
       );
-      return [
+      rows.push([
+        ad.shop.name,
+        ad.title,
+        ad.feeSetting?.placement ?? '',
+        ad.feeSetting?.tier ?? '',
+        ad.createdAt.toISOString(),
+        status,
+        status === 'rejected' ? (ad.rejectionReason ?? '') : '',
+        event.user?.name ?? '',
+        event.createdAt.toISOString(),
+        paid ? paid.toFixed(2) : '0.00',
+        status === 'rejected' && refunded > 0 ? refunded.toFixed(2) : '0.00',
+      ]);
+    }
+
+    // Fallback: ads with no review events recorded in the period keep one row
+    // with their current status so the report stays complete.
+    const reviewedIds = new Set(
+      reviewEvents.map((event) => event.entityId).filter(Boolean) as string[],
+    );
+    for (const ad of ads) {
+      if (reviewedIds.has(ad.id)) continue;
+      const paid = ad.paymentAmount ?? undefined;
+      const refunded = ad.adPayments.reduce(
+        (sum, payment) =>
+          sum +
+          (payment.paymentStatus === 'refunded' && payment.refundAmount
+            ? payment.refundAmount.toNumber()
+            : 0),
+        0,
+      );
+      rows.push([
         ad.shop.name,
         ad.title,
         ad.feeSetting?.placement ?? '',
@@ -159,8 +212,8 @@ export class AdminAdExportService {
         ad.approvedAt?.toISOString() ?? '',
         paid ? paid.toFixed(2) : '0.00',
         refunded > 0 ? refunded.toFixed(2) : '0.00',
-      ];
-    });
+      ]);
+    }
 
     const csv = this.toCsv(SUBMISSION_HISTORY_HEADERS, rows);
     await this.logExport(

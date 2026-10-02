@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Tag, Plus, Search, Filter, Trash2, Pencil, ShieldAlert, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,8 @@ import { useTranslation } from 'react-i18next'
 import { usePromotions, useDeletePromotion, useTogglePromotionActive, getPromotionErrorInfo } from '@/hooks/usePromotions'
 import { useAuth } from '@/hooks/useAuth'
 import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
+import { PaginationControls } from '@/components/PaginationControls'
 import type { PromotionQueryParams, Promotion } from '@/types/promotion.types'
 
 export default function Promotions() {
@@ -38,13 +40,22 @@ export default function Promotions() {
   const guard = useMerchantProductsGuard()
   const status = user?.licenseStatus || user?.license_status
   const isPending = guard.isPending || status === 'pending'
-  const showCrudActions = guard.showCrudActions && !isPending
+  const isDeactivated =
+    guard.isDeactivated ||
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
+  const showPendingBanner = (guard.showPendingBanner || isPending) && !isDeactivated
+  const showDeactivatedBanner = guard.showDeactivatedBanner || isDeactivated
+  const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | PromotionQueryParams['status']>('all')
   const [sortBy, setSortBy] = useState<PromotionQueryParams['sortBy']>('newest')
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
@@ -53,7 +64,7 @@ export default function Promotions() {
     status: statusFilter === 'all' ? undefined : statusFilter,
     sortBy,
     page,
-    limit: 10,
+    limit,
   }
 
   const { data, isLoading, error } = usePromotions(queryParams)
@@ -164,13 +175,17 @@ export default function Promotions() {
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
+      {/* Deactivated Banner */}
+      {showDeactivatedBanner && <AccountDeactivatedBanner />}
+
       {/* Pending/Rejected Banners */}
-      {guard.showPendingBanner && (
+      {showPendingBanner && (
         <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>{t('merchant.promotions.pendingBannerTitle', 'Pending Approval')}</AlertTitle>
+          <AlertTitle>Account Pending</AlertTitle>
           <AlertDescription>
-            {t('merchant.promotions.pendingBanner')}
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
           </AlertDescription>
         </Alert>
       )}
@@ -178,83 +193,87 @@ export default function Promotions() {
       {guard.showRejectionBanner && (
         <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
           <ShieldAlert className="h-4 w-4 text-destructive" />
-          <AlertTitle>{t('merchant.promotions.rejectedBannerTitle', 'Account Rejected')}</AlertTitle>
+          <AlertTitle>Account Rejected</AlertTitle>
           <AlertDescription>
-            {t('merchant.promotions.rejectedBanner')}
+            Your merchant account has been rejected. Product management features are restricted. You can
+            resubmit your license from your Profile page.{' '}
+            <Link to="/merchant/profile" className="underline font-semibold">
+              Go to Profile
+            </Link>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" /> {t('merchant.promotions.title')}
-          </h1>
+      <Card>
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-5 pb-0">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+              <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" /> {t('merchant.promotions.title')}
+            </h1>
+          </div>
+          {showCrudActions && (
+            <Button
+              size="lg"
+              className="font-bold bg-primary shrink-0 w-full sm:w-auto"
+              onClick={() => navigate('/merchant/promotions/new')}
+            >
+              <Plus className="mr-2 h-4 w-4" /> {t('merchant.promotions.addNew')}
+            </Button>
+          )}
         </div>
-        {showCrudActions && (
-          <Button
-            size="lg"
-            className="font-bold bg-pink-600 hover:bg-pink-700 text-white w-full sm:w-auto"
-            onClick={() => navigate('/merchant/promotions/new')}
-          >
-            <Plus className="mr-2 h-4 w-4" /> {t('merchant.promotions.addNew')}
-          </Button>
-        )}
-      </div>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t('merchant.promotions.search')}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-            className="pl-9"
-          />
+        {/* Filters */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center p-5">
+          <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('merchant.promotions.search')}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                setStatusFilter(val as typeof statusFilter)
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <Filter className="mr-2 h-3 w-3" />
+                <SelectValue placeholder={t('merchant.promotions.status')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('merchant.promotions.statusAll')}</SelectItem>
+                <SelectItem value="active">{t('merchant.promotions.statusActive')}</SelectItem>
+                <SelectItem value="inactive">{t('merchant.promotions.statusInactive')}</SelectItem>
+                <SelectItem value="expired">{t('merchant.promotions.statusExpired')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={sortBy}
+              onValueChange={(val) => setSortBy(val as PromotionQueryParams['sortBy'])}
+            >
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="oldest">Oldest</SelectItem>
+                <SelectItem value="code">Code</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Select
-            value={statusFilter}
-            onValueChange={(val) => {
-              setStatusFilter(val as typeof statusFilter)
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[140px]">
-              <Filter className="mr-2 h-3 w-3" />
-              <SelectValue placeholder={t('merchant.promotions.status')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('merchant.promotions.statusAll')}</SelectItem>
-              <SelectItem value="active">{t('merchant.promotions.statusActive')}</SelectItem>
-              <SelectItem value="inactive">{t('merchant.promotions.statusInactive')}</SelectItem>
-              <SelectItem value="expired">{t('merchant.promotions.statusExpired')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={sortBy}
-            onValueChange={(val) => setSortBy(val as PromotionQueryParams['sortBy'])}
-          >
-            <SelectTrigger className="w-full sm:w-[160px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="oldest">Oldest</SelectItem>
-              <SelectItem value="code">Code</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      {/* Promotion List */}
-      {promotions.length === 0 ? (
-        <Card>
+        {/* Promotion List */}
+        {promotions.length === 0 ? (
           <CardContent className="py-10 text-center">
             <Tag className="mx-auto h-12 w-12 text-muted-foreground/50" />
             <p className="mt-4 text-lg font-medium text-muted-foreground">
@@ -265,18 +284,17 @@ export default function Promotions() {
             </p>
             {showCrudActions && (
               <Button
-                className="mt-4 bg-pink-600 hover:bg-pink-700 text-white"
+                className="mt-4 bg-primary"
                 onClick={() => navigate('/merchant/promotions/new')}
               >
                 <Plus className="mr-2 h-4 w-4" /> {t('merchant.promotions.addNew')}
               </Button>
             )}
           </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile Card Layout */}
-          <div className="space-y-3 md:hidden">
+        ) : (
+          <>
+            {/* Mobile Card Layout */}
+            <div className="space-y-3 md:hidden px-5 pb-5">
             {promotions.map((promo) => (
               <Card key={promo.id} className="overflow-hidden">
                 <CardContent className="p-4 space-y-3">
@@ -399,194 +417,206 @@ export default function Promotions() {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block rounded-lg border border-border/80 bg-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/80 bg-muted/30">
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+          <div
+            className={`hidden md:block rounded-md border bg-card overflow-hidden mx-5 ${meta ? '' : 'mb-5'}`}
+          >
+            <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+              <colgroup>
+                <col className="w-[8%]" />
+                <col className="w-[15%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[12%] hidden lg:table-column" />
+                <col className="w-[8%] hidden xl:table-column" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[8%]" />
+                {showCrudActions && <col className="w-[9%]" />}
+              </colgroup>
+              <thead className="sticky top-0 z-10">
+                <tr>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
+                    <span className="block truncate" title={t('merchant.promotions.code')}>
                       {t('merchant.promotions.code')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden lg:table-cell">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
+                    <span className="block truncate" title={t('merchant.promotions.description')}>
                       {t('merchant.promotions.description')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
+                    <span className="block truncate" title={t('merchant.promotions.discountType')}>
                       {t('merchant.promotions.discountType')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
+                    <span className="block truncate" title={t('merchant.promotions.discountValue')}>
                       {t('merchant.promotions.discountValue')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden lg:table-cell">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted hidden lg:table-cell">
+                    <span className="block truncate" title={t('merchant.promotions.minOrderAmount')}>
                       {t('merchant.promotions.minOrderAmount')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden xl:table-cell">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted hidden xl:table-cell">
+                    <span className="block truncate" title={t('merchant.promotions.usage')}>
                       {t('merchant.promotions.usage')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
+                    <span className="block truncate" title={t('merchant.promotions.expiresAt')}>
                       {t('merchant.promotions.expiresAt')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
+                    <span className="block truncate" title={t('merchant.promotions.status')}>
                       {t('merchant.promotions.status')}
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    </span>
+                  </th>
+                  <th scope="col" className="text-left align-middle h-12 px-3 text-sm font-bold text-muted-foreground border-b border-border bg-muted">
+                    <span className="block truncate" title={t('merchant.promotions.isActive')}>
                       {t('merchant.promotions.isActive')}
+                    </span>
+                  </th>
+                  {showCrudActions && (
+                    <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted text-right">
+                      Actions
                     </th>
-                    {showCrudActions && (
-                      <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                        Actions
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {promotions.map((promo) => (
-                    <tr
-                      key={promo.id}
-                      className="border-b border-border/40 hover:bg-muted/20 transition-colors"
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {promotions.map((promo) => (
+                  <tr
+                    key={promo.id}
+                    className="transition-colors duration-150 ease-in-out hover:bg-muted/40"
+                  >
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card text-foreground font-medium">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-mono text-xs font-bold">{promo.code}</span>
+                        <button
+                          onClick={() => handleCopyCode(promo.code)}
+                          className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                          title="Copy code"
+                        >
+                          {copiedCode === promo.code ? (
+                            <Check className="h-3.5 w-3.5 text-green-600" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                    <td
+                      className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card"
+                      title={promo.description || undefined}
                     >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold">{promo.code}</span>
-                          <button
-                            onClick={() => handleCopyCode(promo.code)}
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                            title="Copy code"
-                          >
-                            {copiedCode === promo.code ? (
-                              <Check className="h-3.5 w-3.5 text-green-600" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate hidden lg:table-cell">
-                        {promo.description || '-'}
-                      </td>
-                      <td className="px-4 py-3">{getDiscountBadge(promo)}</td>
-                      <td className="px-4 py-3 font-medium">
+                      <span className="block truncate">{promo.description || '-'}</span>
+                    </td>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card">
+                      <span className="block truncate">{getDiscountBadge(promo)}</span>
+                    </td>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card font-medium">
+                      <span className="block truncate">
                         {promo.discountTypeCode === 'percentage'
                           ? `${promo.discountValue}%`
                           : `${Number(promo.discountValue).toLocaleString()} MMK`}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card hidden lg:table-cell">
+                      <span className="block truncate">
                         {promo.minOrderAmount
                           ? `${Number(promo.minOrderAmount).toLocaleString()} MMK`
                           : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">
-                        {formatUsage(promo)}
-                      </td>
-                      <td
-                        className={`px-4 py-3 ${
-                          isExpired(promo) ? 'text-red-600 font-medium' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {formatDate(promo.expiresAt)}
-                      </td>
-                      <td className="px-4 py-3">{getStatusBadge(promo)}</td>
-                      <td className="px-4 py-3">
-                        {showCrudActions ? (
-                          <Switch
-                            checked={promo.isActive}
-                            onCheckedChange={() => handleToggleActive(promo.id)}
-                            disabled={isExpired(promo) || toggleActive.isPending}
-                            aria-label="Toggle active"
-                          />
-                        ) : (
-                          <span className="text-muted-foreground">
-                            {promo.isActive ? 'Yes' : 'No'}
-                          </span>
-                        )}
-                      </td>
-                      {showCrudActions && (
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/merchant/promotions/${promo.id}/edit`)}
-                              disabled={promo.usedCount > 0}
-                              title={
-                                promo.usedCount > 0
-                                  ? t('merchant.promotions.usedRestriction')
-                                  : t('merchant.promotions.edit')
-                              }
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => setDeleteId(promo.id)}
-                              disabled={promo.usedCount > 0}
-                              title={
-                                promo.usedCount > 0
-                                  ? t('merchant.promotions.usedRestriction')
-                                  : t('merchant.promotions.delete')
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card hidden xl:table-cell">
+                      <span className="block truncate">{formatUsage(promo)}</span>
+                    </td>
+                    <td
+                      className={`py-3 px-4 text-[13px] border-b border-border bg-card ${
+                        isExpired(promo) ? 'text-red-600 font-medium' : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span className="block truncate">{formatDate(promo.expiresAt)}</span>
+                    </td>
+                    <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card">
+                      <span className="block truncate">{getStatusBadge(promo)}</span>
+                    </td>
+                    <td className="py-3 px-3 text-[13px] text-muted-foreground border-b border-border bg-card">
+                      {showCrudActions ? (
+                        <Switch
+                          checked={promo.isActive}
+                          onCheckedChange={() => handleToggleActive(promo.id)}
+                          disabled={isExpired(promo) || toggleActive.isPending}
+                          aria-label="Toggle active"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground block truncate">
+                          {promo.isActive ? 'Yes' : 'No'}
+                        </span>
                       )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </td>
+                    {showCrudActions && (
+                      <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => navigate(`/merchant/promotions/${promo.id}/edit`)}
+                            disabled={promo.usedCount > 0}
+                            title={
+                              promo.usedCount > 0
+                                ? t('merchant.promotions.usedRestriction')
+                                : t('merchant.promotions.edit')
+                            }
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => setDeleteId(promo.id)}
+                            disabled={promo.usedCount > 0}
+                            title={
+                              promo.usedCount > 0
+                                ? t('merchant.promotions.usedRestriction')
+                                : t('merchant.promotions.delete')
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
+          {/* Pagination */}
+          {meta && (
+            <div className="px-5 pb-5">
+              <PaginationControls
+                page={page}
+                totalPages={meta.totalPages}
+                onPageChange={setPage}
+                limit={limit}
+                onLimitChange={(newLimit) => {
+                  setLimit(newLimit)
+                  setPage(1)
+                }}
+              />
+            </div>
+          )}
         </>
       )}
-
-      {/* Pagination */}
-      {meta && meta.totalPages > 1 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground text-center sm:text-left">
-            {t('merchant.promotions.pageInfo', {
-              page: page,
-              totalPages: meta.totalPages,
-              total: meta.total,
-            })}
-          </p>
-          <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Previous
-            </Button>
-            {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
-              const startPage = Math.max(1, Math.min(page - 2, meta.totalPages - 4))
-              const pageNum = startPage + i
-              if (pageNum > meta.totalPages) return null
-              return (
-                <Button
-                  key={pageNum}
-                  variant={page === pageNum ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setPage(pageNum)}
-                  className="min-w-[36px]"
-                >
-                  {pageNum}
-                </Button>
-              )
-            })}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-              disabled={page === meta.totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

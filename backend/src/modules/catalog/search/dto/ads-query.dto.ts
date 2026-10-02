@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty } from 'class-validator';
 
 export enum AdPlacement {
-  HOMEPAGE_SLIDER = 'homepage_slider',
-  PRODUCT_SIDEBAR = 'product_sidebar',
-  CATEGORY_BANNER = 'category_banner',
-  SEARCH_TOP = 'search_top',
+  SEARCH_PAGE_BANNER = 'search_page_banner',
+  RECOMMENDATION_PAGE_BANNER = 'recommendation_page_banner',
+  CHECKOUT_PAGE_BANNER = 'checkout_page_banner',
+  PRODUCTDETAIL_PAGE_BANNER = 'productDetail_page_banner',
 }
 
 export class AdsQueryDto {

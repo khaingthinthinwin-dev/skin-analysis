@@ -12,6 +12,31 @@ function getImageUrl(url: string | null): string {
   return base + url;
 }
 
+const PRODUCT_DETAIL_AD_PLACEMENT = 'productDetail_page_banner';
+
+function isSidebarAdInSchedule(ad: {
+  startsAt?: string | Date | null;
+  expiresAt?: string | Date | null;
+}): boolean {
+  const now = Date.now();
+  const parseDate = (value: string | Date | null | undefined): number | null => {
+    if (value === null || value === undefined) return null;
+    const time = value instanceof Date ? value.getTime() : Date.parse(value);
+    return Number.isNaN(time) ? null : time;
+  };
+  // Date condition: startsAt <= now < expiresAt. Missing bound = no bound.
+  // Invalid bound = not eligible (fail safe, hide the ad).
+  if (ad.startsAt !== null && ad.startsAt !== undefined) {
+    const start = parseDate(ad.startsAt);
+    if (start === null || start > now) return false;
+  }
+  if (ad.expiresAt !== null && ad.expiresAt !== undefined) {
+    const end = parseDate(ad.expiresAt);
+    if (end === null || end <= now) return false;
+  }
+  return true;
+}
+
 interface SidebarAdvertisementsProps {
   idOrSlug: string;
 }
@@ -19,7 +44,7 @@ interface SidebarAdvertisementsProps {
 const sampleAds = [
   { shop: 'Aura & Essence', title: 'Hydrating Jade Set & Facial Gua Sha', desc: 'Handcrafted natural jade stone set designed to soothe skin and boost serum absorption.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
   { shop: 'Glow Essentials', title: 'Summer Glow Collection', desc: 'Discover our bestselling serums and moisturizers — 20% off this week only.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
-  { shop: 'Dermaluxe Lab', title: 'Retinol Night Repair', desc: 'Clinically proven anti-aging serum. Free shipping on orders over $50.', image: '/uploads/products/347496ad-6e35-48f5-97c1-1b8e68545715.png' },
+  { shop: 'Dermaluxe Lab', title: 'Retinol Night Repair', desc: 'Clinically proven anti-aging serum. Free shipping on orders over 50 KS.', image: '/uploads/products/347496ad-6e35-48f5-97c1-1b8e68545715.png' },
   { shop: 'PureSkin Co.', title: 'Vitamin C Brightening Set', desc: 'Complete 3-step routine for radiant skin. Bundle & save 15%.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
   { shop: 'Botanica Beauty', title: 'Organic Rose Mist', desc: 'Hydrating facial toner with real rose petals. Limited batch available.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
 ];
@@ -29,7 +54,14 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
   const [current, setCurrent] = useState(0);
   const pausedRef = useRef(false);
 
-  const total = ads.length > 0 ? ads.length : sampleAds.length;
+  // Placement + date condition (productDetail_page_banner, startsAt <= now < expiresAt).
+  // Backend getSidebarAds() already filters the same way; this guards legacy/stale payloads.
+  const eligibleAds = ads.filter((ad) => {
+    if (ad.placement && ad.placement !== PRODUCT_DETAIL_AD_PLACEMENT) return false;
+    return isSidebarAdInSchedule(ad);
+  });
+
+  const total = eligibleAds.length > 0 ? eligibleAds.length : sampleAds.length;
 
   useEffect(() => {
     if (total <= 1) {
@@ -61,9 +93,9 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
     );
   }
 
-  const useFallback = isError || ads.length === 0;
+  const useFallback = isError || eligibleAds.length === 0;
   const sampleAd = sampleAds[current % sampleAds.length];
-  const realAd = useFallback ? null : (ads[current % ads.length] as SidebarAdvertisement | undefined);
+  const realAd = useFallback ? null : (eligibleAds[current % eligibleAds.length] as SidebarAdvertisement | undefined);
 
   const title = useFallback ? sampleAd.title : (realAd?.title ?? '');
   const description = useFallback ? sampleAd.desc : (realAd?.announcementMessage ?? null);

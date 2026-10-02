@@ -16,6 +16,7 @@ interface EditTargetDialogProps {
   onOpenChange: (open: boolean) => void;
   target?: RevenueTarget | null;
   period: TargetPeriod;
+  onPeriodChange: (period: TargetPeriod) => void;
   onSave: (payload: SaveRevenueTargetPayload) => void;
   saving?: boolean;
 }
@@ -32,17 +33,23 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
   onOpenChange,
   target,
   period,
+  onPeriodChange,
   onSave,
   saving,
 }) => {
   const [amount, setAmount] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState<TargetPeriod>(period);
   const [error, setError] = useState('');
+  const [prevTarget, setPrevTarget] = useState(target);
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  if (open !== prevOpen || target !== prevTarget) {
+    setPrevOpen(open);
+    setPrevTarget(target);
+    setAmount(open ? (target?.targetAmount ?? '') : '');
+    setError('');
+  }
 
   const handleDialogOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      setSelectedPeriod(period);
-    }
     onOpenChange(nextOpen);
   };
 
@@ -57,7 +64,7 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
 
   const handleSave = () => {
     if (!validate()) return;
-    onSave({ targetAmount: amount, targetPeriod: selectedPeriod });
+    onSave({ targetAmount: amount, targetPeriod: period });
   };
 
   return (
@@ -68,7 +75,7 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
             {target ? 'Edit Revenue Target' : 'Set Revenue Target'}
           </DialogTitle>
           <DialogDescription>
-            Define the revenue target for the {selectedPeriod} period. Changes apply to the selected period only.
+            Define the revenue target for the {period} period. Changes apply to the selected period only.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -96,8 +103,12 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
                   key={p.value}
                   type="button"
                   size="sm"
-                  variant={selectedPeriod === p.value ? 'default' : 'outline'}
-                  onClick={() => setSelectedPeriod(p.value)}
+                  variant={period === p.value ? 'default' : 'outline'}
+                  onClick={() => {
+                    // Notify parent to switch period & re-fetch target;
+                    // the useEffect on `target` will update amount automatically.
+                    onPeriodChange(p.value);
+                  }}
                 >
                   {p.label}
                 </Button>
