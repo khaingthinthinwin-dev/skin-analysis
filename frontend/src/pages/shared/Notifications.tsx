@@ -219,45 +219,64 @@ function NotificationCard({
     ? MERCHANT_REJECTION_TEXT
     : item.message
 
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onOpen(item)
+  }
+
   return (
     <Card
       className={`border-border/80 shadow-xs transition-colors ${
         item.isRead ? '' : 'border-purple-500/40 bg-purple-500/5'
       }`}
     >
-      <button
-        type="button"
-        onClick={() => onOpen(item)}
-        className="w-full text-left cursor-pointer"
-      >
-        <CardContent className="p-4 flex items-start gap-3">
-          <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
-            <Icon className="h-5 w-5" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                {item.title}
-                {!item.isRead && (
-                  <span className="h-2 w-2 rounded-full bg-purple-500" aria-label="Unread" />
-                )}
-              </h3>
-              <span className="text-[11px] text-muted-foreground shrink-0">
-                {timeAgo(item.createdAt)}
-              </span>
+      <div className="w-full">
+        <button
+          type="button"
+          onClick={() => onOpen(item)}
+          className="w-full text-left cursor-pointer"
+        >
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
+              <Icon className="h-5 w-5" />
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">{displayMessage}</p>
-            {isMerchantReg && (
-              <p className="text-xs font-semibold text-purple-600">
-                View in Merchant Management →
-              </p>
-            )}
-            {adHint && (
-              <p className="text-xs font-semibold text-purple-600">{adHint}</p>
-            )}
-          </div>
-        </CardContent>
-      </button>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  {item.title}
+                  {!item.isRead && (
+                    <span className="h-2 w-2 rounded-full bg-purple-500" aria-label="Unread" />
+                  )}
+                </h3>
+                <span className="text-[11px] text-muted-foreground shrink-0">
+                  {timeAgo(item.createdAt)}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{displayMessage}</p>
+            </div>
+          </CardContent>
+        </button>
+        <div className="px-4 pb-4 flex items-center gap-2">
+          {isMerchantReg && (
+            <button
+              type="button"
+              onClick={handleActionClick}
+              className="text-xs font-semibold text-purple-600 hover:underline focus:outline-none focus:ring-1 focus:ring-purple-600 rounded"
+            >
+              View in Merchant Management →
+            </button>
+          )}
+          {adHint && (
+            <button
+              type="button"
+              onClick={handleActionClick}
+              className="text-xs font-semibold text-purple-600 hover:underline focus:outline-none focus:ring-1 focus:ring-purple-600 rounded"
+            >
+              {adHint}
+            </button>
+          )}
+        </div>
+      </div>
     </Card>
   )
 }
@@ -284,9 +303,11 @@ export default function Notifications() {
   } = useNotifications()
 
   const displayedNotifications = useMemo(() => {
+    let filtered = notifications.filter((item) => !item.isRead)
+
     if (isAdmin) {
       const seenKeys = new Set<string>()
-      return notifications.filter((item) => {
+      filtered = filtered.filter((item) => {
         if (!isAdminNotification(item)) {
           return false
         }
@@ -297,15 +318,13 @@ export default function Notifications() {
         seenKeys.add(key)
         return true
       })
-    }
-
-    if (user?.role === 'merchant') {
-      return notifications.filter(
+    } else if (user?.role === 'merchant') {
+      filtered = filtered.filter(
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
     }
 
-    return notifications
+    return filtered
   }, [isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)
@@ -314,19 +333,18 @@ export default function Notifications() {
     if (!item.isRead) {
       markAsRead(item.id).catch(() => {})
     }
+
     if (isMerchantRejectedNotification(item)) {
       setRejectedNotification(item)
       return
     }
     const type = normalizeNotificationType(item.type)
     if (AD_SUBMISSION_TYPES.has(type)) {
-      // Navigate to all advertisements and highlight the specific ad
       const params = item.entityId ? `?status=all&highlightAdId=${item.entityId}` : '?status=all'
       navigate(`/admin/ads${params}`)
       return
     }
     if (AD_DECISION_TYPES.has(type)) {
-      // Decisions are only ever addressed to the merchant who owns the ad.
       navigate('/merchant/advertisements')
       return
     }
@@ -335,8 +353,8 @@ export default function Notifications() {
       navigate(`/merchant/advertisements${params}`)
       return
     }
-    if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
-      navigate('/admin/merchants')
+    if (MERCHANT_ADMIN_ACTION_TYPES.has(type) && item.entityId) {
+      navigate(`/admin/merchants?merchantId=${item.entityId}`)
     }
   }
 
