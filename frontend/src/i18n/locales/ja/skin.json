@@ -98,7 +98,9 @@
     "confidence": "信頼度",
     "recommendations": "おすすめ製品",
     "viewMore": "もっと見る",
-    "processed": "解析済み"
+    "processed": "解析済み",
+    "analysisComplete": "分析完了",
+    "scanImage": "顔スキャン画像"
   },
   "conditions": {
     "title": "症状の重症度",
@@ -179,20 +181,6 @@
       "helpful": "役に立った",
       "notHelpful": "役に立たなかった"
     }
-  },
-  "mesh": {
-    "title": "顔面メッシュオーバーレイ",
-    "showMesh": "メッシュを表示",
-    "hideMesh": "メッシュを非表示",
-    "download": "ダウンロード",
-    "scanAlt": "顔スキャン画像",
-    "capturedAlt": "撮影した写真",
-    "loadError": "スキャン画像の読み込みに失敗しました",
-    "meshLoadError": "メッシュオーバーレイの読み込みに失敗しました",
-    "meshUnavailable": "メッシュオーバーレイを表示できません",
-    "scanMissingDesc": "スキャン画像を読み込めませんでした。新しいスキャンを試してください。",
-    "active": "診断オーバーレイ有効",
-    "fullscreen": "全画面表示"
   },
   "history": {
     "title": "分析履歴",

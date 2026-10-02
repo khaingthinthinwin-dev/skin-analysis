@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
+import { cn } from '@/lib/utils';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -195,6 +197,21 @@ function getPageNumbers(current: number, total: number) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function MerchantManagement() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightMerchantId = searchParams.get('merchantId');
+
+  useEffect(() => {
+    if (highlightMerchantId) {
+      const timer = setTimeout(() => {
+        setSearchParams((params) => {
+          params.delete('merchantId')
+          return params
+        })
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [highlightMerchantId, setSearchParams])
+
   // ── State ───────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -420,8 +437,8 @@ export default function MerchantManagement() {
       </div>
 
       {/* ── [E] Merchants Table ─────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-md border bg-card">
-        <Table>
+      <div className="overflow-x-auto overflow-hidden rounded-xl border bg-card">
+        <Table className="border-separate border-spacing-y-2">
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">
@@ -451,17 +468,28 @@ export default function MerchantManagement() {
                   No merchants found.
                 </TableCell>
               </TableRow>
-            ) : (
-              merchants.map((merchant) => (
-                <TableRow key={merchant.id}>
-                  <TableCell>
+              ) : (
+              merchants.map((merchant) => {
+                const isHighlighted = highlightMerchantId === merchant.id;
+                const highlightBg = 'bg-[#f3f0ff] dark:bg-[#18131f]';
+                const rowBorder = 'border-y-2 border-[#7c3aed] dark:border-violet-500';
+                return (
+                  <TableRow key={merchant.id}>
+                    <TableCell
+                      className={cn(
+                        isHighlighted && highlightBg,
+                        isHighlighted && 'first:rounded-l-xl',
+                        isHighlighted && merchant.id === highlightMerchantId && `border-l-2 ${rowBorder}`,
+                        isHighlighted && rowBorder,
+                      )}
+                    >
                     <input
                       type="checkbox"
                       checked={selectedMerchants.includes(merchant.id)}
                       onChange={() => toggleSelectMerchant(merchant.id)}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={cn(isHighlighted && highlightBg, isHighlighted && rowBorder)}>
                     <div className="flex items-center gap-3">
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-medium text-white ${getAvatarColor(
@@ -488,7 +516,7 @@ export default function MerchantManagement() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={cn(isHighlighted && highlightBg, isHighlighted && rowBorder)}>
                     <div>
                       <p className="font-medium text-sm">
                         {merchant.user?.name || 'N/A'}
@@ -498,13 +526,13 @@ export default function MerchantManagement() {
                       </p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                  <TableCell className={cn('text-sm text-muted-foreground whitespace-nowrap', isHighlighted && highlightBg, isHighlighted && rowBorder)}>
                     {new Date(merchant.createdAt).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={cn(isHighlighted && highlightBg, isHighlighted && rowBorder)}>
                     <MerchantStatusBadge status={merchant.licenseStatus} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className={cn('text-right', isHighlighted && highlightBg, isHighlighted && 'last:rounded-r-xl', isHighlighted && rowBorder, isHighlighted && merchant.id === highlightMerchantId && `border-r-2 ${rowBorder}`)}>
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         size="icon"
@@ -516,8 +544,9 @@ export default function MerchantManagement() {
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
-              ))
+</TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

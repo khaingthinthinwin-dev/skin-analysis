@@ -99,7 +99,6 @@ interface AnalysisDetailRow {
   healthScore: number | null;
   hydration: number | null;
   confidence: number | null;
-  meshOverlayUrl: string | null;
   overallAssessment: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -742,11 +741,6 @@ export class SkinAnalysisService {
       this.aiGateway.analyze(imageBuffer, userId),
     );
 
-    const meshOverlayUrl = this.storage.saveMeshSvg(
-      analysisId,
-      payload.meshSvg,
-    );
-
     const recommendations = await this.buildRecommendations(userId, payload);
 
     await this.prisma.$transaction(async (tx) => {
@@ -758,7 +752,6 @@ export class SkinAnalysisService {
           confidence: payload.confidence,
           skinType: payload.skinType.toLowerCase(),
           estimatedAge: payload.estimatedAge,
-          meshOverlayUrl,
           overallAssessment: payload.overallAssessment,
           analysisStatus: 'completed',
           completedAt: new Date(),
@@ -1198,7 +1191,6 @@ export class SkinAnalysisService {
       hydration: record.hydration ?? 0,
       confidence: record.confidence ?? 0,
       facialScanUrl: record.imageUrl,
-      meshOverlayUrl: record.meshOverlayUrl ?? '',
       conditions,
       findings: {
         primaryConcerns,
