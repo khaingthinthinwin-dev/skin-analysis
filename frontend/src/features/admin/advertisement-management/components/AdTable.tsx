@@ -31,17 +31,35 @@ interface AdTableProps {
 // disappear at Zoom +. The wrapper's overflow-x-auto only remains as a
 // fallback for narrower screens, where the Actions column pins to the right
 // edge so its buttons stay reachable.
+const COLUMNS = 11
 const TH_BASE =
-  'text-left h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
+  'text-left align-middle h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
 
 const TH_CLASS = `${TH_BASE} bg-muted/40`
-const TD_BASE = 'py-4 px-2 text-sm text-muted-foreground border-b border-border'
-const ROW_BASE = 'group transition-colors duration-150 ease-in-out hover:bg-muted/40'
 
+// Pinned (sticky) Actions cells must be opaque, otherwise content scrolling
+// underneath would show through them. bg-card is the opaque base and the
+// before: overlay re-applies the same token-based tints the rest of the table
+// uses (header band, row hover, row selection), so the pinned cells stay
+// visually identical to their neighbours.
+const TH_STICKY_CLASS = `${TH_BASE} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-[''] before:bg-muted/40`
+
+const TD_CLASS = 'py-4 px-2 text-sm text-muted-foreground border-b border-border'
+
+const TD_STICKY_CLASS = `${TD_CLASS} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-['']`
+
+const ROW_CLASS =
+  'group transition-colors duration-150 ease-in-out hover:bg-muted/40'
+
+// Responsive column visibility — shared by header, body, and skeleton rows
+// so they always line up.
 const PLACEMENT_COL_CLASS = 'hidden xl:table-cell'
 const SUBMITTED_COL_CLASS = 'whitespace-nowrap'
 const COLUMNS = 11
 
+// Purple inset outline around the row highlighted from a notification deep
+// link (?highlightAdId=). First/last cells round their outer corners so the
+// outline frames the whole row instead of a single cell.
 const FIRST_CELL_HL =
   'shadow-[inset_2px_2px_0_#a855f7,inset_0_-2px_0_#a855f7] rounded-l-xl'
 const LAST_CELL_HL =
@@ -230,5 +248,3 @@ export function AdTable({
     </div>
   )
 }
-
-const TH_STICKY_CLASS = `${TH_BASE} sticky right-0 z-20 bg-muted/50`
