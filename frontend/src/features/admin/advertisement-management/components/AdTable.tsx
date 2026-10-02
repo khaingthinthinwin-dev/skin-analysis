@@ -31,7 +31,6 @@ interface AdTableProps {
 // disappear at Zoom +. The wrapper's overflow-x-auto only remains as a
 // fallback for narrower screens, where the Actions column pins to the right
 // edge so its buttons stay reachable.
-const COLUMNS = 11
 const TH_BASE =
   'text-left align-middle h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
 
@@ -44,11 +43,9 @@ const TH_CLASS = `${TH_BASE} bg-muted/40`
 // visually identical to their neighbours.
 const TH_STICKY_CLASS = `${TH_BASE} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-[''] before:bg-muted/40`
 
-const TD_CLASS = 'py-4 px-2 text-sm text-muted-foreground border-b border-border'
+const TD_BASE = 'py-4 px-2 text-sm text-muted-foreground border-b border-border'
 
-const TD_STICKY_CLASS = `${TD_CLASS} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-['']`
-
-const ROW_CLASS =
+const ROW_BASE =
   'group transition-colors duration-150 ease-in-out hover:bg-muted/40'
 
 // Responsive column visibility — shared by header, body, and skeleton rows
