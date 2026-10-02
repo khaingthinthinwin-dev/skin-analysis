@@ -14,8 +14,8 @@ import type { AdminAdFeeSetting } from '@/types/admin-ad-management'
 import type { CreateFeeSettingInput, EditFeeSettingInput } from '@/types/admin-ad-management'
 import { ADMIN_AD_PLACEMENTS, ADMIN_AD_TIERS } from '@/types/admin-ad-management'
 
-// Every placement ÁEtier combination that can exist as a fee setting
-// (4 placements ÁE3 tiers = 12 packages).
+// Every placement × tier combination that can exist as a fee setting
+// (4 placements × 3 tiers = 12 packages).
 const TOTAL_PACKAGES = ADMIN_AD_PLACEMENTS.length * ADMIN_AD_TIERS.length
 
 function apiErrorMessage(error: unknown): string {
@@ -46,7 +46,7 @@ export default function PackageFeeManagementPage() {
     reactivateMutation,
   } = useFeeSettings()
 
-  // Disable creation once every placement ÁEtier package exists (12 total),
+  // Disable creation once every placement × tier package exists (12 total),
   // using the same placement+tier uniqueness rule as CreateFeeModal.
   const createdCombinations = new Set(
     (feeSettingsQuery.data ?? []).map((setting) => `${setting.placement}:${setting.tier}`),

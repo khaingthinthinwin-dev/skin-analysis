@@ -118,8 +118,15 @@ function packageLabel(placement: string) {
   return placement.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function formatMoney(value: string | number) {
-  return Number(value).toFixed(2)
+// Fees are whole Kyat amounts. The API returns them as fixed-point strings
+// ("500.00"), so the trailing ".00" is dropped for display while any real
+// decimals are kept ("500.50") and thousands are grouped ("12500.00" ->
+// "12,500").
+function formatFee(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return ''
+  const amount = Number(value)
+  if (Number.isNaN(amount)) return String(value)
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
 // Sort key for the package catalog. Packages without a parsable `updatedAt`
@@ -400,7 +407,7 @@ export default function Advertisements() {
   }
 
   const payPackage = payTarget?.package ?? null
-  const payFeeTotal = payTarget?.paymentAmount ?? (payPackage ? formatMoney(Number(payPackage.dailyRate) * payPackage.durationDays) : null)
+  const payFeeTotal = payTarget?.paymentAmount ?? (payPackage ? Number(payPackage.dailyRate) * payPackage.durationDays : null)
 
   return (
     <div className="space-y-6">
@@ -512,7 +519,7 @@ export default function Advertisements() {
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap items-baseline gap-1">
-                      <span className="text-2xl font-bold text-primary sm:text-3xl">{pkg.dailyRate} KS</span>
+                      <span className="text-2xl font-bold text-primary sm:text-3xl">{formatFee(pkg.dailyRate)} KS</span>
                       <span className="text-sm text-muted-foreground">/day</span>
                     </div>
                   </CardHeader>
@@ -526,7 +533,7 @@ export default function Advertisements() {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> Total fee:{' '}
-                        <span className="font-semibold text-foreground">{pkg.totalFee} KS</span>
+                        <span className="font-semibold text-foreground">{formatFee(pkg.totalFee)} KS</span>
                       </li>
                     </ul>
                     <Button
@@ -676,7 +683,7 @@ export default function Advertisements() {
                 [
                   ['Placement', packageLabel(selectedPackage.placement)],
                   ['Tier', tierLabels[selectedPackage.tier] ?? selectedPackage.tier],
-                  ['Daily Rate', `${selectedPackage.dailyRate} KS/day`],
+                  ['Daily Rate', `${formatFee(selectedPackage.dailyRate)} KS/day`],
                   ['Duration', `${selectedPackage.durationDays} days`],
                 ] as const
               ).map(([label, value]) => (
@@ -687,7 +694,7 @@ export default function Advertisements() {
               ))}
               <div className="flex justify-between gap-4 border-t pt-2">
                 <span className="text-muted-foreground">Total Fee</span>
-                <span className="shrink-0 font-bold text-primary">{selectedPackage.totalFee} KS</span>
+                <span className="shrink-0 font-bold text-primary">{formatFee(selectedPackage.totalFee)} KS</span>
               </div>
             </div>
           )}
@@ -724,10 +731,10 @@ export default function Advertisements() {
             <DialogTitle>Pay Advertising Fee</DialogTitle>
           </DialogHeader>
           <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal ? `${payFeeTotal} KS` : 'Calculated at payment'}</p>
+            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal !== null && payFeeTotal !== undefined ? `${formatFee(payFeeTotal)} KS` : 'Calculated at payment'}</p>
             {payPackage && (
               <p className="text-muted-foreground">
-                {payPackage.durationDays} days × {payPackage.dailyRate} KS/day
+                {payPackage.durationDays} days × {formatFee(payPackage.dailyRate)} KS/day
               </p>
             )}
           </div>
@@ -873,7 +880,7 @@ function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }
         {packageInfo && (
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • {packageInfo.dailyRate} KS/day
+              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • {formatFee(packageInfo.dailyRate)} KS/day
             </p>
             <Badge className={paymentBadgeClass[ad.paymentStatus] ?? ''}>{paymentLabels[ad.paymentStatus] ?? ad.paymentStatus}</Badge>
           </div>
@@ -1072,7 +1079,7 @@ function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
           {packageInfo && (
             <div className="flex justify-between gap-4 border-t pt-2">
               <span className="text-muted-foreground">Daily Rate</span>
-              <span className="font-medium text-primary">{packageInfo.dailyRate} KS/day</span>
+              <span className="font-medium text-primary">{formatFee(packageInfo.dailyRate)} KS/day</span>
             </div>
           )}
         </div>
@@ -1213,7 +1220,7 @@ function ContentDialog({
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
   if (endDate) endDate.setUTCDate(endDate.getUTCDate() + durationDays)
   const feeSummary = adPackage
-    ? `Advertising Fee: ${formatMoney(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${adPackage.dailyRate} KS/day`
+    ? `Advertising Fee: ${formatFee(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${formatFee(adPackage.dailyRate)} KS/day`
     : null
   const currentPreview = imageUrl ? getImageUrl(imageUrl) : null
 

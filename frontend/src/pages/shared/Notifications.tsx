@@ -77,6 +77,13 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'AD_EXPIRED',
   'NEW_ADS_PACKAGE',
   'ADS_PACKAGE_UPDATED',
+  'ORDER_PLACED',
+])
+
+const ORDER_NOTIFICATION_TYPES = new Set([
+  'ORDER_PLACED',
+  'ORDER_CONFIRMED',
+  'ORDER_STATUS_UPDATED',
 ])
 
 // Advertisement review decisions the admin makes, and the submission that
@@ -165,6 +172,12 @@ function adActionHint(item: NotificationItem): string | null {
   return null
 }
 
+function orderActionHint(item: NotificationItem): string | null {
+  return ORDER_NOTIFICATION_TYPES.has(normalizeNotificationType(item.type))
+    ? 'View order →'
+    : null
+}
+
 function iconForType(rawType: string, title?: string, message?: string) {
   const type = (rawType || '').toUpperCase()
   if (type === 'MERCHANT_STATUS_CHANGED' || type.includes('MERCHANT_STATUS')) {
@@ -214,6 +227,7 @@ function NotificationCard({
     normalizeNotificationType(item.type),
   )
   const adHint = adActionHint(item)
+  const orderHint = orderActionHint(item)
   const displayMessage = isMerchantRejectedNotification(item)
     ? MERCHANT_REJECTION_TEXT
     : item.message
@@ -253,6 +267,9 @@ function NotificationCard({
             )}
             {adHint && (
               <p className="text-xs font-semibold text-purple-600">{adHint}</p>
+            )}
+            {orderHint && (
+              <p className="text-xs font-semibold text-purple-600">{orderHint}</p>
             )}
           </div>
         </CardContent>
@@ -334,6 +351,16 @@ export default function Notifications() {
       navigate(`/merchant/advertisements${params}`)
       return
     }
+    if (ORDER_NOTIFICATION_TYPES.has(type) && item.entityId) {
+      const basePath =
+        user?.role === 'merchant'
+          ? '/merchant'
+          : user?.role === 'admin' || user?.role === 'super_admin'
+            ? '/admin'
+            : ''
+      navigate(`${basePath}/orders/${item.entityId}`)
+      return
+    }
     if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
       navigate('/admin/merchants')
     }
@@ -347,7 +374,7 @@ export default function Notifications() {
             <Bell className="h-6 w-6 text-purple-600" /> Notifications Center
           </h1>
           <p className="text-sm text-muted-foreground">
-            Stay updated on merchant registrations and moderation events
+            Your latest account and order updates
           </p>
         </div>
         {unreadCount > 0 && (
