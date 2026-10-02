@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-
 import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 import type { NotificationItem } from '@/types/notification.types'
@@ -78,8 +77,13 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'AD_EXPIRED',
   'NEW_ADS_PACKAGE',
   'ADS_PACKAGE_UPDATED',
-  'USER_ACTIVATED',
-  'USER_DEACTIVATED',
+  'ORDER_PLACED',
+])
+
+const ORDER_NOTIFICATION_TYPES = new Set([
+  'ORDER_PLACED',
+  'ORDER_CONFIRMED',
+  'ORDER_STATUS_UPDATED',
 ])
 
 // Advertisement review decisions the admin makes, and the submission that
@@ -168,6 +172,12 @@ function adActionHint(item: NotificationItem): string | null {
   return null
 }
 
+function orderActionHint(item: NotificationItem): string | null {
+  return ORDER_NOTIFICATION_TYPES.has(normalizeNotificationType(item.type))
+    ? 'View order →'
+    : null
+}
+
 function iconForType(rawType: string, title?: string, message?: string) {
   const type = (rawType || '').toUpperCase()
   if (type === 'MERCHANT_STATUS_CHANGED' || type.includes('MERCHANT_STATUS')) {
@@ -217,14 +227,10 @@ function NotificationCard({
     normalizeNotificationType(item.type),
   )
   const adHint = adActionHint(item)
+  const orderHint = orderActionHint(item)
   const displayMessage = isMerchantRejectedNotification(item)
     ? MERCHANT_REJECTION_TEXT
     : item.message
-
-  const handleActionClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onOpen(item)
-  }
 
   return (
     <Card
@@ -232,53 +238,42 @@ function NotificationCard({
         item.isRead ? '' : 'border-purple-500/40 bg-purple-500/5'
       }`}
     >
-      <div className="w-full">
-        <button
-          type="button"
-          onClick={() => onOpen(item)}
-          className="w-full text-left cursor-pointer"
-        >
-          <CardContent className="p-4 flex items-start gap-3">
-            <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
-              <Icon className="h-5 w-5" />
+      <button
+        type="button"
+        onClick={() => onOpen(item)}
+        className="w-full text-left cursor-pointer"
+      >
+        <CardContent className="p-4 flex items-start gap-3">
+          <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                {item.title}
+                {!item.isRead && (
+                  <span className="h-2 w-2 rounded-full bg-purple-500" aria-label="Unread" />
+                )}
+              </h3>
+              <span className="text-[11px] text-muted-foreground shrink-0">
+                {timeAgo(item.createdAt)}
+              </span>
             </div>
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  {item.title}
-                  {!item.isRead && (
-                    <span className="h-2 w-2 rounded-full bg-purple-500" aria-label="Unread" />
-                  )}
-                </h3>
-                <span className="text-[11px] text-muted-foreground shrink-0">
-                  {timeAgo(item.createdAt)}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">{displayMessage}</p>
-            </div>
-          </CardContent>
-        </button>
-        <div className="px-4 pb-4 flex items-center gap-2">
-          {isMerchantReg && (
-            <button
-              type="button"
-              onClick={handleActionClick}
-              className="text-xs font-semibold text-purple-600 hover:underline focus:outline-none focus:ring-1 focus:ring-purple-600 rounded"
-            >
-              View in Merchant Management →
-            </button>
-          )}
-          {adHint && (
-            <button
-              type="button"
-              onClick={handleActionClick}
-              className="text-xs font-semibold text-purple-600 hover:underline focus:outline-none focus:ring-1 focus:ring-purple-600 rounded"
-            >
-              {adHint}
-            </button>
-          )}
-        </div>
-      </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">{displayMessage}</p>
+            {isMerchantReg && (
+              <p className="text-xs font-semibold text-purple-600">
+                View in Merchant Management →
+              </p>
+            )}
+            {adHint && (
+              <p className="text-xs font-semibold text-purple-600">{adHint}</p>
+            )}
+            {orderHint && (
+              <p className="text-xs font-semibold text-purple-600">{orderHint}</p>
+            )}
+          </div>
+        </CardContent>
+      </button>
     </Card>
   )
 }
@@ -305,11 +300,9 @@ export default function Notifications() {
   } = useNotifications()
 
   const displayedNotifications = useMemo(() => {
-    let filtered = notifications.filter((item) => !item.isRead)
-
     if (isAdmin) {
       const seenKeys = new Set<string>()
-      filtered = filtered.filter((item) => {
+      return notifications.filter((item) => {
         if (!isAdminNotification(item)) {
           return false
         }
@@ -320,45 +313,36 @@ export default function Notifications() {
         seenKeys.add(key)
         return true
       })
-    } else if (user?.role === 'merchant') {
-      filtered = filtered.filter(
+    }
+
+    if (user?.role === 'merchant') {
+      return notifications.filter(
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
     }
 
-    return filtered
+    return notifications
   }, [isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)
-  const [deactivationNotification, setDeactivationNotification] = useState<NotificationItem | null>(null)
-
-  const getDeactivationReason = (item: NotificationItem | null): string | null => {
-    if (!item) return null
-    const prefix = 'Reason: '
-    const message = item.message.trim()
-    const idx = message.toLowerCase().indexOf(prefix.toLowerCase())
-    if (idx === -1) return null
-    return message.slice(idx + prefix.length).trim()
-  }
-
-  const deactivationReason = getDeactivationReason(deactivationNotification)
 
   const handleOpen = (item: NotificationItem) => {
     if (!item.isRead) {
       markAsRead(item.id).catch(() => {})
     }
-
     if (isMerchantRejectedNotification(item)) {
       setRejectedNotification(item)
       return
     }
     const type = normalizeNotificationType(item.type)
     if (AD_SUBMISSION_TYPES.has(type)) {
-      const params = item.entityId ? `?status=all&highlightAdId=${item.entityId}` : '?status=all'
-      navigate(`/admin/ads${params}`)
+      // Admins act here: jump straight to the review queue, pre-filtered to the
+      // pending ads the submission just joined.
+      navigate('/admin/ads?status=pending')
       return
     }
     if (AD_DECISION_TYPES.has(type)) {
+      // Decisions are only ever addressed to the merchant who owns the ad.
       navigate('/merchant/advertisements')
       return
     }
@@ -367,16 +351,18 @@ export default function Notifications() {
       navigate(`/merchant/advertisements${params}`)
       return
     }
-    if (MERCHANT_ADMIN_ACTION_TYPES.has(type) && item.entityId) {
-      navigate(`/admin/merchants?merchantId=${item.entityId}`)
-    }
-    if (type === 'USER_DEACTIVATED') {
-      setDeactivationNotification(item)
+    if (ORDER_NOTIFICATION_TYPES.has(type) && item.entityId) {
+      const basePath =
+        user?.role === 'merchant'
+          ? '/merchant'
+          : user?.role === 'admin' || user?.role === 'super_admin'
+            ? '/admin'
+            : ''
+      navigate(`${basePath}/orders/${item.entityId}`)
       return
     }
-    if (type === 'USER_ACTIVATED' || type === 'USER_DEACTIVATED') {
-      const profilePath = user?.role === 'merchant' ? '/merchant/profile' : '/buyer/profile'
-      navigate(`${profilePath}?highlight=status`)
+    if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
+      navigate('/admin/merchants')
     }
   }
 
@@ -388,7 +374,7 @@ export default function Notifications() {
             <Bell className="h-6 w-6 text-purple-600" /> Notifications Center
           </h1>
           <p className="text-sm text-muted-foreground">
-            Stay updated on merchant registrations and moderation events
+            Your latest account and order updates
           </p>
         </div>
         {unreadCount > 0 && (
@@ -481,47 +467,6 @@ export default function Notifications() {
               }}
             >
               Resubmit from Store Profile
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={deactivationNotification !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeactivationNotification(null)
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Account Deactivated</DialogTitle>
-            <DialogDescription>Your account has been deactivated by an administrator.</DialogDescription>
-          </DialogHeader>
-          {deactivationReason && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
-                Reason
-              </p>
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{deactivationReason}</p>
-            </div>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Please contact support if you believe this was a mistake.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeactivationNotification(null)}>
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                setDeactivationNotification(null)
-                const profilePath = user?.role === 'merchant' ? '/merchant/profile' : '/buyer/profile'
-                navigate(`${profilePath}?highlight=status`)
-              }}
-            >
-              View Profile
             </Button>
           </DialogFooter>
         </DialogContent>

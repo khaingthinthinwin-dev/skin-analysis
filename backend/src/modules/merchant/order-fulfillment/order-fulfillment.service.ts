@@ -229,6 +229,34 @@ export class OrderFulfillmentService {
         },
       });
 
+      if (targetStatus.statusCode === 'confirmed') {
+        await tx.notification.create({
+          data: {
+            userId: order.buyerId,
+            type: 'ORDER_CONFIRMED',
+            title: 'Order confirmed',
+            message: `The merchant has confirmed your order ${order.orderNumber}.`,
+            entityType: 'order',
+            entityId: orderId,
+          },
+        });
+      } else if (
+        ['packed', 'shipped', 'out_for_delivery', 'delivered'].includes(
+          targetStatus.statusCode,
+        )
+      ) {
+        await tx.notification.create({
+          data: {
+            userId: order.buyerId,
+            type: 'ORDER_STATUS_UPDATED',
+            title: `Order ${targetStatus.statusName}`,
+            message: `Your order ${order.orderNumber} is now ${targetStatus.statusName.toLowerCase()}.`,
+            entityType: 'order',
+            entityId: orderId,
+          },
+        });
+      }
+
       return tx.order.findUnique({
         where: { id: orderId },
         include: {
