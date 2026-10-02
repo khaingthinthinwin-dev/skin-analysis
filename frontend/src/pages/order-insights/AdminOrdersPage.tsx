@@ -3,12 +3,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AdminOrderFilterBar } from '@/features/order-insights/components/AdminOrderFilterBar';
+import { ExportAdminOrdersDialog } from '@/features/order-insights/components/ExportAdminOrdersDialog';
 import { AdminOrderTable } from '@/features/order-insights/components/AdminOrderTable';
 import { OrderPagination } from '@/features/order-insights/components/OrderPagination';
 import { useAdminOrderFilters } from '@/features/order-insights/hooks/useAdminOrderFilters';
 import { useAdminOrders } from '@/features/order-insights/hooks/useAdminOrders';
-import { getAllAdminOrders } from '@/features/order-insights/services/adminOrderService';
-import { buildAdminOrdersExportFilename, exportAdminOrdersCsv } from '@/features/order-insights/utils/exportAdminOrdersCsv';
 import type { AdminOrderFilterFormData } from '@/features/order-insights/schemas/orderFilters.schema';
 import type { OrderSortField } from '@/features/order-insights/types/orderInsights.types';
 
@@ -19,8 +18,7 @@ const DEFAULT_FILTERS: AdminOrderFilterFormData = {
 export default function AdminOrdersPage() {
   const { methods, filters, patch } = useAdminOrderFilters();
   const ordersQuery = useAdminOrders(filters);
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportError, setExportError] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   const resetFilters = () => {
     methods.reset(DEFAULT_FILTERS);
@@ -63,19 +61,6 @@ export default function AdminOrdersPage() {
       page: 1,
     });
   };
-  const exportOrders = async () => {
-    setIsExporting(true);
-    setExportError(false);
-    try {
-      const rows = await getAllAdminOrders(filters);
-      if (rows.length) exportAdminOrdersCsv(rows, buildAdminOrdersExportFilename(filters));
-    } catch {
-      setExportError(true);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <main className="flex min-w-0 flex-col gap-4 p-2 lg:p-4">
       <header>
@@ -92,17 +77,9 @@ export default function AdminOrdersPage() {
             onShopSearchChange={changeShopSearch}
             onStatusChange={changeStatus}
             onPaymentStatusChange={changePaymentStatus}
-            onExport={() => void exportOrders()}
-            exportDisabled={isExporting || ordersQuery.isLoading || !ordersQuery.data?.meta.total}
-            exporting={isExporting}
+            onExport={() => setIsExportDialogOpen(true)}
+            exportDisabled={ordersQuery.isLoading || !ordersQuery.data?.meta.total}
           />
-
-          {exportError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTitle>Unable to export orders</AlertTitle>
-              <AlertDescription>Please try again.</AlertDescription>
-            </Alert>
-          )}
 
           {ordersQuery.error ? (
             <Alert variant="destructive">
@@ -135,6 +112,7 @@ export default function AdminOrdersPage() {
       {ordersQuery.data && ordersQuery.data.meta.total > 0 && (
         <OrderPagination meta={ordersQuery.data.meta} onPageChange={changePage} onLimitChange={changeLimit} sizes={[10, 20, 50]} />
       )}
+      {isExportDialogOpen && <ExportAdminOrdersDialog filters={filters} total={ordersQuery.data?.meta.total ?? 0} onClose={() => setIsExportDialogOpen(false)} />}
     </main>
   );
 }

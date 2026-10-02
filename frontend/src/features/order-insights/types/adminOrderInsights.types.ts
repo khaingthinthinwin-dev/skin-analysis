@@ -67,3 +67,13 @@ export interface AdminOrderDetailDto {
   customer: MerchantCustomerInfoDto;
   shop: { name: string; merchantId?: string };
 }
+
+export interface AdminOrderTrackingDto {
+  orderId?: string;
+  currentStatus?: OrderStatus;
+  historyAvailable: boolean;
+  steps: Array<{
+    statusCode: OrderStatus;
+    reachedAt: string | null;
+  }>;
+}

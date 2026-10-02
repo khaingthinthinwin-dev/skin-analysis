@@ -29,7 +29,7 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
   }
 
   const sortButton = (label: string, field: OrderSortField) => (
-    <button type="button" onClick={() => onSort(field)} className="inline-flex items-center gap-1 font-bold uppercase tracking-wider hover:text-primary" aria-sort={currentSort === field ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'none'}>
+    <button type="button" onClick={() => onSort(field)} className="inline-flex items-center gap-1 font-medium text-muted-foreground hover:text-primary" aria-sort={currentSort === field ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'none'}>
       {label}{currentSort === field ? (currentOrder === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />) : null}
     </button>
   );
@@ -39,24 +39,24 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
 
   return (
     <>
-      <div className="hidden overflow-x-auto sm:block">
-        <Table className="min-w-[1200px]">
-          <TableHeader className="sticky top-0 z-10 border-b-2 border-primary bg-muted">
-            <TableRow>
-              <TableHead className="font-bold uppercase">{t('orders.table.orderId', 'Order #')}</TableHead>
-              <TableHead className="font-bold uppercase">{sortButton(t('orders.table.date', 'Date'), 'createdAt')}</TableHead>
-              <TableHead className="font-bold uppercase">{t('orders.table.shop', 'Shop / Merchant')}</TableHead>
-              <TableHead className="font-bold uppercase">{t('orders.table.customer', 'Buyer')}</TableHead>
-              <TableHead className="text-center font-bold uppercase">{t('orders.table.items', 'Items')}</TableHead>
-              <TableHead className="text-right font-bold uppercase">{sortButton(t('orders.table.total', 'Total'), 'totalAmount')}</TableHead>
-              <TableHead className="text-center font-bold uppercase">{t('orders.table.payment', 'Payment')}</TableHead>
-              <TableHead className="text-center font-bold uppercase">{sortButton(t('orders.table.status', 'Status'), 'status')}</TableHead>
-              <TableHead className="text-right font-bold uppercase">{t('orders.table.actions', 'Actions')}</TableHead>
+      <div className="hidden overflow-x-auto rounded-md border bg-card sm:block">
+        <Table className="w-full min-w-[1100px] table-fixed border-separate border-spacing-0 text-[13px]">
+          <TableHeader className="sticky top-0 z-10">
+            <TableRow className="border-b-0 bg-primary/10 hover:bg-primary/10">
+              <TableHead className="h-[60px] w-[10%] whitespace-nowrap text-sm font-medium text-muted-foreground">{t('orders.table.orderId', 'Order #')}</TableHead>
+              <TableHead className="h-[60px] w-[11%] whitespace-nowrap text-sm font-medium text-muted-foreground">{sortButton(t('orders.table.date', 'Date'), 'createdAt')}</TableHead>
+              <TableHead className="h-[60px] w-[14%] text-sm font-medium text-muted-foreground">{t('orders.table.shop', 'Shop / Merchant')}</TableHead>
+              <TableHead className="h-[60px] w-[13%] text-sm font-medium text-muted-foreground">{t('orders.table.customer', 'Buyer')}</TableHead>
+              <TableHead className="h-[60px] w-[6%] whitespace-nowrap text-center text-sm font-medium text-muted-foreground">{t('orders.table.items', 'Items')}</TableHead>
+              <TableHead className="h-[60px] w-[12%] whitespace-nowrap text-right text-sm font-medium text-muted-foreground">{sortButton(t('orders.table.total', 'Total'), 'totalAmount')}</TableHead>
+              <TableHead className="h-[60px] w-[11%] whitespace-nowrap text-center text-sm font-medium text-muted-foreground">{t('orders.table.payment', 'Payment')}</TableHead>
+              <TableHead className="h-[60px] w-[11%] whitespace-nowrap text-center text-sm font-medium text-muted-foreground">{sortButton(t('orders.table.status', 'Status'), 'status')}</TableHead>
+              <TableHead className="h-[60px] w-[12%] whitespace-nowrap text-right text-sm font-medium text-muted-foreground">{t('orders.table.actions', 'Actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} className="border-b border-border text-muted-foreground transition-colors hover:bg-muted/40">
                 <TableCell className="font-mono text-xs">{orderNumber(row.id)}</TableCell>
                 <TableCell>{formatDate(row.createdAt)}</TableCell>
                 <TableCell>{row.shopName}</TableCell>
@@ -66,7 +66,7 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
                 <TableCell className="text-center"><PaymentBadge status={row.paymentStatus} /></TableCell>
                 <TableCell className="text-center"><StatusBadge status={row.status} /></TableCell>
                 <TableCell className="text-right">
-                  <Button asChild variant="ghost" size="sm" aria-label={t('common.view', 'View')}>
+                  <Button asChild variant="ghost" size="sm" className="whitespace-nowrap px-2" aria-label={t('common.view', 'View')}>
                     <Link to={`/admin/orders/${row.id}`}><Eye className="mr-1 h-4 w-4" aria-hidden="true" />{t('common.view', 'View')}</Link>
                   </Button>
                 </TableCell>

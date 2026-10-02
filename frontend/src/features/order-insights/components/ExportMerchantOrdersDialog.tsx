@@ -115,6 +115,7 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
               {t('merchant.orders.exportDateRange', 'Date Range')}:{' '}
               <span className="font-medium text-foreground">{scopeDateLabel}</span>
             </p>
+            {filters.orderSearch?.trim() && <p className="text-sm text-muted-foreground">{t('merchant.orders.filter.orderNumber', 'Order #')}: <span className="font-medium text-foreground">{filters.orderSearch.trim()}</span></p>}
           </div>
 
           <p className="text-sm text-muted-foreground">

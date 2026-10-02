@@ -17,23 +17,14 @@ export function OrderPagination({ meta, onPageChange, onLimitChange, sizes = [10
 
   const totalPages = Math.ceil(meta.total / meta.limit);
 
-  const firstItem = (meta.page - 1) * meta.limit + 1;
-  const lastItem = Math.min(meta.page * meta.limit, meta.total);
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (
-    <div className="flex flex-col gap-3 border-t border-gray-100 dark:border-[#29252f] oidark:border-surface-container-highest px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-2">
-      <p className="text-[13px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
-        {t('common.pagination.showing', 'Showing')}{' '}
-        <span className="font-medium text-foreground">{firstItem}-{lastItem}</span>{' '}
-        {t('common.pagination.of', 'of')}{' '}
-        <span className="font-medium text-foreground">{meta.total}</span>{' '}
-        {t('buyer.orders.orders', 'orders')}
-      </p>
-
-      <div className="flex items-center justify-end gap-2">
-        <span className="text-[13px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">{t('common.pagination.show', 'Show')}</span>
+    <div className="flex flex-col gap-3 px-0 pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2">
+        <span>{t('common.pagination.rows', 'Rows:')}</span>
         <Select value={String(meta.limit)} onValueChange={(value) => onLimitChange(Number(value))}>
-          <SelectTrigger className="h-[30px] w-[60px] border-gray-200 px-2 text-[13px] dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 oidark:border-outline-variant focus:border-[#7c3aed] focus:ring-[#7c3aed]">
+          <SelectTrigger className="h-10 w-[78px] border-border px-3 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -42,23 +33,32 @@ export function OrderPagination({ meta, onPageChange, onLimitChange, sizes = [10
             ))}
           </SelectContent>
         </Select>
+        <span className="ml-1">Showing page <span className="font-medium text-foreground">{meta.page}</span> of <span className="font-medium text-foreground">{totalPages}</span></span>
+      </div>
+
+      <div className="flex items-center justify-end gap-1.5">
         <button
           type="button"
-          className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-[6px] border border-gray-200 bg-white text-gray-500 hover:border-[#7c3aed] hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-200 dark:hover:border-violet-400 dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-border px-3 text-sm hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
           disabled={meta.page <= 1}
           onClick={() => onPageChange(meta.page - 1)}
           aria-label={t('common.actions.previous', 'Previous')}
         >
-          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />Prev
         </button>
+        {pageNumbers.map((page) => (
+          <button key={page} type="button" aria-current={meta.page === page ? 'page' : undefined}
+            className={`inline-flex h-10 min-w-10 items-center justify-center rounded-md border px-3 text-sm font-semibold ${meta.page === page ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground hover:border-primary hover:text-primary'}`}
+            onClick={() => onPageChange(page)}>{page}</button>
+        ))}
         <button
           type="button"
-          className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-[6px] border border-gray-200 bg-white text-gray-500 hover:border-[#7c3aed] hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-200 dark:hover:border-violet-400 dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-border px-3 text-sm hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
           disabled={meta.page >= totalPages}
           onClick={() => onPageChange(meta.page + 1)}
           aria-label={t('common.actions.next', 'Next')}
         >
-          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          Next<ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
         </button>
       </div>
     </div>

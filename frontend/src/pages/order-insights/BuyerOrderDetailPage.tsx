@@ -5,7 +5,11 @@ import { Link, useParams } from "react-router";
 import { AxiosError } from "axios";
 import {
   ArrowLeft,
+  CreditCard,
   Download,
+  FileText,
+  MapPin,
+  Package,
   PackageSearch,
   RotateCcw,
   StickyNote,
@@ -270,7 +274,7 @@ function BuyerOrderDetailContent() {
       <section className="flex flex-col items-stretch gap-5 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-4 py-5 text-white shadow-[0_8px_20px_rgba(124,58,237,0.2)] sm:flex-row sm:items-center sm:justify-between sm:px-7">
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[1px] opacity-85">
-            📦 Order Details
+            Order Details
           </p>
           <h1 className="mt-1 text-xl font-bold">Order {orderReference(order)}</h1>
           {order.shop?.name && (
@@ -321,7 +325,8 @@ function BuyerOrderDetailContent() {
           <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="flex flex-wrap items-center gap-2 text-base dark:text-slate-100">
-                📦 {t("orders.detail.itemsTitle", "Order Items")}
+                <Package className="h-4 w-4 text-purple-600" aria-hidden="true" />
+                {t("orders.detail.itemsTitle", "Order Items")}
                 <span className="text-xs font-normal text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">({order.items.length} items)</span>
               </CardTitle>
             </CardHeader>
@@ -338,7 +343,7 @@ function BuyerOrderDetailContent() {
                       <img src={image} alt={item.productName} className="h-20 w-20 shrink-0 rounded-[10px] object-cover" />
                     ) : (
                       <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#f3f0ff] to-[#fce7f3] text-2xl dark:from-[#241638] dark:to-[#2b1c32] oidark:from-surface-container oidark:to-surface-container-high">
-                        💄
+                        <Package className="h-8 w-8 text-purple-600" aria-hidden="true" />
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
@@ -359,7 +364,7 @@ function BuyerOrderDetailContent() {
 
         <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[901px]:sticky min-[901px]:top-20 dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
           <section className="border-b border-[#f3f4f6] p-5 dark:border-[#29252f] oidark:border-outline-variant">
-            <h2 className="mb-3 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">📍 Shipping Address</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />Shipping Address</h2>
             <div>
               {address.length > 0 ? (
                 <address className="text-sm not-italic leading-relaxed text-[#374151] dark:text-slate-200 oidark:text-muted-foreground">
@@ -380,12 +385,12 @@ function BuyerOrderDetailContent() {
             </div>
           </section>
           <section className="space-y-3 border-b border-[#f3f4f6] p-5 text-sm dark:border-[#29252f] oidark:border-outline-variant">
-            <h2 className="text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">💳 Payment</h2>
+            <h2 className="flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><CreditCard className="h-4 w-4 text-emerald-600" aria-hidden="true" />Payment</h2>
             <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Method</span><span className="font-medium text-[#111827] dark:text-slate-100 oidark:text-foreground">{paymentMethodLabel(order.paymentMethod)}</span></div>
             <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Status</span><PaymentBadge status={order.paymentStatus} /></div>
           </section>
           <section className="space-y-2 p-5 text-sm">
-            <h2 className="mb-3 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">🧾 Order Summary</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><FileText className="h-4 w-4 text-purple-600" aria-hidden="true" />Order Summary</h2>
               <div className="flex items-start justify-between gap-4">
                 <span className="min-w-0 text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">
                   {t("orders.detail.subtotal", "Subtotal")}

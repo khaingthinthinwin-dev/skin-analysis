@@ -16,6 +16,7 @@ export function parseOrderListFilters(searchParams: URLSearchParams, defaultLimi
   const parsed = orderListFilterSchema.safeParse({
     status: searchParams.get('status') ?? DEFAULT_ORDER_LIST_FILTERS.status,
     ...(includePaymentStatus ? { paymentStatus: searchParams.get('paymentStatus') ?? undefined } : {}),
+    orderSearch: searchParams.get('orderSearch') ?? '',
     from: searchParams.get('from') ?? DEFAULT_ORDER_LIST_FILTERS.from,
     to: searchParams.get('to') ?? DEFAULT_ORDER_LIST_FILTERS.to,
     page: searchParams.get('page') ?? DEFAULT_ORDER_LIST_FILTERS.page,

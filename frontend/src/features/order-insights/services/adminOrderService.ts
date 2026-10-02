@@ -3,8 +3,10 @@ import type { AdminOrderFilterFormData } from '../schemas/orderFilters.schema';
 import type {
   AdminMerchantOption,
   AdminOrderDetailDto,
+  AdminOrderTrackingDto,
   AdminOrderListResponseDto,
 } from '../types/adminOrderInsights.types';
+import { ORDER_STATUS_FILTER_VALUES, type OrderStatus } from '../types/orderInsights.types';
 
 function unwrapData<T>(payload: unknown): T {
   if (payload && typeof payload === 'object' && 'data' in payload) {
@@ -44,6 +46,44 @@ export async function searchAdminMerchants(search: string): Promise<AdminMerchan
 export async function getAdminOrderDetail(orderId: string): Promise<AdminOrderDetailDto> {
   const response = await apiClient.get(`/orders/${orderId}`);
   return unwrapData<AdminOrderDetailDto>(response.data);
+}
+
+export async function getAdminOrderTracking(orderId: string): Promise<AdminOrderTrackingDto> {
+  const response = await apiClient.get(`/orders/${orderId}/tracking`);
+  const payload = unwrapData<unknown>(response.data);
+  if (!payload || typeof payload !== 'object') return { historyAvailable: false, steps: [] };
+
+  const envelope = payload as Record<string, unknown>;
+  const tracking = envelope.tracking && typeof envelope.tracking === 'object'
+    ? envelope.tracking as Record<string, unknown>
+    : envelope;
+  const validStatuses = new Set<string>(ORDER_STATUS_FILTER_VALUES);
+  const rawSteps = Array.isArray(tracking.steps)
+    ? tracking.steps
+    : Array.isArray(tracking.timeline)
+      ? tracking.timeline
+      : [];
+  const steps = rawSteps.flatMap((rawStep) => {
+    if (!rawStep || typeof rawStep !== 'object') return [];
+    const step = rawStep as Record<string, unknown>;
+    const status = step.statusCode ?? step.status;
+    const reachedAt = step.reachedAt ?? step.timestamp;
+    if (typeof status !== 'string' || !validStatuses.has(status)) return [];
+    return [{ statusCode: status as OrderStatus, reachedAt: typeof reachedAt === 'string' ? reachedAt : null }];
+  });
+  const currentStatus = typeof tracking.currentStatus === 'string' && validStatuses.has(tracking.currentStatus)
+    ? tracking.currentStatus as OrderStatus
+    : undefined;
+  const historyAvailable = typeof tracking.historyAvailable === 'boolean'
+    ? tracking.historyAvailable
+    : steps.some((step) => step.reachedAt !== null);
+
+  return {
+    orderId: typeof tracking.orderId === 'string' ? tracking.orderId : undefined,
+    currentStatus,
+    historyAvailable,
+    steps,
+  };
 }
 
 export async function getAllAdminOrders(

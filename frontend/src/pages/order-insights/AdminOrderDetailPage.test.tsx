@@ -4,10 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminOrderDetailPage from './AdminOrderDetailPage';
 import { OrderStatus } from '@/features/order-insights/types/orderInsights.types';
 
-const { useAdminOrderDetail } = vi.hoisted(() => ({ useAdminOrderDetail: vi.fn() }));
+const { useAdminOrderDetail, useAdminOrderTracking } = vi.hoisted(() => ({
+  useAdminOrderDetail: vi.fn(),
+  useAdminOrderTracking: vi.fn(),
+}));
 
 vi.mock('@/features/order-insights/hooks/useAdminOrderDetail', () => ({ useAdminOrderDetail }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, fallback?: string) => fallback ?? _key }) }));
+vi.mock('@/features/order-insights/hooks/useAdminOrderTracking', () => ({ useAdminOrderTracking }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (_key: string, fallback?: string) => fallback ?? _key,
+    i18n: { resolvedLanguage: 'en-US', language: 'en-US' },
+  }),
+}));
 
 describe('AdminOrderDetailPage', () => {
   beforeEach(() => {
@@ -28,6 +37,12 @@ describe('AdminOrderDetailPage', () => {
         customer: { name: 'Aye Aye', email: 'aye@example.com', phone: '+959123456789' },
         shop: { name: 'Lotus Glow', merchantId: 'merchant-1' },
       },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    useAdminOrderTracking.mockReturnValue({
+      data: { currentStatus: OrderStatus.SHIPPED, historyAvailable: true, steps: [] },
       isLoading: false,
       error: null,
       refetch: vi.fn(),

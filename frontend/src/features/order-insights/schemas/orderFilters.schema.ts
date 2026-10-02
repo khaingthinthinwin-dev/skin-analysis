@@ -8,6 +8,7 @@ export const orderStatusCodes = [
 export const orderListFilterSchema = z.object({
   status: z.enum(['all', ...orderStatusCodes]),
   paymentStatus: z.enum(['all', 'pending', 'completed']).optional(),
+  orderSearch: z.string().max(100).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   page: z.coerce.number().int().min(1, 'Invalid page number').default(1),
@@ -46,6 +47,7 @@ export const revenuePeriodSchema = z.object({
 export type OrderListFilterFormData = {
   status: 'all' | 'placed' | 'confirmed' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered';
   paymentStatus?: 'all' | 'pending' | 'completed';
+  orderSearch?: string;
   from?: string;
   to?: string;
   page: number;
@@ -59,6 +61,7 @@ export type AdminOrderFilterFormData = OrderListFilterFormData & {
   shopId?: string;
   shopSearch?: string;
   paymentStatus?: 'all' | 'pending' | 'completed';
+  orderSearch?: string;
 };
 
 export type RevenuePeriodFormData = {

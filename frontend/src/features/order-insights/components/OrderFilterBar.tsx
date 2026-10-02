@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,21 +19,61 @@ interface OrderFilterBarProps {
   onExport: () => void;
   exportDisabled?: boolean;
   exportLabel?: string;
+  showOrderSearch?: boolean;
+  iconOnlySearch?: boolean;
+  onOrderSearchChange?: (value: string) => void;
 }
 
-export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentStatusFilter = false, onPaymentStatusChange, onReset, onExport, exportDisabled = false, exportLabel }: OrderFilterBarProps) {
+export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentStatusFilter = false, onPaymentStatusChange, onReset, onExport, exportDisabled = false, exportLabel, showOrderSearch = false, iconOnlySearch = false, onOrderSearchChange }: OrderFilterBarProps) {
   const { t } = useTranslation();
   const { control, formState: { errors } } = methods;
   const from = methods.watch('from');
   const to = methods.watch('to');
+  const orderSearch = methods.watch('orderSearch') ?? '';
+  const onOrderSearchChangeRef = useRef(onOrderSearchChange);
   const isDateRangeInvalid = Boolean(from && to && from > to);
+
+  useEffect(() => {
+    onOrderSearchChangeRef.current = onOrderSearchChange;
+  }, [onOrderSearchChange]);
+
+  useEffect(() => {
+    if (!showOrderSearch || !onOrderSearchChangeRef.current) return;
+    const timeout = window.setTimeout(() => {
+      onOrderSearchChangeRef.current?.(orderSearch.trim());
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [orderSearch, showOrderSearch]);
 
   const handleSubmit = (values: OrderListFilterFormData) => {
     onApply(values);
   };
 
+  const gridColumns = showOrderSearch
+    ? iconOnlySearch
+      ? 'sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-[minmax(140px,1fr)_120px_120px_minmax(170px,1.2fr)_minmax(170px,1.2fr)_44px_84px_92px]'
+      : 'sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-[minmax(160px,1fr)_140px_140px_minmax(160px,1fr)_minmax(160px,1fr)_auto_auto_auto]'
+    : showPaymentStatusFilter
+      ? 'sm:grid-cols-2 md:grid-cols-[120px_130px_minmax(130px,1fr)_minmax(130px,1fr)_auto_auto_auto_auto] xl:grid-cols-[130px_140px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto_auto]'
+      : 'sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]';
+
   return (
-    <form onSubmit={methods.handleSubmit(handleSubmit)} className={`mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 ${showPaymentStatusFilter ? 'sm:grid-cols-2 md:grid-cols-[120px_130px_minmax(130px,1fr)_minmax(130px,1fr)_auto_auto_auto_auto] xl:grid-cols-[130px_140px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]' : 'sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]'}`}>
+    <form onSubmit={methods.handleSubmit(handleSubmit)} className={`mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 ${gridColumns}`}>
+      {showOrderSearch && (
+        <div className="min-w-0 pb-5 sm:col-span-2 xl:col-span-1">
+          <label htmlFor="filter-order-search" className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
+            {t('merchant.orders.filter.orderNumber', 'Order #')}
+          </label>
+          <Input
+            id="filter-order-search"
+            value={orderSearch}
+            onChange={(event) => methods.setValue('orderSearch', event.target.value, { shouldDirty: true, shouldValidate: true })}
+            placeholder={t('merchant.orders.filter.orderNumberPlaceholder', 'Search order number')}
+            maxLength={100}
+            className="h-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 oidark:border-outline-variant oidark:bg-surface-container-lowest"
+          />
+        </div>
+      )}
       <div className="flex-1 min-w-0 pb-5 sm:w-[130px]">
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300 mb-1">
           {t('orders.filter.status', 'Status')}
@@ -100,7 +141,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             {t('orders.filter.dateRange.from', 'From')}
           </label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
+            <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
             <Controller
               name="from"
               control={control}
@@ -130,7 +171,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             {t('orders.filter.dateRange.to', 'To')}
           </label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
+            <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
             <Controller
               name="to"
               control={control}
@@ -157,7 +198,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
       </div>
 
       {/* Spacer: absorbs leftover width at md+ so From/To never stretch and Search/Clear stay pinned to the right */}
-      <div className="hidden md:block" aria-hidden="true" />
+      {!showOrderSearch && <div className="hidden md:block" aria-hidden="true" />}
 
       <div className="grid w-full grid-cols-2 gap-2 sm:contents">
         <span className="w-full sm:w-auto" title={isDateRangeInvalid ? 'Please select a valid date range.' : undefined}>
@@ -165,13 +206,14 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             type="submit"
             aria-label={t('common.filters.search', 'Search')}
             disabled={isDateRangeInvalid}
-            className="h-10 w-full shrink-0 gap-2 sm:-translate-y-4 sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
+            title={iconOnlySearch ? t('common.filters.search', 'Search') : undefined}
+            className={`h-10 w-full shrink-0 gap-2 sm:-translate-y-5 sm:w-auto disabled:cursor-not-allowed disabled:opacity-50 ${iconOnlySearch ? 'sm:px-0 sm:w-11' : ''}`}
           >
             <Search className="h-4 w-4" aria-hidden="true" />
-            <span>{t('common.filters.search', 'Search')}</span>
+            {!iconOnlySearch && <span>{t('common.filters.search', 'Search')}</span>}
           </Button>
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full gap-2 sm:-translate-y-4 sm:w-auto">
+        <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full gap-2 sm:-translate-y-5 sm:w-auto">
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
           <span>{t('common.filters.clear', 'Clear')}</span>
         </Button>
@@ -180,7 +222,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             type="button"
             onClick={onExport}
             disabled={exportDisabled || isDateRangeInvalid}
-            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-4 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             &#x2193; {exportLabel ?? t('buyer.orders.exportCsv', 'Export CSV')}
           </Button>

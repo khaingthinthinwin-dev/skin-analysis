@@ -41,6 +41,7 @@ export async function getMerchantOrders(
   const params = {
     ...(filters.status !== 'all' ? { status: filters.status } : {}),
     ...(filters.paymentStatus && filters.paymentStatus !== 'all' ? { paymentStatus: filters.paymentStatus } : {}),
+    ...(filters.orderSearch?.trim() ? { orderSearch: filters.orderSearch.trim() } : {}),
     ...(filters.from ? { from: filters.from } : {}),
     ...(filters.to ? { to: filters.to } : {}),
     page: filters.page,

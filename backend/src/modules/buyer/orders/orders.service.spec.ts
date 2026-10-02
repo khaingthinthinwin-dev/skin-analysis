@@ -68,6 +68,7 @@ describe('OrdersService getOrderHistory', () => {
           itemCount: 2,
           totalAmount: '120.00',
           paymentStatus: 'completed',
+          shopName: 'Lotus Glow Shop',
         },
       ],
       meta: { page: 2, limit: 20, total: 1 },

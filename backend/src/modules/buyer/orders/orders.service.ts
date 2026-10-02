@@ -368,6 +368,7 @@ export class OrdersService {
     }
 
     let where: Prisma.OrderWhereInput;
+    let merchantIdForOrderSearch: string | undefined;
     if (roleCode === 'buyer') {
       where = { buyerId: userId };
     } else if (roleCode === 'merchant') {
@@ -379,6 +380,7 @@ export class OrdersService {
         throw new ForbiddenException('Your merchant account is not approved');
       }
 
+      merchantIdForOrderSearch = merchant.id;
       where = { merchantId: merchant.id };
     } else if (roleCode === 'admin' || roleCode === 'super_admin') {
       const merchantId = query.merchantId ?? shopMerchantId;
@@ -407,6 +409,26 @@ export class OrdersService {
 
     if (query.status) {
       where.statusCode = query.status;
+    }
+
+    // The merchant table displays the uppercase first eight characters of the
+    // order UUID. Search within that visible identifier, allowing merchants to
+    // enter a partial value even when it is not the first character.
+    const orderSearch = query.orderSearch
+      ?.trim()
+      .replace(/^#/, '')
+      .toLowerCase();
+    if (roleCode === 'merchant' && orderSearch && merchantIdForOrderSearch) {
+      // UUID columns do not support Prisma's string contains/startsWith filters.
+      // Cast the ID to text for matching, while retaining an explicit merchant
+      // predicate here and the normal scoped Prisma `where` for the list query.
+      const matchingOrders = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id
+        FROM orders
+        WHERE merchant_id = ${merchantIdForOrderSearch}::uuid
+          AND SUBSTRING(id::text FROM 1 FOR 8) ILIKE ${`%${orderSearch}%`}
+      `;
+      where.id = { in: matchingOrders.map((order) => order.id) };
     }
 
     if (query.from || query.to) {
@@ -492,7 +514,10 @@ export class OrdersService {
           };
         }
 
-        return row;
+        return {
+          ...row,
+          shopName: order.merchant.shopName,
+        };
       }),
       meta: {
         page: query.page,
