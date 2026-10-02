@@ -68,7 +68,10 @@ export default function CommissionAndRevenue() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-[1400px]" style={{ padding: "28px 32px" }}>
+      <div
+        className="mx-auto w-full max-w-[1400px]"
+        style={{ padding: "28px 32px" }}
+      >
         {/* [A] Page Header */}
         <div style={{ marginBottom: 24 }}>
           <h1 className="text-foreground" style={{ fontSize: 24, fontWeight: 700 }}>
