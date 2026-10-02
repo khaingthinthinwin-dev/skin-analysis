@@ -9,6 +9,8 @@ import {
   Megaphone,
   CircleCheck,
   CircleX,
+  Flag,
+  MessageSquareText,
 } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router'
 import { useMemo, useState } from 'react'
@@ -89,6 +91,14 @@ const ORDER_NOTIFICATION_TYPES = new Set([
 // Advertisement review decisions the admin makes, and the submission that
 // triggers them. AD_SUBMITTED goes to admins, AD_APPROVED / AD_REJECTED go back
 // to the shop owner (written by AdminAdManagementService).
+// A buyer reporting a review notifies every admin; they triage it alongside the
+// rest of the review queue.
+const REVIEW_REPORT_TYPES = new Set(['REVIEW_REPORTED', 'NEW_REPORT'])
+
+// A buyer submitting a review notifies every admin; the review waits in the
+// moderation queue until an admin approves or rejects it.
+const REVIEW_SUBMISSION_TYPES = new Set(['REVIEW_CREATED'])
+
 const AD_SUBMISSION_TYPES = new Set(['AD_SUBMITTED'])
 
 const AD_DECISION_TYPES = new Set([
@@ -190,7 +200,7 @@ function iconForType(rawType: string, title?: string, message?: string) {
   if (type === 'MERCHANT_REGISTERED' || type.includes('MERCHANT')) {
     return { Icon: Store, color: 'text-sky-500' }
   }
-  if (type.includes('AD_') || type.includes('ADS_')) {
+  if (type.includes('AD_')) {
     const haystack = `${type} ${title ?? ''} ${message ?? ''}`.toLowerCase()
     if (haystack.includes('reject')) {
       return { Icon: CircleX, color: 'text-red-500' }
@@ -198,14 +208,17 @@ function iconForType(rawType: string, title?: string, message?: string) {
     if (haystack.includes('approve') || haystack.includes('active')) {
       return { Icon: CircleCheck, color: 'text-emerald-500' }
     }
-    if (haystack.includes('package') || haystack.includes('available')) {
-      return { Icon: Sparkles, color: 'text-purple-600' }
-    }
     return { Icon: Megaphone, color: 'text-purple-600' }
   }
-  if (type === 'ORDER' || type.includes('ORDER')) {
-    return { Icon: ShoppingBag, color: 'text-emerald-500' }
+  if (type === 'REVIEW_CREATED' || type.includes('REVIEW_CREATED')) {
+    return { Icon: MessageSquareText, color: 'text-sky-600' }
   }
+  if (REVIEW_REPORT_TYPES.has(type) || type.includes('REVIEW_REPORT')) {
+      return { Icon: Flag, color: 'text-amber-600' }
+    }
+    if (type === 'ORDER' || type.includes('ORDER')) {
+      return { Icon: ShoppingBag, color: 'text-emerald-500' }
+    }
   if (type === 'PROMO' || type.includes('PROMO')) {
     return { Icon: Tag, color: 'text-purple-600' }
   }
@@ -227,6 +240,12 @@ function NotificationCard({
     normalizeNotificationType(item.type),
   )
   const adHint = adActionHint(item)
+  const normalizedType = normalizeNotificationType(item.type)
+    const reportHint = REVIEW_REPORT_TYPES.has(normalizedType)
+      ? 'Review in Review Management →'
+      : REVIEW_SUBMISSION_TYPES.has(normalizedType)
+        ? 'Moderate in Review Management →'
+        : null
   const orderHint = orderActionHint(item)
   const displayMessage = isMerchantRejectedNotification(item)
     ? MERCHANT_REJECTION_TEXT
@@ -268,6 +287,8 @@ function NotificationCard({
             {adHint && (
               <p className="text-xs font-semibold text-purple-600">{adHint}</p>
             )}
+            {reportHint && (
+              <p className="text-xs font-semibold text-purple-600">{reportHint}</p>
             {orderHint && (
               <p className="text-xs font-semibold text-purple-600">{orderHint}</p>
             )}
@@ -346,11 +367,14 @@ export default function Notifications() {
       navigate('/merchant/advertisements')
       return
     }
-    if (type === 'NEW_ADS_PACKAGE' || type === 'ADS_PACKAGE_UPDATED') {
-      const params = item.entityId ? `?updatedPackage=${item.entityId}` : ''
-      navigate(`/merchant/advertisements${params}`)
+    if (REVIEW_REPORT_TYPES.has(type)) {
+      // Admins triage reported reviews on the Reviews page.
+      navigate('/admin/reviews')
       return
     }
+    if (REVIEW_SUBMISSION_TYPES.has(type)) {
+      // A newly submitted review is waiting for approval on the Reviews page.
+      navigate('/admin/reviews')
     if (ORDER_NOTIFICATION_TYPES.has(type) && item.entityId) {
       const basePath =
         user?.role === 'merchant'

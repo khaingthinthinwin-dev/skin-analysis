@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import { cn } from '@/lib/utils';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -29,11 +28,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Search,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   Check,
   X,
   Store,
@@ -181,17 +179,8 @@ function getAvatarColor(name: string) {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
-function getPageNumbers(current: number, total: number) {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | string)[] = [];
-  if (current <= 3) {
-    pages.push(1, 2, 3, 4, '...', total);
-  } else if (current >= total - 2) {
-    pages.push(1, '...', total - 3, total - 2, total - 1, total);
-  } else {
-    pages.push(1, '...', current - 1, current, current + 1, '...', total);
-  }
-  return pages;
+function truncateText(value: string, maxLength = 20) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
@@ -220,12 +209,12 @@ export default function MerchantManagement() {
   const debouncedSearch = useDebounced(search, 300);
   const [merchantSort, setMerchantSort] = useState('createdAt');
   const [merchantOrder, setMerchantOrder] = useState<'asc' | 'desc'>('desc');
-  const [selectedMerchants, setSelectedMerchants] = useState<string[]>([]);
 
   // ── Dialog State ────────────────────────────────────────────────────────
   const [detailMerchant, setDetailMerchant] = useState<Merchant | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Merchant | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [approveTarget, setApproveTarget] = useState<Merchant | null>(null);
 
   // ── Stats ───────────────────────────────────────────────────────────────
   const { stats, refreshStats } = useMerchantStats();
@@ -263,31 +252,22 @@ export default function MerchantManagement() {
     setMerchantSort(sort);
     setMerchantOrder(order as 'asc' | 'desc');
     setPage(1);
-    setSelectedMerchants([]);
-  };
-
-  // ── Selection Helpers ───────────────────────────────────────────────────
-  const toggleSelectAll = () => {
-    if (selectedMerchants.length === merchants.length) {
-      setSelectedMerchants([]);
-    } else {
-      setSelectedMerchants(merchants.map((m) => m.id));
-    }
-  };
-
-  const toggleSelectMerchant = (id: string) => {
-    setSelectedMerchants((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-    );
   };
 
   // ── Actions ─────────────────────────────────────────────────────────────
-  const handleApprove = (id: string) => {
+  const openApproveDialog = (merchant: Merchant) => {
+    setApproveTarget(merchant);
+  };
+
+  const handleApprove = () => {
+    if (!approveTarget) return;
     approveMutation.mutate(
-      { id },
+      { id: approveTarget.id },
       {
         onSuccess: () => {
           toast.success('Merchant approved');
+          setApproveTarget(null);
+          setDetailMerchant(null);
           refreshStats();
         },
         onError: () => toast.error('Failed to approve merchant'),
@@ -372,14 +352,12 @@ export default function MerchantManagement() {
             onClick={() => {
               setStatus(stat.filter);
               setPage(1);
-              setSelectedMerchants([]);
             }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 setStatus(stat.filter);
                 setPage(1);
-                setSelectedMerchants([]);
               }
             }}
             className={`cursor-pointer transition-all ${
@@ -437,182 +415,103 @@ export default function MerchantManagement() {
       </div>
 
       {/* ── [E] Merchants Table ─────────────────────────────────────────── */}
-      <div className="overflow-x-auto overflow-hidden rounded-xl border bg-card">
-        <Table className="border-separate border-spacing-y-2">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <input
-                  type="checkbox"
-                  checked={
-                    merchants.length > 0 &&
-                    selectedMerchants.length === merchants.length
-                  }
-                  onChange={toggleSelectAll}
-                />
-              </TableHead>
-              <TableHead>Shop</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Registered</TableHead>
-              <TableHead>License Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {merchants.length === 0 ? (
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="overflow-x-auto rounded-md border border-border bg-card">
+          <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-24 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-24 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-12 text-muted-foreground"
-                >
-                  No merchants found.
-                </TableCell>
+                <TableHead>Shop</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>Registered</TableHead>
+                <TableHead>License Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
+            </TableHeader>
+            <TableBody>
+              {merchants.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-12 text-muted-foreground"
+                  >
+                    No merchants found.
+                  </TableCell>
+                </TableRow>
               ) : (
-              merchants.map((merchant) => {
-                const isHighlighted = highlightMerchantId === merchant.id;
-                const highlightBg = 'bg-[#f3f0ff] dark:bg-[#18131f]';
-                const rowBorder = 'border-y-2 border-[#7c3aed] dark:border-violet-500';
-                return (
+                merchants.map((merchant) => (
                   <TableRow key={merchant.id}>
-                    <TableCell
-                      className={cn(
-                        isHighlighted && highlightBg,
-                        isHighlighted && 'first:rounded-l-xl',
-                        isHighlighted && merchant.id === highlightMerchantId && `border-l-2 ${rowBorder}`,
-                        isHighlighted && rowBorder,
-                      )}
-                    >
-                    <input
-                      type="checkbox"
-                      checked={selectedMerchants.includes(merchant.id)}
-                      onChange={() => toggleSelectMerchant(merchant.id)}
-                    />
-                  </TableCell>
-                  <TableCell className={cn(isHighlighted && highlightBg, isHighlighted && rowBorder)}>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-medium text-white ${getAvatarColor(
-                          merchant.shopName || '',
-                        )}`}
-                      >
-                        {getInitials(merchant.shopName || 'S')}
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-medium text-white ${getAvatarColor(
+                            merchant.shopName || '',
+                          )}`}
+                        >
+                          {getInitials(merchant.shopName || 'S')}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.shopName}>
+                            {truncateText(merchant.shopName || 'N/A')}
+                          </p>
+                          {merchant.businessLicenseUrl && (
+                            <a
+                              href={merchant.businessLicenseUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              <FileText className="h-3 w-3" />
+                              License
+                            </a>
+                          )}
+                        </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
                       <div>
-                        <p className="font-medium text-sm">
-                          {merchant.shopName}
+                        <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.user?.name || 'N/A'}>
+                          {truncateText(merchant.user?.name || 'N/A')}
                         </p>
-                        {merchant.businessLicenseUrl && (
-                          <a
-                            href={merchant.businessLicenseUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
-                          >
-                            <FileText className="h-3 w-3" />
-                            License
-                          </a>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {merchant.user?.email || ''}
+                        </p>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className={cn(isHighlighted && highlightBg, isHighlighted && rowBorder)}>
-                    <div>
-                      <p className="font-medium text-sm">
-                        {merchant.user?.name || 'N/A'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {merchant.user?.email || ''}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className={cn('text-sm text-muted-foreground whitespace-nowrap', isHighlighted && highlightBg, isHighlighted && rowBorder)}>
-                    {new Date(merchant.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className={cn(isHighlighted && highlightBg, isHighlighted && rowBorder)}>
-                    <MerchantStatusBadge status={merchant.licenseStatus} />
-                  </TableCell>
-                  <TableCell className={cn('text-right', isHighlighted && highlightBg, isHighlighted && 'last:rounded-r-xl', isHighlighted && rowBorder, isHighlighted && merchant.id === highlightMerchantId && `border-r-2 ${rowBorder}`)}>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-8 w-8"
-                        onClick={() => setDetailMerchant(merchant)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-</TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* ── [F] Pagination ──────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">
-          Showing {merchants.length > 0 ? (page - 1) * limit + 1 : 0}-
-          {Math.min(page * limit, total)} of {total} merchants
-        </span>
-        <div className="flex items-center gap-2">
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              setPage(1);
-            }}
-            className="h-8 px-2 text-sm rounded-md border bg-background"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          <div className="flex gap-1">
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {getPageNumbers(page, totalPages).map((p, idx) =>
-              typeof p === 'number' ? (
-                <Button
-                  key={idx}
-                  size="icon"
-                  variant={p === page ? 'default' : 'outline'}
-                  className="h-8 w-8"
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </Button>
-              ) : (
-                <span
-                  key={idx}
-                  className="flex items-center px-1 text-muted-foreground"
-                >
-                  ...
-                </span>
-              ),
-            )}
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      {new Date(merchant.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <MerchantStatusBadge status={merchant.licenseStatus} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-8 w-8"
+                          onClick={() => setDetailMerchant(merchant)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
+
+        {/* ── [F] Pagination ──────────────────────────────────────────────── */}
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          limit={limit}
+          onLimitChange={setLimit}
+          total={total}
+          itemLabel="merchants"
+        />
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════ */}
@@ -624,7 +523,7 @@ export default function MerchantManagement() {
         open={!!detailMerchant}
         onOpenChange={() => setDetailMerchant(null)}
       >
-        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
               Merchant Detail
@@ -652,8 +551,11 @@ export default function MerchantManagement() {
                       {getInitials(detailMerchant.shopName || 'S')}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">
-                        {detailMerchant.shopName}
+                      <p
+                        className="truncate text-sm font-medium text-slate-900"
+                        title={detailMerchant.shopName}
+                      >
+                        {truncateText(detailMerchant.shopName || 'N/A')}
                       </p>
                       <p className="text-xs text-slate-600">
                         Registered {new Date(detailMerchant.createdAt).toLocaleDateString()}
@@ -709,8 +611,11 @@ export default function MerchantManagement() {
                         .slice(0, 2) || '?'}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">
-                        {detailMerchant.user?.name || 'N/A'}
+                      <p
+                        className="truncate text-sm font-medium text-slate-900"
+                        title={detailMerchant.user?.name || 'N/A'}
+                      >
+                        {truncateText(detailMerchant.user?.name || 'N/A')}
                       </p>
                       <p className="truncate text-xs text-slate-600">
                         {detailMerchant.user?.email || 'N/A'}
@@ -763,9 +668,10 @@ export default function MerchantManagement() {
                 {detailMerchant.licenseStatus === 'pending' && (
                   <>
                     <Button
-                      onClick={() => handleApprove(detailMerchant.id)}
-                      disabled={approveMutation.isPending}
-                      className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
+                      onClick={() => {
+                        setDetailMerchant(null);
+                        openApproveDialog(detailMerchant);
+                      }}
                     >
                       <Check className="h-4 w-4 mr-1" /> Approve
                     </Button>
@@ -783,6 +689,31 @@ export default function MerchantManagement() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Approve Merchant Confirmation ──────────────────────────────── */}
+      <Dialog open={!!approveTarget} onOpenChange={() => setApproveTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Merchant</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to approve{' '}
+            <strong className="text-foreground">{approveTarget?.shopName}</strong>?
+            Its status will change to Approved.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApprove}
+              disabled={approveMutation.isPending}
+            >
+              Approve
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
