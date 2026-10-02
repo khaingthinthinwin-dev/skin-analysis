@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import { cn } from '@/lib/utils';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
 import { Card, CardContent } from '@/components/ui/card';
 import {

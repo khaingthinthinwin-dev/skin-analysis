@@ -272,6 +272,25 @@ export default function ReviewManagement() {
   const reviewTotal = reviewsQuery.data?.total ?? 0;
   const reportTotal = reportsQuery.data?.total ?? 0;
 
+  // ── Bulk Action Eligibility ───────────────────────────────────────────────
+  // Approving or rejecting is only meaningful while reviews are still awaiting a
+  // decision, so those actions stay disabled unless every selected review is
+  // pending. Delete stays available for any selection.
+  const selectedReviewStatuses = reviews
+    .filter((review) => selectedReviews.includes(review.id))
+    .map((review) => review.status);
+
+  const allSelectedPending =
+    selectedReviews.length > 0 &&
+    selectedReviewStatuses.length === selectedReviews.length &&
+    selectedReviewStatuses.every((status) => status === 'pending');
+
+  const bulkModerateDisabled =
+    !allSelectedPending ||
+    bulkModerateMutation.isPending ||
+    bulkRejectOpen ||
+    bulkApproveOpen;
+
   // ── Sort Mapping ─────────────────────────────────────────────────────────
   const sortOptions = useMemo(
     () => [
@@ -348,6 +367,11 @@ export default function ReviewManagement() {
   // ── Bulk Actions (only reachable from the confirmation dialogs) ───────────
   const handleBulkApprove = () => {
     if (!bulkApproveOpen || selectedReviews.length === 0) return;
+    if (!allSelectedPending) {
+      setBulkApproveOpen(false);
+      toast.error('Only pending reviews can be approved');
+      return;
+    }
     bulkModerateMutation.mutate(
       { ids: selectedReviews, action: 'approve' },
       {
@@ -377,6 +401,12 @@ export default function ReviewManagement() {
   const handleBulkReject = () => {
     if (!bulkRejectOpen || selectedReviews.length === 0 || !rejectReason.trim())
       return;
+    if (!allSelectedPending) {
+      setBulkRejectOpen(false);
+      setRejectReason('');
+      toast.error('Only pending reviews can be rejected');
+      return;
+    }
     bulkModerateMutation.mutate(
       { ids: selectedReviews, action: 'reject', reason: rejectReason },
       {
@@ -667,12 +697,17 @@ export default function ReviewManagement() {
                   {selectedReviews.length} selected
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" onClick={() => setBulkApproveOpen(true)}>
+                  <Button
+                    size="sm"
+                    disabled={bulkModerateDisabled}
+                    onClick={() => setBulkApproveOpen(true)}
+                  >
                     <Check className="h-4 w-4 mr-1" /> Approve All
                   </Button>
                   <Button
                     size="sm"
                     variant="destructive"
+                    disabled={bulkModerateDisabled}
                     onClick={() => setBulkRejectOpen(true)}
                   >
                     <Flag className="h-4 w-4 mr-1" /> Reject All
@@ -680,6 +715,7 @@ export default function ReviewManagement() {
                   <Button
                     size="sm"
                     variant="destructive"
+                    disabled={bulkDeleteMutation.isPending || bulkDeleteOpen}
                     onClick={() => setBulkDeleteOpen(true)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" /> Delete All

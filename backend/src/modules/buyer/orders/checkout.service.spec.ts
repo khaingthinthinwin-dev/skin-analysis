@@ -103,7 +103,10 @@ describe('CheckoutService getCheckoutPageAds', () => {
 
     expect(start).toBeGreaterThanOrEqual(before.getTime() - 1000);
     expect(start).toBeLessThanOrEqual(now.getTime());
-    expect(end).toBeGreaterThanOrEqual(now.getTime());
+    // The service captures `now` before the mock resolves, so its timestamp
+    // may be a tick or two earlier than the one read here.
+    expect(end).toBeGreaterThanOrEqual(now.getTime() - 1000);
+    expect(end).toBeLessThanOrEqual(now.getTime() + 1000);
   });
 
   it('excludes ads with no schedule', async () => {

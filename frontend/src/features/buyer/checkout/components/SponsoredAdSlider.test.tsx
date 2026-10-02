@@ -72,7 +72,7 @@ describe('SponsoredAdSlider (checkout)', () => {
     expect(screen.getByText('Brighten your routine')).toBeInTheDocument()
     expect(screen.getByText('Sponsored')).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: /learn more/i }),
+      screen.getByRole('link', { name: /explore acne solutions/i }),
     ).toHaveAttribute('href', 'https://shop.test')
   })
 

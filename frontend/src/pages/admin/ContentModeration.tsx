@@ -429,12 +429,24 @@ export default function ContentModeration() {
               <Button
                 size="sm"
                 variant="destructive"
+                disabled={
+                  selectedIds.length === 0 ||
+                  !products.some(
+                    (p) => selectedIds.includes(p.id) && p.isActive,
+                  )
+                }
                 onClick={() => openBulkModerateDialog('deactivate')}
               >
                 <Ban className="h-4 w-4 mr-1" /> Deactivate All
               </Button>
               <Button
                 size="sm"
+                disabled={
+                  selectedIds.length === 0 ||
+                  !products.some(
+                    (p) => selectedIds.includes(p.id) && !p.isActive,
+                  )
+                }
                 onClick={() => openBulkModerateDialog('activate')}
               >
                 <CheckCircle className="h-4 w-4 mr-1" /> Activate All

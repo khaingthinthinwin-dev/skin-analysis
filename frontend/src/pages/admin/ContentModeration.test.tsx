@@ -34,7 +34,7 @@ vi.mock('@/lib/api', () => ({
   },
 }))
 
-const products = [
+const activeProducts = [
   {
     id: 'p-1',
     name: 'Hydrating Serum',
@@ -55,6 +55,35 @@ const products = [
     images: [],
     price: 18,
     isActive: true,
+    avgRating: 4,
+    reviewCount: 1,
+    createdAt: '2026-01-02T00:00:00.000Z',
+    merchant: { id: 'm-1', shopName: 'Glow Beauty', user: { id: 'u-1', name: 'Glow' } },
+    category: null,
+  },
+]
+
+const inactiveProducts = [
+  {
+    id: 'p-1',
+    name: 'Hydrating Serum',
+    slug: 'hydrating-serum',
+    images: [],
+    price: 24,
+    isActive: false,
+    avgRating: 4.5,
+    reviewCount: 2,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    merchant: { id: 'm-1', shopName: 'Glow Beauty', user: { id: 'u-1', name: 'Glow' } },
+    category: null,
+  },
+  {
+    id: 'p-2',
+    name: 'Clay Mask',
+    slug: 'clay-mask',
+    images: [],
+    price: 18,
+    isActive: false,
     avgRating: 4,
     reviewCount: 1,
     createdAt: '2026-01-02T00:00:00.000Z',
@@ -86,17 +115,17 @@ async function renderPage() {
 describe('ContentModeration bulk moderation modals', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    bulkModerateProducts.mockResolvedValue({ processed: 2, failed: 0, results: [] })
+  })
+
+  it('deactivates all selected products only after confirming in the modal', async () => {
     vi.mocked(adminService.getProducts).mockResolvedValue({
-      items: products,
+      items: activeProducts,
       total: 2,
       page: 1,
       limit: 10,
       totalPages: 1,
     })
-    bulkModerateProducts.mockResolvedValue({ processed: 2, failed: 0, results: [] })
-  })
-
-  it('deactivates all selected products only after confirming in the modal', async () => {
     await renderPage()
 
     await user.click(screen.getByRole('button', { name: 'Deactivate All' }))
@@ -124,6 +153,13 @@ describe('ContentModeration bulk moderation modals', () => {
   }, 20_000)
 
   it('activates all selected products only after confirming in the modal', async () => {
+    vi.mocked(adminService.getProducts).mockResolvedValue({
+      items: inactiveProducts,
+      total: 2,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    })
     await renderPage()
 
     await user.click(screen.getByRole('button', { name: 'Activate All' }))
@@ -143,6 +179,13 @@ describe('ContentModeration bulk moderation modals', () => {
   }, 20_000)
 
   it('does not update product status when the modal is cancelled', async () => {
+    vi.mocked(adminService.getProducts).mockResolvedValue({
+      items: inactiveProducts,
+      total: 2,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    })
     await renderPage()
 
     await user.click(screen.getByRole('button', { name: 'Activate All' }))
