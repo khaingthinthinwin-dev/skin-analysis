@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
@@ -22,6 +23,8 @@ import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -1111,6 +1114,10 @@ export class ProductsService {
         title: dto.title,
         body: dto.body,
         images: dto.images || [],
+        // Buyer reviews enter the moderation queue; only an admin action
+        // (POST /admin/reviews/:id/moderate) can make them public.
+        status: 'pending',
+        isVerifiedPurchase: true,
       },
       select: {
         id: true,
@@ -1118,6 +1125,7 @@ export class ProductsService {
         title: true,
         body: true,
         images: true,
+        status: true,
         isVerifiedPurchase: true,
         createdAt: true,
       },
@@ -1137,7 +1145,46 @@ export class ProductsService {
       },
     });
 
+    await this.notifyAdminsOfReviewCreated(review.id, product.name, dto.rating);
+
     return review;
+  }
+
+  /**
+   * Creates an in-app notification for every admin so the newly submitted review
+   * surfaces in the admin Notifications Center and joins the moderation queue.
+   * Failures are logged but never break review submission.
+   */
+  private async notifyAdminsOfReviewCreated(
+    reviewId: string,
+    productName: string,
+    rating: number,
+  ): Promise<void> {
+    try {
+      const admins = await this.prisma.user.findMany({
+        where: { roleCode: { in: ['admin', 'super_admin'] } },
+        select: { id: true },
+      });
+      if (admins.length === 0) {
+        return;
+      }
+
+      await this.prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: 'REVIEW_CREATED',
+          title: 'New review submitted',
+          message: `A ${rating}-star review for "${productName}" was submitted and is pending moderation.`,
+          entityType: 'Review',
+          entityId: reviewId,
+        })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to notify admins of review "${reviewId}": ${(error as Error).message}`,
+      );
+    }
   }
 
   async checkActiveOrders(

@@ -8,7 +8,7 @@ import { useCommission } from "@/features/admin/commission-revenue/hooks/useComm
 import { CommissionTable } from "@/features/admin/commission-revenue/components/CommissionTable";
 import { CommissionReportsTable } from "@/features/admin/commission-revenue/components/CommissionReportsTable";
 import { ReportFilterPanel } from "@/features/admin/commission-revenue/components/ReportFilterPanel";
-import { PaginationControls } from "@/features/admin/commission-revenue/components/PaginationControls";
+import { PaginationControls } from "@/components/PaginationControls";
 import { ExportDialog } from "@/features/admin/commission-revenue/components/ExportDialog";
 import { RevenueTab } from "@/features/admin/commission-revenue/components/RevenueTab";
 import {
@@ -68,7 +68,10 @@ export default function CommissionAndRevenue() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-[1400px]" style={{ padding: "28px 32px" }}>
+      <div
+        className="mx-auto w-full max-w-[1400px]"
+        style={{ padding: "28px 32px" }}
+      >
         {/* [A] Page Header */}
         <div style={{ marginBottom: 24 }}>
           <h1 className="text-foreground" style={{ fontSize: 24, fontWeight: 700 }}>

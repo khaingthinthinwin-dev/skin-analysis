@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Tooltip,
   TooltipContent,
@@ -36,8 +37,6 @@ import {
 import {
   Search,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   Users,
   CheckCircle,
   XCircle,
@@ -175,6 +174,15 @@ function canChangeUserStatus(user: User): boolean {
   return user.merchant.licenseStatus === 'approved';
 }
 
+function isAdminUser(user: User): boolean {
+  return user.roleCode.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'admin';
+}
+
+function getDeactivateTooltip(user: User): string | null {
+  if (isAdminUser(user)) return 'Admin accounts cannot be deactivated.';
+  return getLicenseStatusTooltip(user);
+}
+
 function getLicenseStatusTooltip(user: User): string | null {
   if (user.roleCode !== 'merchant') return null;
   if (!user.merchant) return null;
@@ -201,17 +209,8 @@ function getAvatarColor(name: string) {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
-function getPageNumbers(current: number, total: number) {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | string)[] = [];
-  if (current <= 3) {
-    pages.push(1, 2, 3, 4, '...', total);
-  } else if (current >= total - 2) {
-    pages.push(1, '...', total - 3, total - 2, total - 1, total);
-  } else {
-    pages.push(1, '...', current - 1, current, current + 1, '...', total);
-  }
-  return pages;
+function truncateText(value: string, maxLength = 20) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
@@ -275,7 +274,7 @@ export default function UserManagement() {
 
   // ── Actions ─────────────────────────────────────────────────────────────
   const handleDeactivate = (user: User) => {
-    if (!deactivateReason.trim()) return;
+    if (isAdminUser(user) || !deactivateReason.trim()) return;
     toggleUserStatusMutation.mutate(
       { userId: user.id, isActive: false, reason: deactivateReason },
       {
@@ -434,8 +433,9 @@ export default function UserManagement() {
       </div>
 
       {/* ── [E] Users Table ─────────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-md border bg-card">
-        <Table>
+      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="overflow-x-auto rounded-md border border-border bg-card">
+        <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
@@ -476,7 +476,11 @@ export default function UserManagement() {
                           {getInitials(user.name || '?')}
                         </div>
                       )}
-                      <p className="font-medium text-sm">{user.name}</p>
+                      <p className="max-w-[20ch] truncate text-sm font-medium" title={user.name || 'N/A'}>
+                        {(user.name || 'N/A').length > 20
+                          ? `${(user.name || 'N/A').slice(0, 20)}...`
+                          : user.name || 'N/A'}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
@@ -501,7 +505,7 @@ export default function UserManagement() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {user.isActive && user.id !== currentUserId && (
+                      {user.isActive && (user.id !== currentUserId || isAdminUser(user)) && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -509,17 +513,17 @@ export default function UserManagement() {
                                 <Button
                                   size="icon"
                                   variant="outline"
-                                  className="h-8 w-8"
-                                  disabled={!canChangeUserStatus(user)}
+                                  className="h-8 w-8 disabled:cursor-not-allowed disabled:opacity-50"
+                                  disabled={isAdminUser(user) || !canChangeUserStatus(user)}
                                   onClick={() => setDeactivateTarget(user)}
                                 >
                                   <UserX className="h-4 w-4 text-destructive" />
                                 </Button>
                               </span>
                             </TooltipTrigger>
-                            {getLicenseStatusTooltip(user) && (
+                            {getDeactivateTooltip(user) && (
                               <TooltipContent>
-                                <p>{getLicenseStatusTooltip(user)}</p>
+                                <p>{getDeactivateTooltip(user)}</p>
                               </TooltipContent>
                             )}
                           </Tooltip>
@@ -559,67 +563,16 @@ export default function UserManagement() {
       </div>
 
       {/* ── [F] Pagination ──────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">
-          Showing {users.length > 0 ? (page - 1) * limit + 1 : 0}-
-          {Math.min(page * limit, total)} of {total} users
-        </span>
-        <div className="flex items-center gap-2">
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              setPage(1);
-            }}
-            className="h-8 px-2 text-sm rounded-md border bg-background"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          <div className="flex gap-1">
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {getPageNumbers(page, totalPages).map((p, idx) =>
-              typeof p === 'number' ? (
-                <Button
-                  key={idx}
-                  size="icon"
-                  variant={p === page ? 'default' : 'outline'}
-                  className="h-8 w-8"
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </Button>
-              ) : (
-                <span
-                  key={idx}
-                  className="flex items-center px-1 text-muted-foreground"
-                >
-                  ...
-                </span>
-              ),
-            )}
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <TablePagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        limit={limit}
+        onLimitChange={setLimit}
+        total={total}
+        itemLabel="users"
+      />
+    </div>
 
       {/* ════════════════════════════════════════════════════════════════════ */}
       {/* DIALOGS                                                            */}
@@ -627,7 +580,7 @@ export default function UserManagement() {
 
       {/* ── User Detail Modal ────────────────────────────────────────────── */}
       <Dialog open={!!detailUser} onOpenChange={() => setDetailUser(null)}>
-        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
               User Detail
@@ -664,8 +617,11 @@ export default function UserManagement() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">
-                        {detailUser.name}
+                      <p
+                        className="truncate text-sm font-medium text-slate-900"
+                        title={detailUser.name}
+                      >
+                        {truncateText(detailUser.name || 'N/A')}
                       </p>
                       <p className="truncate text-xs text-slate-600">
                         {detailUser.email}
@@ -726,8 +682,11 @@ export default function UserManagement() {
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
                     Name
                   </p>
-                  <p className="text-sm text-slate-900">
-                    {detailUser.name || 'N/A'}
+                  <p
+                    className="truncate text-sm text-slate-900"
+                    title={detailUser.name || 'N/A'}
+                  >
+                    {truncateText(detailUser.name || 'N/A')}
                   </p>
                 </div>
 
@@ -748,14 +707,16 @@ export default function UserManagement() {
                 >
                   Cancel
                 </Button>
-                {detailUser.isActive && detailUser.id !== currentUserId && (
+                {detailUser.isActive &&
+                  detailUser.id !== currentUserId &&
+                  !isAdminUser(detailUser) && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
                           <Button
                             variant="destructive"
-                            disabled={!canChangeUserStatus(detailUser)}
+                            disabled={isAdminUser(detailUser) || !canChangeUserStatus(detailUser)}
                             onClick={() => {
                               setDetailUser(null);
                               setDeactivateTarget(detailUser);
@@ -765,14 +726,14 @@ export default function UserManagement() {
                           </Button>
                         </span>
                       </TooltipTrigger>
-                      {getLicenseStatusTooltip(detailUser) && (
+                      {getDeactivateTooltip(detailUser) && (
                         <TooltipContent>
-                          <p>{getLicenseStatusTooltip(detailUser)}</p>
+                          <p>{getDeactivateTooltip(detailUser)}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
                   </TooltipProvider>
-                )}
+                  )}
                 {!detailUser.isActive && (
                   <TooltipProvider>
                     <Tooltip>

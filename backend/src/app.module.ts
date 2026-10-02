@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from './config/config.module';
+import { ConfigService } from '@nestjs/config';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { RedisModule } from './shared/redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -9,6 +11,7 @@ import { ProductsModule } from './modules/catalog/products/products.module';
 import { AuditLogsModule } from './modules/admin/audit-logs/audit-logs.module';
 import { AdminModule } from './modules/admin/review-management/admin.module';
 import { AdminAdManagementModule } from './modules/admin/advertisement-management/admin-ad-management.module';
+import { MasterDataModule } from './modules/admin/master-data/master-data.module';
 import { CommissionModule } from './modules/admin/commission-revenue/commission.module';
 import { WishlistModule } from './modules/buyer/wishlist/wishlist.module';
 import { CartModule } from './modules/buyer/cart/cart.module';
@@ -21,11 +24,33 @@ import { AdsModule } from './modules/shared/ads/ads.module';
 import { NotificationsModule } from './modules/shared/notifications/notifications.module';
 import { MatchingModule } from './modules/buyer/matching/matching.module';
 import { AppController } from './app.controller';
+import { SkinAnalysisModule } from './modules/buyer/skin-analysis/skin-analysis.module';
 import { AppService } from './app.service';
+import { OrderInsightsModule } from './modules/shared/order-insights/order-insights.module';
+import { OrderFulfillmentModule } from './modules/merchant/order-fulfillment/order-fulfillment.module';
+import { MailModule } from './shared/mail/mail.module';
 
 @Module({
   imports: [
     ConfigModule,
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('mail.host'),
+          port: configService.get<number>('mail.port'),
+          secure: configService.get<boolean>('mail.secure'),
+          auth: {
+            user: configService.get<string>('mail.user'),
+            pass: configService.get<string>('mail.pass'),
+          },
+        },
+        defaults: {
+          from: configService.get<string>('mail.from'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     PrismaModule,
     RedisModule,
     AuthModule,
@@ -35,6 +60,7 @@ import { AppService } from './app.service';
     AuditLogsModule,
     AdminModule,
     AdminAdManagementModule,
+    MasterDataModule,
     CommissionModule,
     WishlistModule,
     CartModule,
@@ -47,6 +73,10 @@ import { AppService } from './app.service';
     AdsModule,
     NotificationsModule,
     MatchingModule,
+    SkinAnalysisModule,
+    OrderInsightsModule,
+    OrderFulfillmentModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

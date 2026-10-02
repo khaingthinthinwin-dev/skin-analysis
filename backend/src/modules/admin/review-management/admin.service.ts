@@ -822,6 +822,24 @@ export class AdminService {
         newValue: { isActive: dto.isActive, reason: dto.reason },
       });
 
+      // Send notification to the affected user
+      try {
+        await tx.notification.create({
+          data: {
+            userId,
+            type: dto.isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+            title: dto.isActive ? 'Account Activated' : 'Account Deactivated',
+            message: dto.isActive
+              ? 'Your account has been activated by an administrator.'
+              : `Your account has been deactivated by an administrator.${dto.reason ? ` Reason: ${dto.reason}` : ''}`,
+            entityType: 'user',
+            entityId: userId,
+          },
+        });
+      } catch {
+        // noop: notification is best-effort
+      }
+
       return {
         id: updated.id,
         isActive: updated.isActive,
@@ -992,37 +1010,6 @@ export class AdminService {
 
       return { success: true };
     });
-  }
-
-  // ─── Audit Logs ────────────────────────────────────────────────────────
-
-  async getAuditLogs(params: {
-    page?: number;
-    limit?: number;
-    action?: string;
-    userId?: string;
-  }) {
-    const { page = 1, limit = 20, action, userId } = params;
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.AuditLogWhereInput = {};
-    if (action) where.action = { contains: action };
-    if (userId) where.userId = userId;
-
-    const [items, total] = await Promise.all([
-      this.prisma.auditLog.findMany({
-        where,
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.auditLog.count({ where }),
-    ]);
-
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   // ─── Private Helpers ───────────────────────────────────────────────────

@@ -13,7 +13,7 @@ export class AuditLogPage {
   constructor(page: Page) {
     this.page = page;
     this.logList = page.locator('table, [role="table"], .audit-log-list');
-    this.searchInput = page.getByRole('textbox', { name: /search/i });
+    this.searchInput = page.getByRole('searchbox', { name: /search/i });
     this.actionFilter = page.getByRole('combobox', { name: /action/i });
     this.dateRangePicker = page.locator('[data-testid="date-range"]');
     this.exportButton = page.getByRole('button', { name: /export/i });

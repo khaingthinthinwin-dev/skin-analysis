@@ -50,10 +50,31 @@ export class AdminController {
   }
 
   // ─── Review Moderation ──────────────────────────────────────────────────
+  // NOTE: the 'bulk' routes must be declared before the ':id' routes. Express
+  // matches routes in registration order and ':id' also matches the literal
+  // segment 'bulk', so declaring them afterwards made these handlers
+  // unreachable (the request was routed to deleteReview/moderateReview with
+  // id='bulk').
 
   @Get('reviews')
   async getReviews(@Query() query: ReviewsQueryDto) {
     return this.adminService.getReviews(query);
+  }
+
+  @Post('reviews/bulk/moderate')
+  async bulkModerateReviews(
+    @Body() dto: BulkModerateReviewsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.bulkModerateReviews(dto, user.id);
+  }
+
+  @Delete('reviews/bulk')
+  bulkDeleteReviews(
+    @Body() dto: BulkDeleteReviewsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.bulkDeleteReviews(dto, user.id);
   }
 
   @Get('reviews/:id')
@@ -85,22 +106,6 @@ export class AdminController {
     await this.adminService.deleteReview(id, user.id);
   }
 
-  @Post('reviews/bulk/moderate')
-  async bulkModerateReviews(
-    @Body() dto: BulkModerateReviewsDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.adminService.bulkModerateReviews(dto, user.id);
-  }
-
-  @Delete('reviews/bulk')
-  bulkDeleteReviews(
-    @Body() dto: BulkDeleteReviewsDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.adminService.bulkDeleteReviews(dto, user.id);
-  }
-
   // ─── Merchant Management ────────────────────────────────────────────────
 
   @Get('merchants')
@@ -123,10 +128,20 @@ export class AdminController {
   }
 
   // ─── Product Content Moderation ─────────────────────────────────────────
+  // NOTE: as with reviews, 'content/bulk/status' must precede
+  // 'content/:id/status' or ':id' swallows the 'bulk' segment.
 
   @Get('content')
   getProducts(@Query() query: ProductsQueryDto) {
     return this.adminService.getProducts(query);
+  }
+
+  @Patch('content/bulk/status')
+  bulkModerateProducts(
+    @Body() dto: BulkModerateProductsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.bulkModerateProducts(dto, user.id);
   }
 
   @Get('content/:id')
@@ -141,14 +156,6 @@ export class AdminController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.adminService.moderateProduct(id, dto, user.id);
-  }
-
-  @Patch('content/bulk/status')
-  bulkModerateProducts(
-    @Body() dto: BulkModerateProductsDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.adminService.bulkModerateProducts(dto, user.id);
   }
 
   // ─── User Management ───────────────────────────────────────────────────
@@ -197,20 +204,5 @@ export class AdminController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteReport(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     await this.adminService.deleteReport(id, user.id);
-  }
-
-  // ─── Audit Logs ────────────────────────────────────────────────────────
-
-  @Get('audit-logs')
-  getAuditLogs(
-    @Query()
-    query: {
-      page?: number;
-      limit?: number;
-      action?: string;
-      userId?: string;
-    },
-  ) {
-    return this.adminService.getAuditLogs(query);
   }
 }

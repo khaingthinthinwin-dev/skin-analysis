@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 export interface Advertisement {
   id: string;
   shopId: string;
+  shopName: string;
   title: string;
   content: string | null;
   announcementMessage: string;
@@ -38,10 +39,18 @@ export interface CreateAdInput {
   content?: string;
   announcementMessage: string;
   imageUrl?: string;
-  linkUrl?: string;
   paymentAmount: number;
   startsAt: string;
   expiresAt: string;
+}
+
+export interface AdContentPayload {
+  title: string;
+  content?: string;
+  /** Image path of one of the merchant's own products; validated server-side. */
+  imageUrl?: string;
+  announcementMessage: string;
+  startsAt?: string;
 }
 
 export interface AdPackage {
@@ -52,6 +61,8 @@ export interface AdPackage {
   durationDays: number;
   maxAds: number;
   totalFee: string;
+  /** ISO 8601 timestamp of the last admin change (create / rate / activation). */
+  updatedAt?: string;
 }
 
 // Works around the double { data } wrapping produced by the merchant
@@ -98,17 +109,13 @@ export const merchantAdService = {
     return unwrap<Advertisement>(response.data);
   },
 
-  uploadContent: async (id: string, formData: FormData): Promise<Advertisement> => {
-    const response = await api.patch(`/ads/${id}/content`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  uploadContent: async (id: string, payload: AdContentPayload): Promise<Advertisement> => {
+    const response = await api.patch(`/ads/${id}/content`, payload);
     return unwrap<Advertisement>(response.data);
   },
 
-  updateContent: async (id: string, formData: FormData): Promise<Advertisement> => {
-    const response = await api.patch(`/ads/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  updateContent: async (id: string, payload: AdContentPayload): Promise<Advertisement> => {
+    const response = await api.patch(`/ads/${id}`, payload);
     return unwrap<Advertisement>(response.data);
   },
 
