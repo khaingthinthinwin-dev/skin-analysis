@@ -78,6 +78,8 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'AD_EXPIRED',
   'NEW_ADS_PACKAGE',
   'ADS_PACKAGE_UPDATED',
+  'USER_ACTIVATED',
+  'USER_DEACTIVATED',
 ])
 
 // Advertisement review decisions the admin makes, and the submission that
@@ -328,6 +330,18 @@ export default function Notifications() {
   }, [isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)
+  const [deactivationNotification, setDeactivationNotification] = useState<NotificationItem | null>(null)
+
+  const getDeactivationReason = (item: NotificationItem | null): string | null => {
+    if (!item) return null
+    const prefix = 'Reason: '
+    const message = item.message.trim()
+    const idx = message.toLowerCase().indexOf(prefix.toLowerCase())
+    if (idx === -1) return null
+    return message.slice(idx + prefix.length).trim()
+  }
+
+  const deactivationReason = getDeactivationReason(deactivationNotification)
 
   const handleOpen = (item: NotificationItem) => {
     if (!item.isRead) {
@@ -355,6 +369,14 @@ export default function Notifications() {
     }
     if (MERCHANT_ADMIN_ACTION_TYPES.has(type) && item.entityId) {
       navigate(`/admin/merchants?merchantId=${item.entityId}`)
+    }
+    if (type === 'USER_DEACTIVATED') {
+      setDeactivationNotification(item)
+      return
+    }
+    if (type === 'USER_ACTIVATED' || type === 'USER_DEACTIVATED') {
+      const profilePath = user?.role === 'merchant' ? '/merchant/profile' : '/buyer/profile'
+      navigate(`${profilePath}?highlight=status`)
     }
   }
 
@@ -459,6 +481,47 @@ export default function Notifications() {
               }}
             >
               Resubmit from Store Profile
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deactivationNotification !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeactivationNotification(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Account Deactivated</DialogTitle>
+            <DialogDescription>Your account has been deactivated by an administrator.</DialogDescription>
+          </DialogHeader>
+          {deactivationReason && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
+                Reason
+              </p>
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{deactivationReason}</p>
+            </div>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Please contact support if you believe this was a mistake.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeactivationNotification(null)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setDeactivationNotification(null)
+                const profilePath = user?.role === 'merchant' ? '/merchant/profile' : '/buyer/profile'
+                navigate(`${profilePath}?highlight=status`)
+              }}
+            >
+              View Profile
             </Button>
           </DialogFooter>
         </DialogContent>
