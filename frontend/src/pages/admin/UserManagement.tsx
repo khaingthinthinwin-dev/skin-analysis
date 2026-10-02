@@ -174,6 +174,15 @@ function canChangeUserStatus(user: User): boolean {
   return user.merchant.licenseStatus === 'approved';
 }
 
+function isAdminUser(user: User): boolean {
+  return user.roleCode.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'admin';
+}
+
+function getDeactivateTooltip(user: User): string | null {
+  if (isAdminUser(user)) return 'Admin accounts cannot be deactivated.';
+  return getLicenseStatusTooltip(user);
+}
+
 function getLicenseStatusTooltip(user: User): string | null {
   if (user.roleCode !== 'merchant') return null;
   if (!user.merchant) return null;
@@ -265,7 +274,7 @@ export default function UserManagement() {
 
   // ── Actions ─────────────────────────────────────────────────────────────
   const handleDeactivate = (user: User) => {
-    if (!deactivateReason.trim()) return;
+    if (isAdminUser(user) || !deactivateReason.trim()) return;
     toggleUserStatusMutation.mutate(
       { userId: user.id, isActive: false, reason: deactivateReason },
       {
@@ -496,7 +505,7 @@ export default function UserManagement() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {user.isActive && user.id !== currentUserId && (
+                      {user.isActive && (user.id !== currentUserId || isAdminUser(user)) && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -504,17 +513,17 @@ export default function UserManagement() {
                                 <Button
                                   size="icon"
                                   variant="outline"
-                                  className="h-8 w-8"
-                                  disabled={!canChangeUserStatus(user)}
+                                  className="h-8 w-8 disabled:cursor-not-allowed disabled:opacity-50"
+                                  disabled={isAdminUser(user) || !canChangeUserStatus(user)}
                                   onClick={() => setDeactivateTarget(user)}
                                 >
                                   <UserX className="h-4 w-4 text-destructive" />
                                 </Button>
                               </span>
                             </TooltipTrigger>
-                            {getLicenseStatusTooltip(user) && (
+                            {getDeactivateTooltip(user) && (
                               <TooltipContent>
-                                <p>{getLicenseStatusTooltip(user)}</p>
+                                <p>{getDeactivateTooltip(user)}</p>
                               </TooltipContent>
                             )}
                           </Tooltip>
@@ -698,14 +707,16 @@ export default function UserManagement() {
                 >
                   Cancel
                 </Button>
-                {detailUser.isActive && detailUser.id !== currentUserId && (
+                {detailUser.isActive &&
+                  detailUser.id !== currentUserId &&
+                  !isAdminUser(detailUser) && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
                           <Button
                             variant="destructive"
-                            disabled={!canChangeUserStatus(detailUser)}
+                            disabled={isAdminUser(detailUser) || !canChangeUserStatus(detailUser)}
                             onClick={() => {
                               setDetailUser(null);
                               setDeactivateTarget(detailUser);
@@ -715,14 +726,14 @@ export default function UserManagement() {
                           </Button>
                         </span>
                       </TooltipTrigger>
-                      {getLicenseStatusTooltip(detailUser) && (
+                      {getDeactivateTooltip(detailUser) && (
                         <TooltipContent>
-                          <p>{getLicenseStatusTooltip(detailUser)}</p>
+                          <p>{getDeactivateTooltip(detailUser)}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
                   </TooltipProvider>
-                )}
+                  )}
                 {!detailUser.isActive && (
                   <TooltipProvider>
                     <Tooltip>

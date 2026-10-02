@@ -7,13 +7,6 @@ import { getImageUrl } from '@/lib/image-url';
 
 const AUTO_SLIDE_MS = 5000
 const BUYER_PRODUCTS_FALLBACK = '/buyer/products'
-const TRIALS_URL = '/buyer/products'
-
-const FEATURE_METRICS = [
-  { value: '94%', label: 'Clarified Skin' },
-  { value: '100%', label: 'Derm Tested' },
-  { value: '0%', label: 'Micro-Irritants' },
-]
 
 const BATCH_DETAILS = 'Batch 2026-A7 · Lot #EM-4821 · 30ml'
 
@@ -81,9 +74,6 @@ export function SponsoredAdSlider() {
               <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/25 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-200 backdrop-blur-md sm:text-[10px]">
                 <Sparkles className="h-3 w-3 text-purple-300" /> Featured Promotion
               </span>
-              <span className="inline-flex items-center rounded-full bg-white px-3 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-zinc-950 shadow-sm sm:text-[10px]">
-                Up to 25% Off
-              </span>
             </div>
 
             <h3 className="text-lg font-extrabold leading-snug tracking-tight text-white sm:text-xl lg:text-2xl">
@@ -104,36 +94,8 @@ export function SponsoredAdSlider() {
                   <ArrowRight className="h-3.5 w-3.5" />
                 </a>
               </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="h-8.5 rounded-full border border-white/30 bg-white/5 px-4.5 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-sm transition-all hover:border-white/60 hover:bg-white/15 hover:text-white sm:h-9"
-              >
-                <a href={TRIALS_URL} target="_blank" rel="noopener noreferrer">
-                  View Clinical Trials
-                </a>
-              </Button>
             </div>
 
-            <dl className="grid w-full max-w-sm grid-cols-3 gap-2 pt-0.5">
-              {FEATURE_METRICS.map((metric) => (
-                <div
-                  key={metric.label}
-                  className="flex flex-col justify-center rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-center backdrop-blur-md transition-colors hover:bg-white/15"
-                >
-                  <dt className="sr-only">{metric.label}</dt>
-                  <dd className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold leading-none tracking-tight text-white sm:text-sm">
-                      {metric.value}
-                    </span>
-                    <span className="text-[7px] font-semibold uppercase leading-tight tracking-wider text-white/75 sm:text-[8px]">
-                      {metric.label}
-                    </span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
           </div>
 
           {ad.imageUrl && (
