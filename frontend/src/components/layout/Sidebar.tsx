@@ -54,6 +54,26 @@ export function Sidebar({
   const isNotificationItem = (item: NavItem) =>
     item.href.endsWith('/notifications')
 
+  // Prefix matching lets a parent item (e.g. /buyer/skin-analysis) stay active on
+  // child routes (/buyer/skin-analysis/:id), but when a more specific item also
+  // matches (e.g. /buyer/skin-analysis/history) only that one is highlighted.
+  const isItemActive = (item: NavItem) => {
+    const path = location.pathname
+    const matches = (href: string) =>
+      path === href ||
+      (href !== '/' &&
+        href !== '/buyer' &&
+        href !== '/merchant' &&
+        href !== '/admin' &&
+        path.startsWith(`${href}/`))
+    if (!matches(item.href)) return false
+    return !config.sections.some((section) =>
+      section.items.some(
+        (other) => other.href.length > item.href.length && matches(other.href),
+      ),
+    )
+  }
+
   const renderBadge = (item: NavItem) => {
     if (isNotificationItem(item) && unreadCount > 0) {
       return (
@@ -160,13 +180,7 @@ export function Sidebar({
             )}
             {section.items.map((item) => {
               const Icon = item.icon
-              const isActive =
-                location.pathname === item.href ||
-                (item.href !== '/' &&
-                  item.href !== '/buyer' &&
-                  item.href !== '/merchant' &&
-                  item.href !== '/admin' &&
-                  location.pathname.startsWith(`${item.href}/`))
+              const isActive = isItemActive(item)
 
               return (
                 <Link

@@ -51,6 +51,7 @@ import { OrderFulfillmentModule } from './modules/merchant/order-fulfillment/ord
     AdsModule,
     NotificationsModule,
     MatchingModule,
+    SkinAnalysisModule,
     OrderInsightsModule,
     OrderFulfillmentModule,
   ],

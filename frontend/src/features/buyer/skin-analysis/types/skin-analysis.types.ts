@@ -103,7 +103,6 @@ export interface AnalysisResultResponse {
   hydration: number
   confidence: number
   facialScanUrl: string
-  meshOverlayUrl: string
   conditions: ConditionDto[]
   findings: FindingsDto
   recommendations: RecommendationDto[]
