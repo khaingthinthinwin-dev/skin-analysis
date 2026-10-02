@@ -191,7 +191,7 @@ export function Sidebar({
                   className={cn(
                     'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
-                      ? 'bg-gradient-to-r from-purple-100/80 to-purple-50/50 text-purple-900 dark:from-purple-950/60 dark:to-purple-900/30 dark:text-purple-200 border-r-4 border-purple-600 font-semibold shadow-xs'
+                      ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 font-semibold shadow-xs before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-purple-600 before:rounded-r-full'
                       : 'text-muted-foreground hover:bg-purple-50/50 dark:hover:bg-purple-950/30 hover:text-purple-700 dark:hover:text-purple-300'
                   )}
                 >

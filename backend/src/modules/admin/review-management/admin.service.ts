@@ -822,6 +822,24 @@ export class AdminService {
         newValue: { isActive: dto.isActive, reason: dto.reason },
       });
 
+      // Send notification to the affected user
+      try {
+        await tx.notification.create({
+          data: {
+            userId,
+            type: dto.isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+            title: dto.isActive ? 'Account Activated' : 'Account Deactivated',
+            message: dto.isActive
+              ? 'Your account has been activated by an administrator.'
+              : `Your account has been deactivated by an administrator.${dto.reason ? ` Reason: ${dto.reason}` : ''}`,
+            entityType: 'user',
+            entityId: userId,
+          },
+        });
+      } catch {
+        // noop: notification is best-effort
+      }
+
       return {
         id: updated.id,
         isActive: updated.isActive,
