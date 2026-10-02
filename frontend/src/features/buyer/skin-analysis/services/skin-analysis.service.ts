@@ -44,7 +44,7 @@ export const skinAnalysisService = {
   },
 
   /**
-   * Get full analysis result by ID (conditions, findings, recommendations, mesh).
+    * Get full analysis result by ID (conditions, findings, recommendations).
    */
   async getAnalysisById(analysisId: string): Promise<SkinAnalysisSchema.AnalysisResultResponse> {
     const response = await apiClient.get<{ data: SkinAnalysisSchema.AnalysisResultResponse }>(
