@@ -6,6 +6,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query'
 import { notificationService } from '../services/notification.service'
+import type { NotificationItem } from '@/types/notification.types'
 
 export const notificationKeys = {
   all: ['notifications'] as const,
@@ -72,14 +73,23 @@ export function useNotifications(params?: {
     queryClient,
   )
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: notificationKeys.all })
-  }
-
   const markAsReadMutation = useMutation(
     {
       mutationFn: (id: string) => notificationService.markAsRead(id),
-      onSettled: invalidate,
+      onSuccess: (_data, id) => {
+        queryClient.setQueriesData(
+          { queryKey: [...notificationKeys.all, 'list'], exact: false },
+          (old: { items: NotificationItem[]; meta: unknown } | undefined) => {
+            if (!old) return old
+            const filtered = old.items.filter((n) => n.id !== id)
+            return { ...old, items: filtered }
+          },
+        )
+        queryClient.setQueryData(['notifications', 'unread-count'], (old: { count: number } | undefined) => {
+          if (!old) return old
+          return { count: Math.max(0, old.count - 1) }
+        })
+      },
     },
     queryClient,
   )
@@ -87,7 +97,19 @@ export function useNotifications(params?: {
   const markAllAsReadMutation = useMutation(
     {
       mutationFn: () => notificationService.markAllAsRead(),
-      onSettled: invalidate,
+      onSuccess: () => {
+        queryClient.setQueriesData(
+          { queryKey: [...notificationKeys.all, 'list'], exact: false },
+          (old: { items: NotificationItem[]; meta: unknown } | undefined) => {
+            if (!old) return old
+            return { ...old, items: [] }
+          },
+        )
+        queryClient.setQueryData(['notifications', 'unread-count'], (old: { count: number } | undefined) => {
+          if (!old) return old
+          return { count: 0 }
+        })
+      },
     },
     queryClient,
   )

@@ -104,7 +104,6 @@ export const analysisResultSchema = z.object({
   hydration: z.number(),
   confidence: z.number(),
   facialScanUrl: z.string(),
-  meshOverlayUrl: z.string(),
   conditions: z.array(conditionSchema),
   findings: findingsSchema,
   recommendations: z.array(recommendationSchema),

@@ -63,7 +63,6 @@ const historyAnalysis: AnalysisResultResponse = {
   hydration: 44,
   confidence: 92,
   facialScanUrl: '/scan.png',
-  meshOverlayUrl: '/mesh.png',
   conditions: [],
   findings: {
     primaryConcerns: [],

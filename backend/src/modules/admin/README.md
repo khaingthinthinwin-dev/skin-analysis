@@ -57,3 +57,11 @@
 
 ### Audit Logs
 - `GET /admin/audit-logs` - List audit logs with filtering and pagination
+- `GET /admin/audit-logs/filters` - Distinct action / entity type filter options
+- `GET /admin/audit-logs/:id` - Full detail with masked old/new JSON
+- `POST /admin/audit-logs/export` - Stream filtered results as CSV
+- `DELETE /admin/audit-logs/files` - Delete records aged >= 90 days
+- `GET /admin/audit-logs/filters` - Distinct action / entity type filter options
+- `GET /admin/audit-logs/:id` - Full detail with masked old/new JSON
+- `POST /admin/audit-logs/export` - Stream filtered results as CSV
+- `DELETE /admin/audit-logs/files` - Delete records aged >= 90 days

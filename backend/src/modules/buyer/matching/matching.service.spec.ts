@@ -117,6 +117,102 @@ describe('MatchingService', () => {
       expect(result.data[0].matchScore).toBeGreaterThan(0);
     });
 
+    it('should lead page 1 with previously recommended products that are still on sale', async () => {
+      const analysisMock = {
+        id: 'analysis-1',
+        skinType: 'oily',
+        completedAt: new Date(),
+        conditions: [{ conditionName: 'acne' }],
+        recommendations: [
+          {
+            displayOrder: 1,
+            product: {
+              id: 'prev-1',
+              name: 'Previous Pick',
+              slug: 'previous-pick',
+              price: 1500,
+              compareAtPrice: null,
+              images: ['prev.jpg'],
+              skinTypes: ['oily'],
+              tags: ['acne'],
+              ingredients: ['salicylic_acid'],
+              avgRating: 4.8,
+              reviewCount: 30,
+              isFeatured: false,
+              stockQuantity: 4,
+              isActive: true,
+              merchant: {
+                shopName: 'Glow Beauty Shop',
+                user: { shop: { isApproved: true } },
+              },
+            },
+          },
+        ],
+      };
+      mockPrisma.skinAnalysis.findFirst.mockResolvedValue(analysisMock);
+      mockRedis.get.mockResolvedValue(null);
+      mockPrisma.product.findMany.mockResolvedValue([
+        {
+          id: 'p1',
+          name: 'Acne Serum',
+          slug: 'acne-serum',
+          price: 2500,
+          compareAtPrice: 3000,
+          images: ['img.jpg'],
+          skinTypes: ['oily'],
+          tags: ['acne'],
+          ingredients: ['salicylic_acid'],
+          avgRating: 4.7,
+          reviewCount: 50,
+          isFeatured: true,
+          stockQuantity: 10,
+        },
+      ]);
+      mockPrisma.product.count.mockResolvedValue(1);
+
+      const result = await service.getPersonalized(userId, { page: 1 });
+
+      expect(result.data[0].id).toBe('prev-1');
+      expect(result.data[0].matchScore).not.toBeNull();
+      expect(result.data[1].id).toBe('p1');
+      expect(result.meta.total).toBe(2);
+    });
+
+    it('should not prepend previously recommended products on later pages', async () => {
+      mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+        id: 'analysis-1',
+        skinType: 'oily',
+        completedAt: new Date(),
+        conditions: [],
+        recommendations: [],
+      });
+      mockRedis.get.mockResolvedValue(null);
+      mockPrisma.product.findMany.mockResolvedValue([
+        {
+          id: 'p1',
+          name: 'Acne Serum',
+          slug: 'acne-serum',
+          price: 2500,
+          compareAtPrice: 3000,
+          images: ['img.jpg'],
+          skinTypes: ['oily'],
+          tags: ['acne'],
+          ingredients: ['salicylic_acid'],
+          avgRating: 4.7,
+          reviewCount: 50,
+          isFeatured: true,
+          stockQuantity: 10,
+        },
+      ]);
+      mockPrisma.product.count.mockResolvedValue(1);
+
+      const result = await service.getPersonalized(userId, { page: 2 });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('p1');
+      expect(result.meta.total).toBe(1);
+    });
+
     it('should use cached result on Redis HIT', async () => {
       const cachedResult = {
         data: [],
@@ -792,6 +888,12 @@ describe('MatchingService', () => {
                 ingredients: ['Hyaluronic Acid'],
                 avgRating: 4.5,
                 isFeatured: false,
+                isActive: true,
+                stockQuantity: 5,
+                merchant: {
+                  shopName: 'Glow Beauty Shop',
+                  user: { shop: { isApproved: true } },
+                },
               },
               matchScore: 92,
             },
@@ -815,6 +917,67 @@ describe('MatchingService', () => {
 
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);
+    });
+
+    it('should list only products still on sale, highest match first', async () => {
+      const approvedMerchant = {
+        shopName: 'Glow Beauty Shop',
+        user: { shop: { isApproved: true } },
+      };
+      mockPrisma.skinAnalysis.findMany.mockResolvedValue([
+        {
+          id: 'analysis-1',
+          completedAt: new Date('2026-08-20'),
+          skinType: 'oily',
+          conditions: [{ conditionName: 'acne' }],
+          recommendations: [
+            {
+              displayOrder: 1,
+              matchScore: 60,
+              product: {
+                id: 'sold-1',
+                name: 'Still Sold',
+                slug: 'still-sold',
+                price: 1000,
+                images: ['sold.jpg'],
+                skinTypes: ['oily'],
+                tags: ['acne'],
+                ingredients: ['salicylic_acid'],
+                avgRating: 4.9,
+                isFeatured: false,
+                isActive: true,
+                stockQuantity: 3,
+                merchant: approvedMerchant,
+              },
+            },
+            {
+              displayOrder: 2,
+              matchScore: 95,
+              product: {
+                id: 'inactive-1',
+                name: 'No Longer Sold',
+                slug: 'inactive-1',
+                price: 1000,
+                images: ['old.jpg'],
+                skinTypes: ['oily'],
+                tags: [],
+                ingredients: [],
+                avgRating: 4.0,
+                isFeatured: false,
+                isActive: false,
+                stockQuantity: 0,
+                merchant: approvedMerchant,
+              },
+            },
+          ],
+        },
+      ]);
+      mockPrisma.skinAnalysis.count.mockResolvedValue(1);
+
+      const result = await service.getHistory(userId);
+
+      expect(result.data[0].products).toHaveLength(1);
+      expect(result.data[0].products[0].id).toBe('sold-1');
     });
   });
 });

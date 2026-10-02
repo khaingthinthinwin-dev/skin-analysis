@@ -21,7 +21,11 @@
     "licenseStatus": "License အခြေအနေ",
     "licenseApproved": "အတည်ပြုပြီး",
     "licenseRejected": "ပယ်ချပြီး",
-    "licensePending": "စောင့်ဆိုင်းဆဲ"
+    "licensePending": "စောင့်ဆိုင်းဆဲ",
+    "status": {
+      "active": "အသုံးပြုနေသည်",
+      "inactive": "ပိတ်ထားသည်"
+    }
   },
   "form": {
     "title": "Profile ပြင်ဆင်ရန်",
