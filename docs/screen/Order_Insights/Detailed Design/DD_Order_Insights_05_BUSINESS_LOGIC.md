@@ -86,7 +86,7 @@ Every method enforces the caller's role-based data scope as its **first logic st
    - **Scope first:** resolve the target merchant exactly as in §2.4 (JWT for merchant role, `merchantId` parameter for admin — 機能設計書 §10.4) and verify the license gate for merchant callers (BR-OI-005/006). The aggregation is scoped to this merchant's own orders only (BR-OI-001/003).
    - Check the cache `cache:oi:merchant:{merchantId}:summary` (§6). On HIT return the cached summary.
    - On MISS, resolve the period window in **UTC** and run **one** aggregation over the same in-scope order set (BR-OI-027) computing all five fields per §4: `orderCount`; `sales` (BR-OI-021); `commission` (BR-OI-022/023, rounded per order — BR-OI-028); `revenue` (BR-OI-024); `aov` (BR-OI-025, **net Revenue as the numerator**).
-   - Attach `commissionRate`, `commissionRateSource: "current_settings"`, `commissionRateLocked: false` until `orders.commission_rate` exists (BR-OI-023; §4.3).
+   - Attach `commissionRate`, `commissionRateSource: "current_settings"`, `commissionRateLocked: false` — the summary quotes one current platform rate per period (BR-OI-023; §4.3).
    - Return **all four figures together** — the DTO has no partial form; a bare "revenue" figure is forbidden (BR-OI-026).
    - Seed the cache (TTL `OI_SUMMARY_CACHE_TTL_SECONDS`).
    - Log `MERCHANT_SUMMARY_VIEWED` (userId, merchantId, type `revenue`, period).
@@ -250,14 +250,15 @@ async getRevenueSummary(currentUser: JwtUser, query: SummaryQuery): Promise<Reve
 
 Monetary arithmetic uses `DECIMAL` semantics throughout; half-up rounding to 2 decimals happens at the presentation boundary only — except commission, which is rounded **per order before summation** to match payout arithmetic (`payouts.commission_amount`, DATABASE_SPEC §3.18) (BR-OI-028).
 
-### 4.3 Commission Rate Sourcing (BR-OI-023 — schema gap)
+### 4.3 Commission Rate Sourcing (BR-OI-023)
 
-Requirement Spec §7.7 requires the rate to be locked at order creation, but `orders` has **no** `commission_rate` column; only the global, mutable `commission_settings.commission_rate` (default `12.00`, DATABASE_SPEC §3.17) exists. Until the column is added:
+Requirement Spec §7.7 requires the rate to be locked at order creation. `orders.commission_rate` (`DECIMAL(5,2) NOT NULL DEFAULT 12.00`, written at checkout) exists and the merchant order list (`GET /orders`) and merchant order detail (`GET /merchant/orders/:id`) expose it per order as a fixed 2-decimal string. The **Revenue Summary** still sources its single rate from the global, mutable `commission_settings.commission_rate` (default `12.00`, DATABASE_SPEC §3.17) because one period can mix per-order rates:
 
 ```typescript
 async getCommissionRate(): Promise<Decimal> {
-  // TODO(schema gap): once orders.commission_rate exists, read the per-order
-  // snapshot and return { source: 'order_snapshot', locked: true } (BR-OI-023).
+  // TODO(aggregation gap): the period can mix per-order rates, so a single
+  // locked figure cannot be derived from orders.commission_rate yet; the
+  // per-order snapshots are already exposed on the merchant order list/detail.
   const settings = await this.prisma.commissionSettings.findFirst();
   this.rateSource = 'current_settings';
   this.rateLocked = false;

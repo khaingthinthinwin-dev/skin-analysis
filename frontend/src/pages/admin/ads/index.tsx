@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { BarChart3, Download, LayoutGrid } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +35,9 @@ export default function AdminAdListPage() {
   const [review, setReview] = useState<{ id: string; viewOnly: boolean } | null>(null)
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false)
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false)
+  const [highlightAdId, setHighlightAdId] = useState<string | null>(() =>
+    searchParams.get('highlightAdId')
+  )
 
   const params: AdminAdListQuery = useMemo(
     () => ({ ...filters, page, limit }),
@@ -136,6 +139,26 @@ export default function AdminAdListPage() {
     )
   }
 
+  // Handle highlightAdId from URL (e.g., from AD_SUBMITTED notification)
+  useEffect(() => {
+    const adId = searchParams.get('highlightAdId')
+    if (adId && adId !== highlightAdId) {
+      // Defer state update to avoid synchronous setState in effect
+      window.setTimeout(() => {
+        setHighlightAdId(adId)
+        // Auto-clear highlight after 8 seconds
+        const timer = window.setTimeout(() => {
+          setHighlightAdId(null)
+          // Clean up URL
+          const params = new URLSearchParams(searchParams)
+          params.delete('highlightAdId')
+          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
+        }, 8000)
+        return () => window.clearTimeout(timer)
+      }, 0)
+    }
+  }, [searchParams, highlightAdId])
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -185,6 +208,7 @@ export default function AdminAdListPage() {
         onReview={(id) => setReview({ id, viewOnly: false })}
         onView={(id) => setReview({ id, viewOnly: true })}
         isLoading={adsQuery.isPending}
+        highlightAdId={highlightAdId}
       />
 
       <Pagination

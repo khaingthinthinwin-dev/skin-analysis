@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
+import { cn } from '@/lib/utils';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -185,6 +187,21 @@ function truncateText(value: string, maxLength = 20) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function MerchantManagement() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightMerchantId = searchParams.get('merchantId');
+
+  useEffect(() => {
+    if (highlightMerchantId) {
+      const timer = setTimeout(() => {
+        setSearchParams((params) => {
+          params.delete('merchantId')
+          return params
+        })
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [highlightMerchantId, setSearchParams])
+
   // ── State ───────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);

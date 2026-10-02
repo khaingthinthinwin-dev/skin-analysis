@@ -21,9 +21,11 @@ import { PromotionsModule } from './modules/merchant/promotions/promotions.modul
 import { AdsModule } from './modules/shared/ads/ads.module';
 import { NotificationsModule } from './modules/shared/notifications/notifications.module';
 import { MatchingModule } from './modules/buyer/matching/matching.module';
-import { SkinAnalysisModule } from './modules/buyer/skin-analysis/skin-analysis.module';
 import { AppController } from './app.controller';
+import { SkinAnalysisModule } from './modules/buyer/skin-analysis/skin-analysis.module';
 import { AppService } from './app.service';
+import { OrderInsightsModule } from './modules/shared/order-insights/order-insights.module';
+import { OrderFulfillmentModule } from './modules/merchant/order-fulfillment/order-fulfillment.module';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { AppService } from './app.service';
     NotificationsModule,
     MatchingModule,
     SkinAnalysisModule,
+    OrderInsightsModule,
+    OrderFulfillmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -56,6 +56,7 @@ Role-scoped order history list — buyer (own orders), merchant (own shop), admi
       "totalAmount": "120.00",
       "paymentStatus": "completed",
       "customerName": "Aye Aye",
+      "commissionRate": "12.00",
       "shopName": "Lotus Glow Shop"
     }
   ],
@@ -64,6 +65,8 @@ Role-scoped order history list — buyer (own orders), merchant (own shop), admi
 ```
 
 > `customerName` present for merchant/admin rows; `shopName` present for admin only (BR-OI-015). Buyer rows omit both.
+>
+> `commissionRate` is present for **merchant** rows only — `orders.commission_rate`, the fixed 2-decimal rate in force when the order was placed (BR-OI-023), projected per row so the merchant list and its CSV export can show each order's own rate instead of today's platform rate. Buyer and admin rows omit it.
 
 - **Error Responses:**
   - `400 BAD_REQUEST` — Invalid status / date range / pagination / sort parameter ("Invalid order status", "Invalid date range", "Invalid page number", "Invalid limit", "Invalid sort option" — 機能設計書 §8.1)
@@ -76,7 +79,7 @@ Role-scoped order history list — buyer (own orders), merchant (own shop), admi
   2. Apply owner scoping from the JWT identity only (BR-OI-001; Requirement Spec §6.4): buyer → `orders.buyer_id = currentUser.id` (BR-OI-002); merchant → resolve `merchants.id` from `merchants.user_id = currentUser.id` (BR-OI-003), verify `license_status = 'approved'` else `403` (BR-OI-006), then `orders.merchant_id = <resolved id>`; admin → no owner filter (BR-OI-004).
   3. Apply optional `status` (BR-OI-011) and `from`/`to` (BR-OI-012) filters; admin `merchantId`/`shopId`/status/date filters combine with AND semantics in SQL, never client-side (BR-OI-016).
   4. Sort `created_at DESC` default (BR-OI-009); paginate default 20, max 100 (BR-OI-010).
-  5. Project the role-appropriate DTO — `customerName` for merchant/admin only (BR-OI-015), `shopName` for admin only (機能設計書 §7.4).
+  5. Project the role-appropriate DTO — `customerName` for merchant/admin only (BR-OI-015), `shopName` for admin only (機能設計書 §7.4), `commissionRate` for merchant only (`orders.commission_rate` as a 2-decimal string, BR-OI-023).
   6. Return rows + `meta` (`page`, `limit`, `total`).
 - **Audit:** `ORDER_LIST_VIEWED` with `userId`, `role`, applied filters, `page` (retained 90 days)
 - **Rate Limit:** 60 attempts per user per minute

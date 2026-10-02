@@ -4,7 +4,9 @@ import {
   IsIn,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
+  MaxLength,
   Max,
   Min,
 } from 'class-validator';
@@ -57,4 +59,13 @@ export class OrderListQueryDto {
   @IsOptional()
   @IsUUID()
   shopId?: string;
+
+  @IsOptional()
+  @IsIn(['pending', 'completed'])
+  paymentStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  shopSearch?: string;
 }

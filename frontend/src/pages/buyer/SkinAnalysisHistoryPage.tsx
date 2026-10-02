@@ -244,10 +244,11 @@ export default function SkinAnalysisHistoryPage() {
               <div className="flex items-end">
                 <Button
                   variant="ghost"
-                  className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                  size="sm"
+                  className="h-9 gap-1.5 px-3 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => { setParams({ page: 1, pageSize: 10 }); setShowFilters(false) }}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                   {t('common.clearFilters')}
                 </Button>
               </div>
