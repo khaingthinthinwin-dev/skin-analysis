@@ -2,7 +2,6 @@ import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatPrice } from '@/lib/format'
 import type { AdminAdFeeHistory } from '@/types/admin-ad-management'
 import { TierBadge } from './badges'
@@ -17,6 +16,31 @@ interface FeeHistoryTableProps {
   onDeleteRow?: (row: AdminAdFeeHistory) => void
   isDeleting?: boolean
 }
+
+// Responsive styling follows AdTable: uppercase muted header band, tight
+// horizontal padding, truncated text, and a sticky right-pinned Actions
+// column so the Delete button stays reachable. The lower-priority Old Rate,
+// Changed By, and Reason columns collapse below md/lg/xl so the core columns
+// fit on smaller viewports; the wrapper's overflow-x-auto only remains as a
+// fallback for the narrowest screens.
+const TH_BASE =
+  'text-left align-middle h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
+
+const TH_CLASS = `${TH_BASE} bg-muted/40`
+
+const TH_STICKY_CLASS = `${TH_BASE} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-[''] before:bg-muted/40`
+
+const TD_CLASS = 'py-4 px-2 text-sm text-muted-foreground border-b border-border'
+
+const TD_STICKY_CLASS = `${TD_CLASS} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-['']`
+
+const ROW_CLASS = 'group transition-colors duration-150 ease-in-out hover:bg-muted/40'
+
+// Responsive column visibility — shared by header, body, and skeleton rows
+// so they always line up.
+const OLD_RATE_COL_CLASS = 'hidden md:table-cell'
+const CHANGED_BY_COL_CLASS = 'hidden lg:table-cell'
+const REASON_COL_CLASS = 'hidden xl:table-cell'
 
 export function FeeHistoryTable({
   rows = [],
@@ -33,43 +57,55 @@ export function FeeHistoryTable({
     deletableRows.every((row) => selectedIds.includes(row.id))
   if (isLoading) {
     return (
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12" />
-              <TableHead>Date</TableHead>
-              <TableHead>Placement</TableHead>
-              <TableHead>Tier</TableHead>
-              <TableHead className="text-right">Old Rate</TableHead>
-              <TableHead className="text-right">New Rate</TableHead>
-              <TableHead>Changed By</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <div className="overflow-x-auto rounded-lg border bg-card">
+        <table className="w-full border-separate border-spacing-0">
+          <thead className="sticky top-0 z-10">
+            <tr>
+              <th scope="col" className={`${TH_CLASS} w-10`} />
+              <th scope="col" className={TH_CLASS}>Date</th>
+              <th scope="col" className={TH_CLASS}>Placement</th>
+              <th scope="col" className={TH_CLASS}>Tier</th>
+              <th scope="col" className={`${TH_CLASS} ${OLD_RATE_COL_CLASS} text-right`}>Old Rate</th>
+              <th scope="col" className={`${TH_CLASS} text-right`}>New Rate</th>
+              <th scope="col" className={`${TH_CLASS} ${CHANGED_BY_COL_CLASS}`}>Changed By</th>
+              <th scope="col" className={`${TH_CLASS} ${REASON_COL_CLASS}`}>Reason</th>
+              <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
             {Array.from({ length: 5 }, (_, i) => (
-              <TableRow key={i}>
-                {Array.from({ length: 9 }, (_, j) => (
-                  <TableCell key={j}>
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
-                ))}
-              </TableRow>
+              <tr key={i}>
+                {Array.from({ length: 9 }, (_, j) => {
+                  const extra =
+                    j === 4
+                      ? ` ${OLD_RATE_COL_CLASS}`
+                      : j === 6
+                        ? ` ${CHANGED_BY_COL_CLASS}`
+                        : j === 7
+                          ? ` ${REASON_COL_CLASS}`
+                          : j === 8
+                            ? ' sticky right-0 z-10 bg-card'
+                            : ''
+                  return (
+                    <td key={j} className={`${TD_CLASS}${extra}`}>
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  )
+                })}
+              </tr>
             ))}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
     )
   }
 
   return (
-    <div className="rounded-md border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">
+    <div className="overflow-x-auto rounded-lg border bg-card">
+      <table className="w-full border-separate border-spacing-0">
+        <thead className="sticky top-0 z-10">
+          <tr>
+            <th scope="col" className={`${TH_CLASS} w-10`}>
               <Checkbox
                 checked={allDeletableSelected}
                 onCheckedChange={(checked) => onSelectAll?.(checked)}
@@ -81,40 +117,41 @@ export function FeeHistoryTable({
                 }
                 aria-label="Select all deletable fee change history"
               />
-            </TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Placement</TableHead>
-            <TableHead>Tier</TableHead>
-            <TableHead className="text-right">Old Rate</TableHead>
-            <TableHead className="text-right">New Rate</TableHead>
-            <TableHead>Changed By</TableHead>
-            <TableHead>Reason</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </th>
+            <th scope="col" className={TH_CLASS}>Date</th>
+            <th scope="col" className={TH_CLASS}>Placement</th>
+            <th scope="col" className={TH_CLASS}>Tier</th>
+            <th scope="col" className={`${TH_CLASS} ${OLD_RATE_COL_CLASS} text-right`}>Old Rate</th>
+            <th scope="col" className={`${TH_CLASS} text-right`}>New Rate</th>
+            <th scope="col" className={`${TH_CLASS} ${CHANGED_BY_COL_CLASS}`}>Changed By</th>
+            <th scope="col" className={`${TH_CLASS} ${REASON_COL_CLASS}`}>Reason</th>
+            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
           {rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+            <tr>
+              <td colSpan={9} className={`${TD_CLASS} py-10 text-center text-muted-foreground`}>
                 No fee change history found.
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ) : (
             rows.map((row, index) => {
               const deletable = isHistoryDeletable(row.createdAt)
               const selected = selectedIds.includes(row.id)
+              const rowBg = selected
+                ? ' bg-secondary/40'
+                : index % 2 === 1
+                  ? ' bg-muted/50'
+                  : ''
+              const stickyBg = selected
+                ? ' before:bg-secondary/40'
+                : index % 2 === 1
+                  ? ' before:bg-muted/50'
+                  : ''
               return (
-                <TableRow
-                  key={row.id}
-                  className={
-                    selected
-                      ? 'bg-secondary/40'
-                      : index % 2 === 1
-                        ? 'bg-muted/50'
-                        : undefined
-                  }
-                >
-                  <TableCell>
+                <tr key={row.id} className={`${ROW_CLASS}${rowBg}`}>
+                  <td className={TD_CLASS}>
                     <Checkbox
                       checked={selected}
                       onCheckedChange={(checked) => onSelectRow?.(row.id, checked)}
@@ -126,23 +163,33 @@ export function FeeHistoryTable({
                       }
                       aria-label={`Select fee change history from ${formatDate(row.createdAt)}`}
                     />
-                  </TableCell>
-                  <TableCell>{formatDate(row.createdAt)}</TableCell>
-                  <TableCell className="font-medium">{PLACEMENT_LABELS[row.placement]}</TableCell>
-                  <TableCell>
+                  </td>
+                  <td className={`${TD_CLASS} whitespace-nowrap tabular-nums`}>
+                    {formatDate(row.createdAt)}
+                  </td>
+                  <td className={`${TD_CLASS} font-medium text-foreground`}>
+                    <div className="max-w-[120px] truncate" title={PLACEMENT_LABELS[row.placement]}>
+                      {PLACEMENT_LABELS[row.placement]}
+                    </div>
+                  </td>
+                  <td className={TD_CLASS}>
                     <TierBadge tier={row.tier} />
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </td>
+                  <td className={`${TD_CLASS} ${OLD_RATE_COL_CLASS} text-right tabular-nums`}>
                     {row.oldDailyRate ? formatPrice(Number(row.oldDailyRate)) : '\u2014'}
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </td>
+                  <td className={`${TD_CLASS} text-right text-foreground font-semibold tabular-nums`}>
                     {formatPrice(Number(row.newDailyRate))}
-                  </TableCell>
-                  <TableCell>{row.changedByName}</TableCell>
-                  <TableCell className="max-w-[240px] truncate" title={row.changeReason ?? ''}>
-                    {row.changeReason ?? '\u2014'}
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </td>
+                  <td className={`${TD_CLASS} ${CHANGED_BY_COL_CLASS} whitespace-nowrap`}>
+                    {row.changedByName}
+                  </td>
+                  <td className={`${TD_CLASS} ${REASON_COL_CLASS}`}>
+                    <div className="max-w-[240px] truncate" title={row.changeReason ?? ''}>
+                      {row.changeReason ?? '\u2014'}
+                    </div>
+                  </td>
+                  <td className={`${TD_STICKY_CLASS} text-right${stickyBg} group-hover:before:bg-muted/40`}>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -156,15 +203,15 @@ export function FeeHistoryTable({
                       onClick={() => onDeleteRow?.(row)}
                     >
                       <Trash2 className="mr-1 h-4 w-4" />
-                      Delete
+                     
                     </Button>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               )
             })
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   )
 }

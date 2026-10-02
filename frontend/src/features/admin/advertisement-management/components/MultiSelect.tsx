@@ -34,11 +34,11 @@ export function MultiSelect({ label, options, value, onChange }: MultiSelectProp
         : `${value.length} selected`
 
   return (
-    <div className="relative">
+    <div className="relative w-full min-w-0 sm:w-52">
       <Button
         type="button"
         variant="outline"
-        className="h-9 w-52 justify-between font-normal"
+        className="h-9 w-full justify-between font-normal sm:w-52"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -53,7 +53,7 @@ export function MultiSelect({ label, options, value, onChange }: MultiSelectProp
             role="listbox"
             aria-multiselectable="true"
             aria-label={label}
-            className="absolute left-0 top-full z-40 mt-1 max-h-60 w-52 overflow-auto rounded-md border bg-background shadow-md"
+            className="absolute left-0 top-full z-40 mt-1 max-h-60 w-full min-w-[13rem] overflow-auto rounded-md border bg-background shadow-md"
           >
             {value.length > 0 && (
               <button
