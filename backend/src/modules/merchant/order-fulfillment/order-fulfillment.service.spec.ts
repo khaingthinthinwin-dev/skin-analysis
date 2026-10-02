@@ -1,3 +1,5 @@
+/// <reference types="jest" />
+
 import {
   BadRequestException,
   ForbiddenException,
@@ -77,6 +79,8 @@ const statusMap: Record<
 
 const dateValues = {
   id: 'order-1',
+  orderNumber: 'ORD-0000001',
+  buyerId: 'buyer-1',
   createdAt: new Date('2026-08-21T09:30:00.000Z'),
   merchantId: 'merchant-1',
   paymentMethod: 'cod',
@@ -139,12 +143,15 @@ describe('OrderFulfillmentService', () => {
   const tx = {
     order: { update: jest.fn(), findUnique: jest.fn() },
     orderStatusHistory: { create: jest.fn() },
+    notification: { create: jest.fn() },
   };
 
   let service: OrderFulfillmentService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    redis.checkRateLimit.mockReset();
+    redis.checkRateLimit.mockResolvedValue(true);
     prisma.merchant.findUnique.mockResolvedValue(approvedMerchant);
     prisma.order.findUnique.mockResolvedValue(null);
     prisma.orderStatus.findFirst.mockImplementation(
@@ -167,7 +174,7 @@ describe('OrderFulfillmentService', () => {
     tx.order.update.mockResolvedValue({});
     tx.order.findUnique.mockResolvedValue(makeDetailOrder('packed'));
     tx.orderStatusHistory.create.mockResolvedValue({ id: 'history-1' });
-    redis.checkRateLimit.mockResolvedValue(true);
+    tx.notification.create.mockResolvedValue({ id: 'notification-1' });
     service = new OrderFulfillmentService(prisma as never, redis as never);
   });
 
@@ -587,7 +594,7 @@ describe('OrderFulfillmentService', () => {
         ['out_for_delivery', 'delivered'],
       ];
 
-      for (const [from, to] of steps) {
+      for (const [stepIndex, [from, to]] of steps.entries()) {
         prisma.order.findUnique.mockResolvedValue(makeStatusOrder(from));
         tx.order.findUnique.mockResolvedValue(makeDetailOrder(to));
 
@@ -603,6 +610,16 @@ describe('OrderFulfillmentService', () => {
             statusId: statusMap[to].id,
             changedBy: 'user-m1',
             note: 'Status updated by merchant',
+          },
+        });
+        expect(tx.notification.create).toHaveBeenNthCalledWith(stepIndex + 1, {
+          data: {
+            userId: 'buyer-1',
+            type: 'ORDER_STATUS_UPDATED',
+            title: `Order ${statusMap[to].statusName}`,
+            message: `Your order ORD-0000001 is now ${statusMap[to].statusName.toLowerCase()}.`,
+            entityType: 'order',
+            entityId: 'order-1',
           },
         });
       }
@@ -724,6 +741,16 @@ describe('OrderFulfillmentService', () => {
           statusId: statusMap.confirmed.id,
           changedBy: 'user-m1',
           note: 'Status updated by merchant',
+        },
+      });
+      expect(tx.notification.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'buyer-1',
+          type: 'ORDER_CONFIRMED',
+          title: 'Order confirmed',
+          message: 'The merchant has confirmed your order ORD-0000001.',
+          entityType: 'order',
+          entityId: 'order-1',
         },
       });
       expect(result.status).toBe('confirmed');

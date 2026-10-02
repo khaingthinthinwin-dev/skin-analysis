@@ -45,7 +45,11 @@ export class AdvertisementsService {
           take: 1,
         },
       },
-      orderBy: [{ placement: 'asc' }, { tier: 'asc' }],
+      // Most recently updated packages first, so a package an admin just
+      // created, re-rated or reactivated shows up as the first card of the
+      // merchant catalog. Placement → tier is kept as a deterministic
+      // tie-breaker for packages written in the same transaction.
+      orderBy: [{ updatedAt: 'desc' }, { placement: 'asc' }, { tier: 'asc' }],
     });
     // Hide packages whose latest effective_from date has not been reached yet.
     const visibleSettings = settings.filter(
@@ -60,6 +64,7 @@ export class AdvertisementsService {
       durationDays: setting.durationDays,
       maxAds: setting.maxAds,
       totalFee: setting.dailyRate.mul(setting.durationDays).toFixed(2),
+      updatedAt: setting.updatedAt.toISOString(),
     }));
     await this.redis.set(PACKAGES_CACHE_KEY, JSON.stringify(result), 600);
     return result;

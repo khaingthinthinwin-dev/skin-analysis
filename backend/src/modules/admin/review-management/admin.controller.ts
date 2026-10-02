@@ -205,19 +205,4 @@ export class AdminController {
   async deleteReport(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     await this.adminService.deleteReport(id, user.id);
   }
-
-  // ─── Audit Logs ────────────────────────────────────────────────────────
-
-  @Get('audit-logs')
-  getAuditLogs(
-    @Query()
-    query: {
-      page?: number;
-      limit?: number;
-      action?: string;
-      userId?: string;
-    },
-  ) {
-    return this.adminService.getAuditLogs(query);
-  }
 }

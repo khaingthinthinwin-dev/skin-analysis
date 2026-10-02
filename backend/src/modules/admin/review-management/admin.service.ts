@@ -1012,37 +1012,6 @@ export class AdminService {
     });
   }
 
-  // ─── Audit Logs ────────────────────────────────────────────────────────
-
-  async getAuditLogs(params: {
-    page?: number;
-    limit?: number;
-    action?: string;
-    userId?: string;
-  }) {
-    const { page = 1, limit = 20, action, userId } = params;
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.AuditLogWhereInput = {};
-    if (action) where.action = { contains: action };
-    if (userId) where.userId = userId;
-
-    const [items, total] = await Promise.all([
-      this.prisma.auditLog.findMany({
-        where,
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.auditLog.count({ where }),
-    ]);
-
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
-  }
-
   // ─── Private Helpers ───────────────────────────────────────────────────
 
   private async recalculateProductStats(

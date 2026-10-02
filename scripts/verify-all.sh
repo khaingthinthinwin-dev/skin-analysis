@@ -25,7 +25,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 STEP_RESULTS=()
-TOTAL_STEPS=3
+TOTAL_STEPS=4
 PASSED=0
 FAILED=0
 WARNED=0
@@ -68,10 +68,50 @@ record_warn() {
   WARNED=$((WARNED + 1))
 }
 
-# ─── STEP 1: Quality Gates — Backend ────────────────────────────────────────
+# ─── STEP 1: Preflight ──────────────────────────────────────────────────────
+
+# The dev servers keep files open: `nest start --watch` owns backend/dist and
+# the coverage runner owns frontend/coverage. Verifying while they run makes
+# the build die with `EPERM rmdir backend/dist/...` and the tests with
+# `ENOTEMPTY frontend/coverage/.tmp` - confusing errors that look like broken
+# code. Fail fast with the real cause instead.
+step_preflight() {
+  print_step "1" "Preflight (stop the dev servers first)"
+
+  local dev_pids
+
+  dev_pids="$(netstat -ano 2>/dev/null | grep -i listening | grep -E ':(8080|3000)[[:space:]]' | awk '{print $NF}' | sort -u | tr '\n' ' ' || true)"
+
+  if [ -n "${dev_pids// /}" ]; then
+    echo -e "  ${RED}✖${NC} Dev server(s) running — PID(s): ${dev_pids}"
+    echo -e "      backend  (npm run start:dev) uses :8080 and owns backend/dist"
+    echo -e "      frontend (npm run dev)        uses :3000"
+    echo -e "    Stop them (Ctrl+C in their terminals) or:"
+    echo -e "      taskkill /PID <pid> /F"
+    echo -e "    Then re-run: bash scripts/verify-all.sh"
+    echo ""
+    record_fail "Preflight — dev servers must be stopped before verifying"
+    print_report
+    exit 1
+  fi
+
+  echo -e "  ${GREEN}✔${NC} No dev servers on :8080/:3000"
+
+  # A coverage run that was interrupted leaves coverage/.tmp behind, and the
+  # next run then fails with ENOTEMPTY. Start from a clean folder.
+  if [ -d "$PROJECT_ROOT/frontend/coverage" ]; then
+    rm -rf "$PROJECT_ROOT/frontend/coverage"
+    echo -e "  ${GREEN}✔${NC} Removed stale frontend/coverage (incl. .tmp)"
+  fi
+
+  echo ""
+  record_pass "Preflight (no dev servers, clean coverage folder)"
+}
+
+# ─── STEP 2: Quality Gates — Backend ────────────────────────────────────────
 
 step_backend_quality() {
-  print_step "1" "Backend Quality Gates (lint, build, test)"
+  print_step "2" "Backend Quality Gates (lint, build, test)"
 
   local gate_failures=0
 
@@ -109,10 +149,10 @@ step_backend_quality() {
   fi
 }
 
-# ─── STEP 2: Quality Gates — Frontend ───────────────────────────────────────
+# ─── STEP 3: Quality Gates — Frontend ───────────────────────────────────────
 
 step_frontend_quality() {
-  print_step "2" "Frontend Quality Gates (lint, build, test)"
+  print_step "3" "Frontend Quality Gates (lint, build, test)"
 
   local gate_failures=0
 
@@ -150,10 +190,10 @@ step_frontend_quality() {
   fi
 }
 
-# ─── STEP 3: Test Coverage Check ────────────────────────────────────────────
+# ─── STEP 4: Test Coverage Check ────────────────────────────────────────────
 
 step_test_coverage() {
-  print_step "3" "Test Coverage Report"
+  print_step "4" "Test Coverage Report"
 
   cd "$PROJECT_ROOT/backend"
   echo -e "  ${CYAN}[3]${NC} Running backend coverage..."
@@ -216,6 +256,7 @@ print_report() {
 main() {
   print_header
 
+  step_preflight
   step_backend_quality
   step_frontend_quality
   step_test_coverage

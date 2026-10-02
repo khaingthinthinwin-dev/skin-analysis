@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Eye, ShieldCheck } from 'lucide-react'
+import { Eye, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,17 +19,44 @@ interface AdTableProps {
   highlightAdId?: string | null
 }
 
-const COLUMNS = 11
+// Table styling follows the admin ads mock: uppercase muted header on a
+// neutral band, comfortable 14px rows, and muted supporting text with the
+// key columns (shop, fee) emphasized in foreground.
+//
+// Horizontal fit: cells use tight horizontal padding, long text is truncated
+// through inner wrappers, and the lower-priority Placement column collapses
+// below xl so every remaining column (especially Actions and Submitted)
+// fits within the card on laptop viewports. Submitted is never hidden by a
+// breakpoint: browser zoom shrinks the effective viewport and made it
+// disappear at Zoom +. The wrapper's overflow-x-auto only remains as a
+// fallback for narrower screens, where the Actions column pins to the right
+// edge so its buttons stay reachable.
 const TH_BASE =
-  'text-left h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
+  'text-left align-middle h-12 px-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap'
 
 const TH_CLASS = `${TH_BASE} bg-muted/40`
+
+// Pinned (sticky) Actions cells must be opaque, otherwise content scrolling
+// underneath would show through them. bg-card is the opaque base and the
+// before: overlay re-applies the same token-based tints the rest of the table
+// uses (header band, row hover, row selection), so the pinned cells stay
+// visually identical to their neighbours.
+const TH_STICKY_CLASS = `${TH_BASE} sticky right-0 z-10 bg-card before:absolute before:inset-0 before:-z-10 before:content-[''] before:bg-muted/40`
+
 const TD_BASE = 'py-4 px-2 text-sm text-muted-foreground border-b border-border'
-const ROW_BASE = 'group transition-colors duration-150 ease-in-out hover:bg-muted/40'
 
+const ROW_BASE =
+  'group transition-colors duration-150 ease-in-out hover:bg-muted/40'
+
+// Responsive column visibility — shared by header, body, and skeleton rows
+// so they always line up.
 const PLACEMENT_COL_CLASS = 'hidden xl:table-cell'
-const SUBMITTED_COL_CLASS = 'hidden 2xl:table-cell'
+const SUBMITTED_COL_CLASS = 'whitespace-nowrap'
+const COLUMNS = 11
 
+// Purple inset outline around the row highlighted from a notification deep
+// link (?highlightAdId=). First/last cells round their outer corners so the
+// outline frames the whole row instead of a single cell.
 const FIRST_CELL_HL =
   'shadow-[inset_2px_2px_0_#a855f7,inset_0_-2px_0_#a855f7] rounded-l-xl'
 const LAST_CELL_HL =
@@ -73,7 +100,7 @@ export function AdTable({
       {Array.from({ length: COLUMNS }, (_, j) => (
         <td
           key={j}
-className={`${TD_BASE} ${j === 2 ? PLACEMENT_COL_CLASS : j === 7 ? SUBMITTED_COL_CLASS : j === COLUMNS - 1 ? 'sticky right-0 z-20 bg-muted/50' : ''}`}
+          className={`${TD_BASE} ${j === 3 ? PLACEMENT_COL_CLASS : j === 8 ? SUBMITTED_COL_CLASS : j === COLUMNS - 1 ? 'sticky right-0 z-20 bg-muted/50' : ''}`}
         >
           <Skeleton className="h-4 w-full" />
         </td>
@@ -187,7 +214,7 @@ className={`${TD_BASE} ${j === 2 ? PLACEMENT_COL_CLASS : j === 7 ? SUBMITTED_COL
                 onClick={() => onReview(ad.id)}
                 aria-label={`Review ${ad.title}`}
               >
-                <ShieldCheck className="h-4 w-4" />
+                <Pencil className="h-4 w-4" />
               </Button>
             ) : (
               <Button
@@ -206,19 +233,15 @@ className={`${TD_BASE} ${j === 2 ? PLACEMENT_COL_CLASS : j === 7 ? SUBMITTED_COL
   }
 
   return (
-    <div className="overflow-x-hidden rounded-lg border bg-card">
+    <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="w-full border-separate border-spacing-0">
         {renderHeader()}
-        <tbody className="bg-white dark:bg-card divide-y divide-border">
-          {isLoading
-            ? Array.from({ length: 8 }, (_, i) => renderSkeletonRow(i))
-            : ads.length === 0
-            ? renderEmpty()
-            : ads.map((ad, i) => renderRow(ad, i))}
-        </tbody>
+        {isLoading && (
+          <tbody>{Array.from({ length: 8 }, (_, index) => renderSkeletonRow(index))}</tbody>
+        )}
+        {!isLoading && ads.length === 0 && renderEmpty()}
+        {!isLoading && ads.length > 0 && <tbody>{ads.map(renderRow)}</tbody>}
       </table>
     </div>
   )
 }
-
-const TH_STICKY_CLASS = `${TH_BASE} sticky right-0 z-20 bg-muted/50`

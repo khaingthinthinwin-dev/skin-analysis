@@ -118,8 +118,24 @@ function packageLabel(placement: string) {
   return placement.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function formatMoney(value: string | number) {
-  return Number(value).toFixed(2)
+// Fees are whole Kyat amounts. The API returns them as fixed-point strings
+// ("500.00"), so the trailing ".00" is dropped for display while any real
+// decimals are kept ("500.50") and thousands are grouped ("12500.00" ->
+// "12,500").
+function formatFee(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return ''
+  const amount = Number(value)
+  if (Number.isNaN(amount)) return String(value)
+  return amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
+
+// Sort key for the package catalog. Packages without a parsable `updatedAt`
+// (e.g. a payload cached by an older backend) sort to the end instead of
+// producing NaN comparisons that leave the order undefined.
+function packageUpdatedAt(pkg: AdPackage) {
+  if (!pkg.updatedAt) return 0
+  const parsed = new Date(pkg.updatedAt).getTime()
+  return Number.isNaN(parsed) ? 0 : parsed
 }
 
 function getImageUrl(url: string): string {
@@ -190,11 +206,30 @@ export default function Advertisements() {
   const ads = useMemo(() => adsQuery.data?.data ?? [], [adsQuery.data?.data])
   const allAds = useMemo(() => allAdsQuery.data?.data ?? [], [allAdsQuery.data?.data])
   const meta = adsQuery.data?.meta
-  const packages = packagesQuery.data ?? []
+  const packages = useMemo(() => packagesQuery.data ?? [], [packagesQuery.data])
   const PACKAGES_PER_PAGE = 4
-  const packagePages = Math.max(1, Math.ceil(packages.length / PACKAGES_PER_PAGE))
+  // Package cards are ordered most-recently-updated first: GET /ads/packages
+  // already sorts by ad_fee_settings.updated_at DESC (DD_05 §2.9), and
+  // re-sorting here keeps the display correct for any cached payload.
+  // Array#sort is stable, so packages sharing a timestamp keep the backend's
+  // placement → tier tie-break. The package a NEW_ADS_PACKAGE /
+  // ADS_PACKAGE_UPDATED notification points at (?updatedPackage=…) is pinned to
+  // the very front so its "Updated" badge is always the first card rather than
+  // landing on a later page.
+  const orderedPackages = useMemo(() => {
+    const sorted = [...packages].sort((a, b) => packageUpdatedAt(b) - packageUpdatedAt(a))
+    if (!highlightedPackageId) return sorted
+    const highlightedIndex = sorted.findIndex((pkg) => pkg.id === highlightedPackageId)
+    if (highlightedIndex <= 0) return sorted
+    return [
+      sorted[highlightedIndex],
+      ...sorted.slice(0, highlightedIndex),
+      ...sorted.slice(highlightedIndex + 1),
+    ]
+  }, [packages, highlightedPackageId])
+  const packagePages = Math.max(1, Math.ceil(orderedPackages.length / PACKAGES_PER_PAGE))
   const packagePageIndex = Math.min(packagesPage, packagePages)
-  const visiblePackages = packages.slice((packagePageIndex - 1) * PACKAGES_PER_PAGE, packagePageIndex * PACKAGES_PER_PAGE)
+  const visiblePackages = orderedPackages.slice((packagePageIndex - 1) * PACKAGES_PER_PAGE, packagePageIndex * PACKAGES_PER_PAGE)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -408,14 +443,14 @@ export default function Advertisements() {
   }
 
   const payPackage = payTarget?.package ?? null
-  const payFeeTotal = payTarget?.paymentAmount ?? (payPackage ? formatMoney(Number(payPackage.dailyRate) * payPackage.durationDays) : null)
+  const payFeeTotal = payTarget?.paymentAmount ?? (payPackage ? Number(payPackage.dailyRate) * payPackage.durationDays : null)
 
   return (
     <div className="space-y-6">
       {/* Page Header (EL-01 / EL-02) */}
       <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-          <Megaphone className="h-7 w-7 text-primary" /> Advertisements
+        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
+          <Megaphone className="h-6 w-6 text-primary sm:h-7 sm:w-7" /> Advertisements
         </h1>
         <p className="text-muted-foreground">Select an advertising package, upload your content, and manage your advertisements.</p>
       </div>
@@ -451,7 +486,7 @@ export default function Advertisements() {
       )}
 
       {/* Statistics Cards (§4.4) */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat) => (
           <Card
             key={stat.label}
@@ -465,7 +500,7 @@ export default function Advertisements() {
                   {allAdsQuery.isLoading ? (
                     <Skeleton className="h-9 w-12" />
                   ) : (
-                    <p className="text-3xl font-bold text-primary">{stat.value}</p>
+                    <p className="text-2xl font-bold text-primary sm:text-3xl">{stat.value}</p>
                   )}
                 </div>
                 <div className={`flex h-11 w-11 items-center justify-center rounded-full ${stat.iconClass}`}>
@@ -484,7 +519,7 @@ export default function Advertisements() {
           <p className="text-sm text-muted-foreground">Admin-created packages with fixed campaign durations.</p>
         </div>
         {packagesQuery.isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
               <Skeleton className="h-64" key={item} />
             ))}
@@ -497,7 +532,7 @@ export default function Advertisements() {
           </Card>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {visiblePackages.map((pkg) => (
                 <Card
                   key={pkg.id}
@@ -520,8 +555,8 @@ export default function Advertisements() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-primary">{pkg.dailyRate} KS</span>
+                    <div className="mt-2 flex flex-wrap items-baseline gap-1">
+                      <span className="text-2xl font-bold text-primary sm:text-3xl">{formatFee(pkg.dailyRate)} KS</span>
                       <span className="text-sm text-muted-foreground">/day</span>
                     </div>
                   </CardHeader>
@@ -535,7 +570,7 @@ export default function Advertisements() {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> Total fee:{' '}
-                        <span className="font-semibold text-foreground">{pkg.totalFee} KS</span>
+                        <span className="font-semibold text-foreground">{formatFee(pkg.totalFee)} KS</span>
                       </li>
                     </ul>
                     <Button
@@ -552,7 +587,7 @@ export default function Advertisements() {
                 </Card>
               ))}
             </div>
-            {packages.length > PACKAGES_PER_PAGE && (
+            {orderedPackages.length > PACKAGES_PER_PAGE && (
               <Pagination page={packagePageIndex} totalPages={packagePages} onPageChange={setPackagesPage} />
             )}
           </>
@@ -617,7 +652,7 @@ export default function Advertisements() {
         </div>
 
         {adsQuery.isLoading ? (
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3].map((item) => (
               <Skeleton className="h-80" key={item} />
             ))}
@@ -631,7 +666,7 @@ export default function Advertisements() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {ads.map((ad) => (
               <AdCard
                 key={ad.id}
@@ -685,18 +720,18 @@ export default function Advertisements() {
                 [
                   ['Placement', packageLabel(selectedPackage.placement)],
                   ['Tier', tierLabels[selectedPackage.tier] ?? selectedPackage.tier],
-                  ['Daily Rate', `${selectedPackage.dailyRate} KS/day`],
+                  ['Daily Rate', `${formatFee(selectedPackage.dailyRate)} KS/day`],
                   ['Duration', `${selectedPackage.durationDays} days`],
                 ] as const
               ).map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4">
                   <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium">{value}</span>
+                  <span className="min-w-0 break-words text-right font-medium">{value}</span>
                 </div>
               ))}
               <div className="flex justify-between gap-4 border-t pt-2">
                 <span className="text-muted-foreground">Total Fee</span>
-                <span className="font-bold text-primary">{selectedPackage.totalFee} KS</span>
+                <span className="shrink-0 font-bold text-primary">{formatFee(selectedPackage.totalFee)} KS</span>
               </div>
             </div>
           )}
@@ -733,10 +768,10 @@ export default function Advertisements() {
             <DialogTitle>Pay Advertising Fee</DialogTitle>
           </DialogHeader>
           <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal ? `${payFeeTotal} KS` : 'Calculated at payment'}</p>
+            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal !== null && payFeeTotal !== undefined ? `${formatFee(payFeeTotal)} KS` : 'Calculated at payment'}</p>
             {payPackage && (
               <p className="text-muted-foreground">
-                {payPackage.durationDays} days × {payPackage.dailyRate} KS/day
+                {payPackage.durationDays} days × {formatFee(payPackage.dailyRate)} KS/day
               </p>
             )}
           </div>
@@ -805,7 +840,7 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
       </span>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(Math.max(1, page - 1))}>
-          <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+          <ChevronLeft className="mr-1 h-4 w-4" /> Prev
         </Button>
         {pages.map((pageNumber) => (
           <Button
@@ -875,14 +910,14 @@ function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }
       </div>
 
       <CardContent className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="text-base font-semibold">{ad.title || 'Draft advertisement'}</h3>
+        <h3 className="break-words text-base font-semibold">{ad.title || 'Draft advertisement'}</h3>
         {packageInfo && (
           <p className="text-sm text-muted-foreground">Placement: {packageLabel(packageInfo.placement)}</p>
         )}
         {packageInfo && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • {packageInfo.dailyRate} KS/day
+              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • {formatFee(packageInfo.dailyRate)} KS/day
             </p>
             <Badge className={paymentBadgeClass[ad.paymentStatus] ?? ''}>{paymentLabels[ad.paymentStatus] ?? ad.paymentStatus}</Badge>
           </div>
@@ -1073,15 +1108,15 @@ function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
           {rows
             .filter(([, value]) => value)
             .map(([label, value]) => (
-              <div key={label} className="flex justify-between gap-4">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="text-right font-medium">{value}</span>
-              </div>
+<div key={label} className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="min-w-0 break-words text-right font-medium">{value}</span>
+                </div>
             ))}
           {packageInfo && (
             <div className="flex justify-between gap-4 border-t pt-2">
               <span className="text-muted-foreground">Daily Rate</span>
-              <span className="font-medium text-primary">{packageInfo.dailyRate} KS/day</span>
+              <span className="font-medium text-primary">{formatFee(packageInfo.dailyRate)} KS/day</span>
             </div>
           )}
         </div>
@@ -1222,13 +1257,13 @@ function ContentDialog({
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
   if (endDate) endDate.setUTCDate(endDate.getUTCDate() + durationDays)
   const feeSummary = adPackage
-    ? `Advertising Fee: ${formatMoney(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${adPackage.dailyRate} KS/day`
+    ? `Advertising Fee: ${formatFee(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${formatFee(adPackage.dailyRate)} KS/day`
     : null
   const currentPreview = imageUrl ? getImageUrl(imageUrl) : null
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isNewUpload ? 'Upload Advertisement Content' : 'Edit Advertisement Content'}</DialogTitle>
         </DialogHeader>

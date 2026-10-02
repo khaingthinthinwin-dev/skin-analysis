@@ -29,13 +29,8 @@ const statusBadge = (active: boolean) => (
   </Badge>
 );
 
-function Mono({ value }: { value: string | number }) {
-  return <span className="font-mono">{value}</span>;
-}
-
 const columnsByType: Record<MasterDataCrudType, Column[]> = {
   'user-roles': [
-    { header: 'ID', render: (row) => <Mono value={(row as UserRoleRow).id} /> },
     {
       header: 'Code',
       render: (row) => <code>{(row as UserRoleRow).roleCode}</code>,
@@ -52,7 +47,6 @@ const columnsByType: Record<MasterDataCrudType, Column[]> = {
     { header: 'Status', render: (row) => statusBadge((row as UserRoleRow).isActive) },
   ],
   'order-statuses': [
-    { header: 'ID', render: (row) => <Mono value={(row as OrderStatusRow).id} /> },
     {
       header: 'Code',
       render: (row) => <code>{(row as OrderStatusRow).statusCode}</code>,
@@ -73,7 +67,6 @@ const columnsByType: Record<MasterDataCrudType, Column[]> = {
     },
   ],
   'discount-types': [
-    { header: 'ID', render: (row) => <Mono value={(row as DiscountTypeRow).id} /> },
     {
       header: 'Code',
       render: (row) => <code>{(row as DiscountTypeRow).typeCode}</code>,

@@ -16,6 +16,7 @@
     "strict": true,
     "isolatedModules": true,
     "strictPropertyInitialization": false,
+    "types": ["node", "jest"],
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,

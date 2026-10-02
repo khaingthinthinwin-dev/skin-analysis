@@ -204,6 +204,24 @@ export class OrdersService {
           },
         });
 
+        const merchant = await tx.merchant.findUnique({
+          where: { id: merchantId },
+          select: { userId: true },
+        });
+        if (!merchant) {
+          throw new NotFoundException('Merchant not found');
+        }
+        await tx.notification.create({
+          data: {
+            userId: merchant.userId,
+            type: 'ORDER_PLACED',
+            title: 'New order received',
+            message: `A buyer placed order ${newOrder.orderNumber}.`,
+            entityType: 'order',
+            entityId: newOrder.id,
+          },
+        });
+
         for (const item of group.items) {
           const unitPriceNum = parseFloat(item.product.price.toString());
           const lineTotal = (unitPriceNum * item.quantity).toFixed(2);

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from './config/config.module';
+import { ConfigService } from '@nestjs/config';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { RedisModule } from './shared/redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -26,10 +28,29 @@ import { SkinAnalysisModule } from './modules/buyer/skin-analysis/skin-analysis.
 import { AppService } from './app.service';
 import { OrderInsightsModule } from './modules/shared/order-insights/order-insights.module';
 import { OrderFulfillmentModule } from './modules/merchant/order-fulfillment/order-fulfillment.module';
+import { MailModule } from './shared/mail/mail.module';
 
 @Module({
   imports: [
     ConfigModule,
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('mail.host'),
+          port: configService.get<number>('mail.port'),
+          secure: configService.get<boolean>('mail.secure'),
+          auth: {
+            user: configService.get<string>('mail.user'),
+            pass: configService.get<string>('mail.pass'),
+          },
+        },
+        defaults: {
+          from: configService.get<string>('mail.from'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     PrismaModule,
     RedisModule,
     AuthModule,
@@ -55,6 +76,7 @@ import { OrderFulfillmentModule } from './modules/merchant/order-fulfillment/ord
     SkinAnalysisModule,
     OrderInsightsModule,
     OrderFulfillmentModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

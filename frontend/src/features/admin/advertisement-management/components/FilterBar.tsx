@@ -48,66 +48,72 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Select
-        value={filters.status ?? 'all'}
-        onValueChange={(value) => onChange({ status: value === 'all' ? undefined : (value as ApprovalStatus) })}
-      >
-        <SelectTrigger className="h-9 w-32" aria-label="Status filter">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Status</SelectItem>
-          {ADMIN_AD_STATUSES.map((status) => (
-            <SelectItem key={status} value={status}>
-              {status}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filters.placement ?? 'all'}
-        onValueChange={(value) => onChange({ placement: value === 'all' ? undefined : (value as Placement) })}
-      >
-        <SelectTrigger className="h-9 w-40" aria-label="Placement filter">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Placements</SelectItem>
-          {ADMIN_AD_PLACEMENTS.map((placement) => (
-            <SelectItem key={placement} value={placement}>
-              {PLACEMENT_LABELS[placement]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filters.tier ?? 'all'}
-        onValueChange={(value) => onChange({ tier: value === 'all' ? undefined : (value as Tier) })}
-      >
-        <SelectTrigger className="h-9 w-32" aria-label="Tier filter">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Tiers</SelectItem>
-          {ADMIN_AD_TIERS.map((tier) => (
-            <SelectItem key={tier} value={tier}>
-              {TIER_LABELS[tier]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <div className="relative">
+      <div className="relative w-full min-w-0 sm:w-auto">
         <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={shopInput}
           onChange={(e) => setShopInput(e.target.value)}
           placeholder={shopPlaceholder}
-          className="h-9 w-40 pl-8"
+          className="h-9 w-full pl-8 sm:w-40"
           aria-label="Search shop name"
         />
+      </div>
+
+      <div className="w-full min-w-0 sm:w-auto">
+        <Select
+          value={filters.status ?? 'all'}
+          onValueChange={(value) => onChange({ status: value === 'all' ? undefined : (value as ApprovalStatus) })}
+        >
+          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Status filter">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            {ADMIN_AD_STATUSES.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="w-full min-w-0 sm:w-auto">
+        <Select
+          value={filters.placement ?? 'all'}
+          onValueChange={(value) => onChange({ placement: value === 'all' ? undefined : (value as Placement) })}
+        >
+          <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Placement filter">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Placements</SelectItem>
+            {ADMIN_AD_PLACEMENTS.map((placement) => (
+              <SelectItem key={placement} value={placement}>
+                {PLACEMENT_LABELS[placement]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="w-full min-w-0 sm:w-auto">
+        <Select
+          value={filters.tier ?? 'all'}
+          onValueChange={(value) => onChange({ tier: value === 'all' ? undefined : (value as Tier) })}
+        >
+          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Tier filter">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Tiers</SelectItem>
+            {ADMIN_AD_TIERS.map((tier) => (
+              <SelectItem key={tier} value={tier}>
+                {TIER_LABELS[tier]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="w-full min-w-0 md:w-auto">
@@ -126,7 +132,7 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
         size="sm"
         onClick={handleRefresh}
         aria-label="Reset all filters"
-        className="ml-auto shrink-0"
+        className="ml-auto w-full shrink-0 sm:w-auto"
       >
         <RefreshCw className="h-4 w-4" />
         Refresh
