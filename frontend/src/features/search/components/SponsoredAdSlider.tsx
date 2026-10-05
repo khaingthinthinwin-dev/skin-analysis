@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getImageUrl } from '@/lib/image-url'
 import { useSponsoredAds } from '../hooks/useSponsoredAds'
-import { getImageUrl } from '@/lib/image-url'
 
 const AUTO_SLIDE_MS = 5000
 const SAMPLE_AD_IMAGE = '/uploads/products/cd8048d7-ab84-463f-8851-17bb1659b9ee.png'
@@ -77,11 +76,9 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
   if (!ads.length) return null
 
   const ad = ads[displayIndex]
-  const targetId = ad.product_id || ad.productId || ad.product?.id
-  const detailProductId =
-    ad.productSlug || targetId || ad.target_id || fallbackProductId
+  const detailProductId = ad.product_id || fallbackProductId
   const productPath = detailProductId ? `/buyer/products/${detailProductId}` : null
-  const imageUrl = getImageUrl(ad.image_url ?? ad.imageUrl)
+  const imageUrl = getImageUrl(ad.imageUrl)
   const fallbackImageUrl = getImageUrl(SAMPLE_AD_IMAGE)
   const displayImageUrl = imageUrl && failedImageUrl !== imageUrl ? imageUrl : fallbackImageUrl
   const navigateToAd = () => {

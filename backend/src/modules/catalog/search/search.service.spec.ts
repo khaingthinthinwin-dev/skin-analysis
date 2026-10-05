@@ -61,7 +61,7 @@ describe('SearchService sponsored ads', () => {
       title: 'Search banner',
       content: null,
       imageUrl: null,
-      linkUrl: '/buyer/products/product-123',
+      sku: 'AD-SKU-123',
       approvalStatus: 'approved',
       startsAt: new Date('2026-09-01T00:00:00.000Z'),
       expiresAt: new Date('2026-09-30T23:59:59.000Z'),
@@ -107,11 +107,12 @@ describe('SearchService sponsored ads', () => {
     expect(startsAtFilter.lte).toBeInstanceOf(Date);
     expect(expiresAtFilter.gte).toBeInstanceOf(Date);
     expect(findManyArgs.include?.feeSetting).toBe(true);
-    expect(result.data[0].placement).toBe(AdPlacement.SEARCH_PAGE_BANNER);
-    expect(result.data[0].productSlug).toBe('product-123');
-    expect(result.data[0].productId).toBe('product-123');
-    expect(result.data[0].product_id).toBe('product-123');
-    expect(result.data[0].target_url).toBe('/buyer/products/product-123');
+    expect(result.data[0]).toMatchObject({
+      id: 'ad-search',
+      placement: AdPlacement.SEARCH_PAGE_BANNER,
+      title: 'Search banner',
+      sku: 'AD-SKU-123',
+    });
     expect(get).not.toHaveBeenCalled();
   });
 });

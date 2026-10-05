@@ -17,9 +17,10 @@ function makeAd(overrides: Partial<SponsoredAd> = {}): SponsoredAd {
     title: 'Search banner',
     description: null,
     imageUrl: null,
+    sku: null,
     linkUrl: null,
-    productSlug: null,
-    productId: 'prod_123',
+    product_id: 'prod_123',
+    target_url: null,
     tier: 'standard',
     approvalStatus: 'approved',
     startsAt: new Date(Date.now() - 60_000).toISOString(),
@@ -63,7 +64,7 @@ describe('SponsoredAdSlider', () => {
 
   it('navigates to the advertised product when the banner is clicked', () => {
     mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ productId: 'product-123' })] },
+      data: { data: [makeAd({ product_id: 'product-123' })] },
     } as never)
 
     render(<SponsoredAdSlider />)
@@ -74,26 +75,14 @@ describe('SponsoredAdSlider', () => {
 
     fireEvent.click(screen.getByRole('link', { name: /sponsored advertisements/i }))
     expect(mockNavigate).toHaveBeenLastCalledWith('/buyer/products/product-123')
-    expect(screen.getByRole('button', { name: /learn more/i })).toBeInTheDocument()
   })
 
-  it('prefers the active ad product slug for Learn more navigation', () => {
-    mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ productSlug: 'cho', productId: 'product-uuid' })] },
-    } as never)
-
-    render(<SponsoredAdSlider />)
-    fireEvent.click(screen.getByRole('button', { name: /learn more/i }))
-
-    expect(mockNavigate).toHaveBeenCalledWith('/buyer/products/cho')
-  })
-
-  it('uses the currently displayed ad product ID for the Learn more button', () => {
+  it('uses the currently displayed ad product ID for Learn more navigation', () => {
     mockedUseSponsoredAds.mockReturnValue({
       data: {
         data: [
-          makeAd({ productId: 'first-product' }),
-          makeAd({ id: 'second-ad', title: 'Second banner', productId: 'second-product' }),
+          makeAd({ product_id: 'first-product' }),
+          makeAd({ id: 'second-ad', title: 'Second banner', product_id: 'second-product' }),
         ],
       },
     } as never)
@@ -106,36 +95,9 @@ describe('SponsoredAdSlider', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/buyer/products/second-product')
   })
 
-  it('navigates using the product_id field', () => {
-    mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ productId: null, product_id: 'snake-case-product' })] },
-    } as never)
-
-    render(<SponsoredAdSlider />)
-    fireEvent.click(screen.getByRole('button', { name: /learn more/i }))
-
-    expect(mockNavigate).toHaveBeenCalledWith('/buyer/products/snake-case-product')
-  })
-
-  it.each([
-    ['nested product ID', { product: { id: 'nested-product' } }],
-    ['target ID', { target_id: 'target-product' }],
-  ] as const)('navigates to a product when only %s is provided', (_label, extraFields) => {
-    mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ productId: null, ...extraFields })] },
-    } as never)
-
-    render(<SponsoredAdSlider />)
-    fireEvent.click(screen.getByRole('button', { name: /learn more/i }))
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      `/buyer/products/${'product' in extraFields ? extraFields.product.id : extraFields.target_id}`,
-    )
-  })
-
   it('navigates to the products page when the active ad has no product ID', () => {
     mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ productSlug: null, productId: null })] },
+      data: { data: [makeAd({ product_id: null })] },
     } as never)
 
     render(<SponsoredAdSlider />)
@@ -147,7 +109,7 @@ describe('SponsoredAdSlider', () => {
 
   it('uses the fetched products fallback when the active ad has no product ID', () => {
     mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ productSlug: null, productId: null })] },
+      data: { data: [makeAd({ product_id: null })] },
     } as never)
 
     render(<SponsoredAdSlider fallbackProductId="cho" />)
@@ -158,7 +120,7 @@ describe('SponsoredAdSlider', () => {
 
   it('falls back to the ad target URL when no product ID is present', () => {
     mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ productId: null, target_url: '/offers/summer' })] },
+      data: { data: [makeAd({ product_id: null, target_url: '/offers/summer' })] },
     } as never)
 
     render(<SponsoredAdSlider />)
@@ -208,7 +170,7 @@ describe('SponsoredAdSlider', () => {
 
   it('shows the ad photo and avoids substituting an unrelated image on failure', () => {
     mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ image_url: 'https://storage.example.com/ads/ad-placeholder.jpg' })] },
+      data: { data: [makeAd({ imageUrl: 'https://storage.example.com/ads/ad-placeholder.jpg' })] },
     } as never)
 
     render(<SponsoredAdSlider />)

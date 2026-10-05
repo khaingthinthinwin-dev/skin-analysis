@@ -13,18 +13,6 @@ import {
 import { Prisma } from '@prisma/client';
 import { createHash } from 'crypto';
 
-function getProductSlugFromTargetUrl(targetUrl: string | null): string | null {
-  if (!targetUrl) return null;
-
-  try {
-    const pathname = new URL(targetUrl, 'http://localhost').pathname;
-    const match = pathname.match(/^\/buyer\/products\/([^/]+)\/?$/);
-    return match?.[1] ? decodeURIComponent(match[1]) : null;
-  } catch {
-    return null;
-  }
-}
-
 @Injectable()
 export class SearchService {
   private readonly logger = new Logger(SearchService.name);
