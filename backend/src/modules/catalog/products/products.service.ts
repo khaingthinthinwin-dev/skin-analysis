@@ -835,7 +835,11 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: isUuid
         ? { id: idOrSlug, isActive: true }
-        : { slug: idOrSlug, isActive: true },
+        : {
+            isActive: true,
+            // Advertisements link to products by SKU, so accept slug or SKU.
+            OR: [{ slug: idOrSlug }, { sku: idOrSlug }],
+          },
       include: {
         category: { select: { id: true, name: true, slug: true } },
         merchant: { select: { id: true, shopName: true, licenseStatus: true } },

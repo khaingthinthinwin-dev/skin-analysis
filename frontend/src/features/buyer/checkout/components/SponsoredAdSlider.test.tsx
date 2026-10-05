@@ -71,22 +71,74 @@ describe('SponsoredAdSlider (checkout)', () => {
     expect(await screen.findByText('Glow Serum')).toBeInTheDocument()
     expect(screen.getByText('Brighten your routine')).toBeInTheDocument()
     expect(screen.getByText('Sponsored')).toBeInTheDocument()
+    expect(screen.getByText('Featured Promotion')).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: /explore acne solutions/i }),
+      screen.getByRole('link', { name: /learn more/i }),
+    ).toHaveAttribute('href', '/buyer/products/sku-001')
+  })
+
+  it('links the CTA to the product detail page of the ad SKU', async () => {
+    mockedGetSponsoredAds.mockResolvedValue({ data: ads })
+
+    renderSlider()
+
+    await screen.findByText('Glow Serum')
+
+    expect(
+      screen.getByRole('link', { name: /learn more/i }),
+    ).toHaveAttribute('href', '/buyer/products/sku-001')
+  })
+
+  it('falls back to the product list when the ad has no SKU', async () => {
+    mockedGetSponsoredAds.mockResolvedValue({ data: [ads[1]] })
+
+    renderSlider()
+
+    await screen.findByText('Night Cream')
+
+    expect(
+      screen.getByRole('link', { name: /learn more/i }),
     ).toHaveAttribute('href', '/buyer/products')
   })
 
-  it('matches the Search and Filter banner styling', async () => {
+  it('renders the Sponsored and featured promotion badges together', async () => {
     mockedGetSponsoredAds.mockResolvedValue({ data: ads })
 
-    const { container } = renderSlider()
+    renderSlider()
+
+    const sponsored = await screen.findByText('Sponsored')
+    const featured = await screen.findByText('Featured Promotion')
+
+    expect(sponsored.parentElement).toBe(featured.parentElement)
+    expect(featured).toHaveClass('bg-purple-500/25')
+  })
+
+  it('renders the product preview card with a landscape image', async () => {
+    mockedGetSponsoredAds.mockResolvedValue({ data: ads })
+
+    renderSlider()
+
+    const image = await screen.findByAltText('Glow Serum')
+    const frame = image.parentElement as HTMLElement
+
+    expect(frame).toHaveClass('max-w-[22rem]')
+    expect(frame).toHaveClass('rounded-2xl')
+    expect(frame).toHaveClass('shadow-2xl')
+    expect(image).toHaveClass('aspect-[1.74]')
+    expect(image).toHaveClass('object-cover')
+    expect(screen.queryByText('Merchant Partner')).not.toBeInTheDocument()
+  })
+
+  it('matches the checkout banner styling', async () => {
+    mockedGetSponsoredAds.mockResolvedValue({ data: ads })
+
+    renderSlider()
 
     const card = await screen.findByLabelText('Sponsored advertisements')
 
-    expect(card.className).toContain('border-border')
-    expect(card.className).toContain('bg-muted')
+    expect(card.className).toContain('rounded-[1.75rem]')
     expect(card).toHaveAttribute('aria-roledescription', 'carousel')
-    expect(container.querySelector('.p-4')).toBeInTheDocument()
+    expect(card.querySelector('.bg-gradient-to-r')).toBeInTheDocument()
   })
 
   it('advances to the next advertisement and back', async () => {
@@ -112,6 +164,8 @@ describe('SponsoredAdSlider (checkout)', () => {
 
     expect(screen.getByRole('button', { name: 'Go to advertisement 1' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Go to advertisement 2' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Previous advertisement' })).toHaveClass('absolute')
+    expect(screen.getByRole('button', { name: 'Next advertisement' })).toHaveClass('absolute')
   })
 
   it('exposes every returned ad, not just the first page', async () => {
