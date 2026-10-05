@@ -178,6 +178,9 @@ Retrieve sponsored advertisements for a given placement.
         "title": "Summer Skincare Sale",
         "description": "Up to 40% off premium skincare products",
         "imageUrl": "https://cdn.example.com/ads/a1b2c3d4-e5f6-7890-abcd-ef1234567890/banner.webp",
+        "linkUrl": "/buyer/products/6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
+        "product_id": "6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
+        "target_url": "/buyer/products/6b72a6b2-60cc-483a-867c-1b77df7f7dc8",
         "ctaText": "Shop Now",
         "ctaUrl": "/products?category=skincare&sort=newest",
         "impressionUrl": "https://analytics.example.com/impression?ad_id=a1b2c3d4",
@@ -190,6 +193,7 @@ Retrieve sponsored advertisements for a given placement.
     ]
   }
   ```
+- `target_url` mirrors the advertisement's `linkUrl`. `product_id` is extracted when that URL matches `/buyer/products/{id}`; it is `null` for other destinations.
 - **Error Responses:**
   - `400 BAD_REQUEST` — Invalid placement value
   - `500 INTERNAL_SERVER_ERROR` — Server error

@@ -891,6 +891,10 @@ async function main() {
       const feeSetting = await prisma.adFeeSetting.findUnique({
         where: { placement_tier: { placement, tier } },
       });
+      const promotedProduct =
+        products.find(
+          (product) => product.merchantId === merchants[merchantIdx].id,
+        ) ?? products[(i + a) % products.length];
 
       const ad = await prisma.advertisement.create({
         data: {
@@ -900,6 +904,7 @@ async function main() {
           content: `Promotional content for ${month}`,
           announcementMessage: `Special offer from ${merchantShops[merchantIdx].shopName}`,
           imageUrl: `https://storage.example.com/ads/${month}-${a}.jpg`,
+          linkUrl: `/buyer/products/${promotedProduct.slug}`,
           isActive: true,
           approvalStatus: 'approved',
           paymentStatus: 'paid',

@@ -228,19 +228,9 @@ export default function Products() {
   return (
     <div
       className={isGuestRoute
-        ? 'mx-auto w-full max-w-[1400px] space-y-6 bg-[#faf8ff] px-6 py-6 text-slate-900 dark:bg-[#0f0f14] dark:text-white sm:px-8 lg:px-12'
-        : 'w-full min-w-0 space-y-6 bg-[#faf8ff] p-2 text-slate-900 dark:bg-[#0f0f14] dark:text-white lg:p-4'}
+        ? 'mx-auto w-full max-w-[1400px] space-y-4 bg-[#faf8ff] px-6 py-6 text-slate-900 dark:bg-[#0b0614] dark:text-white sm:px-8 lg:px-12'
+        : 'w-full min-w-0 space-y-4 bg-[#faf8ff] p-2 text-slate-900 dark:bg-[#0b0614] dark:text-white lg:p-4'}
     >
-      {/* A. Page header */}
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Cosmetics Search & Filter
-        </h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Find skincare products matched to your skin profile
-        </p>
-      </div>
-
       {/* Search bar - full width */}
       <SearchBar
         value={params.q}
@@ -249,7 +239,7 @@ export default function Products() {
       />
 
       {/* Advertisement panel */}
-      <SponsoredAdSlider />
+      <SponsoredAdSlider fallbackProductId={products[0]?.slug || products[0]?.id} />
 
       <FilterChips
         params={params}

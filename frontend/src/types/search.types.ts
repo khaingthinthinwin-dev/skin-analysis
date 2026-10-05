@@ -78,11 +78,18 @@ export interface SponsoredAd {
   title: string
   description: string | null
   imageUrl: string | null
+  image_url?: string | null
   linkUrl: string | null
+  productSlug?: string | null
+  productId?: string | null
+  product_id?: string | null
+  product?: { id?: string | null } | null
+  target_id?: string | null
+  target_url?: string | null
   tier: 'premium' | 'standard' | 'basic'
   approvalStatus: 'pending' | 'approved' | 'rejected'
-  startsAt: string
-  expiresAt: string
+  startsAt: string | null
+  expiresAt: string | null
 }
 
 export interface AdsResponse {

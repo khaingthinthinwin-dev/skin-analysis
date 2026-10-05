@@ -13,6 +13,18 @@ import {
 import { Prisma } from '@prisma/client';
 import { createHash } from 'crypto';
 
+function getProductSlugFromTargetUrl(targetUrl: string | null): string | null {
+  if (!targetUrl) return null;
+
+  try {
+    const pathname = new URL(targetUrl, 'http://localhost').pathname;
+    const match = pathname.match(/^\/buyer\/products\/([^/]+)\/?$/);
+    return match?.[1] ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
 @Injectable()
 export class SearchService {
   private readonly logger = new Logger(SearchService.name);
@@ -41,7 +53,10 @@ export class SearchService {
         orderBy,
         skip,
         take,
-        include: { category: true },
+        include: {
+          category: true,
+          merchant: { select: { shopName: true } },
+        },
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -127,46 +142,42 @@ export class SearchService {
   }
 
   async getAdsByPlacement(
-    _placement: AdPlacement,
+    placement: AdPlacement,
   ): Promise<{ data: SponsoredAdDto[] }> {
-    const cacheKey = `cache:ads:${_placement}`;
-    const cached = await this.redis.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached) as { data: SponsoredAdDto[] };
-    }
-
     const now = new Date();
 
     const ads = await this.prisma.advertisement.findMany({
       where: {
+        feeSetting: { placement },
         approvalStatus: 'approved',
         isActive: true,
         startsAt: { lte: now },
         expiresAt: { gte: now },
         shop: { isApproved: true },
       },
-      include: { shop: true },
+      include: { shop: true, feeSetting: true },
       orderBy: { createdAt: 'asc' },
       take: 5,
     });
 
     const data: SponsoredAdDto[] = ads.map((ad) => ({
       id: ad.id,
-      placement: _placement,
+      placement: ad.feeSetting?.placement ?? '',
       title: ad.title,
       description: ad.content,
       imageUrl: ad.imageUrl,
       linkUrl: ad.linkUrl,
+      productSlug: getProductSlugFromTargetUrl(ad.linkUrl),
+      productId: getProductSlugFromTargetUrl(ad.linkUrl),
+      product_id: getProductSlugFromTargetUrl(ad.linkUrl),
+      target_url: ad.linkUrl,
       tier: 'standard',
       approvalStatus: ad.approvalStatus,
       startsAt: ad.startsAt,
       expiresAt: ad.expiresAt,
     }));
 
-    const result = { data };
-    await this.redis.set(cacheKey, JSON.stringify(result), 300);
-
-    return result;
+    return { data };
   }
 
   async invalidateProductCache(): Promise<void> {
@@ -292,7 +303,7 @@ export class SearchService {
   private generateCacheKey(query: ProductQueryDto): string {
     const normalized = JSON.stringify(query, Object.keys(query).sort());
     const hash = createHash('md5').update(normalized).digest('hex');
-    return `cache:products:list:${hash}`;
+    return `cache:products:list:v2:${hash}`;
   }
 
   private serializeProduct(product: {
@@ -309,6 +320,7 @@ export class SearchService {
     reviewCount: number;
     stockQuantity: number;
     category: { id: string; name: string; slug: string };
+    merchant: { shopName: string } | null;
   }): ProductSummaryDto {
     return {
       id: product.id,
@@ -328,6 +340,7 @@ export class SearchService {
         name: product.category.name,
         slug: product.category.slug,
       },
+      shop_name: product.merchant?.shopName ?? null,
     };
   }
 

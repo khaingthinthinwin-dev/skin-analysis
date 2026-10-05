@@ -7,6 +7,10 @@ export class SponsoredAdDto {
   @ApiProperty({ nullable: true }) description: string | null;
   @ApiProperty({ nullable: true }) imageUrl: string | null;
   @ApiProperty({ nullable: true }) linkUrl: string | null;
+  @ApiProperty({ nullable: true }) productSlug: string | null;
+  @ApiProperty({ nullable: true }) productId: string | null;
+  @ApiProperty({ nullable: true }) product_id: string | null;
+  @ApiProperty({ nullable: true }) target_url: string | null;
   @ApiProperty() tier: string;
   @ApiProperty() approvalStatus: string;
   @ApiProperty({ nullable: true }) startsAt: Date | null;
