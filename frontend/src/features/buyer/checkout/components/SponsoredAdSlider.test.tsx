@@ -18,7 +18,7 @@ const ads: SponsoredAd[] = [
     title: 'Glow Serum',
     description: 'Brighten your routine',
     imageUrl: 'https://cdn.test/a.png',
-    linkUrl: 'https://shop.test',
+    sku: 'sku-001',
   },
   {
     id: 'ad-2',
@@ -26,7 +26,7 @@ const ads: SponsoredAd[] = [
     title: 'Night Cream',
     description: 'Repair while you sleep',
     imageUrl: null,
-    linkUrl: null,
+    sku: null,
   },
 ]
 
@@ -73,7 +73,7 @@ describe('SponsoredAdSlider (checkout)', () => {
     expect(screen.getByText('Sponsored')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: /explore acne solutions/i }),
-    ).toHaveAttribute('href', 'https://shop.test')
+    ).toHaveAttribute('href', '/buyer/products')
   })
 
   it('matches the Search and Filter banner styling', async () => {

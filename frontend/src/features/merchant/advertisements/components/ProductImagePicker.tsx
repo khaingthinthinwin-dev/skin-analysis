@@ -93,7 +93,7 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
   const products = data?.items ?? []
   // Only products that actually have an image can contribute a choice.
   const options = products.flatMap((product) =>
-    product.images.map((imageUrl) => ({ imageUrl, productName: product.name })),
+    product.images.map((imageUrl) => ({ imageUrl, productName: product.name, sku: product.sku })),
   )
   const totalPages = data?.meta.totalPages ?? 0
 
@@ -121,7 +121,7 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
           </div>
         ) : (
           <div className="grid flex-1 grid-cols-3 gap-3">
-            {options.map(({ imageUrl, productName }) => {
+            {options.map(({ imageUrl, productName, sku }) => {
               const isSelected = selected === imageUrl
               return (
                 <button
@@ -138,6 +138,11 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
                   )}
                 >
                   <Thumb url={imageUrl} alt={productName} />
+                  {sku && (
+                    <span className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 text-center text-xs font-medium text-white">
+                      {sku}
+                    </span>
+                  )}
                 </button>
               )
             })}

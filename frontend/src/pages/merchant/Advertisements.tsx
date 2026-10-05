@@ -1094,12 +1094,10 @@ function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
           {ad.announcementMessage && (
             <p className="whitespace-pre-wrap text-sm font-medium">{ad.announcementMessage}</p>
           )}
-          {ad.linkUrl && (
+          {ad.sku && (
             <p className="text-sm">
-              <span className="text-muted-foreground">Link: </span>
-              <a href={ad.linkUrl} target="_blank" rel="noreferrer" className="break-all text-primary underline underline-offset-2">
-                {ad.linkUrl}
-              </a>
+              <span className="text-muted-foreground">SKU: </span>
+              <span className="font-medium">{ad.sku}</span>
             </p>
           )}
         </div>

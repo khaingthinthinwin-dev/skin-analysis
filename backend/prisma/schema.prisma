@@ -421,7 +421,7 @@ model Advertisement {
   content             String?
   announcementMessage String    @map("announcement_message")
   imageUrl            String?   @map("image_url")
-  linkUrl             String?   @map("link_url")
+  sku                 String?   @map("sku")
   isActive            Boolean   @default(true) @map("is_active")
   approvalStatus      String    @default("pending") @map("approval_status")
   paymentStatus       String    @default("pending") @map("payment_status")

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -100,16 +99,10 @@ export function AdReviewModal({
                 </div>
               )}
               {ad.content && <p className="text-sm text-muted-foreground">{ad.content}</p>}
-              {ad.linkUrl && (
-                <a
-                  href={ad.linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  {ad.linkUrl}
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+              {ad.sku && (
+                <span className="inline-flex items-center gap-1 text-sm text-primary">
+                  SKU: {ad.sku}
+                </span>
               )}
               <div className="grid gap-2 text-sm sm:grid-cols-3">
                 <div>

@@ -289,6 +289,7 @@ function NotificationCard({
             )}
             {reportHint && (
               <p className="text-xs font-semibold text-purple-600">{reportHint}</p>
+            )}
             {orderHint && (
               <p className="text-xs font-semibold text-purple-600">{orderHint}</p>
             )}
@@ -375,6 +376,8 @@ export default function Notifications() {
     if (REVIEW_SUBMISSION_TYPES.has(type)) {
       // A newly submitted review is waiting for approval on the Reviews page.
       navigate('/admin/reviews')
+      return
+    }
     if (ORDER_NOTIFICATION_TYPES.has(type) && item.entityId) {
       const basePath =
         user?.role === 'merchant'

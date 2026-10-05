@@ -78,7 +78,7 @@ export interface SponsoredAd {
   title: string
   description: string | null
   imageUrl: string | null
-  linkUrl: string | null
+  sku: string | null
   tier: 'premium' | 'standard' | 'basic'
   approvalStatus: 'pending' | 'approved' | 'rejected'
   startsAt: string

@@ -104,13 +104,12 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
               {ad.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2">{ad.description}</p>
               )}
-              {ad.linkUrl ? (
+              {ad.sku ? (
                 <Button
                   variant="link"
                   className="p-0 h-auto mt-2"
                   onClick={() => {
                     onClick?.(ad.adId)
-                    window.open(ad.linkUrl!, '_blank', 'noopener,noreferrer')
                   }}
                 >
                   {ad.ctaText || 'Shop Now'}

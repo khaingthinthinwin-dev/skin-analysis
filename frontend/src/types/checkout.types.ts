@@ -39,7 +39,7 @@ export interface SponsoredAd {
   title: string;
   description: string | null;
   imageUrl: string | null;
-  linkUrl: string | null;
+  sku: string | null;
 }
 
 export interface CouponValidation {

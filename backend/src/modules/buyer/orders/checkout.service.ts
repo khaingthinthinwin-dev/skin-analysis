@@ -58,7 +58,7 @@ export class CheckoutService {
         title: ad.title,
         description: ad.content,
         imageUrl: ad.imageUrl,
-        linkUrl: ad.linkUrl,
+        sku: ad.sku,
       })),
     };
   }

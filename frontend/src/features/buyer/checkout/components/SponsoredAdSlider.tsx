@@ -50,7 +50,7 @@ export function SponsoredAdSlider() {
   if (!ads.length) return null
 
   const ad = ads[displayIndex]
-  const ctaHref = ad.linkUrl ?? BUYER_PRODUCTS_FALLBACK
+  const ctaHref = BUYER_PRODUCTS_FALLBACK
 
   return (
     <Card

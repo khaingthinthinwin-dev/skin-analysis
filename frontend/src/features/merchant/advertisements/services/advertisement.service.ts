@@ -8,7 +8,7 @@ export interface Advertisement {
   content: string | null;
   announcementMessage: string;
   imageUrl: string | null;
-  linkUrl: string | null;
+  sku: string | null;
   isActive: boolean;
   approvalStatus: 'pending' | 'approved' | 'rejected';
   paymentStatus: 'pending' | 'completed' | 'refunded';

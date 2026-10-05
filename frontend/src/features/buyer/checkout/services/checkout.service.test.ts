@@ -16,7 +16,7 @@ const ads: SponsoredAd[] = [
     title: 'Glow Serum',
     description: 'Brighten your routine',
     imageUrl: 'https://cdn.test/a.png',
-    linkUrl: 'https://shop.test',
+    sku: 'sku-001',
   },
 ]
 

@@ -952,7 +952,7 @@ export class ProductsService {
       title: ad.title,
       announcementMessage: ad.announcementMessage,
       imageUrl: ad.imageUrl,
-      linkUrl: ad.linkUrl,
+      sku: ad.sku,
       placement: ad.feeSetting.placement,
       startsAt: ad.startsAt,
       expiresAt: ad.expiresAt,

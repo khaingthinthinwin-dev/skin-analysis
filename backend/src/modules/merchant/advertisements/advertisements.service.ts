@@ -116,7 +116,10 @@ export class AdvertisementsService {
     if (ad.paymentStatus !== 'pending' || ad.approvalStatus !== 'pending') {
       throw new BadRequestException('Advertisement cannot accept content');
     }
-    const imageUrl = await this.resolveProductImage(dto.imageUrl, userId);
+    const { imageUrl, sku } = await this.resolveProductImage(
+      dto.imageUrl,
+      userId,
+    );
     const schedule = this.getSchedule(dto.startsAt, ad.feeSetting.durationDays);
     const updated = await this.prisma.advertisement.update({
       where: { id },
@@ -124,6 +127,7 @@ export class AdvertisementsService {
         title: dto.title,
         content: dto.content || null,
         imageUrl,
+        sku,
         announcementMessage: dto.announcementMessage,
         startsAt: schedule.startsAt,
         expiresAt: schedule.expiresAt,
@@ -275,7 +279,7 @@ export class AdvertisementsService {
     }
     // Omitting imageUrl keeps the currently saved image; when present it must
     // still be one of the merchant's own product images.
-    const imageUrl = dto.imageUrl
+    const resolved = dto.imageUrl
       ? await this.resolveProductImage(dto.imageUrl, userId)
       : undefined;
     // A rejected ad being resubmitted may re-pick its start date (its
@@ -290,7 +294,8 @@ export class AdvertisementsService {
       data: {
         title: dto.title,
         content: dto.content || null,
-        imageUrl,
+        imageUrl: resolved?.imageUrl,
+        sku: resolved?.sku,
         announcementMessage: dto.announcementMessage,
         ...(schedule
           ? { startsAt: schedule.startsAt, expiresAt: schedule.expiresAt }
@@ -440,14 +445,14 @@ export class AdvertisementsService {
     if (!merchant) throw new NotFoundException('Merchant profile not found');
     const product = await this.prisma.product.findFirst({
       where: { merchantId: merchant.id, images: { has: imageUrl } },
-      select: { id: true },
+      select: { id: true, sku: true },
     });
     if (!product) {
       throw new BadRequestException(
         'Advertisement image must be selected from your products',
       );
     }
-    return imageUrl;
+    return { imageUrl, sku: product.sku };
   }
 
   private getIsoWeek(date: Date) {
@@ -475,7 +480,7 @@ export class AdvertisementsService {
       content: ad.content,
       announcementMessage: ad.announcementMessage,
       imageUrl: ad.imageUrl,
-      linkUrl: ad.linkUrl,
+      sku: ad.sku,
       isActive: ad.isActive,
       approvalStatus: ad.approvalStatus,
       paymentStatus: ad.paymentStatus,
@@ -509,7 +514,7 @@ export class AdvertisementsService {
       content: ad.content,
       announcementMessage: ad.announcementMessage,
       imageUrl: ad.imageUrl,
-      linkUrl: ad.linkUrl,
+      sku: ad.sku,
       startsAt: ad.startsAt?.toISOString(),
       expiresAt: ad.expiresAt?.toISOString(),
       tier: ad.feeSetting?.tier,

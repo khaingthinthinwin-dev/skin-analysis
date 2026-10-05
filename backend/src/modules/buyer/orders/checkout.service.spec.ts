@@ -6,7 +6,7 @@ const ad = {
   title: 'Glow Serum',
   content: 'Brighten your routine',
   imageUrl: 'https://cdn.example.com/ad.png',
-  linkUrl: 'https://shop.example.com',
+  sku: 'sku-001',
 };
 
 const dateMatcher: unknown = expect.any(Date);
@@ -144,7 +144,7 @@ describe('CheckoutService getCheckoutPageAds', () => {
           title: 'Glow Serum',
           description: 'Brighten your routine',
           imageUrl: 'https://cdn.example.com/ad.png',
-          linkUrl: 'https://shop.example.com',
+          sku: 'sku-001',
         },
       ],
     });
