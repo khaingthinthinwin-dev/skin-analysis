@@ -48,13 +48,13 @@ describe('CheckoutService getCheckoutPageAds', () => {
     expect(where?.isActive).toBe(true);
   });
 
-  it('does not apply the payment status filter', async () => {
+  it('returns only approved advertisements', async () => {
     await service.getCheckoutPageAds();
 
     const where = findManyArgs().where;
 
     expect(where?.paymentStatus).toBeUndefined();
-    expect(where?.approvalStatus).toBeUndefined();
+    expect(where?.approvalStatus).toBe('approved');
   });
 
   it('returns every matching active ad across all tiers of the placement', async () => {

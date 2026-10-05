@@ -14,10 +14,10 @@ export class CheckoutService {
   /**
    * Sponsored ads for the checkout page banner.
    *
-   * Eligibility is the placement join, `is_active`, and the validity window
-   * (`NOW() BETWEEN starts_at AND expires_at`). Several `ad_fee_settings`
-   * rows share the placement (one per tier) and all of their advertisements
-   * are considered; no per-ID or per-tier restriction is applied.
+   * Eligibility is the placement join, `is_active`, approved status, and the
+   * validity window (`NOW() BETWEEN starts_at AND expires_at`). Several
+   * `ad_fee_settings` rows share the placement (one per tier) and all of their
+   * advertisements are considered; no per-ID or per-tier restriction is applied.
    *
    * The `payment_status` filter of the general ad-serving query (BR-AD-010)
    * is deliberately not applied here: every advertisement row currently in
@@ -41,6 +41,7 @@ export class CheckoutService {
           placement: CHECKOUT_AD_PLACEMENT,
         },
         isActive: true,
+        approvalStatus: 'approved',
         // NOW() BETWEEN starts_at AND expires_at — ads that have not opened
         // yet or that have already expired are excluded automatically.
         // `starts_at` / `expires_at` are nullable; a NULL never satisfies a
