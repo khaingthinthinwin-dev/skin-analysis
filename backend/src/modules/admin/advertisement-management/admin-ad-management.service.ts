@@ -581,6 +581,29 @@ export class AdminAdManagementService {
     );
 
     await this.redis.del(PACKAGES_CACHE_KEY);
+
+    try {
+      const merchants = await this.prisma.user.findMany({
+        where: { roleCode: 'merchant' },
+        select: { id: true },
+      });
+      if (merchants.length > 0) {
+        await this.prisma.notification.createMany({
+          data: merchants.map((m) => ({
+            userId: m.id,
+            type: 'NEW_ADS_PACKAGE',
+            title: 'New Ads Package Available',
+            message: `A new ad package is now available: ${created.placement} (${created.tier}) — ${created.durationDays} days at $${Number(created.dailyRate)}/day.`,
+            entityType: 'AdFeeSetting',
+            entityId: created.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    } catch {
+      // noop: notification is best-effort
+    }
+
     return this.toFeeSettingResponse(created);
   }
 
@@ -646,6 +669,31 @@ export class AdminAdManagementService {
     );
 
     await this.redis.del(PACKAGES_CACHE_KEY);
+
+    if (updated.isActive) {
+      try {
+        const merchants = await this.prisma.user.findMany({
+          where: { roleCode: 'merchant', isActive: true },
+          select: { id: true },
+        });
+        if (merchants.length > 0) {
+          await this.prisma.notification.createMany({
+            data: merchants.map((m) => ({
+              userId: m.id,
+              type: 'ADS_PACKAGE_UPDATED',
+              title: 'Ads Package is updated',
+              message: `An ad package has been updated: ${updated.placement} (${updated.tier}) — ${updated.durationDays} days at $${Number(updated.dailyRate)}/day.`,
+              entityType: 'AdFeeSetting',
+              entityId: updated.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      } catch {
+        // noop: notification is best-effort
+      }
+    }
+
     return this.toFeeSettingResponse(updated);
   }
 
@@ -1150,7 +1198,7 @@ export class AdminAdManagementService {
       announcementMessage: ad.announcementMessage,
       content: ad.content,
       imageUrl: ad.imageUrl,
-      linkUrl: ad.linkUrl,
+      sku: ad.sku,
       placement: (ad.feeSetting?.placement ?? null) as Placement | null,
       tier: (ad.feeSetting?.tier ?? null) as Tier | null,
       isActive: ad.isActive,

@@ -12,6 +12,11 @@ import { FeeSettingsTable } from '@/features/admin/advertisement-management/comp
 import { ReactivateFeeModal } from '@/features/admin/advertisement-management/components/ReactivateFeeModal'
 import type { AdminAdFeeSetting } from '@/types/admin-ad-management'
 import type { CreateFeeSettingInput, EditFeeSettingInput } from '@/types/admin-ad-management'
+import { ADMIN_AD_PLACEMENTS, ADMIN_AD_TIERS } from '@/types/admin-ad-management'
+
+// Every placement × tier combination that can exist as a fee setting
+// (4 placements × 3 tiers = 12 packages).
+const TOTAL_PACKAGES = ADMIN_AD_PLACEMENTS.length * ADMIN_AD_TIERS.length
 
 function apiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
@@ -40,6 +45,13 @@ export default function PackageFeeManagementPage() {
     deactivateMutation,
     reactivateMutation,
   } = useFeeSettings()
+
+  // Disable creation once every placement × tier package exists (12 total),
+  // using the same placement+tier uniqueness rule as CreateFeeModal.
+  const createdCombinations = new Set(
+    (feeSettingsQuery.data ?? []).map((setting) => `${setting.placement}:${setting.tier}`),
+  )
+  const allPackagesCreated = createdCombinations.size >= TOTAL_PACKAGES
 
   const handleCreate = (input: CreateFeeSettingInput) => {
     createMutation.mutate(input, {
@@ -117,13 +129,13 @@ export default function PackageFeeManagementPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Package & Fee Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Package & Fee Management</h1>
           <p className="text-muted-foreground">Configure advertising fees by placement and tier</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button asChild size="sm" variant="outline">
             <Link to="/admin/ads">
               <ArrowLeft className="mr-1 h-4 w-4" />
@@ -136,7 +148,16 @@ export default function PackageFeeManagementPage() {
               View History
             </Link>
           </Button>
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Button
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+            disabled={allPackagesCreated}
+            title={
+              allPackagesCreated
+                ? 'All 12 placement & tier packages have been created'
+                : undefined
+            }
+          >
             <Plus className="mr-1 h-4 w-4" />
             Create Fee Setting
           </Button>

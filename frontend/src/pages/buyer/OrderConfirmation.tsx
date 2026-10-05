@@ -28,7 +28,8 @@ function getImageUrl(url: string | null | undefined): string {
 }
 
 function formatCurrency(amount: string | number): string {
-  return `$${Number.parseFloat(String(amount) || '0').toFixed(2)}`;
+  const rounded = Math.round(Number.parseFloat(String(amount) || '0'));
+  return `${rounded.toLocaleString('en-US')}Ks`;
 }
 
 function formatDate(iso: string): string {

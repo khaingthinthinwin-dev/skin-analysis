@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getImageUrl } from '@/lib/image-url'
 import { useSponsoredAds } from '../hooks/useSponsoredAds'
+import { getImageUrl } from '@/lib/image-url'
 
 const AUTO_SLIDE_MS = 5000
 const SAMPLE_AD_IMAGE = '/uploads/products/cd8048d7-ab84-463f-8851-17bb1659b9ee.png'
@@ -181,12 +182,9 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
                   <ImageIcon className="h-6 w-6" />
                 </div>
               )}
-              <span className="absolute left-2.5 top-2.5 rounded-full bg-black/60 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-white">
-                Merchant partner
-              </span>
-              {ads.length > 1 && (
-                <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-bold tracking-wide text-white">
-                  {String(displayIndex + 1).padStart(2, '0')} / {String(ads.length).padStart(2, '0')}
+              {ad.sku && (
+                <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  SKU: {ad.sku}
                 </span>
               )}
             </div>

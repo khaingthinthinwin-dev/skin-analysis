@@ -305,7 +305,7 @@ export default function Products() {
               </p>
             </div>
           ) : (
-            <>
+            <div className="bg-card border border-border rounded-xl p-5">
               <div
                 className={
                   view === 'grid'
@@ -329,8 +329,8 @@ export default function Products() {
               </div>
 
               {meta && (
-                <>
-                  <div className="flex justify-center items-center gap-2 mt-8">
+                <div className="mt-4 border-t border-border pt-3">
+                  <div className="flex justify-center items-center gap-2">
                     <Button
                       type="button"
                       variant="ghost"
@@ -366,9 +366,9 @@ export default function Products() {
                       <ChevronRight className="h-5 w-5" />
                     </Button>
                   </div>
-                </>
+                </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

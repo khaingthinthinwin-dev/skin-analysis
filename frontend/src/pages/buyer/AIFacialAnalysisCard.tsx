@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -11,12 +10,12 @@ import {
   Sparkles,
   ArrowRight,
 } from 'lucide-react'
-import { MeshOverlayViewer } from '../../features/buyer/skin-analysis/components/MeshOverlayViewer'
 import { ConditionSeveritySection } from '../../features/buyer/skin-analysis/components/ConditionSeveritySection'
 import { DailyRoutineSection } from '../../features/buyer/skin-analysis/components/DailyRoutineSection'
 import { ProductRecommendationCard } from '../../features/buyer/skin-analysis/components/ProductRecommendationCard'
 import { SKIN_TYPE_LABELS } from '../../features/buyer/skin-analysis/types/skin-analysis.types'
 import { cn } from '@/lib/utils'
+import { getImageUrl } from '@/lib/image-url'
 import type { AnalysisResultResponse } from '@/schemas/skin-analysis.schema'
 import type { LucideIcon } from 'lucide-react'
 
@@ -32,7 +31,6 @@ const GUIDELINE_KEYS = [
 
 export function AIFacialAnalysisCard({ analysis }: AIFacialAnalysisCardProps) {
   const { t } = useTranslation('skin')
-  const [showMesh, setShowMesh] = useState(true)
 
   const formatShortDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString(undefined, {
@@ -176,24 +174,29 @@ export function AIFacialAnalysisCard({ analysis }: AIFacialAnalysisCardProps) {
       {/* Diagnostic image | capture guidelines */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <MeshOverlayViewer
-            scanImageUrl={analysis.facialScanUrl}
-            meshOverlayUrl={analysis.meshOverlayUrl}
-            showMesh={showMesh}
-            onToggleMesh={() => setShowMesh(!showMesh)}
-            topLeft={
-              <>
-                <span className="rounded-full bg-emerald-500/95 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm">
-                  {t('results.processed')}
-                </span>
-                <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm dark:bg-black/70 dark:text-white">
-                  {formatShortDate(analysis.analysisDate)}
-                </span>
-              </>
-            }
-            overlayTitle={t('mesh.active')}
-            overlayDesc={t('summary.confidence', { value: analysis.confidence })}
-          />
+          <div className="relative aspect-[4/3] max-h-[460px] w-full overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950/70 shadow-lg">
+            <img
+              src={getImageUrl(analysis.facialScanUrl)}
+              alt={t('results.scanImage')}
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+
+            {/* Status chips */}
+            <div className="absolute left-3 top-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-emerald-500/95 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm">
+                {t('results.processed')}
+              </span>
+              <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm dark:bg-black/70 dark:text-white">
+                {formatShortDate(analysis.analysisDate)}
+              </span>
+            </div>
+
+            {/* Caption */}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 pt-12">
+              <p className="text-base font-semibold text-white sm:text-lg">{t('results.analysisComplete')}</p>
+              <p className="mt-0.5 text-xs text-white/80">{t('summary.confidence', { value: analysis.confidence })}</p>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-3xl border border-violet-200/70 bg-gradient-to-b from-violet-50 to-white p-5 shadow-sm dark:border-violet-900 dark:from-violet-950/40 dark:to-card">

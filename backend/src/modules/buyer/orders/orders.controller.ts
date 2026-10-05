@@ -88,7 +88,11 @@ export class OrdersController {
     @CurrentUser() user: AuthUser,
     @Param('orderId') orderId: string,
   ) {
-    const data = await this.ordersService.getOrderDetail(user.id, orderId);
+    const data = await this.ordersService.getOrderDetail(
+      user.id,
+      user.roleCode,
+      orderId,
+    );
     return { data };
   }
 
@@ -99,7 +103,11 @@ export class OrdersController {
     @CurrentUser() user: AuthUser,
     @Param('orderId') orderId: string,
   ) {
-    const data = await this.ordersService.getOrderTracking(user.id, orderId);
+    const data = await this.ordersService.getOrderTracking(
+      user.id,
+      user.roleCode,
+      orderId,
+    );
     return { data };
   }
 }

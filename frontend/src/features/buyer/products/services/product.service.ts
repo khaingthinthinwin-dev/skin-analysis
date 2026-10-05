@@ -110,7 +110,7 @@ export interface SidebarAdvertisement {
   title: string;
   announcementMessage: string | null;
   imageUrl: string | null;
-  linkUrl: string | null;
+  sku: string | null;
   placement: string | null;
   startsAt: string | null;
   expiresAt: string | null;

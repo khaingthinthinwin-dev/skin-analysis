@@ -28,21 +28,29 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TablePagination } from '@/components/ui/pagination';
 import {
   Search,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   Package,
   CheckCircle,
   XCircle,
   Ban,
   SlidersHorizontal,
-  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import type { AdminProduct } from '@/features/admin/content-moderation/services/moderation.service';
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  const message = (error as { response?: { data?: { message?: unknown } } })
+    ?.response?.data?.message;
+  if (Array.isArray(message)) return message.join(', ');
+  if (typeof message === 'string' && message.trim()) return message;
+  return fallback;
+}
 
 // ─── Stats Types ────────────────────────────────────────────────────────────
 
@@ -144,19 +152,6 @@ function ProductStatusBadge({ isActive }: { isActive: boolean }) {
 
 // ─── Helper Functions ───────────────────────────────────────────────────────
 
-function getPageNumbers(current: number, total: number) {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | string)[] = [];
-  if (current <= 3) {
-    pages.push(1, 2, 3, 4, '...', total);
-  } else if (current >= total - 2) {
-    pages.push(1, '...', total - 3, total - 2, total - 1, total);
-  } else {
-    pages.push(1, '...', current - 1, current, current + 1, '...', total);
-  }
-  return pages;
-}
-
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function ContentModeration() {
@@ -175,7 +170,7 @@ export default function ContentModeration() {
   const [moderateTarget, setModerateTarget] = useState<AdminProduct | null>(null);
   const [moderateAction, setModerateAction] = useState<'deactivate' | 'reactivate'>('deactivate');
   const [reason, setReason] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [bulkModerateAction, setBulkModerateAction] = useState<'deactivate' | 'activate' | null>(null);
 
   // ── Stats ───────────────────────────────────────────────────────────────
   const { stats, refreshStats } = useProductStats();
@@ -259,13 +254,17 @@ export default function ContentModeration() {
           refreshStats();
         },
         onError: (error: unknown) => {
-          const msg =
-            (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-            'Failed to update product';
-          toast.error(msg);
+          toast.error(
+            apiErrorMessage(error, 'Failed to update product'),
+          );
         },
       },
     );
+  };
+
+  const openBulkModerateDialog = (action: 'deactivate' | 'activate') => {
+    setBulkModerateAction(action);
+    setReason('');
   };
 
   const handleBulkModerate = (isActive: boolean) => {
@@ -275,32 +274,36 @@ export default function ContentModeration() {
     bulkModerateMutation.mutate(
       { ids: selectedIds, isActive, reason: isActive ? undefined : reason },
       {
-        onSuccess: () => {
-          toast.success(`${selectedIds.length} products ${isActive ? 'activated' : 'deactivated'}`);
-          setSelectedIds([]);
+        onSuccess: (result) => {
+          if (result.failed > 0) {
+            toast.error(
+              `${result.processed} of ${selectedIds.length} updated, ${result.failed} failed`,
+            );
+            setSelectedIds(
+              result.results.filter((r) => r.status === 'failed').map((r) => r.id),
+            );
+          } else {
+            toast.success(
+              `${selectedIds.length} products ${isActive ? 'activated' : 'deactivated'}`,
+            );
+            setSelectedIds([]);
+          }
           setModerateTarget(null);
+          setBulkModerateAction(null);
           setReason('');
           refreshStats();
         },
+        onError: (error: unknown) =>
+          toast.error(
+            apiErrorMessage(error, 'Failed to update products'),
+          ),
       },
     );
   };
 
-  const openDeleteDialog = (id: string) => {
-    setDeleteTarget(id);
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await api.delete(`/admin/content/${deleteTarget}`);
-      toast.success('Product deleted');
-      setDeleteTarget(null);
-      setDetailProduct(null);
-      refreshStats();
-    } catch {
-      toast.error('Failed to delete product');
-    }
+  const confirmBulkModerate = () => {
+    if (!bulkModerateAction) return;
+    handleBulkModerate(bulkModerateAction === 'activate');
   };
 
   return (
@@ -414,208 +417,168 @@ export default function ContentModeration() {
         </Select>
       </div>
 
-      {/* ── Bulk Actions ────────────────────────────────────────────────── */}
-      {selectedIds.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted rounded-md">
-          <span className="text-sm font-medium">
-            {selectedIds.length} selected
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => {
-                openModerate(products[0], 'deactivate');
-              }}
-            >
-              <Ban className="h-4 w-4 mr-1" /> Deactivate All
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => handleBulkModerate(true)}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" /> Activate All
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* ── [E] Products Table ──────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={
-                    products.length > 0 &&
-                    selectedIds.length === products.length
-                  }
-                  onCheckedChange={toggleSelectAll}
-                />
-              </TableHead>
-              <TableHead>Product</TableHead>
-              <TableHead>Shop</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {products.length === 0 ? (
+      <div className="rounded-xl border border-border bg-card p-5">
+        {/* ── Bulk Actions ────────────────────────────────────────────── */}
+        {selectedIds.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted p-3">
+            <span className="text-sm font-medium">
+              {selectedIds.length} selected
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={
+                  selectedIds.length === 0 ||
+                  !products.some(
+                    (p) => selectedIds.includes(p.id) && p.isActive,
+                  )
+                }
+                onClick={() => openBulkModerateDialog('deactivate')}
+              >
+                <Ban className="h-4 w-4 mr-1" /> Deactivate All
+              </Button>
+              <Button
+                size="sm"
+                disabled={
+                  selectedIds.length === 0 ||
+                  !products.some(
+                    (p) => selectedIds.includes(p.id) && !p.isActive,
+                  )
+                }
+                onClick={() => openBulkModerateDialog('activate')}
+              >
+                <CheckCircle className="h-4 w-4 mr-1" /> Activate All
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="overflow-x-auto rounded-md border border-border bg-card">
+          <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center py-12 text-muted-foreground"
-                >
-                  No products found.
-                </TableCell>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={
+                      products.length > 0 &&
+                      selectedIds.length === products.length
+                    }
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Shop</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              products.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.includes(product.id)}
-                      onCheckedChange={() => toggleSelectProduct(product.id)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {product.images?.[0] && (
-                        <img
-                          src={getImageUrl(product.images[0])}
-                          alt=""
-                          className="h-10 w-10 rounded object-cover"
-                        />
-                      )}
-                      <div>
-                        <p className="font-medium text-sm max-w-[160px] truncate">
-                          {product.name}
-                        </p>
-                        {product.category && (
-                          <p className="text-xs text-muted-foreground">
-                            {product.category.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm">{product.merchant?.shopName || 'N/A'}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {product.merchant?.user?.name || ''}
-                    </p>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    ${Number(product.price).toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <ProductStatusBadge isActive={product.isActive} />
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                    {new Date(product.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-8 w-8"
-                        onClick={() => setDetailProduct(product)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {product.isActive ? (
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => openModerate(product, 'deactivate')}
-                        >
-                          <Ban className="h-4 w-4 text-destructive" />
-                        </Button>
-                      ) : (
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => openModerate(product, 'reactivate')}
-                        >
-                          <CheckCircle className="h-4 w-4 text-emerald-500" />
-                        </Button>
-                      )}
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {products.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-12 text-muted-foreground"
+                  >
+                    No products found.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* ── [F] Pagination ──────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">
-          Showing {products.length > 0 ? (page - 1) * limit + 1 : 0}-
-          {Math.min(page * limit, total)} of {total} products
-        </span>
-        <div className="flex items-center gap-2">
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              setPage(1);
-            }}
-            className="h-8 px-2 text-sm rounded-md border bg-background"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          <div className="flex gap-1">
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {getPageNumbers(page, totalPages).map((p, idx) =>
-              typeof p === 'number' ? (
-                <Button
-                  key={idx}
-                  size="icon"
-                  variant={p === page ? 'default' : 'outline'}
-                  className="h-8 w-8"
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </Button>
               ) : (
-                <span
-                  key={idx}
-                  className="flex items-center px-1 text-muted-foreground"
-                >
-                  ...
-                </span>
-              ),
-            )}
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+                products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.includes(product.id)}
+                        onCheckedChange={() => toggleSelectProduct(product.id)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {product.images?.[0] && (
+                          <img
+                            src={getImageUrl(product.images[0])}
+                            alt=""
+                            className="h-10 w-10 rounded object-cover"
+                          />
+                        )}
+                        <div>
+                          <p className="font-medium text-sm max-w-[160px] truncate">
+                            {product.name}
+                          </p>
+                          {product.category && (
+                            <p className="text-xs text-muted-foreground">
+                              {product.category.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm">{product.merchant?.shopName || 'N/A'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {product.merchant?.user?.name || ''}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      ${Number(product.price).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <ProductStatusBadge isActive={product.isActive} />
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      {new Date(product.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-8 w-8"
+                          onClick={() => setDetailProduct(product)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {product.isActive ? (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() => openModerate(product, 'deactivate')}
+                          >
+                            <Ban className="h-4 w-4 text-destructive" />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() => openModerate(product, 'reactivate')}
+                          >
+                            <CheckCircle className="h-4 w-4 text-emerald-500" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
+
+        {/* ── [F] Pagination ──────────────────────────────────────────────── */}
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          limit={limit}
+          onLimitChange={setLimit}
+          total={total}
+          itemLabel="products"
+        />
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════ */}
@@ -627,7 +590,7 @@ export default function ContentModeration() {
         open={!!detailProduct}
         onOpenChange={() => setDetailProduct(null)}
       >
-        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+        <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
               Product Moderation
@@ -759,15 +722,6 @@ export default function ContentModeration() {
                     <CheckCircle className="h-4 w-4 mr-1" /> Reactivate
                   </Button>
                 )}
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    setDetailProduct(null);
-                    openDeleteDialog(detailProduct.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" /> Delete
-                </Button>
               </div>
             </div>
           )}
@@ -841,25 +795,59 @@ export default function ContentModeration() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Product Confirmation ──────────────────────────────────── */}
+      {/* ── Bulk Moderate Products Confirmation ─────────────────────────── */}
       <Dialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
+        open={!!bulkModerateAction}
+        onOpenChange={() => {
+          setBulkModerateAction(null);
+          setReason('');
+        }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Product</DialogTitle>
+            <DialogTitle>
+              {bulkModerateAction === 'deactivate'
+                ? `Deactivate ${selectedIds.length} Products`
+                : `Activate ${selectedIds.length} Products`}
+            </DialogTitle>
           </DialogHeader>
-          <p>
-            Are you sure you want to permanently delete this product? This action
-            cannot be undone.
+          <p className="text-sm text-muted-foreground">
+            {bulkModerateAction === 'deactivate'
+              ? 'The selected products will be deactivated and hidden from the storefront. This can be undone later.'
+              : 'The selected products will be activated and visible on the storefront.'}
           </p>
+          {bulkModerateAction === 'deactivate' && (
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Enter deactivation reason (required, max 500 characters)..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                maxLength={500}
+              />
+              <div className="text-xs text-muted-foreground text-right">
+                {reason.length}/500
+              </div>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBulkModerateAction(null);
+                setReason('');
+              }}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button
+              variant={bulkModerateAction === 'deactivate' ? 'destructive' : 'default'}
+              disabled={
+                bulkModerateMutation.isPending ||
+                (bulkModerateAction === 'deactivate' && !reason.trim())
+              }
+              onClick={confirmBulkModerate}
+            >
+              {bulkModerateAction === 'deactivate' ? 'Deactivate All' : 'Activate All'}
             </Button>
           </DialogFooter>
         </DialogContent>

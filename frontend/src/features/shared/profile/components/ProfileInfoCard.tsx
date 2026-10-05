@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import type { Profile } from '@/types/profile.types'
 import { LicenseResubmissionButton } from './LicenseResubmissionCard'
-import { Mail, Calendar, Shield, FileCheck } from 'lucide-react'
+import { Mail, Calendar, Shield, FileCheck, Circle } from 'lucide-react'
 
 interface ProfileInfoCardProps {
   profile: Profile
@@ -54,6 +54,10 @@ export function ProfileInfoCard({
   const isRejectedMerchant =
     userRole === 'merchant' &&
     (profile.licenseStatus === 'rejected' || profile.license_status === 'rejected')
+  const isActiveAccount =
+    profile.status !== 'inactive' &&
+    profile.isActive !== false &&
+    profile.is_active !== false
 
   return (
     <Card>
@@ -72,10 +76,24 @@ export function ProfileInfoCard({
           </Avatar>
           <div className="space-y-1">
             <h3 className="text-2xl font-semibold">{profile.name}</h3>
-            <Badge className={getRoleBadgeColor(userRole)}>
-              <Shield className="mr-1 h-3 w-3" />
-              {t(`roles.${userRole}`, roleDefault)}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className={getRoleBadgeColor(userRole)}>
+                <Shield className="mr-1 h-3 w-3" />
+                {t(`roles.${userRole}`, roleDefault)}
+              </Badge>
+              <Badge
+                className={
+                  isActiveAccount
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                }
+              >
+                <Circle className={`mr-1 h-3 w-3 ${isActiveAccount ? 'fill-current' : ''}`} />
+                {isActiveAccount
+                  ? t('profile.info.status.active', 'Active')
+                  : t('profile.info.status.inactive', 'Inactive')}
+              </Badge>
+            </div>
           </div>
         </div>
 

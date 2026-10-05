@@ -44,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { PaginationControls } from '@/components/PaginationControls'
 import { useAnalysisHistory } from '../../features/buyer/skin-analysis/hooks/useAnalysisHistory'
 import { useExportHistoryReport } from '../../features/buyer/skin-analysis/hooks/useExportReport'
 import {
@@ -232,7 +233,7 @@ export default function SkinAnalysisHistoryPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[5, 10, 20, 50].map((n) => (
+                    {[10, 20, 50].map((n) => (
                       <SelectItem key={n} value={String(n)}>
                         {t('common.pageSize', { size: n })}
                       </SelectItem>
@@ -243,10 +244,11 @@ export default function SkinAnalysisHistoryPage() {
               <div className="flex items-end">
                 <Button
                   variant="ghost"
-                  className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                  size="sm"
+                  className="h-9 gap-1.5 px-3 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => { setParams({ page: 1, pageSize: 10 }); setShowFilters(false) }}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                   {t('common.clearFilters')}
                 </Button>
               </div>
@@ -285,195 +287,167 @@ export default function SkinAnalysisHistoryPage() {
         </div>
       )}
 
-      {/* ── Main table card ───────────────────────────────────────────────── */}
-      <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
-
-        {/* Bulk-action bar — visible only when rows are selected */}
-        {someSelected && (
-          <div className="flex items-center justify-between px-5 py-3 bg-violet-50 dark:bg-violet-950/30 border-b border-violet-200 dark:border-violet-800 animate-in fade-in slide-in-from-top-1 duration-150">
-            <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-              {selectedIds.size} {selectedIds.size === 1 ? 'record' : 'records'} selected
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground h-8"
-                onClick={() => setSelectedIds(new Set())}
-              >
-                Clear
-              </Button>
-              <Button
-                id="btn-delete-selected"
-                variant="destructive"
-                size="sm"
-                className="h-8 gap-1.5"
-                onClick={() => setConfirmDelete({ mode: 'bulk', ids: Array.from(selectedIds) })}
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete {selectedIds.size === allIds.length ? 'all' : 'selected'}
-              </Button>
-            </div>
+      {/* ── Bulk-action bar — visible only when rows are selected ─────────── */}
+      {someSelected && (
+        <div className="flex items-center justify-between px-5 py-3 mb-4 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 animate-in fade-in slide-in-from-top-1 duration-150">
+          <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+            {selectedIds.size} {selectedIds.size === 1 ? 'record' : 'records'} selected
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground h-8"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Clear
+            </Button>
+            <Button
+              id="btn-delete-selected"
+              variant="destructive"
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={() => setConfirmDelete({ mode: 'bulk', ids: Array.from(selectedIds) })}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete {selectedIds.size === allIds.length ? 'all' : 'selected'}
+            </Button>
           </div>
-        )}
+        </div>
+      )}
 
-        <CardContent className="p-5">
-          {isLoading ? (
-            <div className="py-16 flex flex-col items-center gap-3">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-500 border-t-transparent mx-auto" />
-              <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
-            </div>
-          ) : data ? (
-            <>
-              <div className="overflow-x-auto rounded-md border bg-card">
-                <Table className="w-full">
-                  <TableHeader className="sticky top-0 z-10 bg-primary/10">
-                    <TableRow>
-                      <TableHead className="w-12 bg-primary/10">
-                        <Checkbox
-                          id="chk-select-all"
-                          checked={allSelected}
-                          onCheckedChange={toggleAll}
-                          aria-label="Select all"
-                          data-state={allSelected ? 'checked' : someSelected ? 'indeterminate' : 'unchecked'}
-                        />
-                      </TableHead>
-                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
-                        {t('history.columns.date')}
-                      </TableHead>
-                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
-                        {t('history.columns.healthScore')}
-                      </TableHead>
-                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
-                        {t('history.columns.hydration')}
-                      </TableHead>
-                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
-                        {t('history.columns.skinType')}
-                      </TableHead>
-                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
-                        {t('history.columns.skinAge')}
-                      </TableHead>
-                      <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
-                        {t('history.columns.status')}
-                      </TableHead>
-                      <TableHead className="text-right bg-primary/10 whitespace-nowrap font-bold">
-                        {t('history.columns.actions')}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.items.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                          {t('history.noRecords')}
+      {/* ── Main table ────────────────────────────────────────────────────── */}
+      {isLoading ? (
+        <div className="py-16 flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-500 border-t-transparent mx-auto" />
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+        </div>
+      ) : data ? (
+        <>
+          <div className="overflow-x-auto rounded-md border bg-card">
+            <Table className="w-full">
+              <TableHeader className="sticky top-0 z-10 bg-primary/10">
+                <TableRow>
+                  <TableHead className="w-12 bg-primary/10">
+                    <Checkbox
+                      id="chk-select-all"
+                      checked={allSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all"
+                      data-state={allSelected ? 'checked' : someSelected ? 'indeterminate' : 'unchecked'}
+                    />
+                  </TableHead>
+                  <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                    {t('history.columns.date')}
+                  </TableHead>
+                  <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                    {t('history.columns.healthScore')}
+                  </TableHead>
+                  <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                    {t('history.columns.hydration')}
+                  </TableHead>
+                  <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                    {t('history.columns.skinType')}
+                  </TableHead>
+                  <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                    {t('history.columns.skinAge')}
+                  </TableHead>
+                  <TableHead className="bg-primary/10 whitespace-nowrap font-bold">
+                    {t('history.columns.status')}
+                  </TableHead>
+                  <TableHead className="text-right bg-primary/10 whitespace-nowrap font-bold">
+                    {t('history.columns.actions')}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                      {t('history.noRecords')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  data.items.map((item) => {
+                    const isSelected = selectedIds.has(item.analysisId)
+                    return (
+                      <TableRow
+                        key={item.analysisId}
+                        className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${
+                          isSelected ? 'bg-violet-50/60 dark:bg-violet-900/10' : ''
+                        }`}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            id={`chk-${item.analysisId}`}
+                            checked={isSelected}
+                            onCheckedChange={() => toggleOne(item.analysisId)}
+                            aria-label={`Select ${formatDate(item.analysisDate)}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {formatDate(item.analysisDate)}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {item.healthScore}
+                          <span className="text-xs font-normal text-muted-foreground">/100</span>
+                        </TableCell>
+                        <TableCell>{item.hydration}%</TableCell>
+                        <TableCell>
+                          {SKIN_TYPE_LABELS[item.skinType as keyof typeof SKIN_TYPE_LABELS]}
+                        </TableCell>
+                        <TableCell>{item.skinAge} yrs</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs font-medium ${STATUS_STYLES[item.status] ?? ''}`}
+                          >
+                            {item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                            {/* View */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 border border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
+                              onClick={() => navigate(`/buyer/skin-analysis/${item.analysisId}`)}
+                              aria-label={t('history.viewDetails')}
+                              title={t('history.viewDetails')}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+
+                            {/* Export single */}
+                            <ExportReportButton
+                              analysisId={item.analysisId}
+                              variant="single"
+                              iconOnly
+                              className="h-7 w-7 border border-green-300 bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 disabled:opacity-50"
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      data.items.map((item) => {
-                        const isSelected = selectedIds.has(item.analysisId)
-                        return (
-                          <TableRow
-                            key={item.analysisId}
-                            className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${
-                              isSelected ? 'bg-violet-50/60 dark:bg-violet-900/10' : ''
-                            }`}
-                          >
-                            <TableCell>
-                              <Checkbox
-                                id={`chk-${item.analysisId}`}
-                                checked={isSelected}
-                                onCheckedChange={() => toggleOne(item.analysisId)}
-                                aria-label={`Select ${formatDate(item.analysisDate)}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {formatDate(item.analysisDate)}
-                            </TableCell>
-                            <TableCell className="font-semibold">
-                              {item.healthScore}
-                              <span className="text-xs font-normal text-muted-foreground">/100</span>
-                            </TableCell>
-                            <TableCell>{item.hydration}%</TableCell>
-                            <TableCell>
-                              {SKIN_TYPE_LABELS[item.skinType as keyof typeof SKIN_TYPE_LABELS]}
-                            </TableCell>
-                            <TableCell>{item.skinAge} yrs</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={`text-xs font-medium ${STATUS_STYLES[item.status] ?? ''}`}
-                              >
-                                {item.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-                                {/* View */}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 border border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
-                                  onClick={() => navigate(`/buyer/skin-analysis/${item.analysisId}`)}
-                                  aria-label={t('history.viewDetails')}
-                                  title={t('history.viewDetails')}
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                </Button>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-                                {/* Export single */}
-                                <ExportReportButton
-                                  analysisId={item.analysisId}
-                                  variant="single"
-                                  iconOnly
-                                  className="h-7 w-7 border border-green-300 bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 disabled:opacity-50"
-                                />
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              {data.meta.totalPages > 1 && (
-                <div className="mt-5 flex items-center justify-between border-t border-border/40 pt-4">
-
-                  <p className="text-xs text-muted-foreground">
-                    Showing {(data.meta.page - 1) * data.meta.pageSize + 1}–
-                    {Math.min(data.meta.page * data.meta.pageSize, data.meta.totalItems)} of{' '}
-                    {data.meta.totalItems} results
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setParams((p) => ({ ...p, page: p.page - 1 }))}
-                      disabled={data.meta.page <= 1}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm text-muted-foreground px-1">
-                      {data.meta.page} / {data.meta.totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setParams((p) => ({ ...p, page: p.page + 1 }))}
-                      disabled={data.meta.page >= data.meta.totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
+          {/* Pagination */}
+          <PaginationControls
+            page={data.meta.page}
+            totalPages={data.meta.totalPages}
+            onPageChange={(page) => setParams((p) => ({ ...p, page }))}
+            limit={data.meta.pageSize}
+            onLimitChange={(pageSize) => setParams((p) => ({ ...p, pageSize, page: 1 }))}
+            pageSizeOptions={[10, 20, 50]}
+          />
+        </>
+      ) : null}
 
       {/* ── Confirm delete dialog ─────────────────────────────────────────── */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>

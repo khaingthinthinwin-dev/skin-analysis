@@ -3,11 +3,12 @@ import { api } from '@/lib/api';
 export interface Advertisement {
   id: string;
   shopId: string;
+  shopName: string;
   title: string;
   content: string | null;
   announcementMessage: string;
   imageUrl: string | null;
-  linkUrl: string | null;
+  sku: string | null;
   isActive: boolean;
   approvalStatus: 'pending' | 'approved' | 'rejected';
   paymentStatus: 'pending' | 'completed' | 'refunded';
@@ -60,6 +61,8 @@ export interface AdPackage {
   durationDays: number;
   maxAds: number;
   totalFee: string;
+  /** ISO 8601 timestamp of the last admin change (create / rate / activation). */
+  updatedAt?: string;
 }
 
 // Works around the double { data } wrapping produced by the merchant

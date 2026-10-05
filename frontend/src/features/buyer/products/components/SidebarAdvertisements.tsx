@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSidebarAds } from '../hooks/useProductDetail';
 import { SidebarAdvertisement } from '../services/product.service';
 
@@ -100,7 +100,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
   const title = useFallback ? sampleAd.title : (realAd?.title ?? '');
   const description = useFallback ? sampleAd.desc : (realAd?.announcementMessage ?? null);
   const imageUrl = useFallback ? sampleAd.image : (realAd?.imageUrl ?? null);
-  const linkUrl = useFallback ? '' : (realAd?.linkUrl ?? '');
+  const sku = useFallback ? '' : (realAd?.sku ?? '');
 
   return (
     <div
@@ -153,15 +153,10 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               {description && (
                 <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{description}</p>
               )}
-              {linkUrl && (
-                <a
-                  href={linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow sponsored"
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#7c3aed] hover:underline"
-                >
-                  Learn more <ExternalLink className="h-3 w-3" />
-                </a>
+              {sku && (
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#7c3aed]">
+                  SKU: {sku}
+                </span>
               )}
             </div>
           </div>

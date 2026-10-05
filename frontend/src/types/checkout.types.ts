@@ -35,11 +35,11 @@ export interface CheckoutData {
 
 export interface SponsoredAd {
   id: string;
+  placement: string;
   title: string;
-  description?: string | null;
-  imageUrl: string;
-  ctaText?: string | null;
-  ctaUrl?: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  sku: string | null;
 }
 
 export interface CouponValidation {
