@@ -12,19 +12,10 @@ import type {
 } from '@/types/checkout.types';
 
 export const checkoutService = {
-  async getSponsoredAds(): Promise<SponsoredAd[]> {
-    const { data } = await apiClient.get('/ads', {
-      params: { placement: 'checkout_top' },
-    });
-    const payload = data?.data ?? data;
-    return Array.isArray(payload) ? payload.slice(0, 5) : [];
-  },
-
-  async trackAdClick(adId: string): Promise<void> {
-    await apiClient.post('/ads/track/click', {
-      adId,
-      placement: 'checkout_top',
-    });
+  async getSponsoredAds(): Promise<{ data: SponsoredAd[] }> {
+    const { data } = await apiClient.get('/checkout/sponsored-ads');
+    const payload = data?.data?.data ?? data?.data ?? data;
+    return { data: Array.isArray(payload) ? payload : [] };
   },
 
   async getCheckoutData(): Promise<CheckoutData> {

@@ -156,7 +156,7 @@ export class SearchService {
       title: ad.title,
       description: ad.content,
       imageUrl: ad.imageUrl,
-      linkUrl: ad.linkUrl,
+      sku: ad.sku,
       tier: 'standard',
       approvalStatus: ad.approvalStatus,
       startsAt: ad.startsAt,

@@ -28,7 +28,6 @@ const mockAdminService = {
   getReportById: jest.fn(),
   updateReportStatus: jest.fn(),
   deleteReport: jest.fn(),
-  getAuditLogs: jest.fn(),
 };
 
 describe('AdminController', () => {
@@ -186,11 +185,5 @@ describe('AdminController', () => {
       'rp1',
       'admin-1',
     );
-  });
-
-  it('should get audit logs', async () => {
-    mockAdminService.getAuditLogs.mockResolvedValue({ items: [] });
-    const result = await controller.getAuditLogs({});
-    expect(result.items).toBeDefined();
   });
 });

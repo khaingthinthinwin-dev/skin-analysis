@@ -48,4 +48,13 @@ export class CheckoutController {
     const data = await this.checkoutService.getMerchantPromotions(merchantId);
     return { data };
   }
+
+  @Get('sponsored-ads')
+  @ApiOperation({
+    summary: 'Get sponsored ads for the checkout page banner',
+  })
+  async getSponsoredAds() {
+    const data = await this.checkoutService.getCheckoutPageAds();
+    return data;
+  }
 }

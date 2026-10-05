@@ -118,7 +118,7 @@ export class AdsService {
           title: ad.title,
           description: ad.content,
           imageUrl: ad.imageUrl || '',
-          linkUrl: ad.linkUrl || null,
+          sku: ad.sku || null,
           ctaText: ad.announcementMessage || 'Shop Now',
           priorityAmount: ad.paymentAmount?.toString() || null,
           shopName: ad.shop.name,

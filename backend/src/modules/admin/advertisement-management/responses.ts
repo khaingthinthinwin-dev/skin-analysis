@@ -8,7 +8,7 @@ export interface AdminAdvertisementResponseDto {
   announcementMessage: string;
   content: string | null;
   imageUrl: string | null;
-  linkUrl: string | null;
+  sku: string | null;
   placement: Placement | null;
   tier: Tier | null;
   isActive: boolean;

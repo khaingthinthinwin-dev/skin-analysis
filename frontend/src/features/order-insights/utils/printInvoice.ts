@@ -168,6 +168,7 @@ export function printInvoice(order: OrderDetailResponseDto): void {
         <div>
           <h1>INVOICE</h1>
           <div class="meta">Order ${escapeHtml(reference)}</div>
+          ${order.shop?.name ? `<div class="meta">Shop: ${escapeHtml(order.shop.name)}</div>` : ""}
           <div class="meta">Order Date: ${escapeHtml(formatDate(order.createdAt))}</div>
           <div class="meta">Invoice Date: ${escapeHtml(invoiceDate)}</div>
         </div>

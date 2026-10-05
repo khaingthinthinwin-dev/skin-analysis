@@ -46,7 +46,7 @@ export function ExportConfigForm({ isGenerating = false, onGenerate }: ExportCon
   return (
     <div className="space-y-4 rounded-md border bg-card p-4">
       <div className="flex flex-wrap items-end gap-3">
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Date range</span>
           <DateRangePicker
             value={{ from: dateFrom, to: dateTo }}
@@ -56,32 +56,32 @@ export function ExportConfigForm({ isGenerating = false, onGenerate }: ExportCon
             }}
           />
         </div>
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Placement</span>
           <MultiSelect label="placements" options={PLACEMENT_OPTIONS} value={placement} onChange={setPlacement} />
         </div>
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Tier</span>
           <MultiSelect label="tiers" options={TIER_OPTIONS} value={tier} onChange={setTier} />
         </div>
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Status</span>
           <MultiSelect label="statuses" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
         </div>
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Shop</span>
           <Input
             value={shop}
             onChange={(e) => setShop(e.target.value)}
             placeholder="Search shop..."
-            className="h-9 w-48"
+            className="h-9 w-full sm:w-48"
             aria-label="Search shop name"
           />
         </div>
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Format</span>
           <Select defaultValue="csv">
-            <SelectTrigger className="h-9 w-28" disabled aria-label="Export format">
+            <SelectTrigger className="h-9 w-full sm:w-28" disabled aria-label="Export format">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -97,7 +97,7 @@ export function ExportConfigForm({ isGenerating = false, onGenerate }: ExportCon
         </p>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">
           Generates and downloads a CSV report. Filters are optional; leave empty to include all.
         </p>

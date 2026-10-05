@@ -53,7 +53,7 @@ export interface AdSlide {
   title: string
   description: string | null
   imageUrl: string
-  linkUrl: string | null
+  sku: string | null
   ctaText: string
   priorityAmount: string | null
   shopName: string

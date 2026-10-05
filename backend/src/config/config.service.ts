@@ -25,7 +25,11 @@ export const jwtConfig = registerAs('jwt', () => ({
 }));
 
 export const mailConfig = registerAs('mail', () => ({
-  user: process.env.GMAIL_USER || '',
-  pass: process.env.GMAIL_PASS || '',
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587', 10),
+  secure: process.env.SMTP_SECURE === 'true',
+  user: process.env.SMTP_USER || '',
+  pass: process.env.SMTP_PASS || '',
+  from: process.env.MAIL_FROM || '"No Reply" <shinminthant@myanmardcr.com>',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
 }));

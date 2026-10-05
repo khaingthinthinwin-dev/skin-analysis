@@ -38,7 +38,6 @@ const analysis: AnalysisResultResponse = {
   hydration: 52,
   confidence: 94,
   facialScanUrl: '/scan.png',
-  meshOverlayUrl: '/mesh.png',
   conditions: [
     {
       conditionId: '11111111-1111-1111-1111-111111111111',
@@ -119,17 +118,16 @@ describe('AIFacialAnalysisCard', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the diagnostic image with status, date and overlay caption', () => {
+  it('renders the diagnostic image with status, date and caption', () => {
     renderCard()
 
-    expect(screen.getByText('Facial Mesh Overlay')).toBeInTheDocument()
     expect(screen.getByAltText('Facial scan image')).toHaveAttribute(
       'src',
       getImageUrl('/scan.png'),
     )
     expect(screen.getByText('PROCESSED')).toBeInTheDocument()
     expect(screen.getByText(/2026/)).toBeInTheDocument()
-    expect(screen.getByText('Diagnostic Overlay Active')).toBeInTheDocument()
+    expect(screen.getByText('Analysis Complete')).toBeInTheDocument()
     expect(screen.getByText('AI Confidence: 94%')).toBeInTheDocument()
   })
 

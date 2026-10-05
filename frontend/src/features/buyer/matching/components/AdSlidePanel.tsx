@@ -131,44 +131,16 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
                   {ad.description}
                 </p>
               )}
-
-              {(internalPath || externalUrl) && (
-                <div className="pt-2">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-white text-zinc-900 hover:bg-zinc-100 font-bold shadow-lg"
-                  >
-                    {internalPath ? (
-                      <Link to={internalPath} onClick={trackClick}>
-                        {LearnMoreContent}
-                      </Link>
-                    ) : (
-                      <a
-                        href={externalUrl as string}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow sponsored"
-                        onClick={trackClick}
-                      >
-                        {LearnMoreContent}
-                      </a>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex md:col-span-4 justify-center items-center">
-              {ad.imageUrl ? (
-                <div className="relative w-full max-w-sm h-36 md:h-40 lg:h-48 rounded-2xl overflow-hidden border border-white/20 shadow-inner">
-                  <img
-                    src={getImageUrl(ad.imageUrl)}
-                    alt={ad.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                 
-                </div>
+              {ad.sku ? (
+                <Button
+                  variant="link"
+                  className="p-0 h-auto mt-2"
+                  onClick={() => {
+                    onClick?.(ad.adId)
+                  }}
+                >
+                  {ad.ctaText || 'Shop Now'}
+                </Button>
               ) : (
                 <div className="w-36 h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner">
                   <Megaphone className="w-10 h-10 text-white/80 mb-2" />

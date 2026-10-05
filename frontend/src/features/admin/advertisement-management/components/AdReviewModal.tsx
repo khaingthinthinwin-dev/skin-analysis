@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -78,7 +77,7 @@ export function AdReviewModal({
             </section>
 
             <section aria-label="Advertisement preview" className="space-y-3 rounded-md border p-4">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="text-sm font-medium">{ad.title}</p>
                 <StatusBadge status={ad.approvalStatus} />
               </div>
@@ -100,16 +99,10 @@ export function AdReviewModal({
                 </div>
               )}
               {ad.content && <p className="text-sm text-muted-foreground">{ad.content}</p>}
-              {ad.linkUrl && (
-                <a
-                  href={ad.linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  {ad.linkUrl}
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+              {ad.sku && (
+                <span className="inline-flex items-center gap-1 text-sm text-primary">
+                  SKU: {ad.sku}
+                </span>
               )}
               <div className="grid gap-2 text-sm sm:grid-cols-3">
                 <div>
@@ -128,24 +121,24 @@ export function AdReviewModal({
             </section>
 
             <section aria-label="Fee and payment" className="space-y-2 rounded-md border p-4">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Daily rate</span>
                 <span className="font-medium">{formatPrice(Number(ad.feeInfo.dailyRate))}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Duration</span>
                 <span className="font-medium">{ad.feeInfo.durationDays} days</span>
               </div>
               <Separator />
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Total fee</span>
                 <span className="font-medium">{formatPrice(Number(ad.feeInfo.totalFee))}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Fee paid</span>
                 <span className="font-medium">{formatPrice(Number(ad.paymentInfo.amount))}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span>Payment status</span>
                 <PaymentBadge status={ad.paymentInfo.paymentStatus} />
               </div>

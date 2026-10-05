@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, ExternalLink, Megaphone } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSponsoredAds } from '../hooks/useSponsoredAds'
+import { getImageUrl } from '@/lib/image-url'
 
 const AUTO_SLIDE_MS = 5000
 
@@ -67,17 +68,17 @@ export function SponsoredAdSlider() {
 
           <div className="flex flex-1 items-center gap-4 px-2">
             {ad.imageUrl && (
-              <img src={ad.imageUrl} alt={ad.title} className="hidden h-16 w-24 shrink-0 object-cover rounded-md sm:block" />
+              <img src={getImageUrl(ad.imageUrl)} alt={ad.title} className="h-16 w-24 shrink-0 object-cover rounded-md" />
             )}
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-sm font-semibold">{ad.title}</h3>
               {ad.description && (
                 <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{ad.description}</p>
               )}
-              {ad.linkUrl && (
-                <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-                  Learn more <ExternalLink className="h-3 w-3" />
-                </a>
+              {ad.sku && (
+                <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  SKU: {ad.sku}
+                </span>
               )}
             </div>
           </div>
