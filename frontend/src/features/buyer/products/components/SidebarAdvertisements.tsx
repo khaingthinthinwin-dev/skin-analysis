@@ -4,7 +4,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSidebarAds } from '../hooks/useProductDetail';
 import { useAuth } from '@/hooks/useAuth';
 

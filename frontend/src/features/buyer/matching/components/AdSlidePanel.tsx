@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link } from 'react-router'
-import { ChevronLeft, ChevronRight, ArrowRight, Megaphone } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useAuth } from '@/hooks/useAuth'
 import type { AdSlide } from '@/schemas/matching.schema'
 
 const AUTO_SLIDE_MS = 5000
@@ -12,14 +10,6 @@ interface AdSlidePanelProps {
   ads?: AdSlide[]
   onImpression?: (adIds: string[]) => void
   onClick?: (adId: string) => void
-}
-
-function getImageUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
-  const base = raw.replace(/\/api\/v1\/?$/, '')
-  return base + (url.startsWith('/') ? url : `/${url}`)
 }
 
 function usePrefersReducedMotion() {
@@ -33,8 +23,6 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
   const [isFocused, setIsFocused] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const reducedMotion = usePrefersReducedMotion()
-  const { isAuthenticated } = useAuth()
-  const basePath = isAuthenticated ? '/buyer/products' : '/products'
 
   const paused = isHovered || isFocused || reducedMotion
   const displayIndex = ads.length > 0 ? current % ads.length : 0
@@ -76,21 +64,6 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
   if (!ads.length) return null
 
   const ad = ads[displayIndex]
-  const trackClick = () => onClick?.(ad.adId)
-  // Prefer the product behind the ad image, then an internal link, then the outbound link.
-  const adProduct = ad.productSlug ?? ad.productId ?? null
-  const internalPath = adProduct
-    ? `${basePath}/${adProduct}`
-    : ad.linkUrl && ad.linkUrl.startsWith('/')
-      ? ad.linkUrl
-      : null
-  const externalUrl = internalPath ? null : ad.linkUrl || null
-  const LearnMoreContent = (
-    <>
-      Learn more
-      <ArrowRight className="w-4 h-4 ml-2" />
-    </>
-  )
 
   return (
     <div
