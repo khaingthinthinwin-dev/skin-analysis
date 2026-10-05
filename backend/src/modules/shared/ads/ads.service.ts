@@ -7,7 +7,7 @@ const ROTATION_TTL = 24 * 60 * 60; // 24 hours
 const MAX_ADS_PER_PANEL = 5;
 
 type AdvertisementWithShop = Advertisement & {
-  shop: { id: string; name: string };
+  shop: { id: string; name: string; userId: string };
   feeSetting?: { placement: string; tier: string; isActive: boolean } | null;
 };
 
@@ -49,6 +49,7 @@ export class AdsService {
             select: {
               id: true,
               name: true,
+              userId: true,
             },
           },
         },
@@ -72,6 +73,45 @@ export class AdsService {
         selectedAds = ads.slice(0, MAX_ADS_PER_PANEL);
       }
 
+      // Advertisement images are picked from the merchant's own product images,
+      // so resolve the product behind the image for the click-through target.
+      const merchants = await this.prisma.merchant.findMany({
+        where: {
+          userId: {
+            in: [...new Set(selectedAds.map((ad) => ad.shop.userId))],
+          },
+        },
+        select: { id: true },
+      });
+      const catalogue = merchants.length
+        ? await this.prisma.product.findMany({
+            where: { merchantId: { in: merchants.map((m) => m.id) } },
+            select: { id: true, slug: true, images: true },
+          })
+        : [];
+
+      const imageFileName = (url: string | null): string => {
+        if (!url) return '';
+        const path = url.split('?')[0];
+        return path.slice(path.lastIndexOf('/') + 1);
+      };
+
+      const resolveTarget = (ad: AdvertisementWithShop) => {
+        const fileName = imageFileName(ad.imageUrl);
+        const match = fileName
+          ? catalogue.find((p) =>
+              p.images.some((img) => imageFileName(img) === fileName),
+            )
+          : undefined;
+        if (match) return { productId: match.id, productSlug: match.slug };
+
+        const linked = ad.linkUrl?.match(/\/(?:buyer\/)?products\/([^/?#]+)/);
+        return {
+          productId: null,
+          productSlug: linked ? decodeURIComponent(linked[1]) : null,
+        };
+      };
+
       return {
         data: selectedAds.map((ad) => ({
           adId: ad.id,
@@ -85,6 +125,7 @@ export class AdsService {
           placement: ad.feeSetting?.placement ?? null,
           startsAt: ad.startsAt ? ad.startsAt.toISOString() : null,
           expiresAt: ad.expiresAt ? ad.expiresAt.toISOString() : null,
+          ...resolveTarget(ad),
         })),
         placement,
         meta: {

@@ -925,7 +925,15 @@ export class ProductsService {
       },
       include: {
         feeSetting: { select: { placement: true, tier: true } },
-        shop: { select: { id: true, name: true, slug: true, logoUrl: true } },
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logoUrl: true,
+            userId: true,
+          },
+        },
       },
     });
 
@@ -944,6 +952,43 @@ export class ProductsService {
       )
       .slice(0, 5);
 
+    // Advertisement images are picked from the merchant's own product images,
+    // so resolve the product behind the image to build the click-through target.
+    const merchants = await this.prisma.merchant.findMany({
+      where: {
+        userId: { in: [...new Set(ordered.map((ad) => ad.shop.userId))] },
+      },
+      select: { id: true },
+    });
+    const catalogue = merchants.length
+      ? await this.prisma.product.findMany({
+          where: { merchantId: { in: merchants.map((m) => m.id) } },
+          select: { id: true, slug: true, images: true },
+        })
+      : [];
+
+    const imageFileName = (url: string | null): string => {
+      if (!url) return '';
+      const path = url.split('?')[0];
+      return path.slice(path.lastIndexOf('/') + 1);
+    };
+
+    const resolveTarget = (ad: (typeof ordered)[number]) => {
+      const fileName = imageFileName(ad.imageUrl);
+      const match = fileName
+        ? catalogue.find((p) =>
+            p.images.some((img) => imageFileName(img) === fileName),
+          )
+        : undefined;
+      if (match) return { productId: match.id, productSlug: match.slug };
+
+      const linked = ad.linkUrl?.match(/\/(?:buyer\/)?products\/([^/?#]+)/);
+      return {
+        productId: null,
+        productSlug: linked ? decodeURIComponent(linked[1]) : null,
+      };
+    };
+
     return ordered.map((ad) => ({
       id: ad.id,
       title: ad.title,
@@ -957,6 +1002,7 @@ export class ProductsService {
       shopId: ad.shop.id,
       shopName: ad.shop.name,
       shopSlug: ad.shop.slug,
+      ...resolveTarget(ad),
       shop: {
         name: ad.shop.name,
         slug: ad.shop.slug,

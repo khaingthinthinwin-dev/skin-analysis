@@ -118,6 +118,8 @@ export interface SidebarAdvertisement {
   shopName: string;
   shopSlug: string;
   planTier: string;
+  productId: string | null;
+  productSlug: string | null;
 }
 
 async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {

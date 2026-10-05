@@ -60,6 +60,8 @@ export interface AdSlide {
   placement?: string | null
   startsAt?: string | null
   expiresAt?: string | null
+  productId?: string | null
+  productSlug?: string | null
 }
 
 export interface AdPanelResponse {

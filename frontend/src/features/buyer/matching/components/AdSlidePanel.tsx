@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Card } from '@/components/ui/card'
+import { Link } from 'react-router'
+import { ChevronLeft, ChevronRight, ArrowRight, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { useAuth } from '@/hooks/useAuth'
 import type { AdSlide } from '@/schemas/matching.schema'
 
 const AUTO_SLIDE_MS = 5000
@@ -10,6 +12,14 @@ interface AdSlidePanelProps {
   ads?: AdSlide[]
   onImpression?: (adIds: string[]) => void
   onClick?: (adId: string) => void
+}
+
+function getImageUrl(url: string | null): string {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const raw = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+  const base = raw.replace(/\/api\/v1\/?$/, '')
+  return base + (url.startsWith('/') ? url : `/${url}`)
 }
 
 function usePrefersReducedMotion() {
@@ -23,6 +33,8 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
   const [isFocused, setIsFocused] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const reducedMotion = usePrefersReducedMotion()
+  const { isAuthenticated } = useAuth()
+  const basePath = isAuthenticated ? '/buyer/products' : '/products'
 
   const paused = isHovered || isFocused || reducedMotion
   const displayIndex = ads.length > 0 ? current % ads.length : 0
@@ -64,6 +76,21 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
   if (!ads.length) return null
 
   const ad = ads[displayIndex]
+  const trackClick = () => onClick?.(ad.adId)
+  // Prefer the product behind the ad image, then an internal link, then the outbound link.
+  const adProduct = ad.productSlug ?? ad.productId ?? null
+  const internalPath = adProduct
+    ? `${basePath}/${adProduct}`
+    : ad.linkUrl && ad.linkUrl.startsWith('/')
+      ? ad.linkUrl
+      : null
+  const externalUrl = internalPath ? null : ad.linkUrl || null
+  const LearnMoreContent = (
+    <>
+      Learn more
+      <ArrowRight className="w-4 h-4 ml-2" />
+    </>
+  )
 
   return (
     <div
@@ -71,90 +98,132 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
       className="relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onFocusCapture={() => setIsFocused(true)}
+      onBlurCapture={() => setIsFocused(false)}
       aria-roledescription="carousel"
       aria-label="Sponsored advertisements"
     >
-      <Card className="p-3 sm:p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/40 dark:to-pink-950/40">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={prev}
-            disabled={ads.length <= 1}
-            aria-label="Previous advertisement"
-            className="shrink-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          <div
-            className="flex-1 flex items-center gap-4"
-            onFocusCapture={() => setIsFocused(true)}
-            onBlurCapture={() => setIsFocused(false)}
-          >
-            {ad.imageUrl && (
-              <img
-                src={ad.imageUrl}
-                alt={ad.title}
-                className="w-24 h-24 object-cover rounded shrink-0"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold flex-1 truncate text-gray-900">{ad.title}</h4>
-              {ad.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2">{ad.description}</p>
-              )}
-              {ad.linkUrl ? (
-                <Button
-                  variant="link"
-                  className="p-0 h-auto mt-2"
-                  onClick={() => {
-                    onClick?.(ad.adId)
-                    window.open(ad.linkUrl!, '_blank', 'noopener,noreferrer')
-                  }}
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50">
+        <div className="relative px-12 sm:px-14 md:px-16 py-6 md:py-8 bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950/90 text-white transition-all duration-700">
+          <div className="relative z-10 grid gap-5 md:grid-cols-12 md:items-center">
+            <div className="space-y-3 md:col-span-8">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3"
                 >
-                  {ad.ctaText || 'Shop Now'}
-                </Button>
+                  <Megaphone className="w-3.5 h-3.5 mr-1 inline" />
+                  Sponsored
+                </Badge>
+                {ad.shopName && (
+                  <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
+                    {ad.shopName}
+                  </Badge>
+                )}
+              </div>
+
+              <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-tight text-white leading-tight">
+                {ad.title}
+              </h2>
+
+              {ad.description && (
+                <p className="text-sm sm:text-base text-zinc-200/90 max-w-xl line-clamp-2">
+                  {ad.description}
+                </p>
+              )}
+
+              {(internalPath || externalUrl) && (
+                <div className="pt-2">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-white text-zinc-900 hover:bg-zinc-100 font-bold shadow-lg"
+                  >
+                    {internalPath ? (
+                      <Link to={internalPath} onClick={trackClick}>
+                        {LearnMoreContent}
+                      </Link>
+                    ) : (
+                      <a
+                        href={externalUrl as string}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow sponsored"
+                        onClick={trackClick}
+                      >
+                        {LearnMoreContent}
+                      </a>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex md:col-span-4 justify-center items-center">
+              {ad.imageUrl ? (
+                <div className="relative w-full max-w-sm h-36 md:h-40 lg:h-48 rounded-2xl overflow-hidden border border-white/20 shadow-inner">
+                  <img
+                    src={getImageUrl(ad.imageUrl)}
+                    alt={ad.title}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                 
+                </div>
               ) : (
-                <span className="text-sm text-muted-foreground mt-2 inline-block">
-                  {ad.ctaText}
-                </span>
+                <div className="w-36 h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner">
+                  <Megaphone className="w-10 h-10 text-white/80 mb-2" />
+                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">
+                    Merchant Partner
+                  </span>
+                </div>
               )}
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={next}
-            disabled={ads.length <= 1}
-            aria-label="Next advertisement"
-            className="shrink-0"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          {ads.length > 1 && (
+            <>
+              <div className="absolute left-3 top-1/2 z-20 -translate-y-1/2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Previous advertisement"
+                  onClick={prev}
+                  className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 shadow-md"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="absolute right-3 top-1/2 z-20 -translate-y-1/2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Next advertisement"
+                  onClick={next}
+                  className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 shadow-md"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="absolute left-1/2 bottom-3 z-20 -translate-x-1/2 flex items-center gap-2">
+                {ads.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    aria-label={`Go to advertisement ${idx + 1}`}
+                    aria-current={idx === displayIndex ? 'true' : undefined}
+                    onClick={() => setCurrent(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      idx === displayIndex ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
-
-        {ads.length > 1 && (
-          <div className="mt-2 flex items-center justify-center gap-1.5">
-            {ads.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                aria-label={`Go to advertisement ${idx + 1}`}
-                aria-current={idx === displayIndex ? 'true' : undefined}
-                onClick={() => setCurrent(idx)}
-                className={`h-1.5 rounded-full transition-all ${
-                  idx === displayIndex
-                    ? 'w-4 bg-purple-500'
-                    : 'w-1.5 bg-muted-foreground/30'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </Card>
-
       </div>
+
+    </div>
   )
 }
