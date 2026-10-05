@@ -5,6 +5,6 @@ export function useSponsoredAds(placement = 'search_page_banner') {
   return useQuery({
     queryKey: ['ads', placement] as const,
     queryFn: () => adService.getByPlacement(placement),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   })
 }

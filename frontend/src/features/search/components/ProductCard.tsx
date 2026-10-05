@@ -74,9 +74,6 @@ export function ProductCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <span className="text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-300">
-                  {product.category.name}
-                </span>
                 {product.shop_name && (
                   <span className="mt-1 block rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
                     Sold by {product.shop_name}
@@ -204,10 +201,6 @@ export function ProductCard({
             <span>Sold by {product.shop_name}</span>
           </div>
         )}
-
-        <span className="block text-[10px] font-semibold uppercase text-purple-600 dark:text-purple-300">
-          {product.category.name}
-        </span>
 
         <h3 className="line-clamp-1 text-sm font-semibold text-slate-900 transition-colors group-hover:text-purple-600 dark:text-white dark:group-hover:text-purple-400">
           {product.name}
