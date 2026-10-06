@@ -6,6 +6,7 @@ import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CopyButton } from './CopyButton';
 import { PaymentBadge } from './PaymentBadge';
 import { StatusBadge } from './StatusBadge';
 import type { OrderSortField } from '../types/orderInsights.types';
@@ -37,6 +38,27 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
   const formatAmount = (value: string) => formatCurrencyAmount(value);
   const orderNumber = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
 
+  /**
+   * Row-level quick actions. They stay visually quiet until the row is hovered or
+   * focused — `focus-within` keeps them reachable by keyboard — and collapse to a
+   * single icon so the row stays scannable. Both are read-only: copy the
+   * reference to paste elsewhere, or open the detail screen.
+   */
+  const rowActions = (id: string) => (
+    <div className="flex items-center justify-end gap-0.5">
+      <CopyButton
+        value={orderNumber(id)}
+        label={t('admin.orders.copyOrderNumber', 'Copy order number')}
+        className="text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:ring-primary/50"
+      />
+      <Button asChild variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common.view', 'View')}>
+        <Link to={`/admin/orders/${id}`} aria-label={t('common.view', 'View')} title={t('common.view', 'View')}>
+          <Eye className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </Button>
+    </div>
+  );
+
   return (
     <>
       <div className="hidden overflow-x-auto rounded-md border bg-card sm:block">
@@ -66,9 +88,7 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
                 <TableCell className="text-center"><PaymentBadge status={row.paymentStatus} /></TableCell>
                 <TableCell className="text-center"><StatusBadge status={row.status} /></TableCell>
                 <TableCell className="text-right">
-                  <Button asChild variant="ghost" size="sm" className="whitespace-nowrap px-2" aria-label={t('common.view', 'View')}>
-                    <Link to={`/admin/orders/${row.id}`}><Eye className="mr-1 h-4 w-4" aria-hidden="true" />{t('common.view', 'View')}</Link>
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">{rowActions(row.id)}</div>
                 </TableCell>
               </TableRow>
             ))}
@@ -78,7 +98,17 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
       <div className="space-y-3 sm:hidden">
         {rows.map((row) => (
           <article key={row.id} className="rounded-lg border bg-card p-4">
-            <div className="flex items-start justify-between gap-3"><span className="font-mono text-xs">{orderNumber(row.id)}</span><StatusBadge status={row.status} /></div>
+            <div className="flex items-start justify-between gap-3">
+              <span className="inline-flex items-center gap-1 font-mono text-xs">
+                {orderNumber(row.id)}
+                <CopyButton
+                  value={orderNumber(row.id)}
+                  label={t('admin.orders.copyOrderNumber', 'Copy order number')}
+                  className="text-muted-foreground hover:bg-primary/10 hover:text-primary focus-visible:ring-primary/50"
+                />
+              </span>
+              <StatusBadge status={row.status} />
+            </div>
             <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.date', 'Date')}</dt><dd>{formatDate(row.createdAt)}</dd></div>
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.shop', 'Shop / Merchant')}</dt><dd>{row.shopName}</dd></div>
@@ -87,7 +117,11 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.total', 'Total')}</dt><dd className="font-semibold">{formatAmount(row.totalAmount)}</dd></div>
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.payment', 'Payment')}</dt><dd><PaymentBadge status={row.paymentStatus} /></dd></div>
             </dl>
-            <Button asChild variant="outline" size="sm" className="mt-4 w-full"><Link to={`/admin/orders/${row.id}`}><Eye className="mr-1 h-4 w-4" aria-hidden="true" />{t('common.view', 'View')}</Link></Button>
+            <Button asChild variant="outline" size="sm" className="mt-4 w-full">
+              <Link to={`/admin/orders/${row.id}`} aria-label={t('common.view', 'View')}>
+                <Eye className="mr-1 h-4 w-4" aria-hidden="true" />{t('common.view', 'View')}
+              </Link>
+            </Button>
           </article>
         ))}
       </div>

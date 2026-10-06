@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { ArrowLeft, Check, CreditCard, MapPin, PackageSearch, Store, StickyNote } from 'lucide-react';
+import { ArrowLeft, Check, CreditCard, ExternalLink, ImageOff, MapPin, PackageSearch, Printer, Store, StickyNote } from 'lucide-react';
+import { toast } from 'sonner';
+import { getImageUrl } from '@/lib/image-url';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,9 +14,41 @@ import { PaymentBadge } from '@/features/order-insights/components/PaymentBadge'
 import { StatusBadge } from '@/features/order-insights/components/StatusBadge';
 import { useAdminOrderDetail } from '@/features/order-insights/hooks/useAdminOrderDetail';
 import { useAdminOrderTracking } from '@/features/order-insights/hooks/useAdminOrderTracking';
+import { printAdminOrder } from '@/features/order-insights/utils/printAdminOrder';
 import { formatCurrencyAmount, getHttpStatus } from '@/features/order-insights/types/merchantOrderInsights.types';
 import { OrderStatus } from '@/features/order-insights/types/orderInsights.types';
 import type { AdminOrderDetailDto } from '@/features/order-insights/types/adminOrderInsights.types';
+
+/**
+ * Line-item image with a graceful fallback: order history outlives the product
+ * catalogue, so a removed product or an unreachable file must not leave a broken
+ * image in the list. The name sits right beside it, so the image is decorative.
+ */
+function AdminOrderItemImage({ src }: { src?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  const url = src ? getImageUrl(src) : '';
+
+  if (!url || failed) {
+    return (
+      <span
+        aria-hidden="true"
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#f3f4f6] bg-muted/40 text-muted-foreground oidark:border-outline-variant"
+      >
+        <ImageOff className="h-5 w-5" />
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-14 w-14 shrink-0 rounded-xl border border-[#f3f4f6] bg-muted/30 object-cover oidark:border-outline-variant"
+    />
+  );
+}
 
 function formatAddress(order: AdminOrderDetailDto): string[] {
   const address = order.shippingAddress;
@@ -80,6 +115,14 @@ function AdminOrderDetailContent() {
   const deliveredAt = trackingSteps.find((step) => step.statusCode === OrderStatus.DELIVERED)?.reachedAt;
   const summaryCardClass = 'min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] oidark:border-outline-variant oidark:bg-surface-container-low';
 
+  // Read-only hand-off to the browser's print dialog ("Save as PDF" lives there),
+  // rendered into its own window so no print rule reaches the app itself.
+  const handlePrint = () => {
+    if (!printAdminOrder(order)) {
+      toast.error('Allow pop-ups for this site to print or save this order as a PDF.');
+    }
+  };
+
   return (
     <main className="w-full max-w-full space-y-5 p-2 lg:p-4">
       <section className="flex flex-col gap-3 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-4 py-4 text-white shadow-[0_8px_20px_rgba(124,58,237,0.2)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -92,7 +135,15 @@ function AdminOrderDetailContent() {
           </div>
           <p className="mt-1 text-[13px] opacity-90">Placed {date}</p>
         </div>
-        <div className="flex sm:justify-end">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePrint}
+            className="gap-2 border-white/70 bg-transparent text-white hover:bg-white/15 hover:text-white"
+          >
+            <Printer className="h-4 w-4" aria-hidden="true" />Print / Save as PDF
+          </Button>
           <Button asChild className="gap-2 bg-white text-[#7c3aed] hover:bg-white/90"><Link to="/admin/orders"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to All Orders</Link></Button>
         </div>
       </section>
@@ -120,7 +171,12 @@ function AdminOrderDetailContent() {
         <Card className={summaryCardClass}>
           <CardContent className="flex h-full items-start gap-3 p-4">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 oidark:bg-violet-950 oidark:text-violet-300"><Store className="h-5 w-5" aria-hidden="true" /></span>
-            <div className="min-w-0"><h2 className="text-xs font-semibold text-muted-foreground">Shop / Merchant</h2><p className="mt-1 break-words text-sm font-semibold">{order.shop.name}</p>{order.shop.merchantId && <p className="mt-1 break-all text-xs text-muted-foreground">Merchant ID: {order.shop.merchantId}</p>}</div>
+            <div className="min-w-0">
+              <h2 className="text-xs font-semibold text-muted-foreground">Shop / Merchant</h2>
+              <p className="mt-1 break-words text-sm font-semibold">{order.shop.name}</p>
+              {order.shop.merchantName && <p className="mt-1 break-words text-xs text-muted-foreground">Merchant contact: {order.shop.merchantName}</p>}
+              {order.shop.merchantId && <p className="mt-1 break-all text-xs text-muted-foreground">Merchant ID: {order.shop.merchantId}</p>}
+            </div>
           </CardContent>
         </Card>
         <CustomerInformationCard customer={order.customer} />
@@ -150,9 +206,20 @@ function AdminOrderDetailContent() {
           </CardHeader>
           <CardContent className="space-y-3">
             {order.items.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No items in this order.</p> : order.items.map((item) => (
-              <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-muted/20 p-3 sm:p-4 oidark:border-outline-variant oidark:bg-surface-container">
+              <div key={item.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-muted/20 p-3 sm:p-4 oidark:border-outline-variant oidark:bg-surface-container">
+                <AdminOrderItemImage src={item.productImage} />
                 <div className="min-w-0">
-                  <p className="break-words font-medium">{item.productName}</p>
+                  {item.productId ? (
+                    <Link
+                      to={`/products/${item.productId}`}
+                      className="inline-flex max-w-full items-center gap-1.5 rounded-sm font-medium underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="break-words">{item.productName}</span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
+                    </Link>
+                  ) : (
+                    <p className="break-words font-medium">{item.productName}</p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">Quantity: {item.quantity} · Unit price: {formatCurrencyAmount(item.unitPrice)}</p>
                 </div>
                 <div className="text-right"><p className="text-xs text-muted-foreground">Line total</p><p className="font-semibold">{formatCurrencyAmount(item.totalPrice)}</p></div>

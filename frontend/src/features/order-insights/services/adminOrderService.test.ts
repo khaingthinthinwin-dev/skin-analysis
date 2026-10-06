@@ -44,4 +44,50 @@ describe('adminOrderService', () => {
       params: { search: 'Lotus', page: 1, limit: 20 },
     });
   });
+
+  it('forwards the order-number search so a copied # reference narrows the list', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { data: { orders: [], meta: { page: 1, limit: 20, total: 0 } } },
+    });
+
+    await getAdminOrders({
+      status: 'all',
+      paymentStatus: 'all',
+      shopSearch: '',
+      orderSearch: ' #A1B2C3D4 ',
+      from: '',
+      to: '',
+      page: 1,
+      limit: 20,
+      sort: 'createdAt',
+      order: 'desc',
+    });
+
+    expect(apiClient.get).toHaveBeenCalledWith('/orders', {
+      params: expect.objectContaining({ orderSearch: '#A1B2C3D4' }),
+    });
+  });
+
+  it('omits the order-number param when the field is empty', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: { data: { orders: [], meta: { page: 1, limit: 20, total: 0 } } },
+    });
+
+    await getAdminOrders({
+      status: 'all',
+      paymentStatus: 'all',
+      shopSearch: '',
+      orderSearch: '   ',
+      from: '',
+      to: '',
+      page: 1,
+      limit: 20,
+      sort: 'createdAt',
+      order: 'desc',
+    });
+
+    expect(apiClient.get).toHaveBeenCalledWith('/orders', {
+      params: expect.not.objectContaining({ orderSearch: expect.anything() }),
+    });
+  });
 });

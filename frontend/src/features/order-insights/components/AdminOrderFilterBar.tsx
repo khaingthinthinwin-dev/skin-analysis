@@ -2,11 +2,14 @@
 
 import { useEffect, useRef } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
-import { Search, RotateCcw, Calendar, Store } from 'lucide-react';
+import { Search, RotateCcw, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AdminActiveFilterChips, type AdminFilterChipKey } from './AdminActiveFilterChips';
+import { AdminShopCombobox } from './AdminShopCombobox';
+import type { AdminMerchantOption } from '../types/adminOrderInsights.types';
 import type { AdminOrderFilterFormData } from '../schemas/orderFilters.schema';
 
 interface AdminOrderFilterBarProps {
@@ -17,14 +20,20 @@ interface AdminOrderFilterBarProps {
   onStatusChange: (status: AdminOrderFilterFormData['status']) => void;
   onPaymentStatusChange: (status: AdminOrderFilterFormData['paymentStatus']) => void;
   onExport: () => void;
+  /** Removes one applied filter group without disturbing the others. */
+  onClearFilter: (key: AdminFilterChipKey) => void;
+  /** Debounced partial order-number lookup, matching the merchant filter bar. */
+  onOrderSearchChange: (value: string) => void;
   exportDisabled?: boolean;
   exporting?: boolean;
 }
 
-export function AdminOrderFilterBar({ methods, onApply, onReset, onShopSearchChange, onStatusChange, onPaymentStatusChange, onExport, exportDisabled = false, exporting = false }: AdminOrderFilterBarProps) {
+export function AdminOrderFilterBar({ methods, onApply, onReset, onShopSearchChange, onStatusChange, onPaymentStatusChange, onExport, onClearFilter, onOrderSearchChange, exportDisabled = false, exporting = false }: AdminOrderFilterBarProps) {
   const { t } = useTranslation();
   const shopSearch = methods.watch('shopSearch') ?? '';
+  const orderSearch = methods.watch('orderSearch') ?? '';
   const onShopSearchChangeRef = useRef(onShopSearchChange);
+  const onOrderSearchChangeRef = useRef(onOrderSearchChange);
   const fromDateInput = useRef<HTMLInputElement | null>(null);
   const toDateInput = useRef<HTMLInputElement | null>(null);
   const from = methods.watch('from');
@@ -49,36 +58,72 @@ export function AdminOrderFilterBar({ methods, onApply, onReset, onShopSearchCha
   }, [onShopSearchChange]);
 
   useEffect(() => {
+    onOrderSearchChangeRef.current = onOrderSearchChange;
+  }, [onOrderSearchChange]);
+
+  useEffect(() => {
     const timeout = window.setTimeout(() => {
       onShopSearchChangeRef.current(shopSearch.trim());
     }, 250);
     return () => window.clearTimeout(timeout);
   }, [shopSearch]);
 
+  // Filtering as the admin types means a pasted order number from the table's
+  // copy action narrows the list immediately, with no Search press.
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      onOrderSearchChangeRef.current(orderSearch.trim());
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [orderSearch]);
+
+  /** Free text keeps the substring shop filter; picking a suggestion pins the exact shop. */
+  const handleShopTextChange = (value: string) => {
+    methods.setValue('shopSearch', value, { shouldDirty: true, shouldValidate: true });
+    methods.setValue('merchantId', undefined, { shouldDirty: true, shouldValidate: true });
+    methods.setValue('shopId', undefined, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const handleOrderNumberChange = (value: string) => {
+    methods.setValue('orderSearch', value, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const handleShopSelect = (option: AdminMerchantOption) => {
+    methods.setValue('shopSearch', option.shopName, { shouldDirty: true, shouldValidate: true });
+    methods.setValue('merchantId', option.id, { shouldDirty: true, shouldValidate: true });
+    onApply({ ...methods.getValues(), shopSearch: option.shopName, merchantId: option.id });
+  };
+
   return (
     <form
       onSubmit={methods.handleSubmit(onApply)}
-      className="mb-4 grid w-full gap-3 rounded-lg border bg-muted/30 p-4 dark:border-[#29252f] dark:bg-[#111014] sm:grid-cols-2 xl:grid-cols-[minmax(220px,1.5fr)_140px_130px_minmax(135px,1fr)_minmax(135px,1fr)_auto_auto_auto] xl:items-end"
+      className="mb-4 grid w-full gap-3 rounded-lg border bg-muted/30 p-4 dark:border-[#29252f] dark:bg-[#111014] sm:grid-cols-2 xl:grid-cols-[minmax(160px,0.65fr)_minmax(150px,1fr)_140px_130px_minmax(135px,1fr)_minmax(135px,1fr)_auto_auto_auto] xl:items-end"
     >
+      <div className="min-w-0">
+        <label htmlFor="admin-order-number" className="mb-1 block text-sm font-medium text-muted-foreground">
+          {t('merchant.orders.filter.orderNumber', 'Order #')}
+        </label>
+        <Input
+          id="admin-order-number"
+          value={orderSearch}
+          onChange={(event) => handleOrderNumberChange(event.target.value)}
+          placeholder={t('merchant.orders.filter.orderNumberPlaceholder', 'Search order no')}
+          maxLength={100}
+          className="font-mono"
+        />
+      </div>
+
       <div className="relative min-w-0">
         <label htmlFor="admin-order-merchant" className="mb-1 block text-sm font-medium text-muted-foreground">
           {t('admin.orders.filter.shop', 'Shop / Merchant')}
         </label>
-        <div className="relative">
-          <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <Input
-            id="admin-order-merchant"
-            value={shopSearch}
-            placeholder={t('admin.orders.filter.shopPlaceholder', 'Search shop')}
-            className="pl-9"
-            onChange={(event) => {
-              const value = event.target.value;
-              methods.setValue('shopSearch', value, { shouldDirty: true, shouldValidate: true });
-              methods.setValue('merchantId', undefined, { shouldDirty: true, shouldValidate: true });
-              methods.setValue('shopId', undefined, { shouldDirty: true, shouldValidate: true });
-            }}
-          />
-        </div>
+        <AdminShopCombobox
+          id="admin-order-merchant"
+          value={shopSearch}
+          onValueChange={handleShopTextChange}
+          onSelect={handleShopSelect}
+          placeholder={t('admin.orders.filter.shopPlaceholder', 'Search shop')}
+        />
       </div>
 
       <div>
@@ -194,16 +239,32 @@ export function AdminOrderFilterBar({ methods, onApply, onReset, onShopSearchCha
         </div>
       </div>
 
-      <Button type="submit" disabled={invalidDateRange} className="gap-2">
-        <Search className="h-4 w-4" aria-hidden="true" />{t('common.filters.search', 'Search')}
+      <Button
+        type="submit"
+        aria-label={t('common.filters.search', 'Search')}
+        title={t('common.filters.search', 'Search')}
+        disabled={invalidDateRange}
+        className="gap-2"
+      >
+        <Search className="h-4 w-4" aria-hidden="true" />
       </Button>
-      <Button type="button" variant="outline" onClick={onReset} className="gap-2">
-        <RotateCcw className="h-4 w-4" aria-hidden="true" />{t('common.filters.clear', 'Clear')}
+      <Button
+        type="button"
+        variant="outline"
+        aria-label={t('common.filters.clear', 'Clear')}
+        title={t('common.filters.clear', 'Clear')}
+        onClick={onReset}
+        className="gap-2"
+      >
+        <RotateCcw className="h-4 w-4" aria-hidden="true" />
       </Button>
       <Button type="button" variant="outline" onClick={onExport} disabled={exportDisabled} className="gap-2">
         {exporting ? t('merchant.orders.exporting', 'Exporting...') : t('common.actions.export', 'Export')}
       </Button>
-      {invalidDateRange && <p className="text-sm text-destructive xl:col-span-full" role="alert">{t('orders.filter.dateRange.invalid', 'End date must be on or after start date.')}</p>}
+{invalidDateRange && <p className="text-sm text-destructive xl:col-span-full" role="alert">{t('orders.filter.dateRange.invalid', 'End date must be on or after start date.')}</p>}
+      <div className="xl:col-span-full">
+        <AdminActiveFilterChips filters={methods.watch()} onClear={onClearFilter} onClearAll={onReset} />
+      </div>
     </form>
   );
 }

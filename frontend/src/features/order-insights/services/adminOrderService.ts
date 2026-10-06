@@ -26,6 +26,9 @@ export async function getAdminOrders(
     ...(filters.shopId ? { shopId: filters.shopId } : {}),
     ...(filters.shopSearch?.trim() ? { shopSearch: filters.shopSearch.trim() } : {}),
     ...(filters.paymentStatus !== 'all' ? { paymentStatus: filters.paymentStatus } : {}),
+    // Matches the merchant filter bar: the copied `#ABCD1234` reference pasted
+    // straight in narrows the list (the backend strips the leading `#`).
+    ...(filters.orderSearch?.trim() ? { orderSearch: filters.orderSearch.trim() } : {}),
     page: filters.page,
     limit: filters.limit,
     sort: filters.sort,

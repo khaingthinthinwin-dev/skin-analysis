@@ -39,7 +39,7 @@ Role-scoped order history list — buyer (own orders), merchant (own shop), admi
   - `to` (string, optional) — `@IsDateString()`, `@IsOptional()`; must be ≥ `from`; UTC (BR-OI-012)
   - `merchantId` (UUID, optional) — `@IsUUID()`; **admin only** — rejected with `403` for buyer/merchant (BR-OI-001, 機能設計書 §8.2)
   - `shopId` (UUID, optional) — `@IsUUID()`; **admin only** — rejected with `403` for buyer/merchant (BR-OI-001, 機能設計書 §8.2)
-  - `orderSearch` (string, optional, max 100) — merchant-only substring search within the displayed first eight characters of the order ID; optional leading `#` is ignored.
+  - `orderSearch` (string, optional, max 100) — merchant/admin/super_admin substring search within the displayed first eight characters of the order ID (a merchant's search stays within their own shop; an admin's spans all shops); optional leading `#` is ignored. Ignored for buyer.
   - `page` (number, optional, default `1`) — `@IsInt()`, `@Min(1)`
   - `limit` (number, optional, default `20`) — `@IsInt()`, `@Min(1)`, `@Max(100)` (`OI_TABLE_MAX_PAGE_SIZE`, BR-OI-010)
   - `sort` (enum, optional, default `createdAt`) — `@IsIn(['createdAt','totalAmount','status'])`
@@ -78,7 +78,7 @@ Role-scoped order history list — buyer (own orders), merchant (own shop), admi
 - **Logic:** Calls `ordersService.listOrders(currentUser, query)`:
   1. Validate JWT; read role.
   2. Apply owner scoping from the JWT identity only (BR-OI-001; Requirement Spec §6.4): buyer → `orders.buyer_id = currentUser.id` (BR-OI-002); merchant → resolve `merchants.id` from `merchants.user_id = currentUser.id` (BR-OI-003), verify `license_status = 'approved'` else `403` (BR-OI-006), then `orders.merchant_id = <resolved id>`; admin → no owner filter (BR-OI-004).
-  3. Apply optional `status` (BR-OI-011), `from`/`to` (BR-OI-012), and merchant `orderSearch` filters. Admin `merchantId`/`shopId`/status/date filters combine with AND semantics in SQL, never client-side (BR-OI-016).
+  3. Apply optional `status` (BR-OI-011), `from`/`to` (BR-OI-012), and `orderSearch` (merchant/admin/super_admin; buyer-supplied value ignored) filters. Admin `merchantId`/`shopId`/status/date filters combine with AND semantics in SQL, never client-side (BR-OI-016).
   4. Sort `created_at DESC` default (BR-OI-009); paginate default 20, max 100 (BR-OI-010).
   5. Project the role-appropriate DTO — `customerName` for merchant/admin only (BR-OI-015), `shopName` for admin only (機能設計書 §7.4), `commissionRate` for merchant only (`orders.commission_rate` as a 2-decimal string, BR-OI-023).
   6. Return rows + `meta` (`page`, `limit`, `total`).
