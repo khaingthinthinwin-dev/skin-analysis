@@ -367,4 +367,165 @@ describe('Notifications Center', () => {
       expect(notificationService.markAsRead).toHaveBeenCalledWith('n-1')
     })
   })
+
+  it('hides read Order Insight notifications for the merchant but keeps unread ones', async () => {
+    mockRole = 'merchant'
+    mockUserId = 'merchant-1'
+    const mockNotifications = [
+      {
+        id: 'n-order-unread',
+        userId: 'merchant-1',
+        type: 'ORDER_PLACED',
+        title: 'New order received',
+        message: 'A buyer placed order ORD-0000001.',
+        entityType: 'order',
+        entityId: 'o-1',
+        isRead: false,
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'n-order-read',
+        userId: 'merchant-1',
+        type: 'ORDER_PLACED',
+        title: 'New order received',
+        message: 'A buyer placed order ORD-0000002.',
+        entityType: 'order',
+        entityId: 'o-2',
+        isRead: true,
+        readAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'n-status-read',
+        userId: 'merchant-1',
+        type: 'ORDER_STATUS_UPDATED',
+        title: 'Order Shipped',
+        message: 'Your order ORD-0000003 is now shipped.',
+        entityType: 'order',
+        entityId: 'o-3',
+        isRead: true,
+        readAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'n-promo-read',
+        userId: 'merchant-1',
+        type: 'promo',
+        title: 'Merchant Promo Active',
+        message: 'Promotion SUMMER20 is now active.',
+        entityType: 'promotion',
+        entityId: 'p-1',
+        isRead: true,
+        readAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      },
+    ]
+
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: mockNotifications,
+      meta: { total: 4, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/merchant/notifications']}>
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    // Unread Order Insight notification stays visible…
+    expect(await screen.findByText('New order received')).toBeInTheDocument()
+    // …while read ones disappear (both ORDER_PLACED and ORDER_STATUS_UPDATED).
+    expect(
+      screen.queryByText('A buyer placed order ORD-0000002.'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Order Shipped')).not.toBeInTheDocument()
+    // Non-order notifications are unaffected even when read.
+    expect(screen.getByText('Merchant Promo Active')).toBeInTheDocument()
+  })
+
+  it('hides read Order Insight notifications for the buyer but keeps unread ones', async () => {
+    mockRole = 'buyer'
+    mockUserId = 'buyer-1'
+    const mockNotifications = [
+      {
+        id: 'n-status-unread',
+        userId: 'buyer-1',
+        type: 'ORDER_STATUS_UPDATED',
+        title: 'Order Shipped',
+        message: 'Your order ORD-0000001 is now shipped.',
+        entityType: 'order',
+        entityId: 'o-1',
+        isRead: false,
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'n-status-read',
+        userId: 'buyer-1',
+        type: 'ORDER_STATUS_UPDATED',
+        title: 'Order Delivered',
+        message: 'Your order ORD-0000002 is now delivered.',
+        entityType: 'order',
+        entityId: 'o-2',
+        isRead: true,
+        readAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'n-confirmed-read',
+        userId: 'buyer-1',
+        type: 'ORDER_CONFIRMED',
+        title: 'Order confirmed',
+        message: 'The merchant has confirmed your order ORD-0000003.',
+        entityType: 'order',
+        entityId: 'o-3',
+        isRead: true,
+        readAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'n-seed-order-read',
+        userId: 'buyer-1',
+        type: 'order',
+        title: 'Order Delivered',
+        message: 'Your order has been delivered successfully.',
+        entityType: 'order',
+        entityId: 'o-4',
+        isRead: true,
+        readAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      },
+    ]
+
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: mockNotifications,
+      meta: { total: 4, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/buyer/notifications']}>
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    // Unread Order Insight notification stays visible…
+    expect(await screen.findByText('Order Shipped')).toBeInTheDocument()
+    // …read ORDER_STATUS_UPDATED / ORDER_CONFIRMED / seeded `order` ones disappear.
+    expect(
+      screen.queryByText('Your order ORD-0000002 is now delivered.'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('The merchant has confirmed your order ORD-0000003.'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Your order has been delivered successfully.'),
+    ).not.toBeInTheDocument()
+  })
 })

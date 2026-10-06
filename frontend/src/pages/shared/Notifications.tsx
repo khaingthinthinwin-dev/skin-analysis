@@ -188,6 +188,16 @@ function orderActionHint(item: NotificationItem): string | null {
     : null
 }
 
+// Order Insight notifications travel between the merchant and the buyer
+// (ORDER_PLACED → merchant; ORDER_CONFIRMED / ORDER_STATUS_UPDATED → buyer,
+// plus seeded `order` items). Once the recipient has read one, it leaves the
+// list entirely instead of lingering as a "read" card.
+function isReadOrderInsightNotification(item: NotificationItem): boolean {
+  if (!item.isRead) return false
+  const type = normalizeNotificationType(item.type)
+  return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
+}
+
 function iconForType(rawType: string, title?: string, message?: string) {
   const type = (rawType || '').toUpperCase()
   if (type === 'MERCHANT_STATUS_CHANGED' || type.includes('MERCHANT_STATUS')) {
@@ -322,9 +332,15 @@ export default function Notifications() {
   } = useNotifications()
 
   const displayedNotifications = useMemo(() => {
+    // Order Insight notifications between merchant and buyer disappear as
+    // soon as they are read; every other type keeps its normal behavior.
+    const withoutReadOrderInsights = notifications.filter(
+      (item) => !isReadOrderInsightNotification(item),
+    )
+
     if (isAdmin) {
       const seenKeys = new Set<string>()
-      return notifications.filter((item) => {
+      return withoutReadOrderInsights.filter((item) => {
         if (!isAdminNotification(item)) {
           return false
         }
@@ -338,12 +354,12 @@ export default function Notifications() {
     }
 
     if (user?.role === 'merchant') {
-      return notifications.filter(
+      return withoutReadOrderInsights.filter(
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
     }
 
-    return notifications
+    return withoutReadOrderInsights
   }, [isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)
