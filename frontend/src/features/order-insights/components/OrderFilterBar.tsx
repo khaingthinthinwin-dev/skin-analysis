@@ -252,7 +252,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             type="button"
             onClick={onExport}
             disabled={exportDisabled || isDateRangeInvalid}
-            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-5 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-5 disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:opacity-70 disabled:hover:border-muted disabled:hover:bg-muted disabled:hover:text-muted-foreground"
           >
             &#x2193; {exportLabel ?? t('buyer.orders.exportCsv', 'Export CSV')}
           </Button>

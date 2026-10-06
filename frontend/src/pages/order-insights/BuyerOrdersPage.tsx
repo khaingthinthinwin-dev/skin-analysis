@@ -358,7 +358,7 @@ function BuyerOrdersPageContent() {
               onOrderSearchChange={changeOrderSearch}
               onReset={handleReset}
               onExport={handleOpenExportModal}
-              exportDisabled={isExporting}
+              exportDisabled={isExporting || (data?.meta.total ?? 0) === 0}
               exportLabel="Export"
             />
           </div>
@@ -418,6 +418,22 @@ function BuyerOrdersPageContent() {
                     : 'All dates'}
                 </span>
               </p>
+              {filters.shopSearch?.trim() && (
+                <p className="text-sm text-muted-foreground">
+                  Shop:{' '}
+                  <span className="font-medium text-foreground">
+                    {filters.shopSearch.trim()}
+                  </span>
+                </p>
+              )}
+              {filters.orderSearch?.trim() && (
+                <p className="text-sm text-muted-foreground">
+                  Order #:{' '}
+                  <span className="font-medium text-foreground">
+                    {filters.orderSearch.trim()}
+                  </span>
+                </p>
+              )}
             </div>
 
             <p className="text-sm text-muted-foreground">
@@ -444,6 +460,7 @@ function BuyerOrdersPageContent() {
               type="button"
               onClick={handleExportCsv}
               disabled={isExporting || data?.meta.total === 0}
+              className="disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:opacity-70 disabled:hover:bg-muted disabled:hover:text-muted-foreground"
             >
               {isExporting ? 'Exporting...' : 'Export CSV'}
             </Button>
