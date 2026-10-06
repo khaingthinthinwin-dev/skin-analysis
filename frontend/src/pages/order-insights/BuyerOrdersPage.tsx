@@ -78,6 +78,8 @@ function BuyerOrdersPageContent() {
 
   const { data, isLoading, error, refetch } = useBuyerOrders({
     status: filters.status === 'all' ? undefined : filters.status,
+    shopSearch: filters.shopSearch || undefined,
+    orderSearch: filters.orderSearch || undefined,
     from: filters.from || undefined,
     to: filters.to || undefined,
     page: filters.page,
@@ -113,10 +115,26 @@ function BuyerOrdersPageContent() {
     patch({ status, page: 1 });
   };
 
+  const changeShopSearch = (shopSearch: string) => {
+    if ((filters.shopSearch ?? '').trim() === shopSearch) return;
+    setExportMessage('');
+    methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+    patch({ shopSearch, page: 1 });
+  };
+
+  const changeOrderSearch = (orderSearch: string) => {
+    if ((filters.orderSearch ?? '').trim() === orderSearch) return;
+    setExportMessage('');
+    methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+    patch({ orderSearch, page: 1 });
+  };
+
   const handleReset = () => {
     setExportMessage('');
     methods.reset({
       status: 'all',
+      shopSearch: '',
+      orderSearch: '',
       from: '',
       to: '',
       page: 1,
@@ -124,7 +142,7 @@ function BuyerOrdersPageContent() {
       sort: 'createdAt',
       order: 'desc',
     });
-    patch({ status: 'all', from: '', to: '', page: 1, limit: 10, sort: 'createdAt', order: 'desc' });
+    patch({ status: 'all', shopSearch: '', orderSearch: '', from: '', to: '', page: 1, limit: 10, sort: 'createdAt', order: 'desc' });
   };
 
   const handleSort = (field: 'createdAt' | 'totalAmount' | 'status') => {
@@ -170,6 +188,8 @@ function BuyerOrdersPageContent() {
       do {
         const response = await orderService.getBuyerOrders({
           status: filters.status,
+          shopSearch: filters.shopSearch ?? '',
+          orderSearch: filters.orderSearch ?? '',
           from: filters.from || '',
           to: filters.to || '',
           page,
@@ -331,10 +351,15 @@ function BuyerOrdersPageContent() {
               methods={methods}
               onApply={handleApply}
               onStatusChange={handleStatusChange}
+              showShopSearch
+              showOrderSearch
+              iconOnlySearch
+              onShopSearchChange={changeShopSearch}
+              onOrderSearchChange={changeOrderSearch}
               onReset={handleReset}
               onExport={handleOpenExportModal}
               exportDisabled={isExporting}
-              exportLabel="Export CSV"
+              exportLabel="Export"
             />
           </div>
 

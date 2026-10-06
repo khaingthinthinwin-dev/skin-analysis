@@ -20,22 +20,27 @@ interface OrderFilterBarProps {
   exportDisabled?: boolean;
   exportLabel?: string;
   showOrderSearch?: boolean;
+  showShopSearch?: boolean;
   iconOnlySearch?: boolean;
   onOrderSearchChange?: (value: string) => void;
+  onShopSearchChange?: (value: string) => void;
 }
 
-export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentStatusFilter = false, onPaymentStatusChange, onReset, onExport, exportDisabled = false, exportLabel, showOrderSearch = false, iconOnlySearch = false, onOrderSearchChange }: OrderFilterBarProps) {
+export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentStatusFilter = false, onPaymentStatusChange, onReset, onExport, exportDisabled = false, exportLabel, showOrderSearch = false, showShopSearch = false, iconOnlySearch = false, onOrderSearchChange, onShopSearchChange }: OrderFilterBarProps) {
   const { t } = useTranslation();
   const { control, formState: { errors } } = methods;
   const from = methods.watch('from');
   const to = methods.watch('to');
   const orderSearch = methods.watch('orderSearch') ?? '';
+  const shopSearch = methods.watch('shopSearch') ?? '';
   const onOrderSearchChangeRef = useRef(onOrderSearchChange);
+  const onShopSearchChangeRef = useRef(onShopSearchChange);
   const isDateRangeInvalid = Boolean(from && to && from > to);
 
   useEffect(() => {
     onOrderSearchChangeRef.current = onOrderSearchChange;
-  }, [onOrderSearchChange]);
+    onShopSearchChangeRef.current = onShopSearchChange;
+  }, [onOrderSearchChange, onShopSearchChange]);
 
   useEffect(() => {
     if (!showOrderSearch || !onOrderSearchChangeRef.current) return;
@@ -45,20 +50,45 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
     return () => window.clearTimeout(timeout);
   }, [orderSearch, showOrderSearch]);
 
+  useEffect(() => {
+    if (!showShopSearch || !onShopSearchChangeRef.current) return;
+    const timeout = window.setTimeout(() => {
+      onShopSearchChangeRef.current?.(shopSearch.trim());
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [shopSearch, showShopSearch]);
+
   const handleSubmit = (values: OrderListFilterFormData) => {
     onApply(values);
   };
 
-  const gridColumns = showOrderSearch
-    ? iconOnlySearch
-      ? 'sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-[minmax(140px,1fr)_120px_120px_minmax(170px,1.2fr)_minmax(170px,1.2fr)_44px_84px_92px]'
-      : 'sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-[minmax(160px,1fr)_140px_140px_minmax(160px,1fr)_minmax(160px,1fr)_auto_auto_auto]'
-    : showPaymentStatusFilter
-      ? 'sm:grid-cols-2 md:grid-cols-[120px_130px_minmax(130px,1fr)_minmax(130px,1fr)_auto_auto_auto_auto] xl:grid-cols-[130px_140px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto_auto]'
-      : 'sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]';
+  const gridColumns = showShopSearch
+    ? 'sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_140px_minmax(160px,1fr)_minmax(160px,1fr)_auto_auto_auto]'
+    : showOrderSearch
+      ? iconOnlySearch
+        ? 'sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-[minmax(140px,1fr)_120px_120px_minmax(170px,1.2fr)_minmax(170px,1.2fr)_44px_84px_92px]'
+        : 'sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-[minmax(160px,1fr)_140px_140px_minmax(160px,1fr)_minmax(160px,1fr)_auto_auto_auto]'
+      : showPaymentStatusFilter
+        ? 'sm:grid-cols-2 md:grid-cols-[120px_130px_minmax(130px,1fr)_minmax(130px,1fr)_auto_auto_auto_auto] xl:grid-cols-[130px_140px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto_auto]'
+        : 'sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]';
 
   return (
     <form onSubmit={methods.handleSubmit(handleSubmit)} className={`mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 ${gridColumns}`}>
+      {showShopSearch && (
+        <div className="min-w-0 pb-5 sm:col-span-2 xl:col-span-1">
+          <label htmlFor="filter-shop-search" className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
+            {t('orders.filter.shop', 'Shop')}
+          </label>
+          <Input
+            id="filter-shop-search"
+            value={shopSearch}
+            onChange={(event) => methods.setValue('shopSearch', event.target.value, { shouldDirty: true, shouldValidate: true })}
+            placeholder={t('orders.filter.shopPlaceholder', 'Search shop')}
+            maxLength={100}
+            className="h-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 oidark:border-outline-variant oidark:bg-surface-container-lowest"
+          />
+        </div>
+      )}
       {showOrderSearch && (
         <div className="min-w-0 pb-5 sm:col-span-2 xl:col-span-1">
           <label htmlFor="filter-order-search" className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
@@ -68,7 +98,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             id="filter-order-search"
             value={orderSearch}
             onChange={(event) => methods.setValue('orderSearch', event.target.value, { shouldDirty: true, shouldValidate: true })}
-            placeholder={t('merchant.orders.filter.orderNumberPlaceholder', 'Search order number')}
+            placeholder={t('merchant.orders.filter.orderNumberPlaceholder', 'Search order no')}
             maxLength={100}
             className="h-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 oidark:border-outline-variant oidark:bg-surface-container-lowest"
           />
@@ -213,9 +243,9 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             {!iconOnlySearch && <span>{t('common.filters.search', 'Search')}</span>}
           </Button>
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={onReset} className="h-10 w-full gap-2 sm:-translate-y-5 sm:w-auto">
+        <Button type="button" variant="outline" size="sm" onClick={onReset} aria-label={t('common.filters.clear', 'Clear')} title={iconOnlySearch ? t('common.filters.clear', 'Clear') : undefined} className={`h-10 w-full gap-2 sm:-translate-y-5 sm:w-auto ${iconOnlySearch ? 'sm:px-0 sm:w-11' : ''}`}>
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
-          <span>{t('common.filters.clear', 'Clear')}</span>
+          {!iconOnlySearch && <span>{t('common.filters.clear', 'Clear')}</span>}
         </Button>
         <span className="col-span-2 w-full sm:col-span-1 sm:w-auto" title={isDateRangeInvalid ? 'Please select a valid date range.' : undefined}>
           <Button

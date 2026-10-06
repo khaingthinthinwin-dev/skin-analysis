@@ -8,6 +8,8 @@ export const orderService = {
   ): Promise<OrderListResponseDto> => {
     const params = {
       ...(filters.status !== 'all' ? { status: filters.status } : {}),
+      ...(filters.shopSearch?.trim() ? { shopSearch: filters.shopSearch.trim() } : {}),
+      ...(filters.orderSearch?.trim() ? { orderSearch: filters.orderSearch.trim() } : {}),
       ...(filters.from !== '' ? { from: filters.from } : {}),
       ...(filters.to !== '' ? { to: filters.to } : {}),
       page: filters.page,

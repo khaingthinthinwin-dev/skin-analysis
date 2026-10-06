@@ -268,6 +268,56 @@ describe('OrdersService getOrderHistory', () => {
     );
   });
 
+  it('narrows a buyer order-number search to their own orders', async () => {
+    await expect(
+      service.getOrderHistory(
+        'buyer-1',
+        'buyer',
+        makeQuery({ orderSearch: '#A1B2C3D4' }),
+      ),
+    ).resolves.toMatchObject({ meta: { total: 1 } });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const [, pattern, merchantSlot, buyerPredicate] = prisma.$queryRaw.mock
+      .calls[0] as [unknown, string, { sql: string }, { sql: string }];
+    expect(pattern).toBe('%a1b2c3d4%');
+    // Buyers have no merchant predicate, but the raw lookup stays pinned to
+    // the caller's own rows alongside the scoped Prisma `where`.
+    expect(merchantSlot.sql).toBe('');
+    expect(buyerPredicate.sql).toContain('buyer_id');
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          buyerId: 'buyer-1',
+          id: { in: ['order-1'] },
+        }) as object,
+      }),
+    );
+  });
+
+  it('filters a buyer shop search within their own orders', async () => {
+    await service.getOrderHistory(
+      'buyer-1',
+      'buyer',
+      makeQuery({ shopSearch: '  Lotus  ' }),
+    );
+
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          buyerId: 'buyer-1',
+          merchant: {
+            OR: [
+              { shopName: { contains: 'Lotus', mode: 'insensitive' } },
+              { user: { name: { contains: 'Lotus', mode: 'insensitive' } } },
+            ],
+          },
+        },
+      }),
+    );
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
   it('rejects an inverted date range', async () => {
     await expect(
       service.getOrderHistory(

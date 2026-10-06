@@ -367,10 +367,19 @@ export class OrdersService {
       throw new BadRequestException('Conflicting merchant/shop filter');
     }
 
+    const shopSearch = query.shopSearch?.trim();
     let where: Prisma.OrderWhereInput;
     let merchantIdForOrderSearch: string | undefined;
     if (roleCode === 'buyer') {
       where = { buyerId: userId };
+      if (shopSearch) {
+        where.merchant = {
+          OR: [
+            { shopName: { contains: shopSearch, mode: 'insensitive' } },
+            { user: { name: { contains: shopSearch, mode: 'insensitive' } } },
+          ],
+        };
+      }
     } else if (roleCode === 'merchant') {
       const merchant = await this.prisma.merchant.findUnique({
         where: { userId },
@@ -385,7 +394,6 @@ export class OrdersService {
     } else if (roleCode === 'admin' || roleCode === 'super_admin') {
       const merchantId = query.merchantId ?? shopMerchantId;
       where = merchantId ? { merchantId } : {};
-      const shopSearch = query.shopSearch?.trim();
       if (shopSearch) {
         where.merchant = {
           OR: [
@@ -411,14 +419,15 @@ export class OrdersService {
       where.statusCode = query.status;
     }
 
-    // The merchant and admin tables display the uppercase first eight characters
-    // of the order UUID. Search within that visible identifier, allowing a
-    // partial value to be entered even when it is not the first character.
+    // The order tables display the uppercase first eight characters of the
+    // order UUID. Search within that visible identifier, allowing a partial
+    // value to be entered even when it is not the first character.
     const orderSearch = query.orderSearch
       ?.trim()
       .replace(/^#/, '')
       .toLowerCase();
     const canSearchByOrderNumber =
+      roleCode === 'buyer' ||
       roleCode === 'merchant' ||
       roleCode === 'admin' ||
       roleCode === 'super_admin';
@@ -428,15 +437,16 @@ export class OrdersService {
       (roleCode !== 'merchant' || merchantIdForOrderSearch)
     ) {
       // UUID columns do not support Prisma's string contains/startsWith filters.
-      // Cast the ID to text for matching, while retaining an explicit merchant
+      // Cast the ID to text for matching, while retaining an explicit owner
       // predicate here and the normal scoped Prisma `where` for the list query.
-      // Admins have no merchant predicate because they already read across all
-      // merchants; the surrounding scoped `where` still applies every other filter.
+      // Admins have no owner predicate because they already read across all
+      // shops; the surrounding scoped `where` still applies every other filter.
       const matchingOrders = await this.prisma.$queryRaw<Array<{ id: string }>>`
         SELECT id
         FROM orders
         WHERE SUBSTRING(id::text FROM 1 FOR 8) ILIKE ${`%${orderSearch}%`}
           ${roleCode === 'merchant' ? Prisma.sql`AND merchant_id = ${merchantIdForOrderSearch}::uuid` : Prisma.empty}
+          ${roleCode === 'buyer' ? Prisma.sql`AND buyer_id = ${userId}::uuid` : Prisma.empty}
       `;
       where.id = { in: matchingOrders.map((order) => order.id) };
     }
