@@ -77,8 +77,11 @@ export interface SponsoredAd {
   placement: string
   title: string
   description: string | null
+  content: string | null
   imageUrl: string | null
   sku: string | null
+  announcement_message?: string | null
+  announcementMessage?: string | null
   linkUrl?: string | null
   product_id?: string | null
   target_url?: string | null

@@ -2,6 +2,53 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+.search-box-glow {
+  background-image: linear-gradient(120deg, #8B5CF6, #EC4899, #8B5CF6);
+  background-size: 200% 200%;
+  animation: search-box-glow 2s ease-in-out infinite;
+  transition: transform 150ms ease;
+}
+
+.search-box-glow:hover {
+  animation-duration: 1.25s;
+  box-shadow: 0 0 16px rgb(139 92 246 / 50%), 0 0 30px rgb(236 72 153 / 35%);
+}
+
+.search-box-glow:focus-within {
+  animation-duration: 1.25s;
+  box-shadow: 0 0 0 2px rgb(139 92 246 / 40%), 0 0 20px rgb(139 92 246 / 50%),
+    0 0 34px rgb(236 72 153 / 40%);
+}
+
+.search-box-glow:active {
+  transform: scale(0.995);
+}
+
+@keyframes search-box-glow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 6px rgb(139 92 246 / 30%), 0 0 12px rgb(236 72 153 / 20%);
+  }
+
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 0 16px rgb(139 92 246 / 65%), 0 0 30px rgb(236 72 153 / 45%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-box-glow {
+    animation: none;
+    transition: none;
+    background-position: 50% 50%;
+  }
+
+  .search-box-glow:active {
+    transform: none;
+  }
+}
+
 @theme {
   --radius: 0.5rem;
 
