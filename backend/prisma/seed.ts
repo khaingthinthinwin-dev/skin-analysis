@@ -232,7 +232,7 @@ async function main() {
   // ============================================
   // MERCHANT PROFILES
   // ============================================
-  const merchants = [];
+  const merchants: Array<{ id: string }> = [];
   const merchantShops = [
     { shopName: 'Glow Beauty Shop', slug: 'glow-beauty-shop', description: 'Premium skincare products for radiant skin' },
     { shopName: 'Natural Skin Care', slug: 'natural-skin-care', description: 'Organic and natural skincare solutions' },
@@ -905,7 +905,7 @@ async function main() {
           content: `Promotional content for ${month}`,
           announcementMessage: `Special offer from ${merchantShops[merchantIdx].shopName}`,
           imageUrl: `https://storage.example.com/ads/${month}-${a}.jpg`,
-          linkUrl: `/buyer/products/${promotedProduct.slug}`,
+          sku: promotedProduct.sku,
           isActive: true,
           approvalStatus: 'approved',
           paymentStatus: 'paid',
