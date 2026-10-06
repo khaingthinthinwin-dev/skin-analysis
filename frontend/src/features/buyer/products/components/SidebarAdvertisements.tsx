@@ -93,7 +93,8 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
   const activeIndex = current % total;
   const ad = eligibleAds[activeIndex];
   const title = ad.title;
-  const description = ad.announcementMessage ?? null;
+  const announcement = ad.announcementMessage;
+  const content = ad.description;
   const imageUrl = ad.imageUrl ?? null;
   // Learn more → the product resolved from the ad's sku (falls back to the ad
   // image, then to this product).
@@ -113,10 +114,11 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               <div className="flex flex-wrap items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3"
+                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3 max-w-full"
+                  title={announcement || 'Sponsored'}
                 >
-                  <Megaphone className="w-3.5 h-3.5 mr-1 inline" />
-                  Sponsored
+                  <Megaphone className="w-3.5 h-3.5 mr-1 inline shrink-0" />
+                  <span className="truncate">{announcement || 'Sponsored'}</span>
                 </Badge>
                 {ad.shopName && (
                   <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
@@ -129,9 +131,9 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                 {title}
               </h2>
 
-              {description && (
+              {content && (
                 <p className="text-sm sm:text-base text-zinc-200/90 max-w-xl line-clamp-2">
-                  {description}
+                  {content}
                 </p>
               )}
 

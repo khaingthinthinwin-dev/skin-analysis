@@ -51,9 +51,9 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
 
   useEffect(() => {
     if (paused || ads.length <= 1) return
-    const timer = setInterval(next, AUTO_SLIDE_MS)
-    return () => clearInterval(timer)
-  }, [paused, ads.length, next])
+    const timer = setTimeout(next, AUTO_SLIDE_MS)
+    return () => clearTimeout(timer)
+  }, [paused, ads.length, next, current])
 
   useEffect(() => {
     if (!panelRef.current || !onImpression || ads.length === 0) return
@@ -80,7 +80,8 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
   // ad's sku/image resolves to, otherwise no link.
   const adProduct = ad.productSlug ?? ad.productId ?? null
   const productPath = adProduct ? `${basePath}/${adProduct}` : null
-  const description = ad.announcementMessage ?? ad.description
+  const announcement = ad.announcementMessage
+  const content = ad.description
 
   return (
     <div
@@ -100,10 +101,11 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
               <div className="flex flex-wrap items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3"
+                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3 max-w-full"
+                  title={announcement || 'Sponsored'}
                 >
-                  <Megaphone className="w-3.5 h-3.5 mr-1 inline" />
-                  Sponsored
+                  <Megaphone className="w-3.5 h-3.5 mr-1 inline shrink-0" />
+                  <span className="truncate">{announcement || 'Sponsored'}</span>
                 </Badge>
                 {ad.shopName && (
                   <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
@@ -116,9 +118,9 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
                 {ad.title}
               </h2>
 
-              {description && (
+              {content && (
                 <p className="text-sm sm:text-base text-zinc-200/90 max-w-xl line-clamp-2">
-                  {description}
+                  {content}
                 </p>
               )}
 
