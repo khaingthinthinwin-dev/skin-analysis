@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getAllAdminOrders } from '../services/adminOrderService';
+import { getAdminOrderDetail, getAllAdminOrders } from '../services/adminOrderService';
 import { buildAdminOrdersExportFilename, exportAdminOrdersCsv } from '../utils/exportAdminOrdersCsv';
 import { formatStatusLabel } from '../utils/orderStatusLabel';
 import type { AdminOrderFilterFormData } from '../schemas/orderFilters.schema';
@@ -26,7 +26,23 @@ export function ExportAdminOrdersDialog({ filters, total, onClose }: ExportAdmin
     setError(false);
     try {
       const rows = await getAllAdminOrders(filters);
-      if (rows.length) exportAdminOrdersCsv(rows, buildAdminOrdersExportFilename(filters));
+      if (!rows.length) {
+        onClose();
+        return;
+      }
+      // Buyer-export pattern: fetch each order's detail for product names/quantities,
+      // merchant id, and payment method. A single failed detail must not drop the row —
+      // fall back to the list-row values (item count, blank merchant/payment) instead.
+      const enrichedRows = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            return { row, detail: await getAdminOrderDetail(row.id) };
+          } catch {
+            return { row, detail: null };
+          }
+        }),
+      );
+      exportAdminOrdersCsv(enrichedRows, buildAdminOrdersExportFilename(filters));
       onClose();
     } catch {
       setError(true);
