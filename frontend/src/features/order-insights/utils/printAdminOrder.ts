@@ -147,7 +147,19 @@ export function buildAdminOrderPrintHtml(order: AdminOrderDetailDto, locale = 'e
       .brand-name { color: ${PURPLE}; font-size: 15px; font-weight: 700; }
       .brand-note { color: #6b7280; font-size: 11.5px; }
       section { margin-top: 24px; }
-      .grid { display: grid; gap: 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .info-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 14px 16px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      .info-card .kv dt { color: #111827; font-weight: 700; }
+      .info-card .kv dd { font-weight: 400; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
       .address, dl { color: #374151; font-size: 13px; }
       .kv { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
       .kv dt { color: #6b7280; }
@@ -200,7 +212,7 @@ export function buildAdminOrderPrintHtml(order: AdminOrderDetailDto, locale = 'e
       </header>
 
       <section class="grid">
-        <div>
+        <div class="info-card">
           <h2>Shop / Merchant</h2>
           <dl>
             <div class="kv"><dt>Shop</dt><dd>${escapeHtml(order.shop.name)}</dd></div>
@@ -208,7 +220,7 @@ export function buildAdminOrderPrintHtml(order: AdminOrderDetailDto, locale = 'e
             ${order.shop.merchantId ? `<div class="kv"><dt>Merchant ID</dt><dd>${escapeHtml(order.shop.merchantId)}</dd></div>` : ''}
           </dl>
         </div>
-        <div>
+        <div class="info-card">
           <h2>Customer</h2>
           <dl>
             <div class="kv"><dt>Name</dt><dd>${escapeHtml(order.customer.name)}</dd></div>
