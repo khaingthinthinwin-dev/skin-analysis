@@ -108,9 +108,10 @@ export interface ActivePromotion {
 export interface SidebarAdvertisement {
   id: string;
   title: string;
+  description: string | null;
   announcementMessage: string | null;
   imageUrl: string | null;
-  linkUrl: string | null;
+  sku: string | null;
   placement: string | null;
   startsAt: string | null;
   expiresAt: string | null;
@@ -118,6 +119,8 @@ export interface SidebarAdvertisement {
   shopName: string;
   shopSlug: string;
   planTier: string;
+  productId: string | null;
+  productSlug: string | null;
 }
 
 async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {

@@ -1198,7 +1198,7 @@ export class AdminAdManagementService {
       announcementMessage: ad.announcementMessage,
       content: ad.content,
       imageUrl: ad.imageUrl,
-      linkUrl: ad.linkUrl,
+      sku: ad.sku,
       placement: (ad.feeSetting?.placement ?? null) as Placement | null,
       tier: (ad.feeSetting?.tier ?? null) as Tier | null,
       isActive: ad.isActive,

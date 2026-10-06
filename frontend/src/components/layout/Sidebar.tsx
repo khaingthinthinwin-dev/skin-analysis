@@ -54,6 +54,26 @@ export function Sidebar({
   const isNotificationItem = (item: NavItem) =>
     item.href.endsWith('/notifications')
 
+  // Prefix matching lets a parent item (e.g. /buyer/skin-analysis) stay active on
+  // child routes (/buyer/skin-analysis/:id), but when a more specific item also
+  // matches (e.g. /buyer/skin-analysis/history) only that one is highlighted.
+  const isItemActive = (item: NavItem) => {
+    const path = location.pathname
+    const matches = (href: string) =>
+      path === href ||
+      (href !== '/' &&
+        href !== '/buyer' &&
+        href !== '/merchant' &&
+        href !== '/admin' &&
+        path.startsWith(`${href}/`))
+    if (!matches(item.href)) return false
+    return !config.sections.some((section) =>
+      section.items.some(
+        (other) => other.href.length > item.href.length && matches(other.href),
+      ),
+    )
+  }
+
   const renderBadge = (item: NavItem) => {
     if (isNotificationItem(item) && unreadCount > 0) {
       return (
@@ -160,13 +180,7 @@ export function Sidebar({
             )}
             {section.items.map((item) => {
               const Icon = item.icon
-              const isActive =
-                location.pathname === item.href ||
-                (item.href !== '/' &&
-                  item.href !== '/buyer' &&
-                  item.href !== '/merchant' &&
-                  item.href !== '/admin' &&
-                  location.pathname.startsWith(`${item.href}/`))
+              const isActive = isItemActive(item)
 
               return (
                 <Link
@@ -177,7 +191,7 @@ export function Sidebar({
                   className={cn(
                     'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
-                      ? 'bg-gradient-to-r from-purple-100/80 to-purple-50/50 text-purple-900 dark:from-purple-950/60 dark:to-purple-900/30 dark:text-purple-200 border-r-4 border-purple-600 font-semibold shadow-xs'
+                      ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 font-semibold shadow-xs before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-purple-600 before:rounded-r-full'
                       : 'text-muted-foreground hover:bg-purple-50/50 dark:hover:bg-purple-950/30 hover:text-purple-700 dark:hover:text-purple-300'
                   )}
                 >

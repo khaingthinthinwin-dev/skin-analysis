@@ -91,7 +91,6 @@ const mockAiGateway = {
 
 const mockStorage = {
   saveScan: jest.fn(),
-  saveMeshSvg: jest.fn(),
   resolveLocalPath: jest.fn(),
   getContentType: jest.fn(),
 };
@@ -128,7 +127,6 @@ function makePayload(overrides: Partial<any> = {}) {
       },
     ],
     overallAssessment: 'Good overall health with mild acne.',
-    meshSvg: '<svg></svg>',
     ...overrides,
   };
 }
@@ -138,7 +136,6 @@ function makeCompletedRecord(overrides: Partial<any> = {}) {
     id: 'analysis-1',
     userId: 'user-1',
     imageUrl: '/uploads/skin-scans/user-1/abc.jpg',
-    meshOverlayUrl: '/uploads/skin-scans/meshes/analysis-1.svg',
     analysisStatus: 'completed',
     analysisDate: new Date('2026-01-10T00:00:00Z'),
     completedAt: new Date('2026-01-10T00:01:00Z'),
@@ -202,7 +199,6 @@ function makeCachedDto(overrides: Partial<any> = {}) {
     hydration: rec.hydration,
     confidence: rec.confidence,
     facialScanUrl: rec.imageUrl,
-    meshOverlayUrl: rec.meshOverlayUrl,
     conditions: rec.conditions.map((c: any) => ({
       conditionId: c.id,
       conditionName: c.conditionName,
@@ -383,9 +379,6 @@ describe('SkinAnalysisService', () => {
       });
       mockStorage.resolveLocalPath.mockReturnValue(null);
       mockAiGateway.analyze.mockResolvedValue(makePayload());
-      mockStorage.saveMeshSvg.mockReturnValue(
-        '/uploads/skin-scans/meshes/analysis-1.svg',
-      );
       mockPrisma.product.findMany.mockResolvedValue([]);
       mockPrisma.$transaction.mockImplementation(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return

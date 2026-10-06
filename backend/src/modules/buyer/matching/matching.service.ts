@@ -205,7 +205,7 @@ export class MatchingService {
 
     const skip = (page - 1) * limit;
 
-    const [rawProducts, total] = await Promise.all([
+    const [rawProducts, filteredTotal] = await Promise.all([
       this.prisma.product.findMany({
         where,
         skip,
@@ -219,10 +219,11 @@ export class MatchingService {
       }),
       this.prisma.product.count({ where }),
     ]);
+    let total = filteredTotal;
 
     const products = rawProducts as unknown as ProductWithMerchant[];
 
-    const data: RecommendationResultDto[] = products.map((product) => {
+    let data: RecommendationResultDto[] = products.map((product) => {
       const matchScore =
         context.source === 'ai'
           ? this.computeMatchScore(
@@ -257,6 +258,17 @@ export class MatchingService {
         const scoreB = b.matchScore ?? 0;
         return order === 'desc' ? scoreB - scoreA : scoreA - scoreB;
       });
+    }
+
+    // Previously recommended products lead page 1: the buyer's own past picks
+    // (still on sale, highest match first) are shown before the fresh grid.
+    if (page === 1) {
+      const featured = await this.getPreviouslyRecommendedFeatured(userId, 3);
+      if (featured.length > 0) {
+        const featuredIds = new Set(featured.map((p) => p.id));
+        data = [...featured, ...data.filter((p) => !featuredIds.has(p.id))];
+        total += featured.length;
+      }
     }
 
     const totalPages = Math.ceil(total / limit);
@@ -360,7 +372,13 @@ export class MatchingService {
         include: {
           conditions: true,
           recommendations: {
-            include: { product: true },
+            include: {
+              product: {
+                include: {
+                  merchant: { include: { user: { include: { shop: true } } } },
+                },
+              },
+            },
             orderBy: { displayOrder: 'asc' },
           },
         },
@@ -387,11 +405,15 @@ export class MatchingService {
           .filter((type) => type.length > 0)[0] ?? '';
       const concerns = analysis.conditions.map((c) => c.conditionName);
 
-      return {
-        sessionId: analysis.id,
-        sessionDate: analysis.completedAt!.toISOString(),
-        skinTypesUsed: analysis.skinType ? [analysis.skinType] : [],
-        products: analysis.recommendations.map((rec) => ({
+      // Only products still on sale (active, approved merchant) are listed,
+      // highest match first.
+      const products = analysis.recommendations
+        .filter(
+          (rec) =>
+            rec.product.isActive &&
+            rec.product.merchant?.user?.shop?.isApproved === true,
+        )
+        .map((rec) => ({
           id: rec.product.id,
           name: rec.product.name,
           slug: rec.product.slug,
@@ -402,7 +424,14 @@ export class MatchingService {
             scoringSkinType,
             concerns,
           ).total,
-        })),
+        }))
+        .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+
+      return {
+        sessionId: analysis.id,
+        sessionDate: analysis.completedAt!.toISOString(),
+        skinTypesUsed: analysis.skinType ? [analysis.skinType] : [],
+        products,
       };
     });
 
@@ -412,6 +441,77 @@ export class MatchingService {
       data,
       meta: { page, limit, total, totalPages },
     };
+  }
+
+  /**
+   * The buyer's previously recommended products from the latest analysis that
+   * are still on sale, highest match first. These lead the recommendations
+   * grid so past picks stay visible at the top.
+   */
+  private async getPreviouslyRecommendedFeatured(
+    userId: string,
+    limit: number,
+  ): Promise<RecommendationResultDto[]> {
+    const latestAnalysis = await this.prisma.skinAnalysis.findFirst({
+      where: {
+        userId,
+        analysisStatus: 'completed',
+        completedAt: { not: null },
+      },
+      include: {
+        conditions: true,
+        recommendations: {
+          include: {
+            product: {
+              include: {
+                merchant: { include: { user: { include: { shop: true } } } },
+              },
+            },
+          },
+          orderBy: { displayOrder: 'asc' },
+        },
+      },
+      orderBy: { completedAt: 'desc' },
+    });
+
+    if (!latestAnalysis) return [];
+
+    const scoringSkinType =
+      (latestAnalysis.skinType ?? '')
+        .split(',')
+        .map((type) => type.trim().toLowerCase())
+        .filter((type) => type.length > 0)[0] ?? '';
+    const concerns = latestAnalysis.conditions.map((c) => c.conditionName);
+
+    return (latestAnalysis.recommendations ?? [])
+      .filter(
+        (rec) =>
+          rec.product.isActive &&
+          rec.product.merchant?.user?.shop?.isApproved === true,
+      )
+      .map((rec) => {
+        const product = rec.product;
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          brandName: product.merchant?.shopName ?? '',
+          shortDescription: product.shortDescription ?? null,
+          price: product.price.toString(),
+          compareAtPrice: product.compareAtPrice?.toString() ?? null,
+          images: product.images,
+          skinTypes: product.skinTypes,
+          avgRating: product.avgRating.toString(),
+          reviewCount: product.reviewCount,
+          isFeatured: product.isFeatured,
+          isInStock: product.stockQuantity > 0,
+          matchScore: this.computeMatchScore(product, scoringSkinType, concerns)
+            .total,
+          categoryBadge: this.getCategoryBadge(product),
+        };
+      })
+      .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
+      .slice(0, limit);
   }
 
   private async determineSource(

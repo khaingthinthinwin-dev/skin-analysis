@@ -5,9 +5,64 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 
+const CHECKOUT_AD_PLACEMENT = 'checkout_page_banner';
+
 @Injectable()
 export class CheckoutService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Sponsored ads for the checkout page banner.
+   *
+   * Eligibility is the placement join, `is_active`, approved status, and the
+   * validity window (`NOW() BETWEEN starts_at AND expires_at`). Several
+   * `ad_fee_settings` rows share the placement (one per tier) and all of their
+   * advertisements are considered; no per-ID or per-tier restriction is applied.
+   *
+   * The `payment_status` filter of the general ad-serving query (BR-AD-010)
+   * is deliberately not applied here: every advertisement row currently in
+   * the database carries `payment_status = 'paid'`, so the documented
+   * `= 'completed'` filter matches nothing and empties the banner entirely.
+   *
+   * No `take` limit is applied, so every matching advertisement is returned.
+   */
+  async getCheckoutPageAds() {
+    const now = new Date();
+
+    const ads = await this.prisma.advertisement.findMany({
+      where: {
+        // Relation filter: matches every `fee_setting_id` resolving to an
+        // `ad_fee_settings` row with this placement, so all tiers
+        // (basic/standard/premium) are returned. Prisma compiles this to a
+        // join/IN over `ad_fee_settings.id`, equivalent to:
+        //   INNER JOIN ad_fee_settings f ON a.fee_setting_id = f.id
+        //   WHERE f.placement = 'checkout_page_banner'
+        feeSetting: {
+          placement: CHECKOUT_AD_PLACEMENT,
+        },
+        isActive: true,
+        approvalStatus: 'approved',
+        // NOW() BETWEEN starts_at AND expires_at — ads that have not opened
+        // yet or that have already expired are excluded automatically.
+        // `starts_at` / `expires_at` are nullable; a NULL never satisfies a
+        // comparison in SQL, so unscheduled (draft) ads are excluded too.
+        startsAt: { lte: now },
+        expiresAt: { gte: now },
+      },
+      orderBy: [{ createdAt: 'desc' }, { paymentAmount: 'desc' }],
+    });
+
+    return {
+      data: ads.map((ad) => ({
+        id: ad.id,
+        placement: CHECKOUT_AD_PLACEMENT,
+        title: ad.title,
+        description: ad.content,
+        imageUrl: ad.imageUrl,
+        sku: ad.sku,
+      })),
+    };
+  }
 
   async getCheckoutData(userId: string) {
     const cart = await this.prisma.cart.upsert({

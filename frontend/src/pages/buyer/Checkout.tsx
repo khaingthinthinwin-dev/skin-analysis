@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { CreditCard, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
@@ -8,7 +8,6 @@ import {
   useCheckoutData,
   useValidateCoupon,
   usePlaceOrder,
-  useSponsoredAds,
 } from '@/features/buyer/checkout/hooks/useCheckout';
 import { OrderSummary } from '@/features/buyer/checkout/components/OrderSummary';
 import { CheckoutForm } from '@/features/buyer/checkout/components/CheckoutForm';
@@ -43,7 +42,6 @@ export default function Checkout() {
   } = useCheckoutData();
   const validateCouponMutation = useValidateCoupon();
   const placeOrderMutation = usePlaceOrder();
-  const { data: sponsoredAds = [] } = useSponsoredAds();
 
   const [appliedByMerchant, setAppliedByMerchant] = useState<
     Record<string, MerchantCoupon>
@@ -162,12 +160,14 @@ export default function Checkout() {
           Complete your order details securely
         </p>
         </div>
-        <Link to="/buyer/cart" className="text-sm text-muted-foreground hover:text-primary">
-          ← Back to Cart
-        </Link>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/buyer/cart">
+            <ArrowLeft className="h-4 w-4" /> Back to Cart
+          </Link>
+        </Button>
       </header>
 
-      <SponsoredAdSlider ads={sponsoredAds} />
+      <SponsoredAdSlider />
 
       <CheckoutForm
         summary={

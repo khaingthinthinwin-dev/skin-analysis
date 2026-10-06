@@ -31,7 +31,7 @@ export interface AdminAdvertisement {
   announcementMessage: string
   content: string | null
   imageUrl: string | null
-  linkUrl: string | null
+  sku: string | null
   placement: Placement
   tier: Tier
   isActive: boolean

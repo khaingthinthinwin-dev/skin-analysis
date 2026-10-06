@@ -6,7 +6,7 @@ export class SponsoredAdDto {
   @ApiProperty() title: string;
   @ApiProperty({ nullable: true }) description: string | null;
   @ApiProperty({ nullable: true }) imageUrl: string | null;
-  @ApiProperty({ nullable: true }) linkUrl: string | null;
+  @ApiProperty({ nullable: true }) sku: string | null;
   @ApiProperty() tier: string;
   @ApiProperty() approvalStatus: string;
   @ApiProperty({ nullable: true }) startsAt: Date | null;

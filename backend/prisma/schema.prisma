@@ -421,7 +421,7 @@ model Advertisement {
   content             String?
   announcementMessage String    @map("announcement_message")
   imageUrl            String?   @map("image_url")
-  linkUrl             String?   @map("link_url")
+  sku                 String?   @map("sku")
   isActive            Boolean   @default(true) @map("is_active")
   approvalStatus      String    @default("pending") @map("approval_status")
   paymentStatus       String    @default("pending") @map("payment_status")
@@ -628,9 +628,8 @@ model SkinAnalysis {
   analysisDate      DateTime  @default(now()) @map("analysis_date")
   healthScore       Int?      @map("health_score")
   hydration         Int?
-  confidence        Int?
-  meshOverlayUrl    String?   @map("mesh_overlay_url")
-  overallAssessment String?   @map("overall_assessment")
+   confidence        Int?
+   overallAssessment String?   @map("overall_assessment")
   createdAt         DateTime  @default(now()) @map("created_at")
   completedAt       DateTime? @map("completed_at")
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")

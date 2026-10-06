@@ -52,14 +52,17 @@ export interface AdSlide {
   adId: string
   title: string
   description: string | null
+  announcementMessage?: string | null
   imageUrl: string
-  linkUrl: string | null
+  sku: string | null
   ctaText: string
   priorityAmount: string | null
   shopName: string
   placement?: string | null
   startsAt?: string | null
   expiresAt?: string | null
+  productId?: string | null
+  productSlug?: string | null
 }
 
 export interface AdPanelResponse {

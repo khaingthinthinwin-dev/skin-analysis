@@ -233,7 +233,7 @@ export default function SkinAnalysisHistoryPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[5, 10, 20, 50].map((n) => (
+                    {[10, 20, 50].map((n) => (
                       <SelectItem key={n} value={String(n)}>
                         {t('common.pageSize', { size: n })}
                       </SelectItem>
@@ -244,10 +244,11 @@ export default function SkinAnalysisHistoryPage() {
               <div className="flex items-end">
                 <Button
                   variant="ghost"
-                  className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                  size="sm"
+                  className="h-9 gap-1.5 px-3 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => { setParams({ page: 1, pageSize: 10 }); setShowFilters(false) }}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                   {t('common.clearFilters')}
                 </Button>
               </div>
@@ -443,7 +444,7 @@ export default function SkinAnalysisHistoryPage() {
             onPageChange={(page) => setParams((p) => ({ ...p, page }))}
             limit={data.meta.pageSize}
             onLimitChange={(pageSize) => setParams((p) => ({ ...p, pageSize, page: 1 }))}
-            pageSizeOptions={[5, 10, 20, 50]}
+            pageSizeOptions={[10, 20, 50]}
           />
         </>
       ) : null}
