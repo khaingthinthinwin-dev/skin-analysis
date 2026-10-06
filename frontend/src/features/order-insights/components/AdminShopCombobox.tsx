@@ -145,6 +145,11 @@ export function AdminShopCombobox({ value, onValueChange, onSelect, placeholder,
                 <button
                   type="button"
                   tabIndex={-1}
+                  // Keep focus in the input while pressing an option: the blur
+                  // would arm the close timer below and, on a slower click
+                  // (remote desktop, careful press), unmount the list before
+                  // `click` fires — dropping the selection silently.
+                  onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => choose(option)}
                   className={`flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-sm ${

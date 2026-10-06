@@ -75,6 +75,22 @@ describe('AdminShopCombobox', () => {
     await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
   });
 
+  // Regression: pressing an option used to blur the input, which armed the
+  // 120ms close timer — on a slower mousedown→mouseup (remote desktop, careful
+  // click) the list unmounted before `click` fired, silently dropping the
+  // selection and leaving the free-text `k` filter applied.
+  it('keeps focus in the input while pressing an option so the click cannot be dropped', async () => {
+    const onSelect = vi.fn();
+    render(<ControlledCombobox onSelect={onSelect} initial="Lot" />);
+
+    const combobox = screen.getByRole('combobox');
+    await userEvent.click(combobox);
+    await userEvent.click(screen.getByRole('button', { name: /Lotus Glow/ }));
+
+    expect(document.activeElement).toBe(combobox);
+    expect(onSelect).toHaveBeenCalledWith(LOTUS);
+  });
+
   it('tells the admin that plain name filtering still applies when nothing matches', async () => {
     setOptions({ data: [], isFetching: false });
     render(<AdminShopCombobox value="zzz" onValueChange={vi.fn()} onSelect={vi.fn()} placeholder="Search shop" />);
