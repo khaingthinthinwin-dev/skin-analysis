@@ -8,9 +8,9 @@ export function DeactivationBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   const status = user?.status?.toLowerCase()
+  // Only show if explicitly deactivated/inactive status.
+  // Don't rely on isActive/is_active booleans which may be unreliable.
   const isDeactivated = user && (
-    user.isActive === false ||
-    user.is_active === false ||
     status === 'deactivated' ||
     status === 'inactive'
   )
