@@ -36,7 +36,7 @@ describe('AdminAdManagementService ad review', () => {
     announcementMessage: 'msg',
     content: null,
     imageUrl: null,
-    linkUrl: null,
+    sku: null,
     isActive: true,
     approvalStatus: 'pending',
     paymentStatus: 'completed',

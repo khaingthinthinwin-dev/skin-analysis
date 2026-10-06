@@ -78,7 +78,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
 
   return (
     <div className={`flex flex-col gap-3 ${className ?? ''}`}>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
         <QuantityStepper value={quantity} max={product.stockQuantity} onChange={setQuantity} />
         <span className="text-sm text-muted-foreground">
           {inStock ? `${product.stockQuantity} in stock` : 'Out of stock'}
@@ -88,7 +88,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
       <div className="flex flex-wrap items-center gap-3">
         <Button
           size="lg"
-          className="w-full gap-2 sm:w-auto"
+          className="w-full md:flex-1 gap-2"
           onClick={handleAddToCart}
           disabled={cartDisabled}
         >
@@ -102,7 +102,7 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
         <Button
           variant={isInWishlist ? 'default' : 'outline'}
           size="lg"
-          className={`gap-2 ${isInWishlist ? 'bg-pink-500 text-white hover:bg-pink-600 border-pink-500' : ''}`}
+          className={`w-full md:flex-1 gap-2 ${isInWishlist ? 'bg-pink-500 text-white hover:bg-pink-600 border-pink-500' : ''}`}
           onClick={handleAddToWishlist}
           disabled={wishlistDisabled}
           aria-label="Add to wishlist"
