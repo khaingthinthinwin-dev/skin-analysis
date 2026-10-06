@@ -189,3 +189,179 @@ describe('ReviewManagement bulk action modals', () => {
     expect(bulkModerateReviews).not.toHaveBeenCalled()
   }, 20_000)
 })
+
+describe('ReviewManagement notification highlight', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    vi.mocked(adminService.getReviews).mockResolvedValue({
+      items: reviews,
+      total: 2,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    })
+    vi.mocked(adminService.getReports).mockResolvedValue({
+      items: [
+        {
+          id: 'rep-1',
+          reviewId: 'r-1',
+          resolver: null,
+          reason: 'spam',
+          description: 'Obvious spam',
+          status: 'pending',
+          adminNote: null,
+          resolvedBy: null,
+          resolvedAt: null,
+          createdAt: '2026-01-03T00:00:00.000Z',
+          reporter: {
+            id: 'u-9',
+            name: 'Cara',
+            email: 'cara@example.com',
+            avatarUrl: null,
+          },
+          review: {
+            id: 'r-1',
+            title: 'Alpha review',
+            body: 'Loved it',
+            rating: 5,
+            user: { id: 'u-1', name: 'Ada', email: 'ada@example.com', avatarUrl: null },
+            product: { id: 'p-1', name: 'Serum', slug: 'serum' },
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function highlightedRow(id: string): HTMLElement {
+    const cell = screen.getByText(id === 'r-1' ? 'Alpha review' : 'Beta review').closest('tr')
+    if (!cell) throw new Error(`row for ${id} not found`)
+    return cell as HTMLElement
+  }
+
+  it('highlights only the review the notification pointed at', async () => {
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={['/admin/reviews?tab=reviews&highlight=r-2']}>
+          <ReviewManagement />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Beta review')).toBeInTheDocument()
+    expect(
+      screen.queryByText(/opened from a notification/),
+    ).not.toBeInTheDocument()
+
+    // Exactly one row is flagged as highlighted and it is the target one.
+    expect(document.querySelectorAll('tr[data-highlighted]')).toHaveLength(1)
+    expect(highlightedRow('r-2')).toHaveAttribute('data-highlighted', 'true')
+    expect(highlightedRow('r-1')).not.toHaveAttribute('data-highlighted')
+    expect(highlightedRow('r-2')).toHaveClass(
+      'review-row',
+      '[&>td]:!border-t-2',
+      '[&>td]:!border-b-2',
+      '[&>td]:!border-purple-600',
+      '[&>td:first-child]:!border-l-2',
+      '[&>td:last-child]:!border-r-2',
+      '[&>td:first-child]:rounded-l-lg',
+      '[&>td:last-child]:rounded-r-lg',
+    )
+    expect(screen.getByText('Beta review').closest('table')).toHaveClass(
+      '[&_tbody_tr[data-highlighted]>td]:bg-purple-500/10',
+      '[&_tbody_tr[data-highlighted]>td]:border-b-0',
+    )
+    expect(screen.getAllByText('From notification')).toHaveLength(1)
+  }, 20_000)
+
+  it('switches to the reports tab and highlights the reported row', async () => {
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={['/admin/reviews?tab=reports&highlight=rep-1']}>
+          <ReviewManagement />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await screen.findByText('Loved it')
+    expect(
+      screen.queryByText(/opened from a notification/),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Reports/ })).toHaveAttribute('aria-selected', 'true')
+
+    await screen.findByText('spam')
+    expect(document.querySelectorAll('tr[data-highlighted]')).toHaveLength(1)
+    const row = screen.getByText('Loved it').closest('tr')
+    expect(row).toHaveAttribute('data-highlighted', 'true')
+    expect(row).toHaveClass(
+      '[&>td]:!border-t-2',
+      '[&>td]:!border-b-2',
+      '[&>td]:!border-purple-600',
+      '[&>td:first-child]:!border-l-2',
+      '[&>td:last-child]:!border-r-2',
+      '[&>td:first-child]:rounded-l-lg',
+      '[&>td:last-child]:rounded-r-lg',
+    )
+    expect(screen.getByText('Loved it').closest('table')).toHaveClass(
+      '[&_tbody_tr[data-highlighted]>td]:bg-purple-500/10',
+      '[&_tbody_tr[data-highlighted]>td]:border-b-0',
+    )
+    expect(screen.getByText('From notification')).toBeInTheDocument()
+  }, 20_000)
+
+  it('does not show a notification banner when the highlighted review is not on the current page', async () => {
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={['/admin/reviews?tab=reviews&highlight=missing-id']}>
+          <ReviewManagement />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Alpha review')).toBeInTheDocument()
+    expect(
+      screen.queryByText(/opened from a notification|not on the current page/),
+    ).not.toBeInTheDocument()
+    expect(document.querySelectorAll('tr[data-highlighted]')).toHaveLength(0)
+  }, 20_000)
+
+  it('drops the highlight when the admin switches tabs', async () => {
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={['/admin/reviews?tab=reviews&highlight=r-1']}>
+          <ReviewManagement />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Alpha review')).toBeInTheDocument()
+    expect(highlightedRow('r-1')).toHaveAttribute('data-highlighted', 'true')
+
+    await user.click(screen.getByRole('tab', { name: /Reports/ }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Reports/ })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+    })
+    expect(document.querySelectorAll('tr[data-highlighted]')).toHaveLength(0)
+    expect(screen.queryByText('From notification')).not.toBeInTheDocument()
+  }, 20_000)
+})

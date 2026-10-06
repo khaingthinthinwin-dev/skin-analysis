@@ -12,7 +12,7 @@ import {
   Flag,
   MessageSquareText,
 } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { useMemo, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -254,10 +254,6 @@ function NotificationCard({
   )
   const adHint = adActionHint(item)
   const normalizedType = normalizeNotificationType(item.type)
-  const approvedProductId =
-    normalizedType === 'REVIEW_APPROVED' && item.entityType === 'Product'
-      ? item.entityId
-      : null
   const reportHint = REVIEW_REPORT_TYPES.has(normalizedType)
     ? 'Review in Review Management →'
     : REVIEW_SUBMISSION_TYPES.has(normalizedType)
@@ -274,16 +270,16 @@ function NotificationCard({
         item.isRead ? '' : 'border-purple-500/40 bg-purple-500/5'
       }`}
     >
-      <CardContent className="p-4 flex items-start gap-3">
-        <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="flex-1 space-y-1">
-          <button
-            type="button"
-            onClick={() => onOpen(item)}
-            className="w-full text-left cursor-pointer"
-          >
+      <button
+        type="button"
+        onClick={() => onOpen(item)}
+        className="w-full text-left cursor-pointer"
+      >
+        <CardContent className="p-4 flex items-start gap-3">
+          <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="flex-1 space-y-1">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 {item.title}
@@ -310,18 +306,9 @@ function NotificationCard({
             {orderHint && (
               <p className="text-xs font-semibold text-purple-600">{orderHint}</p>
             )}
-          </button>
-          {approvedProductId && (
-            <Link
-              to={`/buyer/products/${encodeURIComponent(approvedProductId)}#reviews`}
-              onClick={() => onOpen(item)}
-              className="block text-xs font-semibold text-purple-600 hover:underline"
-            >
-              View your review →
-            </Link>
-          )}
-        </div>
-      </CardContent>
+          </div>
+        </CardContent>
+      </button>
     </Card>
   )
 }
