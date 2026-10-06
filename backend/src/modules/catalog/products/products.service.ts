@@ -955,8 +955,8 @@ export class ProductsService {
       )
       .slice(0, 5);
 
-    // Advertisement images are picked from the merchant's own product images,
-    // so resolve the product behind the image to build the click-through target.
+    // The ad's sku is stamped from the merchant's product when the ad image is
+    // picked, so match on sku first and fall back to matching the image file.
     const merchants = await this.prisma.merchant.findMany({
       where: {
         userId: { in: [...new Set(ordered.map((ad) => ad.shop.userId))] },
@@ -966,7 +966,7 @@ export class ProductsService {
     const catalogue = merchants.length
       ? await this.prisma.product.findMany({
           where: { merchantId: { in: merchants.map((m) => m.id) } },
-          select: { id: true, slug: true, images: true },
+          select: { id: true, slug: true, images: true, sku: true },
         })
       : [];
 
@@ -977,6 +977,11 @@ export class ProductsService {
     };
 
     const resolveTarget = (ad: (typeof ordered)[number]) => {
+      const bySku = ad.sku
+        ? catalogue.find((p) => p.sku !== null && p.sku === ad.sku)
+        : undefined;
+      if (bySku) return { productId: bySku.id, productSlug: bySku.slug };
+
       const fileName = imageFileName(ad.imageUrl);
       const match = fileName
         ? catalogue.find((p) =>
@@ -985,11 +990,7 @@ export class ProductsService {
         : undefined;
       if (match) return { productId: match.id, productSlug: match.slug };
 
-      const linked = ad.linkUrl?.match(/\/(?:buyer\/)?products\/([^/?#]+)/);
-      return {
-        productId: null,
-        productSlug: linked ? decodeURIComponent(linked[1]) : null,
-      };
+      return { productId: null, productSlug: null };
     };
 
     return ordered.map((ad) => ({

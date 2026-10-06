@@ -95,7 +95,8 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
   const title = ad.title;
   const description = ad.announcementMessage ?? null;
   const imageUrl = ad.imageUrl ?? null;
-  // Learn more → the product behind the ad image (falls back to this product).
+  // Learn more → the product resolved from the ad's sku (falls back to the ad
+  // image, then to this product).
   const adProduct = ad.productSlug ?? ad.productId;
   const productPath = adProduct ? `${basePath}/${adProduct}` : fallbackPath;
 

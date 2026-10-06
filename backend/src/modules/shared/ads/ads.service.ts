@@ -73,8 +73,8 @@ export class AdsService {
         selectedAds = ads.slice(0, MAX_ADS_PER_PANEL);
       }
 
-      // Advertisement images are picked from the merchant's own product images,
-      // so resolve the product behind the image for the click-through target.
+      // The ad's sku is stamped from the merchant's product when the ad image
+      // is picked, so match on sku first and fall back to the image file.
       const merchants = await this.prisma.merchant.findMany({
         where: {
           userId: {
@@ -86,7 +86,7 @@ export class AdsService {
       const catalogue = merchants.length
         ? await this.prisma.product.findMany({
             where: { merchantId: { in: merchants.map((m) => m.id) } },
-            select: { id: true, slug: true, images: true },
+            select: { id: true, slug: true, images: true, sku: true },
           })
         : [];
 
@@ -97,6 +97,11 @@ export class AdsService {
       };
 
       const resolveTarget = (ad: AdvertisementWithShop) => {
+        const bySku = ad.sku
+          ? catalogue.find((p) => p.sku !== null && p.sku === ad.sku)
+          : undefined;
+        if (bySku) return { productId: bySku.id, productSlug: bySku.slug };
+
         const fileName = imageFileName(ad.imageUrl);
         const match = fileName
           ? catalogue.find((p) =>
@@ -105,11 +110,7 @@ export class AdsService {
           : undefined;
         if (match) return { productId: match.id, productSlug: match.slug };
 
-        const linked = ad.linkUrl?.match(/\/(?:buyer\/)?products\/([^/?#]+)/);
-        return {
-          productId: null,
-          productSlug: linked ? decodeURIComponent(linked[1]) : null,
-        };
+        return { productId: null, productSlug: null };
       };
 
       return {
@@ -117,6 +118,7 @@ export class AdsService {
           adId: ad.id,
           title: ad.title,
           description: ad.content,
+          announcementMessage: ad.announcementMessage,
           imageUrl: ad.imageUrl || '',
           sku: ad.sku || null,
           ctaText: ad.announcementMessage || 'Shop Now',

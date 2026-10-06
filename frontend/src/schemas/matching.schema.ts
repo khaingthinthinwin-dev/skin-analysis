@@ -52,6 +52,7 @@ export interface AdSlide {
   adId: string
   title: string
   description: string | null
+  announcementMessage?: string | null
   imageUrl: string
   sku: string | null
   ctaText: string
