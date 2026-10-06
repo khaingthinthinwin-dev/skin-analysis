@@ -108,6 +108,7 @@ export interface ActivePromotion {
 export interface SidebarAdvertisement {
   id: string;
   title: string;
+  description: string | null;
   announcementMessage: string | null;
   imageUrl: string | null;
   sku: string | null;
