@@ -1000,6 +1000,7 @@ export class ProductsService {
     return ordered.map((ad) => ({
       id: ad.id,
       title: ad.title,
+      description: ad.content,
       announcementMessage: ad.announcementMessage,
       imageUrl: ad.imageUrl,
       sku: ad.sku,
