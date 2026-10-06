@@ -57,6 +57,7 @@ export class CheckoutService {
         id: ad.id,
         placement: CHECKOUT_AD_PLACEMENT,
         title: ad.title,
+        announcementMessage: ad.announcementMessage,
         description: ad.content,
         imageUrl: ad.imageUrl,
         sku: ad.sku,

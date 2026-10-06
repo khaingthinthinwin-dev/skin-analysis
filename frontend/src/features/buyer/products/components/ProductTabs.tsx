@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductDetail } from '../services/product.service';
 import { ProductReviews } from './ProductReviews';
@@ -8,8 +10,19 @@ interface ProductTabsProps {
 }
 
 export function ProductTabs({ product }: ProductTabsProps) {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash !== '#reviews') return;
+
+    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
+  }, [location.hash]);
+
   return (
-    <Tabs defaultValue="description" className="mt-8 w-full">
+    <Tabs
+      defaultValue={location.hash === '#reviews' ? 'reviews' : 'description'}
+      className="mt-8 w-full"
+    >
       <TabsList className="w-full justify-start border-b bg-transparent">
         <TabsTrigger value="description">Description</TabsTrigger>
         <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
