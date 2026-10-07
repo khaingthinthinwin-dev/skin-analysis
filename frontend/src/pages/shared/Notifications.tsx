@@ -220,6 +220,8 @@ function isReadOrderInsightNotification(item: NotificationItem): boolean {
   if (!item.isRead) return false
   const type = normalizeNotificationType(item.type)
   return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
+}
+
 // Review notifications deep-link straight to the queue entry they are about so
 // the admin does not have to hunt for it. `entityId` is the review id for a
 // REVIEW_CREATED notification and the report id for a REVIEW_REPORTED one
