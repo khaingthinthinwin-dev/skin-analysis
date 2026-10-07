@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
-import type { MailerOptions } from '@nestjs-modules/mailer';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from '@nestjs/config';
 import { PrismaModule } from './shared/prisma/prisma.module';
@@ -36,20 +35,24 @@ import { MailModule } from './shared/mail/mail.module';
     ConfigModule,
     MailerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          host: configService.get<string>('mail.host'),
-          port: configService.get<number>('mail.port'),
-          secure: configService.get<boolean>('mail.secure'),
-          auth: {
-            user: configService.get<string>('mail.user'),
-            pass: configService.get<string>('mail.pass'),
+      useFactory: (configService: ConfigService) => {
+        const from =
+          configService.get<string>('mail.from') ?? 'noreply@example.com';
+        return {
+          transport: {
+            host: configService.get<string>('mail.host'),
+            port: configService.get<number>('mail.port'),
+            secure: configService.get<boolean>('mail.secure'),
+            auth: {
+              user: configService.get<string>('mail.user'),
+              pass: configService.get<string>('mail.pass'),
+            },
           },
-        },
-        defaults: {
-          from: configService.get<string>('mail.from'),
-        } as MailerOptions['defaults'],
-      }),
+          defaults: {
+            from,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     PrismaModule,

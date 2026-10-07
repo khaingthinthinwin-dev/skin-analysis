@@ -3,7 +3,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
-import type { MailerOptions } from '@nestjs-modules/mailer';
 import type { StringValue } from 'ms';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
@@ -27,18 +26,21 @@ import { UsersModule } from '../users/users.module';
       inject: [ConfigService],
     }),
     MailerModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          service: 'gmail',
-          auth: {
-            user: configService.get<string>('mail.user'),
-            pass: configService.get<string>('mail.pass'),
+      useFactory: (configService: ConfigService) => {
+        const from = `"Cosmetics Finder" <${configService.get<string>('mail.user') ?? 'noreply@example.com'}>`;
+        return {
+          transport: {
+            service: 'gmail',
+            auth: {
+              user: configService.get<string>('mail.user'),
+              pass: configService.get<string>('mail.pass'),
+            },
           },
-        },
-        defaults: {
-          from: `"Cosmetics Finder" <${configService.get<string>('mail.user') || 'noreply@example.com'}>`,
-        } as MailerOptions['defaults'],
-      }),
+          defaults: {
+            from,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],
