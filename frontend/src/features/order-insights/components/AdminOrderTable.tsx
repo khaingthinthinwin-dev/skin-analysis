@@ -12,6 +12,7 @@ import { StatusBadge } from './StatusBadge';
 import type { OrderSortField } from '../types/orderInsights.types';
 import type { AdminOrderListRowDto } from '../types/adminOrderInsights.types';
 import { formatCurrencyAmount } from '../types/merchantOrderInsights.types';
+import { toSlashDisplayDate } from '../utils/dateRangeLabel';
 
 interface AdminOrderTableProps {
   rows: AdminOrderListRowDto[];
@@ -22,8 +23,7 @@ interface AdminOrderTableProps {
 }
 
 export function AdminOrderTable({ rows, loading = false, onSort, currentSort, currentOrder }: AdminOrderTableProps) {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.resolvedLanguage || i18n.language || 'en-US';
+  const { t } = useTranslation();
 
   if (loading) {
     return <div className="space-y-3 p-4" aria-busy="true">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)}</div>;
@@ -34,7 +34,7 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
       {label}{currentSort === field ? (currentOrder === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />) : null}
     </button>
   );
-  const formatDate = (value: string) => new Date(value).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+  const formatDate = (value: string) => toSlashDisplayDate(value);
   const formatAmount = (value: string) => formatCurrencyAmount(value);
   const orderNumber = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
 

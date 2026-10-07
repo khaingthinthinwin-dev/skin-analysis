@@ -14,7 +14,7 @@ import type { AdminOrderFilterFormData } from '@/features/order-insights/schemas
 import type { OrderSortField } from '@/features/order-insights/types/orderInsights.types';
 
 const DEFAULT_FILTERS: AdminOrderFilterFormData = {
-  status: 'all', paymentStatus: 'all', shopSearch: '', orderSearch: '', from: '', to: '', page: 1, limit: 20, sort: 'createdAt', order: 'desc',
+  status: 'all', paymentStatus: 'all', shopSearch: '', orderSearch: '', from: '', to: '', page: 1, limit: 10, sort: 'createdAt', order: 'desc',
 };
 
 export default function AdminOrdersPage() {

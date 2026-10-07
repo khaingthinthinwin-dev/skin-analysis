@@ -15,6 +15,7 @@ import { StatusBadge } from '@/features/order-insights/components/StatusBadge';
 import { useAdminOrderDetail } from '@/features/order-insights/hooks/useAdminOrderDetail';
 import { useAdminOrderTracking } from '@/features/order-insights/hooks/useAdminOrderTracking';
 import { printAdminOrder } from '@/features/order-insights/utils/printAdminOrder';
+import { toSlashDisplayDate } from '@/features/order-insights/utils/dateRangeLabel';
 import { formatCurrencyAmount, getHttpStatus } from '@/features/order-insights/types/merchantOrderInsights.types';
 import { OrderStatus } from '@/features/order-insights/types/orderInsights.types';
 import type { AdminOrderDetailDto } from '@/features/order-insights/types/adminOrderInsights.types';
@@ -32,7 +33,7 @@ function AdminOrderItemImage({ src }: { src?: string | null }) {
     return (
       <span
         aria-hidden="true"
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#f3f4f6] bg-muted/40 text-muted-foreground oidark:border-outline-variant"
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#f3f4f6] bg-muted/40 text-muted-foreground dark:border-[#29252f] oidark:border-outline-variant"
       >
         <ImageOff className="h-5 w-5" />
       </span>
@@ -45,7 +46,7 @@ function AdminOrderItemImage({ src }: { src?: string | null }) {
       alt=""
       loading="lazy"
       onError={() => setFailed(true)}
-      className="h-14 w-14 shrink-0 rounded-xl border border-[#f3f4f6] bg-muted/30 object-cover oidark:border-outline-variant"
+      className="h-14 w-14 shrink-0 rounded-xl border border-[#f3f4f6] bg-muted/30 object-cover dark:border-[#29252f] oidark:border-outline-variant"
     />
   );
 }
@@ -60,6 +61,15 @@ function formatAddress(order: AdminOrderDetailDto): string[] {
     address.country,
     address.phone,
   ].filter((line): line is string => Boolean(line));
+}
+
+/** e.g. `2026/09/01, 12:00 PM` (empty string when the value is not a date). */
+function formatDateTime(value: string): string {
+  const datePart = toSlashDisplayDate(value);
+  if (!datePart) return '';
+  const parsed = new Date(value);
+  const time = Number.isNaN(parsed.getTime()) ? '' : `, ${parsed.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+  return `${datePart}${time}`;
 }
 
 function AdminOrderDetailSkeleton() {
@@ -104,16 +114,14 @@ function AdminOrderDetailContent() {
   const address = formatAddress(order);
   const subtotal = order.items.reduce((sum, item) => sum + Number(item.totalPrice), 0);
   const discount = Number(order.discountAmount);
-  const date = new Date(order.createdAt).toLocaleString(undefined, {
-    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
+  const date = formatDateTime(order.createdAt);
   const tracking = trackingQuery.data;
   const trackingSteps = Array.isArray(tracking?.steps) ? tracking.steps : [];
   const stepTimestamps = Object.fromEntries(
     trackingSteps.filter((step) => step.reachedAt).map((step) => [step.statusCode, step.reachedAt!]),
   );
   const deliveredAt = trackingSteps.find((step) => step.statusCode === OrderStatus.DELIVERED)?.reachedAt;
-  const summaryCardClass = 'min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] oidark:border-outline-variant oidark:bg-surface-container-low';
+  const summaryCardClass = 'min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none';
 
   // Read-only hand-off to the browser's print dialog ("Save as PDF" lives there),
   // rendered into its own window so no print rule reaches the app itself.
@@ -151,7 +159,7 @@ function AdminOrderDetailContent() {
       {order.status === OrderStatus.DELIVERED && deliveredAt && (
         <section className="flex items-center gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 dark:bg-[#18131f] oidark:bg-surface-container-low">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-white" aria-hidden="true"><Check className="h-5 w-5" /></span>
-          <div><h2 className="text-sm font-bold">Order delivered</h2><p className="text-[13px] text-muted-foreground">Completed on {new Date(deliveredAt).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}.</p></div>
+          <div><h2 className="text-sm font-bold">Order delivered</h2><p className="text-[13px] text-muted-foreground">Completed on {formatDateTime(deliveredAt)}.</p></div>
         </section>
       )}
 
@@ -191,7 +199,7 @@ function AdminOrderDetailContent() {
           <CardContent className="h-full p-4">
             <h2 className="text-xs font-semibold text-muted-foreground">Order total</h2>
             <p className="mt-2 text-2xl font-extrabold text-[#7c3aed] oidark:text-primary">{formatCurrencyAmount(order.totalAmount)}</p>
-            <div className="mt-3 space-y-1.5 border-t pt-3 text-sm oidark:border-outline-variant">
+            <div className="mt-3 space-y-1.5 border-t pt-3 text-sm dark:border-[#29252f] oidark:border-outline-variant">
               <div className="flex justify-between gap-3"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrencyAmount(subtotal)}</span></div>
               {discount > 0 && <div className="flex justify-between gap-3"><span className="text-muted-foreground">Discount{order.couponCode ? ` (${order.couponCode})` : ''}</span><span className="text-emerald-600">−{formatCurrencyAmount(discount)}</span></div>}
             </div>
@@ -200,13 +208,13 @@ function AdminOrderDetailContent() {
       </section>
 
       <div className="grid items-start gap-5 min-[901px]:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
-        <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] oidark:border-outline-variant oidark:bg-surface-container-low">
+        <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600 oidark:bg-violet-950 oidark:text-violet-300"><PackageSearch className="h-5 w-5" aria-hidden="true" /></span>Order Items <span className="text-sm font-normal text-muted-foreground">({order.items.length} {order.items.length === 1 ? 'item' : 'items'})</span></CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {order.items.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No items in this order.</p> : order.items.map((item) => (
-              <div key={item.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-muted/20 p-3 sm:p-4 oidark:border-outline-variant oidark:bg-surface-container">
+              <div key={item.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[#f3f4f6] bg-muted/20 p-3 transition-colors hover:bg-muted/40 sm:p-4 dark:border-[#29252f] dark:hover:bg-muted/40">
                 <AdminOrderItemImage src={item.productImage} />
                 <div className="min-w-0">
                   {item.productId ? (

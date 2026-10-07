@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { AdminOrderFilterFormData } from '../schemas/orderFilters.schema';
 import { formatStatusLabel } from '../utils/orderStatusLabel';
+import { toSlashDisplayDate } from '../utils/dateRangeLabel';
 
 export type AdminFilterChipKey = 'orderNumber' | 'shop' | 'status' | 'paymentStatus' | 'dateRange';
 
@@ -21,10 +22,7 @@ interface Chip {
 }
 
 function formatDay(value?: string): string {
-  if (!value) return '';
-  const parsed = new Date(`${value.slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
-  return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return toSlashDisplayDate(value);
 }
 
 /**

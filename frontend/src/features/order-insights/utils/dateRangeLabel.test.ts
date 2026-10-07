@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countRangeDays, formatRangeLabel, isIsoDate, resolveActiveRange, toIsoDate, toSlashDate } from './dateRangeLabel';
+import { countRangeDays, formatRangeLabel, isIsoDate, resolveActiveRange, toIsoDate, toSlashDate, toSlashDisplayDate } from './dateRangeLabel';
 
 /** 2026-09-24 in local time, matching the reference date of the design. */
 const TODAY = new Date(2026, 8, 24);
@@ -18,26 +18,34 @@ describe('dateRangeLabel date helpers', () => {
     expect(isIsoDate('2026-09-24')).toBe(true);
     expect(isIsoDate('2026-9-4')).toBe(false);
   });
+
+  it('renders any date-like value as yyyy/mm/dd in local time', () => {
+    expect(toSlashDisplayDate('2026-09-24')).toBe('2026/09/24');
+    expect(toSlashDisplayDate(new Date(2026, 8, 24, 12, 0, 0).toString())).toBe('2026/09/24');
+    expect(toSlashDisplayDate(undefined)).toBe('');
+    expect(toSlashDisplayDate('')).toBe('');
+    expect(toSlashDisplayDate('not-a-date')).toBe('');
+  });
 });
 
 describe('formatRangeLabel', () => {
   it('labels a one-day range with a single full date', () => {
-    expect(formatRangeLabel('2026-09-24', '2026-09-24')).toBe('Sep 24, 2026');
+    expect(formatRangeLabel('2026-09-24', '2026-09-24')).toBe('2026/09/24');
   });
 
-  it('labels same-year ranges with the year on the end date only', () => {
-    expect(formatRangeLabel('2026-09-01', '2026-09-24')).toBe('Sep 1 – Sep 24, 2026');
-    expect(formatRangeLabel('2026-08-01', '2026-08-31')).toBe('Aug 1 – Aug 31, 2026');
+  it('labels same-year ranges with the full date on both ends', () => {
+    expect(formatRangeLabel('2026-09-01', '2026-09-24')).toBe('2026/09/01 – 2026/09/24');
+    expect(formatRangeLabel('2026-08-01', '2026-08-31')).toBe('2026/08/01 – 2026/08/31');
   });
 
-  it('keeps the year on both dates for a cross-year range', () => {
-    expect(formatRangeLabel('2025-12-30', '2026-01-02')).toBe('Dec 30, 2025 – Jan 2, 2026');
+  it('renders a cross-year range the same way', () => {
+    expect(formatRangeLabel('2025-12-30', '2026-01-02')).toBe('2025/12/30 – 2026/01/02');
   });
 
   it('ignores an incomplete or reversed range', () => {
     expect(formatRangeLabel(undefined, '2026-09-24')).toBeUndefined();
     expect(formatRangeLabel('2026-09-01', undefined)).toBeUndefined();
-    expect(formatRangeLabel('2026-09-24', '2026-09-01')).toBe('Sep 1 – Sep 24, 2026');
+    expect(formatRangeLabel('2026-09-24', '2026-09-01')).toBe('2026/09/01 – 2026/09/24');
   });
 });
 

@@ -41,6 +41,6 @@ describe('MerchantOrderInsightsPage', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('Jan 5 – Jan 20, 2024')).toBeInTheDocument();
+    expect(screen.getByText('2024/01/05 – 2024/01/20')).toBeInTheDocument();
   });
 });

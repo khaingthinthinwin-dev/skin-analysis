@@ -41,7 +41,7 @@ describe('CustomRangeModal', () => {
     expect(screen.getByLabelText('Start date')).toHaveValue(PAST_FROM);
     expect(screen.getByLabelText('End date')).toHaveValue(PAST_TO);
     expect(screen.getByLabelText('End date')).toHaveAttribute('min', PAST_FROM);
-    expect(screen.getByText('Jan 5 – Jan 20, 2024')).toBeInTheDocument();
+    expect(screen.getByText('2024/01/05 – 2024/01/20')).toBeInTheDocument();
     expect(screen.getByText('16 days')).toBeInTheDocument();
     expect(screen.getByLabelText('Start date')).toHaveFocus();
   });
@@ -56,7 +56,7 @@ describe('CustomRangeModal', () => {
 
     setEnd(PAST_TO);
     expect(screen.queryByText('Now pick an end date')).not.toBeInTheDocument();
-    expect(screen.getByText('Jan 5 – Jan 20, 2024')).toHaveClass('font-semibold', 'text-[#7c3aed]');
+    expect(screen.getByText('2024/01/05 – 2024/01/20')).toHaveClass('font-semibold', 'text-[#7c3aed]');
     expect(screen.getByText('16 days')).toBeInTheDocument();
   });
 
@@ -68,7 +68,7 @@ describe('CustomRangeModal', () => {
 
     setStart(PAST_FROM);
     setEnd(PAST_FROM);
-    expect(screen.getByText('Jan 5, 2024')).toBeInTheDocument();
+    expect(screen.getByText('2024/01/05')).toBeInTheDocument();
     expect(screen.getByText('1 day')).toBeInTheDocument();
   });
 
@@ -119,7 +119,7 @@ describe('CustomRangeModal', () => {
     setEnd('2024-01-30');
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByText('Jan 20 – Jan 30, 2024')).toBeInTheDocument();
+    expect(screen.getByText('2024/01/20 – 2024/01/30')).toBeInTheDocument();
   });
 
   it('refuses a range that reaches into the future', () => {

@@ -135,36 +135,28 @@ export function AdminShopCombobox({ value, onValueChange, onSelect, placeholder,
             </li>
           )}
 
-          {options.map((option, index) => {
-            // The merchant's name (e.g. "John Doe") reads better than the
-            // account email underneath the shop name; email only appears as a
-            // fallback when the account has no name stored.
-            const subtitle = option.user?.name || option.user?.email;
-            return (
-              <li key={option.id} id={`${listboxId}-${index}`} role="option" aria-selected={index === activeIndex}>
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  // Keep focus in the input while pressing an option: the blur
-                  // would arm the close timer below and, on a slower click
-                  // (remote desktop, careful press), unmount the list before
-                  // `click` fires — dropping the selection silently.
-                  onMouseDown={(event) => event.preventDefault()}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => choose(option)}
-                  className={`flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-sm ${
-                    index === activeIndex ? 'bg-muted text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  <Search className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
-                  <span className="min-w-0">
-                    <span className="block break-words font-medium text-foreground">{option.shopName}</span>
-                    {subtitle && <span className="block break-all text-xs">{subtitle}</span>}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+          {options.map((option, index) => (
+            <li key={option.id} id={`${listboxId}-${index}`} role="option" aria-selected={index === activeIndex}>
+              <button
+                type="button"
+                tabIndex={-1}
+                // Keep focus in the input while pressing an option: the blur
+                // would arm the close timer below and, on a slower click
+                // (remote desktop, careful press), unmount the list before
+                // `click` fires — dropping the selection silently.
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => choose(option)}
+                className={`flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-sm ${
+                  index === activeIndex ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                }`}
+              >
+                <Search className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
+                {/* Shop names are unique, so the merchant owner name is not shown. */}
+                <span className="min-w-0 break-words font-medium text-foreground">{option.shopName}</span>
+              </button>
+            </li>
+          ))}
         </ul>
       )}
     </div>

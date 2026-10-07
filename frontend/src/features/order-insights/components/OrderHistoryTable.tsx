@@ -8,6 +8,7 @@ import { StatusBadge } from './StatusBadge';
 import { PaymentBadge } from './PaymentBadge';
 import { Button } from '@/components/ui/button';
 import { OrderListRowDto, OrderSortField } from '../types/orderInsights.types';
+import { toSlashDisplayDate } from '../utils/dateRangeLabel';
 
 export interface OrderHistoryTableProps {
   rows: OrderListRowDto[];
@@ -32,8 +33,7 @@ export function OrderHistoryTable({
   currentSort = 'createdAt',
   currentOrder = 'desc',
 }: OrderHistoryTableProps) {
-  const { t, i18n } = useTranslation();
-  const dateLocale = i18n.resolvedLanguage || i18n.language || 'en-US';
+  const { t } = useTranslation();
 
   if (loading) {
     return (
@@ -113,11 +113,7 @@ export function OrderHistoryTable({
                 #{row.id.slice(0, 8).toUpperCase()}
               </TableCell>
               <TableCell className="border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">
-                {new Date(row.createdAt).toLocaleDateString(dateLocale, {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
+                {toSlashDisplayDate(row.createdAt)}
               </TableCell>
               <TableCell className="border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">{row.shopName || '—'}</TableCell>
               <TableCell className="border-b border-border px-3.5 py-3 text-center text-[13px] text-muted-foreground">
@@ -162,11 +158,7 @@ export function OrderHistoryTable({
             <div>
               <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.date', 'Date')}</p>
               <p className="mt-1">
-                {new Date(row.createdAt).toLocaleDateString(dateLocale, {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
+                {toSlashDisplayDate(row.createdAt)}
               </p>
             </div>
             <div className="text-right">

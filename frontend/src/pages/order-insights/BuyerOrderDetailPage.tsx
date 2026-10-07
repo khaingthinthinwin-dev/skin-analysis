@@ -23,6 +23,7 @@ import { PaymentBadge } from "@/features/order-insights/components/PaymentBadge"
 import { StatusBadge } from "@/features/order-insights/components/StatusBadge";
 import { useOrderDetail } from "@/features/order-insights/hooks/useOrderDetail";
 import { printInvoice } from "@/features/order-insights/utils/printInvoice";
+import { toSlashDisplayDate } from "@/features/order-insights/utils/dateRangeLabel";
 import type {
   OrderDetailResponseDto,
   OrderShippingAddress,
@@ -33,12 +34,8 @@ function formatMoney(value: string): string {
   return `$${parseFloat(value).toFixed(2)}`;
 }
 
-function formatDate(value: string, locale: string): string {
-  return new Date(value).toLocaleDateString(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+function formatDate(value: string): string {
+  return toSlashDisplayDate(value);
 }
 
 function formatTime(value: string, locale: string): string {
@@ -284,7 +281,7 @@ function BuyerOrderDetailContent() {
           )}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-90">
             <span>
-              Placed {formatDate(order.createdAt, dateLocale)}, {formatTime(order.createdAt, dateLocale)}
+              Placed {formatDate(order.createdAt)}, {formatTime(order.createdAt, dateLocale)}
             </span>
             <StatusBadge
               status={order.status}

@@ -45,13 +45,10 @@ import {
 } from '@/features/order-insights/utils/orderCommission';
 import { sanitizeListSearch } from '@/features/order-insights/utils/orderListSearch';
 import { formatStatusLabel } from '@/features/order-insights/utils/orderStatusLabel';
+import { toSlashDisplayDate } from '@/features/order-insights/utils/dateRangeLabel';
 
-function formatDate(value: string, locale: string): string {
-  return new Date(value).toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+function formatDate(value: string): string {
+  return toSlashDisplayDate(value);
 }
 
 function formatTime(value: string, locale: string): string {
@@ -380,7 +377,7 @@ function MerchantOrderDetailContent() {
     order.status === OrderStatus.DELIVERED && deliveredAt
       ? translate(
           'merchant.orders.detail.deliveredOn',
-          `Completed on ${formatDate(deliveredAt, dateLocale)}, ${formatTime(deliveredAt, dateLocale)}.`,
+          `Completed on ${formatDate(deliveredAt)}, ${formatTime(deliveredAt, dateLocale)}.`,
         )
       : copy.message;
   const orderRef = orderReference(order);
@@ -425,7 +422,7 @@ function MerchantOrderDetailContent() {
             <StatusBadge status={order.status} />
           </div>
           <p className="mt-1 text-[13px] opacity-90">
-            Placed {formatDate(order.createdAt, dateLocale)}, {formatTime(order.createdAt, dateLocale)}
+            Placed {formatDate(order.createdAt)}, {formatTime(order.createdAt, dateLocale)}
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">

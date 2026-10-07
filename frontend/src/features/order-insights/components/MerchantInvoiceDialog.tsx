@@ -16,10 +16,10 @@ import { formatCurrencyAmount } from '../types/merchantOrderInsights.types';
 import type { MerchantOrderDetailDto } from '../types/merchantOrderFulfillment.types';
 import {
   buildMerchantInvoiceData,
-  formatInvoiceDate,
   merchantInvoiceLabels,
   printMerchantInvoice,
 } from '../utils/merchantInvoice';
+import { toSlashDisplayDate } from '../utils/dateRangeLabel';
 
 interface MerchantInvoiceDialogProps {
   /** The already-loaded order detail — the invoice never fetches anything itself. */
@@ -77,11 +77,11 @@ export function MerchantInvoiceDialog({ order, onClose }: MerchantInvoiceDialogP
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <dt>{`${labels.orderDate}:`}</dt>
-                  <dd className="m-0">{formatInvoiceDate(data.orderDate, locale)}</dd>
+                  <dd className="m-0">{toSlashDisplayDate(data.orderDate)}</dd>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <dt>{`${labels.issueDate}:`}</dt>
-                  <dd className="m-0">{formatInvoiceDate(data.issueDate, locale)}</dd>
+                  <dd className="m-0">{toSlashDisplayDate(data.issueDate)}</dd>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <dt>{`${labels.orderStatus}:`}</dt>

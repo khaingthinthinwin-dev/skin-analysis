@@ -52,15 +52,16 @@ describe('AdminShopCombobox', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  it('offers the matching shops with the owning account to disambiguate', async () => {
+  it('offers the matching shops without an owner-name subtitle', async () => {
     render(<AdminShopCombobox value="Lot" onValueChange={vi.fn()} onSelect={vi.fn()} placeholder="Search shop" />);
 
     await userEvent.click(screen.getByRole('combobox'));
 
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Lotus Glow/ })).toBeInTheDocument();
-    // The merchant's name replaces the email underneath the shop name.
-    expect(screen.getByText('Aye Chan')).toBeInTheDocument();
+    // Shop names are unique, so only the shop name is listed — no merchant
+    // owner name or account email underneath it.
+    expect(screen.queryByText('Aye Chan')).not.toBeInTheDocument();
     expect(screen.queryByText('lotus@example.com')).not.toBeInTheDocument();
   });
 

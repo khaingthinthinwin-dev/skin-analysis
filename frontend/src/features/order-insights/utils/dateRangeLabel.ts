@@ -1,8 +1,5 @@
 import type { SummaryPeriod } from '../types/merchantOrderInsights.types';
 
-/** Locale used for the range labels (mirrors the MerchantOrderTable date column). */
-const DATE_LOCALE = 'en-US';
-
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface DateRange {
@@ -27,23 +24,31 @@ export function toSlashDate(value?: string): string {
   return isIsoDate(value) ? value.split('-').join('/') : '';
 }
 
+/**
+ * `yyyy/mm/dd` display of any date-like value in local time (empty string when
+ * the value is not a date). Plain `yyyy-mm-dd` strings are converted without
+ * parsing so they never shift a day in a negative-offset timezone.
+ */
+export function toSlashDisplayDate(value?: string): string {
+  if (isIsoDate(value)) return toSlashDate(value);
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return toIsoDate(parsed).split('-').join('/');
+}
+
+/** e.g. `2026/09/24`. */
+export function formatFullDate(iso: string): string {
+  return toSlashDate(iso);
+}
+
 function toLocalDate(iso: string): Date {
   return new Date(`${iso}T00:00:00`);
 }
 
-/** e.g. `Sep 24, 2026`. */
-export function formatFullDate(iso: string): string {
-  return toLocalDate(iso).toLocaleDateString(DATE_LOCALE, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-/** e.g. `Sep 24`. */
-export function formatMonthDay(iso: string): string {
-  return toLocalDate(iso).toLocaleDateString(DATE_LOCALE, { month: 'short', day: 'numeric' });
-}
-
 /**
- * Inclusive day count of a range — `Sep 1` to `Sep 23` covers 23 days and a
- * single day counts as `1`.
+ * Inclusive day count of a range — `2026/09/01` to `2026/09/23` covers 23 days
+ * and a single day counts as `1`.
  */
 export function countRangeDays(from: string, to: string): number {
   const millis = toLocalDate(to).getTime() - toLocalDate(from).getTime();
@@ -51,15 +56,14 @@ export function countRangeDays(from: string, to: string): number {
 }
 
 /**
- * Label for the active-range pill: a single date when the range covers one day,
- * `Sep 1 – Sep 24, 2026` inside a single year, and the year on both dates when
- * the range spans two years.
+ * Label for the active-range pill: a single date when the range covers one day
+ * and `2026/09/01 – 2026/09/24` otherwise. Both dates always carry the full
+ * `yyyy/mm/dd`, so a cross-year range reads the same as a same-year one.
  */
 export function formatRangeLabel(from?: string, to?: string): string | undefined {
   if (!isIsoDate(from) || !isIsoDate(to)) return undefined;
   const [start, end] = to < from ? [to, from] : [from, to];
   if (start === end) return formatFullDate(start);
-  if (start.slice(0, 4) === end.slice(0, 4)) return `${formatMonthDay(start)} – ${formatFullDate(end)}`;
   return `${formatFullDate(start)} – ${formatFullDate(end)}`;
 }
 
