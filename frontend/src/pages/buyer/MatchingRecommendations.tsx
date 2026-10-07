@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ImgHTMLAttributes } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ImgHTMLAttributes } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { ShoppingCart, Star, Sparkles, FlaskConical, Heart, Check, Store, Loader2 } from 'lucide-react'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { ShoppingCart, Star, Sparkles, FlaskConical, Heart, Check, Store, Loader2, SlidersHorizontal } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuth } from '@/providers/AuthProvider'
@@ -78,9 +79,9 @@ export default function MatchingRecommendations() {
   const resolvedSort = resolveMatchingSort(filters)
   const [view, setView] = useState<ViewMode>('grid')
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [loginRequiredModal, setLoginRequiredModal] = useState<'wishlist' | 'cart' | null>(null)
-  const gridTopRef = useRef<HTMLDivElement>(null)
-  const titleRef = useRef<HTMLDivElement>(null)
+  const [historyExpanded, setHistoryExpanded] = useState(false)
   const queryClient = useQueryClient()
 
   const wishlistProductIds = useMemo(() => new Set(wishlistItems.map((item) => item.productId)), [wishlistItems])
@@ -155,8 +156,12 @@ export default function MatchingRecommendations() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
 
+  // Filter changes only refresh the product grid in place — no scrolling,
+  // the filter panel and viewport stay where the buyer tapped.
+
   const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters)
-  const { data: historyData } = useRecommendationHistory(1, 5)
+  // Collapsed: first 5 sessions. Expanded ("see more"): fetch all (max 50/page per HistoryQueryDto).
+  const { data: historyData, isFetching: isHistoryFetching } = useRecommendationHistory(1, historyExpanded ? 50 : 5)
   const { data: adPanelData } = useAdPanel(RECOMMENDATION_AD_PLACEMENT)
 
   // Client-side guard for placement + date condition:
@@ -181,9 +186,7 @@ export default function MatchingRecommendations() {
       queryFn: () => matchingService.getPersonalized(nextParams),
       staleTime: 0,
     })
-    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' })
-    window.scrollTo({ top: 0, behavior: 'instant' })
-    titleRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    // Products refresh in place — no scroll.
   }
 
   // Keep the rendered list and pagination in sync with the selected page size
@@ -275,10 +278,49 @@ export default function MatchingRecommendations() {
 
   const skinTypeLabel = skinTypes.length > 0 ? skinTypes.join(', ') : 'All Types'
 
+  const handleRemoveFilterChip = (key: string, value?: string) => {
+    if (key === 'skinTypes' && value) {
+      const current = filters.skinTypes ? filters.skinTypes.split(',') : []
+      const next = current.filter((t) => t !== value)
+      updateFilters({ skinTypes: next.join(',') || undefined })
+    } else {
+      updateFilters({ [key]: undefined })
+    }
+  }
+
+  const hasFilterChips = Boolean(
+    filters.categoryId ||
+      (filters.skinTypes && filters.skinTypes.split(',').some((t) => t && t !== 'all')) ||
+      filters.minPrice !== undefined ||
+      filters.maxPrice !== undefined ||
+      filters.rating !== undefined,
+  )
+
+  const filterChips = (
+    <MatchingFilterChips
+      filters={filters}
+      onRemove={handleRemoveFilterChip}
+      onClearAll={resetFilters}
+    />
+  )
+
+  const mobileFilterButton = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="rounded-full border-slate-200 bg-white px-4 text-slate-700 shadow-sm hover:bg-slate-50 dark:border-white/10 dark:bg-[#181028] dark:text-slate-200 dark:hover:bg-white/10 lg:hidden"
+      onClick={() => setMobileFilterOpen(true)}
+    >
+      <SlidersHorizontal className="mr-2 h-4 w-4" />
+      Filters
+    </Button>
+  )
+
   return (
     <div className="space-y-6 p-2 lg:p-4">
       {/* Page Header */}
-      <div ref={titleRef} className="scroll-mt-4">
+      <div className="scroll-mt-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Recommended for You</h1>
           <span className={cn(
@@ -310,30 +352,22 @@ export default function MatchingRecommendations() {
 
       {recError && <ErrorBanner message={recError.message || 'Failed to load recommendations.'} onRetry={() => refetch()} />}
 
+      {/* Mobile: active filter chips (sidebar is hidden below lg) */}
+      {hasFilterChips && (
+        <div className="flex flex-wrap items-center gap-2 lg:hidden">{filterChips}</div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Filters Sidebar */}
-        <aside className="w-full lg:w-[280px] flex-shrink-0">
+        {/* Filters Sidebar (desktop only) */}
+        <aside className="hidden w-full flex-shrink-0 lg:block lg:w-[280px]">
           <div className="lg:sticky lg:top-4">
-            <MatchingFilterChips
-              filters={filters}
-              onRemove={(key, value) => {
-                if (key === 'skinTypes' && value) {
-                  const current = filters.skinTypes ? filters.skinTypes.split(',') : []
-                  const next = current.filter((t) => t !== value)
-                  updateFilters({ skinTypes: next.join(',') || undefined })
-                } else {
-                  updateFilters({ [key]: undefined })
-                }
-              }}
-              onClearAll={resetFilters}
-            />
+            {filterChips}
             <FiltersPanel filters={filters} onUpdate={updateFilters} onReset={resetFilters} className="mt-4" />
           </div>
         </aside>
 
         {/* Product Grid */}
-        <div className="flex-1 space-y-4">
-          <div ref={gridTopRef} className="scroll-mt-4" />
+        <div className="min-w-0 flex-1 space-y-4">
           {isFetching && !isLoading && (
             <div className="flex items-center justify-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -343,13 +377,18 @@ export default function MatchingRecommendations() {
           {isLoading ? (
             <SkeletonGrid count={meta.limit} />
           ) : products.length === 0 ? (
-            <EmptyState />
+            <>
+              {/* Keep filters reachable on mobile when the result set is empty */}
+              <div className="flex flex-wrap items-center justify-end gap-3">{mobileFilterButton}</div>
+              <EmptyState />
+            </>
           ) : (
             <>
               {/* Sort Bar — values mirror the backend contract (BR-MATCH-025): "Newest" is
                   the default selection and `rating` is orderable for both sources. Match
                   Score is only offered for AI results, which are the only ones scored. */}
               <div className="flex flex-wrap items-center justify-end gap-3">
+                {mobileFilterButton}
                 <SortSelect
                   sort={resolvedSort.sort}
                   order={resolvedSort.order}
@@ -668,10 +707,29 @@ export default function MatchingRecommendations() {
         </div>
       </div>
 
-      {/* History Section */}
+      {/* History Section — inline expand: first 5, "see more" reveals all (no navigation) */}
       <div className="mt-8">
         {history.length > 0 ? (
-          <HistoryAccordion sessions={history} />
+          <>
+            <HistoryAccordion sessions={history} />
+            {(historyData?.meta ? historyData.meta.total > 5 : history.length >= 5) && (
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setHistoryExpanded((v) => !v)}
+                  disabled={historyExpanded && isHistoryFetching}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-700 disabled:opacity-60 dark:text-violet-400 dark:hover:text-violet-300"
+                >
+                  {historyExpanded
+                    ? 'Show less'
+                    : isHistoryFetching
+                      ? 'Loading all history…'
+                      : `See more${historyData?.meta ? ` (${historyData.meta.total - 5} more)` : ''}`}
+                  <span aria-hidden="true">{historyExpanded ? '↑' : '↓'}</span>
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <div className="text-4xl mb-4">📭</div>
@@ -711,6 +769,40 @@ export default function MatchingRecommendations() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
+        <SheetContent side="right" className="flex flex-col overflow-hidden bg-[#f3f5f8] p-0 dark:bg-[#181028] sm:max-w-md">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-14">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-7 rounded-full bg-slate-200/80 dark:bg-white/10" />
+                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Filters</h2>
+              </div>
+            </div>
+            <FiltersPanel
+              filters={filters}
+              onUpdate={updateFilters}
+              onReset={resetFilters}
+              variant="mobile"
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-3 border-t border-slate-200 bg-white px-5 py-4 dark:border-white/10 dark:bg-[#100b18]">
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="shrink-0 text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+            >
+              Clear All
+            </button>
+            <Button
+              type="button"
+              onClick={() => setMobileFilterOpen(false)}
+              className="h-11 flex-1 rounded-full bg-slate-950 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
+            >
+              Show {meta.total} Products
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

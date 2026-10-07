@@ -1,9 +1,9 @@
 export const SKIN_TYPES = [
-  { value: 'oily', label: 'Oily' },
-  { value: 'dry', label: 'Dry' },
-  { value: 'combination', label: 'Combination' },
-  { value: 'sensitive', label: 'Sensitive' },
-  { value: 'normal', label: 'Normal' },
+  { value: 'oily', label: 'Oily', icon: '💧' },
+  { value: 'dry', label: 'Dry', icon: '🌿' },
+  { value: 'combination', label: 'Combination', icon: '🧴' },
+  { value: 'sensitive', label: 'Sensitive', icon: '✨' },
+  { value: 'normal', label: 'Normal', icon: '☀️' },
 ]
 
 export const INGREDIENTS = [
