@@ -102,35 +102,35 @@ export class MatchingService {
       .map((type) => type.trim().toLowerCase())
       .filter((type) => type.length > 0 && type !== ALL_SKIN_TYPES);
 
-    // The analysis result and the panel selection are two separate conditions.
-    // Each one is an OR inside itself (sharing at least one skin type is enough,
-    // a product never has to carry every analysed type), while the two are
-    // ANDed. So for an "oily" selection on a "combination" analysis a product
-    // tagged oily + combination stays visible, while a dry-only product does not
-    // match the analysis result and stays hidden.
+    // The analysis result supplies the default skin types. An explicit
+    // `skinTypes` selection OVERRIDES the analysis-derived types for that
+    // query (BR-MATCH-006): picking "Oily" shows every product tagged oily
+    // (plus "all"-tagged ones on the AI source) — including analysis
+    // recommended products that carry the oily tag.
+    // `skinTypes=all` means "no selection at all" and clears both.
     const analysisSkinTypes = context.source === 'ai' ? context.skinTypes : [];
 
+    const effectiveSkinTypes =
+      requestedSkinTypes.length > 0
+        ? requestedSkinTypes
+        : skinTypesFilter === undefined
+          ? analysisSkinTypes
+          : [];
+
+    // One condition only: the effective types with `hasSome` semantics
+    // (BR-MATCH-016). On the AI source, products tagged for every skin type
+    // stay compatible with either source of the types.
     const skinTypeConditions: Prisma.ProductWhereInput[] = [];
-    if (analysisSkinTypes.length > 0) {
-      skinTypeConditions.push({
-        OR: [
-          { skinTypes: { hasSome: analysisSkinTypes } },
-          { skinTypes: { has: ALL_SKIN_TYPES } },
-        ],
-      });
-    }
-    if (requestedSkinTypes.length > 0) {
-      // Products tagged for every skin type stay compatible with the buyer's
-      // analysis result, so they also stay compatible with the selection.
+    if (effectiveSkinTypes.length > 0) {
       skinTypeConditions.push(
         context.source === 'ai'
           ? {
               OR: [
-                { skinTypes: { hasSome: requestedSkinTypes } },
+                { skinTypes: { hasSome: effectiveSkinTypes } },
                 { skinTypes: { has: ALL_SKIN_TYPES } },
               ],
             }
-          : { skinTypes: { hasSome: requestedSkinTypes } },
+          : { skinTypes: { hasSome: effectiveSkinTypes } },
       );
     }
 
@@ -172,7 +172,6 @@ export class MatchingService {
     if (skinTypeConditions.length === 1) {
       Object.assign(where, skinTypeConditions[0]);
     } else if (skinTypeConditions.length > 1) {
-      // Analysis result AND panel selection, each one an OR inside itself.
       where.AND = skinTypeConditions;
     }
 
@@ -193,7 +192,11 @@ export class MatchingService {
     }
 
     if (effectiveCategoryId) {
-      where.categoryId = effectiveCategoryId;
+      // Same rule as the search page: picking a parent category also shows the
+      // products of its descendants, otherwise a tree selection looks broken.
+      const descendantIds =
+        await this.getCategoryDescendants(effectiveCategoryId);
+      where.categoryId = { in: descendantIds };
     }
 
     // Rating filter (minimum avgRating)
@@ -219,7 +222,7 @@ export class MatchingService {
       }),
       this.prisma.product.count({ where }),
     ]);
-    let total = filteredTotal;
+    const total = filteredTotal;
 
     const products = rawProducts as unknown as ProductWithMerchant[];
 
@@ -262,12 +265,19 @@ export class MatchingService {
 
     // Previously recommended products lead page 1: the buyer's own past picks
     // (still on sale, highest match first) are shown before the fresh grid.
+    // They are selected with the same WHERE as the grid, so a price / rating /
+    // category / skin-type selection is never bypassed at the top of page 1.
+    // They also add nothing to `total`: every one of them is already part of
+    // the filtered match set counted by `count({ where })` (BR-MATCH-027).
     if (page === 1) {
-      const featured = await this.getPreviouslyRecommendedFeatured(userId, 3);
+      const featured = await this.getPreviouslyRecommendedFeatured(
+        userId,
+        3,
+        where,
+      );
       if (featured.length > 0) {
         const featuredIds = new Set(featured.map((p) => p.id));
         data = [...featured, ...data.filter((p) => !featuredIds.has(p.id))];
-        total += featured.length;
       }
     }
 
@@ -446,11 +456,14 @@ export class MatchingService {
   /**
    * The buyer's previously recommended products from the latest analysis that
    * are still on sale, highest match first. These lead the recommendations
-   * grid so past picks stay visible at the top.
+   * grid so past picks stay visible at the top — but only when they satisfy
+   * the caller's `filters` (the same WHERE the grid query uses), so an active
+   * filter selection is never bypassed.
    */
   private async getPreviouslyRecommendedFeatured(
     userId: string,
     limit: number,
+    filters: Prisma.ProductWhereInput = {},
   ): Promise<RecommendationResultDto[]> {
     const latestAnalysis = await this.prisma.skinAnalysis.findFirst({
       where: {
@@ -461,6 +474,7 @@ export class MatchingService {
       include: {
         conditions: true,
         recommendations: {
+          where: { product: filters },
           include: {
             product: {
               include: {
@@ -512,6 +526,26 @@ export class MatchingService {
       })
       .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
       .slice(0, limit);
+  }
+
+  /** The requested category plus every category nested below it. */
+  private async getCategoryDescendants(categoryId: string): Promise<string[]> {
+    const descendants: string[] = [categoryId];
+    const queue = [categoryId];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const children = await this.prisma.category.findMany({
+        where: { parentId: currentId },
+        select: { id: true },
+      });
+      for (const child of children) {
+        descendants.push(child.id);
+        queue.push(child.id);
+      }
+    }
+
+    return descendants;
   }
 
   private async determineSource(

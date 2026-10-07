@@ -25,11 +25,11 @@ function isUniversal(type: string): boolean {
 /**
  * Skin type conditions a product has to satisfy.
  *
- * Mirrors the API rule: the analysis result and the panel selection are ANDed,
- * while each condition is an OR inside itself (one shared skin type is enough,
- * a product never has to carry every type). `required` holds the analysed skin
- * types, `selected` the types the buyer picked. Without an analysis the
- * selection applies on its own, and no selection means no restriction.
+ * BR-MATCH-006 / DD_MATCH_05 §2.1 step 3: an explicit panel selection
+ * OVERRIDES the analysis-derived skin types for that query, so picking "dry"
+ * on a "combination" analysis filters on dry alone. Without a selection the
+ * analysis result supplies the types (personalized results), and generic
+ * results without a selection are unrestricted.
  */
 export function resolveSkinTypeConditions({
   source,
@@ -43,15 +43,16 @@ export function resolveSkinTypeConditions({
   const analysis = normalize(analysisSkinTypes)
   const requested = normalize(requestedSkinTypes)
 
-  if (source !== 'ai') {
-    return { required: [], selected: requested, restrict: requested.length > 0 }
+  // BR-MATCH-006: an explicit selection replaces the analysis result.
+  if (requested.length > 0) {
+    return { required: [], selected: requested, restrict: true }
   }
 
-  return {
-    required: analysis,
-    selected: requested,
-    restrict: analysis.length > 0 || requested.length > 0,
+  if (source !== 'ai') {
+    return { required: [], selected: [], restrict: false }
   }
+
+  return { required: analysis, selected: [], restrict: analysis.length > 0 }
 }
 
 /**
@@ -79,8 +80,8 @@ export function filterProductsBySkinType<
   }
 
   return products.filter((product) => {
-    // Analysis result AND panel selection - a product has to satisfy both, and
-    // matching one type inside each condition is enough.
+    // Effective condition: either the analysis types (no selection) or the
+    // selection alone (BR-MATCH-006) — never both at once.
     if (required.length > 0 && !matches(product, required)) return false
     if (selected.length > 0 && !matches(product, selected)) return false
     return true

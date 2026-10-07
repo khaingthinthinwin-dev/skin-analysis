@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { Check, RotateCcw, SlidersHorizontal, Star } from 'lucide-react'
 import { CategorySelect } from '@/features/search/components/CategorySelect'
 import { useCategoryTree } from '@/features/search/hooks/useCategoryTree'
 import type { MatchQueryParams } from '@/schemas/matching.schema'
@@ -46,9 +46,10 @@ interface FiltersPanelProps {
   onUpdate: (updates: Partial<MatchQueryParams>) => void
   onReset: () => void
   className?: string
+  variant?: 'desktop' | 'mobile'
 }
 
-export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersPanelProps) {
+export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 'desktop' }: FiltersPanelProps) {
   const [priceMinDraft, setPriceMinDraft] = useState(filters.minPrice?.toString() ?? '')
   const [priceMaxDraft, setPriceMaxDraft] = useState(filters.maxPrice?.toString() ?? '')
   const [focusedPriceField, setFocusedPriceField] = useState<'min' | 'max' | null>(null)
@@ -81,16 +82,15 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
 
   const commitPrice = () => {
     const validationError = validatePriceRange(priceMin, priceMax)
-    if (validationError) {
-      setPriceError(validationError)
-      setFocusedPriceField(null)
-      return
+    setPriceError(validationError)
+    // Commit even on min>max so the API returns empty results; skip on negative/NaN
+    const shouldCommit = validationError === null || validationError === PRICE_ERROR_MIN_MAX
+    if (shouldCommit) {
+      onUpdate({
+        minPrice: priceMin && priceMin.trim() !== '' ? Number(priceMin) : undefined,
+        maxPrice: priceMax && priceMax.trim() !== '' ? Number(priceMax) : undefined,
+      })
     }
-    setPriceError(null)
-    onUpdate({
-      minPrice: priceMin && priceMin.trim() !== '' ? Number(priceMin) : undefined,
-      maxPrice: priceMax && priceMax.trim() !== '' ? Number(priceMax) : undefined,
-    })
     setFocusedPriceField(null)
   }
 
@@ -100,6 +100,128 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
     setFocusedPriceField(null)
     setPriceError(null)
     onReset()
+  }
+
+  if (variant === 'mobile') {
+    return (
+      <div className="space-y-5">
+        <div>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Category
+          </h4>
+          <CategorySelect
+            variant="pills"
+            categories={categories}
+            selectedCategoryId={filters.categoryId ?? ''}
+            onSelect={(categoryId) => onUpdate({ categoryId: categoryId || undefined })}
+          />
+        </div>
+
+        <div>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Price Range
+          </h4>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={0}
+              placeholder="Min"
+              value={priceMin}
+              onChange={(e) => {
+                setFocusedPriceField('min')
+                setPriceMinDraft(e.target.value)
+              }}
+              onBlur={commitPrice}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+              className="h-10 flex-1 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
+            />
+            <span className="text-slate-400">-</span>
+            <Input
+              type="number"
+              min={0}
+              placeholder="Max"
+              value={priceMax}
+              onChange={(e) => {
+                setFocusedPriceField('max')
+                setPriceMaxDraft(e.target.value)
+              }}
+              onBlur={commitPrice}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+              className="h-10 flex-1 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
+            />
+          </div>
+          {priceError && (
+            <p role="alert" className="mt-1.5 text-xs font-medium text-destructive">
+              {priceError}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Skin Type
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
+            {SKIN_TYPES.map((type) => {
+              const checked = selectedSkinTypes.includes(type.value)
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => toggleSkinType(type.value)}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium ${
+                    checked
+                      ? 'border-violet-200 bg-violet-50 text-slate-800 dark:border-violet-400/40 dark:bg-violet-400/15 dark:text-white'
+                      : 'border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200'
+                  }`}
+                >
+                  <span className="text-base">{type.icon}</span>
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                      checked
+                        ? 'border-violet-600 bg-violet-600 text-white'
+                        : 'border-slate-300 dark:border-white/20'
+                    }`}
+                  >
+                    {checked && <Check className="h-3 w-3" />}
+                  </span>
+                  <span>{type.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            Rating
+          </h4>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Rating">
+            {RATING_OPTIONS.map((rating) => (
+              <label
+                key={rating.value}
+                className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm text-slate-700 dark:text-slate-200 ${
+                  filters.rating === rating.value
+                    ? 'border-violet-200 bg-violet-50 dark:border-violet-400/40 dark:bg-violet-400/15'
+                    : 'border-slate-200 bg-white dark:border-white/10 dark:bg-white/5'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="match-rating-filter"
+                  value={rating.value}
+                  checked={filters.rating === rating.value}
+                  onChange={() => onUpdate({ rating: rating.value })}
+                  className="h-4 w-4 accent-violet-600"
+                />
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                {rating.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -152,7 +274,6 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
               onChange={(e) => {
                 setFocusedPriceField('min')
                 setPriceMinDraft(e.target.value)
-                setPriceError(validatePriceRange(e.target.value, priceMax))
               }}
               onBlur={commitPrice}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
@@ -167,7 +288,6 @@ export function FiltersPanel({ filters, onUpdate, onReset, className }: FiltersP
               onChange={(e) => {
                 setFocusedPriceField('max')
                 setPriceMaxDraft(e.target.value)
-                setPriceError(validatePriceRange(priceMin, e.target.value))
               }}
               onBlur={commitPrice}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
