@@ -49,6 +49,13 @@ export class CheckoutService {
         startsAt: { lte: now },
         expiresAt: { gte: now },
       },
+      include: {
+        shop: {
+          select: {
+            name: true,
+          },
+        },
+      },
       orderBy: [{ createdAt: 'desc' }, { paymentAmount: 'desc' }],
     });
 
@@ -56,6 +63,7 @@ export class CheckoutService {
       data: ads.map((ad) => ({
         id: ad.id,
         placement: CHECKOUT_AD_PLACEMENT,
+        merchantName: ad.shop.name,
         title: ad.title,
         announcementMessage: ad.announcementMessage,
         description: ad.content,

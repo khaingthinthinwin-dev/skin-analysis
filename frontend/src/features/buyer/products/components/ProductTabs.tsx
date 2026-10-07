@@ -7,9 +7,10 @@ import { ReviewForm } from './ReviewForm';
 
 interface ProductTabsProps {
   product: ProductDetail;
+  showReviewForm?: boolean;
 }
 
-export function ProductTabs({ product }: ProductTabsProps) {
+export function ProductTabs({ product, showReviewForm = true }: ProductTabsProps) {
   const location = useLocation();
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export function ProductTabs({ product }: ProductTabsProps) {
         <div id="reviews">
           <ProductReviews idOrSlug={product.id} />
         </div>
-        <ReviewForm idOrSlug={product.id} />
+        {showReviewForm && <ReviewForm idOrSlug={product.id} />}
       </TabsContent>
     </Tabs>
   );

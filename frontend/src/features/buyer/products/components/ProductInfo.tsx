@@ -5,6 +5,7 @@ import { ProductPurchaseActions } from './ProductPurchaseActions';
 
 interface ProductInfoProps {
   product: ProductDetail;
+  isMerchantView?: boolean;
 }
 
 function formatPrice(price: number | string) {
@@ -24,7 +25,7 @@ function getStockStatus(product: ProductDetail): {
   return { label: `In stock (${product.stockQuantity})`, variant: 'default' };
 }
 
-export function ProductInfo({ product }: ProductInfoProps) {
+export function ProductInfo({ product, isMerchantView = false }: ProductInfoProps) {
   const discount = product.promotions[0];
   const stock = getStockStatus(product);
 
@@ -91,7 +92,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
       )}
 
       {/* Discount badge (if promotion exists) */}
-      {discount && (
+      {!isMerchantView && discount && (
         <Badge variant="secondary">
           {discount.code}:{' '}
           {discount.discountTypeCode === 'percentage'
@@ -101,9 +102,11 @@ export function ProductInfo({ product }: ProductInfoProps) {
       )}
 
       {/* [D] Purchase Actions — hidden on mobile, shown on desktop */}
-      <div className="hidden pt-2 md:block">
-        <ProductPurchaseActions product={product} />
-      </div>
+      {!isMerchantView && (
+        <div className="hidden pt-2 md:block">
+          <ProductPurchaseActions product={product} />
+        </div>
+      )}
 
       {/* [E] Sold By */}
       <p className="text-sm text-muted-foreground">

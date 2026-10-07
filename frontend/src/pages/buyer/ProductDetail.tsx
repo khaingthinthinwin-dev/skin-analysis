@@ -17,6 +17,7 @@ export default function ProductDetail() {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const idOrSlug = id ?? '';
+  const isMerchantView = user?.role === 'merchant';
 
   const { data: product, isLoading, isError } = useProductDetail(idOrSlug);
 
@@ -56,7 +57,7 @@ export default function ProductDetail() {
     );
   }
 
-  const showCTA = !isAuthenticated || user?.role === 'buyer';
+  const showCTA = !isMerchantView && (!isAuthenticated || user?.role === 'buyer');
 
   return (
     <div key={location.pathname} className="container mx-auto px-4 py-8">
@@ -69,15 +70,15 @@ export default function ProductDetail() {
       >
         <ArrowLeft className="h-5 w-5" />
       </Button>
-      <SidebarAdvertisements idOrSlug={product.id} />
+      {!isMerchantView && <SidebarAdvertisements idOrSlug={product.id} />}
 
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
         <ProductGallery images={product.images} name={product.name} />
-        <ProductInfo product={product} />
+        <ProductInfo product={product} isMerchantView={isMerchantView} />
       </div>
 
-      <ProductTabs product={product} />
-      <SimilarProducts idOrSlug={product.id} />
+      <ProductTabs product={product} showReviewForm={!isMerchantView} />
+      {!isMerchantView && <SimilarProducts idOrSlug={product.id} />}
 
       {showCTA && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 backdrop-blur md:hidden">

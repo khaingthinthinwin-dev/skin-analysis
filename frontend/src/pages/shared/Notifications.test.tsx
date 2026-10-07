@@ -31,8 +31,9 @@ describe('Notifications Center', () => {
     vi.clearAllMocks()
     mockRole = 'admin'
     mockUserId = 'user-1'
+    sessionStorage.clear()
     localStorage.setItem('accessToken', 'mock-admin-token')
-    window.sessionStorage.removeItem('notifications-dismissed-ids')
+    vi.mocked(notificationService.markAsRead).mockResolvedValue(undefined)
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -123,6 +124,9 @@ describe('Notifications Center', () => {
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({
       count: 2,
     })
+    vi.mocked(notificationService.markAllAsRead).mockResolvedValue({
+      updated: 2,
+    })
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -139,6 +143,8 @@ describe('Notifications Center', () => {
     })
 
     expect(screen.getByText('Notifications Center')).toBeInTheDocument()
+    const markAllReadButton = await screen.findByRole('button', { name: 'Mark all read' })
+    expect(markAllReadButton).toBeInTheDocument()
     expect(await screen.findByText('New merchant registration')).toBeInTheDocument()
     expect(screen.getAllByText('New merchant registration')).toHaveLength(1)
     expect(await screen.findByText('New advertisement submitted')).toBeInTheDocument()
@@ -146,6 +152,13 @@ describe('Notifications Center', () => {
     expect(screen.queryByText('Order Placed')).not.toBeInTheDocument()
     expect(screen.queryByText('Summer Promotion Active')).not.toBeInTheDocument()
     expect((await screen.findAllByText('View in Merchant Management →')).length).toBeGreaterThan(0)
+
+    fireEvent.click(markAllReadButton)
+    await waitFor(() => {
+      expect(notificationService.markAllAsRead).toHaveBeenCalledOnce()
+      expect(screen.queryByRole('button', { name: 'Mark all read' })).not.toBeInTheDocument()
+    })
+    expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
   })
 
   it('excludes merchant-specific notifications like "Merchant Approved" in the admin panel', async () => {
@@ -288,10 +301,6 @@ describe('Notifications Center', () => {
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({
       count: 1,
     })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({
-      id: 'n-rejected',
-      isRead: true,
-    })
 
     function LocationProbe() {
       const location = useLocation()
@@ -327,7 +336,7 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('marks unread notification as read on click', async () => {
+  it('marks an opened admin notification as read and removes it from the list', async () => {
     const mockNotifications = [
       {
         id: 'n-1',
@@ -350,7 +359,6 @@ describe('Notifications Center', () => {
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({
       count: 1,
     })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({ id: 'n-1', isRead: true })
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -366,6 +374,7 @@ describe('Notifications Center', () => {
 
     await waitFor(() => {
       expect(notificationService.markAsRead).toHaveBeenCalledWith('n-1')
+      expect(screen.queryByText('New advertisement submitted')).not.toBeInTheDocument()
     })
   })
 
@@ -388,10 +397,6 @@ describe('Notifications Center', () => {
       meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({
-      id: 'n-review',
-      isRead: true,
-    })
 
     function LocationProbe() {
       const location = useLocation()
@@ -442,10 +447,6 @@ describe('Notifications Center', () => {
       meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({
-      id: 'n-report',
-      isRead: true,
-    })
 
     function LocationProbe() {
       const location = useLocation()
@@ -497,10 +498,6 @@ describe('Notifications Center', () => {
       meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({
-      id: 'n-review-approved',
-      isRead: true,
-    })
 
     function LocationProbe() {
       const location = useLocation()
@@ -536,7 +533,201 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('removes an opened notification from the history list, even if it was already read', async () => {
+  it('links an approved review notification to the merchant Product Review page', async () => {
+    mockRole = 'merchant'
+    mockUserId = 'merchant-1'
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 'n-merchant-review-approved',
+          userId: 'merchant-1',
+          type: 'REVIEW_APPROVED',
+          title: 'New review received',
+          message: 'A new review has been approved for "Honey Lip Balm".',
+          entityType: 'Product',
+          entityId: 'product-7',
+          isRead: false,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+
+    function LocationProbe() {
+      const location = useLocation()
+      return (
+        <div data-testid="location">
+          {location.pathname}
+          {location.search}
+        </div>
+      )
+    }
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/merchant/notifications']}>
+          <LocationProbe />
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    const productReviewLink = await screen.findByRole('link', {
+      name: 'View in Product Review →',
+    })
+    expect(productReviewLink).toHaveAttribute(
+      'href',
+      '/merchant/product-review?highlight=product-7',
+    )
+
+    fireEvent.click(productReviewLink)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/merchant/product-review?highlight=product-7',
+      )
+      expect(notificationService.markAsRead).toHaveBeenCalledWith(
+        'n-merchant-review-approved',
+      )
+    })
+    expect(screen.queryByText('New review received')).not.toBeInTheDocument()
+  })
+
+  it('marks a buyer notification as read and removes it from the list', async () => {
+    mockRole = 'buyer'
+    mockUserId = 'buyer-1'
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 'n-buyer-order',
+          userId: 'buyer-1',
+          type: 'ORDER_PLACED',
+          title: 'Order placed',
+          message: 'Your order was placed.',
+          entityType: 'order',
+          entityId: 'order-1',
+          isRead: false,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/buyer/notifications']}>
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    fireEvent.click(await screen.findByText('Order placed'))
+
+    await waitFor(() => {
+      expect(notificationService.markAsRead).toHaveBeenCalledWith('n-buyer-order')
+      expect(screen.queryByText('Order placed')).not.toBeInTheDocument()
+    })
+  })
+
+  it('clears all buyer notifications when Mark all read is clicked', async () => {
+    mockRole = 'buyer'
+    mockUserId = 'buyer-1'
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 'n-buyer-read',
+          userId: 'buyer-1',
+          type: 'ORDER_PLACED',
+          title: 'Previous order',
+          message: 'Your order was placed.',
+          entityType: 'order',
+          entityId: 'order-1',
+          isRead: true,
+          readAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 0 })
+    vi.mocked(notificationService.markAllAsRead).mockResolvedValue({ updated: 0 })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/buyer/notifications']}>
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Previous order')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark all read' }))
+
+    await waitFor(() => {
+      expect(notificationService.markAllAsRead).toHaveBeenCalledOnce()
+      expect(screen.queryByText('Previous order')).not.toBeInTheDocument()
+    })
+  })
+
+  it('clears all merchant notifications after marking them read', async () => {
+    mockRole = 'merchant'
+    mockUserId = 'merchant-1'
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 'n-unread',
+          userId: 'merchant-1',
+          type: 'AD_APPROVED',
+          title: 'Advertisement approved',
+          message: 'Your advertisement is approved.',
+          entityType: 'advertisement',
+          entityId: 'ad-1',
+          isRead: false,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'n-read',
+          userId: 'merchant-1',
+          type: 'ORDER_PLACED',
+          title: 'New order',
+          message: 'A new order was placed.',
+          entityType: 'order',
+          entityId: 'order-1',
+          isRead: true,
+          readAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 2, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+    vi.mocked(notificationService.markAllAsRead).mockResolvedValue({ updated: 1 })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/merchant/notifications']}>
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Advertisement approved')).toBeInTheDocument()
+    expect(await screen.findByText('New order')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark all read' }))
+
+    await waitFor(() => {
+      expect(notificationService.markAllAsRead).toHaveBeenCalledOnce()
+      expect(screen.queryByText('Advertisement approved')).not.toBeInTheDocument()
+      expect(screen.queryByText('New order')).not.toBeInTheDocument()
+    })
+  })
+
+  it('removes an opened read notification from the history list', async () => {
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
       items: [
         {
@@ -555,10 +746,6 @@ describe('Notifications Center', () => {
       meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 0 })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({
-      id: 'n-read',
-      isRead: true,
-    })
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -572,60 +759,8 @@ describe('Notifications Center', () => {
 
     fireEvent.click(screen.getByText('New merchant registration'))
 
-    await waitFor(() => {
-      expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
-    })
-    expect(screen.getByText('No notifications yet')).toBeInTheDocument()
-    expect(notificationService.markAsRead).toHaveBeenCalledWith('n-read')
-  })
-
-  it('keeps a dismissed notification out of the list after a refetch', async () => {
-    vi.mocked(notificationService.getNotifications).mockResolvedValue({
-      items: [
-        {
-          id: 'n-sticky',
-          userId: 'admin-1',
-          type: 'MERCHANT_REGISTERED',
-          title: 'New merchant registration',
-          message: 'Glow Beauty registered and is pending approval.',
-          entityType: 'merchant',
-          entityId: 'm-1',
-          isRead: false,
-          readAt: null,
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
-    })
-    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({
-      id: 'n-sticky',
-      isRead: true,
-    })
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/admin/notifications']}>
-          <Notifications />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    )
-
-    expect(await screen.findByText('New merchant registration')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByText('New merchant registration'))
-
-    await waitFor(() => {
-      expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
-    })
-
-    // The server still returns the row (it only records readAt); it must not
-    // come back into the visible history.
-    await queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] })
-
-    await waitFor(() => {
-      expect(notificationService.getNotifications).toHaveBeenCalledTimes(2)
-    })
+    // Already-read items are dismissed without another read API call.
+    expect(notificationService.markAsRead).not.toHaveBeenCalled()
     expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
   })
 })

@@ -188,8 +188,8 @@ export class AdminService {
             type: 'REVIEW_APPROVED',
             title: 'New review received',
             message: `A new review has been approved for "${product.name}" and is now visible to shoppers.`,
-            entityType: 'Review',
-            entityId: reviewId,
+            entityType: 'Product',
+            entityId: productId,
           });
         }
 

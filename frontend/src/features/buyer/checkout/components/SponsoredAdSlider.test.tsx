@@ -15,6 +15,7 @@ const ads: SponsoredAd[] = [
   {
     id: 'ad-1',
     placement: 'checkout_page_banner',
+    merchantName: 'Aura & Essence',
     title: 'Glow Serum',
     announcementMessage: 'Brighten your skin with Glow Serum',
     description: 'Brighten your routine',
@@ -24,6 +25,7 @@ const ads: SponsoredAd[] = [
   {
     id: 'ad-2',
     placement: 'checkout_page_banner',
+    merchantName: 'Glow Essentials',
     title: 'Night Cream',
     announcementMessage: 'Wake up to refreshed skin',
     description: 'Repair while you sleep',
@@ -72,10 +74,8 @@ describe('SponsoredAdSlider (checkout)', () => {
 
     expect(await screen.findByText('Glow Serum')).toBeInTheDocument()
     expect(screen.getByText('Brighten your routine')).toBeInTheDocument()
-    expect(
-      screen.getByText('Brighten your skin with Glow Serum'),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Featured Promotion')).toBeInTheDocument()
+    expect(screen.getByText('Brighten your skin w...')).toBeInTheDocument()
+    expect(screen.getByText('Aura & Essence')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: /learn more/i }),
     ).toHaveAttribute('href', '/buyer/products/sku-001')
@@ -111,9 +111,9 @@ describe('SponsoredAdSlider (checkout)', () => {
     renderSlider()
 
     const announcement = await screen.findByText(
-      'Brighten your skin with Glow Serum',
+      'Brighten your skin w...',
     )
-    const featured = await screen.findByText('Featured Promotion')
+    const featured = await screen.findByText('Aura & Essence')
 
     expect(announcement.parentElement).toBe(featured.parentElement)
     expect(featured).toHaveClass('bg-purple-500/25')
@@ -132,7 +132,24 @@ describe('SponsoredAdSlider (checkout)', () => {
     expect(frame).toHaveClass('shadow-2xl')
     expect(image).toHaveClass('aspect-[1.74]')
     expect(image).toHaveClass('object-cover')
-    expect(screen.queryByText('Merchant Partner')).not.toBeInTheDocument()
+    expect(screen.queryByText('Featured Promotion')).not.toBeInTheDocument()
+  })
+
+  it('truncates long announcement and merchant names to 20 characters plus an ellipsis', async () => {
+    mockedGetSponsoredAds.mockResolvedValue({
+      data: [
+        {
+          ...ads[0],
+          announcementMessage: '1234567890123456789012345',
+          merchantName: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        },
+      ],
+    })
+
+    renderSlider()
+
+    expect(await screen.findByText('12345678901234567890...')).toBeInTheDocument()
+    expect(screen.getByText('ABCDEFGHIJKLMNOPQRST...')).toBeInTheDocument()
   })
 
   it('matches the checkout banner styling', async () => {

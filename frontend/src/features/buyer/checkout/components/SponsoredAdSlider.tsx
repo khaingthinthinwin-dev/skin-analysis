@@ -70,10 +70,14 @@ export function SponsoredAdSlider() {
           <div className="flex min-w-0 flex-col gap-3 sm:col-span-7 sm:gap-3.5 lg:col-span-7">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white sm:text-xs">
-                <Megaphone className="h-3.5 w-3.5" /> {ad.announcementMessage}
+                <Megaphone className="h-3.5 w-3.5" /> {ad.announcementMessage.length > 20
+                  ? `${ad.announcementMessage.slice(0, 20)}...`
+                  : ad.announcementMessage}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-purple-100 backdrop-blur-md sm:text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-purple-200" /> Featured Promotion
+                <Sparkles className="h-3.5 w-3.5 text-purple-200" /> {ad.merchantName.length > 20
+                  ? `${ad.merchantName.slice(0, 20)}...`
+                  : ad.merchantName}
               </span>
             </div>
 

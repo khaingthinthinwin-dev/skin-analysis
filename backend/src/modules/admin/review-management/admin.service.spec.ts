@@ -49,6 +49,9 @@ describe('AdminService review moderation', () => {
       auditLog: {
         create: jest.fn(),
       },
+      notification: {
+        createMany: jest.fn(),
+      },
       $queryRaw: jest
         .fn()
         .mockResolvedValue([{ avg_rating: 0, review_count: 0 }]),
@@ -90,6 +93,54 @@ describe('AdminService review moderation', () => {
       where: { id: 'r1' },
     });
     expect(result.status).toBe('rejected');
+  });
+
+  it('links the merchant review approval notification to its product', async () => {
+    prisma.review.findUnique.mockResolvedValue({
+      id: 'r1',
+      status: 'pending',
+      productId: 'p1',
+      userId: 'buyer1',
+    });
+    prisma.review.update.mockResolvedValue({
+      id: 'r1',
+      status: 'approved',
+      updatedAt: new Date('2026-10-06T00:00:00Z'),
+    });
+    prisma.product.findUnique.mockResolvedValue({
+      name: 'Honey Lip Balm',
+      merchant: { userId: 'merchant1' },
+    });
+
+    await service.moderateReview(
+      'r1',
+      { action: ReviewAction.APPROVE },
+      'admin1',
+    );
+
+    expect(prisma.notification.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: 'merchant1',
+          type: 'REVIEW_APPROVED',
+          title: 'New review received',
+          message:
+            'A new review has been approved for "Honey Lip Balm" and is now visible to shoppers.',
+          entityType: 'Product',
+          entityId: 'p1',
+        },
+        {
+          userId: 'buyer1',
+          type: 'REVIEW_APPROVED',
+          title: 'Your review was approved',
+          message:
+            'Your review for "Honey Lip Balm" has been approved and is now live.',
+          entityType: 'Product',
+          entityId: 'p1',
+        },
+      ],
+      skipDuplicates: true,
+    });
   });
 
   it('creates a report record for a review', async () => {

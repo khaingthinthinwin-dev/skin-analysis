@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, useLocation } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ReviewManagement from './ReviewManagement'
 import { adminService } from '@/features/admin/content-moderation/services/moderation.service'
@@ -18,6 +18,11 @@ vi.mock('@/lib/api', () => ({
     delete: vi.fn(),
   },
 }))
+
+function LocationDisplay() {
+  const location = useLocation()
+  return <div data-testid="location">{location.pathname + location.search}</div>
+}
 
 vi.mock('@/features/admin/content-moderation/services/moderation.service', async (importOriginal) => {
   const actual =
@@ -360,6 +365,70 @@ describe('ReviewManagement notification highlight', () => {
         'aria-selected',
         'true',
       )
+    })
+    expect(document.querySelectorAll('tr[data-highlighted]')).toHaveLength(0)
+    expect(screen.queryByText('From notification')).not.toBeInTheDocument()
+  }, 20_000)
+
+  it('clears the highlight when the review detail modal is closed and removes the highlight param', async () => {
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={['/admin/reviews?tab=reviews&highlight=r-2']}>
+          <LocationDisplay />
+          <ReviewManagement />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await screen.findByText('Beta review')
+    expect(highlightedRow('r-2')).toHaveAttribute('data-highlighted', 'true')
+    expect(screen.getByTestId('location')).toHaveTextContent('highlight=r-2')
+
+    const targetRow = screen.getByText('Beta review').closest('tr') as HTMLElement
+    await user.click(within(targetRow).getAllByRole('button')[0])
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).not.toHaveTextContent('highlight')
+    })
+    expect(document.querySelectorAll('tr[data-highlighted]')).toHaveLength(0)
+    expect(screen.queryByText('From notification')).not.toBeInTheDocument()
+  }, 20_000)
+
+  it('clears the highlight when the report detail modal is closed and removes the highlight param', async () => {
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={['/admin/reviews?tab=reports&highlight=rep-1']}>
+          <LocationDisplay />
+          <ReviewManagement />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await screen.findByText('Loved it')
+    const targetRow = screen.getByText('Loved it').closest('tr') as HTMLElement
+    expect(targetRow).toHaveAttribute('data-highlighted', 'true')
+    expect(screen.getByTestId('location')).toHaveTextContent('highlight=rep-1')
+
+    await user.click(within(targetRow).getAllByRole('button')[0])
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).not.toHaveTextContent('highlight')
     })
     expect(document.querySelectorAll('tr[data-highlighted]')).toHaveLength(0)
     expect(screen.queryByText('From notification')).not.toBeInTheDocument()
