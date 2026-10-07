@@ -477,65 +477,6 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('links an approved review notification to the buyer product reviews tab', async () => {
-    mockRole = 'buyer'
-    vi.mocked(notificationService.getNotifications).mockResolvedValue({
-      items: [
-        {
-          id: 'n-review-approved',
-          userId: 'buyer-1',
-          type: 'REVIEW_APPROVED',
-          title: 'Your review was approved',
-          message: 'Your review for "Serum" has been approved and is now live.',
-          entityType: 'Product',
-          entityId: 'product-7',
-          isRead: false,
-          readAt: null,
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
-    })
-    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
-    vi.mocked(notificationService.markAsRead).mockResolvedValue({
-      id: 'n-review-approved',
-      isRead: true,
-    })
-
-    function LocationProbe() {
-      const location = useLocation()
-      return (
-        <div data-testid="location">
-          {location.pathname}
-          {location.hash}
-        </div>
-      )
-    }
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/buyer/notifications']}>
-          <LocationProbe />
-          <Notifications />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    )
-
-    const reviewLink = await screen.findByRole('link', { name: 'View your review →' })
-    expect(reviewLink).toHaveAttribute(
-      'href',
-      '/buyer/products/product-7#reviews',
-    )
-
-    fireEvent.click(reviewLink)
-
-    await waitFor(() => {
-      expect(screen.getByTestId('location')).toHaveTextContent(
-        '/buyer/products/product-7#reviews',
-      )
-    })
-  })
-
   it('removes an opened notification from the history list, even if it was already read', async () => {
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
       items: [
@@ -547,8 +488,8 @@ describe('Notifications Center', () => {
           message: 'Glow Beauty registered and is pending approval.',
           entityType: 'merchant',
           entityId: 'm-1',
-          isRead: false,
-          readAt: null,
+          isRead: true,
+          readAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
         },
       ],

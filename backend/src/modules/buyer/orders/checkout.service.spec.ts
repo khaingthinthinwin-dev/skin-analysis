@@ -4,6 +4,7 @@ import { CheckoutService } from './checkout.service';
 const ad = {
   id: 'ad-1',
   title: 'Glow Serum',
+  announcementMessage: 'Brighten your skin with Glow Serum',
   content: 'Brighten your routine',
   imageUrl: 'https://cdn.example.com/ad.png',
   sku: 'sku-001',
@@ -142,6 +143,7 @@ describe('CheckoutService getCheckoutPageAds', () => {
           id: 'ad-1',
           placement: 'checkout_page_banner',
           title: 'Glow Serum',
+          announcementMessage: 'Brighten your skin with Glow Serum',
           description: 'Brighten your routine',
           imageUrl: 'https://cdn.example.com/ad.png',
           sku: 'sku-001',

@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -25,6 +26,8 @@ import {
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -147,6 +150,95 @@ export class AdminService {
     return review;
   }
 
+  private async notifyReviewModerationOutcome(
+    reviewId: string,
+    reviewUserId: string,
+    productId: string,
+    action: ReviewAction,
+  ): Promise<void> {
+    try {
+      const product = await this.prisma.product.findUnique({
+        where: { id: productId },
+        select: {
+          name: true,
+          merchant: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!product) return;
+
+      const merchantUserId = product.merchant?.userId;
+      const notifications: Array<{
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        entityType: 'Review' | 'Product';
+        entityId: string;
+      }> = [];
+
+      if (action === ReviewAction.APPROVE) {
+        if (merchantUserId) {
+          notifications.push({
+            userId: merchantUserId,
+            type: 'REVIEW_APPROVED',
+            title: 'New review received',
+            message: `A new review has been approved for "${product.name}" and is now visible to shoppers.`,
+            entityType: 'Review',
+            entityId: reviewId,
+          });
+        }
+
+        notifications.push({
+          userId: reviewUserId,
+          type: 'REVIEW_APPROVED',
+          title: 'Your review was approved',
+          message: `Your review for "${product.name}" has been approved and is now live.`,
+          entityType: 'Product',
+          entityId: productId,
+        });
+      } else {
+        notifications.push({
+          userId: reviewUserId,
+          type: 'REVIEW_REJECTED',
+          title: 'Your review was rejected',
+          message: `Your review for "${product.name}" was rejected by the moderation team.`,
+          entityType: 'Review',
+          entityId: reviewId,
+        });
+      }
+
+      const uniqueNotifications = Array.from(
+        new Map(
+          notifications
+            .filter((notification) => notification.userId)
+            .map((notification) => [
+              notification.userId + ':' + notification.type,
+              notification,
+            ]),
+        ).values(),
+      );
+
+      if (uniqueNotifications.length === 0) return;
+
+      await this.prisma.notification?.createMany?.({
+        data: uniqueNotifications,
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      // Fail-open: review moderation should still complete even if notifications cannot be created.
+      this.logger.warn(
+        `Failed to create moderation notifications for review ${reviewId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   async moderateReview(
     reviewId: string,
     dto: ModerateReviewDto,
@@ -195,6 +287,12 @@ export class AdminService {
     );
 
     await this.invalidateProductCache(review.productId);
+    await this.notifyReviewModerationOutcome(
+      reviewId,
+      review.userId,
+      review.productId,
+      dto.action,
+    );
 
     return {
       id: updated.id,

@@ -16,6 +16,7 @@ const ads: SponsoredAd[] = [
     id: 'ad-1',
     placement: 'checkout_page_banner',
     title: 'Glow Serum',
+    announcementMessage: 'Brighten your skin with Glow Serum',
     description: 'Brighten your routine',
     imageUrl: 'https://cdn.test/a.png',
     sku: 'sku-001',
@@ -24,6 +25,7 @@ const ads: SponsoredAd[] = [
     id: 'ad-2',
     placement: 'checkout_page_banner',
     title: 'Night Cream',
+    announcementMessage: 'Wake up to refreshed skin',
     description: 'Repair while you sleep',
     imageUrl: null,
     sku: null,
@@ -70,7 +72,9 @@ describe('SponsoredAdSlider (checkout)', () => {
 
     expect(await screen.findByText('Glow Serum')).toBeInTheDocument()
     expect(screen.getByText('Brighten your routine')).toBeInTheDocument()
-    expect(screen.getByText('Sponsored')).toBeInTheDocument()
+    expect(
+      screen.getByText('Brighten your skin with Glow Serum'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Featured Promotion')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: /learn more/i }),
@@ -101,15 +105,17 @@ describe('SponsoredAdSlider (checkout)', () => {
     ).toHaveAttribute('href', '/buyer/products')
   })
 
-  it('renders the Sponsored and featured promotion badges together', async () => {
+  it('renders the announcement and featured promotion badges together', async () => {
     mockedGetSponsoredAds.mockResolvedValue({ data: ads })
 
     renderSlider()
 
-    const sponsored = await screen.findByText('Sponsored')
+    const announcement = await screen.findByText(
+      'Brighten your skin with Glow Serum',
+    )
     const featured = await screen.findByText('Featured Promotion')
 
-    expect(sponsored.parentElement).toBe(featured.parentElement)
+    expect(announcement.parentElement).toBe(featured.parentElement)
     expect(featured).toHaveClass('bg-purple-500/25')
   })
 

@@ -1,10 +1,13 @@
 import { Outlet, Link, useLocation } from 'react-router'
 import { useEffect, useState } from 'react'
-import { Menu, Bell, ShoppingCart } from 'lucide-react'
+import { Menu, Bell, ShoppingCart, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
+import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { useCart } from '@/features/buyer/cart/hooks/useCart'
+import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
 import { useMerchantStatusAlerts } from '@/features/shared/notifications/hooks/useMerchantStatusAlerts'
 import { BuyerAccountDeactivatedBanner } from '@/components/buyer/AccountDeactivatedBanner'
@@ -14,6 +17,7 @@ export function BuyerDashboardLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { summary } = useCart()
   const cartCount = summary.totalItems
+  const { totalCount: wishlistCount } = useWishlist()
   const { unreadCount } = useNotifications()
   const location = useLocation()
   const isNotificationsPage = location.pathname === '/buyer/notifications'
@@ -65,6 +69,16 @@ export function BuyerDashboardLayout() {
                 )}
               </Link>
             </Button>
+            <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
+              <Link to="/buyer/wishlist" className="relative">
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e91e63] px-1 text-[10px] font-bold text-white">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
             <Button variant="ghost" size="icon" asChild aria-label="Cart">
               <Link to="/buyer/cart" className="relative">
                 <ShoppingCart className="h-5 w-5" />
@@ -75,6 +89,8 @@ export function BuyerDashboardLayout() {
                 )}
               </Link>
             </Button>
+            <LanguageToggle />
+            <ThemeToggle />
             <UserNav />
           </div>
         </header>

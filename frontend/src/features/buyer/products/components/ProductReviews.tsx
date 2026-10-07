@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router';
 import { Flag } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/providers/AuthProvider';
 import { useProductReviews } from '../hooks/useProductDetail';
 import { StarRating } from './StarRating';
 import { ReviewReportDialog } from './ReviewReportDialog';
@@ -13,6 +15,8 @@ interface ProductReviewsProps {
 export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
   const [page, setPage] = useState(1);
   const [reportReviewId, setReportReviewId] = useState<string | null>(null);
+  const { hash } = useLocation();
+  const { user } = useAuth();
 
   const { data, isLoading, isError } = useProductReviews(idOrSlug, { page, limit: 10 });
 
@@ -33,7 +37,14 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
   return (
     <div className="space-y-4">
       {data.items.map((review) => (
-        <div key={review.id} className="group rounded-lg border p-4">
+        <div
+          key={review.id}
+          className={`group rounded-lg border p-4 ${
+            hash === '#reviews' && review.user.id === user?.id
+              ? 'border-2 border-purple-600'
+              : 'border-border'
+          }`}
+        >
           <div className="mb-2 flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
