@@ -69,7 +69,7 @@ describe('useAuditLogs', () => {
 
     await waitFor(() => expect(result.current.listQuery.isSuccess).toBe(true));
     expect(getLogs).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 50, sortBy: 'created_at' }),
+      expect.objectContaining({ page: 1, limit: 10, sortBy: 'created_at' }),
     );
   });
 

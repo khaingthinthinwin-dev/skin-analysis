@@ -60,7 +60,10 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
           </div>
         )}
 
-        <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
+        <span
+          data-testid="page-info"
+          className="text-[13px] text-muted-foreground transition-opacity duration-200"
+        >
           Showing page <span className="font-semibold text-foreground">{page}</span> of{' '}
           <span className="font-semibold text-foreground">{safeTotal}</span>
         </span>
