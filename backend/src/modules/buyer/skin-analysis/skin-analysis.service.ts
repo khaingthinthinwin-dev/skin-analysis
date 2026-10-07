@@ -379,6 +379,9 @@ export class SkinAnalysisService {
     if (dateFilter.gte || dateFilter.lte) {
       where.analysisDate = dateFilter;
     }
+    if (query.skinType) {
+      where.skinType = query.skinType.toLowerCase();
+    }
 
     const [records, totalItems, aggregate] = await Promise.all([
       this.prisma.skinAnalysis.findMany({

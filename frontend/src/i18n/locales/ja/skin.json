@@ -1,4 +1,4 @@
-{
+﻿{
   "page": {
     "title": "クリニカル 皮膚分析",
     "subtitle": "診断画像とAIによる皮膚科学のインサイトを確認できます。",
@@ -189,6 +189,7 @@
     "dateFrom": "開始日",
     "dateTo": "終了日",
     "pageSize": "ページサイズ",
+    "allSkinTypes": "すべての肌タイプ",
     "exportAll": "全履歴をエクスポート",
     "exporting": "エクスポート中...",
     "columns": {
