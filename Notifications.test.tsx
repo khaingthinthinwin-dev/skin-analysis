@@ -369,164 +369,204 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('hides read Order Insight notifications for the merchant but keeps unread ones', async () => {
-    mockRole = 'merchant'
-    mockUserId = 'merchant-1'
-    const mockNotifications = [
-      {
-        id: 'n-order-unread',
-        userId: 'merchant-1',
-        type: 'ORDER_PLACED',
-        title: 'New order received',
-        message: 'A buyer placed order ORD-0000001.',
-        entityType: 'order',
-        entityId: 'o-1',
-        isRead: false,
-        readAt: null,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'n-order-read',
-        userId: 'merchant-1',
-        type: 'ORDER_PLACED',
-        title: 'New order received',
-        message: 'A buyer placed order ORD-0000002.',
-        entityType: 'order',
-        entityId: 'o-2',
-        isRead: true,
-        readAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'n-status-read',
-        userId: 'merchant-1',
-        type: 'ORDER_STATUS_UPDATED',
-        title: 'Order Shipped',
-        message: 'Your order ORD-0000003 is now shipped.',
-        entityType: 'order',
-        entityId: 'o-3',
-        isRead: true,
-        readAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'n-promo-read',
-        userId: 'merchant-1',
-        type: 'promo',
-        title: 'Merchant Promo Active',
-        message: 'Promotion SUMMER20 is now active.',
-        entityType: 'promotion',
-        entityId: 'p-1',
-        isRead: true,
-        readAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-    ]
-
+  it('deep-links a review submission to the highlighted Review Management row', async () => {
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
-      items: mockNotifications,
-      meta: { total: 4, page: 1, limit: 50, totalPages: 1 },
+      items: [
+        {
+          id: 'n-review',
+          userId: 'admin-1',
+          type: 'REVIEW_CREATED',
+          title: 'New review submitted',
+          message: 'A 5-star review for "Serum" was submitted and is pending moderation.',
+          entityType: 'Review',
+          entityId: 'rev-7',
+          isRead: false,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+    vi.mocked(notificationService.markAsRead).mockResolvedValue({
+      id: 'n-review',
+      isRead: true,
+    })
+
+    function LocationProbe() {
+      const location = useLocation()
+      return (
+        <div data-testid="location">
+          {location.pathname}
+          {location.search}
+        </div>
+      )
+    }
 
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/merchant/notifications']}>
+        <MemoryRouter initialEntries={['/admin/notifications']}>
+          <LocationProbe />
           <Notifications />
         </MemoryRouter>
       </QueryClientProvider>,
     )
 
-    // Unread Order Insight notification stays visible…
-    expect(await screen.findByText('New order received')).toBeInTheDocument()
-    // …while read ones disappear (both ORDER_PLACED and ORDER_STATUS_UPDATED).
-    expect(
-      screen.queryByText('A buyer placed order ORD-0000002.'),
-    ).not.toBeInTheDocument()
-    expect(screen.queryByText('Order Shipped')).not.toBeInTheDocument()
-    // Non-order notifications are unaffected even when read.
-    expect(screen.getByText('Merchant Promo Active')).toBeInTheDocument()
+    expect(await screen.findByText('Moderate in Review Management →')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('New review submitted'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/admin/reviews?tab=reviews&highlight=rev-7',
+      )
+    })
   })
 
-  it('hides read Order Insight notifications for the buyer but keeps unread ones', async () => {
-    mockRole = 'buyer'
-    mockUserId = 'buyer-1'
-    const mockNotifications = [
-      {
-        id: 'n-status-unread',
-        userId: 'buyer-1',
-        type: 'ORDER_STATUS_UPDATED',
-        title: 'Order Shipped',
-        message: 'Your order ORD-0000001 is now shipped.',
-        entityType: 'order',
-        entityId: 'o-1',
-        isRead: false,
-        readAt: null,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'n-status-read',
-        userId: 'buyer-1',
-        type: 'ORDER_STATUS_UPDATED',
-        title: 'Order Delivered',
-        message: 'Your order ORD-0000002 is now delivered.',
-        entityType: 'order',
-        entityId: 'o-2',
-        isRead: true,
-        readAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'n-confirmed-read',
-        userId: 'buyer-1',
-        type: 'ORDER_CONFIRMED',
-        title: 'Order confirmed',
-        message: 'The merchant has confirmed your order ORD-0000003.',
-        entityType: 'order',
-        entityId: 'o-3',
-        isRead: true,
-        readAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'n-seed-order-read',
-        userId: 'buyer-1',
-        type: 'order',
-        title: 'Order Delivered',
-        message: 'Your order has been delivered successfully.',
-        entityType: 'order',
-        entityId: 'o-4',
-        isRead: true,
-        readAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-    ]
-
+  it('deep-links a reported review to the reports tab', async () => {
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
-      items: mockNotifications,
-      meta: { total: 4, page: 1, limit: 50, totalPages: 1 },
+      items: [
+        {
+          id: 'n-report',
+          userId: 'admin-1',
+          type: 'REVIEW_REPORTED',
+          title: 'Review reported',
+          message: 'A review was reported as "Spam" and is pending moderation.',
+          entityType: 'ReviewReport',
+          entityId: 'rep-3',
+          isRead: false,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+    vi.mocked(notificationService.markAsRead).mockResolvedValue({
+      id: 'n-report',
+      isRead: true,
+    })
+
+    function LocationProbe() {
+      const location = useLocation()
+      return (
+        <div data-testid="location">
+          {location.pathname}
+          {location.search}
+        </div>
+      )
+    }
 
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/buyer/notifications']}>
+        <MemoryRouter initialEntries={['/admin/notifications']}>
+          <LocationProbe />
           <Notifications />
         </MemoryRouter>
       </QueryClientProvider>,
     )
 
-    // Unread Order Insight notification stays visible…
-    expect(await screen.findByText('Order Shipped')).toBeInTheDocument()
-    // …read ORDER_STATUS_UPDATED / ORDER_CONFIRMED / seeded `order` ones disappear.
-    expect(
-      screen.queryByText('Your order ORD-0000002 is now delivered.'),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByText('The merchant has confirmed your order ORD-0000003.'),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByText('Your order has been delivered successfully.'),
-    ).not.toBeInTheDocument()
+    expect(await screen.findByText('Review in Review Management →')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Review reported'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/admin/reviews?tab=reports&highlight=rep-3',
+      )
+    })
+  })
+
+  it('removes an opened notification from the history list, even if it was already read', async () => {
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 'n-read',
+          userId: 'admin-1',
+          type: 'MERCHANT_REGISTERED',
+          title: 'New merchant registration',
+          message: 'Glow Beauty registered and is pending approval.',
+          entityType: 'merchant',
+          entityId: 'm-1',
+          isRead: true,
+          readAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 0 })
+    vi.mocked(notificationService.markAsRead).mockResolvedValue({
+      id: 'n-read',
+      isRead: true,
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/admin/notifications']}>
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('New merchant registration')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('New merchant registration'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
+    })
+    expect(screen.getByText('No notifications yet')).toBeInTheDocument()
+    expect(notificationService.markAsRead).toHaveBeenCalledWith('n-read')
+  })
+
+  it('keeps a dismissed notification out of the list after a refetch', async () => {
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 'n-sticky',
+          userId: 'admin-1',
+          type: 'MERCHANT_REGISTERED',
+          title: 'New merchant registration',
+          message: 'Glow Beauty registered and is pending approval.',
+          entityType: 'merchant',
+          entityId: 'm-1',
+          isRead: false,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+    vi.mocked(notificationService.markAsRead).mockResolvedValue({
+      id: 'n-sticky',
+      isRead: true,
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/admin/notifications']}>
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('New merchant registration')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('New merchant registration'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
+    })
+
+    // The server still returns the row (it only records readAt); it must not
+    // come back into the visible history.
+    await queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] })
+
+    await waitFor(() => {
+      expect(notificationService.getNotifications).toHaveBeenCalledTimes(2)
+    })
+    expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
   })
 })

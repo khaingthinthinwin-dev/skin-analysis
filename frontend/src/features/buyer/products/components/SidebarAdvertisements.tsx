@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
 import { useSidebarAds } from '../hooks/useProductDetail';
-import { SidebarAdvertisement } from '../services/product.service';
+import { useAuth } from '@/hooks/useAuth';
 
 function getImageUrl(url: string | null): string {
   if (!url) return '';
@@ -13,6 +16,7 @@ function getImageUrl(url: string | null): string {
 }
 
 const PRODUCT_DETAIL_AD_PLACEMENT = 'productDetail_page_banner';
+const AUTO_SLIDE_MS = 5000;
 
 function isSidebarAdInSchedule(ad: {
   startsAt?: string | Date | null;
@@ -41,18 +45,13 @@ interface SidebarAdvertisementsProps {
   idOrSlug: string;
 }
 
-const sampleAds = [
-  { shop: 'Aura & Essence', title: 'Hydrating Jade Set & Facial Gua Sha', desc: 'Handcrafted natural jade stone set designed to soothe skin and boost serum absorption.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
-  { shop: 'Glow Essentials', title: 'Summer Glow Collection', desc: 'Discover our bestselling serums and moisturizers — 20% off this week only.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
-  { shop: 'Dermaluxe Lab', title: 'Retinol Night Repair', desc: 'Clinically proven anti-aging serum. Free shipping on orders over 50 KS.', image: '/uploads/products/347496ad-6e35-48f5-97c1-1b8e68545715.png' },
-  { shop: 'PureSkin Co.', title: 'Vitamin C Brightening Set', desc: 'Complete 3-step routine for radiant skin. Bundle & save 15%.', image: '/uploads/products/c86ff43b-9d46-4e63-8609-39cbac709818.png' },
-  { shop: 'Botanica Beauty', title: 'Organic Rose Mist', desc: 'Hydrating facial toner with real rose petals. Limited batch available.', image: '/uploads/products/a6f0a208-63f7-449f-a33b-9f24a3f28810.png' },
-];
-
 export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) {
   const { data: ads = [], isLoading, isError } = useSidebarAds(idOrSlug);
+  const { isAuthenticated } = useAuth();
+  const basePath = isAuthenticated ? '/buyer/products' : '/products';
+  const fallbackPath = `${basePath}/${idOrSlug}`;
   const [current, setCurrent] = useState(0);
-  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   // Placement + date condition (productDetail_page_banner, startsAt <= now < expiresAt).
   // Backend getSidebarAds() already filters the same way; this guards legacy/stale payloads.
@@ -61,123 +60,161 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
     return isSidebarAdInSchedule(ad);
   });
 
-  const total = eligibleAds.length > 0 ? eligibleAds.length : sampleAds.length;
+  const total = eligibleAds.length;
 
+  // Auto-rotate every 5s. Hover pauses; leaving the hover restarts a full
+  // 5s countdown. Rotation state is never paused by focus, so returning to
+  // this page always resumes rotating.
   useEffect(() => {
-    if (total <= 1) {
-      pausedRef.current = true;
-      return;
-    }
-    pausedRef.current = false;
-    const timer = setInterval(() => {
-      if (!pausedRef.current) {
-        setCurrent((c) => (c + 1) % total);
-      }
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [total]);
+    if (total <= 1 || paused) return;
+    const timer = setTimeout(() => {
+      setCurrent((c) => (c + 1) % total);
+    }, AUTO_SLIDE_MS);
+    return () => clearTimeout(timer);
+  }, [total, paused, current]);
 
-  const handlePause = () => {
-    pausedRef.current = true;
-  };
+  const handlePause = () => setPaused(true);
   const handleResume = () => {
     if (total <= 1) return;
-    pausedRef.current = false;
+    setPaused(false);
   };
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-64 sm:h-72 w-full rounded-3xl" />
       </div>
     );
   }
 
-  const useFallback = isError || eligibleAds.length === 0;
-  const sampleAd = sampleAds[current % sampleAds.length];
-  const realAd = useFallback ? null : (eligibleAds[current % eligibleAds.length] as SidebarAdvertisement | undefined);
+  // No eligible (unexpired) ad → hide the section entirely.
+  if (isError || total === 0) return null;
 
-  const title = useFallback ? sampleAd.title : (realAd?.title ?? '');
-  const description = useFallback ? sampleAd.desc : (realAd?.announcementMessage ?? null);
-  const imageUrl = useFallback ? sampleAd.image : (realAd?.imageUrl ?? null);
-  const sku = useFallback ? '' : (realAd?.sku ?? '');
+  const activeIndex = current % total;
+  const ad = eligibleAds[activeIndex];
+  const title = ad.title;
+  const announcement = ad.announcementMessage;
+  const content = ad.description;
+  const imageUrl = ad.imageUrl ?? null;
+  // Learn more → the product resolved from the ad's sku (falls back to the ad
+  // image, then to this product).
+  const adProduct = ad.productSlug ?? ad.productId;
+  const productPath = adProduct ? `${basePath}/${adProduct}` : fallbackPath;
 
   return (
     <div
       className="relative"
       onMouseEnter={handlePause}
       onMouseLeave={handleResume}
-      onFocus={handlePause}
-      onBlur={handleResume}
     >
-      <div className="relative overflow-hidden rounded-xl bg-[#f3f0ff] dark:bg-zinc-800">
-        {total > 1 && (
-          <>
-            <button
-              type="button"
-              aria-label="Previous advertisement"
-              onClick={() => setCurrent((c) => (c - 1 + total) % total)}
-              className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9]"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next advertisement"
-              onClick={() => setCurrent((c) => (c + 1) % total)}
-              className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-sm transition-colors hover:bg-[#6d28d9]"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </>
-        )}
-
-        <div className="px-12 py-4">
-          <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-[#7c3aed]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#7c3aed]">
-            Sponsored
-          </span>
-
-          <div className="flex gap-4">
-            {imageUrl && (
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-zinc-700">
-                <img
-                  src={getImageUrl(imageUrl)}
-                  alt={title}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50">
+        <div className="relative px-11 sm:px-14 md:px-16 py-6 md:py-8 bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950/90 text-white transition-all duration-700">
+          <div className="relative z-10 grid gap-5 md:grid-cols-12 md:items-center">
+            <div className="space-y-3 md:col-span-8">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3 max-w-full"
+                  title={announcement || 'Sponsored'}
+                >
+                  <Megaphone className="w-3.5 h-3.5 mr-1 inline shrink-0" />
+                  <span className="truncate">{announcement || 'Sponsored'}</span>
+                </Badge>
+                {ad.shopName && (
+                  <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
+                    {ad.shopName}
+                  </Badge>
+                )}
               </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold leading-snug text-foreground">{title}</p>
-              {description && (
-                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{description}</p>
+
+              <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-tight text-white leading-tight">
+                {title}
+              </h2>
+
+              {content && (
+                <p className="text-sm sm:text-base text-zinc-200/90 max-w-xl line-clamp-2">
+                  {content}
+                </p>
               )}
-              {sku && (
-                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#7c3aed]">
-                  SKU: {sku}
-                </span>
+
+              <div className="pt-2">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-white text-zinc-900 hover:bg-zinc-100 font-bold shadow-lg"
+                >
+                  <Link to={productPath}>
+                    Learn more
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex md:col-span-4 justify-center items-center">
+              {imageUrl ? (
+                <div className="relative w-full max-w-sm h-32 sm:h-36 md:h-40 lg:h-48 rounded-2xl overflow-hidden border border-white/20 shadow-inner">
+                  <img
+                    src={getImageUrl(imageUrl)}
+                    alt={title}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                  
+                </div>
+              ) : (
+                <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner">
+                  <Megaphone className="w-10 h-10 text-white/80 mb-2" />
+                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">
+                    Merchant Partner
+                  </span>
+                </div>
               )}
             </div>
           </div>
-        </div>
 
-        {total > 1 && (
-          <div className="flex items-center justify-center gap-1.5 pb-3">
-            {Array.from({ length: total }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Go to advertisement ${i + 1}`}
-                aria-current={i === current ? 'true' : undefined}
-                onClick={() => setCurrent(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === current ? 'w-4 bg-[#7c3aed]' : 'w-1.5 bg-muted-foreground/30'
-                }`}
-              />
-            ))}
-          </div>
-        )}
+          {total > 1 && (
+            <>
+              <div className="absolute left-2 sm:left-3 top-1/2 z-20 -translate-y-1/2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Previous advertisement"
+                  onClick={() => setCurrent((c) => (c - 1 + total) % total)}
+                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 shadow-md"
+                >
+                  <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                </Button>
+              </div>
+              <div className="absolute right-2 sm:right-3 top-1/2 z-20 -translate-y-1/2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Next advertisement"
+                  onClick={() => setCurrent((c) => (c + 1) % total)}
+                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 shadow-md"
+                >
+                  <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                </Button>
+              </div>
+
+              <div className="absolute left-1/2 bottom-2 sm:bottom-3 z-20 -translate-x-1/2 flex items-center gap-2">
+                {Array.from({ length: total }).map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-label={`Go to advertisement ${i + 1}`}
+                    aria-current={i === current ? 'true' : undefined}
+                    onClick={() => setCurrent(i)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      i === current ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

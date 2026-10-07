@@ -52,6 +52,7 @@ export interface AdSlide {
   adId: string
   title: string
   description: string | null
+  announcementMessage?: string | null
   imageUrl: string
   sku: string | null
   ctaText: string
@@ -60,6 +61,8 @@ export interface AdSlide {
   placement?: string | null
   startsAt?: string | null
   expiresAt?: string | null
+  productId?: string | null
+  productSlug?: string | null
 }
 
 export interface AdPanelResponse {

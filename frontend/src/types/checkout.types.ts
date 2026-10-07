@@ -37,6 +37,7 @@ export interface SponsoredAd {
   id: string;
   placement: string;
   title: string;
+  announcementMessage: string;
   description: string | null;
   imageUrl: string | null;
   sku: string | null;

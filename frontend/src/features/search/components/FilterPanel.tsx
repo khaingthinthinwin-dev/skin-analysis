@@ -62,7 +62,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
   }
 
   const handleRatingChange = (rating: number) => {
-    onUpdate({ rating: params.rating === rating ? undefined : rating })
+    onUpdate({ rating })
   }
 
   const handleReset = () => {
@@ -150,21 +150,27 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
             Rating
           </h4>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Rating">
             {RATING_OPTIONS.map((rating) => (
-              <button
+              <label
                 key={rating.value}
-                type="button"
-                onClick={() => handleRatingChange(rating.value)}
-                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm text-slate-700 dark:text-slate-200 ${
+                className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm text-slate-700 dark:text-slate-200 ${
                   params.rating === rating.value
                     ? 'border-violet-200 bg-violet-50 dark:border-violet-400/40 dark:bg-violet-400/15'
                     : 'border-slate-200 bg-white dark:border-white/10 dark:bg-white/5'
                 }`}
               >
+                <input
+                  type="radio"
+                  name="rating-filter"
+                  value={rating.value}
+                  checked={params.rating === rating.value}
+                  onChange={() => handleRatingChange(rating.value)}
+                  className="h-4 w-4 accent-violet-600"
+                />
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                 {rating.label}
-              </button>
+              </label>
             ))}
           </div>
         </div>
@@ -260,15 +266,19 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
           <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
             Rating <ChevronUp className="h-3 w-3" />
           </h4>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" role="radiogroup" aria-label="Rating">
             {RATING_OPTIONS.map((r) => (
-              <div key={r.value} className="flex items-center gap-2">
-                <Checkbox
+              <label key={r.value} className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="rating-filter"
+                  value={r.value}
                   checked={params.rating === r.value}
-                  onCheckedChange={() => handleRatingChange(r.value)}
+                  onChange={() => handleRatingChange(r.value)}
+                  className="h-4 w-4 accent-violet-600"
                 />
                 <span className="text-sm">{r.label}</span>
-              </div>
+              </label>
             ))}
           </div>
         </div>

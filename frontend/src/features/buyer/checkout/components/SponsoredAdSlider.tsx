@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, ShoppingBag, Sparkles } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSponsoredAds } from '../hooks/useCheckout'
@@ -8,10 +8,11 @@ import { getImageUrl } from '@/lib/image-url';
 const AUTO_SLIDE_MS = 5000
 const BUYER_PRODUCTS_FALLBACK = '/buyer/products'
 
-const BATCH_DETAILS = 'Batch 2026-A7 · Lot #EM-4821 · 30ml'
+function getProductDetailHref(sku: string | null) {
+  const trimmedSku = sku?.trim()
+  if (!trimmedSku) return BUYER_PRODUCTS_FALLBACK
 
-function padIndex(value: number) {
-  return String(value).padStart(2, '0')
+  return `/buyer/products/${encodeURIComponent(trimmedSku)}`
 }
 
 function usePrefersReducedMotion() {
@@ -50,115 +51,100 @@ export function SponsoredAdSlider() {
   if (!ads.length) return null
 
   const ad = ads[displayIndex]
-  const ctaHref = BUYER_PRODUCTS_FALLBACK
+  const ctaHref = getProductDetailHref(ad.sku)
 
   return (
     <Card
-      className="relative overflow-hidden rounded-2xl border-border/50 bg-muted shadow-xl"
+      className="relative overflow-hidden rounded-[1.75rem] border-0 shadow-xl"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       aria-roledescription="carousel"
       aria-label="Sponsored advertisements"
     >
       <CardContent
-        className="relative min-h-0 p-4 bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950/90 text-white transition-all duration-700 sm:p-5"
+        className="relative min-h-[15rem] bg-gradient-to-r from-[#78349a] via-[#5c5a9f] to-[#562779] px-12 py-6 text-white transition-all duration-700 sm:min-h-[15.5rem] sm:px-16 sm:py-6"
         onFocusCapture={() => setIsFocused(true)}
         onBlurCapture={() => setIsFocused(false)}
       >
-        <div className="relative z-10 grid items-center gap-5 pl-2.5 sm:grid-cols-12 sm:gap-5 sm:pl-3 lg:gap-6">
+        <div className="relative z-10 grid items-center gap-5 sm:grid-cols-12 sm:gap-5 lg:gap-6">
           <div className="flex min-w-0 flex-col gap-3 sm:col-span-7 sm:gap-3.5 lg:col-span-7">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/90 backdrop-blur-md sm:text-[10px]">
-                <Megaphone className="h-3 w-3" /> Sponsored
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white sm:text-xs">
+                <Megaphone className="h-3.5 w-3.5" /> {ad.announcementMessage}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/25 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-200 backdrop-blur-md sm:text-[10px]">
-                <Sparkles className="h-3 w-3 text-purple-300" /> Featured Promotion
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-purple-100 backdrop-blur-md sm:text-xs">
+                <Sparkles className="h-3.5 w-3.5 text-purple-200" /> Featured Promotion
               </span>
             </div>
 
-            <h3 className="text-lg font-extrabold leading-snug tracking-tight text-white sm:text-xl lg:text-2xl">
+            <h3 className="text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl lg:text-[1.625rem]">
               {ad.title}
             </h3>
 
             {ad.description && (
-              <p className="line-clamp-2 max-w-xl text-xs leading-relaxed text-zinc-200/90 sm:text-sm">
+              <p className="line-clamp-2 max-w-xl text-sm leading-relaxed text-white/80 sm:text-base">
                 {ad.description}
               </p>
             )}
 
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-              <Button asChild size="sm" className="h-8.5 gap-2 rounded-full bg-white px-4.5 text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-md shadow-black/25 transition-all hover:bg-zinc-100 hover:shadow-lg sm:h-9">
-                <a href={ctaHref} target="_blank" rel="noopener noreferrer" aria-label="Explore Acne Solutions">
-                  <ShoppingBag className="h-3.5 w-3.5" />
-                  Learn More
-                  <ArrowRight className="h-3.5 w-3.5" />
+              <Button asChild size="lg" className="h-12 gap-4 rounded-md bg-[#f8f7f5] px-8 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-white sm:text-base">
+                <a href={ctaHref}>
+                  Learn more
+                  <ArrowRight className="h-4 w-4" />
                 </a>
               </Button>
             </div>
-
           </div>
 
           {ad.imageUrl && (
             <div className="flex min-w-0 items-center justify-center sm:col-span-5 lg:col-span-5">
-              <div className="relative mx-auto aspect-[16/10] h-40 w-full max-w-[18rem] overflow-hidden rounded-2xl border border-white/20 shadow-2xl sm:h-44 sm:max-w-[20rem] lg:h-48 lg:max-w-[22rem]">
+              <div className="w-full max-w-[22rem] overflow-hidden rounded-2xl border-4 border-white/90 bg-[#fffaf5] shadow-2xl">
                 <img
                   src={getImageUrl(ad.imageUrl)}
                   alt={ad.title}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                  className="aspect-[1.74] h-auto w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 via-purple-950/25 to-transparent" />
-                <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-md sm:text-[10px]">
-                  Merchant Partner
-                </span>
-                <span className="absolute bottom-3 left-3 text-[9px] font-medium uppercase tracking-wider text-white/80 sm:text-[10px]">
-                  {BATCH_DETAILS}
-                </span>
-                <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-2.5 py-1 text-[9px] font-bold tracking-widest text-white backdrop-blur-md sm:text-[10px]">
-                  {padIndex(displayIndex + 1)} / {padIndex(ads.length)}
-                </span>
               </div>
             </div>
           )}
         </div>
 
-        <div className="relative z-20 mt-3 flex items-center justify-between gap-3 pl-2.5 sm:mt-3.5 sm:pl-3">
-          <div className="flex items-center gap-1.5">
-          {ads.length > 1 &&
-            ads.map((_, idx) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={prev}
+          disabled={ads.length <= 1}
+          aria-label="Previous advertisement"
+          className="absolute left-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white sm:left-3"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={next}
+          disabled={ads.length <= 1}
+          aria-label="Next advertisement"
+          className="absolute right-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white sm:right-3"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+
+        {ads.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+            {ads.map((_, idx) => (
               <button
                 key={idx}
                 type="button"
                 aria-label={`Go to advertisement ${idx + 1}`}
                 aria-current={idx === displayIndex ? 'true' : undefined}
                 onClick={() => setCurrentIndex(idx)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${idx === displayIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`}
+                className={`h-2 rounded-full transition-all duration-300 ${idx === displayIndex ? 'w-8 bg-white' : 'w-2 bg-white/45 hover:bg-white/75'}`}
               />
             ))}
           </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={prev}
-              disabled={ads.length <= 1}
-              aria-label="Previous advertisement"
-              className="h-7.5 w-7.5 shrink-0 rounded-full border border-white/20 bg-black/40 text-white transition-all hover:bg-black/60 hover:text-white sm:h-8 sm:w-8"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={next}
-              disabled={ads.length <= 1}
-              aria-label="Next advertisement"
-              className="h-7.5 w-7.5 shrink-0 rounded-full border border-white/20 bg-black/40 text-white transition-all hover:bg-black/60 hover:text-white sm:h-8 sm:w-8"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )

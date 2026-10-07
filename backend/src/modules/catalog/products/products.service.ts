@@ -835,7 +835,11 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: isUuid
         ? { id: idOrSlug, isActive: true }
-        : { slug: idOrSlug, isActive: true },
+        : {
+            isActive: true,
+            // Advertisements link to products by SKU, so accept slug or SKU.
+            OR: [{ slug: idOrSlug }, { sku: idOrSlug }],
+          },
       include: {
         category: { select: { id: true, name: true, slug: true } },
         merchant: { select: { id: true, shopName: true, licenseStatus: true } },
@@ -928,7 +932,15 @@ export class ProductsService {
       },
       include: {
         feeSetting: { select: { placement: true, tier: true } },
-        shop: { select: { id: true, name: true, slug: true, logoUrl: true } },
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logoUrl: true,
+            userId: true,
+          },
+        },
       },
     });
 
@@ -947,9 +959,48 @@ export class ProductsService {
       )
       .slice(0, 5);
 
+    // The ad's sku is stamped from the merchant's product when the ad image is
+    // picked, so match on sku first and fall back to matching the image file.
+    const merchants = await this.prisma.merchant.findMany({
+      where: {
+        userId: { in: [...new Set(ordered.map((ad) => ad.shop.userId))] },
+      },
+      select: { id: true },
+    });
+    const catalogue = merchants.length
+      ? await this.prisma.product.findMany({
+          where: { merchantId: { in: merchants.map((m) => m.id) } },
+          select: { id: true, slug: true, images: true, sku: true },
+        })
+      : [];
+
+    const imageFileName = (url: string | null): string => {
+      if (!url) return '';
+      const path = url.split('?')[0];
+      return path.slice(path.lastIndexOf('/') + 1);
+    };
+
+    const resolveTarget = (ad: (typeof ordered)[number]) => {
+      const bySku = ad.sku
+        ? catalogue.find((p) => p.sku !== null && p.sku === ad.sku)
+        : undefined;
+      if (bySku) return { productId: bySku.id, productSlug: bySku.slug };
+
+      const fileName = imageFileName(ad.imageUrl);
+      const match = fileName
+        ? catalogue.find((p) =>
+            p.images.some((img) => imageFileName(img) === fileName),
+          )
+        : undefined;
+      if (match) return { productId: match.id, productSlug: match.slug };
+
+      return { productId: null, productSlug: null };
+    };
+
     return ordered.map((ad) => ({
       id: ad.id,
       title: ad.title,
+      description: ad.content,
       announcementMessage: ad.announcementMessage,
       imageUrl: ad.imageUrl,
       sku: ad.sku,
@@ -960,6 +1011,7 @@ export class ProductsService {
       shopId: ad.shop.id,
       shopName: ad.shop.name,
       shopSlug: ad.shop.slug,
+      ...resolveTarget(ad),
       shop: {
         name: ad.shop.name,
         slug: ad.shop.slug,

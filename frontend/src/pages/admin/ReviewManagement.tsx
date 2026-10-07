@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   useAdminReviews,
@@ -201,6 +201,52 @@ function ReasonBadge({ reason }: { reason: string }) {
   );
 }
 
+// ─── Notification Target ────────────────────────────────────────────────────
+
+type ModerationTab = 'reviews' | 'reports';
+
+// Review notifications deep-link here with `?tab=reviews|reports&highlight=<id>`
+// so the admin lands on the exact queue entry the notification was about. The
+// query string stays the source of truth, so a refresh keeps the highlight and
+// leaving the page drops it.
+function useNotificationTarget() {
+  const [searchParams] = useSearchParams();
+  const requestedHighlight = searchParams.get('highlight') ?? '';
+  const requestedTab: ModerationTab =
+    searchParams.get('tab') === 'reports' ? 'reports' : 'reviews';
+
+  const [tabChoice, setTabChoice] = useState<ModerationTab>(requestedTab);
+  // Switching tabs clears the deep-link target so the admin can browse the other queue.
+  const [highlightDismissed, setHighlightDismissed] = useState(false);
+
+  const highlightId = highlightDismissed ? null : requestedHighlight;
+  // A live deep-linked target dictates the tab, otherwise the admin's choice wins.
+  const activeTab = highlightId ? requestedTab : tabChoice;
+  const highlightedReviewId = activeTab === 'reviews' ? highlightId : null;
+  const highlightedReportId = activeTab === 'reports' ? highlightId : null;
+
+  return {
+    activeTab,
+    highlightedReviewId,
+    highlightedReportId,
+    changeTab: (value: string) => {
+      setTabChoice(value as ModerationTab);
+      setHighlightDismissed(true);
+    },
+  };
+}
+
+function HighlightBadge() {
+  return (
+    <Badge
+      variant="outline"
+      className="mr-1.5 bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-300"
+    >
+      From notification
+    </Badge>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function ReviewManagement() {
@@ -233,6 +279,14 @@ export default function ReviewManagement() {
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // ── Notification Target ─────────────────────────────────────────────────────
+  const {
+    activeTab,
+    highlightedReviewId,
+    highlightedReportId,
+    changeTab,
+  } = useNotificationTarget();
 
   // ── Stats ────────────────────────────────────────────────────────────────
   const { stats, refreshStats } = useReviewStats();
@@ -558,7 +612,7 @@ export default function ReviewManagement() {
         </p>
       </div>
 
-      <Tabs defaultValue="reviews">
+      <Tabs value={activeTab} onValueChange={changeTab}>
         {/* ── [B] Screen Tabs ──────────────────────────────────────────── */}
         <TabsList>
           <TabsTrigger value="reviews" className="gap-2">
@@ -725,7 +779,7 @@ export default function ReviewManagement() {
             )}
 
             <div className="overflow-x-auto rounded-md border border-border bg-card">
-              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:border-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40 [&_tbody_tr[data-highlighted]]:bg-purple-500/10 [&_tbody_tr[data-highlighted]>td]:bg-purple-500/10 [&_tbody_tr[data-highlighted]>td]:border-b-0">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -751,14 +805,20 @@ export default function ReviewManagement() {
                     <TableRow>
                       <TableCell
                         colSpan={8}
-                        className="text-center py-12 text-muted-foreground"
+                        className="border-b border-border text-center py-12 text-muted-foreground"
                       >
                         No reviews found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    reviews.map((review) => (
-                      <TableRow key={review.id}>
+                    reviews.map((review) => {
+                      const isHighlighted = review.id === highlightedReviewId;
+                      return (
+                      <TableRow
+                        key={review.id}
+                        className={`review-row border-0${isHighlighted ? ' [&>td]:!border-t-2 [&>td]:!border-b-2 [&>td]:!border-purple-600 [&>td:first-child]:!border-l-2 [&>td:last-child]:!border-r-2 [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg' : ''}`}
+                        data-highlighted={isHighlighted || undefined}
+                      >
                         <TableCell>
                           <Checkbox
                             checked={selectedReviews.includes(review.id)}
@@ -811,6 +871,7 @@ export default function ReviewManagement() {
                           <StarRating rating={review.rating} />
                         </TableCell>
                         <TableCell className="max-w-[180px] truncate text-sm">
+                          {isHighlighted && <HighlightBadge />}
                           {review.title || review.body || '-'}
                         </TableCell>
                         <TableCell>
@@ -840,7 +901,8 @@ export default function ReviewManagement() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -966,7 +1028,7 @@ export default function ReviewManagement() {
           {/* ── Reports Table ──────────────────────────────────────────── */}
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="overflow-x-auto rounded-md border border-border bg-card">
-              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:border-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40 [&_tbody_tr[data-highlighted]]:bg-purple-500/10 [&_tbody_tr[data-highlighted]>td]:bg-purple-500/10 [&_tbody_tr[data-highlighted]>td]:border-b-0">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Reporter</TableHead>
@@ -988,8 +1050,14 @@ export default function ReviewManagement() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    reports.map((report) => (
-                      <TableRow key={report.id}>
+                    reports.map((report) => {
+                      const isHighlighted = report.id === highlightedReportId;
+                      return (
+                      <TableRow
+                        key={report.id}
+                        className={isHighlighted ? '[&>td]:!border-t-2 [&>td]:!border-b-2 [&>td]:!border-purple-600 [&>td:first-child]:!border-l-2 [&>td:last-child]:!border-r-2 [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg' : undefined}
+                        data-highlighted={isHighlighted || undefined}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div
@@ -1010,6 +1078,7 @@ export default function ReviewManagement() {
                           </div>
                         </TableCell>
                         <TableCell className="max-w-[250px] truncate">
+                          {isHighlighted && <HighlightBadge />}
                           {report.review?.body || report.review?.title || '-'}
                         </TableCell>
                         <TableCell>
@@ -1055,7 +1124,8 @@ export default function ReviewManagement() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
