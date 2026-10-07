@@ -185,6 +185,9 @@ export default function Advertisements() {
   const [packagesPage, setPackagesPage] = useState(1)
   const [highlightedPackageId, setHighlightedPackageId] = useState<string | null>(null)
   const [navigateToPackageId, setNavigateToPackageId] = useState<string | null>(null)
+  const [highlightAdId, setHighlightAdId] = useState<string | null>(() =>
+    searchParams.get('highlightAdId')
+  )
   const isDeactivated =
     user?.isActive === false ||
     user?.is_active === false ||
@@ -294,6 +297,37 @@ export default function Advertisements() {
     }, 100)
     return () => window.clearTimeout(timer)
   }, [highlightedPackageId])
+
+  // Handle highlightAdId from URL (e.g., from AD_APPROVED notification)
+  useEffect(() => {
+    const adId = searchParams.get('highlightAdId')
+    if (adId && adId !== highlightAdId) {
+      // Defer state update to avoid synchronous setState in effect
+      window.setTimeout(() => {
+        setHighlightAdId(adId)
+        // Auto-clear highlight after 4 seconds
+        const timer = window.setTimeout(() => {
+          setHighlightAdId(null)
+          // Clean up URL
+          const params = new URLSearchParams(searchParams)
+          params.delete('highlightAdId')
+          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
+        }, 4000)
+        return () => window.clearTimeout(timer)
+      }, 0)
+    }
+  }, [searchParams, highlightAdId])
+
+  // When coming from notification (highlightAdId in URL), clear approvalStatus filter to show all ads
+  useEffect(() => {
+    const highlightAdIdFromUrl = searchParams.get('highlightAdId')
+    if (highlightAdIdFromUrl && approvalStatus) {
+      window.setTimeout(() => {
+        setApprovalStatus('')
+        setPage(1)
+      }, 0)
+    }
+  }, [searchParams, approvalStatus, setPage])
 
   // Stats per 画面項目設計書 §4.4: active / pending approval / expired counts.
   const stats = useMemo(
@@ -672,6 +706,7 @@ export default function Advertisements() {
                 key={ad.id}
                 ad={ad}
                 isDeactivated={isDeactivated}
+                highlightAdId={highlightAdId}
                 onEdit={(target) => setEditTarget(target)}
                 onPay={(target) => setPayTarget(target)}
                 onDelete={(target) => setDeleteTarget(target)}
@@ -863,6 +898,7 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
 interface AdCardProps {
   ad: Advertisement
   isDeactivated?: boolean
+  highlightAdId?: string | null
   onEdit: (ad: Advertisement) => void
   onPay: (ad: Advertisement) => void
   onDelete: (ad: Advertisement) => void
@@ -870,7 +906,7 @@ interface AdCardProps {
   onView: (ad: Advertisement) => void
 }
 
-function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
+function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
@@ -878,6 +914,7 @@ function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const isScheduled = state === 'scheduled'
   const packageInfo = ad.package
+  const isHighlighted = highlightAdId === ad.id
   const expiresTomorrow =
     ad.expiresAt && (() => {
       const t = new Date(ad.expiresAt).getTime()
@@ -893,8 +930,27 @@ function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }
       return t >= todayStart && t < todayStart + 24 * 60 * 60 * 1000 && t > now.getTime()
     })()
 
+  // Scroll to highlighted ad when highlightAdId matches this ad
+  useEffect(() => {
+    if (!isHighlighted) return
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(`highlighted-ad-${ad.id}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [isHighlighted, ad.id])
+
   return (
-    <Card className="flex flex-col overflow-hidden">
+    <Card
+      className={`flex flex-col overflow-hidden transition-all duration-300 ${
+        isHighlighted
+          ? 'ring-4 ring-violet-500 ring-offset-4 ring-offset-background scale-[1.02] shadow-2xl shadow-violet-500/30 animate-pulse'
+          : ''
+      }`}
+      id={isHighlighted ? `highlighted-ad-${ad.id}` : undefined}
+    >
       {/* Ad Thumbnail (EL-10) with approval status badge (EL-12a) */}
       <div className="relative aspect-video w-full overflow-hidden bg-muted">
         {ad.imageUrl ? (

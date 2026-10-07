@@ -7,11 +7,9 @@ export function BuyerAccountDeactivatedBanner() {
   const { user, refreshUser } = useAuth()
   const isBuyer = user?.role === 'buyer'
   const status = user?.status?.toLowerCase()
-  const isDeactivated =
-    user?.isActive === false ||
-    user?.is_active === false ||
-    status === 'deactivated' ||
-    status === 'inactive'
+  // Only show if explicitly deactivated/inactive status. 
+  // Don't rely on isActive/is_active booleans which may be unreliable.
+  const isDeactivated = status === 'deactivated' || status === 'inactive'
 
   useEffect(() => {
     if (isBuyer && isDeactivated) {

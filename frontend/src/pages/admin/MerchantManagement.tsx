@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -183,23 +184,26 @@ function truncateText(value: string, maxLength = 20) {
   return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 }
 
+// Highlight cell styles (matching AdTable pattern)
+const COLUMNS = 5
+const FIRST_CELL_HL = 'shadow-[inset_2px_2px_0_#a855f7,inset_0_-2px_0_#a855f7] rounded-l-xl'
+const LAST_CELL_HL = 'shadow-[inset_-2px_2px_0_#a855f7,inset_0_-2px_0_#a855f7] rounded-r-xl'
+const MIDDLE_CELL_HL = 'shadow-[inset_0_2px_0_#a855f7,inset_0_-2px_0_#a855f7]'
+
+const getCellHighlight = (isHighlighted: boolean, index: number): string => {
+  if (!isHighlighted) return ''
+  if (index === 0) return FIRST_CELL_HL
+  if (index === COLUMNS - 1) return LAST_CELL_HL
+  return MIDDLE_CELL_HL
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function MerchantManagement() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const highlightMerchantId = searchParams.get('merchantId');
-
-  useEffect(() => {
-    if (highlightMerchantId) {
-      const timer = setTimeout(() => {
-        setSearchParams((params) => {
-          params.delete('merchantId')
-          return params
-        })
-      }, 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [highlightMerchantId, setSearchParams])
+  const urlMerchantId = searchParams.get('merchantId');
+  const [highlightMerchantId, setHighlightMerchantId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // ── State ───────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
@@ -209,6 +213,65 @@ export default function MerchantManagement() {
   const debouncedSearch = useDebounced(search, 300);
   const [merchantSort, setMerchantSort] = useState('createdAt');
   const [merchantOrder, setMerchantOrder] = useState<'asc' | 'desc'>('desc');
+
+  useEffect(() => {
+    if (!urlMerchantId) return
+
+    const highlightTimer = window.setTimeout(() => {
+      setHighlightMerchantId(urlMerchantId)
+    }, 0)
+    const clearTimer = window.setTimeout(() => {
+      setHighlightMerchantId(null)
+      setSearchParams((params) => {
+        params.delete('merchantId')
+        return params
+      })
+    }, 3000)
+    return () => {
+      window.clearTimeout(highlightTimer)
+      window.clearTimeout(clearTimer)
+    }
+  }, [urlMerchantId, setSearchParams])
+
+  // Scroll highlighted row into view (like AdTable)
+  useEffect(() => {
+    if (!highlightMerchantId) return
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(`merchant-row-${highlightMerchantId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [highlightMerchantId])
+
+  // Invalidate merchant queries when navigating from notification to fetch fresh data
+  useEffect(() => {
+    if (urlMerchantId) {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'merchants'] })
+    }
+  }, [urlMerchantId, queryClient])
+
+  // When coming from notification (merchantId in URL), show all merchants by clearing status filter
+  useEffect(() => {
+    if (!urlMerchantId) return
+
+    const timer = window.setTimeout(() => {
+      if (status !== '') {
+        setStatus('')
+        setPage(1)
+      }
+    }, 0)
+
+    setSearchParams((params) => {
+      if (params.has('status')) {
+        params.delete('status')
+        return params
+      }
+      return params
+    })
+    return () => window.clearTimeout(timer)
+  }, [urlMerchantId, status, setSearchParams])
 
   // ── Dialog State ────────────────────────────────────────────────────────
   const [detailMerchant, setDetailMerchant] = useState<Merchant | null>(null);
@@ -438,65 +501,72 @@ export default function MerchantManagement() {
                   </TableCell>
                 </TableRow>
               ) : (
-                merchants.map((merchant) => (
-                  <TableRow key={merchant.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-medium text-white ${getAvatarColor(
-                            merchant.shopName || '',
-                          )}`}
-                        >
-                          {getInitials(merchant.shopName || 'S')}
+                merchants.map((merchant) => {
+                  const isHighlighted: boolean = highlightMerchantId !== null && String(merchant.id) === String(highlightMerchantId)
+                  return (
+                    <TableRow
+                      key={merchant.id}
+                      id={`merchant-row-${merchant.id}`}
+                      className={isHighlighted ? 'bg-purple-50 dark:bg-purple-950/30' : ''}
+                    >
+                      <TableCell className={getCellHighlight(isHighlighted, 0)}>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-medium text-white ${getAvatarColor(
+                              merchant.shopName || '',
+                            )}`}
+                          >
+                            {getInitials(merchant.shopName || 'S')}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.shopName}>
+                              {truncateText(merchant.shopName || 'N/A')}
+                            </p>
+                            {merchant.businessLicenseUrl && (
+                              <a
+                                href={merchant.businessLicenseUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline flex items-center gap-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                License
+                              </a>
+                            )}
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.shopName}>
-                            {truncateText(merchant.shopName || 'N/A')}
+                      </TableCell>
+                      <TableCell className={getCellHighlight(isHighlighted, 1)}>
+                        <div>
+                          <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.user?.name || 'N/A'}>
+                            {truncateText(merchant.user?.name || 'N/A')}
                           </p>
-                          {merchant.businessLicenseUrl && (
-                            <a
-                              href={merchant.businessLicenseUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-primary hover:underline flex items-center gap-1"
-                            >
-                              <FileText className="h-3 w-3" />
-                              License
-                            </a>
-                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {merchant.user?.email || ''}
+                          </p>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.user?.name || 'N/A'}>
-                          {truncateText(merchant.user?.name || 'N/A')}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {merchant.user?.email || ''}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {new Date(merchant.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <MerchantStatusBadge status={merchant.licenseStatus} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => setDetailMerchant(merchant)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className={`text-sm text-muted-foreground whitespace-nowrap ${getCellHighlight(isHighlighted, 2)}`}>
+                        {new Date(merchant.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className={getCellHighlight(isHighlighted, 3)}>
+                        <MerchantStatusBadge status={merchant.licenseStatus} />
+                      </TableCell>
+                      <TableCell className={`text-right ${getCellHighlight(isHighlighted, 4)}`}>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() => setDetailMerchant(merchant)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
