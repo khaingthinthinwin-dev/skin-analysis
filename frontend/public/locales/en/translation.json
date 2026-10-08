@@ -12,7 +12,8 @@
     "delete": "Delete",
     "submit": "Submit",
     "back": "Back",
-    "next": "Next"
+    "next": "Next",
+    "collapseSidebar": "Collapse Sidebar"
   },
   "nav": {
     "home": "Home",
@@ -21,7 +22,17 @@
     "contact": "Contact",
     "dashboard": "Dashboard",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "aria": {
+      "main": "Main navigation",
+      "mobile": "Mobile navigation",
+      "wishlist": "Wishlist",
+      "cart": "Cart",
+      "openMenu": "Open menu",
+      "closeSidebar": "Close navigation sidebar",
+      "sidebarMain": "Sidebar main navigation",
+      "expandSidebar": "Expand sidebar"
+    }
   },
   "auth": {
     "login": {
@@ -111,10 +122,29 @@
       "confirmPasswordPlaceholder": "Confirm your new password",
       "submit": "Reset Password",
       "submitting": "Resetting...",
+      "success": "Password reset successful",
       "successTitle": "Password reset successful",
       "successMessage": "Your password has been reset successfully. You can now sign in with your new password.",
       "backToLogin": "Back to Login",
       "invalidToken": "Invalid or expired verification code. Please request a new one."
+    },
+    "createAdmin": {
+      "title": "Create Admin Account",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Admin Name",
+      "email": "Email",
+      "emailPlaceholder": "admin@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "role": "Admin Role",
+      "adminRole": "Admin — Standard administrator",
+      "superAdminRole": "Super Admin — Full system access",
+      "roleDescription": "Select the appropriate role for this admin account.",
+      "submit": "Create Admin Account",
+      "submitting": "Creating account...",
+      "success": "Admin account created successfully"
     }
   },
   "home": {
@@ -136,6 +166,21 @@
     "inStock": "In Stock",
     "lowStock": "Low Stock",
     "outOfStock": "Out of Stock",
+    "removedFromWishlist": "Removed from wishlist",
+    "failedToRemove": "Failed to remove from wishlist",
+    "movedToCart": "Moved to cart",
+    "failedToMove": "Failed to move to cart",
+    "errorTitle": "Failed to load wishlist",
+    "errorMessage": "Something went wrong while loading your wishlist.",
+    "retry": "Try again",
+    "clearing": "Clearing...",
+    "clearAll": "All Data Clear",
+    "clearAllTitle": "Clear Wishlist",
+    "clearAllConfirm": "Are you sure you want to clear all items from your wishlist? This action cannot be undone.",
+    "clearAllConfirmButton": "Yes",
+    "clearAllCancelButton": "Cancel",
+    "cleared": "Wishlist cleared",
+    "failedToClear": "Failed to clear wishlist",
     "guestLoginAlert": {
       "title": "Log In Required",
       "message": "Please log in to add items to your wishlist.",
@@ -159,6 +204,26 @@
     "outOfStock": "Out of Stock",
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
+    "summary": "Order Summary",
+    "subtotalLabel": "Subtotal",
+    "shippingEstimate": "Shipping Estimate",
+    "total": "Total",
+    "subtitle": "Review items in your cart before checkout",
+    "errorTitle": "Failed to load cart",
+    "errorMessage": "Something went wrong while loading your cart.",
+    "retry": "Try again",
+    "quantityUpdated": "Quantity updated",
+    "failedToUpdate": "Failed to update quantity",
+    "removedFromCart": "Item removed from cart",
+    "failedToRemove": "Failed to remove from cart",
+    "clearAll": "All Data Clear",
+    "clearing": "Clearing...",
+    "clearAllTitle": "Clear Cart",
+    "clearAllConfirm": "Are you sure you want to clear all items from your cart? This action cannot be undone.",
+    "clearAllConfirmButton": "Yes",
+    "clearAllCancelButton": "Cancel",
+    "cleared": "Cart cleared",
+    "failedToClear": "Failed to clear cart",
     "guestLoginAlert": {
       "title": "Log In Required",
       "message": "Please log in to add items to your cart.",
@@ -171,6 +236,64 @@
       "exportCsv": "Export CSV",
       "exportCsvTooltip": "Download your orders as a CSV file",
       "exportEmpty": "No orders to export"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "description": "Manage your account settings and preferences",
+    "tabs": {
+      "info": "Profile Info",
+      "edit": "Edit Profile",
+      "password": "Change Password"
+    },
+    "info": {
+      "title": "Profile Information",
+      "description": "Your account details and information",
+      "contactInfo": "Contact Information",
+      "email": "Email",
+      "accountDetails": "Account Details",
+      "memberSince": "Member Since",
+      "emailVerification": "Email Verification",
+      "verified": "Verified",
+      "notVerified": "Not Verified",
+      "licenseStatus": "License Status",
+      "licenseApproved": "Approved",
+      "licenseRejected": "Rejected",
+      "licensePending": "Pending",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    },
+    "form": {
+      "title": "Edit Profile",
+      "description": "Update your personal information",
+      "name": "Full Name",
+      "namePlaceholder": "Enter your name",
+      "nameDescription": "Your name as it appears on your account",
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "success": "Profile updated successfully",
+      "error": "Failed to update profile"
+    },
+    "password": {
+      "title": "Change Password",
+      "description": "Update your password to keep your account secure",
+      "current": "Current Password",
+      "currentPlaceholder": "Enter your current password",
+      "new": "New Password",
+      "newPlaceholder": "Create a new password",
+      "newDescription": "Must be at least 8 characters with uppercase, lowercase, number, and special character",
+      "confirm": "Confirm New Password",
+      "confirmPlaceholder": "Confirm your new password",
+      "save": "Change Password",
+      "saving": "Changing...",
+      "success": "Password changed successfully",
+      "error": "Failed to change password"
+    },
+    "error": {
+      "title": "Error",
+      "loadFailed": "Failed to load profile information. Please try again."
     }
   },
   "footer": {
@@ -365,5 +488,10 @@
     "deleting": "Deleting...",
     "deleteSuccess": "Deleted {{count}} records",
     "deleteFailed": "Deletion failed. Please try again."
+  },
+  "banner": {
+    "deactivatedTitle": "Account Deactivated",
+    "deactivatedMessage": "Your account is currently deactivated. Some features may be restricted until an admin activates your account.",
+    "dismiss": "Dismiss banner"
   }
 }

@@ -48,7 +48,7 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6" aria-label="Main navigation">
+        <nav className="hidden md:flex items-center gap-6" aria-label={t('nav.aria.main', 'Main navigation')}>
           {navItems.map((item) => (
             <Link
               key={item.key}
@@ -67,14 +67,14 @@ export function Header() {
               to={getDashboardRoute(user.role)}
               className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
             >
-              Dashboard
+              {t('nav.dashboard', 'Dashboard')}
             </Link>
           )}
         </nav>
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
+          <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.wishlist', 'Wishlist')}>
             <Link to="/buyer/wishlist" onClick={(e) => handleIconClick('wishlist', e)} className="relative">
               <Heart className="h-5 w-5" />
               {wishlistTotal > 0 && (
@@ -84,7 +84,7 @@ export function Header() {
               )}
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" asChild aria-label="Cart">
+          <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.cart', 'Cart')}>
             <Link to="/buyer/cart" onClick={(e) => handleIconClick('cart', e)} className="relative">
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
@@ -113,12 +113,12 @@ export function Header() {
         {/* Mobile Menu */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" aria-label="Open menu">
+            <Button variant="ghost" size="icon" aria-label={t('nav.aria.openMenu', 'Open menu')}>
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-72">
-            <nav className="flex flex-col gap-4 mt-8" aria-label="Mobile navigation">
+            <nav className="flex flex-col gap-4 mt-8" aria-label={t('nav.aria.mobile', 'Mobile navigation')}>
               {navItems.map((item) => (
                 <Link
                   key={item.key}
@@ -139,12 +139,12 @@ export function Header() {
                   onClick={() => setOpen(false)}
                   className="text-sm font-semibold text-primary hover:underline"
                 >
-                  Dashboard
+                  {t('nav.dashboard', 'Dashboard')}
                 </Link>
               )}
               <div className="my-4 h-px bg-border" />
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
+                <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.wishlist', 'Wishlist')}>
                   <Link to="/buyer/wishlist" onClick={(e) => { handleIconClick('wishlist', e); setOpen(false) }} className="relative">
                     <Heart className="h-5 w-5" />
                     {wishlistTotal > 0 && (
@@ -154,7 +154,7 @@ export function Header() {
                     )}
                   </Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild aria-label="Cart">
+                <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.cart', 'Cart')}>
                   <Link to="/buyer/cart" onClick={(e) => { handleIconClick('cart', e); setOpen(false) }} className="relative">
                     <ShoppingCart className="h-5 w-5" />
                     {cartCount > 0 && (

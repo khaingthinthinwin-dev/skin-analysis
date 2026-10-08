@@ -154,7 +154,7 @@ export function Sidebar({
           size="icon"
           className="lg:hidden shrink-0"
           onClick={onClose}
-          aria-label="Close navigation sidebar"
+          aria-label={t('nav.aria.closeSidebar', 'Close navigation sidebar')}
         >
           <X className="h-5 w-5 text-muted-foreground" />
         </Button>
@@ -163,7 +163,7 @@ export function Sidebar({
       {/* Main Navigation Items */}
       <nav
         className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-none"
-        aria-label="Sidebar main navigation"
+        aria-label={t('nav.aria.sidebarMain', 'Sidebar main navigation')}
       >
         {config.sections.map((section, idx) => (
           <div key={section.title || idx} className="space-y-1">
@@ -235,7 +235,7 @@ export function Sidebar({
           size="sm"
           onClick={handleToggleCollapse}
           className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={isCollapsed ? t('nav.aria.expandSidebar', 'Expand sidebar') : t('common.collapseSidebar', 'Collapse Sidebar')}
         >
           {isCollapsed ? (
             <>

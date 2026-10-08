@@ -12,7 +12,8 @@
     "delete": "削除",
     "submit": "送信",
     "back": "戻る",
-    "next": "次へ"
+    "next": "次へ",
+    "collapseSidebar": "サイドバーを畳む"
   },
   "nav": {
     "home": "ホーム",
@@ -21,7 +22,17 @@
     "contact": "お問い合わせ",
     "dashboard": "ダッシュボード",
     "profile": "プロフィール",
-    "settings": "設定"
+    "settings": "設定",
+    "aria": {
+      "main": "メインナビゲーション",
+      "mobile": "モバイルナビゲーション",
+      "wishlist": "お気に入り",
+      "cart": "カート",
+      "openMenu": "メニューを開く",
+      "closeSidebar": "ナビゲーションサイドバーを閉じる",
+      "sidebarMain": "サイドバーのメインナビゲーション",
+      "expandSidebar": "サイドバーを広げる"
+    }
   },
   "auth": {
     "login": {
@@ -111,10 +122,29 @@
       "confirmPasswordPlaceholder": "新しいパスワードを再入力",
       "submit": "パスワードをリセット",
       "submitting": "リセット中...",
+      "success": "パスワードリセット成功",
       "successTitle": "パスワードリセット成功",
       "successMessage": "パスワードが正常にリセットされました。新しいパスワードでログインできます。",
       "backToLogin": "ログインに戻る",
       "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。"
+    },
+    "createAdmin": {
+      "title": "管理者アカウント作成",
+      "fullName": "氏名",
+      "fullNamePlaceholder": "管理者名",
+      "email": "メールアドレス",
+      "emailPlaceholder": "admin@example.com",
+      "password": "パスワード",
+      "passwordPlaceholder": "パスワードを作成",
+      "confirmPassword": "パスワード確認",
+      "confirmPasswordPlaceholder": "パスワードを再入力",
+      "role": "管理者ロール",
+      "adminRole": "管理者 — 標準管理者",
+      "superAdminRole": "スーパー管理者 — システム全体へのアクセス",
+      "roleDescription": "この管理者アカウントに適切なロールを選択してください。",
+      "submit": "管理者アカウントを作成",
+      "submitting": "アカウント作成中...",
+      "success": "管理者アカウントが作成されました"
     }
   },
   "home": {
@@ -136,6 +166,21 @@
     "inStock": "在庫あり",
     "lowStock": "残りわずか",
     "outOfStock": "在庫切れ",
+    "removedFromWishlist": "お気に入りから削除しました",
+    "failedToRemove": "お気に入りからの削除に失敗しました",
+    "movedToCart": "カートに移動しました",
+    "failedToMove": "カートへの移動に失敗しました",
+    "errorTitle": "お気に入りの読み込みに失敗しました",
+    "errorMessage": "お気に入りの読み込み中に問題が発生しました。",
+    "retry": "もう一度試す",
+    "clearing": "削除中...",
+    "clearAll": "すべて削除",
+    "clearAllTitle": "お気に入りをクリア",
+    "clearAllConfirm": "お気に入りのすべての商品を削除しますか？この操作は取り消せません。",
+    "clearAllConfirmButton": "はい",
+    "clearAllCancelButton": "キャンセル",
+    "cleared": "お気に入りをクリアしました",
+    "failedToClear": "お気に入りのクリアに失敗しました",
     "guestLoginAlert": {
       "title": "ログインが必要です",
       "message": "お気に入りに商品を追加するにはログインしてください。",
@@ -159,6 +204,26 @@
     "outOfStock": "在庫切れ",
     "decreaseQuantity": "数量を減らす",
     "increaseQuantity": "数量を増やす",
+    "summary": "注文サマリ",
+    "subtotalLabel": "小計",
+    "shippingEstimate": "配送料の目安",
+    "total": "合計",
+    "subtitle": "チェックアウト前にカートの内容を確認してください",
+    "errorTitle": "カートの読み込みに失敗しました",
+    "errorMessage": "カートの読み込み中に問題が発生しました。",
+    "retry": "もう一度試す",
+    "quantityUpdated": "数量を更新しました",
+    "failedToUpdate": "数量の更新に失敗しました",
+    "removedFromCart": "カートから削除しました",
+    "failedToRemove": "カートからの削除に失敗しました",
+    "clearAll": "すべて削除",
+    "clearing": "削除中...",
+    "clearAllTitle": "カートをクリア",
+    "clearAllConfirm": "カートのすべての商品を削除しますか？この操作は取り消せません。",
+    "clearAllConfirmButton": "はい",
+    "clearAllCancelButton": "キャンセル",
+    "cleared": "カートをクリアしました",
+    "failedToClear": "カートのクリアに失敗しました",
     "guestLoginAlert": {
       "title": "ログインが必要です",
       "message": "カートに商品を追加するにはログインしてください。",
@@ -171,6 +236,64 @@
       "exportCsv": "CSVをエクスポート",
       "exportCsvTooltip": "注文をCSVファイルとしてダウンロード",
       "exportEmpty": "エクスポートする注文がありません"
+    }
+  },
+  "profile": {
+    "title": "マイプロフィール",
+    "description": "アカウント設定と環境設定を管理します",
+    "tabs": {
+      "info": "プロフィール情報",
+      "edit": "プロフィール編集",
+      "password": "パスワード変更"
+    },
+    "info": {
+      "title": "プロフィール情報",
+      "description": "アカウント情報とお客様情報",
+      "contactInfo": "連絡先情報",
+      "email": "メールアドレス",
+      "accountDetails": "アカウント情報",
+      "memberSince": "登録日",
+      "emailVerification": "メール認証",
+      "verified": "認証済み",
+      "notVerified": "未認証",
+      "licenseStatus": "ライセンス状態",
+      "licenseApproved": "承認済み",
+      "licenseRejected": "却下済み",
+      "licensePending": "審査中",
+      "status": {
+        "active": "有効",
+        "inactive": "無効"
+      }
+    },
+    "form": {
+      "title": "プロフィール編集",
+      "description": "お客様情報を更新してください",
+      "name": "氏名",
+      "namePlaceholder": "お名前を入力",
+      "nameDescription": "アカウントに表示されるお名前です",
+      "save": "変更を保存",
+      "saving": "保存中...",
+      "success": "プロフィールを更新しました",
+      "error": "プロフィールの更新に失敗しました"
+    },
+    "password": {
+      "title": "パスワード変更",
+      "description": "アカウントを安全に保つため、パスワードを更新してください",
+      "current": "現在のパスワード",
+      "currentPlaceholder": "現在のパスワードを入力",
+      "new": "新しいパスワード",
+      "newPlaceholder": "新しいパスワードを入力",
+      "newDescription": "8文字以上で、英大文字・小文字・数字・記号をそれぞれ1つ以上含めてください",
+      "confirm": "新しいパスワード（確認）",
+      "confirmPlaceholder": "新しいパスワードを再入力",
+      "save": "パスワードを変更",
+      "saving": "変更中...",
+      "success": "パスワードを変更しました",
+      "error": "パスワードの変更に失敗しました"
+    },
+    "error": {
+      "title": "エラー",
+      "loadFailed": "プロフィール情報を読み込めませんでした。もう一度お試しください。"
     }
   },
   "footer": {
@@ -365,5 +488,10 @@
     "deleting": "削除中...",
     "deleteSuccess": "{{count}}件のレコードを削除しました",
     "deleteFailed": "削除に失敗しました。もう一度お試しください。"
+  },
+  "banner": {
+    "deactivatedTitle": "アカウント停止中",
+    "deactivatedMessage": "アカウントが一時停止されています。管理者がアカウントを再有効化するまで、一部の機能を利用できない場合があります。",
+    "dismiss": "バナーを閉じる"
   }
 }
