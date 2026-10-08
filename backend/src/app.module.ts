@@ -35,21 +35,24 @@ import { MailModule } from './shared/mail/mail.module';
     ConfigModule,
     MailerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          host: configService.get<string>('mail.host'),
-          port: configService.get<number>('mail.port'),
-          secure: configService.get<boolean>('mail.secure'),
-          auth: {
-            user: configService.get<string>('mail.user'),
-            pass: configService.get<string>('mail.pass'),
+      useFactory: (configService: ConfigService) => {
+        const from =
+          configService.get<string>('mail.from') ?? 'noreply@example.com';
+        return {
+          transport: {
+            host: configService.get<string>('mail.host'),
+            port: configService.get<number>('mail.port'),
+            secure: configService.get<boolean>('mail.secure'),
+            auth: {
+              user: configService.get<string>('mail.user'),
+              pass: configService.get<string>('mail.pass'),
+            },
           },
-        },
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        defaults: {
-          from: configService.get<string>('mail.from'),
-        } as any,
-      }),
+          defaults: {
+            from,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     PrismaModule,

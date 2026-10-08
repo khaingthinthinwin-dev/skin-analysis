@@ -4,6 +4,7 @@ export class SponsoredAdDto {
   @ApiProperty() id: string;
   @ApiProperty() placement: string;
   @ApiProperty() title: string;
+  @ApiProperty() announcementMessage: string;
   @ApiProperty({ nullable: true }) description: string | null;
   @ApiProperty({ nullable: true }) imageUrl: string | null;
   @ApiProperty({ nullable: true }) sku: string | null;

@@ -238,7 +238,6 @@ export default function Products() {
         onSubmit={handleSearchBarSubmit}
       />
 
-      {/* Advertisement panel */}
       <SponsoredAdSlider fallbackProductId={products[0]?.slug || products[0]?.id} />
 
       <FilterChips
