@@ -212,6 +212,16 @@ function orderActionHint(item: NotificationItem): string | null {
     : null
 }
 
+// Order Insight notifications travel between the merchant and the buyer
+// (ORDER_PLACED → merchant; ORDER_CONFIRMED / ORDER_STATUS_UPDATED → buyer,
+// plus seeded `order` items). Once the recipient has read one, it leaves the
+// list entirely instead of lingering as a "read" card.
+function isReadOrderInsightNotification(item: NotificationItem): boolean {
+  if (!item.isRead) return false
+  const type = normalizeNotificationType(item.type)
+  return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
+}
+
 // Review notifications deep-link straight to the queue entry they are about so
 // the admin does not have to hunt for it. `entityId` is the review id for a
 // REVIEW_CREATED notification and the report id for a REVIEW_REPORTED one
@@ -377,11 +387,15 @@ export default function Notifications() {
   } = useNotifications()
 
   const displayedNotifications = useMemo(() => {
-    let filtered = notifications
+    // Order Insight notifications between merchant and buyer disappear as
+    // soon as they are read; every other type keeps its normal behavior.
+    const withoutReadOrderInsights = notifications.filter(
+      (item) => !isReadOrderInsightNotification(item),
+    )
 
     if (isAdmin) {
       const seenKeys = new Set<string>()
-      filtered = notifications.filter((item) => {
+      return withoutReadOrderInsights.filter((item) => {
         if (!isAdminNotification(item)) {
           return false
         }
@@ -392,15 +406,15 @@ export default function Notifications() {
         seenKeys.add(key)
         return true
       })
-    } else if (user?.role === 'merchant') {
-      filtered = notifications.filter(
+    }
+
+    if (user?.role === 'merchant') {
+      return withoutReadOrderInsights.filter(
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
     }
 
-    filtered = filtered.filter((item) => !item.isRead)
-
-    return filtered
+    return withoutReadOrderInsights
   }, [isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)

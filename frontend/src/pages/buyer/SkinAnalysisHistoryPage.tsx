@@ -73,6 +73,7 @@ export default function SkinAnalysisHistoryPage() {
     pageSize: 10,
     dateFrom: undefined,
     dateTo: undefined,
+    skinType: undefined,
   })
   const [showFilters, setShowFilters] = useState(false)
 
@@ -175,7 +176,7 @@ export default function SkinAnalysisHistoryPage() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             Filters
-            {(params.dateFrom || params.dateTo) && (
+            {(params.dateFrom || params.dateTo || params.skinType) && (
               <span className="h-2 w-2 rounded-full bg-violet-500 inline-block" />
             )}
           </Button>
@@ -222,20 +223,20 @@ export default function SkinAnalysisHistoryPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pageSize" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {t('history.pageSize')}
+                <Label htmlFor="skinType" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {t('history.columns.skinType')}
                 </Label>
                 <Select
-                  value={String(params.pageSize)}
-                  onValueChange={(v) => setParams((p) => ({ ...p, pageSize: Number(v), page: 1 }))}
+                  value={params.skinType ?? ''}
+                  onValueChange={(v) => setParams((p) => ({ ...p, skinType: (v || undefined) as HistoryQueryParams['skinType'], page: 1 }))}
                 >
-                  <SelectTrigger id="pageSize">
-                    <SelectValue />
+                  <SelectTrigger id="skinType">
+                    <SelectValue placeholder={t('history.allSkinTypes')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {[10, 20, 50].map((n) => (
-                      <SelectItem key={n} value={String(n)}>
-                        {t('common.pageSize', { size: n })}
+                    {Object.entries(SKIN_TYPE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
                       </SelectItem>
                     ))}
                   </SelectContent>

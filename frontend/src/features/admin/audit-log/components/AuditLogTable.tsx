@@ -1,8 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Eye } from 'lucide-react';
+import { Eye, Bot, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -26,70 +25,51 @@ interface AuditLogTableProps {
   sortKey?: AuditLogQueryState['sortBy'];
 }
 
-/**
- * Mobile (<768px) card list — DD_Audit_Log_02_FRONTEND_PAGE §9: "mobile
- * (<768px) uses stacked filters, cards, and full-screen modal/dialog".
- * Hidden from `md` up, where the scrollable/full table takes over.
- */
-export const AuditLogCards: React.FC<
-  Omit<AuditLogTableProps, 'onSort' | 'sortKey' | 'onToggleAll'>
-> = ({ logs = [], query: _query, selectedIds, onToggleRow, onViewDetail }) => {
-  const { t } = useTranslation();
-  if (logs.length === 0) return null;
+function getInitials(name?: string | null): string {
+  if (!name) return 'SYS';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
 
-  return (
-    <ul className="space-y-3 md:hidden" data-testid="audit-cards">
-      {logs.map((log) => (
-        <li
-          key={log.id}
-          className="rounded-md border bg-card p-4 text-sm break-words"
-        >
-          <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <Checkbox
-                checked={selectedIds.has(log.id)}
-                onCheckedChange={() => onToggleRow(log.id)}
-                aria-label={`${t('audit.selectRow')} ${log.id}`}
-              />
-              <span className="font-mono text-xs text-muted-foreground">
-                {formatMmt(log.createdAt)}
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onViewDetail(log.id)}
-              data-testid="btn-view-detail"
-            >
-              {t('audit.viewDetail')}
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2 [&>div]:min-w-0">
-            <div>
-              <span className="text-xs text-muted-foreground">
-                {t('audit.actor')}
-              </span>
-              <p className="font-medium">{log.userName ?? t('audit.system')}</p>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground">
-                {t('audit.action')}
-              </span>
-              <p className="break-all font-mono text-xs">{log.action}</p>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground">
-                {t('audit.entityType')}
-              </span>
-              <p>{log.entityType}</p>
-            </div>
-          </div>
-          <p className="mt-2 text-muted-foreground">{log.summary}</p>
-        </li>
-      ))}
-    </ul>
+function getActionBadgeStyle(action: string): string {
+  const upper = action.toUpperCase();
+  if (upper.includes('DELETE') || upper.includes('REMOVE') || upper.includes('REJECT')) {
+    return 'bg-rose-50 text-rose-600 border-rose-200';
+  }
+  if (upper.includes('APPROVE') || upper.includes('CREATE') || upper.includes('SUCCESS')) {
+    return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+  }
+  if (upper.includes('FEE') || upper.includes('UPDATE') || upper.includes('EDIT')) {
+    return 'bg-amber-50 text-amber-600 border-amber-200';
+  }
+  if (upper.includes('PAID') || upper.includes('PAY') || upper.includes('EXPORT')) {
+    return 'bg-indigo-50 text-indigo-600 border-indigo-200';
+  }
+  return 'bg-muted text-muted-foreground border-border';
+}
+
+function SortIcon({
+  col,
+  sortKey,
+  sortOrder,
+}: {
+  col: AuditLogQueryState['sortBy'];
+  sortKey?: AuditLogQueryState['sortBy'];
+  sortOrder: 'asc' | 'desc';
+}) {
+  if (sortKey !== col)
+    return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
+  return sortOrder === 'asc' ? (
+    <ArrowUp className="ml-1 inline h-3 w-3 text-primary" />
+  ) : (
+    <ArrowDown className="ml-1 inline h-3 w-3 text-primary" />
   );
-};
+}
+
+const thClass = 'bg-primary/10 whitespace-nowrap font-bold';
 
 export const AuditLogTable: React.FC<AuditLogTableProps> = ({
   logs = [],
@@ -105,25 +85,17 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({
   const allSelected =
     logs.length > 0 && logs.every((log) => selectedIds.has(log.id));
 
-  const header = (
-    key: AuditLogQueryState['sortBy'],
-    label: string,
-    widthClass?: string,
-  ) => (
-    <TableHead className={`sticky top-0 z-20 bg-card ${widthClass ?? ''}`}>
+  const sortableHead = (col: AuditLogQueryState['sortBy'], label: string, className = '') => (
+    <TableHead className={`${thClass} ${className}`}>
       {onSort ? (
         <button
           type="button"
-          className="inline-flex items-center gap-1 hover:underline"
-          onClick={() => onSort(key)}
+          className="inline-flex items-center gap-0.5 font-bold hover:text-foreground transition-colors"
+          onClick={() => onSort(col)}
           aria-label={`${t('audit.sortBy')} ${label}`}
         >
           {label}
-          {sortKey === key && (
-            <span aria-hidden="true">
-              {query.sortOrder === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
+          <SortIcon col={col} sortKey={sortKey} sortOrder={query.sortOrder} />
         </button>
       ) : (
         label
@@ -131,117 +103,128 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({
     </TableHead>
   );
 
-  if (logs.length === 0) {
-    return (
-      <div
-        className="rounded-md border bg-card p-8 text-center text-muted-foreground"
-        data-testid="audit-empty"
-      >
-        {t('audit.noLogs')}
-      </div>
-    );
-  }
-
   return (
-    <>
-      {/* Hidden below md (768px) where the card list is rendered instead.
-          Tablet scrolls horizontally; desktop (>=1024px) shows the full table. */}
-      <div className="hidden -mx-2 rounded-md border bg-card sm:-mx-3 md:block">
-        <div
-          className="max-h-[75vh] overflow-auto overscroll-auto [&>div]:overflow-visible"
-          data-testid="audit-table-scroll"
-        >
-          <Table className="w-full table-fixed min-w-[760px] lg:min-w-0">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="sticky top-0 z-20 w-10 bg-card">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={onToggleAll}
-                    aria-label={t('audit.selectAll')}
+    <div className="overflow-x-auto rounded-md border bg-card" data-testid="audit-table-scroll">
+      <Table className="w-full">
+        <TableHeader className="sticky top-0 z-10 bg-primary/10">
+          <TableRow>
+            <TableHead className="w-12 bg-primary/10">
+              <input
+                type="checkbox"
+                aria-label={t('audit.selectAll')}
+                checked={allSelected}
+                onChange={onToggleAll}
+              />
+            </TableHead>
+            {sortableHead('created_at', t('audit.timestamp'), 'w-[160px]')}
+            <TableHead className={thClass}>{t('audit.actor')}</TableHead>
+            {sortableHead('action', t('audit.action'))}
+            {sortableHead('entity_type', t('audit.entityType'))}
+            <TableHead className={thClass}>{t('audit.summary')}</TableHead>
+            <TableHead className={thClass}>{t('audit.ipAddress')}</TableHead>
+            <TableHead className={`${thClass} text-right w-16`}>{t('audit.actions')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {logs.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={8}
+                className="py-12 text-center text-muted-foreground"
+                data-testid="audit-empty"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Bot className="h-8 w-8 text-muted-foreground/40" />
+                  <p className="font-medium text-foreground">{t('audit.noLogs')}</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : (
+            logs.map((log) => (
+              <TableRow
+                key={log.id}
+                data-selected={selectedIds.has(log.id) || undefined}
+                className="transition-colors duration-150 ease-in-out hover:bg-muted/40"
+              >
+                {/* Checkbox */}
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    aria-label={`${t('audit.selectRow')} ${log.id}`}
+                    checked={selectedIds.has(log.id)}
+                    onChange={() => onToggleRow(log.id)}
                   />
-                </TableHead>
-                {header('created_at', t('audit.timestamp'), 'w-[150px]')}
-                <TableHead className="sticky top-0 z-20 bg-card w-[180px]">
-                  {t('audit.actor')}
-                </TableHead>
-                {header('action', t('audit.action'), 'w-[130px]')}
-                <TableHead className="sticky top-0 z-20 hidden bg-card sm:table-cell w-[120px]">
-                  {t('audit.entityType')}
-                </TableHead>
-                <TableHead className="sticky top-0 z-20 hidden bg-card lg:table-cell w-[220px]">
-                  {t('audit.summary')}
-                </TableHead>
-                <TableHead className="sticky top-0 z-20 hidden bg-card lg:table-cell w-[140px]">
-                  {t('audit.ipAddress')}
-                </TableHead>
-                <TableHead className="sticky top-0 z-20 bg-card text-right w-[80px]">
-                  {t('audit.actions')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {logs.map((log) => (
-                <TableRow
-                  key={log.id}
-                  data-selected={selectedIds.has(log.id) || undefined}
-                >
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.has(log.id)}
-                      onCheckedChange={() => onToggleRow(log.id)}
-                      aria-label={`${t('audit.selectRow')} ${log.id}`}
-                    />
-                  </TableCell>
-                  <TableCell className="break-words font-mono text-xs">
-                    {formatMmt(log.createdAt)}
-                  </TableCell>
-                  <TableCell className="max-w-32 truncate text-sm sm:max-w-40">
-                    {log.userName ?? t('audit.system')}
-                    {log.userEmail ? (
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {log.userEmail}
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="break-all font-mono text-xs">
+                </TableCell>
+
+                {/* Timestamp */}
+                <TableCell className="font-mono text-[11px] text-muted-foreground whitespace-nowrap w-[160px]">
+                  {formatMmt(log.createdAt)}
+                </TableCell>
+
+                {/* Actor */}
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-[11px] border border-primary/20">
+                      {log.userName ? getInitials(log.userName) : <Bot className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate max-w-[130px]">
+                        {log.userName ?? t('audit.system')}
+                      </p>
+                      {log.userEmail && (
+                        <span className="block truncate text-[11px] text-muted-foreground max-w-[130px]">
+                          {log.userEmail}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+
+                {/* Action */}
+                <TableCell>
+                  <span className={`inline-block font-mono text-xs px-2 py-0.5 rounded border font-medium whitespace-nowrap ${getActionBadgeStyle(log.action)}`}>
                     {log.action}
-                  </TableCell>
-                  <TableCell className="hidden text-sm sm:table-cell">
+                  </span>
+                </TableCell>
+
+                {/* Entity Type */}
+                <TableCell>
+                  <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground border border-border/60 whitespace-nowrap">
                     {log.entityType}
-                  </TableCell>
-                  <TableCell className="hidden max-w-48 truncate text-sm text-muted-foreground lg:table-cell">
-                    {log.summary}
-                  </TableCell>
-                  <TableCell className="hidden break-all font-mono text-xs lg:table-cell">
+                  </span>
+                </TableCell>
+
+                {/* Summary */}
+                <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                  {log.summary || '—'}
+                </TableCell>
+
+                {/* IP Address */}
+                <TableCell>
+                  <span className="font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded border border-border/50 whitespace-nowrap">
                     {log.ipAddress ?? t('audit.unknownIp')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
-                      onClick={() => onViewDetail(log.id)}
-                      aria-label={t('audit.viewDetail')}
-                      title={t('audit.viewDetail')}
-                      data-testid="btn-view-detail"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-      <AuditLogCards
-        logs={logs}
-        query={query}
-        selectedIds={selectedIds}
-        onToggleRow={onToggleRow}
-        onViewDetail={onViewDetail}
-      />
-    </>
+                  </span>
+                </TableCell>
+
+                {/* Actions */}
+                <TableCell className="text-right">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    aria-label={t('audit.viewDetail')}
+                    title={t('audit.viewDetail')}
+                    data-testid="btn-view-detail"
+                    className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
+                    onClick={() => onViewDetail(log.id)}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

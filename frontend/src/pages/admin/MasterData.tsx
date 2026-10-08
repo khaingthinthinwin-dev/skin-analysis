@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -61,13 +60,6 @@ export default function MasterData() {
     });
   };
 
-  const totalRows = [
-    ...(userRoles.rowsQuery.data ?? []),
-    ...(orderStatuses.rowsQuery.data ?? []),
-    ...(discountTypes.rowsQuery.data ?? []),
-    ...(categories.rowsQuery.data ?? []),
-  ].length;
-
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -78,7 +70,6 @@ export default function MasterData() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary">{totalRows} entries</Badge>
           {tab === 'categories' && (
             <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />

@@ -48,11 +48,12 @@ import { MailModule } from './shared/mail/mail.module';
               pass: configService.get<string>('mail.pass'),
             },
           },
-          defaults: {
-            from,
-          },
-        };
-      },
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        defaults: {
+          from: configService.get<string>('mail.from'),
+        } as any,
+      }),
       inject: [ConfigService],
     }),
     PrismaModule,

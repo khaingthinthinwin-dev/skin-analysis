@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Search, Filter, X, Activity, Layers, Globe, Calendar } from "lucide-react";
 import { DatePicker } from "./DatePicker";
 import { MultiSelect, type MultiSelectOption } from "./MultiSelect";
 import type { AuditFilterOptions } from "../services/auditLog.service";
@@ -26,20 +27,12 @@ export function AuditLogFilters({
   onClear,
 }: AuditLogFiltersProps) {
   const { t } = useTranslation();
-  // Single merged search box: user name, email, action and entity type are all
-  // matched by the `search` query parameter (see the backend `buildWhere`).
   const [searchInput, setSearchInput] = useState(query.search ?? "");
   const [dateFromInput, setDateFromInput] = useState(query.dateFrom ?? "");
   const [dateToInput, setDateToInput] = useState(query.dateTo ?? "");
-  // Range this panel last sent to the query, so the pickers can follow external
-  // changes (Clear Filters, drill-down navigation, browser back/forward) without
-  // discarding a draft the user is still editing.
   const lastPublishedRange = useRef(
     `${query.dateFrom ?? ""}|${query.dateTo ?? ""}`,
   );
-  // Search term this panel last sent to the query, so an external change
-  // (Clear Filters, drill-down, shared URL, back/forward) can be told apart
-  // from an echo of this field's own debounced push.
   const lastPublishedSearch = useRef(query.search ?? "");
 
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -49,14 +42,8 @@ export function AuditLogFilters({
       ? t("audit.invalidDateRange")
       : null;
 
-  // BR-AUDIT-023: the date range is optional, but both ends become required as
-  // soon as either one is picked. Both pickers therefore keep their own value
-  // (same behaviour as the commission report filter panel) and the pair is only
-  // pushed to the query once it is complete and correctly ordered — a
-  // half-filled or inverted range is never sent to the API.
   const pushDateRange = (from: string, to: string) => {
     if (from && to) {
-      // Wait for the user to fix an inverted range instead of querying with it.
       if (to < from) return;
       if (query.dateFrom !== from || query.dateTo !== to) {
         lastPublishedRange.current = `${from}|${to}`;
@@ -64,8 +51,6 @@ export function AuditLogFilters({
       }
       return;
     }
-    // Clearing one end clears the range filter; the other value stays visible so
-    // it can be paired with a new date.
     if (query.dateFrom || query.dateTo) {
       lastPublishedRange.current = "|";
       onChange({ dateFrom: undefined, dateTo: undefined });
@@ -82,7 +67,6 @@ export function AuditLogFilters({
     pushDateRange(dateFromInput, value);
   };
 
-  // Clear Filters also resets the drafts held by this panel.
   const handleClearFilters = () => {
     setSearchInput("");
     setDateFromInput("");
@@ -91,8 +75,6 @@ export function AuditLogFilters({
     onClear();
   };
 
-  // Mirror a date range that changed outside this panel (Clear Filters,
-  // drill-down navigation, browser back/forward, shared URL) into the pickers.
   useEffect(() => {
     const incoming = `${query.dateFrom ?? ""}|${query.dateTo ?? ""}`;
     if (incoming === lastPublishedRange.current) return;
@@ -101,7 +83,6 @@ export function AuditLogFilters({
     setDateToInput(query.dateTo ?? "");
   }, [query.dateFrom, query.dateTo]);
 
-  // Publish the debounced draft to the query (the one merged search box).
   useEffect(() => {
     const next = debouncedSearch || undefined;
     if ((query.search ?? "") !== (next ?? "")) {
@@ -111,8 +92,6 @@ export function AuditLogFilters({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
-  // Mirror a search term that changed outside this panel (Clear Filters,
-  // drill-down navigation, browser back/forward, shared URL) into the box.
   useEffect(() => {
     const incoming = query.search ?? "";
     if (incoming === lastPublishedSearch.current) return;
@@ -129,16 +108,19 @@ export function AuditLogFilters({
 
   return (
     <section
-      className="-mx-2 rounded-lg border bg-card p-4 sm:-mx-3"
+      className="relative z-30 rounded-xl border border-border/60 bg-card/90 shadow-2xs backdrop-blur-xs p-4 sm:p-5 space-y-4"
       aria-label={t("audit.filtersSection")}
       data-testid="audit-filters"
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">{t("audit.filtersSection")}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-3">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">{t("audit.filtersSection")}</h2>
+        </div>
         <div className="flex items-center gap-2">
           {activeCount > 0 && (
-            <Badge variant="secondary" data-testid="active-filters-count">
-              {t("audit.activeFilters", { count: activeCount })}
+            <Badge variant="secondary" className="gap-1 px-2.5 py-0.5 font-medium" data-testid="active-filters-count">
+              <span>{t("audit.activeFilters", { count: activeCount })}</span>
             </Badge>
           )}
           {activeCount > 0 && (
@@ -146,8 +128,10 @@ export function AuditLogFilters({
               variant="ghost"
               size="sm"
               onClick={handleClearFilters}
+              className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
               data-testid="btn-clear-filters"
             >
+              <X className="h-3.5 w-3.5" />
               {t("audit.clearFilters")}
             </Button>
           )}
@@ -156,22 +140,30 @@ export function AuditLogFilters({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>div]:min-w-0">
         <div className="space-y-1.5">
-          <Label htmlFor="audit-search">{t("audit.search")}</Label>
-          {/* One merged box in the old User slot: the API `search` parameter
-              matches user name, email, action and entity type together. */}
-          <Input
-            id="audit-search"
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t("audit.searchPlaceholder")}
-            maxLength={255}
-            data-testid="audit-search"
-          />
+          <Label htmlFor="audit-search" className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Search className="h-3.5 w-3.5 text-muted-foreground/80" />
+            {t("audit.search")}
+          </Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
+            <Input
+              id="audit-search"
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t("audit.searchPlaceholder")}
+              maxLength={255}
+              className="pl-9 text-sm rounded-lg"
+              data-testid="audit-search"
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label>{t("audit.filterByAction")}</Label>
+          <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Activity className="h-3.5 w-3.5 text-muted-foreground/80" />
+            {t("audit.filterByAction")}
+          </Label>
           <MultiSelect
             label={t("audit.filterByAction")}
             options={actionOptions}
@@ -182,7 +174,10 @@ export function AuditLogFilters({
         </div>
 
         <div className="space-y-1.5">
-          <Label>{t("audit.filterByEntityType")}</Label>
+          <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Layers className="h-3.5 w-3.5 text-muted-foreground/80" />
+            {t("audit.filterByEntityType")}
+          </Label>
           <MultiSelect
             label={t("audit.filterByEntityType")}
             options={entityTypeOptions}
@@ -193,7 +188,10 @@ export function AuditLogFilters({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="audit-ip-filter">{t("audit.filterByIp")}</Label>
+          <Label htmlFor="audit-ip-filter" className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Globe className="h-3.5 w-3.5 text-muted-foreground/80" />
+            {t("audit.filterByIp")}
+          </Label>
           <Input
             id="audit-ip-filter"
             value={query.ipAddress ?? ""}
@@ -202,14 +200,16 @@ export function AuditLogFilters({
             }
             placeholder={t("audit.filterByIpPlaceholder")}
             maxLength={45}
+            className="text-sm rounded-lg font-mono"
           />
         </div>
 
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="audit-date-from">{t("audit.filterByDate")}</Label>
-          {/* Stacked below sm so neither date input gets squeezed on narrow
-              phones; side-by-side (with the dash) from sm upwards. */}
-          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+        <div className="space-y-1.5 sm:col-span-2 lg:col-span-4 border-t border-border/40 pt-3">
+          <Label htmlFor="audit-date-from" className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground/80" />
+            {t("audit.filterByDate")}
+          </Label>
+          <div className="grid min-w-0 grid-cols-1 gap-2 max-w-xl sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
             <DatePicker
               id="audit-date-from"
               label={t("audit.dateFrom")}
@@ -217,7 +217,7 @@ export function AuditLogFilters({
               onChange={handleDateFromChange}
               invalid={Boolean(dateError)}
             />
-            <span className="hidden text-muted-foreground sm:inline">–</span>
+            <span className="hidden text-muted-foreground sm:inline font-medium text-center px-1">–</span>
             <DatePicker
               id="audit-date-to"
               align="right"
@@ -229,7 +229,7 @@ export function AuditLogFilters({
           </div>
           {dateError && (
             <p
-              className="text-sm text-destructive"
+              className="text-sm text-destructive font-medium"
               role="alert"
               aria-live="polite"
             >

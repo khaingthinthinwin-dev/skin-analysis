@@ -36,11 +36,12 @@ import { UsersModule } from '../users/users.module';
               pass: configService.get<string>('mail.pass'),
             },
           },
-          defaults: {
-            from,
-          },
-        };
-      },
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        defaults: {
+          from: `"Cosmetics Finder" <${configService.get<string>('mail.user') || 'noreply@example.com'}>`,
+        } as any,
+      }),
       inject: [ConfigService],
     }),
   ],
