@@ -402,6 +402,123 @@
         "sg": "စင်္ကာပူ"
       },
       "processing": "သင့်အော်ဒါကို လုပ်ဆောင်နေပါသည်..."
+    },
+    "products": {
+      "promotion": {
+        "title": "လက်ရှိ ပရိုမိုးရှင်း",
+        "discountPercentOff": "{{discountValue}}% လျှော့စျေး",
+        "discountAmountOff": "{{amount}} လျှော့စျေး",
+        "unlimited": "အကန့်အသတ်မရှိ ကျန်",
+        "usesLeft": "{{count}} ခု ကျန်",
+        "copyCode": "ပရိုမိုးရှင်းကုဒ် {{code}} ကို ကူးယူရန်",
+        "copied": "ကူးယူပြီးပါပြီ!",
+        "clickToCopy": "ကူးယူရန် နှိပ်ပါ",
+        "minimumOrder": "အနည်းဆုံး အော်ဒါ {{amount}}",
+        "validity": "သက်တမ်း: {{validity}}",
+        "usageSummary": "{{usedCount}} ကြိမ် အသုံးပြုပြီး · {{balance}}"
+      },
+      "featured": "အထူးအသားပေး",
+      "price": {
+        "amountInMmk": "{{amount}} Ks",
+        "savingsInMmk": "{{amount}} Ks သက်သာ"
+      },
+      "gallery": {
+        "imageView": "{{name}} ပုံ {{index}}"
+      },
+      "page": {
+        "invalidProduct": "ကုန်ပစ္စည်း မမှန်ကန်ပါ။",
+        "notFound": "ကုန်ပစ္စည်း မတွေ့ပါ။",
+        "browseProducts": "ကုန်ပစ္စည်းများ ကြည့်ရန်",
+        "goBack": "နောက်သို့ ပြန်သွားရန်"
+      },
+      "stock": {
+        "outOfStock": "လက်ကျန်ပြတ်သည်",
+        "lowStock": "လက်ကျန်နည်းသည် ({{count}} ခု ကျန်)",
+        "inStockStatus": "လက်ကျန်ရှိသည် ({{count}} ခု)",
+        "quantityInStock": "လက်ကျန် {{count}} ခု"
+      },
+      "product": {
+        "sku": "SKU: {{sku}}",
+        "soldBy": "{{shopName}} မှ ရောင်းချသည်"
+      },
+      "reviews": {
+        "countLabel_other": "({{count}} ခု သုံးသပ်ချက်)",
+        "loading": "သုံးသပ်ချက်များ ဖွင့်နေသည်...",
+        "loadError": "သုံးသပ်ချက်များ ဖွင့်၍ မရပါ။",
+        "empty": "သုံးသပ်ချက် မရှိသေးပါ။",
+        "pending": "စစ်ဆေးဆဲ",
+        "verified": "အတည်ပြုပြီး",
+        "reportLabel": "ဤသုံးသပ်ချက်ကို တိုင်ကြားရန်",
+        "imageAlt": "သုံးသပ်ချက်ပုံ {{index}}",
+        "loadMore": "သုံးသပ်ချက်များ ထပ်ဖွင့်ရန်"
+      },
+      "actions": {
+        "addedToCartToast": "စျေးခြင်းဘူးထဲ ထည့်ပြီးပါပြီ",
+        "addedToWishlistToast": "ဆန္ဒစာရင်းထဲ ထည့်ပြီးပါပြီ",
+        "addingToCart": "ထည့်နေသည်...",
+        "addToCart": "စျေးခြင်းဘူးထဲ ထည့်ရန်",
+        "addToWishlistLabel": "ဆန္ဒစာရင်းထဲ ထည့်ရန်",
+        "addedToWishlist": "ဆန္ဒစာရင်းထဲ ထည့်ပြီးပါပြီ",
+        "addToWishlist": "ဆန္ဒစာရင်းထဲ ထည့်ရန်",
+        "ok": "အိုကေ",
+        "submitting": "တင်သွင်းနေသည်..."
+      },
+      "cart": {
+        "alreadyInCartTitle": "စျေးခြင်းဘူးထဲ ရှိပြီးပါပြီ",
+        "alreadyInCartDescription": "ဤကုန်ပစ္စည်းသည် စျေးခြင်းဘူးထဲတွင် ရှိပြီးပါပြီ။"
+      },
+      "wishlist": {
+        "alreadyInWishlistTitle": "ဆန္ဒစာရင်းထဲ ရှိပြီးပါပြီ",
+        "alreadyInWishlistDescription": "ဤကုန်ပစ္စည်းသည် ဆန္ဒစာရင်းထဲတွင် ရှိပြီးပါပြီ။"
+      },
+      "tabs": {
+        "description": "ဖော်ပြချက်",
+        "ingredients": "ပါဝင်ပစ္စည်းများ",
+        "reviews_other": "သုံးသပ်ချက် ({{count}} ခု)",
+        "noDescription": "ဖော်ပြချက် မရှိပါ။",
+        "noIngredients": "ပါဝင်ပစ္စည်းများ မဖော်ပြထားပါ။"
+      },
+      "rating": {
+        "label": "5 မှတ်တွင် {{rating}} မှတ်",
+        "rateStar_other": "ကြယ် {{count}} ပွင့် အဆင့်သတ်မှတ်ရန်"
+      },
+      "reviewForm": {
+        "signInRequired": "သုံးသပ်ချက်ရေးရန် အကောင့်ဝင်ပါ။",
+        "buyerOnly": "ဤကုန်ပစ္စည်းကို ဝယ်ယူသူများသာ သုံးသပ်ချက်ရေးနိုင်ပါသည်။",
+        "checkingPurchase": "ဝယ်ယူမှုကို စစ်ဆေးနေပါသည်... ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။",
+        "verifyPurchaseError": "ဝယ်ယူမှုကို အတည်မပြုနိုင်ပါ။ စာမျက်နှာကို ပြန်ဖွင့်ပြီး ထပ်ကြိုးစားပါ။",
+        "alreadyReviewed": "ဤကုန်ပစ္စည်းကို သုံးသပ်ပြီးပါပြီ။",
+        "purchaseRequired": "ဝယ်ယူပြီး လက်ခံရရှိသော ကုန်ပစ္စည်းများကိုသာ သုံးသပ်နိုင်ပါသည်။",
+        "ratingRequired": "အဆင့်သတ်မှတ်ချက် ရွေးပါ။",
+        "reviewRequired": "သုံးသပ်ချက် ရေးပါ။",
+        "signInPrompt": "သုံးသပ်ချက်ရေးရန် <signin>အကောင့်ဝင်ပါ</signin>။",
+        "title": "သုံးသပ်ချက်ရေးရန်",
+        "titlePlaceholder": "ခေါင်းစဉ် (မဖြည့်လည်းရပါသည်)",
+        "bodyPlaceholder": "သင့်အတွေ့အကြုံကို မျှဝေပါ...",
+        "submit": "သုံးသပ်ချက် တင်ရန်",
+        "submitted": "သုံးသပ်ချက် တင်ပြီးပါပြီ။ အတည်ပြုရန် စောင့်ဆိုင်းနေပါသည်။",
+        "submitError": "သုံးသပ်ချက် တင်၍ မရပါ။"
+      },
+      "report": {
+        "title": "သုံးသပ်ချက် တိုင်ကြားရန်",
+        "description": "ဤသုံးသပ်ချက်ကို တိုင်ကြားရသည့် အကြောင်းရင်းကို ပြောပြပါ။ တိုင်ကြားချက်များကို စိစစ်ရေးအဖွဲ့က စစ်ဆေးပါသည်။",
+        "reasonSpam": "စပမ်း",
+        "reasonInappropriate": "မသင့်လျော်သော အကြောင်းအရာ",
+        "reasonFake": "အတုအယောင် သုံးသပ်ချက်",
+        "reasonOther": "အခြား",
+        "detailsPlaceholder": "အသေးစိတ် ထပ်ဖြည့်ပါ... (မဖြည့်လည်းရပါသည်)",
+        "submit": "တိုင်ကြားချက် တင်ရန်",
+        "submitted": "တိုင်ကြားချက် တင်ပြီးပါပြီ",
+        "alreadyReported": "ဤသုံးသပ်ချက်ကို တိုင်ကြားပြီးပါပြီ",
+        "rateLimited": "တောင်းဆိုမှု များလွန်းပါသည်။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။",
+        "submitError": "တိုင်ကြားချက် တင်၍ မရပါ။"
+      },
+      "ads": {
+        "merchantPartner": "ရောင်းချသူ မိတ်ဖက်"
+      },
+      "similar": {
+        "title": "ဆင်တူကုန်ပစ္စည်းများ"
+      }
     }
   },
   "profile": {

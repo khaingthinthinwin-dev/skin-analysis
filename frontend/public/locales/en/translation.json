@@ -402,6 +402,126 @@
         "sg": "Singapore"
       },
       "processing": "Processing your order..."
+    },
+    "products": {
+      "promotion": {
+        "title": "Active Promotion",
+        "discountPercentOff": "{{discountValue}}% off",
+        "discountAmountOff": "{{amount}} off",
+        "unlimited": "Unlimited",
+        "usesLeft": "{{count}} left",
+        "copyCode": "Copy promotion code {{code}}",
+        "copied": "Copied!",
+        "clickToCopy": "Click to copy",
+        "minimumOrder": "Min. order {{amount}}",
+        "validity": "Valid: {{validity}}",
+        "usageSummary": "{{usedCount}} used · {{balance}} left"
+      },
+      "featured": "Featured",
+      "price": {
+        "amountInMmk": "{{amount}} MMK",
+        "savingsInMmk": "Save {{amount}} MMK"
+      },
+      "gallery": {
+        "imageView": "{{name}} view {{index}}"
+      },
+      "page": {
+        "invalidProduct": "Invalid product.",
+        "notFound": "Product not found.",
+        "browseProducts": "Browse products",
+        "goBack": "Go back"
+      },
+      "stock": {
+        "outOfStock": "Out of stock",
+        "lowStock": "Low stock ({{count}} left)",
+        "inStockStatus": "In stock ({{count}})",
+        "quantityInStock": "{{count}} in stock"
+      },
+      "product": {
+        "sku": "SKU: {{sku}}",
+        "soldBy": "Sold by {{shopName}}"
+      },
+      "reviews": {
+        "countLabel_one": "({{count}} reviews)",
+        "countLabel_other": "({{count}} reviews)",
+        "loading": "Loading reviews...",
+        "loadError": "Unable to load reviews.",
+        "empty": "No reviews yet.",
+        "pending": "Pending",
+        "verified": "Verified",
+        "reportLabel": "Report this review",
+        "imageAlt": "Review image {{index}}",
+        "loadMore": "Load more reviews"
+      },
+      "actions": {
+        "addedToCartToast": "Added to cart",
+        "addedToWishlistToast": "Added to wishlist",
+        "addingToCart": "Adding...",
+        "addToCart": "Add to Cart",
+        "addToWishlistLabel": "Add to wishlist",
+        "addedToWishlist": "Added to Wishlist",
+        "addToWishlist": "Add to Wishlist",
+        "ok": "OK",
+        "submitting": "Submitting..."
+      },
+      "cart": {
+        "alreadyInCartTitle": "Already in Cart",
+        "alreadyInCartDescription": "This product is already in cart."
+      },
+      "wishlist": {
+        "alreadyInWishlistTitle": "Already in Wishlist",
+        "alreadyInWishlistDescription": "This product is already in wishlist."
+      },
+      "tabs": {
+        "description": "Description",
+        "ingredients": "Ingredients",
+        "reviews_one": "Reviews ({{count}})",
+        "reviews_other": "Reviews ({{count}})",
+        "noDescription": "No description available.",
+        "noIngredients": "No ingredients listed."
+      },
+      "rating": {
+        "label": "Rated {{rating}} out of 5",
+        "rateStar_one": "Rate {{count}} star",
+        "rateStar_other": "Rate {{count}} stars"
+      },
+      "reviewForm": {
+        "signInRequired": "Please sign in to write a review.",
+        "buyerOnly": "Only buyers who purchased this product can leave a review.",
+        "checkingPurchase": "Checking your purchase... please try again in a moment.",
+        "verifyPurchaseError": "We could not verify your purchase. Please refresh and try again.",
+        "alreadyReviewed": "You have already reviewed this product.",
+        "purchaseRequired": "You can only review products you have purchased and received.",
+        "ratingRequired": "Please select a rating.",
+        "reviewRequired": "Please write your review.",
+        "signInPrompt": "<signin>Sign in</signin> to write a review.",
+        "title": "Write a review",
+        "titlePlaceholder": "Title (optional)",
+        "bodyPlaceholder": "Share your experience...",
+        "submit": "Submit Review",
+        "submitted": "Your review has been submitted and is awaiting approval.",
+        "submitError": "Failed to submit your review."
+      },
+      "report": {
+        "title": "Report Review",
+        "description": "Let us know why you are reporting this review. Reports are reviewed by our moderation team.",
+        "reasonSpam": "Spam",
+        "reasonInappropriate": "Inappropriate content",
+        "reasonFake": "Fake review",
+        "reasonOther": "Other",
+        "detailsPlaceholder": "Provide additional details... (optional)",
+        "submit": "Submit Report",
+        "submitted": "Report submitted",
+        "alreadyReported": "You have already reported this review",
+        "rateLimited": "Too many requests. Please wait a moment and try again.",
+        "submitError": "Failed to submit report."
+      },
+      "ads": {
+        "merchantPartner": "Merchant Partner"
+      },
+      "similar": {
+        "title": "Similar Products"
+      }
     }
   },
   "profile": {

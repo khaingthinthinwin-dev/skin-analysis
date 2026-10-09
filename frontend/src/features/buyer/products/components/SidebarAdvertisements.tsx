@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
 import { useSidebarAds } from '../hooks/useProductDetail';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 function getImageUrl(url: string | null): string {
   if (!url) return '';
@@ -46,6 +47,7 @@ interface SidebarAdvertisementsProps {
 }
 
 export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) {
+  const { t } = useTranslation();
   const { data: ads = [], isLoading, isError } = useSidebarAds(idOrSlug);
   const { isAuthenticated } = useAuth();
   const basePath = isAuthenticated ? '/buyer/products' : '/products';
@@ -115,10 +117,12 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                 <Badge
                   variant="outline"
                   className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3 max-w-full"
-                  title={announcement || 'Sponsored'}
+                  title={announcement || t('buyer.checkout.sponsoredAds.sponsoredBadge', 'Sponsored')}
                 >
                   <Megaphone className="w-3.5 h-3.5 mr-1 inline shrink-0" />
-                  <span className="truncate">{announcement || 'Sponsored'}</span>
+                  <span className="truncate">
+                    {announcement || t('buyer.checkout.sponsoredAds.sponsoredBadge', 'Sponsored')}
+                  </span>
                 </Badge>
                 {ad.shopName && (
                   <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
@@ -144,7 +148,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                   className="bg-white text-zinc-900 hover:bg-zinc-100 font-bold shadow-lg"
                 >
                   <Link to={productPath}>
-                    Learn more
+                    {t('buyer.checkout.sponsoredAds.learnMore', 'Learn more')}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
@@ -166,7 +170,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                 <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner">
                   <Megaphone className="w-10 h-10 text-white/80 mb-2" />
                   <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">
-                    Merchant Partner
+                    {t('buyer.products.ads.merchantPartner', 'Merchant Partner')}
                   </span>
                 </div>
               )}
@@ -179,7 +183,10 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Previous advertisement"
+                  aria-label={t(
+                    'buyer.checkout.sponsoredAds.previousAdvertisement',
+                    'Previous advertisement',
+                  )}
                   onClick={() => setCurrent((c) => (c - 1 + total) % total)}
                   className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 shadow-md"
                 >
@@ -190,7 +197,10 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Next advertisement"
+                  aria-label={t(
+                    'buyer.checkout.sponsoredAds.nextAdvertisement',
+                    'Next advertisement',
+                  )}
                   onClick={() => setCurrent((c) => (c + 1) % total)}
                   className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 shadow-md"
                 >
@@ -203,7 +213,11 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                   <button
                     key={i}
                     type="button"
-                    aria-label={`Go to advertisement ${i + 1}`}
+                    aria-label={t(
+                      'buyer.checkout.sponsoredAds.goToAdvertisement',
+                      'Go to advertisement {{index}}',
+                      { index: i + 1 },
+                    )}
                     aria-current={i === current ? 'true' : undefined}
                     onClick={() => setCurrent(i)}
                     className={`h-2 rounded-full transition-all duration-300 ${

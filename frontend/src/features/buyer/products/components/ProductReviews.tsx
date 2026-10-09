@@ -5,27 +5,41 @@ import { Button } from '@/components/ui/button';
 import { useProductReviews } from '../hooks/useProductDetail';
 import { StarRating } from './StarRating';
 import { ReviewReportDialog } from './ReviewReportDialog';
+import { useTranslation } from 'react-i18next';
 
 interface ProductReviewsProps {
   idOrSlug: string;
 }
 
 export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [reportReviewId, setReportReviewId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useProductReviews(idOrSlug, { page, limit: 10 });
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading reviews...</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t('buyer.products.reviews.loading', 'Loading reviews...')}
+      </p>
+    );
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-muted-foreground">Unable to load reviews.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t('buyer.products.reviews.loadError', 'Unable to load reviews.')}
+      </p>
+    );
   }
 
   if (data.items.length === 0) {
-    return <p className="text-sm text-muted-foreground">No reviews yet.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t('buyer.products.reviews.empty', 'No reviews yet.')}
+      </p>
+    );
   }
 
   const hasMore = data.page < data.totalPages;
@@ -53,20 +67,20 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
               <StarRating rating={review.rating} size="sm" />
               {review.status === 'pending' && (
                 <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-medium text-amber-700">
-                  Pending
+                  {t('buyer.products.reviews.pending', 'Pending')}
                 </span>
               )}
               {review.isVerifiedPurchase && (
                 <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-medium text-green-700">
-                  Verified
+                  {t('buyer.products.reviews.verified', 'Verified')}
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => setReportReviewId(review.id)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
-                aria-label="Report this review"
-                title="Report this review"
+                aria-label={t('buyer.products.reviews.reportLabel', 'Report this review')}
+                title={t('buyer.products.reviews.reportLabel', 'Report this review')}
               >
                 <Flag className="h-4 w-4" />
               </button>
@@ -80,7 +94,9 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
                 <img
                   key={i}
                   src={img}
-                  alt={`Review image ${i + 1}`}
+                  alt={t('buyer.products.reviews.imageAlt', 'Review image {{index}}', {
+                    index: i + 1,
+                  })}
                   className="h-20 w-20 rounded-md object-cover"
                 />
               ))}
@@ -92,7 +108,7 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
       {hasMore && (
         <div className="flex items-center justify-center pt-2">
           <Button variant="outline" onClick={() => setPage((p) => p + 1)}>
-            Load more reviews
+            {t('buyer.products.reviews.loadMore', 'Load more reviews')}
           </Button>
         </div>
       )}

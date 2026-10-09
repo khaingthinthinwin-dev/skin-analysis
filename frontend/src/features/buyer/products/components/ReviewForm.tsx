@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ interface ReviewFormProps {
 }
 
 export function ReviewForm({ idOrSlug }: ReviewFormProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { mutate: createReview, isPending: isSubmitting } = useCreateReview(idOrSlug);
   const { data: canReviewData, isPending: isCheckingEligibility, isError: isEligibilityError } =
@@ -28,24 +30,42 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   const validate = (): boolean => {
     const newErrors: { rating?: string; body?: string; submit?: string } = {};
     if (!user) {
-      newErrors.submit = 'Please sign in to write a review.';
+      newErrors.submit = t(
+        'buyer.products.reviewForm.signInRequired',
+        'Please sign in to write a review.',
+      );
     } else if (!isBuyer) {
-      newErrors.submit = 'Only buyers who purchased this product can leave a review.';
+      newErrors.submit = t(
+        'buyer.products.reviewForm.buyerOnly',
+        'Only buyers who purchased this product can leave a review.',
+      );
     } else if (isCheckingEligibility) {
-      newErrors.submit = 'Checking your purchase... please try again in a moment.';
+      newErrors.submit = t(
+        'buyer.products.reviewForm.checkingPurchase',
+        'Checking your purchase... please try again in a moment.',
+      );
     } else if (isEligibilityError) {
-      newErrors.submit = 'We could not verify your purchase. Please refresh and try again.';
+      newErrors.submit = t(
+        'buyer.products.reviewForm.verifyPurchaseError',
+        'We could not verify your purchase. Please refresh and try again.',
+      );
     } else if (!canReview) {
       newErrors.submit =
         canReviewData?.reason === 'already_reviewed'
-          ? 'You have already reviewed this product.'
-          : 'You can only review products you have purchased and received.';
+          ? t(
+              'buyer.products.reviewForm.alreadyReviewed',
+              'You have already reviewed this product.',
+            )
+          : t(
+              'buyer.products.reviewForm.purchaseRequired',
+              'You can only review products you have purchased and received.',
+            );
     } else {
       if (draftRating === 0) {
-        newErrors.rating = 'Please select a rating.';
+        newErrors.rating = t('buyer.products.reviewForm.ratingRequired', 'Please select a rating.');
       }
       if (!draftBody.trim()) {
-        newErrors.body = 'Please write your review.';
+        newErrors.body = t('buyer.products.reviewForm.reviewRequired', 'Please write your review.');
       }
     }
     setErrors(newErrors);
@@ -60,10 +80,13 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   if (!user) {
     return (
       <p className="pt-4 text-sm text-muted-foreground">
-        <a href="/login" className="text-blue-600 hover:underline">
-          Sign in
-        </a>{' '}
-        to write a review.
+        <Trans
+          i18nKey="buyer.products.reviewForm.signInPrompt"
+          defaults="<signin>Sign in</signin> to write a review."
+          components={{
+            signin: <a href="/login" className="text-blue-600 hover:underline" />,
+          }}
+        />
       </p>
     );
   }
@@ -71,18 +94,23 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   return (
     <div className="space-y-3 border-t pt-4">
       <Separator />
-      <h3 className="font-medium">Write a review</h3>
+      <h3 className="font-medium">
+        {t('buyer.products.reviewForm.title', 'Write a review')}
+      </h3>
       <StarRating rating={draftRating} interactive onRate={(r) => { setDraftRating(r); setErrors((e) => ({ ...e, rating: undefined })); }} />
       {errors.rating && <p className="text-sm text-red-500">{errors.rating}</p>}
       <Input
-        placeholder="Title (optional)"
+        placeholder={t('buyer.products.reviewForm.titlePlaceholder', 'Title (optional)')}
         value={draftTitle}
         onChange={(e) => setDraftTitle(e.target.value)}
         maxLength={255}
       />
       <div className="relative">
         <Textarea
-          placeholder="Share your experience..."
+          placeholder={t(
+            'buyer.products.reviewForm.bodyPlaceholder',
+            'Share your experience...',
+          )}
           value={draftBody}
           onChange={(e) => { setDraftBody(e.target.value); setErrors((e2) => ({ ...e2, body: undefined })); }}
           maxLength={5000}
@@ -95,7 +123,9 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
       {errors.body && <p className="text-sm text-red-500">{errors.body}</p>}
       {errors.submit && <p className="text-sm text-red-500">{errors.submit}</p>}
       <Button onClick={handleReviewSubmit} disabled={isSubmitting || isCheckingEligibility}>
-        {isSubmitting ? 'Submitting...' : 'Submit Review'}
+        {isSubmitting
+          ? t('buyer.products.actions.submitting', 'Submitting...')
+          : t('buyer.products.reviewForm.submit', 'Submit Review')}
       </Button>
     </div>
   );

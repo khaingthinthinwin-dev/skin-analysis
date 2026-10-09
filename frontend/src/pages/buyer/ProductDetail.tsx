@@ -10,8 +10,10 @@ import { SidebarAdvertisements } from '@/features/buyer/products/components/Side
 import { ProductPurchaseActions } from '@/features/buyer/products/components/ProductPurchaseActions';
 import { useProductDetail } from '@/features/buyer/products/hooks/useProductDetail';
 import { useAuth } from '@/providers/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,7 +25,9 @@ export default function ProductDetail() {
   if (!id) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground">Invalid product.</p>
+        <p className="text-muted-foreground">
+          {t('buyer.products.page.invalidProduct', 'Invalid product.')}
+        </p>
       </div>
     );
   }
@@ -48,9 +52,11 @@ export default function ProductDetail() {
   if (isError || !product) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <p className="text-muted-foreground mb-4">Product not found.</p>
+        <p className="text-muted-foreground mb-4">
+          {t('buyer.products.page.notFound', 'Product not found.')}
+        </p>
         <Button asChild>
-          <a href="/products">Browse products</a>
+          <a href="/products">{t('buyer.products.page.browseProducts', 'Browse products')}</a>
         </Button>
       </div>
     );
@@ -65,7 +71,7 @@ export default function ProductDetail() {
         size="icon"
         className="mb-4"
         onClick={() => navigate(-1)}
-        aria-label="Go back"
+        aria-label={t('buyer.products.page.goBack', 'Go back')}
       >
         <ArrowLeft className="h-5 w-5" />
       </Button>

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   productService,
   ProductDetail,
@@ -51,6 +52,7 @@ export function useSimilarProducts(idOrSlug: string, limit = 4) {
 }
 
 export function useCreateReview(idOrSlug: string) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation<ProductReview, Error, CreateReviewData>({
@@ -59,10 +61,18 @@ export function useCreateReview(idOrSlug: string) {
       queryClient.invalidateQueries({ queryKey: ['product', idOrSlug, 'reviews'] });
       queryClient.invalidateQueries({ queryKey: ['product', idOrSlug, 'can-review'] });
       queryClient.invalidateQueries({ queryKey: ['product', idOrSlug] });
-      toast.success('Your review has been submitted and is awaiting approval.');
+      toast.success(
+        t(
+          'buyer.products.reviewForm.submitted',
+          'Your review has been submitted and is awaiting approval.',
+        ),
+      );
     },
     onError: (err: Error & { response?: { data?: { message?: string } } }) => {
-      toast.error(err?.response?.data?.message || 'Failed to submit your review.');
+      toast.error(
+        err?.response?.data?.message ||
+          t('buyer.products.reviewForm.submitError', 'Failed to submit your review.'),
+      );
     },
   });
 }
@@ -97,21 +107,32 @@ export function useCanReview(idOrSlug: string) {
 }
 
 export function useReportReview(reviewId: string) {
+  const { t } = useTranslation();
   return useMutation<ReportReviewResult, Error, ReportReviewData>({
     mutationFn: (data) => productService.reportReview(reviewId, data),
     onSuccess: () => {
-      toast.success('Report submitted');
+      toast.success(t('buyer.products.report.submitted', 'Report submitted'));
     },
     onError: (err: Error & { response?: { data?: { message?: string }; status?: number } }) => {
       if (err?.response?.status === 409) {
-        toast.info('You have already reported this review');
+        toast.info(
+          t('buyer.products.report.alreadyReported', 'You have already reported this review'),
+        );
         return
       }
       if (err?.response?.status === 429) {
-        toast.error('Too many requests. Please wait a moment and try again.');
+        toast.error(
+          t(
+            'buyer.products.report.rateLimited',
+            'Too many requests. Please wait a moment and try again.',
+          ),
+        );
         return
       }
-      toast.error(err?.response?.data?.message || 'Failed to submit report.');
+      toast.error(
+        err?.response?.data?.message ||
+          t('buyer.products.report.submitError', 'Failed to submit report.'),
+      );
     },
   });
 }

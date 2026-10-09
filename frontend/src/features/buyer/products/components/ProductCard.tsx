@@ -5,6 +5,7 @@ import { SimilarProduct } from '../services/product.service';
 import { StarRating } from './StarRating';
 import { ImageIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 function getImageUrl(url: string | null | undefined): string {
   if (!url) return '';
@@ -23,6 +24,7 @@ function formatPrice(price: number) {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const imageUrl = getImageUrl(product.images[0]);
   const productLink = isAuthenticated ? `/buyer/products/${product.slug}` : `/products/${product.slug}`;
@@ -50,14 +52,22 @@ export function ProductCard({ product }: ProductCardProps) {
             <span className="text-sm text-muted-foreground">({product.reviewCount})</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-bold">{formatPrice(product.price)} MMK</span>
+            <span className="font-bold">
+              {t('buyer.products.price.amountInMmk', '{{amount}} MMK', {
+                amount: formatPrice(product.price),
+              })}
+            </span>
             {product.compareAtPrice && (
               <span className="text-sm text-muted-foreground line-through">
-                {formatPrice(product.compareAtPrice)} MMK
+                {t('buyer.products.price.amountInMmk', '{{amount}} MMK', {
+                  amount: formatPrice(product.compareAtPrice),
+                })}
               </span>
             )}
           </div>
-          {product.isFeatured && <Badge variant="secondary">Featured</Badge>}
+          {product.isFeatured && (
+            <Badge variant="secondary">{t('buyer.products.featured', 'Featured')}</Badge>
+          )}
         </div>
       </Card>
     </Link>

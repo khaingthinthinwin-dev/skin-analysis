@@ -402,6 +402,123 @@
         "sg": "シンガポール"
       },
       "processing": "注文を処理しています..."
+    },
+    "products": {
+      "promotion": {
+        "title": "開催中のプロモーション",
+        "discountPercentOff": "{{discountValue}}%割引",
+        "discountAmountOff": "{{amount}}割引",
+        "unlimited": "無制限",
+        "usesLeft": "{{count}}回分",
+        "copyCode": "プロモーションコード{{code}}をコピー",
+        "copied": "コピーしました！",
+        "clickToCopy": "クリックしてコピー",
+        "minimumOrder": "最低注文額 {{amount}}",
+        "validity": "有効期間: {{validity}}",
+        "usageSummary": "{{usedCount}}回使用 · 残り{{balance}}"
+      },
+      "featured": "おすすめ",
+      "price": {
+        "amountInMmk": "{{amount}} MMK",
+        "savingsInMmk": "{{amount}} MMKお得"
+      },
+      "gallery": {
+        "imageView": "{{name}}の画像{{index}}"
+      },
+      "page": {
+        "invalidProduct": "商品が無効です。",
+        "notFound": "商品が見つかりません。",
+        "browseProducts": "商品を見る",
+        "goBack": "戻る"
+      },
+      "stock": {
+        "outOfStock": "在庫切れ",
+        "lowStock": "残りわずか（あと{{count}}個）",
+        "inStockStatus": "在庫あり（{{count}}個）",
+        "quantityInStock": "在庫 {{count}}個"
+      },
+      "product": {
+        "sku": "商品番号: {{sku}}",
+        "soldBy": "{{shopName}}が販売"
+      },
+      "reviews": {
+        "countLabel_other": "（{{count}}件のレビュー）",
+        "loading": "レビューを読み込み中...",
+        "loadError": "レビューを読み込めませんでした。",
+        "empty": "レビューはまだありません。",
+        "pending": "審査中",
+        "verified": "確認済み",
+        "reportLabel": "このレビューを報告",
+        "imageAlt": "レビュー画像{{index}}",
+        "loadMore": "レビューをさらに表示"
+      },
+      "actions": {
+        "addedToCartToast": "カートに追加しました",
+        "addedToWishlistToast": "お気に入りに追加しました",
+        "addingToCart": "追加中...",
+        "addToCart": "カートに追加",
+        "addToWishlistLabel": "お気に入りに追加",
+        "addedToWishlist": "お気に入りに追加済み",
+        "addToWishlist": "お気に入りに追加",
+        "ok": "OK",
+        "submitting": "送信中..."
+      },
+      "cart": {
+        "alreadyInCartTitle": "カートに追加済み",
+        "alreadyInCartDescription": "この商品はすでにカートに入っています。"
+      },
+      "wishlist": {
+        "alreadyInWishlistTitle": "お気に入りに追加済み",
+        "alreadyInWishlistDescription": "この商品はすでにお気に入りに登録されています。"
+      },
+      "tabs": {
+        "description": "商品説明",
+        "ingredients": "成分",
+        "reviews_other": "レビュー（{{count}}件）",
+        "noDescription": "商品説明はありません。",
+        "noIngredients": "成分情報はありません。"
+      },
+      "rating": {
+        "label": "5段階中{{rating}}の評価",
+        "rateStar_other": "{{count}}つ星で評価"
+      },
+      "reviewForm": {
+        "signInRequired": "レビューを書くにはログインしてください。",
+        "buyerOnly": "購入者のみレビューを投稿できます。",
+        "checkingPurchase": "購入を確認しています...少々お待ちください。",
+        "verifyPurchaseError": "購入を確認できませんでした。更新してもう一度お試しください。",
+        "alreadyReviewed": "この商品はすでにレビュー済みです。",
+        "purchaseRequired": "購入して受け取った商品のみレビューできます。",
+        "ratingRequired": "評価を選択してください。",
+        "reviewRequired": "レビューを入力してください。",
+        "signInPrompt": "レビューを書くには<signin>ログイン</signin>してください。",
+        "title": "レビューを書く",
+        "titlePlaceholder": "タイトル（任意）",
+        "bodyPlaceholder": "ご感想をお聞かせください...",
+        "submit": "レビューを送信",
+        "submitted": "レビューを送信しました。承認をお待ちください。",
+        "submitError": "レビューを送信できませんでした。"
+      },
+      "report": {
+        "title": "レビューを報告",
+        "description": "報告する理由をお知らせください。報告内容はモデレーションチームが確認します。",
+        "reasonSpam": "スパム",
+        "reasonInappropriate": "不適切な内容",
+        "reasonFake": "偽のレビュー",
+        "reasonOther": "その他",
+        "detailsPlaceholder": "詳細を入力してください...（任意）",
+        "submit": "報告を送信",
+        "submitted": "報告を送信しました",
+        "alreadyReported": "このレビューはすでに報告されています",
+        "rateLimited": "リクエストが多すぎます。少し待ってからもう一度お試しください。",
+        "submitError": "報告を送信できませんでした。"
+      },
+      "ads": {
+        "merchantPartner": "販売店パートナー"
+      },
+      "similar": {
+        "title": "関連商品"
+      }
     }
   },
   "profile": {

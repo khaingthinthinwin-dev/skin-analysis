@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 function getImageUrl(url: string): string {
   if (!url) return '';
@@ -15,6 +16,7 @@ interface ProductGalleryProps {
 }
 
 export function ProductGallery({ images, name }: ProductGalleryProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState(0);
   const shown = images.length > 0 ? images : ['/placeholder-product.png'];
 
@@ -44,7 +46,10 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
             >
               <img
                 src={getImageUrl(img)}
-                alt={`${name} view ${i + 1}`}
+                alt={t('buyer.products.gallery.imageView', '{{name}} view {{index}}', {
+                  name,
+                  index: i + 1,
+                })}
                 className="h-full w-full object-cover object-center"
               />
             </button>
