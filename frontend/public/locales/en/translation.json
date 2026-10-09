@@ -13,7 +13,46 @@
     "submit": "Submit",
     "back": "Back",
     "next": "Next",
-    "collapseSidebar": "Collapse Sidebar"
+    "collapseSidebar": "Collapse Sidebar",
+    "actions": {
+      "export": "Export",
+      "next": "Next",
+      "previous": "Previous",
+      "retry": "Retry"
+    },
+    "filters": {
+      "active": "Active filters",
+      "applied": "Applied:",
+      "all": "All",
+      "clear": "Clear",
+      "clearAll": "Clear all",
+      "removeLabel": "Remove filter: {{label}}",
+      "search": "Search",
+      "searching": "Searching..."
+    },
+    "pagination": {
+      "rows": "Rows:"
+    },
+    "payment": {
+      "pending": "Pending",
+      "completed": "Completed"
+    },
+    "paymentStatus": {
+      "pending": "pending",
+      "completed": "completed"
+    },
+    "status": {
+      "placed": "Placed",
+      "confirmed": "Confirmed",
+      "packed": "Packed",
+      "shipped": "Shipped",
+      "out_for_delivery": "Out For Delivery",
+      "delivered": "Delivered"
+    },
+    "confirm": "Confirm",
+    "copied": "Copied",
+    "copyFailed": "Could not copy to the clipboard.",
+    "view": "View"
   },
   "nav": {
     "home": "Home",
@@ -235,7 +274,15 @@
     "orders": {
       "exportCsv": "Export CSV",
       "exportCsvTooltip": "Download your orders as a CSV file",
-      "exportEmpty": "No orders to export"
+      "exportEmpty": "No orders to export",
+      "title": "My Orders",
+      "error": {
+        "loadFailed": "Unable to load orders."
+      },
+      "empty": {
+        "filteredTitle": "No orders found for this filter.",
+        "filteredDescription": "Try changing the status or date filters."
+      }
     }
   },
   "profile": {
@@ -377,6 +424,157 @@
         "expiresAt": "Expiry Date & Time",
         "isActive": "Active"
       }
+    },
+    "orders": {
+      "title": "Order Insights",
+      "completed": "Completed Orders",
+      "scopeNote": "Showing orders for your shop only.",
+      "today": "Today's Orders",
+      "thisMonth": "This Month's Orders",
+      "salesSummary": "Sales Summary",
+      "viewCompletedOrders": "View completed orders",
+      "empty": "No orders match the current filters.",
+      "emptyClearFilters": "Clear Filters",
+      "copyEmail": "Copy customer email",
+      "customer": "Customer",
+      "customerName": "Name",
+      "customerEmail": "Email",
+      "customerPhone": "Phone",
+      "advanceTo": "Advance to {{label}}",
+      "confirmAdvance": "Confirm order?",
+      "confirmAdvanceDescription": "The status will change to {{label}} and the customer will be notified.",
+      "updateSuccess": "Order marked as {{status}}.",
+      "updateFailed": "Could not update the order status. Please try again.",
+      "error": {
+        "forbidden": "Access denied",
+        "notApproved": "Your merchant account is not approved",
+        "tooManyRequests": "Too many requests. Please try again shortly."
+      },
+      "filter": {
+        "orderNumber": "Order #",
+        "orderNumberPlaceholder": "Search order no"
+      },
+      "exportTitle": "Export Orders",
+      "exportDescription": "The CSV will include orders matching your current filters.",
+      "exportCsv": "Export CSV",
+      "exporting": "Exporting...",
+      "exportError": "Unable to export orders. Please try again.",
+      "exportScope": "Export Scope",
+      "exportStatus": "Status",
+      "exportDateRange": "Date Range",
+      "exportAllDates": "All dates",
+      "exportEmptyCsv": "No matching orders. The CSV will contain column headers only.",
+      "exportCommissionUnavailable": "Commission rate, Commission and You receive columns are included for orders that report their own rate — commission rate unavailable, and left out entirely when no order reports one. Other rows leave those cells blank.",
+      "exportResult": "Result: {{status}} orders within this range",
+      "table": {
+        "commissionRate": "Commission Rate"
+      },
+      "detail": {
+        "title": "Order Details",
+        "backToOrders": "Back to Order Insights",
+        "loading": "Loading order",
+        "copyOrderNumber": "Copy order number",
+        "viewInvoice": "View Invoice",
+        "deliveredOn": "Completed on {{date}}, {{time}}.",
+        "status": {
+          "placed": {
+            "title": "Awaiting confirmation",
+            "message": "Confirm this order to start processing it."
+          },
+          "confirmed": {
+            "title": "Order confirmed",
+            "message": "Prepare the items and hand them to the courier."
+          },
+          "packed": {
+            "title": "Order packed",
+            "message": "Hand the package to the courier to mark it as shipped."
+          },
+          "shipped": {
+            "title": "Order shipped",
+            "message": "The next step is out for delivery."
+          },
+          "out_for_delivery": {
+            "title": "Out for delivery",
+            "message": "The courier is delivering this order today."
+          },
+          "delivered": {
+            "title": "Order delivered",
+            "message": "This order is complete."
+          },
+          "unknown": {
+            "message": "No further actions are available for this order."
+          }
+        },
+        "notFound": {
+          "description": "This order does not belong to your shop or could not be found."
+        }
+      },
+      "invoice": {
+        "title": "Invoice",
+        "heading": "INVOICE",
+        "description": "Review this invoice, then print it or save it as a PDF.",
+        "orderNumber": "Order number",
+        "orderDate": "Order date",
+        "issueDate": "Invoice date",
+        "generatedOn": "Generated on",
+        "orderStatus": "Order status",
+        "paymentMethod": "Payment method",
+        "paymentStatus": "Payment status",
+        "paymentStatusPaid": "PAID",
+        "paymentStatusPending": "PENDING",
+        "paymentUnavailable": "Not available",
+        "paymentPendingNotice": "Payment is still PENDING: no payment has been collected for this order yet, so this document is not a payment receipt.",
+        "paymentReceivedNotice": "Payment for this order has been collected.",
+        "seller": "Seller",
+        "sellerFulfillmentNote": "Marketplace order fulfilled by your shop",
+        "shop": "Shop",
+        "billedTo": "Customer",
+        "shippingAddress": "Shipping address",
+        "addressUnavailable": "Shipping address is not available for this order.",
+        "itemsTitle": "Order items",
+        "noItems": "No items in this order.",
+        "columnProduct": "Product",
+        "columnQuantity": "Qty",
+        "columnUnitPrice": "Unit price",
+        "columnLineTotal": "Line total",
+        "print": "Print",
+        "printHint": "Print and Download PDF both open your browser print dialog — choose \"Save as PDF\" as the destination to download a copy.",
+        "downloadPdf": "Download PDF",
+        "footer": "This invoice was generated from the order record on Cosmetics Finder.",
+        "popupBlocked": "Please allow pop-ups to print or save this invoice.",
+        "close": "Close"
+      }
+    },
+    "revenue": {
+      "title": "Revenue Summary",
+      "period": "Period",
+      "today": "Today",
+      "thisMonth": "This Month",
+      "lastMonth": "Last Month",
+      "custom": "Custom",
+      "sales": "Sales",
+      "commission": "Commission",
+      "net": "Revenue",
+      "aov": "AOV",
+      "basis_one": "Based on {{count}} order",
+      "basis_other": "Based on {{count}} orders",
+      "commissionAtRate": "Commission at {{rate}}",
+      "rateCurrent": "(current rate)",
+      "rateNote": "Commission is calculated with the current platform rate; historical rate locking is pending.",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "customRangeTitle": "Custom range",
+      "customRangeSubtitle": "Choose the period to calculate your revenue.",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "noDatesSelected": "No dates selected",
+      "pickStartDate": "Now pick a start date",
+      "pickEndDate": "Now pick an end date",
+      "selectRangeError": "Select a start and end date.",
+      "startBeforeEndError": "Start date must be before end date.",
+      "invalidPeriod": "Select a start and end date",
+      "daysCount_one": "{{count}} day",
+      "daysCount_other": "{{count}} days"
     }
   },
   "roles": {
@@ -493,5 +691,172 @@
     "deactivatedTitle": "Account Deactivated",
     "deactivatedMessage": "Your account is currently deactivated. Some features may be restricted until an admin activates your account.",
     "dismiss": "Dismiss banner"
+  },
+  "admin": {
+    "orders": {
+      "title": "All Orders",
+      "subtitle": "View platform orders across all shops and merchants.",
+      "error": {
+        "loadFailed": "Unable to load orders",
+        "tryAgain": "Please try again."
+      },
+      "empty": "No orders match the current filters.",
+      "clearFilters": "Clear Filters",
+      "matchCount": "{{total}} orders match the current filters.",
+      "copyOrderNumber": "Copy order number",
+      "filter": {
+        "shop": "Shop / Merchant",
+        "shopPlaceholder": "Search shop",
+        "noShops": "No matching shops. Keep typing to filter by name."
+      },
+      "kpi": {
+        "totalOrders": "Total orders",
+        "orderValue": "Order value",
+        "orderValueHint": "Gross value of the matching orders",
+        "inProgress": "In progress",
+        "inProgressHint": "Not yet delivered",
+        "delivered": "Delivered",
+        "deliveredHint": "Completed orders",
+        "matchingFilters": "Matching the current filters",
+        "aggregateUnavailable": "Aggregates are not available for this result set."
+      },
+      "table": {
+        "buyer": "Buyer",
+        "shopMerchant": "Shop / Merchant"
+      },
+      "detail": {
+        "title": "Order Details",
+        "orderHeading": "Order {{orderNumber}}",
+        "placedAt": "Placed {{date}}",
+        "printPdf": "Print / Save as PDF",
+        "loadFailedTitle": "Unable to load order",
+        "notFoundDescription": "This order could not be found.",
+        "backToAllOrders": "Back to All Orders",
+        "printPopupBlocked": "Allow pop-ups for this site to print or save this order as a PDF.",
+        "deliveredTitle": "Order delivered",
+        "deliveredOn": "Completed on {{date}}.",
+        "trackingErrorTitle": "Unable to load delivery progress",
+        "historyUnavailable": "Detailed history unavailable for this order.",
+        "summaryLabel": "Order summary",
+        "merchantContact": "Merchant contact: {{name}}",
+        "merchantId": "Merchant ID: {{id}}",
+        "method": "Method",
+        "orderTotal": "Order total",
+        "itemsCount_one": "({{count}} item)",
+        "itemsCount_other": "({{count}} items)",
+        "quantityUnitPrice": "Quantity: {{quantity}} · Unit price: {{unitPrice}}",
+        "lineTotal": "Line total",
+        "noAddress": "Shipping address is not available."
+      }
+    }
+  },
+  "orders": {
+    "track": "Track",
+    "empty": {
+      "cta": "Browse Products"
+    },
+    "filter": {
+      "status": "Status",
+      "shop": "Shop",
+      "shopPlaceholder": "Search shop",
+      "dateRange": {
+        "label": "Date range",
+        "orderDate": "Order date",
+        "from": "From",
+        "to": "To",
+        "invalid": "End date must be on or after start date."
+      }
+    },
+    "table": {
+      "orderId": "Order #",
+      "customer": "Customer",
+      "shop": "Shop",
+      "date": "Date",
+      "items": "Items",
+      "item": "Item",
+      "status": "Status",
+      "payment": "Payment",
+      "total": "Total",
+      "actions": "Actions",
+      "track": "Track"
+    },
+    "detail": {
+      "loading": "Loading order",
+      "notFound": {
+        "title": "Order not found",
+        "description": "The order you are looking for could not be found. It may have been opened from an old link."
+      },
+      "error": {
+        "title": "Something went wrong",
+        "description": "We could not load this order. Please try again."
+      },
+      "shippingTitle": "Shipping Address",
+      "itemsTitle": "Order Items",
+      "noItems": "No items in this order.",
+      "notesTitle": "Order Note",
+      "paymentTitle": "Payment",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "discountWithCoupon": "Discount ({{code}})",
+      "total": "Total",
+      "currentStep": "Current",
+      "nextStep": "Next",
+      "deliveryProgress": "Delivery progress",
+      "progressStepCount": "Step {{current}} of {{total}}",
+      "backToOrders": "Back to My Orders",
+      "copyAddress": "Copy shipping address",
+      "shopName": "Shop",
+      "noAddress": "Shipping address is not available for this order.",
+      "youReceive": "You receive",
+      "commissionLabel": "Commission ({{rate}})",
+      "itemsCountOne": "1 item",
+      "title": "Order Details",
+      "orderHeading": "Order {{orderNumber}}",
+      "placedAt": "Placed {{date}}, {{time}}",
+      "summaryTitle": "Order Summary",
+      "quantity": "Quantity: {{count}}",
+      "unitPrice": "Unit price: {{amount}}",
+      "lineTotal": "Line total",
+      "method": "Method",
+      "youSaved": "You saved {{amount}}",
+      "buyAgain": "Buy Again",
+      "downloadInvoice": "Download Invoice",
+      "itemsCount_one": "({{count}} item)",
+      "itemsCount_other": "({{count}} items)",
+      "status": {
+        "placed": {
+          "title": "We've received your order",
+          "message": "Waiting for the seller to confirm your order."
+        },
+        "confirmed": {
+          "title": "Your order is confirmed",
+          "message": "The seller has accepted your order and is preparing it."
+        },
+        "packed": {
+          "title": "Your order is packed",
+          "message": "Your items are packed and ready for pickup by the courier."
+        },
+        "shipped": {
+          "title": "Your order has shipped",
+          "message": "On the way! Track your package with the courier."
+        },
+        "out_for_delivery": {
+          "title": "Out for delivery today",
+          "message": "Your order is arriving today."
+        },
+        "delivered": {
+          "title": "Your order has been delivered",
+          "message": "Enjoy your purchase!"
+        }
+      },
+      "paymentMethods": {
+        "cod": "Cod",
+        "bank_transfer": "Bank Transfer",
+        "card": "Card",
+        "cash_on_delivery": "Cash On Delivery",
+        "credit_card": "Credit Card",
+        "e_wallet": "E Wallet"
+      }
+    }
   }
 }

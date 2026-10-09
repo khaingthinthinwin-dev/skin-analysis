@@ -13,7 +13,46 @@
     "submit": "送信",
     "back": "戻る",
     "next": "次へ",
-    "collapseSidebar": "サイドバーを畳む"
+    "collapseSidebar": "サイドバーを畳む",
+    "actions": {
+      "export": "エクスポート",
+      "next": "次へ",
+      "previous": "前へ",
+      "retry": "再試行"
+    },
+    "filters": {
+      "active": "適用中のフィルター",
+      "applied": "適用中:",
+      "all": "すべて",
+      "clear": "クリア",
+      "clearAll": "すべてクリア",
+      "removeLabel": "{{label}} のフィルターを解除",
+      "search": "検索",
+      "searching": "検索中..."
+    },
+    "pagination": {
+      "rows": "表示件数:"
+    },
+    "payment": {
+      "pending": "保留中",
+      "completed": "完了"
+    },
+    "paymentStatus": {
+      "pending": "保留中",
+      "completed": "完了"
+    },
+    "status": {
+      "placed": "受付済み",
+      "confirmed": "確認済み",
+      "packed": "梱包済み",
+      "shipped": "発送済み",
+      "out_for_delivery": "配送中",
+      "delivered": "配送済み"
+    },
+    "confirm": "確認",
+    "copied": "コピーしました",
+    "copyFailed": "クリップボードにコピーできませんでした。",
+    "view": "表示"
   },
   "nav": {
     "home": "ホーム",
@@ -235,7 +274,15 @@
     "orders": {
       "exportCsv": "CSVをエクスポート",
       "exportCsvTooltip": "注文をCSVファイルとしてダウンロード",
-      "exportEmpty": "エクスポートする注文がありません"
+      "exportEmpty": "エクスポートする注文がありません",
+      "title": "私の注文",
+      "error": {
+        "loadFailed": "注文を読み込めませんでした。"
+      },
+      "empty": {
+        "filteredTitle": "このフィルターに一致する注文が見つかりません。",
+        "filteredDescription": "ステータスや日付のフィルターを変えてみてください。"
+      }
     }
   },
   "profile": {
@@ -377,6 +424,157 @@
         "expiresAt": "有効期限",
         "isActive": "有効"
       }
+    },
+    "orders": {
+      "title": "注文インサイト",
+      "completed": "完了した注文",
+      "scopeNote": "自分の店舗の注文のみ表示しています。",
+      "today": "今日の注文",
+      "thisMonth": "今月の注文",
+      "salesSummary": "販売サマリ",
+      "viewCompletedOrders": "完了した注文を表示",
+      "empty": "現在のフィルターに一致する注文はありません。",
+      "emptyClearFilters": "フィルターをクリア",
+      "copyEmail": "顧客のメールアドレスをコピー",
+      "customer": "お客様",
+      "customerName": "名前",
+      "customerEmail": "メールアドレス",
+      "customerPhone": "電話番号",
+      "advanceTo": "{{label}}に更新",
+      "confirmAdvance": "注文を更新しますか？",
+      "confirmAdvanceDescription": "ステータスが{{label}}に変更され、お客様に通知されます。",
+      "updateSuccess": "注文を{{status}}に更新しました。",
+      "updateFailed": "注文ステータスを更新できませんでした。もう一度お試しください。",
+      "error": {
+        "forbidden": "アクセスが拒否されました",
+        "notApproved": "出品者アカウントが承認されていません",
+        "tooManyRequests": "リクエストが多すぎます。しばらくしてから再度お試しください。"
+      },
+      "filter": {
+        "orderNumber": "注文番号 #",
+        "orderNumberPlaceholder": "注文番号を検索"
+      },
+      "exportTitle": "注文をエクスポート",
+      "exportDescription": "現在のフィルターに一致する注文がCSVに含まれます。",
+      "exportCsv": "CSVをエクスポート",
+      "exporting": "エクスポート中...",
+      "exportError": "注文をエクスポートできませんでした。もう一度お試しください。",
+      "exportScope": "エクスポート範囲",
+      "exportStatus": "ステータス",
+      "exportDateRange": "期間",
+      "exportAllDates": "すべての日付",
+      "exportEmptyCsv": "一致する注文がありません。CSVには見出し行のみが含まれます。",
+      "exportCommissionUnavailable": "コミッション率・コミッション・受取額の列は、自身のレートを報告する注文に含まれます（コミッション率は利用不可）。レートを報告する注文が1件もない場合は、列ごと除外されます。その他の行では該当セルを空欄にします。",
+      "exportResult": "結果: {{status}}の注文（この期間内）",
+      "table": {
+        "commissionRate": "コミッション率"
+      },
+      "detail": {
+        "title": "注文詳細",
+        "backToOrders": "注文インサイトに戻る",
+        "loading": "注文を読み込み中",
+        "copyOrderNumber": "注文番号をコピー",
+        "viewInvoice": "請求書を表示",
+        "deliveredOn": "{{date}} {{time}} に完了しました。",
+        "status": {
+          "placed": {
+            "title": "確認待ち",
+            "message": "この注文を確定して処理を開始してください。"
+          },
+          "confirmed": {
+            "title": "注文を確定しました",
+            "message": "商品を準備して配送業者に引き渡してください。"
+          },
+          "packed": {
+            "title": "注文を梱包しました",
+            "message": "荷物を配送業者に引き渡して発送済みにしてください。"
+          },
+          "shipped": {
+            "title": "注文を発送しました",
+            "message": "次のステップは配送中です。"
+          },
+          "out_for_delivery": {
+            "title": "配送中",
+            "message": "配送業者が本日この注文を配達しています。"
+          },
+          "delivered": {
+            "title": "配達完了",
+            "message": "この注文は完了しました。"
+          },
+          "unknown": {
+            "message": "この注文に対して利用可能な操作はありません。"
+          }
+        },
+        "notFound": {
+          "description": "この注文はあなたの店舗のものではないか、見つかりませんでした。"
+        }
+      },
+      "invoice": {
+        "title": "請求書",
+        "heading": "請求書",
+        "description": "この請求書を確認し、印刷するかPDFとして保存してください。",
+        "orderNumber": "注文番号",
+        "orderDate": "注文日",
+        "issueDate": "請求書発行日",
+        "generatedOn": "生成日",
+        "orderStatus": "注文ステータス",
+        "paymentMethod": "支払い方法",
+        "paymentStatus": "支払いステータス",
+        "paymentStatusPaid": "支払済",
+        "paymentStatusPending": "保留中",
+        "paymentUnavailable": "利用できません",
+        "paymentPendingNotice": "支払いはまだ保留中です：この注文の入金はまだ行われていないため、この書類は領収書ではありません。",
+        "paymentReceivedNotice": "この注文の支払いは完了しています。",
+        "seller": "出品者",
+        "sellerFulfillmentNote": "ご自身の店舗が処理するマーケットプレイス注文",
+        "shop": "店舗",
+        "billedTo": "お客様",
+        "shippingAddress": "配送先住所",
+        "addressUnavailable": "この注文の配送先住所はありません。",
+        "itemsTitle": "注文商品",
+        "noItems": "この注文に商品はありません。",
+        "columnProduct": "商品",
+        "columnQuantity": "数量",
+        "columnUnitPrice": "単価",
+        "columnLineTotal": "明細合計",
+        "print": "印刷",
+        "printHint": "印刷とPDFダウンロードはどちらもブラウザの印刷ダイアログを開きます。コピーを保存するには、送信先に「PDFとして保存」を選択してください。",
+        "downloadPdf": "PDFをダウンロード",
+        "footer": "この請求書は、Cosmetics Finder の注文記録から生成されました。",
+        "popupBlocked": "この請求書を印刷または保存するには、ポップアップを許可してください。",
+        "close": "閉じる"
+      }
+    },
+    "revenue": {
+      "title": "売上サマリ",
+      "period": "期間",
+      "today": "今日",
+      "thisMonth": "今月",
+      "lastMonth": "先月",
+      "custom": "カスタム",
+      "sales": "売上",
+      "commission": "コミッション",
+      "net": "売上高",
+      "aov": "AOV",
+      "basis_one": "{{count}}件の注文に基づく",
+      "basis_other": "{{count}}件の注文に基づく",
+      "commissionAtRate": "コミッション率 {{rate}}",
+      "rateCurrent": "（現在レート）",
+      "rateNote": "コミッションは現在のプラットフォームレートで計算されています。過去レートの固定は未対応です。",
+      "apply": "適用",
+      "cancel": "キャンセル",
+      "customRangeTitle": "カスタム期間",
+      "customRangeSubtitle": "売上を計算する期間を選択してください。",
+      "startDate": "開始日",
+      "endDate": "終了日",
+      "noDatesSelected": "日付が選択されていません",
+      "pickStartDate": "次に開始日を選択してください",
+      "pickEndDate": "次に終了日を選択してください",
+      "selectRangeError": "開始日と終了日を選択してください。",
+      "startBeforeEndError": "開始日は終了日より前にしてください。",
+      "invalidPeriod": "開始日と終了日を選択",
+      "daysCount_one": "{{count}}日",
+      "daysCount_other": "{{count}}日"
     }
   },
   "roles": {
@@ -493,5 +691,171 @@
     "deactivatedTitle": "アカウント停止中",
     "deactivatedMessage": "アカウントが一時停止されています。管理者がアカウントを再有効化するまで、一部の機能を利用できない場合があります。",
     "dismiss": "バナーを閉じる"
+  },
+  "admin": {
+    "orders": {
+      "title": "すべての注文",
+      "subtitle": "すべての店舗・出品者のプラットフォーム注文を表示します。",
+      "error": {
+        "loadFailed": "注文を読み込めませんでした",
+        "tryAgain": "もう一度お試しください。"
+      },
+      "empty": "現在のフィルターに一致する注文はありません。",
+      "clearFilters": "フィルターをクリア",
+      "matchCount": "{{total}}件の注文が現在のフィルターに一致しています。",
+      "copyOrderNumber": "注文番号をコピー",
+      "filter": {
+        "shop": "店舗 / 出品者",
+        "shopPlaceholder": "店舗を検索",
+        "noShops": "該当する店舗がありません。名前で絞り込むには入力を続けてください。"
+      },
+      "kpi": {
+        "totalOrders": "総注文件数",
+        "orderValue": "注文金額",
+        "orderValueHint": "一致した注文の合計金額",
+        "inProgress": "処理中",
+        "inProgressHint": "まだ配送されていません",
+        "delivered": "配送済み",
+        "deliveredHint": "完了した注文",
+        "matchingFilters": "現在のフィルターに一致",
+        "aggregateUnavailable": "この結果セットには集計値がありません。"
+      },
+      "table": {
+        "buyer": "購入者",
+        "shopMerchant": "店舗 / 出品者"
+      },
+      "detail": {
+        "title": "注文詳細",
+        "orderHeading": "注文 {{orderNumber}}",
+        "placedAt": "注文日時 {{date}}",
+        "printPdf": "印刷 / PDFとして保存",
+        "loadFailedTitle": "注文を読み込めませんでした",
+        "notFoundDescription": "この注文は見つかりませんでした。",
+        "backToAllOrders": "すべての注文に戻る",
+        "printPopupBlocked": "この注文を印刷またはPDFとして保存するには、このサイトのポップアップを許可してください。",
+        "deliveredTitle": "注文の配送完了",
+        "deliveredOn": "{{date}} に完了しました。",
+        "trackingErrorTitle": "配送状況を読み込めませんでした",
+        "historyUnavailable": "この注文の詳細な履歴は利用できません。",
+        "summaryLabel": "注文サマリ",
+        "merchantContact": "出品者連絡先: {{name}}",
+        "merchantId": "出品者ID: {{id}}",
+        "method": "支払い方法",
+        "orderTotal": "注文合計",
+        "itemsCount_one": "({{count}}点)",
+        "itemsCount_other": "({{count}}点)",
+        "quantityUnitPrice": "数量: {{quantity}} · 単価: {{unitPrice}}",
+        "lineTotal": "明細合計",
+        "noAddress": "配送先住所がありません。"
+      }
+    }
+  },
+  "orders": {
+    "track": "追跡",
+    "empty": {
+      "cta": "商品を見る"
+    },
+    "filter": {
+      "status": "ステータス",
+      "shop": "店舗",
+      "shopPlaceholder": "店舗を検索",
+      "dateRange": {
+        "label": "日付範囲",
+        "orderDate": "注文日",
+        "from": "開始",
+        "to": "終了",
+        "invalid": "終了日は開始日以降にしてください。"
+      }
+    },
+    "table": {
+      "orderId": "注文番号 #",
+      "customer": "お客様",
+      "shop": "店舗",
+      "date": "日付",
+      "items": "商品",
+      "item": "商品",
+      "status": "ステータス",
+      "payment": "支払い",
+      "total": "合計",
+      "actions": "操作",
+      "track": "追跡"
+    },
+    "detail": {
+      "loading": "注文を読み込み中",
+      "notFound": {
+        "title": "注文が見つかりません",
+        "description": "お探しの注文は見つかりませんでした。古いリンクから開かれた可能性があります。"
+      },
+      "error": {
+        "title": "エラーが発生しました",
+        "description": "この注文を読み込めませんでした。もう一度お試しください。"
+      },
+      "shippingTitle": "配送先住所",
+      "itemsTitle": "注文商品",
+      "noItems": "この注文に商品はありません。",
+      "notesTitle": "注文メモ",
+      "paymentTitle": "支払い",
+      "subtotal": "小計",
+      "discount": "割引",
+      "discountWithCoupon": "割引（{{code}}）",
+      "total": "合計",
+      "currentStep": "現在",
+      "nextStep": "次へ",
+      "deliveryProgress": "配送状況",
+      "progressStepCount": "{{total}}段階中{{current}}段階",
+      "backToOrders": "私の注文に戻る",
+      "copyAddress": "配送先住所をコピー",
+      "shopName": "店舗",
+      "noAddress": "この注文の配送先住所はありません。",
+      "youReceive": "受取額",
+      "commissionLabel": "コミッション ({{rate}})",
+      "itemsCountOne": "1点",
+      "title": "注文詳細",
+      "orderHeading": "注文 {{orderNumber}}",
+      "placedAt": "注文日時 {{date}}, {{time}}",
+      "summaryTitle": "注文サマリ",
+      "quantity": "数量: {{count}}",
+      "unitPrice": "単価: {{amount}}",
+      "lineTotal": "明細合計",
+      "method": "支払い方法",
+      "youSaved": "{{amount}} お得になりました",
+      "buyAgain": "もう一度購入",
+      "downloadInvoice": "請求書をダウンロード",
+      "itemsCount_other": "({{count}}点)",
+      "status": {
+        "placed": {
+          "title": "ご注文を受け付けました",
+          "message": "販売者の確認をお待ちください。"
+        },
+        "confirmed": {
+          "title": "ご注文が確定しました",
+          "message": "販売者が注文を承認し、準備を進めています。"
+        },
+        "packed": {
+          "title": "ご注文を梱包しました",
+          "message": "商品を梱包し、配送業者の集荷を待っています。"
+        },
+        "shipped": {
+          "title": "ご注文を発送しました",
+          "message": "輸送中です。配送業者で荷物を追跡できます。"
+        },
+        "out_for_delivery": {
+          "title": "本日配送中です",
+          "message": "ご注文は本日到着予定です。"
+        },
+        "delivered": {
+          "title": "ご注文が配達されました",
+          "message": "お買い上げありがとうございます。"
+        }
+      },
+      "paymentMethods": {
+        "cod": "代金引換",
+        "bank_transfer": "銀行振込",
+        "card": "クレジットカード",
+        "cash_on_delivery": "代金引換",
+        "credit_card": "クレジットカード",
+        "e_wallet": "電子ウォレット"
+      }
+    }
   }
 }

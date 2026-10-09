@@ -165,7 +165,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
       <div className="flex w-full flex-col items-end gap-2 sm:contents">
         <div className="relative w-full pb-5 sm:min-w-0">
           <span className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
-            {t('orders.filter.dateRange.label', 'Order date')}
+            {t('orders.filter.dateRange.orderDate', 'Order date')}
           </span>
           <label htmlFor="filter-from" className="sr-only">
             {t('orders.filter.dateRange.from', 'From')}

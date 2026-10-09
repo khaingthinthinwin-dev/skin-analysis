@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Link, useParams } from "react-router";
 import { AxiosError } from "axios";
 import {
@@ -78,37 +79,70 @@ function paymentMethodLabel(method: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function statusCopy(status: OrderStatus) {
+const PAYMENT_METHOD_KEYS: Record<string, string> = {
+  cod: "orders.detail.paymentMethods.cod",
+  bank_transfer: "orders.detail.paymentMethods.bank_transfer",
+  card: "orders.detail.paymentMethods.card",
+  cash_on_delivery: "orders.detail.paymentMethods.cash_on_delivery",
+  credit_card: "orders.detail.paymentMethods.credit_card",
+  e_wallet: "orders.detail.paymentMethods.e_wallet",
+};
+
+function statusCopy(status: OrderStatus, t: TFunction) {
   switch (status) {
     case OrderStatus.PLACED:
       return {
-        title: "We've received your order",
-        message: "Waiting for the seller to confirm your order.",
+        title: t("orders.detail.status.placed.title", "We've received your order"),
+        message: t(
+          "orders.detail.status.placed.message",
+          "Waiting for the seller to confirm your order.",
+        ),
       };
     case OrderStatus.CONFIRMED:
       return {
-        title: "Your order is confirmed",
-        message: "The seller has accepted your order and is preparing it.",
+        title: t(
+          "orders.detail.status.confirmed.title",
+          "Your order is confirmed",
+        ),
+        message: t(
+          "orders.detail.status.confirmed.message",
+          "The seller has accepted your order and is preparing it.",
+        ),
       };
     case OrderStatus.PACKED:
       return {
-        title: "Your order is packed",
-        message: "Your items are packed and ready for pickup by the courier.",
+        title: t("orders.detail.status.packed.title", "Your order is packed"),
+        message: t(
+          "orders.detail.status.packed.message",
+          "Your items are packed and ready for pickup by the courier.",
+        ),
       };
     case OrderStatus.SHIPPED:
       return {
-        title: "Your order has shipped",
-        message: "On the way! Track your package with the courier.",
+        title: t("orders.detail.status.shipped.title", "Your order has shipped"),
+        message: t(
+          "orders.detail.status.shipped.message",
+          "On the way! Track your package with the courier.",
+        ),
       };
     case OrderStatus.OUT_FOR_DELIVERY:
       return {
-        title: "Out for delivery today",
-        message: "Your order is arriving today.",
+        title: t(
+          "orders.detail.status.out_for_delivery.title",
+          "Out for delivery today",
+        ),
+        message: t(
+          "orders.detail.status.out_for_delivery.message",
+          "Your order is arriving today.",
+        ),
       };
     case OrderStatus.DELIVERED:
       return {
-        title: "Your order has been delivered",
-        message: "Enjoy your purchase!",
+        title: t(
+          "orders.detail.status.delivered.title",
+          "Your order has been delivered",
+        ),
+        message: t("orders.detail.status.delivered.message", "Enjoy your purchase!"),
       };
   }
 }
@@ -257,6 +291,12 @@ function BuyerOrderDetailContent() {
     return null;
   }
 
+  const paymentMethodFallback = paymentMethodLabel(order.paymentMethod);
+  const paymentMethodKey = PAYMENT_METHOD_KEYS[order.paymentMethod];
+  const paymentMethodText = paymentMethodKey
+    ? t(paymentMethodKey, paymentMethodFallback)
+    : paymentMethodFallback;
+
   const subtotal = order.items
     .reduce((sum, item) => sum + parseFloat(item.totalPrice), 0)
     .toFixed(2);
@@ -271,9 +311,13 @@ function BuyerOrderDetailContent() {
       <section className="flex flex-col items-stretch gap-5 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-4 py-5 text-white shadow-[0_8px_20px_rgba(124,58,237,0.2)] sm:flex-row sm:items-center sm:justify-between sm:px-7">
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[1px] opacity-85">
-            Order Details
+            {t("orders.detail.title", "Order Details")}
           </p>
-          <h1 className="mt-1 text-xl font-bold">Order {orderReference(order)}</h1>
+          <h1 className="mt-1 text-xl font-bold">
+            {t("orders.detail.orderHeading", "Order {{orderNumber}}", {
+              orderNumber: orderReference(order),
+            })}
+          </h1>
           {order.shop?.name && (
             <p className="mt-1 text-sm font-medium opacity-95">
               {t("orders.detail.shopName", "Shop")}: {order.shop.name}
@@ -281,7 +325,10 @@ function BuyerOrderDetailContent() {
           )}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-90">
             <span>
-              Placed {formatDate(order.createdAt)}, {formatTime(order.createdAt, dateLocale)}
+              {t("orders.detail.placedAt", "Placed {{date}}, {{time}}", {
+                date: formatDate(order.createdAt),
+                time: formatTime(order.createdAt, dateLocale),
+              })}
             </span>
             <StatusBadge
               status={order.status}
@@ -292,13 +339,13 @@ function BuyerOrderDetailContent() {
         <Button asChild className="w-full justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-[13px] font-semibold text-[#7c3aed] hover:bg-white/90 sm:w-auto">
           <Link to="/orders">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to My Orders
+            {t("orders.detail.backToOrders", "Back to My Orders")}
           </Link>
         </Button>
       </section>
 
       {(() => {
-        const copy = statusCopy(order.status);
+        const copy = statusCopy(order.status, t);
         return (
       <section className="flex items-start gap-3 rounded-xl border-l-4 border-[#7c3aed] bg-[#f3f0ff] px-4 py-3.5 sm:items-center sm:px-5 dark:border-violet-500 dark:bg-[#18131f] oidark:border-primary oidark:bg-surface-container-low">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#7c3aed] text-lg text-white oidark:bg-primary oidark:text-primary-foreground">
@@ -324,7 +371,15 @@ function BuyerOrderDetailContent() {
               <CardTitle className="flex flex-wrap items-center gap-2 text-base dark:text-slate-100">
                 <Package className="h-4 w-4 text-purple-600" aria-hidden="true" />
                 {t("orders.detail.itemsTitle", "Order Items")}
-                <span className="text-xs font-normal text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">({order.items.length} items)</span>
+                <span className="text-xs font-normal text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">
+                  {order.items.length === 1
+                    ? t("orders.detail.itemsCount_one", "({{count}} item)", {
+                        count: order.items.length,
+                      })
+                    : t("orders.detail.itemsCount_other", "({{count}} items)", {
+                        count: order.items.length,
+                      })}
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -345,11 +400,21 @@ function BuyerOrderDetailContent() {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="break-words text-sm font-bold leading-5 text-[#111827] dark:text-slate-100 oidark:text-foreground">{item.productName}</p>
-                      <p className="mt-1 text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Quantity: {item.quantity}</p>
-                      <p className="text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Unit price: {formatMoney(item.unitPrice)}</p>
+                      <p className="mt-1 text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">
+                        {t("orders.detail.quantity", "Quantity: {{count}}", {
+                          count: item.quantity,
+                        })}
+                      </p>
+                      <p className="text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">
+                        {t("orders.detail.unitPrice", "Unit price: {{amount}}", {
+                          amount: formatMoney(item.unitPrice),
+                        })}
+                      </p>
                     </div>
                     <div className="col-start-2 shrink-0 text-left sm:col-start-auto sm:text-right">
-                      <p className="text-[11px] uppercase text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">Line total</p>
+                      <p className="text-[11px] uppercase text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">
+                        {t("orders.detail.lineTotal", "Line total")}
+                      </p>
                       <p className="text-base font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">{formatMoney(item.totalPrice)}</p>
                     </div>
                   </div>
@@ -361,7 +426,7 @@ function BuyerOrderDetailContent() {
 
         <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[901px]:sticky min-[901px]:top-20 dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
           <section className="border-b border-[#f3f4f6] p-5 dark:border-[#29252f] oidark:border-outline-variant">
-            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />Shipping Address</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />{t("orders.detail.shippingTitle", "Shipping Address")}</h2>
             <div>
               {address.length > 0 ? (
                 <address className="text-sm not-italic leading-relaxed text-[#374151] dark:text-slate-200 oidark:text-muted-foreground">
@@ -382,12 +447,12 @@ function BuyerOrderDetailContent() {
             </div>
           </section>
           <section className="space-y-3 border-b border-[#f3f4f6] p-5 text-sm dark:border-[#29252f] oidark:border-outline-variant">
-            <h2 className="flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><CreditCard className="h-4 w-4 text-emerald-600" aria-hidden="true" />Payment</h2>
-            <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Method</span><span className="font-medium text-[#111827] dark:text-slate-100 oidark:text-foreground">{paymentMethodLabel(order.paymentMethod)}</span></div>
-            <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Status</span><PaymentBadge status={order.paymentStatus} /></div>
+            <h2 className="flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><CreditCard className="h-4 w-4 text-emerald-600" aria-hidden="true" />{t("orders.detail.paymentTitle", "Payment")}</h2>
+            <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">{t("orders.detail.method", "Method")}</span><span className="font-medium text-[#111827] dark:text-slate-100 oidark:text-foreground">{paymentMethodText}</span></div>
+            <div className="flex items-center justify-between"><span className="text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">{t("orders.table.status", "Status")}</span><PaymentBadge status={order.paymentStatus} /></div>
           </section>
           <section className="space-y-2 p-5 text-sm">
-            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><FileText className="h-4 w-4 text-purple-600" aria-hidden="true" />Order Summary</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><FileText className="h-4 w-4 text-purple-600" aria-hidden="true" />{t("orders.detail.summaryTitle", "Order Summary")}</h2>
               <div className="flex items-start justify-between gap-4">
                 <span className="min-w-0 text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">
                   {t("orders.detail.subtotal", "Subtotal")}
@@ -410,7 +475,9 @@ function BuyerOrderDetailContent() {
               </div>}
               {parseFloat(order.discountAmount) > 0 && (
                 <p className="text-xs font-semibold text-[#10b981] oidark:text-emerald-400">
-                  You saved {formatMoney(order.discountAmount)}
+                  {t("orders.detail.youSaved", "You saved {{amount}}", {
+                    amount: formatMoney(order.discountAmount),
+                  })}
                 </p>
               )}
               <div className="my-3 h-px bg-[#f3f4f6] oidark:bg-outline-variant" />
@@ -447,7 +514,7 @@ function BuyerOrderDetailContent() {
 
       <div className="flex flex-col gap-3 rounded-xl border border-[#f3f4f6] bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:flex-row sm:p-4 sm:px-5 dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
         <Button asChild className="w-full justify-center gap-2 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#ec4899] px-[18px] text-[13.5px] font-semibold shadow-[0_4px_12px_rgba(124,58,237,0.25)] hover:opacity-90 sm:w-auto">
-          <Link to="/buyer/search"><RotateCcw className="h-4 w-4" aria-hidden="true" /> Buy Again</Link>
+          <Link to="/buyer/search"><RotateCcw className="h-4 w-4" aria-hidden="true" /> {t("orders.detail.buyAgain", "Buy Again")}</Link>
         </Button>
         <Button
           variant="outline"
@@ -455,7 +522,7 @@ function BuyerOrderDetailContent() {
           onClick={() => printInvoice(order)}
         >
           <Download className="h-4 w-4" aria-hidden="true" />
-          Download Invoice
+          {t("orders.detail.downloadInvoice", "Download Invoice")}
         </Button>
       </div>
     </div>

@@ -33,7 +33,9 @@ export function StatusTransitionControl({
   const { t } = useTranslation();
   const [isConfirmOpen, setConfirmOpen] = useState(false);
 
-  const label = nextStatus ? formatStatusLabel(nextStatus) : '';
+  const label = nextStatus
+    ? t(`common.status.${nextStatus}`, formatStatusLabel(nextStatus))
+    : '';
 
   const confirmAdvance = () => {
     // Guard against double submits while a request is already in flight.
@@ -58,7 +60,7 @@ export function StatusTransitionControl({
         ) : (
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         )}
-        {t('merchant.orders.advanceTo', `Advance to ${label}`)}
+        {t('merchant.orders.advanceTo', `Advance to ${label}`, { label })}
       </Button>
       <Dialog open={isConfirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-md border-border/50 bg-background">
@@ -70,6 +72,7 @@ export function StatusTransitionControl({
               {t(
                 'merchant.orders.confirmAdvanceDescription',
                 `The status will change to ${label} and the customer will be notified.`,
+                { label },
               )}
             </DialogDescription>
           </DialogHeader>

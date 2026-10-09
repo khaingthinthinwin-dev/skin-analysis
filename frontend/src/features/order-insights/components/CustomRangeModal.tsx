@@ -73,9 +73,9 @@ export function CustomRangeModal({ from, to, error, onApply, onClose }: CustomRa
       ? t('merchant.revenue.pickStartDate', 'Now pick a start date')
       : t('merchant.revenue.noDatesSelected', 'No dates selected');
   const days = rangeLabel ? countRangeDays(startDate, endDate) : 0;
-  const daysWord = days === 1
-    ? t('merchant.revenue.dayOne', 'day')
-    : t('merchant.revenue.dayOther', 'days');
+  const daysText = days === 1
+    ? t('merchant.revenue.daysCount_one', `${days} day`, { count: days })
+    : t('merchant.revenue.daysCount_other', `${days} days`, { count: days });
 
   const handleApply = () => {
     if (!hasStart || !hasEnd || startDate > todayIso || endDate > todayIso) {
@@ -154,7 +154,7 @@ export function CustomRangeModal({ from, to, error, onApply, onClose }: CustomRa
             ? <>
               <span className={rangeHighlightClassName}>{rangeLabel}</span>
               <span aria-hidden="true">·</span>
-              <span>{`${days} ${daysWord}`}</span>
+              <span>{daysText}</span>
             </>
             : <span>{summaryText}</span>}
         </p>

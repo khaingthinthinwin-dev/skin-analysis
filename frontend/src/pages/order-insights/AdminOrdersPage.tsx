@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,6 +19,7 @@ const DEFAULT_FILTERS: AdminOrderFilterFormData = {
 };
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation();
   const { methods, filters, patch } = useAdminOrderFilters();
   const ordersQuery = useAdminOrders(filters);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -104,8 +106,8 @@ export default function AdminOrdersPage() {
   return (
     <main className="flex min-w-0 flex-col gap-4 p-2 lg:p-4">
       <header>
-        <h1 className="text-[22px] font-bold text-foreground">All Orders</h1>
-        <p className="mt-1 text-sm text-muted-foreground">View platform orders across all shops and merchants.</p>
+        <h1 className="text-[22px] font-bold text-foreground">{t('admin.orders.title', 'All Orders')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t('admin.orders.subtitle', 'View platform orders across all shops and merchants.')}</p>
       </header>
 
       <AdminOrderKpiTiles
@@ -131,20 +133,24 @@ export default function AdminOrdersPage() {
 
           {ordersQuery.error ? (
             <Alert variant="destructive">
-              <AlertTitle>Unable to load orders</AlertTitle>
+              <AlertTitle>{t('admin.orders.error.loadFailed', 'Unable to load orders')}</AlertTitle>
               <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-                <span>Please try again.</span>
-                <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>Retry</Button>
+                <span>{t('admin.orders.error.tryAgain', 'Please try again.')}</span>
+                <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>{t('common.actions.retry', 'Retry')}</Button>
               </AlertDescription>
             </Alert>
           ) : ordersQuery.data?.meta.total === 0 ? (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <p className="text-muted-foreground">No orders match the current filters.</p>
-              <Button variant="outline" onClick={resetFilters}>Clear Filters</Button>
+              <p className="text-muted-foreground">{t('admin.orders.empty', 'No orders match the current filters.')}</p>
+              <Button variant="outline" onClick={resetFilters}>{t('admin.orders.clearFilters', 'Clear Filters')}</Button>
             </div>
           ) : (
             <>
-              {ordersQuery.data && <p className="mb-3 text-sm text-muted-foreground">{ordersQuery.data.meta.total} orders match the current filters.</p>}
+              {ordersQuery.data && (
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {t('admin.orders.matchCount', `${ordersQuery.data.meta.total} orders match the current filters.`, { total: ordersQuery.data.meta.total })}
+                </p>
+              )}
               <AdminOrderTable
                 rows={ordersQuery.data?.orders ?? []}
                 loading={ordersQuery.isLoading}

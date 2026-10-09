@@ -76,7 +76,7 @@ export function DeliveryProgress({
           </CardTitle>
           {isBuyer && currentIndex >= 0 && (
             <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-              {t('orders.detail.progressStepCount', `Step ${currentIndex + 1} of ${STEP_ORDER.length}`)}
+              {t('orders.detail.progressStepCount', `Step ${currentIndex + 1} of ${STEP_ORDER.length}`, { current: currentIndex + 1, total: STEP_ORDER.length })}
             </span>
           )}
         </div>

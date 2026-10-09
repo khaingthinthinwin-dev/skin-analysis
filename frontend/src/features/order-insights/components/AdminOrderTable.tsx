@@ -67,8 +67,8 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
             <TableRow className="border-b-0 bg-primary/10 hover:bg-primary/10">
               <TableHead className="h-[60px] w-[10%] whitespace-nowrap text-sm font-medium text-muted-foreground">{t('orders.table.orderId', 'Order #')}</TableHead>
               <TableHead className="h-[60px] w-[11%] whitespace-nowrap text-sm font-medium text-muted-foreground">{sortButton(t('orders.table.date', 'Date'), 'createdAt')}</TableHead>
-              <TableHead className="h-[60px] w-[14%] text-sm font-medium text-muted-foreground">{t('orders.table.shop', 'Shop / Merchant')}</TableHead>
-              <TableHead className="h-[60px] w-[13%] text-sm font-medium text-muted-foreground">{t('orders.table.customer', 'Buyer')}</TableHead>
+              <TableHead className="h-[60px] w-[14%] text-sm font-medium text-muted-foreground">{t('admin.orders.table.shopMerchant', 'Shop / Merchant')}</TableHead>
+              <TableHead className="h-[60px] w-[13%] text-sm font-medium text-muted-foreground">{t('admin.orders.table.buyer', 'Buyer')}</TableHead>
               <TableHead className="h-[60px] w-[6%] whitespace-nowrap text-center text-sm font-medium text-muted-foreground">{t('orders.table.items', 'Items')}</TableHead>
               <TableHead className="h-[60px] w-[12%] whitespace-nowrap text-right text-sm font-medium text-muted-foreground">{sortButton(t('orders.table.total', 'Total'), 'totalAmount')}</TableHead>
               <TableHead className="h-[60px] w-[11%] whitespace-nowrap text-center text-sm font-medium text-muted-foreground">{t('orders.table.payment', 'Payment')}</TableHead>
@@ -111,8 +111,8 @@ export function AdminOrderTable({ rows, loading = false, onSort, currentSort, cu
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.date', 'Date')}</dt><dd>{formatDate(row.createdAt)}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">{t('orders.table.shop', 'Shop / Merchant')}</dt><dd>{row.shopName}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">{t('orders.table.customer', 'Buyer')}</dt><dd>{row.customerName}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{t('admin.orders.table.shopMerchant', 'Shop / Merchant')}</dt><dd>{row.shopName}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{t('admin.orders.table.buyer', 'Buyer')}</dt><dd>{row.customerName}</dd></div>
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.items', 'Items')}</dt><dd>{row.itemCount}</dd></div>
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.total', 'Total')}</dt><dd className="font-semibold">{formatAmount(row.totalAmount)}</dd></div>
               <div><dt className="text-xs text-muted-foreground">{t('orders.table.payment', 'Payment')}</dt><dd><PaymentBadge status={row.paymentStatus} /></dd></div>

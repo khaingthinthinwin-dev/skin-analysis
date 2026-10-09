@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Link, useLocation, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -86,44 +87,68 @@ function paymentMethodLabel(method: string): string {
   return method.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function statusCopy(status: OrderStatus): { title: string; message: string } {
+const PAYMENT_METHOD_KEYS: Record<string, string> = {
+  cod: 'orders.detail.paymentMethods.cod',
+  bank_transfer: 'orders.detail.paymentMethods.bank_transfer',
+  card: 'orders.detail.paymentMethods.card',
+  cash_on_delivery: 'orders.detail.paymentMethods.cash_on_delivery',
+  credit_card: 'orders.detail.paymentMethods.credit_card',
+  e_wallet: 'orders.detail.paymentMethods.e_wallet',
+};
+
+function statusCopy(status: OrderStatus, t: TFunction): { title: string; message: string } {
   switch (status) {
     case OrderStatus.PLACED:
       return {
-        title: 'Awaiting confirmation',
-        message: 'Confirm this order to start processing it.',
+        title: t('merchant.orders.detail.status.placed.title', 'Awaiting confirmation'),
+        message: t(
+          'merchant.orders.detail.status.placed.message',
+          'Confirm this order to start processing it.',
+        ),
       };
     case OrderStatus.CONFIRMED:
       return {
-        title: 'Order confirmed',
-        message: 'Prepare the items and hand them to the courier.',
+        title: t('merchant.orders.detail.status.confirmed.title', 'Order confirmed'),
+        message: t(
+          'merchant.orders.detail.status.confirmed.message',
+          'Prepare the items and hand them to the courier.',
+        ),
       };
     case OrderStatus.PACKED:
       return {
-        title: 'Order packed',
-        message: 'Hand the package to the courier to mark it as shipped.',
+        title: t('merchant.orders.detail.status.packed.title', 'Order packed'),
+        message: t(
+          'merchant.orders.detail.status.packed.message',
+          'Hand the package to the courier to mark it as shipped.',
+        ),
       };
     case OrderStatus.SHIPPED:
       return {
-        title: 'Order shipped',
-        message: 'The next step is out for delivery.',
+        title: t('merchant.orders.detail.status.shipped.title', 'Order shipped'),
+        message: t('merchant.orders.detail.status.shipped.message', 'The next step is out for delivery.'),
       };
     case OrderStatus.OUT_FOR_DELIVERY:
       return {
-        title: 'Out for delivery',
-        message: 'The courier is delivering this order today.',
+        title: t('merchant.orders.detail.status.out_for_delivery.title', 'Out for delivery'),
+        message: t(
+          'merchant.orders.detail.status.out_for_delivery.message',
+          'The courier is delivering this order today.',
+        ),
       };
     case OrderStatus.DELIVERED:
       return {
-        title: 'Order delivered',
-        message: 'This order is complete.',
+        title: t('merchant.orders.detail.status.delivered.title', 'Order delivered'),
+        message: t('merchant.orders.detail.status.delivered.message', 'This order is complete.'),
       };
     default:
       // Unknown or terminal statuses (e.g. cancelled if the backend adds one):
       // no advance action — just an accurate message.
       return {
-        title: formatStatusLabel(status),
-        message: 'No further actions are available for this order.',
+        title: t(`common.status.${status}`, formatStatusLabel(status)),
+        message: t(
+          'merchant.orders.detail.status.unknown.message',
+          'No further actions are available for this order.',
+        ),
       };
   }
 }
@@ -191,11 +216,15 @@ function MerchantOrderDetailSkeleton() {
 }
 
 function MerchantOrderDetailForbidden() {
+  const { t } = useTranslation();
+
   return (
     <div className="p-4">
       <Alert variant="destructive">
-        <AlertTitle>Access denied</AlertTitle>
-        <AlertDescription>Your merchant account is not approved</AlertDescription>
+        <AlertTitle>{t('merchant.orders.error.forbidden', 'Access denied')}</AlertTitle>
+        <AlertDescription>
+          {t('merchant.orders.error.notApproved', 'Your merchant account is not approved')}
+        </AlertDescription>
       </Alert>
     </div>
   );
@@ -211,6 +240,7 @@ function useBackToListHref(): string {
 
 /** One order line with a fixed 64px thumbnail that falls back to a placeholder icon. */
 function OrderItemRow({ item }: { item: MerchantOrderItemDto }) {
+  const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const image = getImageUrl(item.productImage);
 
@@ -233,11 +263,11 @@ function OrderItemRow({ item }: { item: MerchantOrderItemDto }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="break-words text-sm font-bold leading-5 text-[#111827] dark:text-slate-100 oidark:text-foreground">{item.productName}</p>
-        <p className="mt-1 text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Quantity: {item.quantity}</p>
-        <p className="text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">Unit price: {formatCurrencyAmount(item.unitPrice)}</p>
+        <p className="mt-1 text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">{t('orders.detail.quantity', `Quantity: ${item.quantity}`, { count: item.quantity })}</p>
+        <p className="text-[13px] text-[#6b7280] dark:text-slate-300 oidark:text-muted-foreground">{t('orders.detail.unitPrice', `Unit price: ${formatCurrencyAmount(item.unitPrice)}`, { amount: formatCurrencyAmount(item.unitPrice) })}</p>
       </div>
       <div className="col-start-2 shrink-0 text-left sm:col-start-auto sm:text-right">
-        <p className="text-[11px] uppercase text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">Line total</p>
+        <p className="text-[11px] uppercase text-[#9ca3af] dark:text-slate-300 oidark:text-muted-foreground">{t('orders.detail.lineTotal', 'Line total')}</p>
         <p className="text-base font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground">{formatCurrencyAmount(item.totalPrice)}</p>
       </div>
     </div>
@@ -298,7 +328,9 @@ function MerchantOrderDetailContent() {
     updateMutation.mutate(nextStatus, {
       onSuccess: () => {
         toast.success(
-          translate('merchant.orders.updateSuccess', `Order marked as ${formatStatusLabel(nextStatus)}.`),
+          t('merchant.orders.updateSuccess', `Order marked as ${formatStatusLabel(nextStatus)}.`, {
+            status: t(`common.status.${nextStatus}`, formatStatusLabel(nextStatus)),
+          }),
         );
       },
       onError: (error: Error) => {
@@ -367,7 +399,7 @@ function MerchantOrderDetailContent() {
       ? (timeline[timeline.length - 1].status as OrderStatus)
       : order.status;
   const nextStatus = order.availableTransitions[0] ?? null;
-  const copy = statusCopy(order.status);
+  const copy = statusCopy(order.status, t);
   const stepTimestamps: Partial<Record<OrderStatus, string>> = {};
   for (const entry of timeline) {
     if (entry.createdAt) stepTimestamps[entry.status as OrderStatus] = entry.createdAt;
@@ -375,12 +407,17 @@ function MerchantOrderDetailContent() {
   const deliveredAt = timeline.find((entry) => entry.status === OrderStatus.DELIVERED)?.createdAt;
   const actionMessage =
     order.status === OrderStatus.DELIVERED && deliveredAt
-      ? translate(
-          'merchant.orders.detail.deliveredOn',
-          `Completed on ${formatDate(deliveredAt)}, ${formatTime(deliveredAt, dateLocale)}.`,
-        )
+      ? t('merchant.orders.detail.deliveredOn', `Completed on ${formatDate(deliveredAt)}, ${formatTime(deliveredAt, dateLocale)}.`, {
+          date: formatDate(deliveredAt),
+          time: formatTime(deliveredAt, dateLocale),
+        })
       : copy.message;
   const orderRef = orderReference(order);
+  const paymentMethodFallback = paymentMethodLabel(order.paymentMethod);
+  const paymentMethodKey = PAYMENT_METHOD_KEYS[order.paymentMethod];
+  const paymentMethodText = paymentMethodKey
+    ? t(paymentMethodKey, paymentMethodFallback)
+    : paymentMethodFallback;
   const itemCountLabel =
     order.items.length === 1
       ? translate('orders.detail.itemsCountOne', '1 item')
@@ -413,7 +450,9 @@ function MerchantOrderDetailContent() {
             {translate('merchant.orders.detail.title', 'Order Details')}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h1 className="text-lg font-bold leading-tight sm:text-xl">Order {orderRef}</h1>
+            <h1 className="text-lg font-bold leading-tight sm:text-xl">
+              {t('orders.detail.orderHeading', `Order ${orderRef}`, { orderNumber: orderRef })}
+            </h1>
             <CopyButton
               value={orderRef}
               label={translate('merchant.orders.detail.copyOrderNumber', 'Copy order number')}
@@ -422,7 +461,10 @@ function MerchantOrderDetailContent() {
             <StatusBadge status={order.status} />
           </div>
           <p className="mt-1 text-[13px] opacity-90">
-            Placed {formatDate(order.createdAt)}, {formatTime(order.createdAt, dateLocale)}
+            {t('orders.detail.placedAt', `Placed ${formatDate(order.createdAt)}, ${formatTime(order.createdAt, dateLocale)}`, {
+              date: formatDate(order.createdAt),
+              time: formatTime(order.createdAt, dateLocale),
+            })}
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -527,10 +569,9 @@ function MerchantOrderDetailContent() {
                     <div className="rounded-lg bg-[#f9f5ff] px-4 py-3 dark:bg-[#2a1f4d] oidark:bg-surface-container-highest">
                       <div className="flex items-center justify-between gap-4">
                         <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-[#7c3aed] dark:text-[#c4b5fd] oidark:text-primary">
-                          {translate(
-                            'orders.detail.commissionLabel',
-                            `Commission (${commissionRatePercent})`,
-                          )}
+                          {t('orders.detail.commissionLabel', `Commission (${commissionRatePercent})`, {
+                            rate: commissionRatePercent,
+                          })}
                           {showCurrentRateMarker && (
                             <span className="text-xs font-normal opacity-70">
                               {rateCurrentMarker}
@@ -615,11 +656,11 @@ function MerchantOrderDetailContent() {
                 {translate('orders.detail.paymentTitle', 'Payment')}
               </h2>
               <div className="flex items-center justify-between">
-                <span className="text-[#6b7280] dark:text-slate-300 oidark:text-slate-300">Method</span>
-                <span className="font-medium text-[#111827] dark:text-slate-100 oidark:text-slate-100">{paymentMethodLabel(order.paymentMethod)}</span>
+                <span className="text-[#6b7280] dark:text-slate-300 oidark:text-slate-300">{translate('orders.detail.method', 'Method')}</span>
+                <span className="font-medium text-[#111827] dark:text-slate-100 oidark:text-slate-100">{paymentMethodText}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[#6b7280] dark:text-slate-300 oidark:text-slate-300">Status</span>
+                <span className="text-[#6b7280] dark:text-slate-300 oidark:text-slate-300">{translate('orders.table.status', 'Status')}</span>
                 <PaymentBadge status={order.paymentStatus} />
               </div>
             </section>
