@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Package, Plus, Search, Filter, Trash2, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -49,8 +49,15 @@ export default function ProductManagement() {
   const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const highlightedProductId = searchParams.get('highlightProductId') ?? undefined
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    const statusParam = searchParams.get('status')
+    return statusParam === 'active' || statusParam === 'inactive'
+      ? statusParam
+      : 'all'
+  })
   const [sortBy, setSortBy] = useState<ProductQueryParams['sortBy']>('newest')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
@@ -403,6 +410,7 @@ export default function ProductManagement() {
               isTogglingFeatured={toggleFeatured.isPending}
               isTogglingActive={bulkUpdate.isPending}
               showActions={showCrudActions}
+              highlightedProductId={highlightedProductId}
             />
           </div>
         )}

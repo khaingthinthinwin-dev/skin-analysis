@@ -69,6 +69,7 @@ interface ProductTableProps {
   isTogglingFeatured?: boolean
   isTogglingActive?: boolean
   showActions?: boolean
+  highlightedProductId?: string
 }
 
 export function ProductTable({
@@ -81,6 +82,7 @@ export function ProductTable({
   isTogglingFeatured = false,
   isTogglingActive = false,
   showActions = true,
+  highlightedProductId,
 }: ProductTableProps) {
   const navigate = useNavigate()
 
@@ -116,7 +118,7 @@ export function ProductTable({
   }
 
   const thClass = "text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-primary/10 whitespace-nowrap"
-  const tdClass = "py-3 px-2 sm:px-3.5 text-[13px] text-muted-foreground border-b border-border whitespace-nowrap bg-card"
+  const tdClass = "py-3 px-2 sm:px-3.5 text-[13px] text-muted-foreground border-b border-border whitespace-nowrap bg-transparent"
 
   return (
     <div className="overflow-x-auto rounded-md border bg-card">
@@ -154,146 +156,152 @@ export function ProductTable({
               </td>
             </tr>
           ) : (
-            products.map((product) => (
-              <tr
-                key={product.id}
-                className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${selectedIds.includes(product.id) ? 'bg-muted/30' : ''}`}
-              >
-                {showActions && (
+            products.map((product) => {
+              const isHighlighted = highlightedProductId === product.id
+
+              return (
+                <tr
+                  key={product.id}
+                  className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${
+                    selectedIds.includes(product.id) ? 'bg-muted/30' : ''
+                  } ${isHighlighted ? 'bg-amber-50 dark:bg-amber-950/40 ring-2 ring-inset ring-amber-400/70' : ''}`}
+                >
+                  {showActions && (
+                    <td className={tdClass}>
+                      <Checkbox
+                        checked={selectedIds.includes(product.id)}
+                        onCheckedChange={() => toggleOne(product.id)}
+                        aria-label={`Select ${product.name}`}
+                      />
+                    </td>
+                  )}
                   <td className={tdClass}>
-                    <Checkbox
-                      checked={selectedIds.includes(product.id)}
-                      onCheckedChange={() => toggleOne(product.id)}
-                      aria-label={`Select ${product.name}`}
+                    <ProductImage
+                      url={product.images[0]}
+                      alt={product.name}
                     />
                   </td>
-                )}
-                <td className={tdClass}>
-                  <ProductImage
-                    url={product.images[0]}
-                    alt={product.name}
-                  />
-                </td>
-                <td className={`${tdClass} text-foreground font-medium max-w-0`}>
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold text-foreground truncate">{product.name}</span>
-                  </div>
-                </td>
-                <td className={`${tdClass} font-mono text-xs text-muted-foreground`}>
-                  {product.sku || '—'}
-                </td>
-                <td className={tdClass}>
-                  {(() => {
-                    const { price, compareAtPrice, hasDiscount } = getPricing(product)
-                    return (
-                      <div className="space-y-0.5">
-                        <div className="font-semibold">
-                          {price != null ? (
-                            formatPrice(price)
-                          ) : (
-                            <span className="text-muted-foreground font-normal">—</span>
-                          )}
-                        </div>
-                        {hasDiscount && (
-                          <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                            Saved {formatPrice(compareAtPrice! - price!)}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </td>
-                <td className={tdClass}>
-                  {(() => {
-                    const { compareAtPrice, hasDiscount } = getPricing(product)
-                    return compareAtPrice != null ? (
-                      <span
-                        className={
-                          hasDiscount
-                            ? 'font-semibold line-through'
-                            : 'font-semibold'
-                        }
-                      >
-                        {formatPrice(compareAtPrice)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )
-                  })()}
-                </td>
-                <td className={tdClass}>
-                  {showActions ? (
-                    <InlineStockEditor
-                      value={product.stockQuantity}
-                      onSave={(stock) => onStockUpdate(product.id, stock)}
-                    />
-                  ) : (
-                    <span className="font-medium text-sm">{product.stockQuantity}</span>
-                  )}
-                </td>
-                <td className={tdClass}>
-                  {showActions ? (
-                    <button
-                      type="button"
-                      disabled={isTogglingActive}
-                      onClick={() => onToggleActive(product.id)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
-                        product.isActive ? 'bg-green-500' : 'bg-input'
-                      }`}
-                      aria-label={`Toggle status for ${product.name}`}
-                    >
-                      <span
-                        className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
-                          product.isActive ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  ) : (
-                    getStatusBadge(product)
-                  )}
-                </td>
-                <td className={tdClass}>
-                  {showActions ? (
-                    <button
-                      type="button"
-                      disabled={isTogglingFeatured}
-                      onClick={() => onToggleFeatured(product.id)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
-                        product.isFeatured ? 'bg-primary' : 'bg-input'
-                      }`}
-                      aria-label={`Toggle featured for ${product.name}`}
-                    >
-                      <span
-                        className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
-                          product.isFeatured ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  ) : product.isFeatured ? (
-                    <Badge variant="outline" className="text-[10px]">
-                      Featured
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  )}
-                </td>
-                {showActions && (
-                  <td className={`${tdClass} text-right`}>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => navigate(`/merchant/products/${product.id}/edit`)}
-                        aria-label={`Edit ${product.name}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                  <td className={`${tdClass} text-foreground font-medium max-w-0`}>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-foreground truncate">{product.name}</span>
                     </div>
                   </td>
-                )}
-              </tr>
-            ))
+                  <td className={`${tdClass} font-mono text-xs text-muted-foreground`}>
+                    {product.sku || '—'}
+                  </td>
+                  <td className={tdClass}>
+                    {(() => {
+                      const { price, compareAtPrice, hasDiscount } = getPricing(product)
+                      return (
+                        <div className="space-y-0.5">
+                          <div className="font-semibold">
+                            {price != null ? (
+                              formatPrice(price)
+                            ) : (
+                              <span className="text-muted-foreground font-normal">—</span>
+                            )}
+                          </div>
+                          {hasDiscount && (
+                            <div className="text-xs text-emerald-600 dark:text-emerald-400">
+                              Saved {formatPrice(compareAtPrice! - price!)}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </td>
+                  <td className={tdClass}>
+                    {(() => {
+                      const { compareAtPrice, hasDiscount } = getPricing(product)
+                      return compareAtPrice != null ? (
+                        <span
+                          className={
+                            hasDiscount
+                              ? 'font-semibold line-through'
+                              : 'font-semibold'
+                          }
+                        >
+                          {formatPrice(compareAtPrice)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )
+                    })()}
+                  </td>
+                  <td className={tdClass}>
+                    {showActions ? (
+                      <InlineStockEditor
+                        value={product.stockQuantity}
+                        onSave={(stock) => onStockUpdate(product.id, stock)}
+                      />
+                    ) : (
+                      <span className="font-medium text-sm">{product.stockQuantity}</span>
+                    )}
+                  </td>
+                  <td className={tdClass}>
+                    {showActions ? (
+                      <button
+                        type="button"
+                        disabled={isTogglingActive}
+                        onClick={() => onToggleActive(product.id)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+                          product.isActive ? 'bg-green-500' : 'bg-input'
+                        }`}
+                        aria-label={`Toggle status for ${product.name}`}
+                      >
+                        <span
+                          className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
+                            product.isActive ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      getStatusBadge(product)
+                    )}
+                  </td>
+                  <td className={tdClass}>
+                    {showActions ? (
+                      <button
+                        type="button"
+                        disabled={isTogglingFeatured}
+                        onClick={() => onToggleFeatured(product.id)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+                          product.isFeatured ? 'bg-primary' : 'bg-input'
+                        }`}
+                        aria-label={`Toggle featured for ${product.name}`}
+                      >
+                        <span
+                          className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
+                            product.isFeatured ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    ) : product.isFeatured ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        Featured
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </td>
+                  {showActions && (
+                    <td className={`${tdClass} text-right`}>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => navigate(`/merchant/products/${product.id}/edit`)}
+                          aria-label={`Edit ${product.name}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              )
+            })
           )}
         </tbody>
       </table>

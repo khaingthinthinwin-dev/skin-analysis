@@ -695,6 +695,30 @@ export class AdminService {
           newValue: { isActive: dto.isActive, reason: dto.reason },
         });
 
+        if (!dto.isActive) {
+          const merchant = await tx.merchant.findUnique({
+            where: { id: product.merchantId },
+            select: { userId: true },
+          });
+
+          if (merchant) {
+            try {
+              await tx.notification.create({
+                data: {
+                  userId: merchant.userId,
+                  type: 'PRODUCT_DEACTIVATED',
+                  title: 'Product Deactivated',
+                  message: `Your product "${product.name}" has been deactivated by an administrator.${dto.reason ? ` Reason: ${dto.reason}` : ''}`,
+                  entityType: 'product',
+                  entityId: productId,
+                },
+              });
+            } catch {
+              // notification is best-effort and should not block moderation
+            }
+          }
+        }
+
         return p;
       },
     );
