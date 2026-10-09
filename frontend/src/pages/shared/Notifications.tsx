@@ -296,19 +296,13 @@ function iconForType(rawType: string, title?: string, message?: string) {
 function NotificationCard({
   item,
   onOpen,
-<<<<<<< HEAD
   isMerchant,
-}: {
-  item: NotificationItem
-  onOpen: (item: NotificationItem) => void
-  isMerchant: boolean
-=======
   isAdmin = false,
 }: {
   item: NotificationItem
   onOpen: (item: NotificationItem) => void
+  isMerchant: boolean
   isAdmin?: boolean
->>>>>>> 35edfc04f8ec1953afd89c40921e8db999e7c632
 }) {
   const { Icon, color } = iconForType(item.type, item.title, item.message)
   const isMerchantReg = MERCHANT_ADMIN_ACTION_TYPES.has(
@@ -394,7 +388,6 @@ function NotificationCard({
 
 export default function Notifications() {
   const navigate = useNavigate()
-<<<<<<< HEAD
   const location = useLocation()
   const queryClient = useQueryClient()
   const { user } = useAuth()
@@ -406,10 +399,6 @@ export default function Notifications() {
     user?.role === 'admin' ||
     user?.role === 'super_admin' ||
     location.pathname.startsWith('/admin')
-=======
-  const { user } = useAuth()
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
->>>>>>> 35edfc04f8ec1953afd89c40921e8db999e7c632
   const [rejectedNotification, setRejectedNotification] = useState<NotificationItem | null>(null)
   const [deactivatedNotification, setDeactivatedNotification] = useState<NotificationItem | null>(null)
 
@@ -420,21 +409,13 @@ export default function Notifications() {
     refetch,
     markAllAsRead,
     isMarkingAllRead,
-  } = useNotifications()
+  } = useNotifications({ unreadOnly: true })
 
   const displayedNotifications = useMemo(() => {
-<<<<<<< HEAD
     let roleNotifications: NotificationItem[]
     if (isAdmin) {
       const seenKeys = new Set<string>()
       roleNotifications = notifications.filter((item) => {
-=======
-    let filtered = notifications
-
-    if (isAdmin) {
-      const seenKeys = new Set<string>()
-      filtered = notifications.filter((item) => {
->>>>>>> 35edfc04f8ec1953afd89c40921e8db999e7c632
         if (!isAdminNotification(item)) {
           return false
         }
@@ -446,26 +427,20 @@ export default function Notifications() {
         return true
       })
     } else if (user?.role === 'merchant') {
-<<<<<<< HEAD
       roleNotifications = notifications.filter(
-=======
-      filtered = notifications.filter(
->>>>>>> 35edfc04f8ec1953afd89c40921e8db999e7c632
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
     } else {
       roleNotifications = notifications
     }
 
-<<<<<<< HEAD
-    return roleNotifications.filter((item) => !dismissedNotificationIds.has(item.id))
+    return roleNotifications.filter(
+      (item) =>
+        !item.isRead &&
+        !item.readAt &&
+        !dismissedNotificationIds.has(item.id),
+    )
   }, [dismissedNotificationIds, isAdmin, notifications, user])
-=======
-    filtered = filtered.filter((item) => !item.isRead)
-
-    return filtered
-  }, [isAdmin, notifications, user])
->>>>>>> 35edfc04f8ec1953afd89c40921e8db999e7c632
 
   const rejectionReason = getRejectionReason(rejectedNotification)
   const deactivationReason = getDeactivationReason(deactivatedNotification)
@@ -635,16 +610,13 @@ export default function Notifications() {
       ) : (
         <div className="space-y-3">
           {displayedNotifications.map((item) => (
-<<<<<<< HEAD
             <NotificationCard
               key={item.id}
               item={item}
               onOpen={handleOpen}
               isMerchant={user?.role === 'merchant'}
+              isAdmin={isAdmin}
             />
-=======
-            <NotificationCard key={item.id} item={item} onOpen={handleOpen} isAdmin={isAdmin} />
->>>>>>> 35edfc04f8ec1953afd89c40921e8db999e7c632
           ))}
         </div>
       )}

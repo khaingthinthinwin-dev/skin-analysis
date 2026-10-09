@@ -108,13 +108,14 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
         </div>
       )}
 
-      {/* [E] Sold By */}
-      <p className="text-sm text-muted-foreground">
-        Sold by{' '}
-        <span className="font-medium text-foreground">
-          {product.merchant.shopName}
-        </span>
-      </p>
+      {!isMerchantView && (
+        <p className="text-sm text-muted-foreground">
+          Sold by{' '}
+          <span className="font-medium text-foreground">
+            {product.merchant.shopName}
+          </span>
+        </p>
+      )}
     </div>
   );
 }

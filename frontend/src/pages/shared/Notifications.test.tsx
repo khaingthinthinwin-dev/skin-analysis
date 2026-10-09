@@ -139,6 +139,7 @@ describe('Notifications Center', () => {
     await waitFor(() => {
       expect(notificationService.getNotifications).toHaveBeenCalledWith({
         limit: 50,
+        unreadOnly: true,
       })
     })
 
@@ -633,7 +634,7 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('clears all buyer notifications when Mark all read is clicked', async () => {
+  it('hides read buyer notifications', async () => {
     mockRole = 'buyer'
     mockUserId = 'buyer-1'
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
@@ -646,7 +647,7 @@ describe('Notifications Center', () => {
           message: 'Your order was placed.',
           entityType: 'order',
           entityId: 'order-1',
-          isRead: true,
+          isRead: false,
           readAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
         },
@@ -664,12 +665,12 @@ describe('Notifications Center', () => {
       </QueryClientProvider>,
     )
 
-    expect(await screen.findByText('Previous order')).toBeInTheDocument()
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark all read' }))
-
-    await waitFor(() => {
-      expect(notificationService.markAllAsRead).toHaveBeenCalledOnce()
-      expect(screen.queryByText('Previous order')).not.toBeInTheDocument()
+    expect(await screen.findByText('No notifications yet')).toBeInTheDocument()
+    expect(screen.queryByText('Previous order')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mark all read' })).not.toBeInTheDocument()
+    expect(notificationService.getNotifications).toHaveBeenCalledWith({
+      limit: 50,
+      unreadOnly: true,
     })
   })
 
@@ -717,7 +718,11 @@ describe('Notifications Center', () => {
     )
 
     expect(await screen.findByText('Advertisement approved')).toBeInTheDocument()
-    expect(await screen.findByText('New order')).toBeInTheDocument()
+    expect(screen.queryByText('New order')).not.toBeInTheDocument()
+    expect(notificationService.getNotifications).toHaveBeenCalledWith({
+      limit: 50,
+      unreadOnly: true,
+    })
     fireEvent.click(await screen.findByRole('button', { name: 'Mark all read' }))
 
     await waitFor(() => {
@@ -727,7 +732,7 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('removes an opened read notification from the history list', async () => {
+  it('hides read admin notifications from the history list', async () => {
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
       items: [
         {
@@ -755,12 +760,12 @@ describe('Notifications Center', () => {
       </QueryClientProvider>,
     )
 
-    expect(await screen.findByText('New merchant registration')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByText('New merchant registration'))
-
-    // Already-read items are dismissed without another read API call.
-    expect(notificationService.markAsRead).not.toHaveBeenCalled()
+    expect(await screen.findByText('No notifications yet')).toBeInTheDocument()
     expect(screen.queryByText('New merchant registration')).not.toBeInTheDocument()
+    expect(notificationService.getNotifications).toHaveBeenCalledWith({
+      limit: 50,
+      unreadOnly: true,
+    })
+    expect(notificationService.markAsRead).not.toHaveBeenCalled()
   })
 })

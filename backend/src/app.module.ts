@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
-import type { MailerOptions } from '@nestjs-modules/mailer';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from '@nestjs/config';
 import { PrismaModule } from './shared/prisma/prisma.module';
@@ -48,7 +47,7 @@ import { MailModule } from './shared/mail/mail.module';
         },
         defaults: {
           from: configService.get<string>('mail.from'),
-        } as MailerOptions['defaults'],
+        },
       }),
       inject: [ConfigService],
     }),

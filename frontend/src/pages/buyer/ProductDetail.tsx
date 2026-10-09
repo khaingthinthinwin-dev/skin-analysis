@@ -77,7 +77,11 @@ export default function ProductDetail() {
         <ProductInfo product={product} isMerchantView={isMerchantView} />
       </div>
 
-      <ProductTabs product={product} showReviewForm={!isMerchantView} />
+      <ProductTabs
+        product={product}
+        showReviewForm={!isMerchantView}
+        showProductDetails={!isMerchantView}
+      />
       {!isMerchantView && <SimilarProducts idOrSlug={product.id} />}
 
       {showCTA && (
