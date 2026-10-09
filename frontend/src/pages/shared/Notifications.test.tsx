@@ -135,6 +135,7 @@ describe('Notifications Center', () => {
     await waitFor(() => {
       expect(notificationService.getNotifications).toHaveBeenCalledWith({
         limit: 50,
+        unreadOnly: true,
       })
     })
 
