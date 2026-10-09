@@ -283,6 +283,125 @@
         "filteredTitle": "このフィルターに一致する注文が見つかりません。",
         "filteredDescription": "ステータスや日付のフィルターを変えてみてください。"
       }
+    },
+    "checkout": {
+      "title": "購入手続き",
+      "shippingAddress": {
+        "recipientNameRequired": "受取人名は必須です。",
+        "recipientNameMaxLength": "名前は200文字以内で入力してください。",
+        "phoneRequired": "電話番号は必須です。",
+        "phoneDigitsOnly": "電話番号は数字のみ入力してください。",
+        "phoneFormatInvalid": "電話番号は0から始まり、9桁または11桁で入力してください。",
+        "addressLine1Required": "住所は必須です。",
+        "addressLine1MaxLength": "住所は255文字以内で入力してください。",
+        "addressLine2MaxLength": "住所は255文字以内で入力してください。",
+        "cityRequired": "市区町村は必須です。",
+        "cityMaxLength": "市区町村は100文字以内で入力してください。",
+        "stateRequired": "都道府県は必須です。",
+        "stateMaxLength": "都道府県は100文字以内で入力してください。",
+        "postalCodeRequired": "郵便番号は必須です。",
+        "postalCodeDigitsOnly": "郵便番号は数字のみ入力してください。",
+        "countryRequired": "国は必須です。",
+        "recipientNamePlaceholder": "氏名",
+        "phonePlaceholder": "電話番号",
+        "addressLine1Placeholder": "住所",
+        "addressLine2Placeholder": "マンション・アパート名など",
+        "cityPlaceholder": "市区町村",
+        "statePlaceholder": "都道府県",
+        "postalCodePlaceholder": "郵便番号",
+        "postalCodeFormatInvalid": "郵便番号は4〜7桁で入力してください。",
+        "recipientNameLabel": "受取人名",
+        "phoneLabel": "電話番号",
+        "addressLine1Label": "住所1",
+        "addressLine2Label": "住所2（任意）",
+        "cityLabel": "市区町村",
+        "stateLabel": "都道府県",
+        "postalCodeLabel": "郵便番号",
+        "countryLabel": "国"
+      },
+      "payment": {
+        "title": "お支払い方法",
+        "cod": "代金引換",
+        "codDescription": "商品到着時にお支払い",
+        "bankTransfer": "銀行振込",
+        "bankTransferDescription": "銀行振込でお支払い",
+        "card": "クレジット・デビットカード",
+        "cardDescription": "カード決済（MVP簡易版）"
+      },
+      "orderNotes": {
+        "title": "注文メモ（任意）",
+        "placeholder": "ショップへのメモを入力してください"
+      },
+      "actions": {
+        "placeOrder": "注文する",
+        "placingOrder": "注文中...",
+        "backToCart": "カートに戻る"
+      },
+      "orderSummary": {
+        "soldByMerchant": "販売店: {{merchantName}}",
+        "itemQuantityPrice": "数量: {{quantity}} × {{unitPrice}}"
+      },
+      "vouchers": {
+        "shopVoucher": "ショップクーポン",
+        "shopVouchersTitle": "ショップクーポン",
+        "selectOrEnterCode": "クーポンを選択するか、コードを入力してください。",
+        "appliedBadge": "適用済み",
+        "remove": "削除",
+        "availableVouchers": "利用可能なクーポン",
+        "noVouchersAvailable": "このショップには利用可能なクーポンがありません",
+        "haveACode": "クーポンコードをお持ちですか？",
+        "enterCouponCode": "クーポンコードを入力",
+        "couponCodeAria": "クーポンコード",
+        "applying": "適用中...",
+        "apply": "適用",
+        "selectLabel": "選択",
+        "enterCodeLabel": "コードを入力",
+        "percentOff": "{{value}}% オフ",
+        "amountOff": "{{amount}}Ks オフ",
+        "minOrder": "最低注文額 {{amount}}Ks",
+        "expired": "期限切れ",
+        "expiresToday": "本日まで",
+        "expiresInDays": "{{count}}日後に期限切れ",
+        "expiresOn": "{{date}}に期限切れ"
+      },
+      "sponsoredAds": {
+        "ariaLabel": "スポンサー広告",
+        "carouselRoleDescription": "カルーセル",
+        "sponsoredBadge": "スポンサー",
+        "featuredPromotionBadge": "注目のプロモーション",
+        "learnMore": "詳細を見る",
+        "previousAdvertisement": "前の広告",
+        "nextAdvertisement": "次の広告",
+        "goToAdvertisement": "広告{{index}}へ移動"
+      },
+      "auth": {
+        "loginButton": "ログイン",
+        "loginToCheckoutTitle": "チェックアウトにログイン",
+        "loginToCheckoutDescription": "購入を完了するにはログインしてください。"
+      },
+      "errors": {
+        "unableToLoadCheckout": "チェックアウトの読み込みに失敗しました",
+        "checkoutLoadError": "カートが空か、エラーが発生しました。"
+      },
+      "subtitle": "注文情報を安全に入力してください",
+      "toasts": {
+        "couponApplied": "クーポンを適用しました",
+        "invalidCoupon": "無効なクーポンコードです",
+        "placeOrderFailed": "注文に失敗しました。もう一度お試しください。",
+        "couponRemoved": "クーポンを削除しました",
+        "orderPlaced": "注文が完了しました！"
+      },
+      "countries": {
+        "jp": "日本",
+        "us": "アメリカ合衆国",
+        "gb": "イギリス",
+        "mm": "ミャンマー",
+        "th": "タイ",
+        "kr": "韓国",
+        "cn": "中国",
+        "sg": "シンガポール"
+      },
+      "processing": "注文を処理しています..."
     }
   },
   "profile": {
@@ -855,7 +974,8 @@
         "cash_on_delivery": "代金引換",
         "credit_card": "クレジットカード",
         "e_wallet": "電子ウォレット"
-      }
+      },
+      "itemsCount_one": "({{count}}点)"
     }
   }
 }

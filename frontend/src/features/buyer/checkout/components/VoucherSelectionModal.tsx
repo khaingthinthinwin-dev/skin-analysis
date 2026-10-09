@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Check, ChevronRight, Ticket, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,27 +28,39 @@ interface VoucherSelectionModalProps {
   subtotal: number;
 }
 
-function formatDiscount(promo: MerchantPromotion): string {
+function formatDiscount(promo: MerchantPromotion, t: TFunction): string {
   if (promo.discountType === 'percentage') {
-    return `${promo.discountValue}% OFF`;
+    return t('buyer.checkout.vouchers.percentOff', '{{value}}% OFF', {
+      value: promo.discountValue,
+    });
   }
-  return `${Math.round(Number(promo.discountValue)).toLocaleString('en-US')}Ks OFF`;
+  return t('buyer.checkout.vouchers.amountOff', '{{amount}}Ks OFF', {
+    amount: Math.round(Number(promo.discountValue)).toLocaleString('en-US'),
+  });
 }
 
-function formatMinOrder(amount: string | null): string {
+function formatMinOrder(amount: string | null, t: TFunction): string {
   if (!amount) return '';
-  return `Min. order ${Math.round(Number(amount)).toLocaleString('en-US')}Ks`;
+  return t('buyer.checkout.vouchers.minOrder', 'Min. order {{amount}}Ks', {
+    amount: Math.round(Number(amount)).toLocaleString('en-US'),
+  });
 }
 
-function getExpiryLabel(expiresAt: string): string {
+function getExpiryLabel(expiresAt: string, t: TFunction): string {
   const exp = new Date(expiresAt);
   const now = new Date();
   const diffMs = exp.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays <= 0) return 'Expired';
-  if (diffDays === 1) return 'Expires today';
-  if (diffDays <= 7) return `Expires in ${diffDays} days`;
-  return `Expires ${exp.toLocaleDateString()}`;
+  if (diffDays <= 0) return t('buyer.checkout.vouchers.expired', 'Expired');
+  if (diffDays === 1) return t('buyer.checkout.vouchers.expiresToday', 'Expires today');
+  if (diffDays <= 7) {
+    return t('buyer.checkout.vouchers.expiresInDays', 'Expires in {{count}} days', {
+      count: diffDays,
+    });
+  }
+  return t('buyer.checkout.vouchers.expiresOn', 'Expires {{date}}', {
+    date: exp.toLocaleDateString(),
+  });
 }
 
 export function VoucherSelectionModal({
@@ -61,6 +75,7 @@ export function VoucherSelectionModal({
   isLoading,
   subtotal,
 }: VoucherSelectionModalProps) {
+  const { t } = useTranslation();
   const [manualCode, setManualCode] = useState('');
   const [selectedCode, setSelectedCode] = useState<string | null>(appliedCode);
 
@@ -91,10 +106,13 @@ export function VoucherSelectionModal({
         <DialogHeader className="pb-1">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Ticket className="h-5 w-5 text-primary" />
-            Shop Vouchers
+            {t('buyer.checkout.vouchers.shopVouchersTitle', 'Shop Vouchers')}
           </DialogTitle>
           <DialogDescription>
-            Select a voucher or enter a code to apply a discount.
+            {t(
+              'buyer.checkout.vouchers.selectOrEnterCode',
+              'Select a voucher or enter a code to apply a discount.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,19 +124,22 @@ export function VoucherSelectionModal({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-green-800 dark:text-green-300">
-                      {formatDiscount({ discountType: appliedCoupon.discountType, discountValue: appliedCoupon.discountValue } as MerchantPromotion)}
+                      {formatDiscount(
+                        { discountType: appliedCoupon.discountType, discountValue: appliedCoupon.discountValue } as MerchantPromotion,
+                        t,
+                      )}
                     </span>
                     <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-mono font-medium text-green-700 dark:bg-green-900/40 dark:text-green-300">
                       {appliedCode.toUpperCase()}
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs text-green-600 dark:text-green-400">
-                    applied
+                    {t('buyer.checkout.vouchers.appliedBadge', 'applied')}
                   </p>
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={handleRemove} className="text-green-700 hover:text-green-900 dark:text-green-300">
-                Remove
+                {t('buyer.checkout.vouchers.remove', 'Remove')}
               </Button>
             </div>
           )}
@@ -126,7 +147,7 @@ export function VoucherSelectionModal({
           {promotions.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Available Vouchers
+                {t('buyer.checkout.vouchers.availableVouchers', 'Available Vouchers')}
               </p>
               <RadioGroup
                 value={selectedCode ?? undefined}
@@ -166,7 +187,7 @@ export function VoucherSelectionModal({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-primary">
-                              {formatDiscount(promo)}
+                              {formatDiscount(promo, t)}
                             </span>
                             <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono font-medium">
                               {promo.code}
@@ -181,10 +202,10 @@ export function VoucherSelectionModal({
                             {promo.minOrderAmount && (
                               <span className="flex items-center gap-1">
                                 <Tag className="h-3 w-3" />
-                                {formatMinOrder(promo.minOrderAmount)}
+                                {formatMinOrder(promo.minOrderAmount, t)}
                               </span>
                             )}
-                            <span>{getExpiryLabel(promo.expiresAt)}</span>
+                            <span>{getExpiryLabel(promo.expiresAt, t)}</span>
                           </div>
                         </div>
                         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -198,20 +219,25 @@ export function VoucherSelectionModal({
           {promotions.length === 0 && !appliedCoupon && (
             <div className="flex flex-col items-center py-6 text-center">
               <Ticket className="h-10 w-10 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">No vouchers available for this shop</p>
+              <p className="text-sm text-muted-foreground">
+                {t(
+                  'buyer.checkout.vouchers.noVouchersAvailable',
+                  'No vouchers available for this shop',
+                )}
+              </p>
             </div>
           )}
 
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Have a code?
+              {t('buyer.checkout.vouchers.haveACode', 'Have a code?')}
             </p>
             <div className="flex gap-2">
               <Input
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                placeholder="Enter coupon code"
-                aria-label="Coupon code"
+                placeholder={t('buyer.checkout.vouchers.enterCouponCode', 'Enter coupon code')}
+                aria-label={t('buyer.checkout.vouchers.couponCodeAria', 'Coupon code')}
                 disabled={isLoading}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -226,7 +252,9 @@ export function VoucherSelectionModal({
                 onClick={handleApplyManual}
                 disabled={!manualCode.trim() || isLoading}
               >
-                {isLoading ? 'Applying...' : 'Apply'}
+                {isLoading
+                  ? t('buyer.checkout.vouchers.applying', 'Applying...')
+                  : t('buyer.checkout.vouchers.apply', 'Apply')}
               </Button>
             </div>
           </div>

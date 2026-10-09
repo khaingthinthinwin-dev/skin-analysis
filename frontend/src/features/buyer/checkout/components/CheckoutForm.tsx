@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { Loader2, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormControl,
-  FormMessage,
+  useFormField,
 } from '@/components/ui/form';
 import type { ShippingAddress, PaymentMethod } from '@/types/checkout.types';
 
@@ -71,18 +72,62 @@ interface CheckoutFormProps {
 }
 
 const COUNTRIES = [
-  { value: 'JP', label: 'Japan' },
-  { value: 'US', label: 'United States' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'MM', label: 'Myanmar' },
-  { value: 'TH', label: 'Thailand' },
-  { value: 'KR', label: 'South Korea' },
-  { value: 'CN', label: 'China' },
-  { value: 'SG', label: 'Singapore' },
+  { value: 'JP', key: 'jp', label: 'Japan' },
+  { value: 'US', key: 'us', label: 'United States' },
+  { value: 'GB', key: 'gb', label: 'United Kingdom' },
+  { value: 'MM', key: 'mm', label: 'Myanmar' },
+  { value: 'TH', key: 'th', label: 'Thailand' },
+  { value: 'KR', key: 'kr', label: 'South Korea' },
+  { value: 'CN', key: 'cn', label: 'China' },
+  { value: 'SG', key: 'sg', label: 'Singapore' },
 ];
+
+const VALIDATION_KEYS: Record<string, string> = {
+  'Recipient name is required': 'buyer.checkout.shippingAddress.recipientNameRequired',
+  'Name must not exceed 200 characters':
+    'buyer.checkout.shippingAddress.recipientNameMaxLength',
+  'Phone number is required': 'buyer.checkout.shippingAddress.phoneRequired',
+  'Phone number must contain digits only':
+    'buyer.checkout.shippingAddress.phoneDigitsOnly',
+  'Phone must start with 0 and be 9 or 11 digits':
+    'buyer.checkout.shippingAddress.phoneFormatInvalid',
+  'Address is required': 'buyer.checkout.shippingAddress.addressLine1Required',
+  'Address must not exceed 255 characters':
+    'buyer.checkout.shippingAddress.addressLine1MaxLength',
+  'City is required': 'buyer.checkout.shippingAddress.cityRequired',
+  'City must not exceed 100 characters':
+    'buyer.checkout.shippingAddress.cityMaxLength',
+  'State is required': 'buyer.checkout.shippingAddress.stateRequired',
+  'State must not exceed 100 characters':
+    'buyer.checkout.shippingAddress.stateMaxLength',
+  'Postal code is required': 'buyer.checkout.shippingAddress.postalCodeRequired',
+  'Postal code must contain digits only':
+    'buyer.checkout.shippingAddress.postalCodeDigitsOnly',
+  'Postal code must be between 4 and 7 digits':
+    'buyer.checkout.shippingAddress.postalCodeFormatInvalid',
+  'Country is required': 'buyer.checkout.shippingAddress.countryRequired',
+};
+
+function CheckoutValidationMessage() {
+  const { error, formMessageId } = useFormField();
+  const { t } = useTranslation();
+  const englishMessage = error?.message;
+
+  if (!englishMessage) return null;
+
+  const message = String(englishMessage);
+  const key = VALIDATION_KEYS[message];
+
+  return (
+    <p id={formMessageId} className="text-sm font-medium text-destructive">
+      {key ? t(key, message) : message}
+    </p>
+  );
+}
 
 export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [notes, setNotes] = useState('');
   const form = useForm<ShippingFormValues>({
@@ -115,7 +160,9 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
 
         <Card className="border-border/80 shadow-xs">
           <CardHeader>
-            <CardTitle className="text-base">Shipping Address</CardTitle>
+            <CardTitle className="text-base">
+              {t('orders.detail.shippingTitle', 'Shipping Address')}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -123,11 +170,16 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
               name="recipientName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Recipient Name</FormLabel>
+                  <FormLabel>
+                    {t('buyer.checkout.shippingAddress.recipientNameLabel', 'Recipient Name')}
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Full name" {...field} />
+                    <Input
+                      placeholder={t('buyer.checkout.shippingAddress.recipientNamePlaceholder', 'Full name')}
+                      {...field}
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <CheckoutValidationMessage />
                 </FormItem>
               )}
             />
@@ -136,10 +188,12 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel>
+                    {t('buyer.checkout.shippingAddress.phoneLabel', 'Phone Number')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Phone number"
+                      placeholder={t('buyer.checkout.shippingAddress.phonePlaceholder', 'Phone number')}
                       type="tel"
                       maxLength={11}
                       {...field}
@@ -149,7 +203,7 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                       }}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <CheckoutValidationMessage />
                 </FormItem>
               )}
             />
@@ -158,11 +212,16 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
               name="addressLine1"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address Line 1</FormLabel>
+                  <FormLabel>
+                    {t('buyer.checkout.shippingAddress.addressLine1Label', 'Address Line 1')}
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Street address" {...field} />
+                    <Input
+                      placeholder={t('buyer.checkout.shippingAddress.addressLine1Placeholder', 'Street address')}
+                      {...field}
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <CheckoutValidationMessage />
                 </FormItem>
               )}
             />
@@ -171,14 +230,16 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
               name="addressLine2"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address Line 2 (optional)</FormLabel>
+                  <FormLabel>
+                    {t('buyer.checkout.shippingAddress.addressLine2Label', 'Address Line 2 (optional)')}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Apartment, suite, unit, etc."
+                      placeholder={t('buyer.checkout.shippingAddress.addressLine2Placeholder', 'Apartment, suite, unit, etc.')}
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <CheckoutValidationMessage />
                 </FormItem>
               )}
             />
@@ -188,11 +249,16 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>City</FormLabel>
+                    <FormLabel>
+                      {t('buyer.checkout.shippingAddress.cityLabel', 'City')}
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="City" {...field} />
+                      <Input
+                        placeholder={t('buyer.checkout.shippingAddress.cityPlaceholder', 'City')}
+                        {...field}
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <CheckoutValidationMessage />
                   </FormItem>
                 )}
               />
@@ -201,11 +267,16 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                 name="state"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>State/Province</FormLabel>
+                    <FormLabel>
+                      {t('buyer.checkout.shippingAddress.stateLabel', 'State/Province')}
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="State/Province" {...field} />
+                      <Input
+                        placeholder={t('buyer.checkout.shippingAddress.statePlaceholder', 'State/Province')}
+                        {...field}
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <CheckoutValidationMessage />
                   </FormItem>
                 )}
               />
@@ -216,10 +287,12 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                 name="postalCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Postal Code</FormLabel>
+                    <FormLabel>
+                      {t('buyer.checkout.shippingAddress.postalCodeLabel', 'Postal Code')}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Postal code"
+                        placeholder={t('buyer.checkout.shippingAddress.postalCodePlaceholder', 'Postal code')}
                         maxLength={7}
                         {...field}
                         onChange={(e) => {
@@ -228,7 +301,7 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                         }}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <CheckoutValidationMessage />
                   </FormItem>
                 )}
               />
@@ -237,7 +310,9 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Country</FormLabel>
+                    <FormLabel>
+                      {t('buyer.checkout.shippingAddress.countryLabel', 'Country')}
+                    </FormLabel>
                     <FormControl>
                       <select
                         className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -245,12 +320,12 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                       >
                         {COUNTRIES.map((c) => (
                           <option key={c.value} value={c.value}>
-                            {c.label}
+                            {t(`buyer.checkout.countries.${c.key}`, c.label)}
                           </option>
                         ))}
                       </select>
                     </FormControl>
-                    <FormMessage />
+                    <CheckoutValidationMessage />
                   </FormItem>
                 )}
               />
@@ -260,7 +335,9 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
 
         <Card className="border-border/80 shadow-xs lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Payment Method</CardTitle>
+            <CardTitle className="text-base">
+              {t('buyer.checkout.payment.title', 'Payment Method')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <RadioGroup
@@ -271,27 +348,33 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
               <div className={`flex items-center space-x-3 rounded-lg border p-3 ${paymentMethod === 'cod' ? 'border-purple-300 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20' : 'border-border'}`}>
                 <RadioGroupItem value="cod" id="cod" />
                 <Label htmlFor="cod" className="cursor-pointer flex-1">
-                  <p className="text-sm font-medium">Cash on Delivery</p>
+                  <p className="text-sm font-medium">
+                    {t('buyer.checkout.payment.cod', 'Cash on Delivery')}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Pay when order arrives
+                    {t('buyer.checkout.payment.codDescription', 'Pay when order arrives')}
                   </p>
                 </Label>
               </div>
               <div className={`flex items-center space-x-3 rounded-lg border p-3 ${paymentMethod === 'bank_transfer' ? 'border-purple-300 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20' : 'border-border'}`}>
                 <RadioGroupItem value="bank_transfer" id="bank_transfer" />
                 <Label htmlFor="bank_transfer" className="cursor-pointer flex-1">
-                  <p className="text-sm font-medium">Bank Transfer</p>
+                  <p className="text-sm font-medium">
+                    {t('buyer.checkout.payment.bankTransfer', 'Bank Transfer')}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Pay via bank transfer
+                    {t('buyer.checkout.payment.bankTransferDescription', 'Pay via bank transfer')}
                   </p>
                 </Label>
               </div>
               <div className={`flex items-center space-x-3 rounded-lg border p-3 ${paymentMethod === 'card' ? 'border-purple-300 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20' : 'border-border'}`}>
                 <RadioGroupItem value="card" id="card" />
                 <Label htmlFor="card" className="cursor-pointer flex-1">
-                  <p className="text-sm font-medium">Credit/Debit Card</p>
+                  <p className="text-sm font-medium">
+                    {t('buyer.checkout.payment.card', 'Credit/Debit Card')}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Card payment (stubbed for MVP)
+                    {t('buyer.checkout.payment.cardDescription', 'Card payment (stubbed for MVP)')}
                   </p>
                 </Label>
               </div>
@@ -301,11 +384,13 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
 
         <Card className="border-border/80 shadow-xs lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Order Notes (optional)</CardTitle>
+            <CardTitle className="text-base">
+              {t('buyer.checkout.orderNotes.title', 'Order Notes (optional)')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Textarea
-              placeholder="Notes for the merchant..."
+              placeholder={t('buyer.checkout.orderNotes.placeholder', 'Notes for the merchant...')}
               className="min-h-[80px]"
               maxLength={500}
               value={notes}
@@ -322,26 +407,26 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
             className="w-full font-bold sm:w-48"
             disabled={isSubmitting}
             onClick={() => navigate('/buyer/cart')}
-            aria-label="Cancel"
+            aria-label={t('common.cancel', 'Cancel')}
           >
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button
             type="submit"
             size="lg"
             className="w-full font-bold sm:w-48"
             disabled={isSubmitting || !form.formState.isValid}
-            aria-label="Place Order"
+            aria-label={t('buyer.checkout.actions.placeOrder', 'Place Order')}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Placing order...
+                {t('buyer.checkout.actions.placingOrder', 'Placing order...')}
               </>
             ) : (
               <>
                 <ShoppingBag className="mr-2 h-4 w-4" />
-                Place Order
+                {t('buyer.checkout.actions.placeOrder', 'Place Order')}
               </>
             )}
           </Button>

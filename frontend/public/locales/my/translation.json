@@ -283,6 +283,125 @@
         "filteredTitle": "ဤစစ်ထုတ်မှုနှင့် ကိုက်ညီသော အော်ဒါ မတွေ့ပါ။",
         "filteredDescription": "အခြေအနေ သို့မဟုတ် ရက်စွဲ စစ်ထုတ်မှုကို ပြောင်းကြည့်ပါ။"
       }
+    },
+    "checkout": {
+      "title": "ငွေရှင်းရန်",
+      "shippingAddress": {
+        "recipientNameRequired": "လက်ခံသူအမည် လိုအပ်ပါသည်",
+        "recipientNameMaxLength": "အမည်သည် စာလုံးရေ ၂၀၀ အထိသာ ဖြစ်ရပါမည်",
+        "phoneRequired": "ဖုန်းနံပါတ် လိုအပ်ပါသည်",
+        "phoneDigitsOnly": "ဖုန်းနံပါတ်သည် ဂဏန်းများသာဖြစ်ရပါမည်",
+        "phoneFormatInvalid": "ဖုန်းနံပါတ်သည် ၀ ဖြင့်စတင်ပြီး ၉ သို့မဟုတ် ၁၁ လုံးဖြစ်ရပါမည်",
+        "addressLine1Required": "လိပ်စာ လိုအပ်ပါသည်",
+        "addressLine1MaxLength": "လိပ်စာသည် စာလုံးရေ ၂၅၅ အထိသာ ဖြစ်ရပါမည်",
+        "addressLine2MaxLength": "လိပ်စာသည် စာလုံးရေ ၂၅၅ အထိသာ ဖြစ်ရပါမည်",
+        "cityRequired": "မြို့/ဒေသ လိုအပ်ပါသည်",
+        "cityMaxLength": "မြို့/ဒေသသည် စာလုံးရေ ၁၀၀ အထိသာ ဖြစ်ရပါမည်",
+        "stateRequired": "ပြည်နယ်/တိုင်း လိုအပ်ပါသည်",
+        "stateMaxLength": "ပြည်နယ်/တိုင်းသည် စာလုံးရေ ၁၀၀ အထိသာ ဖြစ်ရပါမည်",
+        "postalCodeRequired": "စာပို့သင်္ကေတ လိုအပ်ပါသည်",
+        "postalCodeDigitsOnly": "စာပို့သင်္ကေတသည် ဂဏန်းများသာဖြစ်ရပါမည်",
+        "countryRequired": "နိုင်ငံ လိုအပ်ပါသည်",
+        "recipientNamePlaceholder": "နာမည်အပြည့်",
+        "phonePlaceholder": "ဖုန်းနံပါတ်",
+        "addressLine1Placeholder": "လမ်း/အိမ်လိပ်စာ",
+        "addressLine2Placeholder": "အဆောင်၊ တိုက်ခန်း၊ အပိုင်း စသည်",
+        "cityPlaceholder": "မြို့/ဒေသ",
+        "statePlaceholder": "ပြည်နယ်/တိုင်းဒေသကြီး",
+        "postalCodePlaceholder": "စာပို့သင်္ကေတ",
+        "postalCodeFormatInvalid": "စာပို့သင်္ကေတသည် ၄ လုံးမှ ၇ လုံးအတွင်း ဖြစ်ရပါမည်",
+        "recipientNameLabel": "လက်ခံသူအမည်",
+        "phoneLabel": "ဖုန်းနံပါတ်",
+        "addressLine1Label": "လိပ်စာ ၁",
+        "addressLine2Label": "လိပ်စာ ၂ (မဖြည့်လည်းရပါသည်)",
+        "cityLabel": "မြို့/ဒေသ",
+        "stateLabel": "ပြည်နယ်/တိုင်း",
+        "postalCodeLabel": "စာပို့သင်္ကေတ",
+        "countryLabel": "နိုင်ငံ"
+      },
+      "payment": {
+        "title": "ငွေပေးချေနည်းလမ်း",
+        "cod": "ပစ္စည်းရောက်မှ ငွေပေးချေ",
+        "codDescription": "ပစ္စည်းရောက်ချိန်တွင် ငွေပေးချေပါမည်",
+        "bankTransfer": "ဘဏ်လွှဲပြောင်း",
+        "bankTransferDescription": "ဘဏ်လွှဲပြောင်းဖြင့် ငွေပေးချေပါမည်",
+        "card": "ကတ်ငွေပေးချေ",
+        "cardDescription": "ကတ်ဖြင့် ငွေပေးချေ (MVP စမ်းသပ်မှုသာ)"
+      },
+      "orderNotes": {
+        "title": "အော်ဒါ မှတ်ချက် (မဖြည့်လည်းရပါသည်)",
+        "placeholder": "ရောင်းချသူထံ မှတ်ချက်ပို့ရန်..."
+      },
+      "actions": {
+        "placeOrder": "အော်ဒါမှာရန်",
+        "placingOrder": "အော်ဒါမှာနေပါသည်...",
+        "backToCart": "စျေးခြင်းဘူးသို့ ပြန်သွားရန်"
+      },
+      "orderSummary": {
+        "soldByMerchant": "ရောင်းချသူ: {{merchantName}}",
+        "itemQuantityPrice": "အရေအတွက်: {{quantity}} x {{unitPrice}}"
+      },
+      "vouchers": {
+        "shopVoucher": "ဆိုင်ကူပွန်",
+        "shopVouchersTitle": "ဆိုင်ကူပွန်များ",
+        "selectOrEnterCode": "ကူပွန်ရွေးပါ သို့မဟုတ် ကုဒ်ထည့်ပါ",
+        "appliedBadge": "အသုံးပြုပြီး",
+        "remove": "ဖယ်ရှားရန်",
+        "availableVouchers": "အသုံးပြုနိုင်သော ကူပွန်များ",
+        "noVouchersAvailable": "ဤဆိုင်အတွက် အသုံးပြုနိုင်သော ကူပွန်မရှိပါ",
+        "haveACode": "ကူပွန်ကုဒ်ရှိပါသလား?",
+        "enterCouponCode": "ကူပွန်ကုဒ် ထည့်ပါ",
+        "couponCodeAria": "ကူပွန်ကုဒ်",
+        "applying": "အသုံးပြုနေပါသည်...",
+        "apply": "အသုံးပြုရန်",
+        "selectLabel": "ရွေးပါ",
+        "enterCodeLabel": "ကုဒ်ထည့်ပါ",
+        "percentOff": "{{value}}% လျှော့",
+        "amountOff": "{{amount}}Ks လျှော့",
+        "minOrder": "အနည်းဆုံး အော်ဒါ {{amount}}Ks",
+        "expired": "သက်တမ်းကုန်ပြီ",
+        "expiresToday": "ယနေ့ သက်တမ်းကုန်မည်",
+        "expiresInDays": "{{count}} ရက်အတွင်း သက်တမ်းကုန်မည်",
+        "expiresOn": "{{date}} တွင် သက်တမ်းကုန်မည်"
+      },
+      "sponsoredAds": {
+        "ariaLabel": "ထောက်ပံ့ကြော်ငြာများ",
+        "carouselRoleDescription": "ဆလိုက်ပြသမှု",
+        "sponsoredBadge": "ထောက်ပံ့ကြော်ငြာ",
+        "featuredPromotionBadge": "အထူးအသားပေး ပရိုမိုးရှင်း",
+        "learnMore": "အချက်အလက်ကြည့်ရန်",
+        "previousAdvertisement": "ယခင်ကြော်ငြာ",
+        "nextAdvertisement": "နောက်ကြော်ငြာ",
+        "goToAdvertisement": "ကြော်ငြာ {{index}} သို့ သွားရန်"
+      },
+      "auth": {
+        "loginButton": "အကောင့်ဝင်ရန်",
+        "loginToCheckoutTitle": "အော်ဒါမှာရန် အကောင့်ဝင်ပါ",
+        "loginToCheckoutDescription": "ငွေပေးချေမှု ပြီးဆုံးရန် အကောင့်ဝင်ပါ"
+      },
+      "errors": {
+        "unableToLoadCheckout": "အော်ဒါစာမျက်နှာကို ဖွင့်မရပါ",
+        "checkoutLoadError": "သင်၏စျေးခြင်းဘူးသည် ဗလာဖြစ်နေပါသည် သို့မဟုတ် အမှားတစ်ခုဖြစ်ပေါ်ခဲ့ပါသည်"
+      },
+      "subtitle": "သင့်အော်ဒါအချက်အလက်များကို လုံခြုံစွာဖြည့်ပါ",
+      "toasts": {
+        "couponApplied": "ကူပွန်ကို အသုံးပြုလိုက်ပါပြီ",
+        "invalidCoupon": "ကူပွန်ကုဒ် မှားနေပါသည်",
+        "placeOrderFailed": "အော်ဒါမအောင်မြင်ပါ။ ထပ်မံကြိုးစားပါ",
+        "couponRemoved": "ကူပွန်ကို ဖယ်ရှားလိုက်ပါပြီ",
+        "orderPlaced": "အော်ဒါ အောင်မြင်စွာ တင်ပြီးပါပြီ!"
+      },
+      "countries": {
+        "jp": "ဂျပန်",
+        "us": "အမေရိကန်",
+        "gb": "ယူနိုက်တက်ကင်းဒမ်း",
+        "mm": "မြန်မာ",
+        "th": "ထိုင်း",
+        "kr": "တောင်ကိုရီးယား",
+        "cn": "တရုတ်",
+        "sg": "စင်္ကာပူ"
+      },
+      "processing": "သင့်အော်ဒါကို လုပ်ဆောင်နေပါသည်..."
     }
   },
   "profile": {
@@ -475,6 +594,36 @@
         "viewInvoice": "ငွေတောင်းခံစာ ကြည့်ရန်",
         "notFound": {
           "description": "ဤအော်ဒါသည် သင့်ဆိုင်နှင့် မသက်ဆိုင်ပါ သို့မဟုတ် ရှာမတွေ့ပါ။"
+        },
+        "deliveredOn": "ပြီးဆုံးသည့်ရက်နှင့် အချိန်: {{date}}၊ {{time}}။",
+        "status": {
+          "placed": {
+            "title": "အတည်ပြုရန် စောင့်ဆိုင်းနေပါသည်",
+            "message": "လုပ်ငန်းစဉ် စတင်ရန် ဤအော်ဒါကို အတည်ပြုပါ။"
+          },
+          "confirmed": {
+            "title": "အော်ဒါ အတည်ပြုပြီးပါပြီ",
+            "message": "ပစ္စည်းများကို ပြင်ဆင်ပြီး ပို့ဆောင်သူထံ အပ်နှံပါ။"
+          },
+          "packed": {
+            "title": "အော်ဒါ ထုပ်ပိုးပြီးပါပြီ",
+            "message": "ပို့ဆောင်ပြီးကြောင်း မှတ်သားရန် ပါဆယ်ထုပ်ကို ပို့ဆောင်သူထံ အပ်နှံပါ။"
+          },
+          "shipped": {
+            "title": "အော်ဒါ ပို့ဆောင်ပြီးပါပြီ",
+            "message": "နောက်တစ်ဆင့်တွင် အော်ဒါကို လက်ခံသူထံ ပို့ဆောင်မည်ဖြစ်ပါသည်။"
+          },
+          "out_for_delivery": {
+            "title": "ပို့ဆောင်နေပါပြီ",
+            "message": "ပို့ဆောင်သူသည် ဤအော်ဒါကို ယနေ့ ပို့ဆောင်ပေးနေပါသည်။"
+          },
+          "delivered": {
+            "title": "အော်ဒါ ပို့ဆောင်ပြီးစီးပါပြီ",
+            "message": "ဤအော်ဒါ ပြီးဆုံးပါပြီ။"
+          },
+          "unknown": {
+            "message": "ဤအော်ဒါအတွက် နောက်ထပ် လုပ်ဆောင်ရန် မရှိပါ။"
+          }
         }
       },
       "invoice": {
@@ -511,7 +660,9 @@
         "footer": "ဤငွေတောင်းခံစာသည် Cosmetics Finder ရှိ အော်ဒါမှတ်တမ်းမှ ထုတ်လုပ်ခြင်း ဖြစ်ပါသည်။",
         "popupBlocked": "ဤငွေတောင်းခံစာ ပုံနှိပ်ရန်/သိမ်းဆည်းရန် ပေါ့ပ်အပ်များကို ခွင့်ပြုပါ။",
         "close": "ပိတ်ရန်"
-      }
+      },
+      "updateSuccess": "အော်ဒါအခြေအနေကို {{status}} အဖြစ် ပြောင်းလဲပြီးပါပြီ။",
+      "updateFailed": "အော်ဒါအခြေအနေကို ပြောင်းလဲ၍ မရပါ။ ထပ်မံကြိုးစားပါ။"
     },
     "revenue": {
       "title": "ဝင်ငွေ အကျဉ်းချုပ်",
@@ -538,7 +689,11 @@
       "startBeforeEndError": "စတင်ရက်စွဲသည် ပြီးဆုံးရက်စွဲထက် စောရမည်။",
       "invalidPeriod": "စတင်ရက်စွဲနှင့် ပြီးဆုံးရက်စွဲ ရွေးပါ",
       "daysCount_one": "{{count}} ရက်",
-      "daysCount_other": "{{count}} ရက်"
+      "daysCount_other": "{{count}} ရက်",
+      "today": "ယနေ့",
+      "thisMonth": "ယခုလ",
+      "lastMonth": "ပြီးခဲ့သည့်လ",
+      "custom": "စိတ်ကြိုက်"
     }
   },
   "roles": {
@@ -818,7 +973,9 @@
         "cash_on_delivery": "ပစ္စည်းရောက်မှ ငွေချေ",
         "credit_card": "အကြွေးကတ်",
         "e_wallet": "အီလက်ထရောနစ် ပိုက်ဆံအိတ်"
-      }
+      },
+      "commissionLabel": "ကော်မရှင် ({{rate}})",
+      "itemsCount_one": "(ပစ္စည်း {{count}} ခု)"
     }
   }
 }

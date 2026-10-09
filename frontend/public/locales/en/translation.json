@@ -283,6 +283,125 @@
         "filteredTitle": "No orders found for this filter.",
         "filteredDescription": "Try changing the status or date filters."
       }
+    },
+    "checkout": {
+      "title": "Checkout",
+      "shippingAddress": {
+        "recipientNameRequired": "Recipient name is required",
+        "recipientNameMaxLength": "Name must not exceed 200 characters",
+        "phoneRequired": "Phone number is required",
+        "phoneDigitsOnly": "Phone number must contain digits only",
+        "phoneFormatInvalid": "Phone must start with 0 and be 9 or 11 digits",
+        "addressLine1Required": "Address is required",
+        "addressLine1MaxLength": "Address must not exceed 255 characters",
+        "addressLine2MaxLength": "Address must not exceed 255 characters",
+        "cityRequired": "City is required",
+        "cityMaxLength": "City must not exceed 100 characters",
+        "stateRequired": "State is required",
+        "stateMaxLength": "State must not exceed 100 characters",
+        "postalCodeRequired": "Postal code is required",
+        "postalCodeDigitsOnly": "Postal code must contain digits only",
+        "countryRequired": "Country is required",
+        "recipientNamePlaceholder": "Full name",
+        "phonePlaceholder": "Phone number",
+        "addressLine1Placeholder": "Street address",
+        "addressLine2Placeholder": "Apartment, suite, unit, etc.",
+        "cityPlaceholder": "City",
+        "statePlaceholder": "State/Province",
+        "postalCodePlaceholder": "Postal code",
+        "postalCodeFormatInvalid": "Postal code must be between 4 and 7 digits",
+        "recipientNameLabel": "Recipient Name",
+        "phoneLabel": "Phone Number",
+        "addressLine1Label": "Address Line 1",
+        "addressLine2Label": "Address Line 2 (optional)",
+        "cityLabel": "City",
+        "stateLabel": "State/Province",
+        "postalCodeLabel": "Postal Code",
+        "countryLabel": "Country"
+      },
+      "payment": {
+        "title": "Payment Method",
+        "cod": "Cash on Delivery",
+        "codDescription": "Pay when order arrives",
+        "bankTransfer": "Bank Transfer",
+        "bankTransferDescription": "Pay via bank transfer",
+        "card": "Credit/Debit Card",
+        "cardDescription": "Card payment (stubbed for MVP)"
+      },
+      "orderNotes": {
+        "title": "Order Notes (optional)",
+        "placeholder": "Notes for the merchant..."
+      },
+      "actions": {
+        "placeOrder": "Place Order",
+        "placingOrder": "Placing order...",
+        "backToCart": "Back to Cart"
+      },
+      "orderSummary": {
+        "soldByMerchant": "Sold by {{merchantName}}",
+        "itemQuantityPrice": "Qty: {{quantity}} x {{unitPrice}}"
+      },
+      "vouchers": {
+        "shopVoucher": "Shop Voucher",
+        "shopVouchersTitle": "Shop Vouchers",
+        "selectOrEnterCode": "Select a voucher or enter a code to apply a discount.",
+        "appliedBadge": "applied",
+        "remove": "Remove",
+        "availableVouchers": "Available Vouchers",
+        "noVouchersAvailable": "No vouchers available for this shop",
+        "haveACode": "Have a code?",
+        "enterCouponCode": "Enter coupon code",
+        "couponCodeAria": "Coupon code",
+        "applying": "Applying...",
+        "apply": "Apply",
+        "selectLabel": "Select",
+        "enterCodeLabel": "Enter code",
+        "percentOff": "{{value}}% OFF",
+        "amountOff": "{{amount}}Ks OFF",
+        "minOrder": "Min. order {{amount}}Ks",
+        "expired": "Expired",
+        "expiresToday": "Expires today",
+        "expiresInDays": "Expires in {{count}} days",
+        "expiresOn": "Expires {{date}}"
+      },
+      "sponsoredAds": {
+        "ariaLabel": "Sponsored advertisements",
+        "carouselRoleDescription": "carousel",
+        "sponsoredBadge": "Sponsored",
+        "featuredPromotionBadge": "Featured Promotion",
+        "learnMore": "Learn more",
+        "previousAdvertisement": "Previous advertisement",
+        "nextAdvertisement": "Next advertisement",
+        "goToAdvertisement": "Go to advertisement {{index}}"
+      },
+      "auth": {
+        "loginButton": "Log in",
+        "loginToCheckoutTitle": "Log in to checkout",
+        "loginToCheckoutDescription": "Please log in to complete your purchase."
+      },
+      "errors": {
+        "unableToLoadCheckout": "Unable to load checkout",
+        "checkoutLoadError": "Your cart may be empty or an error occurred."
+      },
+      "subtitle": "Complete your order details securely",
+      "toasts": {
+        "couponApplied": "Coupon applied successfully",
+        "invalidCoupon": "Invalid coupon code",
+        "placeOrderFailed": "Failed to place order. Please try again.",
+        "couponRemoved": "Coupon removed",
+        "orderPlaced": "Order placed successfully!"
+      },
+      "countries": {
+        "jp": "Japan",
+        "us": "United States",
+        "gb": "United Kingdom",
+        "mm": "Myanmar",
+        "th": "Thailand",
+        "kr": "South Korea",
+        "cn": "China",
+        "sg": "Singapore"
+      },
+      "processing": "Processing your order..."
     }
   },
   "profile": {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,6 +22,7 @@ function usePrefersReducedMotion() {
 }
 
 export function SponsoredAdSlider() {
+  const { t } = useTranslation()
   const { data } = useSponsoredAds()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
@@ -58,8 +60,11 @@ export function SponsoredAdSlider() {
       className="relative overflow-hidden rounded-[1.75rem] border-0 shadow-xl"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      aria-roledescription="carousel"
-      aria-label="Sponsored advertisements"
+      aria-roledescription={t(
+        'buyer.checkout.sponsoredAds.carouselRoleDescription',
+        'carousel',
+      )}
+      aria-label={t('buyer.checkout.sponsoredAds.ariaLabel', 'Sponsored advertisements')}
     >
       <CardContent
         className="relative min-h-[15rem] bg-gradient-to-r from-[#78349a] via-[#5c5a9f] to-[#562779] px-12 py-6 text-white transition-all duration-700 sm:min-h-[15.5rem] sm:px-16 sm:py-6"
@@ -70,10 +75,12 @@ export function SponsoredAdSlider() {
           <div className="flex min-w-0 flex-col gap-3 sm:col-span-7 sm:gap-3.5 lg:col-span-7">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white sm:text-xs">
-                <Megaphone className="h-3.5 w-3.5" /> Sponsored
+                <Megaphone className="h-3.5 w-3.5" />
+                {t('buyer.checkout.sponsoredAds.sponsoredBadge', 'Sponsored')}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-purple-100 backdrop-blur-md sm:text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-purple-200" /> Featured Promotion
+                <Sparkles className="h-3.5 w-3.5 text-purple-200" />
+                {t('buyer.checkout.sponsoredAds.featuredPromotionBadge', 'Featured Promotion')}
               </span>
             </div>
 
@@ -90,7 +97,7 @@ export function SponsoredAdSlider() {
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
               <Button asChild size="lg" className="h-12 gap-4 rounded-md bg-[#f8f7f5] px-8 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-white sm:text-base">
                 <a href={ctaHref}>
-                  Learn more
+                  {t('buyer.checkout.sponsoredAds.learnMore', 'Learn more')}
                   <ArrowRight className="h-4 w-4" />
                 </a>
               </Button>
@@ -115,7 +122,7 @@ export function SponsoredAdSlider() {
           size="icon"
           onClick={prev}
           disabled={ads.length <= 1}
-          aria-label="Previous advertisement"
+          aria-label={t('buyer.checkout.sponsoredAds.previousAdvertisement', 'Previous advertisement')}
           className="absolute left-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white sm:left-3"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -125,7 +132,7 @@ export function SponsoredAdSlider() {
           size="icon"
           onClick={next}
           disabled={ads.length <= 1}
-          aria-label="Next advertisement"
+          aria-label={t('buyer.checkout.sponsoredAds.nextAdvertisement', 'Next advertisement')}
           className="absolute right-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white sm:right-3"
         >
           <ChevronRight className="h-5 w-5" />
@@ -137,7 +144,11 @@ export function SponsoredAdSlider() {
               <button
                 key={idx}
                 type="button"
-                aria-label={`Go to advertisement ${idx + 1}`}
+                aria-label={t(
+                  'buyer.checkout.sponsoredAds.goToAdvertisement',
+                  'Go to advertisement {{index}}',
+                  { index: idx + 1 },
+                ).replace('{{index}}', String(idx + 1))}
                 aria-current={idx === displayIndex ? 'true' : undefined}
                 onClick={() => setCurrentIndex(idx)}
                 className={`h-2 rounded-full transition-all duration-300 ${idx === displayIndex ? 'w-8 bg-white' : 'w-2 bg-white/45 hover:bg-white/75'}`}

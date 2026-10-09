@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageIcon } from 'lucide-react';
 import { ShopVoucherRow } from './ShopVoucherRow';
@@ -45,6 +46,7 @@ export function OrderSummary({
 	onRemoveCoupon,
 	isCouponLoading,
 }: OrderSummaryProps) {
+	const { t } = useTranslation();
 	const shopGroups = useMemo(() => {
 		const groupMap = new Map<string, ShopGroup>();
 		for (const item of items) {
@@ -80,7 +82,9 @@ export function OrderSummary({
 	return (
 		<Card className="border-border/80 shadow-xs">
 			<CardHeader>
-				<CardTitle className="text-base">Order Summary</CardTitle>
+				<CardTitle className="text-base">
+					{t('cart.summary', 'Order Summary')}
+				</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{shopGroups.map((group) => {
@@ -104,11 +108,16 @@ export function OrderSummary({
 										<p className="truncate text-sm font-medium">{item.productName}</p>
 										{item.merchantName && (
 											<p className="text-xs text-muted-foreground">
-												Sold by {item.merchantName}
+												{t('buyer.checkout.orderSummary.soldByMerchant', 'Sold by {{merchantName}}', {
+													merchantName: item.merchantName,
+												})}
 											</p>
 										)}
 										<p className="text-xs text-muted-foreground">
-											Qty: {item.quantity} x {formatPrice(item.unitPrice)}
+											{t('buyer.checkout.orderSummary.itemQuantityPrice', 'Qty: {{quantity}} x {{unitPrice}}', {
+												quantity: item.quantity,
+												unitPrice: formatPrice(item.unitPrice),
+											})}
 										</p>
 									</div>
 									<span className="text-sm font-medium">{formatPrice(item.lineTotal)}</span>
@@ -131,17 +140,19 @@ export function OrderSummary({
 
 				<div className="space-y-2 border-t border-border pt-3 text-sm">
 					<div className="flex justify-between">
-						<span className="text-muted-foreground">Subtotal</span>
+						<span className="text-muted-foreground">
+							{t('cart.subtotal', 'Subtotal')}
+						</span>
 						<span>{formatPrice(subtotal)}</span>
 					</div>
 					{totalDiscount > 0 && (
 						<div className="flex justify-between text-green-600">
-							<span>Discount</span>
+							<span>{t('orders.detail.discount', 'Discount')}</span>
 							<span>-{formatPrice(totalDiscount)}</span>
 						</div>
 					)}
 					<div className="flex justify-between text-base font-bold">
-						<span>Total</span>
+						<span>{t('cart.total', 'Total')}</span>
 						<span>{formatPrice(total)}</span>
 					</div>
 				</div>
