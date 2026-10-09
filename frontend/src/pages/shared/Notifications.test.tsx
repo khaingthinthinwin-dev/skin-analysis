@@ -328,6 +328,51 @@ describe('Notifications Center', () => {
     })
   })
 
+  it('opens a product deactivation notification with all statuses available and highlights its product', async () => {
+    mockRole = 'merchant'
+    mockUserId = 'merchant-1'
+    vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 'n-product-deactivated',
+          userId: 'merchant-1',
+          type: 'PRODUCT_DEACTIVATED',
+          title: 'Product Deactivated',
+          message: 'Your product "Night Cream" has been deactivated.',
+          entityType: 'product',
+          entityId: 'prod-2',
+          isRead: false,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
+    })
+    vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
+
+    function LocationProbe() {
+      const location = useLocation()
+      return <div data-testid="location">{`${location.pathname}${location.search}`}</div>
+    }
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/merchant/notifications']}>
+          <LocationProbe />
+          <Notifications />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    fireEvent.click(await screen.findByText('Product Deactivated'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/merchant/products?highlightProductId=prod-2',
+      )
+    })
+  })
+
   it('marks unread notification as read on click', async () => {
     const mockNotifications = [
       {

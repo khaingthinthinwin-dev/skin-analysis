@@ -82,6 +82,8 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'NEW_ADS_PACKAGE',
   'ADS_PACKAGE_UPDATED',
   'ORDER_PLACED',
+  'PRODUCT_DEACTIVATED',
+  'PRODUCT_REACTIVATED',
 ])
 
 const ORDER_NOTIFICATION_TYPES = new Set([
@@ -248,6 +250,13 @@ function reviewManagementPath(item: NotificationItem): string {
     ? `&highlight=${encodeURIComponent(item.entityId)}`
     : ''
   return `/admin/reviews?tab=${tab}${highlight}`
+}
+
+function productManagementPath(item: NotificationItem): string {
+  const highlight = item.entityId
+    ? `?highlightProductId=${encodeURIComponent(item.entityId)}`
+    : ''
+  return `/merchant/products${highlight}`
 }
 
 function iconForType(rawType: string, title?: string, message?: string) {
@@ -475,6 +484,10 @@ export default function Notifications() {
       // Admins triage reports and moderate submissions on the Reviews page.
       // The specific row is highlighted so it is easy to spot.
       navigate(reviewManagementPath(item))
+      return
+    }
+    if (type === 'PRODUCT_DEACTIVATED' || type === 'PRODUCT_REACTIVATED') {
+      navigate(productManagementPath(item))
       return
     }
     if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {

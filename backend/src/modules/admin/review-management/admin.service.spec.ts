@@ -33,6 +33,10 @@ describe('AdminService review moderation', () => {
       },
       merchant: {
         findFirst: jest.fn(),
+        findUnique: jest.fn(),
+      },
+      notification: {
+        create: jest.fn(),
       },
       orderStatusHistory: {
         findFirst: jest.fn(),
@@ -251,6 +255,46 @@ describe('AdminService review moderation', () => {
           entityType: 'user',
           entityId: 'u1',
           newValue: { isActive: true },
+        },
+      });
+    });
+  });
+
+  describe('product moderation', () => {
+    it('sends a merchant notification when an admin deactivates a product', async () => {
+      prisma.product.findUnique.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        merchantId: 'm1',
+        isActive: true,
+      });
+      prisma.product.update.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        isActive: false,
+        updatedAt: new Date('2026-09-23T00:00:00Z'),
+      });
+      prisma.merchant.findUnique.mockResolvedValue({
+        id: 'm1',
+        userId: 'merchant-user-1',
+      });
+
+      const result = await service.moderateProduct(
+        'p1',
+        { isActive: false, reason: 'Policy violation' },
+        'admin1',
+      );
+
+      expect(result.isActive).toBe(false);
+      expect(prisma.notification.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'merchant-user-1',
+          type: 'PRODUCT_DEACTIVATED',
+          title: 'Product Deactivated',
+          message:
+            'Your product "Glow Serum" has been deactivated by an administrator. Reason: Policy violation',
+          entityType: 'product',
+          entityId: 'p1',
         },
       });
     });
