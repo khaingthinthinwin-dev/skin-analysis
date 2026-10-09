@@ -34,11 +34,12 @@ function serializeArrayParams(params: Record<string, string | string[]>): string
 }
 
 export const productService = {
-  async search(params: SearchParams): Promise<ProductListResponse> {
+  async search(params: SearchParams, signal?: AbortSignal): Promise<ProductListResponse> {
     const queryParams = buildProductParams(params)
     const response = await api.get<{ data: ProductListResponse }>('/search/products', {
       params: queryParams,
       paramsSerializer: serializeArrayParams,
+      signal,
     })
     return response.data.data
   },

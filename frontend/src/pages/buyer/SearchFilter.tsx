@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { ImageIcon, Heart, ShoppingCart, Loader2 } from 'lucide-react'
+import { ImageIcon, Heart, ShoppingCart, Loader2, Filter, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -12,6 +12,7 @@ import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { useCart } from '@/features/buyer/cart/hooks/useCart'
 import type { Product } from '@/types/product.types'
 import { formatPrice } from '@/lib/format'
+import { PriceRangeFilter } from '@/components/buyer/PriceRangeFilter'
 
 function getImageUrl(url: string): string {
   if (!url) return ''
@@ -51,12 +52,30 @@ export default function SearchFilter() {
 
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
   const [loginRequiredModal, setLoginRequiredModal] = useState<'wishlist' | 'cart' | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined)
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined)
+  const [filterKey, setFilterKey] = useState(0)
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['buyer', 'featured-products'],
-    queryFn: () => buyerSearchService.searchProducts({ isFeatured: true, limit: 100 }),
+    queryKey: ['buyer', 'search-products', minPrice, maxPrice],
+    queryFn: () => buyerSearchService.searchProducts({ minPrice, maxPrice, limit: 100 }),
   })
   const products = data?.items ?? []
+
+  const handlePriceChange = useCallback((min: number | undefined, max: number | undefined, hasError: boolean) => {
+    if (!hasError) {
+      setMinPrice(min)
+      setMaxPrice(max)
+    }
+  }, [])
+
+  const hasActiveFilters = minPrice !== undefined || maxPrice !== undefined
+  const clearFilters = useCallback(() => {
+    setMinPrice(undefined)
+    setMaxPrice(undefined)
+    setFilterKey((k) => k + 1)
+  }, [])
 
   const wishlistProductIds = useMemo(() => new Set(wishlistItems.map((item) => item.productId)), [wishlistItems])
   const cartProductIds = useMemo(() => new Set(cartItems.map((item) => item.productId)), [cartItems])
@@ -126,10 +145,41 @@ export default function SearchFilter() {
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Featured Products</h1>
-        <p className="text-sm text-muted-foreground">Discover products selected for you</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Featured Products</h1>
+          <p className="text-sm text-muted-foreground">Discover products selected for you</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="w-full sm:w-auto"
+        >
+          <Filter className="h-4 w-4 mr-2" />
+          Filters
+        </Button>
       </div>
+
+      {showFilters && (
+        <Card className="p-4 space-y-4 border-border/80 shadow-xs">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Price Range</h2>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+          <PriceRangeFilter
+            key={filterKey}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            onChange={handlePriceChange}
+          />
+        </Card>
+      )}
 
       {isLoading ? (
         <p className="py-12 text-center text-sm text-muted-foreground">Loading featured products...</p>

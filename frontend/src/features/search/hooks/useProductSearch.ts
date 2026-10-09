@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { searchParamsSchema, type SearchParams } from '@/schemas/search.schema'
 import { productService } from '../services/product.service'
 
-export function useProductSearch() {
+export function useProductSearch(enabled = true) {
   const [searchParams, setSearchParams] = useReactRouterSearchParams()
 
   const parsedParams = useMemo(() => {
@@ -14,9 +14,10 @@ export function useProductSearch() {
 
   const query = useQuery({
     queryKey: ['products', parsedParams] as const,
-    queryFn: () => productService.search(parsedParams),
+    queryFn: ({ signal }) => productService.search(parsedParams, signal),
     placeholderData: (prev) => prev,
     staleTime: 30_000,
+    enabled,
   })
 
   const updateParams = (updates: Partial<SearchParams>) => {
