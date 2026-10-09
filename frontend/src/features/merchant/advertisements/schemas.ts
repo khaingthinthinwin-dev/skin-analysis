@@ -60,8 +60,14 @@ export const contentSchema = z.object({
   ...contentFields,
 })
 
+// Payment reference is a numeric transaction reference: at least 8 digits,
+// up to the 100-character column limit.
 export const paymentSchema = z.object({
-  paymentReference: z.string().max(100, 'Payment reference must not exceed 100 characters'),
+  paymentReference: z
+    .string()
+    .min(8, 'Payment reference must be at least 8 digits')
+    .max(100, 'Payment reference must not exceed 100 characters')
+    .regex(/^\d+$/, 'Payment reference must contain only digits'),
 })
 
 export type UploadContentForm = z.infer<typeof uploadContentSchema>

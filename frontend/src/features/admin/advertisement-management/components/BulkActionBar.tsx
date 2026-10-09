@@ -35,18 +35,18 @@ export function BulkActionBar({
           size="sm"
           disabled={overLimit}
           onClick={onBulkApprove}
-          aria-label="Bulk approve selected advertisements"
+          aria-label="All approve selected advertisements"
         >
-          Bulk Approve
+          All Approve
         </Button>
         <Button
           size="sm"
           variant="destructive"
           disabled={overLimit}
           onClick={onBulkReject}
-          aria-label="Bulk reject selected advertisements"
+          aria-label="All reject selected advertisements"
         >
-          Bulk Reject
+          All Reject
         </Button>
       </div>
     </div>
