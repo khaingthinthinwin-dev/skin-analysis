@@ -47,6 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-medium group-hover:underline">{product.name}</h3>
           <div className="flex items-center gap-2">
             <StarRating rating={product.avgRating} size="sm" />
+            <span className="text-sm font-medium">{Number(product.avgRating).toFixed(1)}</span>
             <span className="text-sm text-muted-foreground">({product.reviewCount})</span>
           </div>
           <div className="flex items-center gap-2">

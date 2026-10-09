@@ -10,6 +10,7 @@ import {
   User as UserIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { roleNavConfigs, type UserRole, type NavItem } from '@/lib/navConfig'
 import { useAuth } from '@/hooks/useAuth'
@@ -255,9 +256,16 @@ export function Sidebar({
         {user ? (
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800">
-                {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="h-4 w-4" />}
-              </div>
+              <Avatar className="h-9 w-9 shrink-0 border border-purple-200 dark:border-purple-800">
+                <AvatarImage
+                  src={user.avatar || user.avatarUrl || undefined}
+                  alt={user.name || user.email}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold">
+                  {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
               {!isCollapsed && (
                 <div className="flex flex-col min-w-0">
                   <span className="truncate text-xs font-bold text-foreground">

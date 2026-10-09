@@ -10,25 +10,34 @@ export function useMatchFilters() {
     [searchParams],
   );
 
-  const updateFilters = useCallback((updates: Partial<MatchQueryParams>) => {
-    setSearchParams((prev: URLSearchParams) => {
-      const next = new URLSearchParams(prev);
+  const updateFilters = useCallback(
+    (updates: Partial<MatchQueryParams>, options?: { replace?: boolean; keepPage?: boolean }) => {
+      setSearchParams(
+        (prev: URLSearchParams) => {
+          const next = new URLSearchParams(prev);
 
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value === undefined || value === null || value === '') {
-          next.delete(key);
-        } else {
-          next.set(key, String(value));
-        }
-      });
+          Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === null || value === '') {
+              next.delete(key);
+            } else {
+              next.set(key, String(value));
+            }
+          });
 
-      if (Object.keys(updates).some((k) => k !== 'page')) {
-        next.set('page', '1');
-      }
+          // A sort/filter change restarts at page 1 — unless the caller is only
+          // persisting the current selection (e.g. pinning the default sort on
+          // load), where the current page must survive a refresh.
+          if (!options?.keepPage && Object.keys(updates).some((k) => k !== 'page')) {
+            next.set('page', '1');
+          }
 
-      return next;
-    });
-  }, [setSearchParams]);
+          return next;
+        },
+        { replace: options?.replace ?? false },
+      );
+    },
+    [setSearchParams],
+  );
 
   const resetFilters = useCallback(() => {
     setSearchParams({});
