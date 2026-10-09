@@ -4,8 +4,10 @@ import { SkinAnalysisService } from './skin-analysis.service';
 import { AiGatewayService } from './services/ai-gateway.service';
 import { SkinScanStorageService } from './services/skin-scan-storage.service';
 import { PdfReportService } from './services/pdf-report.service';
+import { NotificationsModule } from '../../shared/notifications/notifications.module';
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [SkinAnalysisController],
   providers: [
     SkinAnalysisService,

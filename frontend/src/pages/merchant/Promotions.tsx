@@ -92,16 +92,6 @@ export default function Promotions() {
     [now, t],
   )
 
-  const getDiscountBadge = useCallback(
-    (promo: Promotion) => {
-      if (promo.discountTypeCode === 'percentage') {
-        return <Badge className="bg-blue-100 text-blue-800">{promo.discountValue}% OFF</Badge>
-      }
-      return <Badge className="bg-green-100 text-green-800">{promo.discountValue} MMK OFF</Badge>
-    },
-    [],
-  )
-
   const handleDelete = useCallback(
     (id: string) => {
       deletePromotion.mutate(id, {
@@ -330,7 +320,9 @@ export default function Promotions() {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <div>
                       <span className="text-muted-foreground text-xs">{t('merchant.promotions.discountType')}</span>
-                      <div className="mt-0.5">{getDiscountBadge(promo)}</div>
+                      <p className="mt-0.5 font-medium">
+                        {promo.discountTypeCode === 'percentage' ? 'Percentage' : 'Fixed Amount'}
+                      </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">{t('merchant.promotions.discountValue')}</span>
@@ -516,7 +508,11 @@ export default function Promotions() {
                       <span className="block truncate">{promo.description || '-'}</span>
                     </td>
                     <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card">
-                      <span className="block truncate">{getDiscountBadge(promo)}</span>
+                      <span className="block truncate">
+                        {promo.discountTypeCode === 'percentage'
+                          ? 'Percentage'
+                          : 'Fixed Amount'}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card font-medium">
                       <span className="block truncate">

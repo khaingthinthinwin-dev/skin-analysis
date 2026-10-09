@@ -117,6 +117,21 @@ const ACCOUNT_DEACTIVATED_TYPES = new Set([
   'USER_DEACTIVATED',
 ])
 
+const ACCOUNT_ACTIVATED_TYPES = new Set([
+  'ACCOUNT_ACTIVATED',
+  'USER_ACTIVATED',
+])
+
+function isAccountActivatedNotification(item: NotificationItem): boolean {
+  const type = normalizeNotificationType(item.type)
+  const text = `${item.title || ''} ${item.message || ''}`.toLowerCase()
+  return (
+    ACCOUNT_ACTIVATED_TYPES.has(type) ||
+    text.includes('account activated') ||
+    text.includes('your account has been activated')
+  )
+}
+
 function isAccountDeactivatedNotification(item: NotificationItem): boolean {
   const type = normalizeNotificationType(item.type)
   const text = `${item.title || ''} ${item.message || ''}`.toLowerCase()
@@ -237,6 +252,9 @@ function reviewManagementPath(item: NotificationItem): string {
 
 function iconForType(rawType: string, title?: string, message?: string) {
   const type = (rawType || '').toUpperCase()
+  if (ACCOUNT_ACTIVATED_TYPES.has(type) || type.includes('ACCOUNT_ACTIVATED') || type.includes('USER_ACTIVATED')) {
+    return { Icon: BadgeCheck, color: 'text-emerald-500' }
+  }
   if (ACCOUNT_DEACTIVATED_TYPES.has(type) || type.includes('ACCOUNT_DEACTIVATED') || type.includes('USER_DEACTIVATED')) {
     return { Icon: BadgeX, color: 'text-destructive' }
   }
@@ -274,6 +292,9 @@ function iconForType(rawType: string, title?: string, message?: string) {
     }
   if (type === 'PROMO' || type.includes('PROMO')) {
     return { Icon: Tag, color: 'text-purple-600' }
+  }
+  if (type === 'SKIN_CHECK_REMINDER') {
+    return { Icon: Sparkles, color: 'text-pink-500' }
   }
   if (type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) {
     return { Icon: Sparkles, color: 'text-pink-500' }
@@ -384,7 +405,7 @@ export default function Notifications() {
     markAsRead,
     markAllAsRead,
     isMarkingAllRead,
-  } = useNotifications()
+  } = useNotifications({ unreadOnly: true })
 
   const displayedNotifications = useMemo(() => {
     // Order Insight notifications between merchant and buyer disappear as
@@ -428,6 +449,11 @@ export default function Notifications() {
       setRejectedNotification(item)
       return
     }
+    if (isAccountActivatedNotification(item)) {
+      const profilePath = user?.role === 'buyer' ? '/buyer/profile' : '/merchant/profile'
+      navigate(profilePath)
+      return
+    }
     if (isAccountDeactivatedNotification(item)) {
       setDeactivatedNotification(item)
       return
@@ -459,6 +485,21 @@ export default function Notifications() {
       } else {
         navigate('/admin/merchants')
       }
+      return
+    }
+
+     // Skin analysis notifications
+    if ((type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) && item.entityId && type !== 'SKIN_CHECK_REMINDER') {
+      navigate(`/buyer/skin-analysis/${item.entityId}`)
+      return
+    }
+    if (type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) {
+      navigate('/buyer/skin-analysis')
+      return
+    }
+    // Skin check reminder - link to new analysis page
+    if (type === 'SKIN_CHECK_REMINDER') {
+      navigate('/buyer/skin-analysis/new')
       return
     }
     // Merchant/buyer routes - navigate based on user role

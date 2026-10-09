@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsDateString,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdatePromotionDto {
@@ -21,10 +22,11 @@ export class UpdatePromotionDto {
   @Min(0.01)
   discountValue?: number;
 
+  @ValidateIf((o: UpdatePromotionDto) => o.minOrderAmount !== null)
   @IsNumber()
   @IsOptional()
   @Min(0)
-  minOrderAmount?: number;
+  minOrderAmount?: number | null;
 
   @IsNumber()
   @IsOptional()

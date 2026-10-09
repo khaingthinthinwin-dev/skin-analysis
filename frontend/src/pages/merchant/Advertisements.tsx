@@ -305,14 +305,14 @@ export default function Advertisements() {
       // Defer state update to avoid synchronous setState in effect
       window.setTimeout(() => {
         setHighlightAdId(adId)
-        // Auto-clear highlight after 4 seconds
+        // Auto-clear highlight after 5 seconds
         const timer = window.setTimeout(() => {
           setHighlightAdId(null)
           // Clean up URL
           const params = new URLSearchParams(searchParams)
           params.delete('highlightAdId')
           window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
-        }, 4000)
+        }, 5000)
         return () => window.clearTimeout(timer)
       }, 0)
     }
