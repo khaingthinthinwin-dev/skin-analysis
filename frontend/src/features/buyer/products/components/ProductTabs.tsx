@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductDetail } from '../services/product.service';
@@ -7,20 +7,38 @@ import { ReviewForm } from './ReviewForm';
 
 interface ProductTabsProps {
   product: ProductDetail;
+  focusReviewsRequest?: number;
 }
 
-export function ProductTabs({ product }: ProductTabsProps) {
+type ProductTab = 'description' | 'ingredients' | 'reviews';
+
+export function ProductTabs({ product, focusReviewsRequest = 0 }: ProductTabsProps) {
   const location = useLocation();
 
+  // A "reviews request" is either a #reviews deep link or an in-page click on the
+  // rating summary (parent bumps the counter).
+  const requestKey = `${location.hash === '#reviews' ? 'hash' : ''}:${focusReviewsRequest}`;
+  const [selection, setSelection] = useState<{ tab: ProductTab; key: string }>(() => ({
+    tab: location.hash === '#reviews' ? 'reviews' : 'description',
+    key: requestKey,
+  }));
+
+  // A new request always shows the reviews tab. Manually picking a tab records the
+  // current request key, so that pick wins until the next request arrives.
+  const tab = selection.key === requestKey ? selection.tab : 'reviews';
+
+  // Scroll once the reviews tab content is actually mounted.
   useEffect(() => {
-    if (location.hash !== '#reviews') return;
+    if (tab !== 'reviews') return;
+    if (location.hash !== '#reviews' && focusReviewsRequest === 0) return;
 
     document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
-  }, [location.hash]);
+  }, [tab, location.hash, focusReviewsRequest]);
 
   return (
     <Tabs
-      defaultValue={location.hash === '#reviews' ? 'reviews' : 'description'}
+      value={tab}
+      onValueChange={(value) => setSelection({ tab: value as ProductTab, key: requestKey })}
       className="mt-8 w-full"
     >
       <TabsList className="w-full justify-start border-b bg-transparent">

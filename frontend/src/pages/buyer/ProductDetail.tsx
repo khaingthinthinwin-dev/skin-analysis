@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ export default function ProductDetail() {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const idOrSlug = id ?? '';
+  const [reviewsFocusRequest, setReviewsFocusRequest] = useState(0);
 
   const { data: product, isLoading, isError } = useProductDetail(idOrSlug);
 
@@ -73,10 +75,13 @@ export default function ProductDetail() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
         <ProductGallery images={product.images} name={product.name} />
-        <ProductInfo product={product} />
+        <ProductInfo
+          product={product}
+          onShowReviews={() => setReviewsFocusRequest((n) => n + 1)}
+        />
       </div>
 
-      <ProductTabs product={product} />
+      <ProductTabs product={product} focusReviewsRequest={reviewsFocusRequest} />
       <SimilarProducts idOrSlug={product.id} />
 
       {showCTA && (

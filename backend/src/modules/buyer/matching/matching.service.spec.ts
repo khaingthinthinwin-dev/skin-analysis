@@ -120,7 +120,7 @@ describe('MatchingService', () => {
       expect(result.data[0].matchScore).toBeGreaterThan(0);
     });
 
-    it('should lead page 1 with previously recommended products that are still on sale', async () => {
+    it('should follow strict createdAt order on page 1 under Newest (no prepend)', async () => {
       const analysisMock = {
         id: 'analysis-1',
         skinType: 'oily',
@@ -173,13 +173,17 @@ describe('MatchingService', () => {
       ]);
       mockPrisma.product.count.mockResolvedValue(1);
 
-      const result = await service.getPersonalized(userId, { page: 1 });
+      const result = await service.getPersonalized(userId, {
+        page: 1,
+        sort: 'createdAt',
+        order: 'desc',
+      });
 
-      expect(result.data[0].id).toBe('prev-1');
-      expect(result.data[0].matchScore).not.toBeNull();
-      expect(result.data[1].id).toBe('p1');
-      // `total` is the filtered count only — the prepended featured product
-      // must not inflate it (BR-MATCH-027).
+      // "Newest" must show the DB createdAt order strictly — previously
+      // recommended picks stay in history, they never jump ahead of newer
+      // products (BR-MATCH-025).
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('p1');
       expect(result.meta.total).toBe(1);
     });
 
@@ -211,7 +215,11 @@ describe('MatchingService', () => {
       ]);
       mockPrisma.product.count.mockResolvedValue(1);
 
-      const result = await service.getPersonalized(userId, { page: 2 });
+      const result = await service.getPersonalized(userId, {
+        page: 2,
+        sort: 'createdAt',
+        order: 'desc',
+      });
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].id).toBe('p1');
@@ -747,6 +755,164 @@ describe('MatchingService', () => {
         await service.getPersonalized(userId, { sort: 'price', order: 'desc' });
 
         expect(getOrderBy()).toEqual({ price: 'desc' });
+      });
+
+      it('should order match score globally across pages, not just within a page', async () => {
+        mockAiSource();
+        // The DB returns the FULL filtered set for every page (no skip/take):
+        // the service scores all of it, sorts globally, then slices the page.
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'low',
+            name: 'Low Match',
+            slug: 'low-match',
+            price: 1000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['dry'],
+            tags: [],
+            ingredients: [],
+            avgRating: 3.0,
+            reviewCount: 5,
+            isFeatured: false,
+            stockQuantity: 1,
+          },
+          {
+            id: 'high',
+            name: 'High Match',
+            slug: 'high-match',
+            price: 2000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.8,
+            reviewCount: 100,
+            isFeatured: true,
+            stockQuantity: 1,
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(2);
+
+        const page1 = await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'desc',
+          page: 1,
+          limit: 1,
+        });
+        const page2 = await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'desc',
+          page: 2,
+          limit: 1,
+        });
+
+        // Page 1 takes the global top score, page 2 the next one — no repeats.
+        expect(page1.data.map((p) => p.id)).toEqual(['high']);
+        expect(page2.data.map((p) => p.id)).toEqual(['low']);
+        expect(page2.meta.total).toBe(2);
+        expect(page2.meta.totalPages).toBe(2);
+
+        const findManyArgs = getMockCallArgs(mockPrisma.product.findMany);
+        expect(findManyArgs.skip).toBeUndefined();
+        expect(findManyArgs.take).toBeUndefined();
+      });
+
+      it('should keep page 1 strictly ordered by price with no featured strip', async () => {
+        // A previous AI pick exists — under Newest it would be prepended, but
+        // an explicit price sort must order the whole page on its own.
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily',
+          completedAt: new Date(),
+          conditions: [],
+          recommendations: [
+            {
+              displayOrder: 1,
+              product: {
+                id: 'prev-1',
+                name: 'Previous Pick',
+                slug: 'previous-pick',
+                price: 1500,
+                compareAtPrice: null,
+                images: [],
+                skinTypes: ['oily'],
+                tags: [],
+                ingredients: [],
+                avgRating: 4.8,
+                reviewCount: 30,
+                isFeatured: false,
+                stockQuantity: 4,
+                isActive: true,
+                merchant: {
+                  shopName: 'Glow Beauty Shop',
+                  user: { shop: { isApproved: true } },
+                },
+              },
+            },
+          ],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        // The DB returns rows already ordered by price asc (orderBy is asserted
+        // separately) — the service must not reshuffle or prepend them.
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'cheap',
+            name: 'Cheap',
+            slug: 'cheap',
+            price: 900,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.0,
+            reviewCount: 10,
+            isFeatured: false,
+            stockQuantity: 2,
+          },
+          {
+            id: 'expensive',
+            name: 'Expensive',
+            slug: 'expensive',
+            price: 5000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.5,
+            reviewCount: 20,
+            isFeatured: true,
+            stockQuantity: 2,
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(2);
+
+        const asc = await service.getPersonalized(userId, {
+          sort: 'price',
+          order: 'asc',
+          page: 1,
+        });
+
+        expect(getOrderBy()).toEqual({ price: 'asc' });
+        expect(asc.data.map((p) => p.id)).toEqual(['cheap', 'expensive']);
+        expect(asc.data.map((p) => p.id)).not.toContain('prev-1');
+      });
+
+      it('should fall back to Newest when a generic source receives a stale matchScore sort', async () => {
+        mockGenericSource();
+
+        // The Match Score option is only offered for AI results; a URL that
+        // outlived the analysis must behave exactly like the "Newest" the UI
+        // shows instead of silently applying the featured/rating fallback.
+        await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'desc',
+        });
+
+        expect(getOrderBy()).toEqual({ createdAt: 'desc' });
       });
     });
 
