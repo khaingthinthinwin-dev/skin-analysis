@@ -47,7 +47,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { contentSchema, resubmitContentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
+import { AD_CONTENT_MAX, contentSchema, resubmitContentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
 import { useAdvertisements } from '@/features/merchant/advertisements/hooks/useAdvertisements'
 import { ProductImagePicker } from '@/features/merchant/advertisements/components/ProductImagePicker'
 import type { AdContentPayload } from '@/features/merchant/advertisements/services/advertisement.service'
@@ -1281,6 +1281,7 @@ function ContentDialog({
   })
   const startsAt = form.watch('startsAt')
   const imageUrl = form.watch('imageUrl')
+  const content = form.watch('content') ?? ''
   // Preserves unsaved typed content per ad across cancel/reopen (and across
   // logout/login via localStorage) so edits are not lost before a successful
   // save.
@@ -1353,7 +1354,18 @@ function ContentDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="ad-content">Content</Label>
-            <Textarea id="ad-content" maxLength={5000} placeholder="Enter advertisement content" {...form.register('content')} />
+            <div className="relative">
+              <Textarea
+                id="ad-content"
+                className={content.length > AD_CONTENT_MAX ? 'border-destructive pb-6' : 'pb-6'}
+                maxLength={AD_CONTENT_MAX}
+                placeholder="Enter advertisement content"
+                {...form.register('content')}
+              />
+              <span className="pointer-events-none absolute bottom-2 right-3 text-xs text-muted-foreground">
+                {content.length}/{AD_CONTENT_MAX}
+              </span>
+            </div>
             {form.formState.errors.content && (
               <p role="alert" className="text-sm text-destructive">
                 {form.formState.errors.content.message}

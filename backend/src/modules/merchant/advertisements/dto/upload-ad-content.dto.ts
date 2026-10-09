@@ -14,7 +14,9 @@ export class UploadAdContentDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  // Rendered inside a 2-line clamp on the ad cards, so longer copy is cut off
+  // on screen (~100 characters fit at the narrowest placement).
+  @MaxLength(100, { message: 'Content must not exceed 100 characters' })
   content?: string;
 
   // The advertisement image must be one of the merchant's own product images.
