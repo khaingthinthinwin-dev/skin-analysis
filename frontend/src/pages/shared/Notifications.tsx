@@ -227,15 +227,7 @@ function orderActionHint(item: NotificationItem): string | null {
     : null
 }
 
-// Order Insight notifications travel between the merchant and the buyer
-// (ORDER_PLACED → merchant; ORDER_CONFIRMED / ORDER_STATUS_UPDATED → buyer,
-// plus seeded `order` items). Once the recipient has read one, it leaves the
-// list entirely instead of lingering as a "read" card.
-function isReadOrderInsightNotification(item: NotificationItem): boolean {
-  if (!item.isRead) return false
-  const type = normalizeNotificationType(item.type)
-  return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
-}
+
 
 // Review notifications deep-link straight to the queue entry they are about so
 // the admin does not have to hunt for it. `entityId` is the review id for a
@@ -295,6 +287,9 @@ function iconForType(rawType: string, title?: string, message?: string) {
   }
   if (type === 'SKIN_CHECK_REMINDER') {
     return { Icon: Sparkles, color: 'text-pink-500' }
+  }
+  if (type === 'FIRST_SKIN_ANALYSIS_REMINDER') {
+    return { Icon: Sparkles, color: 'text-purple-500' }
   }
   if (type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) {
     return { Icon: Sparkles, color: 'text-pink-500' }
@@ -408,15 +403,13 @@ export default function Notifications() {
   } = useNotifications({ unreadOnly: true })
 
   const displayedNotifications = useMemo(() => {
-    // Order Insight notifications between merchant and buyer disappear as
-    // soon as they are read; every other type keeps its normal behavior.
-    const withoutReadOrderInsights = notifications.filter(
-      (item) => !isReadOrderInsightNotification(item),
-    )
+    // Once a notification is read (or marked as read), it is immediately
+    // removed from the view for all user roles.
+    const unreadOnly = notifications.filter((item) => !item.isRead)
 
     if (isAdmin) {
       const seenKeys = new Set<string>()
-      return withoutReadOrderInsights.filter((item) => {
+      return unreadOnly.filter((item) => {
         if (!isAdminNotification(item)) {
           return false
         }
@@ -430,12 +423,12 @@ export default function Notifications() {
     }
 
     if (user?.role === 'merchant') {
-      return withoutReadOrderInsights.filter(
+      return unreadOnly.filter(
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
     }
 
-    return withoutReadOrderInsights
+    return unreadOnly
   }, [isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)
@@ -500,6 +493,11 @@ export default function Notifications() {
     // Skin check reminder - link to new analysis page
     if (type === 'SKIN_CHECK_REMINDER') {
       navigate('/buyer/skin-analysis/new')
+      return
+    }
+    // First skin analysis reminder - link to main skin analysis page
+    if (type === 'FIRST_SKIN_ANALYSIS_REMINDER') {
+      navigate('/buyer/skin-analysis')
       return
     }
     // Merchant/buyer routes - navigate based on user role

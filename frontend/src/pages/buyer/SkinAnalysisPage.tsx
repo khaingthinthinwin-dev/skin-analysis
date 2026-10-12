@@ -45,6 +45,7 @@ export default function SkinAnalysisPage() {
     onComplete: (data) => {
       queryClient.setQueryData(['skin-analysis', 'detail', data.analysisId], data)
       queryClient.invalidateQueries({ queryKey: ['skin-analysis', 'latest'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       setCurrentAnalysisId(data.analysisId)
       setViewMode('results')
     },
