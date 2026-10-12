@@ -167,8 +167,8 @@ export class PromotionsService {
       throw new BadRequestException('Expiry date must be after start date');
     }
 
-    if (dto.discountTypeCode === 'percentage' && dto.discountValue > 100) {
-      throw new BadRequestException('Percentage discount must not exceed 100');
+    if (dto.discountTypeCode === 'percentage' && dto.discountValue > 99) {
+      throw new BadRequestException('Percentage discount must not exceed 99');
     }
 
     if (
@@ -263,9 +263,9 @@ export class PromotionsService {
     if (
       dto.discountTypeCode === 'percentage' &&
       dto.discountValue &&
-      dto.discountValue > 100
+      dto.discountValue > 99
     ) {
-      throw new BadRequestException('Percentage discount must not exceed 100');
+      throw new BadRequestException('Percentage discount must not exceed 99');
     }
 
     const effectiveType = dto.discountTypeCode || existing.discountTypeCode;
