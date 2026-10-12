@@ -189,6 +189,7 @@
     "dateFrom": "From Date",
     "dateTo": "To Date",
     "pageSize": "Page Size",
+    "allSkinTypes": "All Skin Types",
     "exportAll": "Export Full History",
     "exporting": "Exporting...",
     "columns": {

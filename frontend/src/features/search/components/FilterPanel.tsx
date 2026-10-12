@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { CategorySelect } from './CategorySelect'
 import type { CategoryNode } from '@/types/search.types'
 import type { SearchParams } from '@/schemas/search.schema'
+import { validatePriceRange } from '@/lib/priceRangeValidation'
 
 const SKIN_TYPES = [
   { value: 'dry' as const, label: 'Dry', labelKey: 'buyer.search.skinTypeOptions.dry', icon: '🌿' },
@@ -29,14 +30,23 @@ interface FilterPanelProps {
   onUpdate: (updates: Partial<SearchParams>) => void
   categories: CategoryNode[]
   onReset?: () => void
+  onPriceErrorChange?: (hasError: boolean) => void
   variant?: 'desktop' | 'mobile'
 }
 
-export function FilterPanel({ params, onUpdate, categories, onReset, variant = 'desktop' }: FilterPanelProps) {
-  const { t } = useTranslation()
+export function FilterPanel({
+  params,
+  onUpdate,
+  categories,
+  onReset,
+  onPriceErrorChange,
+  variant = 'desktop',
+}: FilterPanelProps) {
+    const { t } = useTranslation()
   const [priceMinDraft, setPriceMinDraft] = useState(params.minPrice?.toString() ?? '')
   const [priceMaxDraft, setPriceMaxDraft] = useState(params.maxPrice?.toString() ?? '')
   const [focusedPriceField, setFocusedPriceField] = useState<'min' | 'max' | null>(null)
+  const [priceError, setPriceError] = useState<string | null>(null)
 
   const hasActiveFilters =
     params.categoryId !== '' ||
@@ -46,10 +56,21 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
     params.maxPrice !== undefined ||
     params.rating !== undefined
 
-  const priceMin = focusedPriceField === 'min' ? priceMinDraft : (params.minPrice?.toString() ?? '')
-  const priceMax = focusedPriceField === 'max' ? priceMaxDraft : (params.maxPrice?.toString() ?? '')
+  const hasPriceError = Boolean(priceError)
+  const priceMin = focusedPriceField === 'min' || hasPriceError ? priceMinDraft : (params.minPrice?.toString() ?? '')
+  const priceMax = focusedPriceField === 'max' || hasPriceError ? priceMaxDraft : (params.maxPrice?.toString() ?? '')
+  const visiblePriceError = focusedPriceField ? null : priceError
 
   const commitPrice = () => {
+    const validationError = validatePriceRange(priceMin, priceMax)
+    if (validationError) {
+      setPriceError(validationError)
+      onPriceErrorChange?.(true)
+      setFocusedPriceField(null)
+      return
+    }
+    setPriceError(null)
+    onPriceErrorChange?.(false)
     onUpdate({
       minPrice: priceMin ? Number(priceMin) : undefined,
       maxPrice: priceMax ? Number(priceMax) : undefined,
@@ -71,8 +92,11 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
     setPriceMinDraft('')
     setPriceMaxDraft('')
     setFocusedPriceField(null)
+    setPriceError(null)
+    onPriceErrorChange?.(false)
     onReset?.()
   }
+  const priceErrorId = variant === 'mobile' ? 'mobilePriceError' : 'priceError'
 
   if (variant === 'mobile') {
     return (
@@ -98,6 +122,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
               type="number"
               placeholder={t('buyer.search.minPlaceholder', 'Min')}
               value={priceMin}
+              onFocus={() => setFocusedPriceField('min')}
               onChange={(e) => {
                 setFocusedPriceField('min')
                 setPriceMinDraft(e.target.value)
@@ -105,12 +130,15 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
               onBlur={commitPrice}
               className="h-10 flex-1 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
               min={0}
+              aria-invalid={visiblePriceError ? 'true' : 'false'}
+              aria-describedby={visiblePriceError ? priceErrorId : undefined}
             />
             <span className="text-slate-400">-</span>
             <Input
               type="number"
               placeholder={t('buyer.search.maxPlaceholder', 'Max')}
               value={priceMax}
+              onFocus={() => setFocusedPriceField('max')}
               onChange={(e) => {
                 setFocusedPriceField('max')
                 setPriceMaxDraft(e.target.value)
@@ -118,8 +146,15 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
               onBlur={commitPrice}
               className="h-10 flex-1 text-sm dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
               min={0}
+              aria-invalid={visiblePriceError ? 'true' : 'false'}
+              aria-describedby={visiblePriceError ? priceErrorId : undefined}
             />
           </div>
+          {visiblePriceError && (
+            <p id={priceErrorId} role="alert" className="text-red-600 text-xs mt-2">
+              {visiblePriceError}
+            </p>
+          )}
         </div>
 
         <div>
@@ -228,6 +263,7 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
               type="number"
               placeholder={t('buyer.search.minPlaceholder', 'Min')}
               value={priceMin}
+              onFocus={() => setFocusedPriceField('min')}
               onChange={(e) => {
                 setFocusedPriceField('min')
                 setPriceMinDraft(e.target.value)
@@ -240,12 +276,15 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
               }}
               className="h-8 text-xs"
               min={0}
+              aria-invalid={visiblePriceError ? 'true' : 'false'}
+              aria-describedby={visiblePriceError ? priceErrorId : undefined}
             />
             <span className="text-slate-400">-</span>
             <Input
               type="number"
               placeholder={t('buyer.search.maxPlaceholder', 'Max')}
               value={priceMax}
+              onFocus={() => setFocusedPriceField('max')}
               onChange={(e) => {
                 setFocusedPriceField('max')
                 setPriceMaxDraft(e.target.value)
@@ -258,8 +297,15 @@ export function FilterPanel({ params, onUpdate, categories, onReset, variant = '
               }}
               className="h-8 text-xs"
               min={0}
+              aria-invalid={visiblePriceError ? 'true' : 'false'}
+              aria-describedby={visiblePriceError ? priceErrorId : undefined}
             />
           </div>
+          {visiblePriceError && (
+            <p id={priceErrorId} role="alert" className="text-red-600 text-xs mt-2">
+              {visiblePriceError}
+            </p>
+          )}
         </div>
 
         <Separator />

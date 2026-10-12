@@ -81,7 +81,7 @@ export class MatchingService {
       minPrice,
       maxPrice,
       rating,
-      sort = 'matchScore',
+      sort,
       order = 'desc',
       page = 1,
       limit = 20,
@@ -94,6 +94,19 @@ export class MatchingService {
 
     const context = await this.determineSource(userId);
 
+    // BR-MATCH-024 defaults: AI results fall back to `matchScore desc` (scored
+    // in memory below); generic results keep buildOrderBy's featured/rating
+    // fallback, which an absent `sort` selects. A stale `sort=matchScore` URL
+    // can outlive the AI analysis that offered it — generic results carry no
+    // scores, so mirror the UI and fall back to Newest (createdAt desc).
+    let effectiveSort =
+      sort ?? (context.source === 'ai' ? 'matchScore' : undefined);
+    let effectiveOrder = order;
+    if (effectiveSort === 'matchScore' && context.source !== 'ai') {
+      effectiveSort = 'createdAt';
+      effectiveOrder = 'desc';
+    }
+
     // The filter panel sends `skinTypes=all` when the buyer clears every skin type
     // checkbox, which means "no skin-type selection". Feeding that sentinel to
     // `hasSome` matched no product at all and emptied the grid.
@@ -102,35 +115,35 @@ export class MatchingService {
       .map((type) => type.trim().toLowerCase())
       .filter((type) => type.length > 0 && type !== ALL_SKIN_TYPES);
 
-    // The analysis result and the panel selection are two separate conditions.
-    // Each one is an OR inside itself (sharing at least one skin type is enough,
-    // a product never has to carry every analysed type), while the two are
-    // ANDed. So for an "oily" selection on a "combination" analysis a product
-    // tagged oily + combination stays visible, while a dry-only product does not
-    // match the analysis result and stays hidden.
+    // The analysis result supplies the default skin types. An explicit
+    // `skinTypes` selection OVERRIDES the analysis-derived types for that
+    // query (BR-MATCH-006): picking "Oily" shows every product tagged oily
+    // (plus "all"-tagged ones on the AI source) — including analysis
+    // recommended products that carry the oily tag.
+    // `skinTypes=all` means "no selection at all" and clears both.
     const analysisSkinTypes = context.source === 'ai' ? context.skinTypes : [];
 
+    const effectiveSkinTypes =
+      requestedSkinTypes.length > 0
+        ? requestedSkinTypes
+        : skinTypesFilter === undefined
+          ? analysisSkinTypes
+          : [];
+
+    // One condition only: the effective types with `hasSome` semantics
+    // (BR-MATCH-016). On the AI source, products tagged for every skin type
+    // stay compatible with either source of the types.
     const skinTypeConditions: Prisma.ProductWhereInput[] = [];
-    if (analysisSkinTypes.length > 0) {
-      skinTypeConditions.push({
-        OR: [
-          { skinTypes: { hasSome: analysisSkinTypes } },
-          { skinTypes: { has: ALL_SKIN_TYPES } },
-        ],
-      });
-    }
-    if (requestedSkinTypes.length > 0) {
-      // Products tagged for every skin type stay compatible with the buyer's
-      // analysis result, so they also stay compatible with the selection.
+    if (effectiveSkinTypes.length > 0) {
       skinTypeConditions.push(
         context.source === 'ai'
           ? {
               OR: [
-                { skinTypes: { hasSome: requestedSkinTypes } },
+                { skinTypes: { hasSome: effectiveSkinTypes } },
                 { skinTypes: { has: ALL_SKIN_TYPES } },
               ],
             }
-          : { skinTypes: { hasSome: requestedSkinTypes } },
+          : { skinTypes: { hasSome: effectiveSkinTypes } },
       );
     }
 
@@ -154,8 +167,11 @@ export class MatchingService {
       maxPrice,
       rating,
       categoryId: effectiveCategoryId,
-      sort,
-      order,
+      // The EFFECTIVE sort, not the raw request: a stale generic `matchScore`
+      // resolves to Newest, and two requests that apply the same order must
+      // share one cache entry (while AI `matchScore` must not collide with it).
+      sort: effectiveSort,
+      order: effectiveOrder,
       page,
       limit,
     });
@@ -172,7 +188,6 @@ export class MatchingService {
     if (skinTypeConditions.length === 1) {
       Object.assign(where, skinTypeConditions[0]);
     } else if (skinTypeConditions.length > 1) {
-      // Analysis result AND panel selection, each one an OR inside itself.
       where.AND = skinTypeConditions;
     }
 
@@ -193,7 +208,11 @@ export class MatchingService {
     }
 
     if (effectiveCategoryId) {
-      where.categoryId = effectiveCategoryId;
+      // Same rule as the search page: picking a parent category also shows the
+      // products of its descendants, otherwise a tree selection looks broken.
+      const descendantIds =
+        await this.getCategoryDescendants(effectiveCategoryId);
+      where.categoryId = { in: descendantIds };
     }
 
     // Rating filter (minimum avgRating)
@@ -201,15 +220,20 @@ export class MatchingService {
       where.avgRating = { gte: rating };
     }
 
-    const orderBy = this.buildOrderBy(sort, order);
+    const orderBy = this.buildOrderBy(effectiveSort, effectiveOrder);
 
     const skip = (page - 1) * limit;
+
+    // `matchScore` is computed, not a database column (BR-MATCH-025): the whole
+    // filtered set has to be scored and sorted before pagination, otherwise each
+    // page is re-sorted independently and the order repeats/skips products
+    // across pages. DB-level sorts (price / rating / createdAt) keep skip/take.
+    const globalMatchSort = effectiveSort === 'matchScore';
 
     const [rawProducts, filteredTotal] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        skip,
-        take: limit,
+        ...(globalMatchSort ? {} : { skip, take: limit }),
         orderBy,
         include: {
           merchant: {
@@ -219,7 +243,7 @@ export class MatchingService {
       }),
       this.prisma.product.count({ where }),
     ]);
-    let total = filteredTotal;
+    const total = filteredTotal;
 
     const products = rawProducts as unknown as ProductWithMerchant[];
 
@@ -252,24 +276,21 @@ export class MatchingService {
       };
     });
 
-    if (context.source === 'ai' && sort === 'matchScore') {
+    if (globalMatchSort) {
       data.sort((a, b) => {
         const scoreA = a.matchScore ?? 0;
         const scoreB = b.matchScore ?? 0;
-        return order === 'desc' ? scoreB - scoreA : scoreA - scoreB;
+        return effectiveOrder === 'asc' ? scoreA - scoreB : scoreB - scoreA;
       });
+      data = data.slice(skip, skip + limit);
     }
 
-    // Previously recommended products lead page 1: the buyer's own past picks
-    // (still on sale, highest match first) are shown before the fresh grid.
-    if (page === 1) {
-      const featured = await this.getPreviouslyRecommendedFeatured(userId, 3);
-      if (featured.length > 0) {
-        const featuredIds = new Set(featured.map((p) => p.id));
-        data = [...featured, ...data.filter((p) => !featuredIds.has(p.id))];
-        total += featured.length;
-      }
-    }
+    // "Newest" (createdAt) follows the DB order strictly: page 1 must show the
+    // newest products first with no prepended strip, so the selected order is
+    // exactly what the buyer sees (BR-MATCH-025).
+    // NOTE: previously-recommended picks are NOT prepended here — they would
+    // break strict createdAt ordering. They remain available via the
+    // recommendation-history endpoint.
 
     const totalPages = Math.ceil(total / limit);
 
@@ -443,75 +464,24 @@ export class MatchingService {
     };
   }
 
-  /**
-   * The buyer's previously recommended products from the latest analysis that
-   * are still on sale, highest match first. These lead the recommendations
-   * grid so past picks stay visible at the top.
-   */
-  private async getPreviouslyRecommendedFeatured(
-    userId: string,
-    limit: number,
-  ): Promise<RecommendationResultDto[]> {
-    const latestAnalysis = await this.prisma.skinAnalysis.findFirst({
-      where: {
-        userId,
-        analysisStatus: 'completed',
-        completedAt: { not: null },
-      },
-      include: {
-        conditions: true,
-        recommendations: {
-          include: {
-            product: {
-              include: {
-                merchant: { include: { user: { include: { shop: true } } } },
-              },
-            },
-          },
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-      orderBy: { completedAt: 'desc' },
-    });
+  /** The requested category plus every category nested below it. */
+  private async getCategoryDescendants(categoryId: string): Promise<string[]> {
+    const descendants: string[] = [categoryId];
+    const queue = [categoryId];
 
-    if (!latestAnalysis) return [];
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const children = await this.prisma.category.findMany({
+        where: { parentId: currentId },
+        select: { id: true },
+      });
+      for (const child of children) {
+        descendants.push(child.id);
+        queue.push(child.id);
+      }
+    }
 
-    const scoringSkinType =
-      (latestAnalysis.skinType ?? '')
-        .split(',')
-        .map((type) => type.trim().toLowerCase())
-        .filter((type) => type.length > 0)[0] ?? '';
-    const concerns = latestAnalysis.conditions.map((c) => c.conditionName);
-
-    return (latestAnalysis.recommendations ?? [])
-      .filter(
-        (rec) =>
-          rec.product.isActive &&
-          rec.product.merchant?.user?.shop?.isApproved === true,
-      )
-      .map((rec) => {
-        const product = rec.product;
-        return {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          brandName: product.merchant?.shopName ?? '',
-          shortDescription: product.shortDescription ?? null,
-          price: product.price.toString(),
-          compareAtPrice: product.compareAtPrice?.toString() ?? null,
-          images: product.images,
-          skinTypes: product.skinTypes,
-          avgRating: product.avgRating.toString(),
-          reviewCount: product.reviewCount,
-          isFeatured: product.isFeatured,
-          isInStock: product.stockQuantity > 0,
-          matchScore: this.computeMatchScore(product, scoringSkinType, concerns)
-            .total,
-          categoryBadge: this.getCategoryBadge(product),
-        };
-      })
-      .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
-      .slice(0, limit);
+    return descendants;
   }
 
   private async determineSource(
@@ -618,13 +588,13 @@ export class MatchingService {
    * for buyers without an AI analysis, and `rating` was never implemented at all
    * (the DTO accepted it, the ordering ignored it).
    *
-   * `matchScore` is not a database column — it is computed per product after the
-   * rows are fetched — so it (and an absent `sort`) falls back to the per-source
-   * default candidate window from BR-MATCH-024: featured, then rating. AI results
-   * are re-sorted by score in memory below.
+   * `matchScore` is not a database column — it is computed per product before
+   * pagination — so it (and an absent `sort`) falls back to the per-source
+   * default candidate window from BR-MATCH-024: featured, then rating. AI
+   * results are scored and re-sorted in memory before the page slice.
    */
   private buildOrderBy(
-    sort: string,
+    sort: string | undefined,
     order: string,
   ):
     | Prisma.ProductOrderByWithRelationInput

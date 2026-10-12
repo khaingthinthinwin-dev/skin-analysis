@@ -132,4 +132,43 @@ describe('useMatchFilters pagination', () => {
     expect(screen.getByTestId('limit')).toHaveTextContent('24');
     expect(screen.getByTestId('rating')).toHaveTextContent('4');
   });
+
+  it('persists a sort without resetting the page when keepPage is set', async () => {
+    const user = userEvent.setup();
+
+    function PinProbe() {
+      const { filters, updateFilters } = useMatchFilters();
+      return (
+        <>
+          <output data-testid="page">{filters.page}</output>
+          <output data-testid="sort">{filters.sort}</output>
+          <output data-testid="order">{filters.order}</output>
+          <button
+            onClick={() =>
+              updateFilters(
+                { sort: 'createdAt', order: 'desc' },
+                { replace: true, keepPage: true },
+              )
+            }
+          >
+            pin
+          </button>
+        </>
+      );
+    }
+
+    // Bare URL on page 3 (e.g. after a refresh that kept ?page=3): pinning the
+    // Newest default must add sort/order without bumping back to page 1.
+    render(
+      <MemoryRouter initialEntries={['/buyer/recommendations?page=3']}>
+        <PinProbe />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'pin' }));
+
+    expect(screen.getByTestId('page')).toHaveTextContent('3');
+    expect(screen.getByTestId('sort')).toHaveTextContent('createdAt');
+    expect(screen.getByTestId('order')).toHaveTextContent('desc');
+  });
 });

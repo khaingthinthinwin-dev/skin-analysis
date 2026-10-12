@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -25,6 +26,8 @@ import {
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -147,6 +150,95 @@ export class AdminService {
     return review;
   }
 
+  private async notifyReviewModerationOutcome(
+    reviewId: string,
+    reviewUserId: string,
+    productId: string,
+    action: ReviewAction,
+  ): Promise<void> {
+    try {
+      const product = await this.prisma.product.findUnique({
+        where: { id: productId },
+        select: {
+          name: true,
+          merchant: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!product) return;
+
+      const merchantUserId = product.merchant?.userId;
+      const notifications: Array<{
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        entityType: 'Review' | 'Product';
+        entityId: string;
+      }> = [];
+
+      if (action === ReviewAction.APPROVE) {
+        if (merchantUserId) {
+          notifications.push({
+            userId: merchantUserId,
+            type: 'REVIEW_APPROVED',
+            title: 'New review received',
+            message: `A new review has been approved for "${product.name}" and is now visible to shoppers.`,
+            entityType: 'Product',
+            entityId: productId,
+          });
+        }
+
+        notifications.push({
+          userId: reviewUserId,
+          type: 'REVIEW_APPROVED',
+          title: 'Your review was approved',
+          message: `Your review for "${product.name}" has been approved and is now live.`,
+          entityType: 'Product',
+          entityId: productId,
+        });
+      } else {
+        notifications.push({
+          userId: reviewUserId,
+          type: 'REVIEW_REJECTED',
+          title: 'Your review was rejected',
+          message: `Your review for "${product.name}" was rejected by the moderation team.`,
+          entityType: 'Review',
+          entityId: reviewId,
+        });
+      }
+
+      const uniqueNotifications = Array.from(
+        new Map(
+          notifications
+            .filter((notification) => notification.userId)
+            .map((notification) => [
+              notification.userId + ':' + notification.type,
+              notification,
+            ]),
+        ).values(),
+      );
+
+      if (uniqueNotifications.length === 0) return;
+
+      await this.prisma.notification?.createMany?.({
+        data: uniqueNotifications,
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      // Fail-open: review moderation should still complete even if notifications cannot be created.
+      this.logger.warn(
+        `Failed to create moderation notifications for review ${reviewId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   async moderateReview(
     reviewId: string,
     dto: ModerateReviewDto,
@@ -195,6 +287,12 @@ export class AdminService {
     );
 
     await this.invalidateProductCache(review.productId);
+    await this.notifyReviewModerationOutcome(
+      reviewId,
+      review.userId,
+      review.productId,
+      dto.action,
+    );
 
     return {
       id: updated.id,
@@ -597,6 +695,30 @@ export class AdminService {
           newValue: { isActive: dto.isActive, reason: dto.reason },
         });
 
+        if (!dto.isActive) {
+          const merchant = await tx.merchant.findUnique({
+            where: { id: product.merchantId },
+            select: { userId: true },
+          });
+
+          if (merchant) {
+            try {
+              await tx.notification.create({
+                data: {
+                  userId: merchant.userId,
+                  type: 'PRODUCT_DEACTIVATED',
+                  title: 'Product Deactivated',
+                  message: `Your product "${product.name}" has been deactivated by an administrator.${dto.reason ? ` Reason: ${dto.reason}` : ''}`,
+                  entityType: 'product',
+                  entityId: productId,
+                },
+              });
+            } catch {
+              // notification is best-effort and should not block moderation
+            }
+          }
+        }
+
         return p;
       },
     );
@@ -747,14 +869,12 @@ export class AdminService {
         );
       }
       if (!dto.isActive && merchant) {
-        const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst(
-          {
-            where: {
-              statusId: { not: 6 },
-              order: { merchantId: merchant.id },
-            },
+        const hasPendingOrders = await this.prisma.order.findFirst({
+          where: {
+            merchantId: merchant.id,
+            status: { isTerminalState: false },
           },
-        );
+        });
         if (hasPendingOrders) {
           throw new BadRequestException(
             'Cannot deactivate until the order delivery is completed.',
@@ -764,10 +884,10 @@ export class AdminService {
     }
 
     if (user.roleCode === 'buyer' && !dto.isActive) {
-      const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst({
+      const hasPendingOrders = await this.prisma.order.findFirst({
         where: {
-          statusId: { not: 6 },
-          order: { buyerId: userId },
+          buyerId: userId,
+          status: { isTerminalState: false },
         },
       });
       if (hasPendingOrders) {
@@ -927,6 +1047,91 @@ export class AdminService {
     return report;
   }
 
+  private async notifyReportModerationOutcome(
+    reportId: string,
+    reporterId: string,
+    reviewId: string,
+    status: ReportAction,
+  ): Promise<void> {
+    try {
+      const review = await this.prisma.review.findUnique({
+        where: { id: reviewId },
+        select: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              merchant: { select: { userId: true } },
+            },
+          },
+        },
+      });
+
+      const productName = review?.product?.name ?? 'the reported product';
+      const productId = review?.product?.id ?? null;
+      const merchantUserId = review?.product?.merchant?.userId ?? null;
+      const isResolved = status === ReportAction.RESOLVED;
+
+      const notifications: Array<{
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        entityType: 'ReviewReport' | 'Product';
+        entityId: string | null;
+      }> = [
+        {
+          userId: reporterId,
+          type: isResolved ? 'REPORT_RESOLVED' : 'REPORT_REJECTED',
+          title: isResolved
+            ? 'Your review report was resolved'
+            : 'Your review report was rejected',
+          message: isResolved
+            ? `The review you reported for "${productName}" has been resolved by our moderation team.`
+            : `The review you reported for "${productName}" was rejected by our moderation team.`,
+          entityType: 'ReviewReport',
+          entityId: reportId,
+        },
+      ];
+
+      if (isResolved && merchantUserId) {
+        notifications.push({
+          userId: merchantUserId,
+          type: 'REPORT_RESOLVED',
+          title: 'A product review was resolved',
+          message: `A review for your product "${productName}" was reported and has been resolved by our moderation team.`,
+          entityType: 'Product',
+          entityId: productId,
+        });
+      }
+
+      const uniqueNotifications = Array.from(
+        new Map(
+          notifications
+            .filter((notification) => notification.userId)
+            .map((notification) => [
+              notification.userId + ':' + notification.type,
+              notification,
+            ]),
+        ).values(),
+      );
+
+      if (uniqueNotifications.length === 0) return;
+
+      await this.prisma.notification?.createMany?.({
+        data: uniqueNotifications,
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      // Fail-open: report moderation should still complete even if notifications cannot be created.
+      this.logger.warn(
+        `Failed to create report moderation notifications for report ${reportId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   async updateReportStatus(
     reportId: string,
     dto: UpdateReportStatusDto,
@@ -948,44 +1153,60 @@ export class AdminService {
       }
     }
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const updated = await tx.reviewReport.update({
-        where: { id: reportId },
-        data: {
-          status: dto.status,
-          adminNote: dto.adminNote,
-          resolvedBy: adminId,
-          resolvedAt: new Date(),
-        },
-      });
-
-      if (dto.status === ReportAction.RESOLVED) {
-        const review = await tx.review.findUnique({
-          where: { id: report.reviewId },
+    const updated = await this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const reportUpdate = await tx.reviewReport.update({
+          where: { id: reportId },
+          data: {
+            status: dto.status,
+            adminNote: dto.adminNote,
+            resolvedBy: adminId,
+            resolvedAt: new Date(),
+          },
         });
-        if (review) {
-          await tx.review.update({
+
+        if (dto.status === ReportAction.RESOLVED) {
+          const review = await tx.review.findUnique({
             where: { id: report.reviewId },
-            data: { status: 'rejected' },
           });
-          await this.recalculateProductStats(tx, review.productId);
-          await this.invalidateProductCache(review.productId);
+          if (review) {
+            await tx.review.update({
+              where: { id: report.reviewId },
+              data: { status: 'rejected' },
+            });
+            await this.recalculateProductStats(tx, review.productId);
+            await this.invalidateProductCache(review.productId);
+          }
         }
-      }
 
-      await this.logAudit(tx, {
-        userId: adminId,
-        action:
-          dto.status === ReportAction.RESOLVED
-            ? 'REPORT_RESOLVED'
-            : 'REPORT_REJECTED',
-        entityType: 'report',
-        entityId: reportId,
-        newValue: { status: dto.status, reviewId: report.reviewId },
-      });
+        await this.logAudit(tx, {
+          userId: adminId,
+          action:
+            dto.status === ReportAction.RESOLVED
+              ? 'REPORT_RESOLVED'
+              : 'REPORT_REJECTED',
+          entityType: 'report',
+          entityId: reportId,
+          newValue: { status: dto.status, reviewId: report.reviewId },
+        });
 
-      return updated;
-    });
+        return reportUpdate;
+      },
+    );
+
+    if (
+      dto.status === ReportAction.RESOLVED ||
+      dto.status === ReportAction.REJECTED
+    ) {
+      await this.notifyReportModerationOutcome(
+        reportId,
+        report.reportedBy,
+        report.reviewId,
+        dto.status,
+      );
+    }
+
+    return updated;
   }
 
   async deleteReport(reportId: string, adminId: string) {

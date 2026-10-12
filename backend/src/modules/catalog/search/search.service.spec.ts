@@ -59,6 +59,7 @@ describe('SearchService sponsored ads', () => {
       id: 'ad-search',
       feeSetting: { placement: AdPlacement.SEARCH_PAGE_BANNER },
       title: 'Search banner',
+      announcementMessage: 'Vitamin C serum',
       content: null,
       imageUrl: null,
       sku: 'AD-SKU-123',
@@ -111,6 +112,7 @@ describe('SearchService sponsored ads', () => {
       id: 'ad-search',
       placement: AdPlacement.SEARCH_PAGE_BANNER,
       title: 'Search banner',
+      announcementMessage: 'Vitamin C serum',
       sku: 'AD-SKU-123',
     });
     expect(get).not.toHaveBeenCalled();

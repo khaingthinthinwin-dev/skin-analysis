@@ -15,7 +15,9 @@ const ads: SponsoredAd[] = [
   {
     id: 'ad-1',
     placement: 'checkout_page_banner',
+    merchantName: 'Aura & Essence',
     title: 'Glow Serum',
+    announcementMessage: 'Brighten your skin with Glow Serum',
     description: 'Brighten your routine',
     imageUrl: 'https://cdn.test/a.png',
     sku: 'sku-001',
@@ -23,7 +25,9 @@ const ads: SponsoredAd[] = [
   {
     id: 'ad-2',
     placement: 'checkout_page_banner',
+    merchantName: 'Glow Essentials',
     title: 'Night Cream',
+    announcementMessage: 'Wake up to refreshed skin',
     description: 'Repair while you sleep',
     imageUrl: null,
     sku: null,
@@ -70,8 +74,8 @@ describe('SponsoredAdSlider (checkout)', () => {
 
     expect(await screen.findByText('Glow Serum')).toBeInTheDocument()
     expect(screen.getByText('Brighten your routine')).toBeInTheDocument()
-    expect(screen.getByText('Sponsored')).toBeInTheDocument()
-    expect(screen.getByText('Featured Promotion')).toBeInTheDocument()
+    expect(screen.getByText('Brighten your skin w...')).toBeInTheDocument()
+    expect(screen.getByText('Aura & Essence')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: /learn more/i }),
     ).toHaveAttribute('href', '/buyer/products/sku-001')
@@ -101,16 +105,18 @@ describe('SponsoredAdSlider (checkout)', () => {
     ).toHaveAttribute('href', '/buyer/products')
   })
 
-  it('renders the Sponsored and featured promotion badges together', async () => {
+  it('renders the announcement and featured promotion badges together', async () => {
     mockedGetSponsoredAds.mockResolvedValue({ data: ads })
 
     renderSlider()
 
-    const sponsored = await screen.findByText('Sponsored')
-    const featured = await screen.findByText('Featured Promotion')
+    const announcement = await screen.findByText(
+      'Brighten your skin w...',
+    )
+    const featured = await screen.findByText('Aura & Essence')
 
-    expect(sponsored.parentElement).toBe(featured.parentElement)
-    expect(featured).toHaveClass('bg-purple-500/25')
+    expect(announcement.parentElement).toBe(featured.parentElement)
+    expect(featured).toHaveClass('bg-accent')
   })
 
   it('renders the product preview card with a landscape image', async () => {
@@ -121,12 +127,32 @@ describe('SponsoredAdSlider (checkout)', () => {
     const image = await screen.findByAltText('Glow Serum')
     const frame = image.parentElement as HTMLElement
 
+    expect(frame).toHaveClass('h-[220px]')
+    expect(frame).toHaveClass('items-center')
     expect(frame).toHaveClass('max-w-[22rem]')
     expect(frame).toHaveClass('rounded-2xl')
     expect(frame).toHaveClass('shadow-2xl')
-    expect(image).toHaveClass('aspect-[1.74]')
-    expect(image).toHaveClass('object-cover')
-    expect(screen.queryByText('Merchant Partner')).not.toBeInTheDocument()
+    expect(image).toHaveClass('h-[210px]')
+    expect(image).toHaveClass('block')
+    expect(image).toHaveClass('object-fill')
+    expect(screen.queryByText('Featured Promotion')).not.toBeInTheDocument()
+  })
+
+  it('truncates long announcement and merchant names to 20 characters plus an ellipsis', async () => {
+    mockedGetSponsoredAds.mockResolvedValue({
+      data: [
+        {
+          ...ads[0],
+          announcementMessage: '1234567890123456789012345',
+          merchantName: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        },
+      ],
+    })
+
+    renderSlider()
+
+    expect(await screen.findByText('12345678901234567890...')).toBeInTheDocument()
+    expect(screen.getByText('ABCDEFGHIJKLMNOPQRST...')).toBeInTheDocument()
   })
 
   it('matches the checkout banner styling', async () => {
@@ -138,7 +164,9 @@ describe('SponsoredAdSlider (checkout)', () => {
 
     expect(card.className).toContain('rounded-[1.75rem]')
     expect(card).toHaveAttribute('aria-roledescription', 'carousel')
-    expect(card.querySelector('.bg-gradient-to-r')).toBeInTheDocument()
+    const banner = card.querySelector('.bg-gradient-to-r')
+    expect(banner).toHaveClass('min-h-[15rem]')
+    expect(banner).toHaveClass('sm:min-h-[15.5rem]')
   })
 
   it('advances to the next advertisement and back', async () => {

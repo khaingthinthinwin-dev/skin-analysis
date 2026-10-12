@@ -144,7 +144,7 @@ export class SearchService {
         shop: { isApproved: true },
       },
       include: { shop: true, feeSetting: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { startsAt: 'desc' },
       take: 5,
     });
 
@@ -152,6 +152,7 @@ export class SearchService {
       id: ad.id,
       placement: ad.feeSetting?.placement ?? '',
       title: ad.title,
+      announcementMessage: ad.announcementMessage,
       description: ad.content,
       imageUrl: ad.imageUrl,
       sku: ad.sku,

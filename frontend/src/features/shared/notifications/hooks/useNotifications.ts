@@ -6,7 +6,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query'
 import { notificationService } from '../services/notification.service'
-import type { NotificationItem } from '@/types/notification.types'
+import type { NotificationListResponse } from '@/types/notification.types'
 
 export const notificationKeys = {
   all: ['notifications'] as const,
@@ -23,10 +23,6 @@ const fallbackClient = new QueryClient({
   },
 })
 
-function hasAccessToken() {
-  return typeof window !== 'undefined' && !!window.localStorage.getItem('accessToken')
-}
-
 export function useNotifications(params?: {
   limit?: number
   unreadOnly?: boolean
@@ -37,6 +33,8 @@ export function useNotifications(params?: {
 
   const limit = params?.limit ?? 50
   const unreadOnly = params?.unreadOnly ?? false
+  const hasAccessToken = () =>
+    typeof window !== 'undefined' && !!window.localStorage.getItem('accessToken')
 
   const {
     data: listData,
@@ -73,56 +71,42 @@ export function useNotifications(params?: {
     queryClient,
   )
 
-  const markAsReadMutation = useMutation(
-    {
-      mutationFn: (id: string) => notificationService.markAsRead(id),
-      onSuccess: (_data, id) => {
-        queryClient.setQueriesData(
-          { queryKey: [...notificationKeys.all, 'list'], exact: false },
-          (old: { items: NotificationItem[]; meta: unknown } | undefined) => {
-            if (!old) return old
-            const filtered = old.items.filter((n) => n.id !== id)
-            return { ...old, items: filtered }
-          },
-        )
-        queryClient.setQueryData(['notifications', 'unread-count'], (old: { count: number } | undefined) => {
-          if (!old) return old
-          return { count: Math.max(0, old.count - 1) }
-        })
-      },
-    },
-    queryClient,
-  )
+  const notifications = listData?.items ?? []
 
   const markAllAsReadMutation = useMutation(
     {
       mutationFn: () => notificationService.markAllAsRead(),
       onSuccess: () => {
-        queryClient.setQueriesData(
+        const readAt = new Date().toISOString()
+        queryClient.setQueriesData<NotificationListResponse>(
           { queryKey: [...notificationKeys.all, 'list'], exact: false },
-          (old: { items: NotificationItem[]; meta: unknown } | undefined) => {
-            if (!old) return old
-            return { ...old, items: [] }
-          },
+          (old) =>
+            old
+              ? {
+                  ...old,
+                  items: old.items.map((item) =>
+                    item.isRead ? item : { ...item, isRead: true, readAt },
+                  ),
+                }
+              : old,
         )
-        queryClient.setQueryData(['notifications', 'unread-count'], (old: { count: number } | undefined) => {
-          if (!old) return old
-          return { count: 0 }
-        })
+        queryClient.setQueryData<{ count: number }>(
+          notificationKeys.unreadCount(),
+          { count: 0 },
+        )
       },
     },
     queryClient,
   )
 
   return {
-    notifications: listData?.items ?? [],
+    notifications,
     total: listData?.meta?.total ?? 0,
     unreadCount: unreadData?.count ?? 0,
     isLoading,
     isError,
     error,
     refetch,
-    markAsRead: markAsReadMutation.mutateAsync,
     markAllAsRead: markAllAsReadMutation.mutateAsync,
     isMarkingAllRead: markAllAsReadMutation.isPending,
   }

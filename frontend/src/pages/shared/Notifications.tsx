@@ -12,8 +12,10 @@ import {
   Flag,
   MessageSquareText,
 } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useNavigate, useLocation } from 'react-router'
 import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,9 +26,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
+import {
+  notificationKeys,
+  useNotifications,
+} from '@/features/shared/notifications/hooks/useNotifications'
+import { notificationService } from '@/features/shared/notifications/services/notification.service'
 import { useAuth } from '@/hooks/useAuth'
 import type { NotificationItem } from '@/types/notification.types'
+
+function dismissedStorageKey(userId: string): string {
+  return `dismissed-notifications:${userId}`
+}
+
+function readDismissedIds(userId: string): Set<string> {
+  try {
+    const stored = sessionStorage.getItem(dismissedStorageKey(userId))
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+    return Array.isArray(parsed)
+      ? new Set(parsed.filter((id): id is string => typeof id === 'string'))
+      : new Set()
+  } catch {
+    return new Set()
+  }
+}
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -65,6 +87,8 @@ const MERCHANT_REGISTRATION_TYPES = new Set([
 const MERCHANT_ADMIN_ACTION_TYPES = new Set([
   ...MERCHANT_REGISTRATION_TYPES,
   'MERCHANT_LICENSE_RESUBMITTED',
+  'MERCHANT_STATUS_CHANGED',
+  'MERCHANT_STATUS_REJECTED',
 ])
 
 const MERCHANT_NOTIFICATION_TYPES = new Set([
@@ -80,6 +104,8 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'NEW_ADS_PACKAGE',
   'ADS_PACKAGE_UPDATED',
   'ORDER_PLACED',
+  'PRODUCT_DEACTIVATED',
+  'PRODUCT_REACTIVATED',
 ])
 
 const ORDER_NOTIFICATION_TYPES = new Set([
@@ -109,6 +135,36 @@ const AD_DECISION_TYPES = new Set([
 ])
 
 const MERCHANT_REJECTION_TEXT = 'Your business license has been rejected'
+
+const ACCOUNT_DEACTIVATED_TYPES = new Set([
+  'ACCOUNT_DEACTIVATED',
+  'USER_DEACTIVATED',
+])
+
+const ACCOUNT_ACTIVATED_TYPES = new Set([
+  'ACCOUNT_ACTIVATED',
+  'USER_ACTIVATED',
+])
+
+function isAccountActivatedNotification(item: NotificationItem): boolean {
+  const type = normalizeNotificationType(item.type)
+  const text = `${item.title || ''} ${item.message || ''}`.toLowerCase()
+  return (
+    ACCOUNT_ACTIVATED_TYPES.has(type) ||
+    text.includes('account activated') ||
+    text.includes('your account has been activated')
+  )
+}
+
+function isAccountDeactivatedNotification(item: NotificationItem): boolean {
+  const type = normalizeNotificationType(item.type)
+  const text = `${item.title || ''} ${item.message || ''}`.toLowerCase()
+  return (
+    ACCOUNT_DEACTIVATED_TYPES.has(type) ||
+    text.includes('account deactivated') ||
+    text.includes('your account has been deactivated')
+  )
+}
 
 function normalizeNotificationType(rawType: string): string {
   return (rawType || '').trim().replace(/[.\s-]+/g, '_').toUpperCase()
@@ -147,6 +203,13 @@ function getRejectionReason(item: NotificationItem | null): string | null {
   if (!message.toLowerCase().startsWith(prefix.toLowerCase())) return null
   const reason = message.slice(prefix.length).trim().replace(/^reason:\s*/i, '')
   return reason || null
+}
+
+function getDeactivationReason(item: NotificationItem | null): string | null {
+  if (!item) return null
+  const message = item.message.trim()
+  const reasonMatch = message.match(/reason:\s*(.+)/i)
+  return reasonMatch ? reasonMatch[1].trim() : null
 }
 
 function adminNotificationKey(item: NotificationItem): string {
@@ -188,8 +251,44 @@ function orderActionHint(item: NotificationItem): string | null {
     : null
 }
 
+// Order Insight notifications travel between the merchant and the buyer
+// (ORDER_PLACED → merchant; ORDER_CONFIRMED / ORDER_STATUS_UPDATED → buyer,
+// plus seeded `order` items). Once the recipient has read one, it leaves the
+// list entirely instead of lingering as a "read" card.
+function isReadOrderInsightNotification(item: NotificationItem): boolean {
+  if (!item.isRead && !item.readAt) return false
+  const type = normalizeNotificationType(item.type)
+  return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
+}
+
+// Review notifications deep-link straight to the queue entry they are about so
+// the admin does not have to hunt for it. `entityId` is the review id for a
+// REVIEW_CREATED notification and the report id for a REVIEW_REPORTED one
+// (see products.service.ts / reviews.service.ts).
+function reviewManagementPath(item: NotificationItem): string {
+  const type = normalizeNotificationType(item.type)
+  const tab = REVIEW_REPORT_TYPES.has(type) ? 'reports' : 'reviews'
+  const highlight = item.entityId
+    ? `&highlight=${encodeURIComponent(item.entityId)}`
+    : ''
+  return `/admin/reviews?tab=${tab}${highlight}`
+}
+
+function productManagementPath(item: NotificationItem): string {
+  const highlight = item.entityId
+    ? `?highlightProductId=${encodeURIComponent(item.entityId)}`
+    : ''
+  return `/merchant/products${highlight}`
+}
+
 function iconForType(rawType: string, title?: string, message?: string) {
   const type = (rawType || '').toUpperCase()
+  if (ACCOUNT_ACTIVATED_TYPES.has(type) || type.includes('ACCOUNT_ACTIVATED') || type.includes('USER_ACTIVATED')) {
+    return { Icon: BadgeCheck, color: 'text-emerald-500' }
+  }
+  if (ACCOUNT_DEACTIVATED_TYPES.has(type) || type.includes('ACCOUNT_DEACTIVATED') || type.includes('USER_DEACTIVATED')) {
+    return { Icon: BadgeX, color: 'text-destructive' }
+  }
   if (type === 'MERCHANT_STATUS_CHANGED' || type.includes('MERCHANT_STATUS')) {
     const haystack = `${title ?? ''} ${message ?? ''}`.toLowerCase()
     if (haystack.includes('reject')) {
@@ -199,6 +298,9 @@ function iconForType(rawType: string, title?: string, message?: string) {
   }
   if (type === 'MERCHANT_REGISTERED' || type.includes('MERCHANT')) {
     return { Icon: Store, color: 'text-sky-500' }
+  }
+  if (type === 'NEW_ADS_PACKAGE' || type === 'ADS_PACKAGE_UPDATED') {
+    return { Icon: Tag, color: 'text-purple-600' }
   }
   if (type.includes('AD_')) {
     const haystack = `${type} ${title ?? ''} ${message ?? ''}`.toLowerCase()
@@ -222,6 +324,9 @@ function iconForType(rawType: string, title?: string, message?: string) {
   if (type === 'PROMO' || type.includes('PROMO')) {
     return { Icon: Tag, color: 'text-purple-600' }
   }
+  if (type === 'SKIN_CHECK_REMINDER') {
+    return { Icon: Sparkles, color: 'text-pink-500' }
+  }
   if (type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) {
     return { Icon: Sparkles, color: 'text-pink-500' }
   }
@@ -231,9 +336,13 @@ function iconForType(rawType: string, title?: string, message?: string) {
 function NotificationCard({
   item,
   onOpen,
+  isMerchant,
+  isAdmin = false,
 }: {
   item: NotificationItem
   onOpen: (item: NotificationItem) => void
+  isMerchant: boolean
+  isAdmin?: boolean
 }) {
   const { Icon, color } = iconForType(item.type, item.title, item.message)
   const isMerchantReg = MERCHANT_ADMIN_ACTION_TYPES.has(
@@ -241,11 +350,15 @@ function NotificationCard({
   )
   const adHint = adActionHint(item)
   const normalizedType = normalizeNotificationType(item.type)
-    const reportHint = REVIEW_REPORT_TYPES.has(normalizedType)
-      ? 'Review in Review Management →'
-      : REVIEW_SUBMISSION_TYPES.has(normalizedType)
-        ? 'Moderate in Review Management →'
-        : null
+  const approvedProductId =
+    normalizedType === 'REVIEW_APPROVED' && item.entityType === 'Product'
+      ? item.entityId
+      : null
+  const reportHint = REVIEW_REPORT_TYPES.has(normalizedType)
+    ? 'Review in Review Management →'
+    : REVIEW_SUBMISSION_TYPES.has(normalizedType)
+      ? 'Moderate in Review Management →'
+      : null
   const orderHint = orderActionHint(item)
   const displayMessage = isMerchantRejectedNotification(item)
     ? MERCHANT_REJECTION_TEXT
@@ -257,16 +370,16 @@ function NotificationCard({
         item.isRead ? '' : 'border-purple-500/40 bg-purple-500/5'
       }`}
     >
-      <button
-        type="button"
-        onClick={() => onOpen(item)}
-        className="w-full text-left cursor-pointer"
-      >
-        <CardContent className="p-4 flex items-start gap-3">
-          <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
-            <Icon className="h-5 w-5" />
-          </div>
-          <div className="flex-1 space-y-1">
+      <CardContent className="p-4 flex items-start gap-3">
+        <div className={`p-2 rounded-xl bg-muted/60 ${color} shrink-0`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="flex-1 space-y-1">
+          <button
+            type="button"
+            onClick={() => onOpen(item)}
+            className="w-full text-left cursor-pointer"
+          >
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 {item.title}
@@ -279,23 +392,36 @@ function NotificationCard({
               </span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">{displayMessage}</p>
-            {isMerchantReg && (
-              <p className="text-xs font-semibold text-purple-600">
+            {isAdmin && isMerchantReg && (
+              <p className="text-xs font-semibold text-purple-600 underline hover:text-purple-700 cursor-pointer">
                 View in Merchant Management →
               </p>
             )}
             {adHint && (
               <p className="text-xs font-semibold text-purple-600">{adHint}</p>
             )}
-            {reportHint && (
+            {isAdmin && reportHint && (
               <p className="text-xs font-semibold text-purple-600">{reportHint}</p>
             )}
             {orderHint && (
               <p className="text-xs font-semibold text-purple-600">{orderHint}</p>
             )}
-          </div>
-        </CardContent>
-      </button>
+          </button>
+          {approvedProductId && (
+            <Link
+              to={
+                isMerchant
+                  ? `/merchant/product-review?highlight=${encodeURIComponent(approvedProductId)}`
+                  : `/buyer/products/${encodeURIComponent(approvedProductId)}#reviews`
+              }
+              onClick={() => onOpen(item)}
+              className="block text-xs font-semibold text-purple-600 hover:underline"
+            >
+              {isMerchant ? 'View in Product Review →' : 'View your review →'}
+            </Link>
+          )}
+        </div>
+      </CardContent>
     </Card>
   )
 }
@@ -303,28 +429,33 @@ function NotificationCard({
 export default function Notifications() {
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
   const { user } = useAuth()
+  const [dismissedNotificationIds, setDismissedNotificationIds] =
+    useState(() =>
+      user ? readDismissedIds(user.id) : new Set<string>(),
+    )
   const isAdmin =
     user?.role === 'admin' ||
     user?.role === 'super_admin' ||
     location.pathname.startsWith('/admin')
   const [rejectedNotification, setRejectedNotification] = useState<NotificationItem | null>(null)
+  const [deactivatedNotification, setDeactivatedNotification] = useState<NotificationItem | null>(null)
 
   const {
     notifications,
-    unreadCount,
     isLoading,
     isError,
     refetch,
-    markAsRead,
     markAllAsRead,
     isMarkingAllRead,
-  } = useNotifications()
+  } = useNotifications({ unreadOnly: true })
 
   const displayedNotifications = useMemo(() => {
+    let roleNotifications: NotificationItem[]
     if (isAdmin) {
       const seenKeys = new Set<string>()
-      return notifications.filter((item) => {
+      roleNotifications = notifications.filter((item) => {
         if (!isAdminNotification(item)) {
           return false
         }
@@ -335,47 +466,136 @@ export default function Notifications() {
         seenKeys.add(key)
         return true
       })
-    }
-
-    if (user?.role === 'merchant') {
-      return notifications.filter(
+    } else if (user?.role === 'merchant') {
+      roleNotifications = notifications.filter(
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
+    } else {
+      roleNotifications = notifications
     }
 
-    return notifications
-  }, [isAdmin, notifications, user])
+    return roleNotifications.filter((item) => {
+      if (dismissedNotificationIds.has(item.id)) return false
+      // Admin history keeps only unread items; merchants and buyers also drop
+      // read Order Insight cards but keep every other read notification.
+      if (isAdmin) return !item.isRead && !item.readAt
+      return !isReadOrderInsightNotification(item)
+    })
+  }, [dismissedNotificationIds, isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)
+  const deactivationReason = getDeactivationReason(deactivatedNotification)
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead()
+      dismissNotifications(notifications.map((item) => item.id))
+    } catch {
+      toast.error('Failed to mark notifications as read')
+    }
+  }
+
+  const dismissNotifications = (ids: string[]) => {
+    if (!user || ids.length === 0) return
+
+    const dismissed = new Set(dismissedNotificationIds)
+    ids.forEach((id) => dismissed.add(id))
+    setDismissedNotificationIds(dismissed)
+    try {
+      sessionStorage.setItem(
+        dismissedStorageKey(user.id),
+        JSON.stringify([...dismissed]),
+      )
+    } catch {
+      toast.error('Unable to retain cleared notifications for this session')
+    }
+  }
 
   const handleOpen = (item: NotificationItem) => {
+    dismissNotifications([item.id])
     if (!item.isRead) {
-      markAsRead(item.id).catch(() => {})
+      void Promise.resolve()
+        .then(() => notificationService.markAsRead(item.id))
+        .then(() => queryClient.invalidateQueries({ queryKey: notificationKeys.all }))
+        .catch(() => toast.error('Failed to mark notification as read'))
     }
+
     if (isMerchantRejectedNotification(item)) {
       setRejectedNotification(item)
       return
     }
-    const type = normalizeNotificationType(item.type)
-    if (AD_SUBMISSION_TYPES.has(type)) {
-      // Admins act here: jump straight to the review queue, pre-filtered to the
-      // pending ads the submission just joined.
-      navigate('/admin/ads?status=pending')
+    if (isAccountActivatedNotification(item)) {
+      const profilePath = user?.role === 'buyer' ? '/buyer/profile' : '/merchant/profile'
+      navigate(profilePath)
       return
     }
+    if (isAccountDeactivatedNotification(item)) {
+      setDeactivatedNotification(item)
+      return
+    }
+    const type = normalizeNotificationType(item.type)
+    // Admin-only routes - only navigate if user is admin
+    if (AD_SUBMISSION_TYPES.has(type)) {
+      if (!isAdmin) return
+      // Admins act here: jump straight to the review queue. Highlight the specific ad if entityId is available.
+      // Don't filter by status - show all ads so admin can see the highlighted ad in context
+      if (item.entityId) {
+        navigate(`/admin/ads?highlightAdId=${item.entityId}`)
+      } else {
+        navigate('/admin/ads')
+      }
+      return
+    }
+    if (REVIEW_REPORT_TYPES.has(type) || REVIEW_SUBMISSION_TYPES.has(type)) {
+      // Admins triage reports and moderate submissions on the Reviews page.
+      // The specific row is highlighted so it is easy to spot.
+      navigate(reviewManagementPath(item))
+      return
+    }
+    if (type === 'PRODUCT_DEACTIVATED' || type === 'PRODUCT_REACTIVATED') {
+      navigate(productManagementPath(item))
+      return
+    }
+    if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
+      if (!isAdmin) return
+      // Navigate to admin merchants page with merchantId to highlight the row
+      if (item.entityId) {
+        navigate(`/admin/merchants?merchantId=${item.entityId}`)
+      } else {
+        navigate('/admin/merchants')
+      }
+      return
+    }
+
+     // Skin analysis notifications
+    if ((type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) && item.entityId && type !== 'SKIN_CHECK_REMINDER') {
+      navigate(`/buyer/skin-analysis/${item.entityId}`)
+      return
+    }
+    if (type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) {
+      navigate('/buyer/skin-analysis')
+      return
+    }
+    // Skin check reminder - link to new analysis page
+    if (type === 'SKIN_CHECK_REMINDER') {
+      navigate('/buyer/skin-analysis/new')
+      return
+    }
+    // Merchant/buyer routes - navigate based on user role
     if (AD_DECISION_TYPES.has(type)) {
       // Decisions are only ever addressed to the merchant who owns the ad.
-      navigate('/merchant/advertisements')
+      // Highlight the specific advertisement if entityId is available.
+      if (item.entityId) {
+        navigate(`/merchant/advertisements?highlightAdId=${item.entityId}`)
+      } else {
+        navigate('/merchant/advertisements')
+      }
       return
     }
-    if (REVIEW_REPORT_TYPES.has(type)) {
-      // Admins triage reported reviews on the Reviews page.
-      navigate('/admin/reviews')
-      return
-    }
-    if (REVIEW_SUBMISSION_TYPES.has(type)) {
-      // A newly submitted review is waiting for approval on the Reviews page.
-      navigate('/admin/reviews')
+    const adPackageTypes = new Set(['NEW_ADS_PACKAGE', 'ADS_PACKAGE_UPDATED'])
+    if (adPackageTypes.has(type) && item.entityId) {
+      // Navigate to ads page and highlight the updated package
+      navigate(`/merchant/advertisements?updatedPackage=${item.entityId}`)
       return
     }
     if (ORDER_NOTIFICATION_TYPES.has(type) && item.entityId) {
@@ -388,8 +608,9 @@ export default function Notifications() {
       navigate(`${basePath}/orders/${item.entityId}`)
       return
     }
-    if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
-      navigate('/admin/merchants')
+    // Merchant account approved - only mark as read, no navigation
+    if (type === 'MERCHANT_APPROVED' || type === 'MERCHANT_STATUS_APPROVED') {
+      return
     }
   }
 
@@ -404,12 +625,12 @@ export default function Notifications() {
             Your latest account and order updates
           </p>
         </div>
-        {unreadCount > 0 && (
+        {displayedNotifications.length > 0 && (
           <Button
             variant="outline"
             size="sm"
             disabled={isMarkingAllRead}
-            onClick={() => markAllAsRead().catch(() => {})}
+            onClick={() => void handleMarkAllAsRead()}
           >
             Mark all read
           </Button>
@@ -454,7 +675,13 @@ export default function Notifications() {
       ) : (
         <div className="space-y-3">
           {displayedNotifications.map((item) => (
-            <NotificationCard key={item.id} item={item} onOpen={handleOpen} />
+            <NotificationCard
+              key={item.id}
+              item={item}
+              onOpen={handleOpen}
+              isMerchant={user?.role === 'merchant'}
+              isAdmin={isAdmin}
+            />
           ))}
         </div>
       )}
@@ -494,6 +721,61 @@ export default function Notifications() {
               }}
             >
               Resubmit from Store Profile
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deactivatedNotification !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeactivatedNotification(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Account Deactivated</DialogTitle>
+            <DialogDescription>Your account has been deactivated by an administrator</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
+              Account Status
+            </p>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+              Your account has been deactivated. Some features may be restricted until an admin
+              reactivates your account.
+            </p>
+          </div>
+          {deactivationReason && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 mt-3">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
+                Deactivation Reason
+              </p>
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{deactivationReason}</p>
+            </div>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Please contact support or visit your profile for more information.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeactivatedNotification(null)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setDeactivatedNotification(null)
+                const profilePath =
+                  user?.role === 'buyer'
+                    ? '/dashboard/profile'
+                    : user?.role === 'merchant'
+                    ? '/merchant/profile'
+                    : '/profile'
+                navigate(profilePath)
+              }}
+            >
+              Go to Profile
             </Button>
           </DialogFooter>
         </DialogContent>

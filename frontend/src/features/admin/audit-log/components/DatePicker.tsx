@@ -175,7 +175,7 @@ export function DatePicker({
         id={id}
         type="date"
         readOnly
-        className="min-w-0 w-full pr-9 text-left [&::-webkit-calendar-picker-indicator]:hidden"
+        className="h-9 min-w-0 w-full pr-9 text-left text-[13px] [&::-webkit-calendar-picker-indicator]:hidden"
         value={value}
         onClick={openPicker}
         onChange={(event) => onChange(event.target.value)}

@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductDetail } from '../services/product.service';
 import { ProductReviews } from './ProductReviews';
@@ -6,19 +8,45 @@ import { useTranslation } from 'react-i18next';
 
 interface ProductTabsProps {
   product: ProductDetail;
+  showReviewForm?: boolean;
+  showProductDetails?: boolean;
 }
 
-export function ProductTabs({ product }: ProductTabsProps) {
+export function ProductTabs({
+  product,
+  showReviewForm = true,
+  showProductDetails = true,
+}: ProductTabsProps) {
   const { t } = useTranslation();
+  const location = useLocation();
+
+  // A #reviews deep link jumps straight to the reviews tab and scrolls to it
+  // once the tab content is mounted.
+  useEffect(() => {
+    if (location.hash !== '#reviews') return;
+    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
+  }, [location.hash]);
+
   return (
-    <Tabs defaultValue="description" className="mt-8 w-full">
+    <Tabs
+      defaultValue={
+        location.hash === '#reviews' || !showProductDetails
+          ? 'reviews'
+          : 'description'
+      }
+      className="mt-8 w-full"
+    >
       <TabsList className="w-full justify-start border-b bg-transparent">
-        <TabsTrigger value="description">
-          {t('buyer.products.tabs.description', 'Description')}
-        </TabsTrigger>
-        <TabsTrigger value="ingredients">
-          {t('buyer.products.tabs.ingredients', 'Ingredients')}
-        </TabsTrigger>
+        {showProductDetails && (
+          <>
+            <TabsTrigger value="description">          
+              {t('buyer.products.tabs.description', 'Description')}
+            </TabsTrigger>
+            <TabsTrigger value="ingredients">
+              {t('buyer.products.tabs.ingredients', 'Ingredients')}
+            </TabsTrigger>
+          </>
+        )}
         <TabsTrigger value="reviews" className="flex items-center gap-2">
           {t('buyer.products.tabs.reviews', 'Reviews ({{count}})', {
             count: product.reviewCount,
@@ -26,38 +54,42 @@ export function ProductTabs({ product }: ProductTabsProps) {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="description" className="py-4">
-        {product.description ? (
-          <div
-            className="space-y-3 text-sm text-muted-foreground [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:py-0.5 [&_strong]:font-semibold [&_strong]:text-foreground [&_em]:italic [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a]:hover:text-primary/80"
-            dangerouslySetInnerHTML={{ __html: product.description }}
-          />
-        ) : (
-          <p className="text-muted-foreground">
-            {t('buyer.products.tabs.noDescription', 'No description available.')}
-          </p>
-        )}
-      </TabsContent>
+      {showProductDetails && (
+        <>
+          <TabsContent value="description" className="py-4">
+            {product.description ? (
+              <div
+                className="space-y-3 text-sm text-muted-foreground [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:py-0.5 [&_strong]:font-semibold [&_strong]:text-foreground [&_em]:italic [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a]:hover:text-primary/80"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
+            ) : (
+              <p className="text-muted-foreground">
+               {t('buyer.products.tabs.noDescription', 'No description available.')}
+              </p>
+            )}
+          </TabsContent>
 
-      <TabsContent value="ingredients" className="py-4">
-        {product.ingredients.length > 0 ? (
-          <ul className="list-inside list-disc space-y-1 text-muted-foreground">
-            {product.ingredients.map((ing) => (
-              <li key={ing}>{ing}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted-foreground">
-            {t('buyer.products.tabs.noIngredients', 'No ingredients listed.')}
-          </p>
-        )}
-      </TabsContent>
+          <TabsContent value="ingredients" className="py-4">
+            {product.ingredients.length > 0 ? (
+              <ul className="list-inside list-disc space-y-1 text-muted-foreground">
+                {product.ingredients.map((ing) => (
+                  <li key={ing}>{ing}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground">
+               {t('buyer.products.tabs.noIngredients', 'No ingredients listed.')}
+              </p>
+            )}
+          </TabsContent>
+        </>
+      )}
 
       <TabsContent value="reviews" className="py-4">
         <div id="reviews">
           <ProductReviews idOrSlug={product.id} />
         </div>
-        <ReviewForm idOrSlug={product.id} />
+        {showReviewForm && <ReviewForm idOrSlug={product.id} />}
       </TabsContent>
     </Tabs>
   );

@@ -38,7 +38,7 @@ export interface UpdatePromotionInput {
   description?: string
   discountTypeCode?: string
   discountValue?: number
-  minOrderAmount?: number
+  minOrderAmount?: number | null
   maxUses?: number
   startsAt?: string
   expiresAt?: string

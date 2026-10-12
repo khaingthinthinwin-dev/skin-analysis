@@ -26,18 +26,21 @@ import { UsersModule } from '../users/users.module';
       inject: [ConfigService],
     }),
     MailerModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          service: 'gmail',
-          auth: {
-            user: configService.get<string>('mail.user'),
-            pass: configService.get<string>('mail.pass'),
+      useFactory: (configService: ConfigService) => {
+        const from = `"Cosmetics Finder" <${configService.get<string>('mail.user') ?? 'noreply@example.com'}>`;
+        return {
+          transport: {
+            service: 'gmail',
+            auth: {
+              user: configService.get<string>('mail.user'),
+              pass: configService.get<string>('mail.pass'),
+            },
           },
-        },
-        defaults: {
-          from: `"Cosmetics Finder" <${configService.get<string>('mail.user') || 'noreply@example.com'}>`,
-        },
-      }),
+          defaults: {
+            from,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

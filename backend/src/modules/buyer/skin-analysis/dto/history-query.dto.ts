@@ -1,4 +1,11 @@
-import { IsOptional, IsInt, Min, Max, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  IsDateString,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class HistoryQueryDto {
@@ -22,6 +29,13 @@ export class HistoryQueryDto {
   @IsOptional()
   @IsDateString({}, { message: 'dateTo must be an ISO 8601 date string' })
   dateTo?: string;
+
+  @IsOptional()
+  @IsIn(['Combination', 'Oily', 'Dry', 'Normal', 'Sensitive'], {
+    message:
+      'skinType must be one of: Combination, Oily, Dry, Normal, Sensitive',
+  })
+  skinType?: 'Combination' | 'Oily' | 'Dry' | 'Normal' | 'Sensitive';
 }
 
 export class TrendsQueryDto {

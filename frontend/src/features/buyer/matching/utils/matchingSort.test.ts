@@ -32,6 +32,44 @@ describe('resolveMatchingSort', () => {
       order: 'desc',
     })
   })
+
+  it('keeps Match Score for the AI source', () => {
+    expect(resolveMatchingSort({ sort: 'matchScore', order: 'desc' }, 'ai')).toEqual({
+      sort: 'matchScore',
+      order: 'desc',
+    })
+  })
+
+  it('falls back to Newest when a generic source receives a stale matchScore', () => {
+    expect(resolveMatchingSort({ sort: 'matchScore', order: 'desc' }, 'generic')).toEqual(
+      DEFAULT_MATCHING_SORT,
+    )
+  })
+
+  it('falls back to Newest for directions the select cannot display', () => {
+    expect(resolveMatchingSort({ sort: 'rating', order: 'asc' }, 'ai')).toEqual(
+      DEFAULT_MATCHING_SORT,
+    )
+    expect(resolveMatchingSort({ sort: 'rating', order: 'asc' }, 'generic')).toEqual(
+      DEFAULT_MATCHING_SORT,
+    )
+  })
+
+  it('does not clamp while the source is still loading', () => {
+    expect(resolveMatchingSort({ sort: 'matchScore', order: 'desc' }, undefined)).toEqual({
+      sort: 'matchScore',
+      order: 'desc',
+    })
+  })
+
+  it('keeps every source-offered sort untouched', () => {
+    for (const source of ['ai', 'generic'] as const) {
+      for (const option of getMatchingSortOptions(source)) {
+        const [sort, order] = option.value.split(':') as ['matchScore' | 'price' | 'rating' | 'createdAt', 'asc' | 'desc']
+        expect(resolveMatchingSort({ sort, order }, source)).toEqual({ sort, order })
+      }
+    }
+  })
 })
 
 describe('getMatchingSortOptions', () => {
@@ -82,6 +120,12 @@ describe('getMatchingSortOptions', () => {
       expect(values).toContain('createdAt:desc')
       expect(values).toContain('rating:desc')
     }
+  })
+
+  it('lists Newest first for both sources', () => {
+    const newest = { value: 'createdAt:desc', label: 'Newest' }
+    expect(getMatchingSortOptions('ai')[0]).toEqual(newest)
+    expect(getMatchingSortOptions('generic')[0]).toEqual(newest)
   })
 
   it('lists Newest once and as the default entry for generic results', () => {

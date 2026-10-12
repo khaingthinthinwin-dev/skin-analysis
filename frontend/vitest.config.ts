@@ -13,11 +13,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    css: true,
-    // Coverage instrumentation slows tests well past the 5s default,
-    // which caused flaky "Test timed out in 5000ms" failures in verify-all.
-    testTimeout: 30000,
-    hookTimeout: 30000,
-    teardownTimeout: 10000,
+    // Coverage instrumentation makes the jsdom tests much slower. Running
+    // many workers in parallel starves the CPU, so unrelated tests randomly
+    // exceed the default 5s timeout. Cap the pool and give tests more room.
+    maxWorkers: 4,
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 })

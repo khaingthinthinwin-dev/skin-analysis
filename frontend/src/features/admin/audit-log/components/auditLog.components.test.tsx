@@ -389,7 +389,7 @@ describe('AuditLogTable', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('renders the mobile card list alongside the desktop table', () => {
+  it('renders one responsive table and no separate card list', () => {
     const longAction = 'audit.action.with.a.very.long.unbroken.identifier';
     renderI18n(
       <MemoryRouter>
@@ -403,18 +403,10 @@ describe('AuditLogTable', () => {
         />
       </MemoryRouter>,
     );
-    // <768px shows cards, >=768px shows the table — both variants exist in the
-    // DOM and are toggled with Tailwind breakpoints.
-    expect(screen.getByTestId('audit-cards')).toBeInTheDocument();
+    expect(screen.queryByTestId('audit-cards')).not.toBeInTheDocument();
     expect(screen.getByTestId('audit-table-scroll')).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('audit-cards')).getByText(longAction),
-    ).toHaveClass('break-all');
-    expect(
-      within(screen.getByTestId('audit-cards')).getAllByTestId(
-        'btn-view-detail',
-      ),
-    ).toHaveLength(1);
+    expect(screen.getByText(longAction)).toBeInTheDocument();
+    expect(screen.getAllByTestId('btn-view-detail')).toHaveLength(1);
   });
 
   it('shows empty state and renders System for null actor', () => {
@@ -473,12 +465,9 @@ describe('AuditLogTable', () => {
       </MemoryRouter>,
     );
     // 14:30 UTC is 21:00 the same day in Myanmar time (UTC+06:30).
-    const expected = '2026-08-25 21:00:00.000 MMT';
+    const expected = '2026/08/25 21:00:00.000 MMT';
     expect(
       within(screen.getByTestId('audit-table-scroll')).getByText(expected),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('audit-cards')).getByText(expected),
     ).toBeInTheDocument();
     expect(screen.queryByText(/UTC/)).not.toBeInTheDocument();
   });
@@ -499,7 +488,7 @@ describe('AuditLogTable', () => {
     // 18:15 UTC is already 00:45 on the 26th in Myanmar time.
     expect(
       within(screen.getByTestId('audit-table-scroll')).getByText(
-        '2026-08-26 00:45:00.000 MMT',
+        '2026/08/26 00:45:00.000 MMT',
       ),
     ).toBeInTheDocument();
   });
@@ -513,8 +502,6 @@ describe('AuditLogDetailModal', () => {
         <AuditLogDetailModal
           open
           onClose={vi.fn()}
-          onViewUserHistory={vi.fn()}
-          onViewEntityHistory={vi.fn()}
           detail={{
             ...row(),
             oldValue: {
@@ -535,7 +522,7 @@ describe('AuditLogDetailModal', () => {
     );
     expect(screen.getByText('Audit Log Detail')).toBeInTheDocument();
     // 14:30 UTC is 21:00 the same day in Myanmar time (UTC+06:30).
-    expect(screen.getByText('2026-08-25 21:00:00.000 MMT')).toBeInTheDocument();
+    expect(screen.getByText('2026/08/25 21:00:00.000 MMT')).toBeInTheDocument();
     expect(screen.queryByText(/UTC/)).not.toBeInTheDocument();
     expect(screen.getByText('Password')).toBeInTheDocument();
     expect(screen.getAllByText('License Status')).toHaveLength(2);
@@ -549,8 +536,9 @@ describe('AuditLogDetailModal', () => {
     // the parsed client facts (Client Type/Browser/Device) replace it.
     expect(screen.queryByTitle(longAgent)).not.toBeInTheDocument();
     expect(screen.queryByText(longAgent)).not.toBeInTheDocument();
-    expect(screen.getByTestId('btn-view-user-history')).toBeInTheDocument();
-    // Entity id is intentionally not retrieved, so its history action is gone.
+    expect(
+      screen.queryByTestId('btn-view-user-history'),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByTestId('btn-view-entity-history'),
     ).not.toBeInTheDocument();
@@ -651,7 +639,7 @@ describe('AuditLogPagination', () => {
       />,
     );
     expect(screen.getByTestId('page-info')).toHaveTextContent(
-      'Showing 1-50 of 120',
+      'Showing page 1 of 3',
     );
     expect(screen.getByRole('button', { name: /Previous/i })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: /Next/i }));

@@ -159,9 +159,10 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
         title: 'Catalog & Sales',
         titleKey: 'nav.menu.catalogSales',
         items: [
-          { label: 'Products', labelKey: 'nav.products', href: '/merchant/products', icon: Package },
-          { label: 'Promotions', labelKey: 'nav.menu.promotions', href: '/merchant/promotions', icon: Tag },
-          { label: 'Advertisements', labelKey: 'nav.menu.advertisements', href: '/merchant/advertisements', icon: Megaphone },
+          { label: 'Products', href: '/merchant/products', icon: Package },
+          { label: 'Product Review', href: '/merchant/product-review', icon: MessageSquare },
+          { label: 'Promotions', href: '/merchant/promotions', icon: Tag },
+          { label: 'Advertisements', href: '/merchant/advertisements', icon: Megaphone },
         ],
       },
       {

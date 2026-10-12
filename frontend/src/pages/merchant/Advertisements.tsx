@@ -47,7 +47,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { DeleteConfirmDialog } from '@/components/merchant/DeleteConfirmDialog'
-import { contentSchema, resubmitContentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
+import { AD_CONTENT_MAX, contentSchema, paymentSchema, resubmitContentSchema, uploadContentSchema, type ContentForm } from '@/features/merchant/advertisements/schemas'
 import { useAdvertisements } from '@/features/merchant/advertisements/hooks/useAdvertisements'
 import { ProductImagePicker } from '@/features/merchant/advertisements/components/ProductImagePicker'
 import type { AdContentPayload } from '@/features/merchant/advertisements/services/advertisement.service'
@@ -181,10 +181,14 @@ export default function Advertisements() {
   const [viewTarget, setViewTarget] = useState<Advertisement | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Advertisement | null>(null)
   const [paymentReference, setPaymentReference] = useState('')
+  const [paymentReferenceTouched, setPaymentReferenceTouched] = useState(false)
   const [confirmingSelection, setConfirmingSelection] = useState(false)
   const [packagesPage, setPackagesPage] = useState(1)
   const [highlightedPackageId, setHighlightedPackageId] = useState<string | null>(null)
   const [navigateToPackageId, setNavigateToPackageId] = useState<string | null>(null)
+  const [highlightAdId, setHighlightAdId] = useState<string | null>(() =>
+    searchParams.get('highlightAdId')
+  )
   const isDeactivated =
     user?.isActive === false ||
     user?.is_active === false ||
@@ -294,6 +298,37 @@ export default function Advertisements() {
     }, 100)
     return () => window.clearTimeout(timer)
   }, [highlightedPackageId])
+
+  // Handle highlightAdId from URL (e.g., from AD_APPROVED notification)
+  useEffect(() => {
+    const adId = searchParams.get('highlightAdId')
+    if (adId && adId !== highlightAdId) {
+      // Defer state update to avoid synchronous setState in effect
+      window.setTimeout(() => {
+        setHighlightAdId(adId)
+        // Auto-clear highlight after 5 seconds
+        const timer = window.setTimeout(() => {
+          setHighlightAdId(null)
+          // Clean up URL
+          const params = new URLSearchParams(searchParams)
+          params.delete('highlightAdId')
+          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
+        }, 5000)
+        return () => window.clearTimeout(timer)
+      }, 0)
+    }
+  }, [searchParams, highlightAdId])
+
+  // When coming from notification (highlightAdId in URL), clear approvalStatus filter to show all ads
+  useEffect(() => {
+    const highlightAdIdFromUrl = searchParams.get('highlightAdId')
+    if (highlightAdIdFromUrl && approvalStatus) {
+      window.setTimeout(() => {
+        setApprovalStatus('')
+        setPage(1)
+      }, 0)
+    }
+  }, [searchParams, approvalStatus, setPage])
 
   // Stats per 画面項目設計書 §4.4: active / pending approval / expired counts.
   const stats = useMemo(
@@ -410,12 +445,22 @@ export default function Advertisements() {
     }
   }
 
+  const closePayDialog = () => {
+    setPayTarget(null)
+    setPaymentReference('')
+    setPaymentReferenceTouched(false)
+  }
+
   const handlePay = async () => {
     if (!payTarget) return
+    const parsed = paymentSchema.shape.paymentReference.safeParse(paymentReference)
+    if (!parsed.success) {
+      setPaymentReferenceTouched(true)
+      return
+    }
     try {
-      await pay.mutateAsync({ id: payTarget.id, paymentReference: paymentReference || undefined })
-      setPayTarget(null)
-      setPaymentReference('')
+      await pay.mutateAsync({ id: payTarget.id, paymentReference })
+      closePayDialog()
       toast.success('Advertisement submitted for approval')
     } catch {
       toast.error('Payment failed. Please try again.')
@@ -444,6 +489,10 @@ export default function Advertisements() {
 
   const payPackage = payTarget?.package ?? null
   const payFeeTotal = payTarget?.paymentAmount ?? (payPackage ? Number(payPackage.dailyRate) * payPackage.durationDays : null)
+  const paymentReferenceResult = paymentSchema.shape.paymentReference.safeParse(paymentReference)
+  const paymentReferenceError = paymentReferenceResult.success
+    ? null
+    : paymentReferenceResult.error.issues[0]?.message ?? 'Invalid payment reference'
 
   return (
     <div className="space-y-6">
@@ -672,6 +721,7 @@ export default function Advertisements() {
                 key={ad.id}
                 ad={ad}
                 isDeactivated={isDeactivated}
+                highlightAdId={highlightAdId}
                 onEdit={(target) => setEditTarget(target)}
                 onPay={(target) => setPayTarget(target)}
                 onDelete={(target) => setDeleteTarget(target)}
@@ -762,7 +812,7 @@ export default function Advertisements() {
       />
 
       {/* Payment Confirmation (§4.11) */}
-      <Dialog open={Boolean(payTarget)} onOpenChange={(open) => !open && setPayTarget(null)}>
+      <Dialog open={Boolean(payTarget)} onOpenChange={(open) => !open && closePayDialog()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Pay Advertising Fee</DialogTitle>
@@ -776,20 +826,31 @@ export default function Advertisements() {
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="payment-reference">Payment reference (optional)</Label>
+            <Label htmlFor="payment-reference">Payment reference</Label>
             <Input
               id="payment-reference"
+              inputMode="numeric"
               maxLength={100}
               placeholder="Payment transaction reference"
               value={paymentReference}
-              onChange={(event) => setPaymentReference(event.target.value)}
+              onChange={(event) => {
+                setPaymentReference(event.target.value.replace(/\D/g, ''))
+                setPaymentReferenceTouched(true)
+              }}
             />
+            {paymentReferenceTouched && paymentReferenceError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {paymentReferenceError}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Enter at least 8 digits.</p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPayTarget(null)} disabled={pay.isPending}>
+            <Button variant="outline" onClick={closePayDialog} disabled={pay.isPending}>
               Cancel
             </Button>
-            <Button onClick={handlePay} disabled={pay.isPending}>
+            <Button onClick={handlePay} disabled={pay.isPending || paymentReferenceError !== null}>
               <CreditCard className="mr-2 h-4 w-4" />
               {pay.isPending ? 'Processing payment...' : 'Pay & Submit'}
             </Button>
@@ -863,6 +924,7 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
 interface AdCardProps {
   ad: Advertisement
   isDeactivated?: boolean
+  highlightAdId?: string | null
   onEdit: (ad: Advertisement) => void
   onPay: (ad: Advertisement) => void
   onDelete: (ad: Advertisement) => void
@@ -870,7 +932,7 @@ interface AdCardProps {
   onView: (ad: Advertisement) => void
 }
 
-function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
+function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
@@ -878,6 +940,7 @@ function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }
   const canToggle = state !== 'expired' && ad.approvalStatus === 'approved' && ad.paymentStatus === 'completed'
   const isScheduled = state === 'scheduled'
   const packageInfo = ad.package
+  const isHighlighted = highlightAdId === ad.id
   const expiresTomorrow =
     ad.expiresAt && (() => {
       const t = new Date(ad.expiresAt).getTime()
@@ -893,8 +956,27 @@ function AdCard({ ad, isDeactivated, onEdit, onPay, onDelete, onToggle, onView }
       return t >= todayStart && t < todayStart + 24 * 60 * 60 * 1000 && t > now.getTime()
     })()
 
+  // Scroll to highlighted ad when highlightAdId matches this ad
+  useEffect(() => {
+    if (!isHighlighted) return
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(`highlighted-ad-${ad.id}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [isHighlighted, ad.id])
+
   return (
-    <Card className="flex flex-col overflow-hidden">
+    <Card
+      className={`flex flex-col overflow-hidden transition-all duration-300 ${
+        isHighlighted
+          ? 'ring-4 ring-violet-500 ring-offset-4 ring-offset-background scale-[1.02] shadow-2xl shadow-violet-500/30 animate-pulse'
+          : ''
+      }`}
+      id={isHighlighted ? `highlighted-ad-${ad.id}` : undefined}
+    >
       {/* Ad Thumbnail (EL-10) with approval status badge (EL-12a) */}
       <div className="relative aspect-video w-full overflow-hidden bg-muted">
         {ad.imageUrl ? (
@@ -1225,6 +1307,7 @@ function ContentDialog({
   })
   const startsAt = form.watch('startsAt')
   const imageUrl = form.watch('imageUrl')
+  const content = form.watch('content') ?? ''
   // Preserves unsaved typed content per ad across cancel/reopen (and across
   // logout/login via localStorage) so edits are not lost before a successful
   // save.
@@ -1297,7 +1380,18 @@ function ContentDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="ad-content">Content</Label>
-            <Textarea id="ad-content" maxLength={5000} placeholder="Enter advertisement content" {...form.register('content')} />
+            <div className="relative">
+              <Textarea
+                id="ad-content"
+                className={content.length > AD_CONTENT_MAX ? 'border-destructive pb-6' : 'pb-6'}
+                maxLength={AD_CONTENT_MAX}
+                placeholder="Enter advertisement content"
+                {...form.register('content')}
+              />
+              <span className="pointer-events-none absolute bottom-2 right-3 text-xs text-muted-foreground">
+                {content.length}/{AD_CONTENT_MAX}
+              </span>
+            </div>
             {form.formState.errors.content && (
               <p role="alert" className="text-sm text-destructive">
                 {form.formState.errors.content.message}

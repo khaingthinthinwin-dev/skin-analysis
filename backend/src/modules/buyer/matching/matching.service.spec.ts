@@ -23,6 +23,9 @@ const mockPrisma = {
     findUnique: jest.fn(),
     count: jest.fn(),
   },
+  category: {
+    findMany: jest.fn(() => Promise.resolve([])),
+  },
 };
 
 const mockRedis = {
@@ -117,7 +120,7 @@ describe('MatchingService', () => {
       expect(result.data[0].matchScore).toBeGreaterThan(0);
     });
 
-    it('should lead page 1 with previously recommended products that are still on sale', async () => {
+    it('should follow strict createdAt order on page 1 under Newest (no prepend)', async () => {
       const analysisMock = {
         id: 'analysis-1',
         skinType: 'oily',
@@ -170,12 +173,18 @@ describe('MatchingService', () => {
       ]);
       mockPrisma.product.count.mockResolvedValue(1);
 
-      const result = await service.getPersonalized(userId, { page: 1 });
+      const result = await service.getPersonalized(userId, {
+        page: 1,
+        sort: 'createdAt',
+        order: 'desc',
+      });
 
-      expect(result.data[0].id).toBe('prev-1');
-      expect(result.data[0].matchScore).not.toBeNull();
-      expect(result.data[1].id).toBe('p1');
-      expect(result.meta.total).toBe(2);
+      // "Newest" must show the DB createdAt order strictly — previously
+      // recommended picks stay in history, they never jump ahead of newer
+      // products (BR-MATCH-025).
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('p1');
+      expect(result.meta.total).toBe(1);
     });
 
     it('should not prepend previously recommended products on later pages', async () => {
@@ -206,7 +215,11 @@ describe('MatchingService', () => {
       ]);
       mockPrisma.product.count.mockResolvedValue(1);
 
-      const result = await service.getPersonalized(userId, { page: 2 });
+      const result = await service.getPersonalized(userId, {
+        page: 2,
+        sort: 'createdAt',
+        order: 'desc',
+      });
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].id).toBe('p1');
@@ -324,7 +337,7 @@ describe('MatchingService', () => {
         ]);
       });
 
-      it('should apply the analysed skin types and the selection as two ANDed conditions', async () => {
+      it('should override the analysed skin types with the selection (BR-MATCH-006)', async () => {
         mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
           id: 'analysis-1',
           skinType: 'oily,combination',
@@ -337,49 +350,56 @@ describe('MatchingService', () => {
 
         await service.getPersonalized(userId, { skinTypes: 'oily' });
 
-        expect(getMockWhere(mockPrisma.product.findMany).AND).toEqual([
-          {
-            OR: [
-              { skinTypes: { hasSome: ['oily', 'combination'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
-          {
-            OR: [
-              { skinTypes: { hasSome: ['oily'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
+        // One condition only: the explicit selection replaces the analysis
+        // result instead of being ANDed with it.
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.AND).toBeUndefined();
+        expect(where.OR).toEqual([
+          { skinTypes: { hasSome: ['oily'] } },
+          { skinTypes: { has: 'all' } },
         ]);
       });
 
-      it('should still query the database when the selected skin type is outside the analysis', async () => {
+      it('should apply every selected skin type regardless of the analysis', async () => {
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily,combination',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, { skinTypes: 'oily,dry' });
+
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.AND).toBeUndefined();
+        expect(where.OR).toEqual([
+          { skinTypes: { hasSome: ['oily', 'dry'] } },
+          { skinTypes: { has: 'all' } },
+        ]);
+      });
+
+      it('should query with the selection alone when it is outside the analysis', async () => {
         mockAiSource();
         mockPrisma.product.findMany.mockResolvedValue([]);
         mockPrisma.product.count.mockResolvedValue(0);
 
         await service.getPersonalized(userId, { skinTypes: 'dry' });
 
-        // A dry-only product cannot satisfy the analysis condition, but products
-        // tagged for every skin type still can, so the grid is not force-empty.
+        // BR-MATCH-006: the selection overrides the analysed "oily" type, so
+        // dry-only products are part of the result set (plus "all"-tagged ones).
         expect(mockPrisma.product.findMany).toHaveBeenCalled();
-        expect(getMockWhere(mockPrisma.product.findMany).AND).toEqual([
-          {
-            OR: [
-              { skinTypes: { hasSome: ['oily'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
-          {
-            OR: [
-              { skinTypes: { hasSome: ['dry'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.AND).toBeUndefined();
+        expect(where.OR).toEqual([
+          { skinTypes: { hasSome: ['dry'] } },
+          { skinTypes: { has: 'all' } },
         ]);
       });
 
-      it('should keep a product tagged oily + combination for a combination analysis with an oily selection', async () => {
+      it('should apply the selection alone for a combination analysis with an oily selection', async () => {
         mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
           id: 'analysis-1',
           skinType: 'combination',
@@ -410,22 +430,15 @@ describe('MatchingService', () => {
           skinTypes: 'oily',
         });
 
-        // The product shares "combination" with the analysis result and "oily"
-        // with the selection, so both conditions are satisfied by one tag each.
+        // The oily selection replaces the combination analysis result, so the
+        // query is a plain hasSome on the selection (BR-MATCH-006) — oily
+        // products are shown even though the analysis label says combination.
         expect(result.data).toHaveLength(1);
-        expect(getMockWhere(mockPrisma.product.findMany).AND).toEqual([
-          {
-            OR: [
-              { skinTypes: { hasSome: ['combination'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
-          {
-            OR: [
-              { skinTypes: { hasSome: ['oily'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.AND).toBeUndefined();
+        expect(where.OR).toEqual([
+          { skinTypes: { hasSome: ['oily'] } },
+          { skinTypes: { has: 'all' } },
         ]);
       });
 
@@ -451,7 +464,7 @@ describe('MatchingService', () => {
         ]);
       });
 
-      it('should AND the analysis skin type condition with the other filters', async () => {
+      it('should combine the skin type selection with the other filters in one query', async () => {
         mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
           id: 'analysis-1',
           skinType: 'oily,combination',
@@ -471,23 +484,14 @@ describe('MatchingService', () => {
         });
 
         const where = getMockWhere(mockPrisma.product.findMany);
-        expect(where.AND).toEqual([
-          {
-            OR: [
-              { skinTypes: { hasSome: ['oily', 'combination'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
-          {
-            OR: [
-              { skinTypes: { hasSome: ['combination'] } },
-              { skinTypes: { has: 'all' } },
-            ],
-          },
+        expect(where.AND).toBeUndefined();
+        expect(where.OR).toEqual([
+          { skinTypes: { hasSome: ['combination'] } },
+          { skinTypes: { has: 'all' } },
         ]);
         expect(where.price).toEqual({ gte: 1000, lte: 5000 });
         expect(where.avgRating).toEqual({ gte: 4 });
-        expect(where.categoryId).toBe('cat-1');
+        expect(where.categoryId).toEqual({ in: ['cat-1'] });
       });
 
       it('should still score against the analysed skin type when all skin types are requested', async () => {
@@ -521,14 +525,14 @@ describe('MatchingService', () => {
         expect(result.data[0].matchScore).toBeGreaterThan(0);
       });
 
-      it('should filter by categoryId', async () => {
+      it('should filter by categoryId including its descendants', async () => {
         mockGenericSource();
 
         await service.getPersonalized(userId, { categoryId: 'cat-1' });
 
-        expect(getMockWhere(mockPrisma.product.findMany).categoryId).toBe(
-          'cat-1',
-        );
+        expect(getMockWhere(mockPrisma.product.findMany).categoryId).toEqual({
+          in: ['cat-1'],
+        });
       });
 
       it('should support the category alias', async () => {
@@ -536,9 +540,9 @@ describe('MatchingService', () => {
 
         await service.getPersonalized(userId, { category: 'cat-2' });
 
-        expect(getMockWhere(mockPrisma.product.findMany).categoryId).toBe(
-          'cat-2',
-        );
+        expect(getMockWhere(mockPrisma.product.findMany).categoryId).toEqual({
+          in: ['cat-2'],
+        });
       });
 
       it('should apply the rating filter as a minimum avgRating', async () => {
@@ -568,7 +572,7 @@ describe('MatchingService', () => {
         expect(where.ingredients).toEqual({ hasSome: ['Vitamin C'] });
         expect(where.price).toEqual({ gte: 1000, lte: 5000 });
         expect(where.avgRating).toEqual({ gte: 4 });
-        expect(where.categoryId).toBe('cat-1');
+        expect(where.categoryId).toEqual({ in: ['cat-1'] });
       });
 
       it('should NOT collide cache keys when only the rating filter differs', async () => {
@@ -751,6 +755,164 @@ describe('MatchingService', () => {
         await service.getPersonalized(userId, { sort: 'price', order: 'desc' });
 
         expect(getOrderBy()).toEqual({ price: 'desc' });
+      });
+
+      it('should order match score globally across pages, not just within a page', async () => {
+        mockAiSource();
+        // The DB returns the FULL filtered set for every page (no skip/take):
+        // the service scores all of it, sorts globally, then slices the page.
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'low',
+            name: 'Low Match',
+            slug: 'low-match',
+            price: 1000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['dry'],
+            tags: [],
+            ingredients: [],
+            avgRating: 3.0,
+            reviewCount: 5,
+            isFeatured: false,
+            stockQuantity: 1,
+          },
+          {
+            id: 'high',
+            name: 'High Match',
+            slug: 'high-match',
+            price: 2000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.8,
+            reviewCount: 100,
+            isFeatured: true,
+            stockQuantity: 1,
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(2);
+
+        const page1 = await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'desc',
+          page: 1,
+          limit: 1,
+        });
+        const page2 = await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'desc',
+          page: 2,
+          limit: 1,
+        });
+
+        // Page 1 takes the global top score, page 2 the next one — no repeats.
+        expect(page1.data.map((p) => p.id)).toEqual(['high']);
+        expect(page2.data.map((p) => p.id)).toEqual(['low']);
+        expect(page2.meta.total).toBe(2);
+        expect(page2.meta.totalPages).toBe(2);
+
+        const findManyArgs = getMockCallArgs(mockPrisma.product.findMany);
+        expect(findManyArgs.skip).toBeUndefined();
+        expect(findManyArgs.take).toBeUndefined();
+      });
+
+      it('should keep page 1 strictly ordered by price with no featured strip', async () => {
+        // A previous AI pick exists — under Newest it would be prepended, but
+        // an explicit price sort must order the whole page on its own.
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily',
+          completedAt: new Date(),
+          conditions: [],
+          recommendations: [
+            {
+              displayOrder: 1,
+              product: {
+                id: 'prev-1',
+                name: 'Previous Pick',
+                slug: 'previous-pick',
+                price: 1500,
+                compareAtPrice: null,
+                images: [],
+                skinTypes: ['oily'],
+                tags: [],
+                ingredients: [],
+                avgRating: 4.8,
+                reviewCount: 30,
+                isFeatured: false,
+                stockQuantity: 4,
+                isActive: true,
+                merchant: {
+                  shopName: 'Glow Beauty Shop',
+                  user: { shop: { isApproved: true } },
+                },
+              },
+            },
+          ],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        // The DB returns rows already ordered by price asc (orderBy is asserted
+        // separately) — the service must not reshuffle or prepend them.
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'cheap',
+            name: 'Cheap',
+            slug: 'cheap',
+            price: 900,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.0,
+            reviewCount: 10,
+            isFeatured: false,
+            stockQuantity: 2,
+          },
+          {
+            id: 'expensive',
+            name: 'Expensive',
+            slug: 'expensive',
+            price: 5000,
+            compareAtPrice: null,
+            images: [],
+            skinTypes: ['oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4.5,
+            reviewCount: 20,
+            isFeatured: true,
+            stockQuantity: 2,
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(2);
+
+        const asc = await service.getPersonalized(userId, {
+          sort: 'price',
+          order: 'asc',
+          page: 1,
+        });
+
+        expect(getOrderBy()).toEqual({ price: 'asc' });
+        expect(asc.data.map((p) => p.id)).toEqual(['cheap', 'expensive']);
+        expect(asc.data.map((p) => p.id)).not.toContain('prev-1');
+      });
+
+      it('should fall back to Newest when a generic source receives a stale matchScore sort', async () => {
+        mockGenericSource();
+
+        // The Match Score option is only offered for AI results; a URL that
+        // outlived the analysis must behave exactly like the "Newest" the UI
+        // shows instead of silently applying the featured/rating fallback.
+        await service.getPersonalized(userId, {
+          sort: 'matchScore',
+          order: 'desc',
+        });
+
+        expect(getOrderBy()).toEqual({ createdAt: 'desc' });
       });
     });
 

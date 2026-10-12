@@ -5,10 +5,18 @@ import type { MatchQueryParams } from '@/schemas/matching.schema'
 
 const PREFETCH_STALE_MS = 30_000
 
+function paramsToQueryKey(params: MatchQueryParams): string {
+  return Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && v !== '')
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(',') : v}`)
+    .join('&')
+}
+
 export function usePersonalizedRecommendations(params: MatchQueryParams, refreshKey = 0) {
   const queryClient = useQueryClient()
   const query = useQuery({
-    queryKey: ['recommendations', 'personalized', params, refreshKey],
+    queryKey: ['recommendations', 'personalized', paramsToQueryKey(params), refreshKey],
     queryFn: () => matchingService.getPersonalized(params),
     // Keep previous page visible while the next page loads; isFetching drives UI feedback.
     placeholderData: (prev) => prev,
@@ -27,7 +35,7 @@ export function usePersonalizedRecommendations(params: MatchQueryParams, refresh
       if (page < 1 || page > totalPages) continue
       const nextParams: MatchQueryParams = { ...params, page }
       void queryClient.prefetchQuery({
-        queryKey: ['recommendations', 'personalized', nextParams, refreshKey],
+        queryKey: ['recommendations', 'personalized', paramsToQueryKey(nextParams), refreshKey],
         queryFn: () => matchingService.getPersonalized(nextParams),
         staleTime: PREFETCH_STALE_MS,
       })

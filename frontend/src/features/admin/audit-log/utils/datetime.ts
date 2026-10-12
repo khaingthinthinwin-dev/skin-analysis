@@ -21,14 +21,14 @@ const parse = (value: string | Date): Date | null => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-/** `2026-09-30 12:43:12.123 MMT`, or an em dash for a missing/invalid value. */
+/** `2026/09/30 12:43:12.123 MMT`, or an em dash for a missing/invalid value. */
 export function formatMmt(value: string | Date | null | undefined): string {
   if (value === null || value === undefined) return '—';
   const date = parse(value);
   if (!date) return '—';
   const mmt = toMmtInstant(date);
   return (
-    `${mmt.getUTCFullYear()}-${pad(mmt.getUTCMonth() + 1)}-${pad(mmt.getUTCDate())}` +
+    `${mmt.getUTCFullYear()}/${pad(mmt.getUTCMonth() + 1)}/${pad(mmt.getUTCDate())}` +
     ` ${pad(mmt.getUTCHours())}:${pad(mmt.getUTCMinutes())}:${pad(mmt.getUTCSeconds())}` +
     `.${pad(mmt.getUTCMilliseconds(), 3)} MMT`
   );

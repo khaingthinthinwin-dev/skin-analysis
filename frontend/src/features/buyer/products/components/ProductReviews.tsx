@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router';
 import { Flag } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/providers/AuthProvider';
 import { useProductReviews } from '../hooks/useProductDetail';
 import { StarRating } from './StarRating';
 import { ReviewReportDialog } from './ReviewReportDialog';
@@ -15,6 +17,8 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [reportReviewId, setReportReviewId] = useState<string | null>(null);
+  const { hash } = useLocation();
+  const { user } = useAuth();
 
   const { data, isLoading, isError } = useProductReviews(idOrSlug, { page, limit: 10 });
 
@@ -47,7 +51,14 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
   return (
     <div className="space-y-4">
       {data.items.map((review) => (
-        <div key={review.id} className="group rounded-lg border p-4">
+        <div
+          key={review.id}
+          className={`group rounded-lg border p-4 ${
+            hash === '#reviews' && review.user.id === user?.id
+              ? 'border-2 border-purple-600'
+              : 'border-border'
+          }`}
+        >
           <div className="mb-2 flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
@@ -75,7 +86,8 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
                   {t('buyer.products.reviews.verified', 'Verified')}
                 </span>
               )}
-              <button
+            {user?.role !== 'merchant' && (
+                <button
                 type="button"
                 onClick={() => setReportReviewId(review.id)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
@@ -84,6 +96,7 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
               >
                 <Flag className="h-4 w-4" />
               </button>
+             )}
             </div>
           </div>
           {review.title && <p className="mb-1 font-medium">{review.title}</p>}
@@ -113,7 +126,7 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
         </div>
       )}
 
-      {reportReviewId && (
+      {reportReviewId && user?.role !== 'merchant' && (
         <ReviewReportDialog
           reviewId={reportReviewId}
           open={!!reportReviewId}
