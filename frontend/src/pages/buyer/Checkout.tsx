@@ -4,6 +4,8 @@ import { CreditCard, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
+import { isAccountDeactivated } from '@/lib/account-status';
+import { AccountDeactivatedDialog } from '@/components/shared/AccountDeactivatedDialog';
 import {
   useCheckoutData,
   useValidateCoupon,
@@ -34,7 +36,7 @@ interface MerchantCoupon {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const {
     data: checkoutData,
     isLoading: isCheckoutLoading,
@@ -46,6 +48,7 @@ export default function Checkout() {
   const [appliedByMerchant, setAppliedByMerchant] = useState<
     Record<string, MerchantCoupon>
   >({});
+  const [deactivatedOpen, setDeactivatedOpen] = useState(false);
 
   const handleApplyCoupon = useCallback(
     async (merchantId: string, code: string, shopSubtotal: number) => {
@@ -80,6 +83,10 @@ export default function Checkout() {
     paymentMethod: PaymentMethod;
     notes: string;
   }) => {
+    if (isAccountDeactivated(user)) {
+      setDeactivatedOpen(true);
+      return;
+    }
     try {
       const voucherCodesMap: Record<string, string> = {};
       for (const [mid, entry] of Object.entries(appliedByMerchant)) {
@@ -191,6 +198,11 @@ export default function Checkout() {
           </div>
         </div>
       )}
+      <AccountDeactivatedDialog
+        open={deactivatedOpen}
+        onOpenChange={setDeactivatedOpen}
+        deactivationReason={user?.deactivationReason}
+      />
     </div>
   );
 }

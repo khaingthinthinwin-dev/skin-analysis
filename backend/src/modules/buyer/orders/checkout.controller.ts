@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { ActiveUserGuard } from '../../../common/guards/active-user.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import {
   CurrentUser,
@@ -26,6 +27,7 @@ export class CheckoutController {
   }
 
   @Post('validate-coupon')
+  @UseGuards(ActiveUserGuard)
   @ApiOperation({ summary: 'Validate a coupon code' })
   async validateCoupon(
     @CurrentUser() user: AuthUser,

@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { ActiveUserGuard } from '../../../common/guards/active-user.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import {
   CurrentUser,
@@ -51,6 +52,7 @@ export class CartController {
   }
 
   @Post('items')
+  @UseGuards(ActiveUserGuard)
   @ApiOperation({ summary: 'Add product to cart' })
   @HttpCode(HttpStatus.CREATED)
   async addToCart(@CurrentUser() user: AuthUser, @Body() dto: AddToCartDto) {
