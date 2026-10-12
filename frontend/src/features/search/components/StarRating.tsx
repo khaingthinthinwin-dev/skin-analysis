@@ -1,4 +1,5 @@
 import { Star } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface StarRatingProps {
   rating: number
@@ -6,8 +7,9 @@ interface StarRatingProps {
 }
 
 export function StarRating({ rating, totalReviews }: StarRatingProps) {
+  const { t } = useTranslation()
   return (
-    <div className="flex items-center gap-1.5" aria-label={`${rating.toFixed(2)} out of 5 stars from ${totalReviews} reviews`}>
+    <div className="flex items-center gap-1.5" aria-label={t('buyer.search.ratingSummary', `${rating.toFixed(2)} out of 5 stars from ${totalReviews} reviews`, { rating: rating.toFixed(2), count: totalReviews })}>
       <div className="flex items-center" aria-hidden="true">
         {Array.from({ length: 5 }, (_, index) => (
           <Star

@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Menu, Bell, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
@@ -10,6 +11,7 @@ import { useMerchantStatusAlerts } from '@/features/shared/notifications/hooks/u
 import { BuyerAccountDeactivatedBanner } from '@/components/buyer/AccountDeactivatedBanner'
 
 export function BuyerDashboardLayout() {
+  const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { summary } = useCart()
@@ -49,13 +51,13 @@ export function BuyerDashboardLayout() {
             size="icon"
             className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
-            aria-label="Open navigation menu"
+            aria-label={t('nav.menu.openNavigationMenu', 'Open navigation menu')}
           >
             <Menu className="h-6 w-6" />
           </Button>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild aria-label="Notifications">
+            <Button variant="ghost" size="icon" asChild aria-label={t('nav.menu.notifications', 'Notifications')}>
               <Link to="notifications" className="relative">
                 <Bell className="h-5 w-5 text-muted-foreground" />
                 {unreadCount > 0 && (
@@ -65,7 +67,7 @@ export function BuyerDashboardLayout() {
                 )}
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" asChild aria-label="Cart">
+            <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.cart', 'Cart')}>
               <Link to="/buyer/cart" className="relative">
                 <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (

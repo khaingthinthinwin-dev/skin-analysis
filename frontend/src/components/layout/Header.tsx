@@ -14,9 +14,9 @@ import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { ROUTES, getDashboardRoute } from '@/lib/constants'
 
 const navItems = [
-  { key: 'home', href: ROUTES.HOME },
-  { key: 'products', href: '/products' },
-  { key: 'about', href: ROUTES.ABOUT },
+  { key: 'home', href: ROUTES.HOME, label: 'Home' },
+  { key: 'products', href: '/products', label: 'Products' },
+  { key: 'about', href: ROUTES.ABOUT, label: 'About' },
 ]
 
 export function Header() {
@@ -59,7 +59,7 @@ export function Header() {
                   : 'text-muted-foreground'
               }`}
             >
-              {t(`nav.${item.key}`)}
+              {t(`nav.${item.key}`, item.label)}
             </Link>
           ))}
           {isAuthenticated && user && (
@@ -130,7 +130,7 @@ export function Header() {
                       : 'text-muted-foreground'
                   }`}
                 >
-                  {t(`nav.${item.key}`)}
+                  {t(`nav.${item.key}`, item.label)}
                 </Link>
               ))}
               {isAuthenticated && user && (

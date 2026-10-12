@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface DuplicateCartAlertDialogProps {
   open: boolean;
@@ -17,20 +18,21 @@ export function DuplicateCartAlertDialog({
   open,
   onClose,
 }: DuplicateCartAlertDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Already in Cart</DialogTitle>
+          <DialogTitle>{t('buyer.products.cart.alreadyInCartTitle', 'Already in Cart')}</DialogTitle>
           <DialogDescription>
-            This product is already in cart.
+            {t('buyer.products.cart.alreadyInCartDescription', 'This product is already in cart.')}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
-          <Button onClick={onClose}>OK</Button>
+          <Button onClick={onClose}>{t('buyer.products.actions.ok', 'OK')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

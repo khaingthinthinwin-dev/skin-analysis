@@ -1,4 +1,5 @@
 import { useSearchParams, useNavigate, useLocation } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Search as SearchIcon, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
@@ -39,6 +40,7 @@ function readInitialViewMode(): ViewMode {
 }
 
 export default function Products() {
+  const { t } = useTranslation()
   const [, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -67,7 +69,7 @@ export default function Products() {
   const handleWishlistToggle = useCallback(
     async (product: ProductSummary) => {
       if (!isAuthenticated) {
-        setGuestLoginMessage('Please log in to use the wishlist')
+        setGuestLoginMessage(t('buyer.search.guestWishlist', 'Please log in to use the wishlist'))
         setGuestLoginOpen(true)
         return
       }
@@ -76,29 +78,29 @@ export default function Products() {
       try {
         if (isInWishlist) {
           await removeFromWishlist(product.id)
-          toast.success('Removed from wishlist')
+          toast.success(t('wishlist.removedFromWishlist', 'Removed from wishlist'))
         } else {
           await addToWishlist(product.id)
-          toast.success('Added to wishlist')
+          toast.success(t('buyer.products.actions.addedToWishlistToast', 'Added to wishlist'))
         }
       } catch (err: unknown) {
         const axiosErr = err as { response?: { status?: number } }
         if (axiosErr?.response?.status === 409) {
-          toast.info('Already in your wishlist')
+          toast.info(t('buyer.search.alreadyInWishlist', 'Already in your wishlist'))
         } else {
-          toast.error('Something went wrong. Please try again.')
+          toast.error(t('buyer.search.toastError', 'Something went wrong. Please try again.'))
         }
       } finally {
         setWishlistLoadingId(null)
       }
     },
-    [isAuthenticated, wishlistProductIds, addToWishlist, removeFromWishlist],
+    [isAuthenticated, wishlistProductIds, addToWishlist, removeFromWishlist, t],
   )
 
   const handleAddToCart = useCallback(
     async (product: ProductSummary) => {
       if (!isAuthenticated) {
-        setGuestLoginMessage('Please log in to add items to your cart')
+        setGuestLoginMessage(t('buyer.search.guestCart', 'Please log in to add items to your cart'))
         setGuestLoginOpen(true)
         return
       }
@@ -109,19 +111,19 @@ export default function Products() {
       setCartLoadingId(product.id)
       try {
         await addToCart({ productId: product.id, quantity: 1 })
-        toast.success('Added to cart')
+        toast.success(t('buyer.products.actions.addedToCartToast', 'Added to cart'))
       } catch (err: unknown) {
         const axiosErr = err as { response?: { status?: number } }
         if (axiosErr?.response?.status === 409) {
           setCartDuplicateOpen(true)
         } else {
-          toast.error('Something went wrong. Please try again.')
+          toast.error(t('buyer.search.toastError', 'Something went wrong. Please try again.'))
         }
       } finally {
         setCartLoadingId(null)
       }
     },
-    [isAuthenticated, cartProductIds, addToCart],
+    [isAuthenticated, cartProductIds, addToCart, t],
   )
 
   useEffect(() => {
@@ -274,7 +276,7 @@ export default function Products() {
               onClick={() => setMobileFilterOpen(true)}
             >
               <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Filters
+              {t('buyer.search.filters', 'Filters')}
             </Button>
             <SortSelect
               sort={params.sort}
@@ -293,15 +295,15 @@ export default function Products() {
           ) : isError ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <SearchIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold">Something went wrong</h3>
-              <p className="text-sm text-muted-foreground">Failed to load products. Please try again.</p>
+              <h3 className="text-lg font-semibold">{t('buyer.search.errorTitle', 'Something went wrong')}</h3>
+              <p className="text-sm text-muted-foreground">{t('buyer.search.errorDescription', 'Failed to load products. Please try again.')}</p>
             </div>
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <SearchIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold">No products found</h3>
+              <h3 className="text-lg font-semibold">{t('buyer.search.noProducts', 'No products found')}</h3>
               <p className="text-sm text-muted-foreground">
-                Try adjusting your search or filter criteria.
+                {t('buyer.search.noProductsHint', 'Try adjusting your search or filter criteria.')}
               </p>
             </div>
           ) : (
@@ -379,7 +381,7 @@ export default function Products() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-6 w-7 rounded-full bg-slate-200/80 dark:bg-white/10" />
-                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Filters</h2>
+                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{t('buyer.search.filters', 'Filters')}</h2>
               </div>
             </div>
             <FilterPanel
@@ -397,14 +399,14 @@ export default function Products() {
               onClick={handleClearAll}
               className="shrink-0 text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
             >
-              Clear All
+              {t('buyer.search.clearAll', 'Clear All')}
             </button>
             <Button
               type="button"
               onClick={() => setMobileFilterOpen(false)}
               className="h-11 flex-1 rounded-full bg-slate-950 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
             >
-              Show {meta?.total ?? products.length} Products
+              {t('buyer.search.showProducts', `Show ${meta?.total ?? products.length} Products`, { count: meta?.total ?? products.length })}
             </Button>
           </div>
         </SheetContent>
@@ -414,15 +416,15 @@ export default function Products() {
       <Dialog open={guestLoginOpen} onOpenChange={setGuestLoginOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Login Required</DialogTitle>
+            <DialogTitle>{t('buyer.search.loginRequired', 'Login Required')}</DialogTitle>
             <DialogDescription>{guestLoginMessage}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGuestLoginOpen(false)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button onClick={() => navigate('/login')}>
-              Login
+              {t('common.login', 'Login')}
             </Button>
           </DialogFooter>
         </DialogContent>
