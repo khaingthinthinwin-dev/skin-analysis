@@ -14,7 +14,6 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router'
 import { useMemo, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,11 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  notificationKeys,
-  useNotifications,
-} from '@/features/shared/notifications/hooks/useNotifications'
-import { notificationService } from '@/features/shared/notifications/services/notification.service'
+import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 import type { NotificationItem } from '@/types/notification.types'
 
@@ -251,20 +246,6 @@ function orderActionHint(item: NotificationItem): string | null {
     : null
 }
 
-<<<<<<< HEAD
-
-=======
-// Order Insight notifications travel between the merchant and the buyer
-// (ORDER_PLACED → merchant; ORDER_CONFIRMED / ORDER_STATUS_UPDATED → buyer,
-// plus seeded `order` items). Once the recipient has read one, it leaves the
-// list entirely instead of lingering as a "read" card.
-function isReadOrderInsightNotification(item: NotificationItem): boolean {
-  if (!item.isRead && !item.readAt) return false
-  const type = normalizeNotificationType(item.type)
-  return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
-}
->>>>>>> a33e58d1813ac2bcba411dee01e1676a1875b797
-
 // Review notifications deep-link straight to the queue entry they are about so
 // the admin does not have to hunt for it. `entityId` is the review id for a
 // REVIEW_CREATED notification and the report id for a REVIEW_REPORTED one
@@ -436,7 +417,6 @@ function NotificationCard({
 export default function Notifications() {
   const navigate = useNavigate()
   const location = useLocation()
-  const queryClient = useQueryClient()
   const { user } = useAuth()
   const [dismissedNotificationIds, setDismissedNotificationIds] =
     useState(() =>
@@ -454,25 +434,19 @@ export default function Notifications() {
     isLoading,
     isError,
     refetch,
+    markAsRead,
     markAllAsRead,
     isMarkingAllRead,
   } = useNotifications({ unreadOnly: true })
 
   const displayedNotifications = useMemo(() => {
-<<<<<<< HEAD
     // Once a notification is read (or marked as read), it is immediately
     // removed from the view for all user roles.
-    const unreadOnly = notifications.filter((item) => !item.isRead)
+    const unreadOnly = notifications.filter((item) => !item.isRead && !item.readAt)
 
     if (isAdmin) {
       const seenKeys = new Set<string>()
       return unreadOnly.filter((item) => {
-=======
-    let roleNotifications: NotificationItem[]
-    if (isAdmin) {
-      const seenKeys = new Set<string>()
-      roleNotifications = notifications.filter((item) => {
->>>>>>> a33e58d1813ac2bcba411dee01e1676a1875b797
         if (!isAdminNotification(item)) {
           return false
         }
@@ -483,34 +457,16 @@ export default function Notifications() {
         seenKeys.add(key)
         return true
       })
-<<<<<<< HEAD
     }
 
     if (user?.role === 'merchant') {
       return unreadOnly.filter(
-=======
-    } else if (user?.role === 'merchant') {
-      roleNotifications = notifications.filter(
->>>>>>> a33e58d1813ac2bcba411dee01e1676a1875b797
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
-    } else {
-      roleNotifications = notifications
     }
 
-<<<<<<< HEAD
     return unreadOnly
   }, [isAdmin, notifications, user])
-=======
-    return roleNotifications.filter((item) => {
-      if (dismissedNotificationIds.has(item.id)) return false
-      // Admin history keeps only unread items; merchants and buyers also drop
-      // read Order Insight cards but keep every other read notification.
-      if (isAdmin) return !item.isRead && !item.readAt
-      return !isReadOrderInsightNotification(item)
-    })
-  }, [dismissedNotificationIds, isAdmin, notifications, user])
->>>>>>> a33e58d1813ac2bcba411dee01e1676a1875b797
 
   const rejectionReason = getRejectionReason(rejectedNotification)
   const deactivationReason = getDeactivationReason(deactivatedNotification)
@@ -543,10 +499,7 @@ export default function Notifications() {
   const handleOpen = (item: NotificationItem) => {
     dismissNotifications([item.id])
     if (!item.isRead) {
-      void Promise.resolve()
-        .then(() => notificationService.markAsRead(item.id))
-        .then(() => queryClient.invalidateQueries({ queryKey: notificationKeys.all }))
-        .catch(() => toast.error('Failed to mark notification as read'))
+      markAsRead(item.id).catch(() => toast.error('Failed to mark notification as read'))
     }
 
     if (isMerchantRejectedNotification(item)) {
