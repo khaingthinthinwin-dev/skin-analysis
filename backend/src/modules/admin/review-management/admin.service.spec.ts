@@ -39,9 +39,6 @@ describe('AdminService review moderation', () => {
         findFirst: jest.fn(),
         findUnique: jest.fn(),
       },
-      notification: {
-        create: jest.fn(),
-      },
       order: {
         findFirst: jest.fn(),
       },
@@ -61,6 +58,7 @@ describe('AdminService review moderation', () => {
         create: jest.fn(),
       },
       notification: {
+        create: jest.fn(),
         createMany: jest.fn(),
       },
       $queryRaw: jest

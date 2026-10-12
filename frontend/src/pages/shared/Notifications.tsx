@@ -12,7 +12,7 @@ import {
   Flag,
   MessageSquareText,
 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useLocation } from 'react-router'
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -256,7 +256,7 @@ function orderActionHint(item: NotificationItem): string | null {
 // plus seeded `order` items). Once the recipient has read one, it leaves the
 // list entirely instead of lingering as a "read" card.
 function isReadOrderInsightNotification(item: NotificationItem): boolean {
-  if (!item.isRead) return false
+  if (!item.isRead && !item.readAt) return false
   const type = normalizeNotificationType(item.type)
   return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
 }
@@ -474,12 +474,13 @@ export default function Notifications() {
       roleNotifications = notifications
     }
 
-    return roleNotifications.filter(
-      (item) =>
-        !item.isRead &&
-        !item.readAt &&
-        !dismissedNotificationIds.has(item.id),
-    )
+    return roleNotifications.filter((item) => {
+      if (dismissedNotificationIds.has(item.id)) return false
+      // Admin history keeps only unread items; merchants and buyers also drop
+      // read Order Insight cards but keep every other read notification.
+      if (isAdmin) return !item.isRead && !item.readAt
+      return !isReadOrderInsightNotification(item)
+    })
   }, [dismissedNotificationIds, isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)

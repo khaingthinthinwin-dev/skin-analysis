@@ -29,9 +29,8 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
   const discount = product.promotions[0];
   const stock = getStockStatus(product);
 
-  const showReviews =
-    onShowReviews ??
-    (() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }));
+  const showReviews = () =>
+    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="space-y-4">

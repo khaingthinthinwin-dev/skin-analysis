@@ -20,8 +20,8 @@ const fallbackClient = new QueryClient({
       enabled: false,
       retry: false,
     },
-  )
-}
+  },
+})
 
 export function useNotifications(params?: {
   limit?: number
@@ -33,6 +33,8 @@ export function useNotifications(params?: {
 
   const limit = params?.limit ?? 50
   const unreadOnly = params?.unreadOnly ?? false
+  const hasAccessToken = () =>
+    typeof window !== 'undefined' && !!window.localStorage.getItem('accessToken')
 
   const {
     data: listData,

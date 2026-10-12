@@ -48,11 +48,11 @@ import { MailModule } from './shared/mail/mail.module';
               pass: configService.get<string>('mail.pass'),
             },
           },
-        },
-        defaults: {
-          from: configService.get<string>('mail.from'),
-        },
-      }),
+          defaults: {
+            from,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     PrismaModule,

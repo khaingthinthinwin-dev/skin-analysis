@@ -379,7 +379,9 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('deep-links a review submission to the highlighted Review Management row', async () => {
+  it('opens a product deactivation notification with all statuses available and highlights its product', async () => {
+    mockRole = 'merchant'
+    mockUserId = 'merchant-1'
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
       items: [
         {
@@ -443,16 +445,6 @@ describe('Notifications Center', () => {
       meta: { total: 1, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
-
-    function LocationProbe() {
-      const location = useLocation()
-      return (
-        <div data-testid="location">
-          {location.pathname}
-          {location.search}
-        </div>
-      )
-    }
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -530,16 +522,6 @@ describe('Notifications Center', () => {
       meta: { total: 4, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.getUnreadCount).mockResolvedValue({ count: 1 })
-
-    function LocationProbe() {
-      const location = useLocation()
-      return (
-        <div data-testid="location">
-          {location.pathname}
-          {location.hash}
-        </div>
-      )
-    }
 
     render(
       <QueryClientProvider client={queryClient}>

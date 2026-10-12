@@ -36,11 +36,11 @@ import { UsersModule } from '../users/users.module';
               pass: configService.get<string>('mail.pass'),
             },
           },
-        },
-        defaults: {
-          from: `"Cosmetics Finder" <${configService.get<string>('mail.user') || 'noreply@example.com'}>`,
-        },
-      }),
+          defaults: {
+            from,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],
