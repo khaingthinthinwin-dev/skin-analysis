@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { CreditCard, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/providers/AuthProvider';
 import {
   useCheckoutData,
@@ -34,6 +35,7 @@ interface MerchantCoupon {
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const {
     data: checkoutData,
@@ -58,12 +60,12 @@ export default function Checkout() {
           ...prev,
           [merchantId]: { coupon: result, code },
         }));
-        toast.success('Coupon applied successfully');
+        toast.success(t('buyer.checkout.toasts.couponApplied', 'Coupon applied successfully'));
       } catch {
-        toast.error('Invalid coupon code');
+        toast.error(t('buyer.checkout.toasts.invalidCoupon', 'Invalid coupon code'));
       }
     },
-    [validateCouponMutation],
+    [t, validateCouponMutation],
   );
 
   const handleRemoveCoupon = useCallback((merchantId: string) => {
@@ -72,8 +74,8 @@ export default function Checkout() {
       delete next[merchantId];
       return next;
     });
-    toast.success('Coupon removed');
-  }, []);
+    toast.success(t('buyer.checkout.toasts.couponRemoved', 'Coupon removed'));
+  }, [t]);
 
   const handlePlaceOrder = async (data: {
     shippingAddress: ShippingAddress;
@@ -95,7 +97,7 @@ export default function Checkout() {
           Object.keys(voucherCodesMap).length > 0 ? voucherCodesMap : undefined,
         notes: data.notes || undefined,
       });
-      toast.success('Order placed successfully!');
+      toast.success(t('buyer.checkout.toasts.orderPlaced', 'Order placed successfully!'));
       const primaryId = result.orders[0]?.orderId;
       const extraIds = result.orders
         .slice(1)
@@ -106,7 +108,9 @@ export default function Checkout() {
         : '';
       navigate(`/buyer/checkout/confirmation/${primaryId}${query}`);
     } catch {
-      toast.error('Failed to place order. Please try again.');
+      toast.error(
+        t('buyer.checkout.toasts.placeOrderFailed', 'Failed to place order. Please try again.'),
+      );
     }
   };
 
@@ -115,14 +119,19 @@ export default function Checkout() {
       <Dialog open onOpenChange={() => navigate('/buyer/cart')}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Log in to checkout</DialogTitle>
+            <DialogTitle>
+              {t('buyer.checkout.auth.loginToCheckoutTitle', 'Log in to checkout')}
+            </DialogTitle>
             <DialogDescription className="text-center">
-              Please log in to complete your purchase.
+              {t(
+                'buyer.checkout.auth.loginToCheckoutDescription',
+                'Please log in to complete your purchase.',
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button className="w-full" onClick={() => navigate('/login?redirect=%2Fcheckout')}>
-              Log in
+              {t('buyer.checkout.auth.loginButton', 'Log in')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -141,9 +150,14 @@ export default function Checkout() {
   if (isCheckoutError || !checkoutData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <h2 className="text-xl font-bold">Unable to load checkout</h2>
+        <h2 className="text-xl font-bold">
+          {t('buyer.checkout.errors.unableToLoadCheckout', 'Unable to load checkout')}
+        </h2>
         <p className="text-muted-foreground">
-          Your cart may be empty or an error occurred.
+          {t(
+            'buyer.checkout.errors.checkoutLoadError',
+            'Your cart may be empty or an error occurred.',
+          )}
         </p>
       </div>
     );
@@ -154,15 +168,17 @@ export default function Checkout() {
       <header className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-          <CreditCard className="h-6 w-6 text-primary" /> Checkout
+          <CreditCard className="h-6 w-6 text-primary" />
+          {t('buyer.checkout.title', 'Checkout')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Complete your order details securely
+          {t('buyer.checkout.subtitle', 'Complete your order details securely')}
         </p>
         </div>
         <Button variant="outline" size="sm" asChild>
           <Link to="/buyer/cart">
-            <ArrowLeft className="h-4 w-4" /> Back to Cart
+            <ArrowLeft className="h-4 w-4" />
+            {t('buyer.checkout.actions.backToCart', 'Back to Cart')}
           </Link>
         </Button>
       </header>
@@ -187,7 +203,7 @@ export default function Checkout() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80" role="status" aria-live="polite">
           <div className="flex items-center gap-3 rounded-lg border bg-background px-5 py-4 shadow-lg">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span>Processing your order...</span>
+            <span>{t('buyer.checkout.processing', 'Processing your order...')}</span>
           </div>
         </div>
       )}

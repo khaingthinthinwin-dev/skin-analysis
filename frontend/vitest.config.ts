@@ -13,7 +13,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    css: true,
     // Coverage instrumentation makes the jsdom tests much slower. Running
     // many workers in parallel starves the CPU, so unrelated tests randomly
     // exceed the default 5s timeout. Cap the pool and give tests more room.

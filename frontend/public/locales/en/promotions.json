@@ -7,6 +7,7 @@
   "merchant.promotions.statusActive": "Active",
   "merchant.promotions.statusInactive": "Inactive",
   "merchant.promotions.statusExpired": "Expired",
+  "merchant.promotions.statusExhausted": "Exhausted",
   "merchant.promotions.code": "Coupon Code",
   "merchant.promotions.description": "Description",
   "merchant.promotions.discountType": "Discount Type",

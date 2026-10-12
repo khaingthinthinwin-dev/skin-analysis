@@ -12,7 +12,47 @@
     "delete": "削除",
     "submit": "送信",
     "back": "戻る",
-    "next": "次へ"
+    "next": "次へ",
+    "collapseSidebar": "サイドバーを畳む",
+    "actions": {
+      "export": "エクスポート",
+      "next": "次へ",
+      "previous": "前へ",
+      "retry": "再試行"
+    },
+    "filters": {
+      "active": "適用中のフィルター",
+      "applied": "適用中:",
+      "all": "すべて",
+      "clear": "クリア",
+      "clearAll": "すべてクリア",
+      "removeLabel": "{{label}} のフィルターを解除",
+      "search": "検索",
+      "searching": "検索中..."
+    },
+    "pagination": {
+      "rows": "表示件数:"
+    },
+    "payment": {
+      "pending": "保留中",
+      "completed": "完了"
+    },
+    "paymentStatus": {
+      "pending": "保留中",
+      "completed": "完了"
+    },
+    "status": {
+      "placed": "受付済み",
+      "confirmed": "確認済み",
+      "packed": "梱包済み",
+      "shipped": "発送済み",
+      "out_for_delivery": "配送中",
+      "delivered": "配送済み"
+    },
+    "confirm": "確認",
+    "copied": "コピーしました",
+    "copyFailed": "クリップボードにコピーできませんでした。",
+    "view": "表示"
   },
   "nav": {
     "home": "ホーム",
@@ -21,7 +61,58 @@
     "contact": "お問い合わせ",
     "dashboard": "ダッシュボード",
     "profile": "プロフィール",
-    "settings": "設定"
+    "settings": "設定",
+    "aria": {
+      "main": "メインナビゲーション",
+      "mobile": "モバイルナビゲーション",
+      "wishlist": "お気に入り",
+      "cart": "カート",
+      "openMenu": "メニューを開く",
+      "closeSidebar": "ナビゲーションサイドバーを閉じる",
+      "sidebarMain": "サイドバーのメインナビゲーション",
+      "expandSidebar": "サイドバーを広げる"
+    },
+    "menu": {
+      "adminConsole": "管理コンソール",
+      "beautyPortal": "ビューティーポータル",
+      "merchantHub": "出品者ハブ",
+      "overview": "概要",
+      "management": "管理",
+      "financeGovernance": "財務・ガバナンス",
+      "account": "アカウント",
+      "explore": "探索",
+      "aiIntelligence": "AI機能",
+      "shopping": "ショッピング",
+      "catalogSales": "商品・販売",
+      "analyticsAccount": "分析・アカウント",
+      "users": "ユーザー",
+      "merchants": "出品者",
+      "orderInsights": "注文インサイト",
+      "advertisements": "広告",
+      "reviews": "レビュー",
+      "content": "コンテンツ",
+      "commissionRevenue": "手数料・収益",
+      "auditLogs": "監査ログ",
+      "masterData": "マスターデータ",
+      "adminProfile": "管理者プロフィール",
+      "notifications": "通知",
+      "wishlist": "お気に入り",
+      "cart": "カート",
+      "searchProducts": "商品検索",
+      "skinAnalysis": "肌分析",
+      "recommendations": "おすすめ",
+      "analysisHistory": "分析履歴",
+      "promotions": "プロモーション",
+      "storeProfile": "店舗プロフィール",
+      "logOut": "ログアウト",
+      "collapseSidebar": "サイドバーを畳む",
+      "expandSidebar": "サイドバーを広げる",
+      "openNavigationMenu": "ナビゲーションメニューを開く",
+      "changeLanguage": "言語を変更",
+      "toggleTheme": "テーマを切り替え",
+      "user": "ユーザー",
+      "unreadNotifications_other": "未読通知が{{count}}件"
+    }
   },
   "auth": {
     "login": {
@@ -111,10 +202,29 @@
       "confirmPasswordPlaceholder": "新しいパスワードを再入力",
       "submit": "パスワードをリセット",
       "submitting": "リセット中...",
+      "success": "パスワードリセット成功",
       "successTitle": "パスワードリセット成功",
       "successMessage": "パスワードが正常にリセットされました。新しいパスワードでログインできます。",
       "backToLogin": "ログインに戻る",
       "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。"
+    },
+    "createAdmin": {
+      "title": "管理者アカウント作成",
+      "fullName": "氏名",
+      "fullNamePlaceholder": "管理者名",
+      "email": "メールアドレス",
+      "emailPlaceholder": "admin@example.com",
+      "password": "パスワード",
+      "passwordPlaceholder": "パスワードを作成",
+      "confirmPassword": "パスワード確認",
+      "confirmPasswordPlaceholder": "パスワードを再入力",
+      "role": "管理者ロール",
+      "adminRole": "管理者 — 標準管理者",
+      "superAdminRole": "スーパー管理者 — システム全体へのアクセス",
+      "roleDescription": "この管理者アカウントに適切なロールを選択してください。",
+      "submit": "管理者アカウントを作成",
+      "submitting": "アカウント作成中...",
+      "success": "管理者アカウントが作成されました"
     }
   },
   "home": {
@@ -136,6 +246,21 @@
     "inStock": "在庫あり",
     "lowStock": "残りわずか",
     "outOfStock": "在庫切れ",
+    "removedFromWishlist": "お気に入りから削除しました",
+    "failedToRemove": "お気に入りからの削除に失敗しました",
+    "movedToCart": "カートに移動しました",
+    "failedToMove": "カートへの移動に失敗しました",
+    "errorTitle": "お気に入りの読み込みに失敗しました",
+    "errorMessage": "お気に入りの読み込み中に問題が発生しました。",
+    "retry": "もう一度試す",
+    "clearing": "削除中...",
+    "clearAll": "すべて削除",
+    "clearAllTitle": "お気に入りをクリア",
+    "clearAllConfirm": "お気に入りのすべての商品を削除しますか？この操作は取り消せません。",
+    "clearAllConfirmButton": "はい",
+    "clearAllCancelButton": "キャンセル",
+    "cleared": "お気に入りをクリアしました",
+    "failedToClear": "お気に入りのクリアに失敗しました",
     "guestLoginAlert": {
       "title": "ログインが必要です",
       "message": "お気に入りに商品を追加するにはログインしてください。",
@@ -159,6 +284,26 @@
     "outOfStock": "在庫切れ",
     "decreaseQuantity": "数量を減らす",
     "increaseQuantity": "数量を増やす",
+    "summary": "注文サマリ",
+    "subtotalLabel": "小計",
+    "shippingEstimate": "配送料の目安",
+    "total": "合計",
+    "subtitle": "チェックアウト前にカートの内容を確認してください",
+    "errorTitle": "カートの読み込みに失敗しました",
+    "errorMessage": "カートの読み込み中に問題が発生しました。",
+    "retry": "もう一度試す",
+    "quantityUpdated": "数量を更新しました",
+    "failedToUpdate": "数量の更新に失敗しました",
+    "removedFromCart": "カートから削除しました",
+    "failedToRemove": "カートからの削除に失敗しました",
+    "clearAll": "すべて削除",
+    "clearing": "削除中...",
+    "clearAllTitle": "カートをクリア",
+    "clearAllConfirm": "カートのすべての商品を削除しますか？この操作は取り消せません。",
+    "clearAllConfirmButton": "はい",
+    "clearAllCancelButton": "キャンセル",
+    "cleared": "カートをクリアしました",
+    "failedToClear": "カートのクリアに失敗しました",
     "guestLoginAlert": {
       "title": "ログインが必要です",
       "message": "カートに商品を追加するにはログインしてください。",
@@ -170,7 +315,370 @@
     "orders": {
       "exportCsv": "CSVをエクスポート",
       "exportCsvTooltip": "注文をCSVファイルとしてダウンロード",
-      "exportEmpty": "エクスポートする注文がありません"
+      "exportEmpty": "エクスポートする注文がありません",
+      "title": "私の注文",
+      "error": {
+        "loadFailed": "注文を読み込めませんでした。"
+      },
+      "empty": {
+        "filteredTitle": "このフィルターに一致する注文が見つかりません。",
+        "filteredDescription": "ステータスや日付のフィルターを変えてみてください。"
+      }
+    },
+    "checkout": {
+      "title": "購入手続き",
+      "shippingAddress": {
+        "recipientNameRequired": "受取人名は必須です。",
+        "recipientNameMaxLength": "名前は200文字以内で入力してください。",
+        "phoneRequired": "電話番号は必須です。",
+        "phoneDigitsOnly": "電話番号は数字のみ入力してください。",
+        "phoneFormatInvalid": "電話番号は0から始まり、9桁または11桁で入力してください。",
+        "addressLine1Required": "住所は必須です。",
+        "addressLine1MaxLength": "住所は255文字以内で入力してください。",
+        "addressLine2MaxLength": "住所は255文字以内で入力してください。",
+        "cityRequired": "市区町村は必須です。",
+        "cityMaxLength": "市区町村は100文字以内で入力してください。",
+        "stateRequired": "都道府県は必須です。",
+        "stateMaxLength": "都道府県は100文字以内で入力してください。",
+        "postalCodeRequired": "郵便番号は必須です。",
+        "postalCodeDigitsOnly": "郵便番号は数字のみ入力してください。",
+        "countryRequired": "国は必須です。",
+        "recipientNamePlaceholder": "氏名",
+        "phonePlaceholder": "電話番号",
+        "addressLine1Placeholder": "住所",
+        "addressLine2Placeholder": "マンション・アパート名など",
+        "cityPlaceholder": "市区町村",
+        "statePlaceholder": "都道府県",
+        "postalCodePlaceholder": "郵便番号",
+        "postalCodeFormatInvalid": "郵便番号は4〜7桁で入力してください。",
+        "recipientNameLabel": "受取人名",
+        "phoneLabel": "電話番号",
+        "addressLine1Label": "住所1",
+        "addressLine2Label": "住所2（任意）",
+        "cityLabel": "市区町村",
+        "stateLabel": "都道府県",
+        "postalCodeLabel": "郵便番号",
+        "countryLabel": "国"
+      },
+      "payment": {
+        "title": "お支払い方法",
+        "cod": "代金引換",
+        "codDescription": "商品到着時にお支払い",
+        "bankTransfer": "銀行振込",
+        "bankTransferDescription": "銀行振込でお支払い",
+        "card": "クレジット・デビットカード",
+        "cardDescription": "カード決済（MVP簡易版）"
+      },
+      "orderNotes": {
+        "title": "注文メモ（任意）",
+        "placeholder": "ショップへのメモを入力してください"
+      },
+      "actions": {
+        "placeOrder": "注文する",
+        "placingOrder": "注文中...",
+        "backToCart": "カートに戻る"
+      },
+      "orderSummary": {
+        "soldByMerchant": "販売店: {{merchantName}}",
+        "itemQuantityPrice": "数量: {{quantity}} × {{unitPrice}}"
+      },
+      "vouchers": {
+        "shopVoucher": "ショップクーポン",
+        "shopVouchersTitle": "ショップクーポン",
+        "selectOrEnterCode": "クーポンを選択するか、コードを入力してください。",
+        "appliedBadge": "適用済み",
+        "remove": "削除",
+        "availableVouchers": "利用可能なクーポン",
+        "noVouchersAvailable": "このショップには利用可能なクーポンがありません",
+        "haveACode": "クーポンコードをお持ちですか？",
+        "enterCouponCode": "クーポンコードを入力",
+        "couponCodeAria": "クーポンコード",
+        "applying": "適用中...",
+        "apply": "適用",
+        "selectLabel": "選択",
+        "enterCodeLabel": "コードを入力",
+        "percentOff": "{{value}}% オフ",
+        "amountOff": "{{amount}}Ks オフ",
+        "minOrder": "最低注文額 {{amount}}Ks",
+        "expired": "期限切れ",
+        "expiresToday": "本日まで",
+        "expiresInDays": "{{count}}日後に期限切れ",
+        "expiresOn": "{{date}}に期限切れ"
+      },
+      "sponsoredAds": {
+        "ariaLabel": "スポンサー広告",
+        "carouselRoleDescription": "カルーセル",
+        "sponsoredBadge": "スポンサー",
+        "featuredPromotionBadge": "注目のプロモーション",
+        "learnMore": "詳細を見る",
+        "previousAdvertisement": "前の広告",
+        "nextAdvertisement": "次の広告",
+        "goToAdvertisement": "広告{{index}}へ移動"
+      },
+      "auth": {
+        "loginButton": "ログイン",
+        "loginToCheckoutTitle": "チェックアウトにログイン",
+        "loginToCheckoutDescription": "購入を完了するにはログインしてください。"
+      },
+      "errors": {
+        "unableToLoadCheckout": "チェックアウトの読み込みに失敗しました",
+        "checkoutLoadError": "カートが空か、エラーが発生しました。"
+      },
+      "subtitle": "注文情報を安全に入力してください",
+      "toasts": {
+        "couponApplied": "クーポンを適用しました",
+        "invalidCoupon": "無効なクーポンコードです",
+        "placeOrderFailed": "注文に失敗しました。もう一度お試しください。",
+        "couponRemoved": "クーポンを削除しました",
+        "orderPlaced": "注文が完了しました！"
+      },
+      "countries": {
+        "jp": "日本",
+        "us": "アメリカ合衆国",
+        "gb": "イギリス",
+        "mm": "ミャンマー",
+        "th": "タイ",
+        "kr": "韓国",
+        "cn": "中国",
+        "sg": "シンガポール"
+      },
+      "processing": "注文を処理しています..."
+    },
+    "products": {
+      "promotion": {
+        "title": "開催中のプロモーション",
+        "discountPercentOff": "{{discountValue}}%割引",
+        "discountAmountOff": "{{amount}}割引",
+        "unlimited": "無制限",
+        "usesLeft": "{{count}}回分",
+        "copyCode": "プロモーションコード{{code}}をコピー",
+        "copied": "コピーしました！",
+        "clickToCopy": "クリックしてコピー",
+        "minimumOrder": "最低注文額 {{amount}}",
+        "validity": "有効期間: {{validity}}",
+        "usageSummary": "{{usedCount}}回使用 · 残り{{balance}}"
+      },
+      "featured": "おすすめ",
+      "price": {
+        "amountInMmk": "{{amount}} MMK",
+        "savingsInMmk": "{{amount}} MMKお得"
+      },
+      "gallery": {
+        "imageView": "{{name}}の画像{{index}}"
+      },
+      "page": {
+        "invalidProduct": "商品が無効です。",
+        "notFound": "商品が見つかりません。",
+        "browseProducts": "商品を見る",
+        "goBack": "戻る"
+      },
+      "stock": {
+        "outOfStock": "在庫切れ",
+        "lowStock": "残りわずか（あと{{count}}個）",
+        "inStockStatus": "在庫あり（{{count}}個）",
+        "quantityInStock": "在庫 {{count}}個"
+      },
+      "product": {
+        "sku": "商品番号: {{sku}}",
+        "soldBy": "{{shopName}}が販売"
+      },
+      "reviews": {
+        "countLabel_other": "（{{count}}件のレビュー）",
+        "loading": "レビューを読み込み中...",
+        "loadError": "レビューを読み込めませんでした。",
+        "empty": "レビューはまだありません。",
+        "pending": "審査中",
+        "verified": "確認済み",
+        "reportLabel": "このレビューを報告",
+        "imageAlt": "レビュー画像{{index}}",
+        "loadMore": "レビューをさらに表示"
+      },
+      "actions": {
+        "addedToCartToast": "カートに追加しました",
+        "addedToWishlistToast": "お気に入りに追加しました",
+        "addingToCart": "追加中...",
+        "addToCart": "カートに追加",
+        "addToWishlistLabel": "お気に入りに追加",
+        "addedToWishlist": "お気に入りに追加済み",
+        "addToWishlist": "お気に入りに追加",
+        "ok": "OK",
+        "submitting": "送信中..."
+      },
+      "cart": {
+        "alreadyInCartTitle": "カートに追加済み",
+        "alreadyInCartDescription": "この商品はすでにカートに入っています。"
+      },
+      "wishlist": {
+        "alreadyInWishlistTitle": "お気に入りに追加済み",
+        "alreadyInWishlistDescription": "この商品はすでにお気に入りに登録されています。"
+      },
+      "tabs": {
+        "description": "商品説明",
+        "ingredients": "成分",
+        "reviews_other": "レビュー（{{count}}件）",
+        "noDescription": "商品説明はありません。",
+        "noIngredients": "成分情報はありません。"
+      },
+      "rating": {
+        "label": "5段階中{{rating}}の評価",
+        "rateStar_other": "{{count}}つ星で評価"
+      },
+      "reviewForm": {
+        "signInRequired": "レビューを書くにはログインしてください。",
+        "buyerOnly": "購入者のみレビューを投稿できます。",
+        "checkingPurchase": "購入を確認しています...少々お待ちください。",
+        "verifyPurchaseError": "購入を確認できませんでした。更新してもう一度お試しください。",
+        "alreadyReviewed": "この商品はすでにレビュー済みです。",
+        "purchaseRequired": "購入して受け取った商品のみレビューできます。",
+        "ratingRequired": "評価を選択してください。",
+        "reviewRequired": "レビューを入力してください。",
+        "signInPrompt": "レビューを書くには<signin>ログイン</signin>してください。",
+        "title": "レビューを書く",
+        "titlePlaceholder": "タイトル（任意）",
+        "bodyPlaceholder": "ご感想をお聞かせください...",
+        "submit": "レビューを送信",
+        "submitted": "レビューを送信しました。承認をお待ちください。",
+        "submitError": "レビューを送信できませんでした。"
+      },
+      "report": {
+        "title": "レビューを報告",
+        "description": "報告する理由をお知らせください。報告内容はモデレーションチームが確認します。",
+        "reasonSpam": "スパム",
+        "reasonInappropriate": "不適切な内容",
+        "reasonFake": "偽のレビュー",
+        "reasonOther": "その他",
+        "detailsPlaceholder": "詳細を入力してください...（任意）",
+        "submit": "報告を送信",
+        "submitted": "報告を送信しました",
+        "alreadyReported": "このレビューはすでに報告されています",
+        "rateLimited": "リクエストが多すぎます。少し待ってからもう一度お試しください。",
+        "submitError": "報告を送信できませんでした。"
+      },
+      "ads": {
+        "merchantPartner": "販売店パートナー"
+      },
+      "similar": {
+        "title": "関連商品"
+      }
+    },
+    "search": {
+      "placeholder": "商品名・成分・肌悩みで検索...",
+      "filters": "フィルター",
+      "categoryTitle": "カテゴリー",
+      "all": "すべて",
+      "allCategories": "すべてのカテゴリー",
+      "viewMore": "もっと見る",
+      "viewLess": "表示を減らす",
+      "skinTypeTitle": "肌質",
+      "skinTypeOptions": {
+        "all": "すべて",
+        "dry": "乾燥肌",
+        "oily": "脂性肌",
+        "combination": "混合肌",
+        "sensitive": "敏感肌",
+        "normal": "普通肌"
+      },
+      "priceRangeTitle": "価格帯",
+      "minPlaceholder": "最小",
+      "maxPlaceholder": "最大",
+      "minChip": "最小: Ks {{amount}}",
+      "maxChip": "最大: Ks {{amount}}",
+      "ratingTitle": "評価",
+      "ratingOptions": {
+        "fourFivePlus": "4.5+ 星",
+        "fourPlus": "4.0+ 星",
+        "threeFivePlus": "3.5+ 星",
+        "threePlus": "3.0+ 星"
+      },
+      "ratingChip": "{{rating}}+ 星",
+      "ratingSummary": "5つ星中{{rating}}・{{count}}件のレビュー",
+      "removeChipAria": "{{label}}を削除",
+      "clearAll": "すべてクリア",
+      "sortBy": "並べ替え",
+      "sortOptions": {
+        "newest": "新着順",
+        "priceLowToHigh": "価格の安い順",
+        "priceHighToLow": "価格の高い順",
+        "highestRated": "評価の高い順"
+      },
+      "viewMode": "表示モード",
+      "gridView": "グリッド表示",
+      "listView": "リスト表示",
+      "noImage": "画像なし",
+      "sale": "セール",
+      "outOfStockBadge": "在庫切れ",
+      "removeFromWishlist": "お気に入りから削除",
+      "addToCartAria": "{{name}}をカートに追加",
+      "tierPromotion": "{{tier}}プロモーション",
+      "imageUnavailable": "{{title}}の画像は利用できません",
+      "guestWishlist": "お気に入りを利用するにはログインしてください",
+      "guestCart": "カートに商品を追加するにはログインしてください",
+      "alreadyInWishlist": "お気に入りに登録済みです",
+      "toastError": "問題が発生しました。もう一度お試しください。",
+      "errorTitle": "問題が発生しました",
+      "errorDescription": "商品を読み込めませんでした。もう一度お試しください。",
+      "noProducts": "商品が見つかりません",
+      "noProductsHint": "検索条件やフィルターを調整してください。",
+      "showProducts": "{{count}}件の商品を表示",
+      "loginRequired": "ログインが必要です"
+    }
+  },
+  "profile": {
+    "title": "マイプロフィール",
+    "description": "アカウント設定と環境設定を管理します",
+    "tabs": {
+      "info": "プロフィール情報",
+      "edit": "プロフィール編集",
+      "password": "パスワード変更"
+    },
+    "info": {
+      "title": "プロフィール情報",
+      "description": "アカウント情報とお客様情報",
+      "contactInfo": "連絡先情報",
+      "email": "メールアドレス",
+      "accountDetails": "アカウント情報",
+      "memberSince": "登録日",
+      "emailVerification": "メール認証",
+      "verified": "認証済み",
+      "notVerified": "未認証",
+      "licenseStatus": "ライセンス状態",
+      "licenseApproved": "承認済み",
+      "licenseRejected": "却下済み",
+      "licensePending": "審査中",
+      "status": {
+        "active": "有効",
+        "inactive": "無効"
+      }
+    },
+    "form": {
+      "title": "プロフィール編集",
+      "description": "お客様情報を更新してください",
+      "name": "氏名",
+      "namePlaceholder": "お名前を入力",
+      "nameDescription": "アカウントに表示されるお名前です",
+      "save": "変更を保存",
+      "saving": "保存中...",
+      "success": "プロフィールを更新しました",
+      "error": "プロフィールの更新に失敗しました"
+    },
+    "password": {
+      "title": "パスワード変更",
+      "description": "アカウントを安全に保つため、パスワードを更新してください",
+      "current": "現在のパスワード",
+      "currentPlaceholder": "現在のパスワードを入力",
+      "new": "新しいパスワード",
+      "newPlaceholder": "新しいパスワードを入力",
+      "newDescription": "8文字以上で、英大文字・小文字・数字・記号をそれぞれ1つ以上含めてください",
+      "confirm": "新しいパスワード（確認）",
+      "confirmPlaceholder": "新しいパスワードを再入力",
+      "save": "パスワードを変更",
+      "saving": "変更中...",
+      "success": "パスワードを変更しました",
+      "error": "パスワードの変更に失敗しました"
+    },
+    "error": {
+      "title": "エラー",
+      "loadFailed": "プロフィール情報を読み込めませんでした。もう一度お試しください。"
     }
   },
   "footer": {
@@ -254,6 +762,157 @@
         "expiresAt": "有効期限",
         "isActive": "有効"
       }
+    },
+    "orders": {
+      "title": "注文インサイト",
+      "completed": "完了した注文",
+      "scopeNote": "自分の店舗の注文のみ表示しています。",
+      "today": "今日の注文",
+      "thisMonth": "今月の注文",
+      "salesSummary": "販売サマリ",
+      "viewCompletedOrders": "完了した注文を表示",
+      "empty": "現在のフィルターに一致する注文はありません。",
+      "emptyClearFilters": "フィルターをクリア",
+      "copyEmail": "顧客のメールアドレスをコピー",
+      "customer": "お客様",
+      "customerName": "名前",
+      "customerEmail": "メールアドレス",
+      "customerPhone": "電話番号",
+      "advanceTo": "{{label}}に更新",
+      "confirmAdvance": "注文を更新しますか？",
+      "confirmAdvanceDescription": "ステータスが{{label}}に変更され、お客様に通知されます。",
+      "updateSuccess": "注文を{{status}}に更新しました。",
+      "updateFailed": "注文ステータスを更新できませんでした。もう一度お試しください。",
+      "error": {
+        "forbidden": "アクセスが拒否されました",
+        "notApproved": "出品者アカウントが承認されていません",
+        "tooManyRequests": "リクエストが多すぎます。しばらくしてから再度お試しください。"
+      },
+      "filter": {
+        "orderNumber": "注文番号 #",
+        "orderNumberPlaceholder": "注文番号を検索"
+      },
+      "exportTitle": "注文をエクスポート",
+      "exportDescription": "現在のフィルターに一致する注文がCSVに含まれます。",
+      "exportCsv": "CSVをエクスポート",
+      "exporting": "エクスポート中...",
+      "exportError": "注文をエクスポートできませんでした。もう一度お試しください。",
+      "exportScope": "エクスポート範囲",
+      "exportStatus": "ステータス",
+      "exportDateRange": "期間",
+      "exportAllDates": "すべての日付",
+      "exportEmptyCsv": "一致する注文がありません。CSVには見出し行のみが含まれます。",
+      "exportCommissionUnavailable": "コミッション率・コミッション・受取額の列は、自身のレートを報告する注文に含まれます（コミッション率は利用不可）。レートを報告する注文が1件もない場合は、列ごと除外されます。その他の行では該当セルを空欄にします。",
+      "exportResult": "結果: {{status}}の注文（この期間内）",
+      "table": {
+        "commissionRate": "コミッション率"
+      },
+      "detail": {
+        "title": "注文詳細",
+        "backToOrders": "注文インサイトに戻る",
+        "loading": "注文を読み込み中",
+        "copyOrderNumber": "注文番号をコピー",
+        "viewInvoice": "請求書を表示",
+        "deliveredOn": "{{date}} {{time}} に完了しました。",
+        "status": {
+          "placed": {
+            "title": "確認待ち",
+            "message": "この注文を確定して処理を開始してください。"
+          },
+          "confirmed": {
+            "title": "注文を確定しました",
+            "message": "商品を準備して配送業者に引き渡してください。"
+          },
+          "packed": {
+            "title": "注文を梱包しました",
+            "message": "荷物を配送業者に引き渡して発送済みにしてください。"
+          },
+          "shipped": {
+            "title": "注文を発送しました",
+            "message": "次のステップは配送中です。"
+          },
+          "out_for_delivery": {
+            "title": "配送中",
+            "message": "配送業者が本日この注文を配達しています。"
+          },
+          "delivered": {
+            "title": "配達完了",
+            "message": "この注文は完了しました。"
+          },
+          "unknown": {
+            "message": "この注文に対して利用可能な操作はありません。"
+          }
+        },
+        "notFound": {
+          "description": "この注文はあなたの店舗のものではないか、見つかりませんでした。"
+        }
+      },
+      "invoice": {
+        "title": "請求書",
+        "heading": "請求書",
+        "description": "この請求書を確認し、印刷するかPDFとして保存してください。",
+        "orderNumber": "注文番号",
+        "orderDate": "注文日",
+        "issueDate": "請求書発行日",
+        "generatedOn": "生成日",
+        "orderStatus": "注文ステータス",
+        "paymentMethod": "支払い方法",
+        "paymentStatus": "支払いステータス",
+        "paymentStatusPaid": "支払済",
+        "paymentStatusPending": "保留中",
+        "paymentUnavailable": "利用できません",
+        "paymentPendingNotice": "支払いはまだ保留中です：この注文の入金はまだ行われていないため、この書類は領収書ではありません。",
+        "paymentReceivedNotice": "この注文の支払いは完了しています。",
+        "seller": "出品者",
+        "sellerFulfillmentNote": "ご自身の店舗が処理するマーケットプレイス注文",
+        "shop": "店舗",
+        "billedTo": "お客様",
+        "shippingAddress": "配送先住所",
+        "addressUnavailable": "この注文の配送先住所はありません。",
+        "itemsTitle": "注文商品",
+        "noItems": "この注文に商品はありません。",
+        "columnProduct": "商品",
+        "columnQuantity": "数量",
+        "columnUnitPrice": "単価",
+        "columnLineTotal": "明細合計",
+        "print": "印刷",
+        "printHint": "印刷とPDFダウンロードはどちらもブラウザの印刷ダイアログを開きます。コピーを保存するには、送信先に「PDFとして保存」を選択してください。",
+        "downloadPdf": "PDFをダウンロード",
+        "footer": "この請求書は、Cosmetics Finder の注文記録から生成されました。",
+        "popupBlocked": "この請求書を印刷または保存するには、ポップアップを許可してください。",
+        "close": "閉じる"
+      }
+    },
+    "revenue": {
+      "title": "売上サマリ",
+      "period": "期間",
+      "today": "今日",
+      "thisMonth": "今月",
+      "lastMonth": "先月",
+      "custom": "カスタム",
+      "sales": "売上",
+      "commission": "コミッション",
+      "net": "売上高",
+      "aov": "AOV",
+      "basis_one": "{{count}}件の注文に基づく",
+      "basis_other": "{{count}}件の注文に基づく",
+      "commissionAtRate": "コミッション率 {{rate}}",
+      "rateCurrent": "（現在レート）",
+      "rateNote": "コミッションは現在のプラットフォームレートで計算されています。過去レートの固定は未対応です。",
+      "apply": "適用",
+      "cancel": "キャンセル",
+      "customRangeTitle": "カスタム期間",
+      "customRangeSubtitle": "売上を計算する期間を選択してください。",
+      "startDate": "開始日",
+      "endDate": "終了日",
+      "noDatesSelected": "日付が選択されていません",
+      "pickStartDate": "次に開始日を選択してください",
+      "pickEndDate": "次に終了日を選択してください",
+      "selectRangeError": "開始日と終了日を選択してください。",
+      "startBeforeEndError": "開始日は終了日より前にしてください。",
+      "invalidPeriod": "開始日と終了日を選択",
+      "daysCount_one": "{{count}}日",
+      "daysCount_other": "{{count}}日"
     }
   },
   "roles": {
@@ -367,5 +1026,177 @@
     "deleting": "削除中...",
     "deleteSuccess": "{{count}}件のレコードを削除しました",
     "deleteFailed": "削除に失敗しました。もう一度お試しください。"
+  },
+  "banner": {
+    "deactivatedTitle": "アカウント停止中",
+    "deactivatedMessage": "アカウントが一時停止されています。管理者がアカウントを再有効化するまで、一部の機能を利用できない場合があります。",
+    "dismiss": "バナーを閉じる"
+  },
+  "admin": {
+    "orders": {
+      "title": "すべての注文",
+      "subtitle": "すべての店舗・出品者のプラットフォーム注文を表示します。",
+      "error": {
+        "loadFailed": "注文を読み込めませんでした",
+        "tryAgain": "もう一度お試しください。"
+      },
+      "empty": "現在のフィルターに一致する注文はありません。",
+      "clearFilters": "フィルターをクリア",
+      "matchCount": "{{total}}件の注文が現在のフィルターに一致しています。",
+      "copyOrderNumber": "注文番号をコピー",
+      "filter": {
+        "shop": "店舗 / 出品者",
+        "shopPlaceholder": "店舗を検索",
+        "noShops": "該当する店舗がありません。名前で絞り込むには入力を続けてください。"
+      },
+      "kpi": {
+        "totalOrders": "総注文件数",
+        "orderValue": "注文金額",
+        "orderValueHint": "一致した注文の合計金額",
+        "inProgress": "処理中",
+        "inProgressHint": "まだ配送されていません",
+        "delivered": "配送済み",
+        "deliveredHint": "完了した注文",
+        "matchingFilters": "現在のフィルターに一致",
+        "aggregateUnavailable": "この結果セットには集計値がありません。"
+      },
+      "table": {
+        "buyer": "購入者",
+        "shopMerchant": "店舗 / 出品者"
+      },
+      "detail": {
+        "title": "注文詳細",
+        "orderHeading": "注文 {{orderNumber}}",
+        "placedAt": "注文日時 {{date}}",
+        "printPdf": "印刷 / PDFとして保存",
+        "loadFailedTitle": "注文を読み込めませんでした",
+        "notFoundDescription": "この注文は見つかりませんでした。",
+        "backToAllOrders": "すべての注文に戻る",
+        "printPopupBlocked": "この注文を印刷またはPDFとして保存するには、このサイトのポップアップを許可してください。",
+        "deliveredTitle": "注文の配送完了",
+        "deliveredOn": "{{date}} に完了しました。",
+        "trackingErrorTitle": "配送状況を読み込めませんでした",
+        "historyUnavailable": "この注文の詳細な履歴は利用できません。",
+        "summaryLabel": "注文サマリ",
+        "merchantContact": "出品者連絡先: {{name}}",
+        "merchantId": "出品者ID: {{id}}",
+        "method": "支払い方法",
+        "orderTotal": "注文合計",
+        "itemsCount_one": "({{count}}点)",
+        "itemsCount_other": "({{count}}点)",
+        "quantityUnitPrice": "数量: {{quantity}} · 単価: {{unitPrice}}",
+        "lineTotal": "明細合計",
+        "noAddress": "配送先住所がありません。"
+      }
+    }
+  },
+  "orders": {
+    "track": "追跡",
+    "empty": {
+      "cta": "商品を見る"
+    },
+    "filter": {
+      "status": "ステータス",
+      "shop": "店舗",
+      "shopPlaceholder": "店舗を検索",
+      "dateRange": {
+        "label": "日付範囲",
+        "orderDate": "注文日",
+        "from": "開始",
+        "to": "終了",
+        "invalid": "終了日は開始日以降にしてください。"
+      }
+    },
+    "table": {
+      "orderId": "注文番号 #",
+      "customer": "お客様",
+      "shop": "店舗",
+      "date": "日付",
+      "items": "商品",
+      "item": "商品",
+      "status": "ステータス",
+      "payment": "支払い",
+      "total": "合計",
+      "actions": "操作",
+      "track": "追跡"
+    },
+    "detail": {
+      "loading": "注文を読み込み中",
+      "notFound": {
+        "title": "注文が見つかりません",
+        "description": "お探しの注文は見つかりませんでした。古いリンクから開かれた可能性があります。"
+      },
+      "error": {
+        "title": "エラーが発生しました",
+        "description": "この注文を読み込めませんでした。もう一度お試しください。"
+      },
+      "shippingTitle": "配送先住所",
+      "itemsTitle": "注文商品",
+      "noItems": "この注文に商品はありません。",
+      "notesTitle": "注文メモ",
+      "paymentTitle": "支払い",
+      "subtotal": "小計",
+      "discount": "割引",
+      "discountWithCoupon": "割引（{{code}}）",
+      "total": "合計",
+      "currentStep": "現在",
+      "nextStep": "次へ",
+      "deliveryProgress": "配送状況",
+      "progressStepCount": "{{total}}段階中{{current}}段階",
+      "backToOrders": "私の注文に戻る",
+      "copyAddress": "配送先住所をコピー",
+      "shopName": "店舗",
+      "noAddress": "この注文の配送先住所はありません。",
+      "youReceive": "受取額",
+      "commissionLabel": "コミッション ({{rate}})",
+      "itemsCountOne": "1点",
+      "title": "注文詳細",
+      "orderHeading": "注文 {{orderNumber}}",
+      "placedAt": "注文日時 {{date}}, {{time}}",
+      "summaryTitle": "注文サマリ",
+      "quantity": "数量: {{count}}",
+      "unitPrice": "単価: {{amount}}",
+      "lineTotal": "明細合計",
+      "method": "支払い方法",
+      "youSaved": "{{amount}} お得になりました",
+      "buyAgain": "もう一度購入",
+      "downloadInvoice": "請求書をダウンロード",
+      "itemsCount_other": "({{count}}点)",
+      "status": {
+        "placed": {
+          "title": "ご注文を受け付けました",
+          "message": "販売者の確認をお待ちください。"
+        },
+        "confirmed": {
+          "title": "ご注文が確定しました",
+          "message": "販売者が注文を承認し、準備を進めています。"
+        },
+        "packed": {
+          "title": "ご注文を梱包しました",
+          "message": "商品を梱包し、配送業者の集荷を待っています。"
+        },
+        "shipped": {
+          "title": "ご注文を発送しました",
+          "message": "輸送中です。配送業者で荷物を追跡できます。"
+        },
+        "out_for_delivery": {
+          "title": "本日配送中です",
+          "message": "ご注文は本日到着予定です。"
+        },
+        "delivered": {
+          "title": "ご注文が配達されました",
+          "message": "お買い上げありがとうございます。"
+        }
+      },
+      "paymentMethods": {
+        "cod": "代金引換",
+        "bank_transfer": "銀行振込",
+        "card": "クレジットカード",
+        "cash_on_delivery": "代金引換",
+        "credit_card": "クレジットカード",
+        "e_wallet": "電子ウォレット"
+      },
+      "itemsCount_one": "({{count}}点)"
+    }
   }
 }

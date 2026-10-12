@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, ChevronLeft, ChevronRight, ImageIcon, Megaphone } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { ArrowRight, ChevronLeft, ChevronRight, ImageIcon, Megaphone,Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getImageUrl } from '@/lib/image-url'
@@ -71,6 +72,7 @@ function usePrefersReducedMotion() {
 }
 
 export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { data, isPending, isError } = useSponsoredAds(SEARCH_PAGE_PLACEMENT)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -171,8 +173,8 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
       tabIndex={0}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      aria-roledescription="carousel"
-      aria-label="Sponsored advertisements"
+      aria-roledescription={t('buyer.checkout.sponsoredAds.carouselRoleDescription', 'carousel')}
+      aria-label={t('buyer.checkout.sponsoredAds.ariaLabel', 'Sponsored advertisements')}
     >
       <CardContent
         className="relative min-h-[15rem] bg-gradient-to-r from-[#78349a] via-[#5c5a9f] to-[#562779] px-6 py-6 text-white transition-all duration-700 sm:min-h-[15.5rem] sm:px-16 sm:py-6"
@@ -209,7 +211,7 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
                 }}
                 className="h-12 gap-4 rounded-md bg-[#f8f7f5] px-8 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-white sm:text-base"
               >
-                Learn more
+                <span>{t('buyer.checkout.sponsoredAds.learnMore', 'Learn more')}</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -231,11 +233,16 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
               ) : (
                 <div
                   role="img"
-                  aria-label={`${title} image unavailable`}
-                  className="flex h-full w-full items-center justify-center text-purple-300/70"
+                  aria-label={t('buyer.search.imageUnavailable', `${ad.title} image unavailable`, { title: ad.title })}
+                  className="flex h-full w-full items-center justify-center text-white/50"
                 >
                   <ImageIcon className="h-6 w-6" />
                 </div>
+              )}
+              {ad.sku && (
+                <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  {t('buyer.products.product.sku', `SKU: ${ad.sku}`, { sku: ad.sku })}
+                </span>
               )}
             </div>
           </div>
@@ -247,7 +254,7 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
               <button
                 key={item.id}
                 type="button"
-                aria-label={`Go to advertisement ${idx + 1}`}
+                aria-label={t('buyer.checkout.sponsoredAds.goToAdvertisement', `Go to advertisement ${idx + 1}`, { index: idx + 1 })}
                 aria-current={idx === displayIndex ? 'true' : undefined}
                 onClick={(event) => {
                   event.stopPropagation()
@@ -264,24 +271,20 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
             <Button
               variant="ghost"
               size="icon"
-              onClick={(event) => {
-                event.stopPropagation()
-                prev()
-              }}
-              aria-label="Previous advertisement"
-              className="absolute left-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white"
+              onClick={(event) => { event.stopPropagation(); prev() }}
+              disabled={ads.length <= 1}
+              aria-label={t('buyer.checkout.sponsoredAds.previousAdvertisement', 'Previous advertisement')}
+              className="absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/35 p-0 text-white transition-colors hover:bg-black/60 hover:text-white"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              onClick={(event) => {
-                event.stopPropagation()
-                next()
-              }}
-              aria-label="Next advertisement"
-              className="absolute right-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white"
+              onClick={(event) => { event.stopPropagation(); next() }}
+              disabled={ads.length <= 1}
+              aria-label={t('buyer.checkout.sponsoredAds.nextAdvertisement', 'Next advertisement')}
+              className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/35 p-0 text-white transition-colors hover:bg-black/60 hover:text-white"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>

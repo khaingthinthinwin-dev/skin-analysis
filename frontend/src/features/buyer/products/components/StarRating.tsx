@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface StarRatingProps {
   rating: number;
@@ -14,11 +15,17 @@ export function StarRating({
   size = 'md',
   onRate,
 }: StarRatingProps) {
+  const { t } = useTranslation();
   const displayRating = Math.max(0, Math.min(5, Number(rating) || 0));
   const starSize = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
 
   return (
-    <div className="flex items-center gap-1" aria-label={`Rated ${displayRating} out of 5`}>
+    <div
+      className="flex items-center gap-1"
+      aria-label={t('buyer.products.rating.label', 'Rated {{rating}} out of 5', {
+        rating: displayRating,
+      })}
+    >
       {Array.from({ length: 5 }).map((_, index) => {
         const value = index + 1;
         const fill = Math.min(Math.max(displayRating - index, 0), 1);

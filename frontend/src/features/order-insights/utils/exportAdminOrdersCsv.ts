@@ -1,4 +1,4 @@
-import type { AdminOrderListRowDto } from '../types/adminOrderInsights.types';
+import type { AdminOrderDetailDto, AdminOrderListRowDto } from '../types/adminOrderInsights.types';
 import type { AdminOrderFilterFormData } from '../schemas/orderFilters.schema';
 
 function csvCell(value: string): string {
@@ -19,35 +19,51 @@ export function buildAdminOrdersExportFilename(
   return `admin-orders-${filters.status}-${filters.paymentStatus ?? 'all'}-${from}-to-${to}-${today}.csv`;
 }
 
-export function buildAdminOrdersCsv(rows: AdminOrderListRowDto[]): string {
+export interface AdminOrderExportRow {
+  row: AdminOrderListRowDto;
+  detail?: AdminOrderDetailDto | null;
+}
+
+export function buildAdminOrdersCsv(rows: AdminOrderListRowDto[] | AdminOrderExportRow[]): string {
   const columns = [
     'Order number',
     'Order date',
     'Shop / Merchant',
+    'Merchant ID',
     'Buyer',
     'Items',
     'Total amount',
+    'Payment method',
     'Payment status',
     'Order status',
   ];
   const lines = [
     columns.map(csvCell).join(','),
-    ...rows.map((row) => [
-      `#${row.id.slice(0, 8).toUpperCase()}`,
-      new Date(row.createdAt).toISOString().slice(0, 10),
-      row.shopName,
-      row.customerName,
-      String(row.itemCount),
-      row.totalAmount,
-      label(row.paymentStatus),
-      label(row.status),
-    ].map(csvCell).join(',')),
+    ...rows.map((entry) => {
+      const row = 'row' in entry ? entry.row : entry;
+      const detail = 'row' in entry ? entry.detail : undefined;
+      const items = detail
+        ? detail.items.map((item) => `${item.productName} (x${item.quantity})`).join(', ')
+        : String(row.itemCount);
+      return [
+        `#${row.id.slice(0, 8).toUpperCase()}`,
+        new Date(row.createdAt).toISOString().slice(0, 10),
+        row.shopName,
+        detail?.shop.merchantId ?? '',
+        row.customerName,
+        items,
+        row.totalAmount,
+        detail ? label(detail.paymentMethod) : '',
+        label(row.paymentStatus),
+        label(row.status),
+      ].map(csvCell).join(',');
+    }),
   ];
   return lines.join('\r\n');
 }
 
 export function exportAdminOrdersCsv(
-  rows: AdminOrderListRowDto[],
+  rows: AdminOrderListRowDto[] | AdminOrderExportRow[],
   filename: string,
 ): void {
   const url = URL.createObjectURL(new Blob([`\uFEFF${buildAdminOrdersCsv(rows)}`], {

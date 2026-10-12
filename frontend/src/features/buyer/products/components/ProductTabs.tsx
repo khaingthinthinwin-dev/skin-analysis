@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductDetail } from '../services/product.service';
 import { ProductReviews } from './ProductReviews';
 import { ReviewForm } from './ReviewForm';
+import { useTranslation } from 'react-i18next';
 
 interface ProductTabsProps {
   product: ProductDetail;
@@ -16,6 +17,7 @@ export function ProductTabs({
   showReviewForm = true,
   showProductDetails = true,
 }: ProductTabsProps) {
+  const { t } = useTranslation();
   const location = useLocation();
 
   // A #reviews deep link jumps straight to the reviews tab and scrolls to it
@@ -37,12 +39,18 @@ export function ProductTabs({
       <TabsList className="w-full justify-start border-b bg-transparent">
         {showProductDetails && (
           <>
-            <TabsTrigger value="description">Description</TabsTrigger>
-            <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
+            <TabsTrigger value="description">          
+              {t('buyer.products.tabs.description', 'Description')}
+            </TabsTrigger>
+            <TabsTrigger value="ingredients">
+              {t('buyer.products.tabs.ingredients', 'Ingredients')}
+            </TabsTrigger>
           </>
         )}
         <TabsTrigger value="reviews" className="flex items-center gap-2">
-          Reviews ({product.reviewCount})
+          {t('buyer.products.tabs.reviews', 'Reviews ({{count}})', {
+            count: product.reviewCount,
+          })}
         </TabsTrigger>
       </TabsList>
 
@@ -55,7 +63,9 @@ export function ProductTabs({
                 dangerouslySetInnerHTML={{ __html: product.description }}
               />
             ) : (
-              <p className="text-muted-foreground">No description available.</p>
+              <p className="text-muted-foreground">
+               {t('buyer.products.tabs.noDescription', 'No description available.')}
+              </p>
             )}
           </TabsContent>
 
@@ -67,7 +77,9 @@ export function ProductTabs({
                 ))}
               </ul>
             ) : (
-              <p className="text-muted-foreground">No ingredients listed.</p>
+              <p className="text-muted-foreground">
+               {t('buyer.products.tabs.noIngredients', 'No ingredients listed.')}
+              </p>
             )}
           </TabsContent>
         </>
