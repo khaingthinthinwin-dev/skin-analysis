@@ -131,8 +131,9 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
   const ad = ads[displayIndex]
   const sku = ad.sku?.trim() || undefined
   const product = sku ? adProducts?.[sku] : undefined
-  const title = product?.name || ad.title
-  const description = product?.description || product?.shortDescription || ad.content || ad.description
+  const title = ad.title || product?.name
+  const description = ad.content || ad.description || product?.description || product?.shortDescription
+  const announcementBadge = ad.announcement_message || ad.announcementMessage || 'SPONSORED'
   const badgeText = product?.merchant?.shopName || product?.category?.name || DEFAULT_TAG
   const imageCandidates = [product?.images?.[0], ad.imageUrl, SAMPLE_AD_IMAGE]
     .filter((source): source is string => Boolean(source))
@@ -158,7 +159,7 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
 
   return (
     <Card
-      className="relative cursor-pointer overflow-hidden rounded-[1.75rem] border-0 shadow-xl"
+      className="relative cursor-pointer overflow-hidden rounded-3xl border-0 shadow-xl"
       onClick={navigateToAd}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return
@@ -175,70 +176,66 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
       aria-label="Sponsored advertisements"
     >
       <CardContent
-        className="relative min-h-[15rem] bg-gradient-to-r from-[#78349a] via-[#5c5a9f] to-[#562779] px-6 py-6 text-white transition-all duration-700 sm:min-h-[15.5rem] sm:px-16 sm:py-6"
+        className="relative flex h-[250px] max-h-[260px] items-center justify-between overflow-hidden rounded-3xl bg-gradient-to-r from-[#8d4eb3] via-[#7268b3] to-[#5d2d7d] p-6 text-white transition-all duration-700"
         onFocusCapture={() => setIsFocused(true)}
         onBlurCapture={() => setIsFocused(false)}
       >
-        <div className="relative z-10 grid items-center gap-5 sm:grid-cols-12 sm:gap-5 lg:gap-6">
-          <div className="flex min-w-0 flex-col gap-3 sm:col-span-7 sm:gap-3.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white sm:text-xs">
-                <Megaphone className="h-3.5 w-3.5" /> {ad?.announcement_message || ad?.announcementMessage || "SPONSORED"}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500 px-3 py-1 text-[11px] font-semibold text-white shadow-sm sm:text-xs">
-                {badgeText}
-              </span>
-              </div>
-
-<h3 className="truncate text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl lg:text-[1.625rem]">
-              {title}
-            </h3>
-
-            {description && (
-              <p className="line-clamp-2 max-w-xl text-sm leading-relaxed text-white/80 sm:text-base">
-                {stripHtml(description)}
-              </p>
-            )}
-
-            <div className="flex flex-wrap items-center gap-2.5 pt-1 sm:gap-3">
-              <Button
-                size="lg"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  navigateToAd()
-                }}
-                className="h-12 gap-4 rounded-md bg-[#f8f7f5] px-8 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-white sm:text-base"
-              >
-                Learn more
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col pl-12">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+              <Megaphone className="h-3.5 w-3.5" /> {announcementBadge}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-500 px-3 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+              {badgeText}
+            </span>
           </div>
 
-          <div className="flex min-w-0 items-center justify-center sm:col-span-5 sm:justify-end">
-            <div className="aspect-[1.74] w-full max-w-[22rem] overflow-hidden rounded-2xl border-4 border-white/90 bg-[#fffaf5] shadow-2xl">
-              {displayImageUrl ? (
-                <img
-                  src={displayImageUrl}
-                  alt={title}
-                  className="h-full w-full object-cover"
-                  onError={() =>
-                    setFailedImages((prev) =>
-                      prev.includes(displayImageUrl) ? prev : [...prev, displayImageUrl],
-                    )
-                  }
-                />
-              ) : (
-                <div
-                  role="img"
-                  aria-label={`${title} image unavailable`}
-                  className="flex h-full w-full items-center justify-center text-purple-300/70"
-                >
-                  <ImageIcon className="h-6 w-6" />
-                </div>
-              )}
-            </div>
+          <h3 className="mb-1.5 truncate text-2xl font-bold leading-tight tracking-tight text-white">
+            {title}
+          </h3>
+
+          {description && (
+            <p className="mb-3 max-w-sm line-clamp-2 text-xs font-normal leading-relaxed text-purple-100/80">
+              {stripHtml(description)}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              size="lg"
+              onClick={(event) => {
+                event.stopPropagation()
+                navigateToAd()
+              }}
+              className="h-auto gap-1.5 rounded-lg bg-white px-3 py-1 text-[11px] font-semibold text-gray-900 shadow-sm transition-colors hover:bg-gray-100 lg:h-9 lg:px-5"
+            >
+              Learn more
+              <ArrowRight className="h-3 w-3" />
+            </Button>
           </div>
+        </div>
+
+        <div className="relative z-10 mr-12 h-[232px] w-fit max-w-[49%] overflow-hidden rounded-2xl bg-white">
+          {displayImageUrl ? (
+            <img
+              src={displayImageUrl}
+              alt={title}
+              className="block h-full w-auto max-w-full object-contain object-center"
+              onError={() =>
+                setFailedImages((prev) =>
+                  prev.includes(displayImageUrl) ? prev : [...prev, displayImageUrl],
+                )
+              }
+            />
+          ) : (
+            <div
+              role="img"
+              aria-label={`${title} image unavailable`}
+              className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100 text-purple-300/80"
+            >
+              <ImageIcon className="h-6 w-6" />
+            </div>
+          )}
         </div>
 
         {ads.length > 1 && (
@@ -269,7 +266,7 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
                 prev()
               }}
               aria-label="Previous advertisement"
-              className="absolute left-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white"
+              className="absolute left-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -281,7 +278,7 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
                 next()
               }}
               aria-label="Next advertisement"
-              className="absolute right-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/25 text-white shadow-sm transition-colors hover:bg-black/40 hover:text-white"
+              className="absolute right-3 top-1/2 z-20 h-9 w-9 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
