@@ -46,6 +46,7 @@ import {
   ERROR_CODE,
 } from './types/skin-analysis.enums';
 import { readImageMetadata } from './utils/image-metadata.util';
+import { NotificationsService } from '../../shared/notifications/notifications.service';
 
 export interface UploadedFile {
   buffer: Buffer;
@@ -156,6 +157,7 @@ export class SkinAnalysisService {
     private readonly aiGateway: AiGatewayService,
     private readonly storage: SkinScanStorageService,
     private readonly pdfReport: PdfReportService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ─── Upload ─────────────────────────────────────────────────────────────
@@ -817,6 +819,16 @@ export class SkinAnalysisService {
         JSON.stringify(dto),
         RESULT_CACHE_TTL,
       );
+
+      await this.notifications.create({
+        userId,
+        type: 'analysis',
+        title: 'Analysis completed 🔔',
+        message:
+          'Your skin analysis is ready. Check your results and personalized recommendations.',
+        entityType: 'skin_analysis',
+        entityId: analysisId,
+      });
     }
 
     await this.invalidateHistorySummaryCache(userId);

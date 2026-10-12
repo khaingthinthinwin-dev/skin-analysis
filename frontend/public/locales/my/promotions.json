@@ -52,6 +52,8 @@
     "fixed": "Amaun Tetap (MMK)",
     "discountValue": "Nilai Diskaun",
     "discountValuePlaceholder": "cth: 10",
+    "discountValuePercentagePlaceholder": "cth: 10 (10%)",
+    "discountValueFixedPlaceholder": "cth: 1000 (1,000 MMK)",
     "minOrderAmount": "Jumlah Pesanan Minimum (MMK)",
     "minOrderAmountPlaceholder": "cth: 5000",
     "minOrderAmountHelper": "Kosongkan untuk tiada minimum",

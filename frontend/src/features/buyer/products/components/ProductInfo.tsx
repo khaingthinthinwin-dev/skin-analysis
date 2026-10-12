@@ -29,6 +29,10 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
   const discount = product.promotions[0];
   const stock = getStockStatus(product);
 
+  const showReviews =
+    onShowReviews ??
+    (() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }));
+
   return (
     <div className="space-y-4">
       {/* [C1] Product Name */}
@@ -39,18 +43,21 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
         )}
       </div>
 
-      {/* [C2] Rating Summary */}
-      <div className="flex items-center gap-2">
+      {/* [C2] Rating Summary — the whole row jumps to the reviews section */}
+      <button
+        type="button"
+        onClick={showReviews}
+        aria-label={`Go to reviews. Rated ${Number(product.avgRating).toFixed(
+          1,
+        )} out of 5 from ${product.reviewCount} reviews`}
+        className="group flex cursor-pointer items-center gap-2 text-left transition-opacity hover:opacity-80"
+      >
         <StarRating rating={product.avgRating} />
         <span className="text-sm font-medium">{Number(product.avgRating).toFixed(1)}</span>
-        <button
-          type="button"
-          onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })}
-          className="text-sm text-blue-600 hover:underline"
-        >
+        <span className="text-sm text-blue-600 group-hover:underline">
           ({product.reviewCount} reviews)
-        </button>
-      </div>
+        </span>
+      </button>
 
       {/* [C3] Price */}
       <div className="flex items-center gap-3">

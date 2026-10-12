@@ -12,7 +12,7 @@ import {
   Flag,
   MessageSquareText,
 } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -104,6 +104,8 @@ const MERCHANT_NOTIFICATION_TYPES = new Set([
   'NEW_ADS_PACKAGE',
   'ADS_PACKAGE_UPDATED',
   'ORDER_PLACED',
+  'PRODUCT_DEACTIVATED',
+  'PRODUCT_REACTIVATED',
 ])
 
 const ORDER_NOTIFICATION_TYPES = new Set([
@@ -138,6 +140,21 @@ const ACCOUNT_DEACTIVATED_TYPES = new Set([
   'ACCOUNT_DEACTIVATED',
   'USER_DEACTIVATED',
 ])
+
+const ACCOUNT_ACTIVATED_TYPES = new Set([
+  'ACCOUNT_ACTIVATED',
+  'USER_ACTIVATED',
+])
+
+function isAccountActivatedNotification(item: NotificationItem): boolean {
+  const type = normalizeNotificationType(item.type)
+  const text = `${item.title || ''} ${item.message || ''}`.toLowerCase()
+  return (
+    ACCOUNT_ACTIVATED_TYPES.has(type) ||
+    text.includes('account activated') ||
+    text.includes('your account has been activated')
+  )
+}
 
 function isAccountDeactivatedNotification(item: NotificationItem): boolean {
   const type = normalizeNotificationType(item.type)
@@ -234,6 +251,16 @@ function orderActionHint(item: NotificationItem): string | null {
     : null
 }
 
+// Order Insight notifications travel between the merchant and the buyer
+// (ORDER_PLACED → merchant; ORDER_CONFIRMED / ORDER_STATUS_UPDATED → buyer,
+// plus seeded `order` items). Once the recipient has read one, it leaves the
+// list entirely instead of lingering as a "read" card.
+function isReadOrderInsightNotification(item: NotificationItem): boolean {
+  if (!item.isRead) return false
+  const type = normalizeNotificationType(item.type)
+  return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
+}
+
 // Review notifications deep-link straight to the queue entry they are about so
 // the admin does not have to hunt for it. `entityId` is the review id for a
 // REVIEW_CREATED notification and the report id for a REVIEW_REPORTED one
@@ -247,8 +274,18 @@ function reviewManagementPath(item: NotificationItem): string {
   return `/admin/reviews?tab=${tab}${highlight}`
 }
 
+function productManagementPath(item: NotificationItem): string {
+  const highlight = item.entityId
+    ? `?highlightProductId=${encodeURIComponent(item.entityId)}`
+    : ''
+  return `/merchant/products${highlight}`
+}
+
 function iconForType(rawType: string, title?: string, message?: string) {
   const type = (rawType || '').toUpperCase()
+  if (ACCOUNT_ACTIVATED_TYPES.has(type) || type.includes('ACCOUNT_ACTIVATED') || type.includes('USER_ACTIVATED')) {
+    return { Icon: BadgeCheck, color: 'text-emerald-500' }
+  }
   if (ACCOUNT_DEACTIVATED_TYPES.has(type) || type.includes('ACCOUNT_DEACTIVATED') || type.includes('USER_DEACTIVATED')) {
     return { Icon: BadgeX, color: 'text-destructive' }
   }
@@ -286,6 +323,9 @@ function iconForType(rawType: string, title?: string, message?: string) {
     }
   if (type === 'PROMO' || type.includes('PROMO')) {
     return { Icon: Tag, color: 'text-purple-600' }
+  }
+  if (type === 'SKIN_CHECK_REMINDER') {
+    return { Icon: Sparkles, color: 'text-pink-500' }
   }
   if (type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) {
     return { Icon: Sparkles, color: 'text-pink-500' }
@@ -483,6 +523,11 @@ export default function Notifications() {
       setRejectedNotification(item)
       return
     }
+    if (isAccountActivatedNotification(item)) {
+      const profilePath = user?.role === 'buyer' ? '/buyer/profile' : '/merchant/profile'
+      navigate(profilePath)
+      return
+    }
     if (isAccountDeactivatedNotification(item)) {
       setDeactivatedNotification(item)
       return
@@ -506,6 +551,10 @@ export default function Notifications() {
       navigate(reviewManagementPath(item))
       return
     }
+    if (type === 'PRODUCT_DEACTIVATED' || type === 'PRODUCT_REACTIVATED') {
+      navigate(productManagementPath(item))
+      return
+    }
     if (MERCHANT_ADMIN_ACTION_TYPES.has(type)) {
       if (!isAdmin) return
       // Navigate to admin merchants page with merchantId to highlight the row
@@ -514,6 +563,21 @@ export default function Notifications() {
       } else {
         navigate('/admin/merchants')
       }
+      return
+    }
+
+     // Skin analysis notifications
+    if ((type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) && item.entityId && type !== 'SKIN_CHECK_REMINDER') {
+      navigate(`/buyer/skin-analysis/${item.entityId}`)
+      return
+    }
+    if (type === 'ANALYSIS' || type.includes('ANALYSIS') || type.includes('SKIN')) {
+      navigate('/buyer/skin-analysis')
+      return
+    }
+    // Skin check reminder - link to new analysis page
+    if (type === 'SKIN_CHECK_REMINDER') {
+      navigate('/buyer/skin-analysis/new')
       return
     }
     // Merchant/buyer routes - navigate based on user role

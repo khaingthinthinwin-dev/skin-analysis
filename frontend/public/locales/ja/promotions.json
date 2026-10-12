@@ -52,6 +52,8 @@
     "fixed": "固定金額（MMK）",
     "discountValue": "割引額",
     "discountValuePlaceholder": "例：10",
+    "discountValuePercentagePlaceholder": "例：10（10%）",
+    "discountValueFixedPlaceholder": "例：1000（1,000 MMK）",
     "minOrderAmount": "最低注文金額（MMK）",
     "minOrderAmountPlaceholder": "例：5000",
     "minOrderAmountHelper": "空欄で最低金額なし",

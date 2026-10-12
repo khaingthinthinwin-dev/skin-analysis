@@ -119,6 +119,7 @@ export const historyQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(10),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
+  skinType: z.enum(['Combination', 'Oily', 'Dry', 'Normal', 'Sensitive']).optional(),
 })
 
 export type HistoryQueryParams = z.infer<typeof historyQuerySchema>

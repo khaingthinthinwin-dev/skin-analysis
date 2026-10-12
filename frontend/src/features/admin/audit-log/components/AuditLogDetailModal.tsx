@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ScrollText, Clock, User, Mail, Shield, Tag, Monitor, Globe, Wifi } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,21 +12,22 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 import type { AuditLogDetail } from '../services/auditLog.service';
 import { formatMmt } from '../utils/datetime';
 import { parseUserAgent, type UaClientType } from '../utils/userAgent';
 
 const ROLE_BADGE: Record<string, string> = {
-  admin: 'bg-red-100 text-red-700 border-red-200',
-  merchant: 'bg-blue-100 text-blue-700 border-blue-200',
-  buyer: 'bg-green-100 text-green-700 border-green-200',
-  super_admin: 'bg-purple-100 text-purple-700 border-purple-200',
+  admin: 'bg-red-50 text-red-700 border-red-200',
+  merchant: 'bg-blue-50 text-blue-700 border-blue-200',
+  buyer: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  super_admin: 'bg-purple-50 text-purple-700 border-purple-200',
 };
 
 const CLIENT_BADGE: Record<UaClientType, string> = {
-  browser: 'bg-green-100 text-green-700 border-green-200',
-  mobileApp: 'bg-blue-100 text-blue-700 border-blue-200',
-  apiClient: 'bg-amber-100 text-amber-700 border-amber-200',
+  browser: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  mobileApp: 'bg-blue-50 text-blue-700 border-blue-200',
+  apiClient: 'bg-amber-50 text-amber-700 border-amber-200',
   unknown: 'bg-muted text-muted-foreground border-border',
 };
 
@@ -150,11 +153,11 @@ function renderValue(key: string | null, value: unknown): React.ReactNode {
     const entries = Object.entries(value as Record<string, unknown>);
     if (entries.length === 0) return '—';
     return (
-      <ul className="ms-4 space-y-1">
+      <ul className="space-y-1">
         {entries.map(([childKey, val]) => (
-          <li key={childKey}>
-            <span className="font-semibold">{humanizeKey(childKey)}</span> ={' '}
-            {renderValue(childKey, val)}
+          <li key={childKey} className="flex items-baseline gap-2">
+            <span className="text-muted-foreground font-medium">{humanizeKey(childKey)}</span>
+            <span className="font-mono text-xs">{renderValue(childKey, val)}</span>
           </li>
         ))}
       </ul>
@@ -163,15 +166,58 @@ function renderValue(key: string | null, value: unknown): React.ReactNode {
   return String(value);
 }
 
+function InfoRow({
+  icon: Icon,
+  label,
+  children,
+  className,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('flex items-start gap-2.5', className)}>
+      {Icon && (
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      )}
+      <div className="min-w-0 flex-1">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          {label}:
+        </span>
+        <div className="mt-0.5 text-sm break-words">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-border/60 bg-card p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 interface AuditLogDetailModalProps {
   open: boolean;
   onClose: () => void;
   detail?: AuditLogDetail;
   loading?: boolean;
   error?: boolean;
-  onViewUserHistory?: (userId: string) => void;
-  /** Kept for the page's props; unused because entity id is no longer shown. */
-  onViewEntityHistory?: (entityType: string, entityId: string) => void;
 }
 
 export function AuditLogDetailModal({
@@ -180,7 +226,6 @@ export function AuditLogDetailModal({
   detail,
   loading = false,
   error = false,
-  onViewUserHistory,
 }: AuditLogDetailModalProps) {
   const { t } = useTranslation();
   const oldValue = detail?.oldValue ?? null;
@@ -190,163 +235,137 @@ export function AuditLogDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      {/* Mobile (<768px) full-screen modal; tablet/desktop centered modal. */}
       <DialogContent
-        className="left-0 top-0 h-dvh max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none border-0 sm:rounded-none md:left-1/2 md:top-1/2 md:h-[min(85dvh,48rem)] md:w-[min(40rem,calc(100vw_-_3rem))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:border"
+        className="left-0 top-0 h-dvh max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none border-0 sm:rounded-none md:left-1/2 md:top-1/2 md:h-[min(85dvh,48rem)] md:w-[min(40rem,calc(100vw_-_3rem))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-xl md:border md:shadow-2xl"
         data-testid="audit-detail-modal"
         aria-describedby={undefined}
       >
-        <DialogHeader>
-          <DialogTitle>{t('audit.logDetail')}</DialogTitle>
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <ScrollText className="h-5 w-5 text-primary" />
+            <DialogTitle className="text-lg">{t('audit.logDetail')}</DialogTitle>
+          </div>
         </DialogHeader>
 
+        <Separator />
+
         {loading && (
-          <div className="space-y-3" aria-busy="true">
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-4 w-1/2" />
+          <div className="space-y-4 py-4" aria-busy="true">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
             <Skeleton className="h-32 w-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+            <span className="sr-only">{t('audit.loading')}</span>
           </div>
         )}
 
         {error && !loading && (
-          <p className="text-sm text-destructive" role="alert">
-            {t('audit.detailNotFound')}
-          </p>
+          <div className="py-8 text-center">
+            <p className="text-sm text-destructive" role="alert">
+              {t('audit.detailNotFound')}
+            </p>
+          </div>
         )}
 
         {detail && !loading && (
-          <div className="space-y-4 text-sm">
-            <section className="space-y-1.5">
-              <h3 className="font-semibold">{t('audit.basicInfo')}</h3>
-              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                <p>
-                  <span className="text-muted-foreground">
-                    {t('audit.timestamp')}:
-                  </span>{' '}
-                  <span className="font-mono">
-                    {formatMmt(detail.createdAt)}
-                  </span>
-                </p>
-                <p>
-                  <span className="text-muted-foreground">
-                    {t('audit.actorName')}:
-                  </span>{' '}
+          <div className="space-y-4 py-4">
+            <SectionCard title={t('audit.basicInfo')} icon={User}>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <InfoRow icon={Clock} label={t('audit.timestamp')}>
+                  <span className="font-mono text-xs">{formatMmt(detail.createdAt)}</span>
+                </InfoRow>
+                <InfoRow icon={User} label={t('audit.actorName')}>
                   {detail.userName ?? t('audit.system')}
-                </p>
+                </InfoRow>
                 {detail.userEmail && (
-                  <p>
-                    <span className="text-muted-foreground">
-                      {t('audit.actorEmail')}:
-                    </span>{' '}
-                    {detail.userEmail}
-                  </p>
+                  <InfoRow icon={Mail} label={t('audit.actorEmail')}>
+                    <span className="break-all">{detail.userEmail}</span>
+                  </InfoRow>
                 )}
                 {detail.userRole && (
-                  <div>
-                    <span className="text-muted-foreground">
-                      {t('audit.actorRole')}:
-                    </span>{' '}
+                  <InfoRow icon={Shield} label={t('audit.actorRole')}>
                     <Badge
                       className={ROLE_BADGE[detail.userRole] ?? undefined}
                       variant="outline"
                     >
                       {detail.userRole}
                     </Badge>
-                  </div>
+                  </InfoRow>
                 )}
-                <p>
-                  <span className="text-muted-foreground">
-                    {t('audit.action')}:
-                  </span>{' '}
-                  <span className="font-mono">{detail.action}</span>
-                </p>
-                <p>
-                  <span className="text-muted-foreground">
-                    {t('audit.entityType')}:
-                  </span>{' '}
+                <InfoRow icon={Tag} label={t('audit.action')}>
+                  <span className="font-mono text-xs">{detail.action}</span>
+                </InfoRow>
+                <InfoRow icon={Globe} label={t('audit.entityType')}>
                   {detail.entityType}
-                </p>
+                </InfoRow>
               </div>
-            </section>
+            </SectionCard>
 
-            <section className="space-y-1.5">
-              <h3 className="font-semibold">{t('audit.changeDetails')}</h3>
+            <SectionCard title={t('audit.changeDetails')} icon={ScrollText}>
               {oldValue && (
-                <div>
-                  <p className="text-muted-foreground">{t('audit.oldValue')}</p>
-                  <div className="max-h-40 overflow-auto rounded-md border border-border bg-muted p-2 text-xs">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">{t('audit.oldValue')}</p>
+                  <div className="max-h-40 overflow-auto rounded-md border border-border/50 bg-muted/30 p-3 text-xs">
                     {renderValue(null, oldValue)}
                   </div>
                 </div>
               )}
               {newValue && (
-                <div>
-                  <p className="text-muted-foreground">{t('audit.newValue')}</p>
-                  <div className="max-h-40 overflow-auto rounded-md border border-border bg-muted p-2 text-xs">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">{t('audit.newValue')}</p>
+                  <div className="max-h-40 overflow-auto rounded-md border border-border/50 bg-muted/30 p-3 text-xs">
                     {renderValue(null, newValue)}
                   </div>
                 </div>
               )}
               {!oldValue && !newValue && (
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {t('audit.noChangeDetails')}
                 </p>
               )}
-            </section>
+            </SectionCard>
 
-            <section className="space-y-1.5">
-              <h3 className="font-semibold">{t('audit.clientInfo')}</h3>
-              <p>
-                <span className="text-muted-foreground">
-                  {t('audit.ipAddress')}:
-                </span>{' '}
-                <span className="font-mono">
-                  {detail.ipAddress ?? t('audit.unknownIp')}
-                </span>
-              </p>
-              {parsedUa && (
-                <div className="space-y-1.5" data-testid="ua-parsed">
-                  <div>
-                    <span className="text-muted-foreground">
-                      {t('audit.clientType')}:
-                    </span>{' '}
-                    <Badge
-                      className={CLIENT_BADGE[parsedUa.clientType]}
-                      variant="outline"
-                    >
-                      {t(CLIENT_TYPE_KEY[parsedUa.clientType])}
-                    </Badge>
+            <SectionCard title={t('audit.clientInfo')} icon={Monitor}>
+              <div className="space-y-3">
+                <InfoRow icon={Wifi} label={t('audit.ipAddress')}>
+                  <span className="font-mono text-xs">
+                    {detail.ipAddress ?? t('audit.unknownIp')}
+                  </span>
+                </InfoRow>
+                {parsedUa && (
+                  <div className="space-y-3 rounded-md border border-border/50 bg-muted/20 p-3" data-testid="ua-parsed">
+                    <InfoRow icon={Monitor} label={t('audit.clientType')}>
+                      <Badge
+                        className={CLIENT_BADGE[parsedUa.clientType]}
+                        variant="outline"
+                      >
+                        {t(CLIENT_TYPE_KEY[parsedUa.clientType])}
+                      </Badge>
+                    </InfoRow>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <InfoRow label={t('audit.clientBrowser')}>
+                        <span className="break-all">{parsedUa.browser ?? t('audit.unknown')}</span>
+                      </InfoRow>
+                      <InfoRow label={t('audit.clientDevice')}>
+                        {t(DEVICE_KEY[parsedUa.device])}
+                      </InfoRow>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                    <p>
-                      <span className="text-muted-foreground">
-                        {t('audit.clientBrowser')}:
-                      </span>{' '}
-                      {parsedUa.browser ?? t('audit.unknown')}
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">
-                        {t('audit.clientDevice')}:
-                      </span>{' '}
-                      {t(DEVICE_KEY[parsedUa.device])}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </section>
+                )}
+              </div>
+            </SectionCard>
           </div>
         )}
 
-        <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {detail?.userId && onViewUserHistory && (
-            <Button
-              variant="outline"
-              onClick={() => onViewUserHistory(detail.userId as string)}
-              data-testid="btn-view-user-history"
-            >
-              {t('audit.viewUserHistory')}
-            </Button>
-          )}
+        <Separator />
+
+        <DialogFooter className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
           <Button onClick={onClose} data-testid="btn-close-modal">
             {t('audit.close')}
           </Button>

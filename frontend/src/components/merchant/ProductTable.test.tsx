@@ -111,6 +111,30 @@ describe('ProductTable', () => {
       expect(screen.getByText('NC-002')).toBeInTheDocument()
     })
 
+    it('highlights the notified product while keeping all product rows visible', () => {
+      render(
+        <MemoryRouter>
+          <ProductTable
+            products={mockProducts}
+            selectedIds={[]}
+            onSelectionChange={vi.fn()}
+            onStockUpdate={vi.fn()}
+            onToggleFeatured={vi.fn()}
+            onToggleActive={vi.fn()}
+            highlightedProductId="prod-2"
+            showActions={true}
+          />
+        </MemoryRouter>,
+      )
+
+      expect(screen.getByText('Hydrating Serum')).toBeInTheDocument()
+      expect(screen.getByText('Night Cream')).toBeInTheDocument()
+      expect(screen.getByText('Night Cream').closest('tr')).toHaveClass(
+        'bg-amber-50',
+        'ring-2',
+      )
+    })
+
     it('renders empty state when no products', () => {
       render(
         <MemoryRouter>

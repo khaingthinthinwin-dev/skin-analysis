@@ -20,11 +20,7 @@ const fallbackClient = new QueryClient({
       enabled: false,
       retry: false,
     },
-  },
-})
-
-function hasAccessToken() {
-  return typeof window !== 'undefined' && !!window.localStorage.getItem('accessToken')
+  )
 }
 
 export function useNotifications(params?: {

@@ -4,6 +4,15 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { ListNotificationsDto } from './dto/list-notifications.dto';
 import { AuthUser } from '../../../common/decorators/current-user.decorator';
 
+export interface CreateNotificationDto {
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  entityType?: string;
+  entityId?: string;
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -150,5 +159,18 @@ export class NotificationsService {
       data: { isRead: true, readAt: new Date() },
     });
     return { updated: count };
+  }
+
+  async create(data: CreateNotificationDto) {
+    return this.prisma.notification.create({
+      data: {
+        userId: data.userId,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        entityType: data.entityType,
+        entityId: data.entityId,
+      },
+    });
   }
 }

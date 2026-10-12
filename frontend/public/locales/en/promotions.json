@@ -52,6 +52,8 @@
     "fixed": "Fixed Amount (MMK)",
     "discountValue": "Discount Value",
     "discountValuePlaceholder": "e.g. 10",
+    "discountValuePercentagePlaceholder": "e.g. 10 (10%)",
+    "discountValueFixedPlaceholder": "e.g. 1000 (1,000 MMK)",
     "minOrderAmount": "Minimum Order Amount (MMK)",
     "minOrderAmountPlaceholder": "e.g. 5000",
     "minOrderAmountHelper": "Leave empty for no minimum",

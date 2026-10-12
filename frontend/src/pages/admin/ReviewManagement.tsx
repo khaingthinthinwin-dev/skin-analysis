@@ -114,16 +114,29 @@ function getImageUrl(url: string): string {
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={`text-sm ${
-            star <= rating ? 'text-yellow-400' : 'text-gray-600'
-          }`}
-        >
-          ★
-        </span>
-      ))}
+      {[1, 2, 3, 4, 5].map((star) => {
+        const fill = Math.min(Math.max(rating - (star - 1), 0), 1);
+        const background =
+          fill >= 1
+            ? '#facc15'
+            : fill >= 0.5
+              ? 'linear-gradient(90deg, #facc15 50%, #4b5563 50%)'
+              : '#4b5563';
+        return (
+          <span
+            key={star}
+            className="text-sm"
+            style={{
+              background,
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            ★
+          </span>
+        );
+      })}
     </div>
   );
 }

@@ -351,6 +351,8 @@
     "next": "次へ",
     "goToPage": "ページへ移動",
     "pageSize": "表示件数",
+    "rows": "行数:",
+    "showingPage": "{{page}} / {{totalPages}} ページを表示",
     "deleteDialogTitle": "監査ログを削除",
     "deleteWarningTitle": "警告",
     "deleteWarning": "この操作は保持期間に該当する監査ログレコードを完全に削除します。この操作は取り消せません。",

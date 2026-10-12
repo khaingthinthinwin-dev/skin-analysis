@@ -11,7 +11,7 @@ describe('auditLogQuerySchema', () => {
     const parsed = auditLogQuerySchema.parse({});
     expect(parsed).toMatchObject({
       page: 1,
-      limit: 50,
+      limit: 10,
       sortBy: 'created_at',
       sortOrder: 'desc',
     });
@@ -67,13 +67,13 @@ describe('deleteAuditLogsSchema', () => {
 describe('parseAuditLogQuery', () => {
   it('hydrates multi-select arrays from repeated keys', () => {
     const params = new URLSearchParams(
-      'action=merchant.approve&action=order.status_change&entityType=Merchant&page=2&limit=25&sortBy=action&sortOrder=asc',
+      'action=merchant.approve&action=order.status_change&entityType=Merchant&page=2&limit=100&sortBy=action&sortOrder=asc',
     );
     expect(parseAuditLogQuery(params)).toMatchObject({
       action: ['merchant.approve', 'order.status_change'],
       entityType: ['Merchant'],
       page: 2,
-      limit: 25,
+      limit: 100,
       sortBy: 'action',
       sortOrder: 'asc',
     });

@@ -133,7 +133,7 @@ function PromotionForm({
           description: description.trim() || undefined,
           discountTypeCode,
           discountValue: Number(discountValue),
-          minOrderAmount: minOrderAmount ? Number(minOrderAmount) : undefined,
+          minOrderAmount: minOrderAmount ? Number(minOrderAmount) : null,
           maxUses: maxUses ? Number(maxUses) : undefined,
           startsAt: new Date(startsAt).toISOString(),
           expiresAt: new Date(expiresAt).toISOString(),
@@ -208,15 +208,22 @@ function PromotionForm({
 
             {/* Discount Value */}
             <div className="space-y-2">
-              <Label htmlFor="discountValue">{t('merchant.promotions.form.discountValue')}</Label>
+              <Label htmlFor="discountValue">
+                {t('merchant.promotions.form.discountValue')}
+                {discountTypeCode === 'percentage' ? ' (%)' : ' (MMK)'}
+              </Label>
               <Input
                 id="discountValue"
                 type="number"
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
-                placeholder={t('merchant.promotions.form.discountValuePlaceholder')}
+                placeholder={
+                  discountTypeCode === 'percentage'
+                    ? t('merchant.promotions.form.discountValuePercentagePlaceholder')
+                    : t('merchant.promotions.form.discountValueFixedPlaceholder')
+                }
                 min="0.01"
-                step="0.01"
+                step="any"
                 disabled={isUsed}
               />
               {errors.discountValue && (
@@ -226,7 +233,9 @@ function PromotionForm({
 
             {/* Min Order Amount */}
             <div className="space-y-2">
-              <Label htmlFor="minOrderAmount">{t('merchant.promotions.form.minOrderAmount')}</Label>
+              <Label htmlFor="minOrderAmount">
+                {t('merchant.promotions.form.minOrderAmount')} (MMK)
+              </Label>
               <Input
                 id="minOrderAmount"
                 type="number"
@@ -234,7 +243,7 @@ function PromotionForm({
                 onChange={(e) => setMinOrderAmount(e.target.value)}
                 placeholder={t('merchant.promotions.form.minOrderAmountPlaceholder')}
                 min="0"
-                step="100"
+                step="any"
                 disabled={isUsed}
               />
               {errors.minOrderAmount && (
