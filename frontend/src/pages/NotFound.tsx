@@ -9,9 +9,9 @@ export default function NotFound() {
   return (
     <div className="flex min-h-[calc(100vh-200px)] flex-col items-center justify-center gap-4 px-4">
       <h1 className="text-6xl font-bold text-muted-foreground">404</h1>
-      <h2 className="text-2xl font-bold">Page Not Found</h2>
+      <h2 className="text-2xl font-bold">{t('errors.notFound.title', 'Page Not Found')}</h2>
       <p className="text-center text-muted-foreground">
-        The page you are looking for does not exist or has been moved.
+        {t('errors.notFound.desc', 'The page you are looking for does not exist or has been moved.')}
       </p>
       <Button asChild>
         <Link to="/">

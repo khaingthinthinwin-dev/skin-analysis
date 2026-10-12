@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { Link, Navigate } from 'react-router'
 import {
   Brain,
@@ -37,6 +38,11 @@ interface AdBanner {
   link: string
   buttonText: string
   icon: typeof Sparkles
+  tagKey: string
+  titleKey: string
+  subtitleKey: string
+  discountKey: string
+  buttonTextKey: string
 }
 
 const PROMO_SLIDES: AdBanner[] = [
@@ -51,6 +57,11 @@ const PROMO_SLIDES: AdBanner[] = [
     link: '/products',
     buttonText: 'Shop Hydration Sale',
     icon: Droplets,
+    tagKey: 'home.promo.slide1.tag',
+    titleKey: 'home.promo.slide1.title',
+    subtitleKey: 'home.promo.slide1.subtitle',
+    discountKey: 'home.promo.slide1.discount',
+    buttonTextKey: 'home.promo.slide1.buttonText',
   },
   {
     id: 'slide-2',
@@ -63,6 +74,11 @@ const PROMO_SLIDES: AdBanner[] = [
     link: '/products',
     buttonText: 'Explore Acne Solutions',
     icon: ShieldAlert,
+    tagKey: 'home.promo.slide2.tag',
+    titleKey: 'home.promo.slide2.title',
+    subtitleKey: 'home.promo.slide2.subtitle',
+    discountKey: 'home.promo.slide2.discount',
+    buttonTextKey: 'home.promo.slide2.buttonText',
   },
   {
     id: 'slide-3',
@@ -75,6 +91,11 @@ const PROMO_SLIDES: AdBanner[] = [
     link: '/products',
     buttonText: 'Discover Sunscreens',
     icon: Sun,
+    tagKey: 'home.promo.slide3.tag',
+    titleKey: 'home.promo.slide3.title',
+    subtitleKey: 'home.promo.slide3.subtitle',
+    discountKey: 'home.promo.slide3.discount',
+    buttonTextKey: 'home.promo.slide3.buttonText',
   },
 ]
 
@@ -82,6 +103,8 @@ const SKIN_CONCERNS = [
   {
     title: 'Deep Hydration',
     description: 'For dry, flaky, or tight skin needing moisture balance',
+    titleKey: 'home.concerns.deepHydration.title',
+    descriptionKey: 'home.concerns.deepHydration.description',
     icon: Droplets,
     color: 'text-sky-500 dark:text-sky-400',
     bg: 'bg-sky-500/10 dark:bg-sky-500/20',
@@ -90,6 +113,8 @@ const SKIN_CONCERNS = [
   {
     title: 'Acne & Pores',
     description: 'Target breakouts, blackheads, and excess sebum',
+    titleKey: 'home.concerns.acnePores.title',
+    descriptionKey: 'home.concerns.acnePores.description',
     icon: ShieldAlert,
     color: 'text-rose-500 dark:text-rose-400',
     bg: 'bg-rose-500/10 dark:bg-rose-500/20',
@@ -98,6 +123,8 @@ const SKIN_CONCERNS = [
   {
     title: 'Sun Protection',
     description: 'Broad spectrum UV defense to prevent photoaging',
+    titleKey: 'home.concerns.sunProtection.title',
+    descriptionKey: 'home.concerns.sunProtection.description',
     icon: Sun,
     color: 'text-amber-500 dark:text-amber-400',
     bg: 'bg-amber-500/10 dark:bg-amber-500/20',
@@ -106,6 +133,8 @@ const SKIN_CONCERNS = [
   {
     title: 'Soothing & Redness',
     description: 'Calm sensitive, irritated, or compromised skin barrier',
+    titleKey: 'home.concerns.soothingRedness.title',
+    descriptionKey: 'home.concerns.soothingRedness.description',
     icon: Heart,
     color: 'text-emerald-500 dark:text-emerald-400',
     bg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
@@ -121,6 +150,9 @@ const HOW_IT_WORKS = [
       'Upload a selfie or complete our smart skin assessment. Our AI analyzes your hydration, pore clarity, redness, and oil balance.',
     icon: Camera,
     badge: 'Quick & Accurate',
+    titleKey: 'home.howItWorks.step1.title',
+    descriptionKey: 'home.howItWorks.step1.description',
+    badgeKey: 'home.howItWorks.step1.badge',
   },
   {
     step: '02',
@@ -129,6 +161,9 @@ const HOW_IT_WORKS = [
       'Our intelligent algorithm cross-references thousands of skincare formulations to find what actually works for your skin chemistry.',
     icon: Brain,
     badge: 'Smart Matching',
+    titleKey: 'home.howItWorks.step2.title',
+    descriptionKey: 'home.howItWorks.step2.description',
+    badgeKey: 'home.howItWorks.step2.badge',
   },
   {
     step: '03',
@@ -137,11 +172,15 @@ const HOW_IT_WORKS = [
       'Order genuine, dermatologist-approved skincare directly from verified merchants with transparent reviews and prompt delivery.',
     icon: ShoppingBag,
     badge: 'Verified Merchants',
+    titleKey: 'home.howItWorks.step3.title',
+    descriptionKey: 'home.howItWorks.step3.description',
+    badgeKey: 'home.howItWorks.step3.badge',
   },
 ]
 
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth()
+  const { t } = useTranslation()
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
 
@@ -179,18 +218,19 @@ export default function Home() {
             <div className="space-y-8 lg:col-span-7">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm text-primary font-medium">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <span>AI Skin Diagnosis & Skincare Marketplace</span>
+                <span>{t('home.hero.badge', 'AI Skin Diagnosis & Skincare Marketplace')}</span>
               </div>
 
               <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl leading-[1.15]">
-                Smart AI Analysis.{' '}
-                <span className="bg-gradient-to-r from-primary via-purple-600 to-accent bg-clip-text text-transparent">
-                  Personalized Skincare You Can Buy.
-                </span>
+                <Trans
+                  i18nKey="home.hero.heading"
+                  defaults="Smart AI Analysis. <highlight>Personalized Skincare You Can Buy.</highlight>"
+                  components={{ highlight: <span className="bg-gradient-to-r from-primary via-purple-600 to-accent bg-clip-text text-transparent" /> }}
+                />
               </h1>
 
               <p className="max-w-2xl text-lg text-muted-foreground leading-relaxed">
-                Take the guesswork out of beauty shopping. Scan your skin with advanced AI to understand your exact skin concerns, then instantly purchase dermatologist-backed products formulated specifically for you.
+                {t('home.hero.paragraph', 'Take the guesswork out of beauty shopping. Scan your skin with advanced AI to understand your exact skin concerns, then instantly purchase dermatologist-backed products formulated specifically for you.')}
               </p>
 
               {/* Dual Primary Call-to-Actions */}
@@ -202,7 +242,7 @@ export default function Home() {
                 >
                   <Link to={ROUTES.REGISTER}>
                     <Camera className="mr-2 h-5 w-5" />
-                    Start Free AI Skin Scan
+                    {t('home.hero.ctaPrimary', 'Start Free AI Skin Scan')}
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </Button>
@@ -215,7 +255,7 @@ export default function Home() {
                 >
                   <Link to="/products">
                     <ShoppingBag className="mr-2 h-5 w-5 text-primary" />
-                    Browse Skincare Shop
+                    {t('home.hero.ctaSecondary', 'Browse Skincare Shop')}
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -225,15 +265,15 @@ export default function Home() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border/60">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
-                  <span>100% Genuine Brands</span>
+                  <span>{t('home.trustBadges.genuine', '100% Genuine Brands')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <Zap className="h-5 w-5 text-accent shrink-0" />
-                  <span>Instant AI Diagnosis</span>
+                  <span>{t('home.trustBadges.instant', 'Instant AI Diagnosis')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground col-span-2 sm:col-span-1">
                   <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                  <span>Verified Merchants</span>
+                  <span>{t('home.trustBadges.verified', 'Verified Merchants')}</span>
                 </div>
               </div>
             </div>
@@ -249,10 +289,10 @@ export default function Home() {
                     {/* Top status header */}
                     <div className="flex items-center justify-between text-xs text-zinc-400 pt-1">
                       <span className="flex items-center gap-1 text-primary font-semibold">
-                        <Sparkles className="h-3.5 w-3.5" /> AI Scan
+                        <Sparkles className="h-3.5 w-3.5" /> {t('home.mockup.aiScan', 'AI Scan')}
                       </span>
                       <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold">
-                        LIVE READY
+                        {t('home.mockup.liveReady', 'LIVE READY')}
                       </span>
                     </div>
 
@@ -266,12 +306,12 @@ export default function Home() {
                       {/* Detected Target Points */}
                       <div className="absolute top-1/4 left-8 flex items-center gap-1 bg-zinc-900/90 border border-primary/40 rounded-md px-2 py-0.5 shadow-md">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                        <span className="text-[10px] text-zinc-200">Hydration 88%</span>
+                        <span className="text-[10px] text-zinc-200">{t('home.mockup.hydration', 'Hydration 88%')}</span>
                       </div>
 
                       <div className="absolute bottom-1/4 right-4 flex items-center gap-1 bg-zinc-900/90 border border-accent/40 rounded-md px-2 py-0.5 shadow-md">
                         <span className="w-1.5 h-1.5 rounded-full bg-pink-400" />
-                        <span className="text-[10px] text-zinc-200">Mild Redness</span>
+                        <span className="text-[10px] text-zinc-200">{t('home.mockup.mildRedness', 'Mild Redness')}</span>
                       </div>
 
                       <div className="w-24 h-28 border border-white/10 rounded-full flex items-center justify-center bg-white/5">
@@ -283,9 +323,9 @@ export default function Home() {
                     <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-3 shadow-lg backdrop-blur-md">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-accent flex items-center gap-1">
-                          <Flame className="w-3 h-3" /> Best AI Match (98%)
+                          <Flame className="w-3 h-3" /> {t('home.mockup.bestMatch', 'Best AI Match (98%)')}
                         </span>
-                        <span className="text-[11px] font-bold text-emerald-400">In Stock</span>
+                        <span className="text-[11px] font-bold text-emerald-400">{t('home.mockup.inStock', 'In Stock')}</span>
                       </div>
 
                       <div className="flex items-center gap-3">
@@ -308,8 +348,8 @@ export default function Home() {
                     <Heart className="w-4 h-4 fill-pink-500" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold">Barrier Score: 94%</p>
-                    <p className="text-[10px] text-muted-foreground">Optimal balance</p>
+                    <p className="text-xs font-bold">{t('home.mockup.barrierScore', 'Barrier Score: 94%')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('home.mockup.optimalBalance', 'Optimal balance')}</p>
                   </div>
                 </div>
 
@@ -318,8 +358,8 @@ export default function Home() {
                     <Tag className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold">1,200+ Products</p>
-                    <p className="text-[10px] text-muted-foreground">Tested & Ready</p>
+                    <p className="text-xs font-bold">{t('home.mockup.productsCount', '1,200+ Products')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('home.mockup.testedReady', 'Tested & Ready')}</p>
                   </div>
                 </div>
               </div>
@@ -341,28 +381,28 @@ export default function Home() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className={`${activeSlide.badgeBg} text-xs uppercase tracking-wider font-semibold py-1 px-3`}>
                     <SlideIcon className="w-3.5 h-3.5 mr-1 inline" />
-                    {activeSlide.tag}
+                    {t(activeSlide.tagKey, activeSlide.tag)}
                   </Badge>
                   {activeSlide.discount && (
                     <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
-                      {activeSlide.discount}
+                      {t(activeSlide.discountKey, activeSlide.discount)}
                     </Badge>
                   )}
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                  {activeSlide.title}
+                  {t(activeSlide.titleKey, activeSlide.title)}
                 </h2>
 
                 <p className="text-sm sm:text-base text-zinc-200/90 max-w-xl">
-                  {activeSlide.subtitle}
+                  {t(activeSlide.subtitleKey, activeSlide.subtitle)}
                 </p>
 
                 <div className="pt-2">
                   <Button asChild size="lg" className="bg-white text-zinc-900 hover:bg-zinc-100 font-bold shadow-lg">
                     <Link to={activeSlide.link}>
                       <ShoppingBag className="w-4 h-4 mr-2" />
-                      {activeSlide.buttonText}
+                      {t(activeSlide.buttonTextKey, activeSlide.buttonText)}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
@@ -372,8 +412,8 @@ export default function Home() {
               <div className="hidden md:flex md:col-span-4 justify-center items-center">
                 <div className="w-36 h-36 lg:w-44 lg:h-44 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner animate-pulse">
                   <SlideIcon className="w-12 h-12 text-white mb-2" />
-                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">Merchant Partner</span>
-                  <span className="text-sm font-bold text-white">Verified Brand</span>
+                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">{t('buyer.products.ads.merchantPartner', 'Merchant Partner')}</span>
+                  <span className="text-sm font-bold text-white">{t('home.promo.verifiedBrand', 'Verified Brand')}</span>
                 </div>
               </div>
             </div>
@@ -384,7 +424,7 @@ export default function Home() {
                 variant="ghost"
                 size="icon"
                 onClick={prevSlide}
-                aria-label="Previous slide"
+                aria-label={t('home.promo.previousSlide', 'Previous slide')}
                 className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -393,7 +433,7 @@ export default function Home() {
                 variant="ghost"
                 size="icon"
                 onClick={nextSlide}
-                aria-label="Next slide"
+                aria-label={t('home.promo.nextSlide', 'Next slide')}
                 className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -406,7 +446,7 @@ export default function Home() {
                 <button
                   key={slide.id}
                   onClick={() => setCurrentSlide(idx)}
-                  aria-label={`Go to slide ${idx + 1}`}
+                  aria-label={t('home.promo.goToSlide', `Go to slide ${idx + 1}`, { number: idx + 1 })}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     idx === currentSlide ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
                   }`}
@@ -422,13 +462,13 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge variant="secondary" className="mb-3 px-3 py-1 font-semibold text-primary">
-              Simple 3-Step Process
+              {t('home.howItWorks.sectionBadge', 'Simple 3-Step Process')}
             </Badge>
             <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">
-              How Cosmetic Finder Works
+              {t('home.howItWorks.sectionTitle', 'How Cosmetic Finder Works')}
             </h2>
             <p className="mt-4 text-base sm:text-lg text-muted-foreground">
-              From scanning your skin to delivering the ideal skincare regimen directly to your door.
+              {t('home.howItWorks.sectionDesc', 'From scanning your skin to delivering the ideal skincare regimen directly to your door.')}
             </p>
           </div>
 
@@ -449,12 +489,12 @@ export default function Home() {
                     </div>
 
                     <Badge variant="outline" className="mb-3 text-xs font-semibold text-muted-foreground">
-                      {item.badge}
+                      {t(item.badgeKey, item.badge)}
                     </Badge>
 
-                    <h3 className="text-xl font-bold text-card-foreground mb-3">{item.title}</h3>
+                    <h3 className="text-xl font-bold text-card-foreground mb-3">{t(item.titleKey, item.title)}</h3>
                     <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                      {item.description}
+                      {t(item.descriptionKey, item.description)}
                     </p>
                   </CardContent>
                 </Card>
@@ -465,7 +505,7 @@ export default function Home() {
           <div className="mt-12 text-center">
             <Button size="lg" asChild className="font-bold bg-primary text-primary-foreground">
               <Link to={ROUTES.REGISTER}>
-                Experience It Now — Free Skin Scan
+                {t('home.howItWorks.cta', 'Experience It Now — Free Skin Scan')}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -479,18 +519,18 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
             <div>
               <span className="text-sm font-semibold uppercase tracking-wider text-primary">
-                Curated Collections
+                {t('home.shopByConcern.eyebrow', 'Curated Collections')}
               </span>
               <h2 className="mt-2 text-3xl font-extrabold text-foreground sm:text-4xl">
-                Shop Skincare by Concern
+                {t('home.shopByConcern.title', 'Shop Skincare by Concern')}
               </h2>
               <p className="mt-2 text-muted-foreground">
-                Find products tailored for your specific skin goals and dermatological needs.
+                {t('home.shopByConcern.desc', 'Find products tailored for your specific skin goals and dermatological needs.')}
               </p>
             </div>
             <Button variant="outline" asChild className="self-start md:self-auto">
               <Link to="/products">
-                View Full Catalog
+                {t('home.shopByConcern.link', 'View Full Catalog')}
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
@@ -509,11 +549,11 @@ export default function Home() {
                     <Icon className="h-6 w-6" />
                   </div>
                   <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors flex items-center justify-between">
-                    {concern.title}
+                    {t(concern.titleKey, concern.title)}
                     <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                   </h3>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                    {concern.description}
+                    {t(concern.descriptionKey, concern.description)}
                   </p>
                 </Link>
               )
@@ -527,13 +567,13 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-sm font-semibold uppercase tracking-wider text-primary">
-              Our Commitment
+              {t('home.why.eyebrow', 'Our Commitment')}
             </span>
             <h2 className="mt-3 text-3xl font-bold text-foreground sm:text-4xl">
-              Why Shop & Analyze With Us?
+              {t('home.why.title', 'Why Shop & Analyze With Us?')}
             </h2>
             <p className="mt-3 text-muted-foreground">
-              We bridge artificial intelligence with authentic skincare commerce.
+              {t('home.why.desc', 'We bridge artificial intelligence with authentic skincare commerce.')}
             </p>
           </div>
 
@@ -542,9 +582,9 @@ export default function Home() {
               <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <Brain className="h-7 w-7" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">Accurate AI Analysis</h3>
+              <h3 className="text-lg font-bold text-foreground mb-2">{t('home.why.card1.title', 'Accurate AI Analysis')}</h3>
               <p className="text-sm text-muted-foreground">
-                Deep learning algorithms that analyze skin hydration, texture, redness, and pores in seconds.
+                {t('home.why.card1.description', 'Deep learning algorithms that analyze skin hydration, texture, redness, and pores in seconds.')}
               </p>
             </div>
 
@@ -552,9 +592,9 @@ export default function Home() {
               <div className="h-14 w-14 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-4">
                 <ShieldCheck className="h-7 w-7" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">100% Genuine Skincare</h3>
+              <h3 className="text-lg font-bold text-foreground mb-2">{t('home.why.card2.title', '100% Genuine Skincare')}</h3>
               <p className="text-sm text-muted-foreground">
-                Every merchant is verified and products are certified authentic, safe, and stored in optimal conditions.
+                {t('home.why.card2.description', 'Every merchant is verified and products are certified authentic, safe, and stored in optimal conditions.')}
               </p>
             </div>
 
@@ -562,9 +602,9 @@ export default function Home() {
               <div className="h-14 w-14 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-4">
                 <Layers className="h-7 w-7" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">Personalized Matching</h3>
+              <h3 className="text-lg font-bold text-foreground mb-2">{t('home.why.card3.title', 'Personalized Matching')}</h3>
               <p className="text-sm text-muted-foreground">
-                No more wasted money on products that cause irritation. Get matched with ingredients that work.
+                {t('home.why.card3.description', 'No more wasted money on products that cause irritation. Get matched with ingredients that work.')}
               </p>
             </div>
           </div>
@@ -579,21 +619,21 @@ export default function Home() {
 
           <div className="relative z-10 max-w-2xl mx-auto space-y-6">
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Ready for Healthier, Radiant Skin?
+              {t('home.cta.title', 'Ready for Healthier, Radiant Skin?')}
             </h2>
             <p className="text-base sm:text-lg text-white/90">
-              Join thousands of buyers discovering their tailored skincare routine with AI analysis.
+              {t('home.cta.desc', 'Join thousands of buyers discovering their tailored skincare routine with AI analysis.')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button size="lg" asChild className="bg-white text-primary hover:bg-zinc-100 font-bold h-12 px-8">
                 <Link to={ROUTES.REGISTER}>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Get Started Free
+                  {t('home.cta.primary', 'Get Started Free')}
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="bg-transparent border-white text-white hover:bg-white/10 font-semibold h-12 px-8">
                 <Link to="/products">
-                  Explore Products
+                  {t('home.cta.secondary', 'Explore Products')}
                 </Link>
               </Button>
             </div>

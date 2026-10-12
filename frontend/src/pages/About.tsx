@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { useTranslation, Trans } from 'react-i18next'
 import {
   Target,
   Eye,
@@ -14,43 +15,56 @@ import { ROUTES } from '@/lib/constants'
 import { aboutImages } from '@/data/about'
 
 export default function About() {
+  const { t } = useTranslation()
   const steps = [
-    { num: '1', title: 'Upload Photo', desc: 'Take or upload a clear facial photo for analysis.' },
-    { num: '2', title: 'AI Analysis', desc: 'Our model analyzes skin type, condition, and age estimation.' },
-    { num: '3', title: 'Smart Matching', desc: 'Cross-references ingredient data with your skin profile.' },
-    { num: '4', title: 'Recommendations', desc: 'Receive a personalized, optimized skincare routine.', final: true },
+    { num: '1', title: 'Upload Photo', desc: 'Take or upload a clear facial photo for analysis.', titleKey: 'about.steps.step1Title', descKey: 'about.steps.step1Desc' },
+    { num: '2', title: 'AI Analysis', desc: 'Our model analyzes skin type, condition, and age estimation.', titleKey: 'about.steps.step2Title', descKey: 'about.steps.step2Desc' },
+    { num: '3', title: 'Smart Matching', desc: 'Cross-references ingredient data with your skin profile.', titleKey: 'about.steps.step3Title', descKey: 'about.steps.step3Desc' },
+    { num: '4', title: 'Recommendations', desc: 'Receive a personalized, optimized skincare routine.', final: true, titleKey: 'about.steps.step4Title', descKey: 'about.steps.step4Desc' },
   ]
 
   const capabilities = [
     {
       icon: Brain,
       title: 'AI Skin Analysis',
+      titleKey: 'about.capabilities.aiSkinAnalysis.title',
       desc: 'Upload a photo and get instant insights on your skin type, conditions, and age estimation.',
+      descKey: 'about.capabilities.aiSkinAnalysis.desc',
     },
     {
       icon: Sparkles,
       title: 'Smart Recommendations',
+      titleKey: 'about.capabilities.smartRecommendations.title',
       desc: 'Receive personalized product suggestions matched to your unique skin profile and concerns.',
+      descKey: 'about.capabilities.smartRecommendations.desc',
     },
     {
       icon: ShoppingBag,
       title: 'Curated Marketplace',
+      titleKey: 'about.capabilities.curatedMarketplace.title',
       desc: 'Browse thousands of skincare products from trusted brands, filtered by your skin needs.',
+      descKey: 'about.capabilities.curatedMarketplace.desc',
     },
     {
       icon: Globe,
       title: 'Multi-Language Support',
+      titleKey: 'about.capabilities.multiLanguageSupport.title',
       desc: 'Use the platform in English, Myanmar, or Japanese — your language, your choice.',
+      descKey: 'about.capabilities.multiLanguageSupport.desc',
     },
     {
       icon: Lock,
       title: 'Secure & Private',
+      titleKey: 'about.capabilities.securePrivate.title',
       desc: 'Your data is protected with enterprise-grade security and privacy-first design.',
+      descKey: 'about.capabilities.securePrivate.desc',
     },
     {
       icon: Zap,
       title: 'Instant Results',
+      titleKey: 'about.capabilities.instantResults.title',
       desc: 'Get AI-powered analysis in under 10 seconds with real-time product matching.',
+      descKey: 'about.capabilities.instantResults.desc',
     },
   ]
 
@@ -62,17 +76,21 @@ export default function About() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="fade-in-up">
             <h1 className="font-display text-4xl md:text-[48px] font-bold leading-[56px] tracking-[-0.02em] text-on-surface mb-6">
-              Pioneering the Future of <span className="text-primary-container">AI Skincare</span>
+              <Trans
+                i18nKey="about.hero.heading"
+                defaults="Pioneering the Future of <highlight>AI Skincare</highlight>"
+                components={{ highlight: <span className="text-primary-container" /> }}
+              />
             </h1>
             <p className="text-lg leading-[28px] text-on-surface-variant mb-8 max-w-xl">
-              Cosmetics Finder connects buyers seeking personalized skincare solutions with merchants selling skincare products, powered by AI skin analysis and smart product recommendations.
+              {t('about.hero.paragraph', 'Cosmetics Finder connects buyers seeking personalized skincare solutions with merchants selling skincare products, powered by AI skin analysis and smart product recommendations.')}
             </p>
             <div className="flex gap-4">
               <Link
                 to={ROUTES.LOGIN}
                 className="inline-flex items-center justify-center bg-primary-container text-deep-base px-8 py-3 rounded-full font-medium text-sm tracking-widest hover:bg-primary transition-colors"
               >
-                Try AI Analysis
+                {t('about.hero.cta', 'Try AI Analysis')}
               </Link>
             </div>
           </div>
@@ -103,16 +121,16 @@ export default function About() {
           </div>
           <div className="order-1 md:order-2 fade-in-up fade-in-up-delay-200">
             <div className="inline-block px-4 py-1 rounded-full bg-primary-container/10 border border-primary-container/20 text-primary mb-4 text-xs font-semibold tracking-widest uppercase">
-              Our Story
+              {t('about.story.badge', 'Our Story')}
             </div>
             <h2 className="font-display text-2xl md:text-[32px] font-semibold leading-[40px] tracking-[-0.01em] mb-6">
-              Decoding Beauty through Intelligence
+              {t('about.story.title', 'Decoding Beauty through Intelligence')}
             </h2>
             <p className="text-on-surface-variant mb-6">
-              Consumers struggle to find skincare products suited to their individual skin types and concerns. Traditional e-commerce lacks personalization, leading to poor product choices and wasted spending.
+              {t('about.story.p1', 'Consumers struggle to find skincare products suited to their individual skin types and concerns. Traditional e-commerce lacks personalization, leading to poor product choices and wasted spending.')}
             </p>
             <p className="text-on-surface-variant">
-              Our proprietary AI model analyzes thousands of data points — from ingredient interactions to individual skin phenotypes — to construct a regimen that is unequivocally yours. We believe that clarity is the ultimate luxury.
+              {t('about.story.p2', 'Our proprietary AI model analyzes thousands of data points — from ingredient interactions to individual skin phenotypes — to construct a regimen that is unequivocally yours. We believe that clarity is the ultimate luxury.')}
             </p>
           </div>
         </div>
@@ -125,18 +143,18 @@ export default function About() {
             <div className="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center mb-6">
               <Target className="w-6 h-6 text-primary-container" />
             </div>
-            <h3 className="font-display text-2xl font-semibold mb-4">Our Mission</h3>
+            <h3 className="font-display text-2xl font-semibold mb-4">{t('about.missionVision.missionTitle', 'Our Mission')}</h3>
             <p className="text-on-surface-variant">
-              To provide personalized skincare product recommendations based on AI analysis, increasing conversion rates through targeted product matching and merchant tools for product management and sales analytics.
+              {t('about.missionVision.missionDesc', 'To provide personalized skincare product recommendations based on AI analysis, increasing conversion rates through targeted product matching and merchant tools for product management and sales analytics.')}
             </p>
           </div>
           <div className="glass-card rounded-[32px] p-10 fade-in-up fade-in-up-delay-200 hover:border-primary-container/50 transition-colors">
             <div className="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center mb-6">
               <Eye className="w-6 h-6 text-primary-container" />
             </div>
-            <h3 className="font-display text-2xl font-semibold mb-4">Our Vision</h3>
+            <h3 className="font-display text-2xl font-semibold mb-4">{t('about.missionVision.visionTitle', 'Our Vision')}</h3>
             <p className="text-on-surface-variant">
-              A future where trial-and-error is obsolete. We envision a seamlessly integrated digital ecosystem where your biological needs instantly align with perfect product formulations through multi-vendor marketplace growth.
+              {t('about.missionVision.visionDesc', 'A future where trial-and-error is obsolete. We envision a seamlessly integrated digital ecosystem where your biological needs instantly align with perfect product formulations through multi-vendor marketplace growth.')}
             </p>
           </div>
         </div>
@@ -146,10 +164,10 @@ export default function About() {
       <section className="mx-auto max-w-6xl px-5 md:px-16 mb-12 md:mb-32">
         <div className="text-center mb-16 fade-in-up">
           <h2 className="font-display text-2xl md:text-[32px] font-semibold leading-[40px] tracking-[-0.01em] mb-4">
-            The Intelligence Engine
+            {t('about.engine.title', 'The Intelligence Engine')}
           </h2>
           <p className="text-on-surface-variant max-w-2xl mx-auto">
-            A seamless four-step process engineered to deliver unprecedented accuracy. AI skin analysis processing completes in under 10 seconds.
+            {t('about.engine.desc', 'A seamless four-step process engineered to deliver unprecedented accuracy. AI skin analysis processing completes in under 10 seconds.')}
           </p>
         </div>
         <div className="relative">
@@ -177,8 +195,8 @@ export default function About() {
                     <span className="font-display text-primary-container font-semibold">{step.num}</span>
                   )}
                 </div>
-                <h4 className="font-medium text-on-surface mb-2 text-sm tracking-wide">{step.title}</h4>
-                <p className="text-xs text-on-surface-variant">{step.desc}</p>
+                <h4 className="font-medium text-on-surface mb-2 text-sm tracking-wide">{t(step.titleKey, step.title)}</h4>
+                <p className="text-xs text-on-surface-variant">{t(step.descKey, step.desc)}</p>
               </div>
             ))}
           </div>
@@ -189,10 +207,10 @@ export default function About() {
       <section className="mx-auto max-w-6xl px-5 md:px-16 mb-12 md:mb-32">
         <div className="text-center mb-12 fade-in-up">
           <h2 className="font-display text-2xl md:text-[32px] font-semibold leading-[40px] tracking-[-0.01em] mb-4">
-            What You Can Do
+            {t('about.capabilities.sectionTitle', 'What You Can Do')}
           </h2>
           <p className="text-on-surface-variant max-w-2xl mx-auto">
-            Everything you need for a personalized skincare journey.
+            {t('about.capabilities.sectionDesc', 'Everything you need for a personalized skincare journey.')}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -206,8 +224,8 @@ export default function About() {
                 }`}
               >
                 <Icon className="w-8 h-8 text-primary-container mb-4" />
-                <h4 className="font-display text-lg font-semibold mb-2">{cap.title}</h4>
-                <p className="text-sm text-on-surface-variant">{cap.desc}</p>
+                <h4 className="font-display text-lg font-semibold mb-2">{t(cap.titleKey, cap.title)}</h4>
+                <p className="text-sm text-on-surface-variant">{t(cap.descKey, cap.desc)}</p>
               </div>
             )
           })}
