@@ -1,5 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useState, useRef, useCallback, useEffect, useId } from 'react'
 import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -19,7 +18,6 @@ export function SearchBar({
   onSubmit,
   placeholder,
 }: SearchBarProps) {
-  const { t } = useTranslation()
   const [draft, setDraft] = useState(value);
   const [focused, setFocused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

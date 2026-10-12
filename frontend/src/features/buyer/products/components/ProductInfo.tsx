@@ -68,16 +68,12 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
       >
         <StarRating rating={product.avgRating} />
         <span className="text-sm font-medium">{Number(product.avgRating).toFixed(1)}</span>
-        <button
-          type="button"
-          onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })}
-          className="text-sm text-blue-600 hover:underline"
-        >
+        <span className="text-sm text-blue-600 group-hover:underline">
           {t('buyer.products.reviews.countLabel', '({{count}} reviews)', {
             count: product.reviewCount,
           })}
-        </button>
-      </div>
+        </span>
+      </button>
 
       {/* [C3] Price */}
       <div className="flex items-center gap-3">

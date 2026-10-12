@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowRight, ChevronLeft, ChevronRight, ImageIcon, Megaphone,Sparkles } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, ImageIcon, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getImageUrl } from '@/lib/image-url'

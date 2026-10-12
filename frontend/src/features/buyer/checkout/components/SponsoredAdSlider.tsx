@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, Sparkles } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,13 @@ import { getImageUrl } from '@/lib/image-url';
 
 const AUTO_SLIDE_MS = 5000
 const BUYER_PRODUCTS_FALLBACK = '/buyer/products'
+const MAX_BADGE_TEXT_LENGTH = 20
+
+function truncateBadgeText(text: string) {
+  return text.length > MAX_BADGE_TEXT_LENGTH
+    ? `${text.slice(0, MAX_BADGE_TEXT_LENGTH)}...`
+    : text
+}
 
 function getProductDetailHref(sku: string | null) {
   const trimmedSku = sku?.trim()
@@ -77,16 +84,13 @@ export function SponsoredAdSlider() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white sm:text-xs">
                 <Megaphone className="h-3.5 w-3.5" />
-                {t('buyer.checkout.sponsoredAds.sponsoredBadge', 'Sponsored')}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-purple-100 backdrop-blur-md sm:text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-purple-200" />
-                {t('buyer.checkout.sponsoredAds.featuredPromotionBadge', 'Featured Promotion')}
+                {truncateBadgeText(
+                  ad.announcementMessage ||
+                    t('buyer.checkout.sponsoredAds.sponsoredBadge', 'Sponsored'),
+                )}
               </span>
               <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
-                {ad.merchantName.length > 20
-                  ? `${ad.merchantName.slice(0, 20)}...`
-                  : ad.merchantName}
+                {truncateBadgeText(ad.merchantName)}
               </Badge>
             </div>
 
