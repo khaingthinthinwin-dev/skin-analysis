@@ -1,5 +1,6 @@
 import { Outlet, Link } from 'react-router'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Menu, Bell, ShoppingCart, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserNav } from '@/components/common/UserNav'
@@ -13,6 +14,7 @@ import { useMerchantStatusAlerts } from '@/features/shared/notifications/hooks/u
 import { useAuth } from '@/hooks/useAuth'
 
 export function DashboardLayout() {
+  const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { user } = useAuth()
@@ -53,13 +55,13 @@ export function DashboardLayout() {
             size="icon"
             className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
-            aria-label="Open navigation menu"
+            aria-label={t('nav.menu.openNavigationMenu', 'Open navigation menu')}
           >
             <Menu className="h-6 w-6" />
           </Button>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild aria-label="Notifications">
+            <Button variant="ghost" size="icon" asChild aria-label={t('nav.menu.notifications', 'Notifications')}>
               <Link to="notifications" className="relative">
                 <Bell className="h-5 w-5 text-muted-foreground" />
                 {unreadCount > 0 && (
@@ -71,7 +73,7 @@ export function DashboardLayout() {
             </Button>
             {isBuyer && (
               <>
-                <Button variant="ghost" size="icon" asChild aria-label="Wishlist">
+                <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.cart', 'Cart')}>
                   <Link to="/buyer/wishlist" className="relative">
                     <Heart className="h-5 w-5" />
                     {wishlistCount > 0 && (

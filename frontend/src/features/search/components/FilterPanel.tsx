@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronUp, SlidersHorizontal, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -10,18 +11,18 @@ import type { SearchParams } from '@/schemas/search.schema'
 import { validatePriceRange } from '@/lib/priceRangeValidation'
 
 const SKIN_TYPES = [
-  { value: 'dry' as const, label: 'Dry', icon: '🌿' },
-  { value: 'oily' as const, label: 'Oily', icon: '💧' },
-  { value: 'combination' as const, label: 'Combination', icon: '🧴' },
-  { value: 'sensitive' as const, label: 'Sensitive', icon: '✨' },
-  { value: 'normal' as const, label: 'Normal', icon: '☀️' },
+  { value: 'dry' as const, label: 'Dry', labelKey: 'buyer.search.skinTypeOptions.dry', icon: '🌿' },
+  { value: 'oily' as const, label: 'Oily', labelKey: 'buyer.search.skinTypeOptions.oily', icon: '💧' },
+  { value: 'combination' as const, label: 'Combination', labelKey: 'buyer.search.skinTypeOptions.combination', icon: '🧴' },
+  { value: 'sensitive' as const, label: 'Sensitive', labelKey: 'buyer.search.skinTypeOptions.sensitive', icon: '✨' },
+  { value: 'normal' as const, label: 'Normal', labelKey: 'buyer.search.skinTypeOptions.normal', icon: '☀️' },
 ]
 
 const RATING_OPTIONS = [
-  { value: 4.5, label: '4.5+ Stars' },
-  { value: 4.0, label: '4.0+ Stars' },
-  { value: 3.5, label: '3.5+ Stars' },
-  { value: 3.0, label: '3.0+ Stars' },
+  { value: 4.5, label: '4.5+ Stars', labelKey: 'buyer.search.ratingOptions.fourFivePlus' },
+  { value: 4.0, label: '4.0+ Stars', labelKey: 'buyer.search.ratingOptions.fourPlus' },
+  { value: 3.5, label: '3.5+ Stars', labelKey: 'buyer.search.ratingOptions.threeFivePlus' },
+  { value: 3.0, label: '3.0+ Stars', labelKey: 'buyer.search.ratingOptions.threePlus' },
 ]
 
 interface FilterPanelProps {
@@ -41,6 +42,7 @@ export function FilterPanel({
   onPriceErrorChange,
   variant = 'desktop',
 }: FilterPanelProps) {
+    const { t } = useTranslation()
   const [priceMinDraft, setPriceMinDraft] = useState(params.minPrice?.toString() ?? '')
   const [priceMaxDraft, setPriceMaxDraft] = useState(params.maxPrice?.toString() ?? '')
   const [focusedPriceField, setFocusedPriceField] = useState<'min' | 'max' | null>(null)
@@ -101,7 +103,7 @@ export function FilterPanel({
       <div className="space-y-5">
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Category
+            {t('buyer.search.categoryTitle', 'Category')}
           </h4>
           <CategorySelect
             categories={categories}
@@ -113,12 +115,12 @@ export function FilterPanel({
 
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Price Range
+            {t('buyer.search.priceRangeTitle', 'Price Range')}
           </h4>
           <div className="flex items-center gap-2">
             <Input
               type="number"
-              placeholder="Min"
+              placeholder={t('buyer.search.minPlaceholder', 'Min')}
               value={priceMin}
               onFocus={() => setFocusedPriceField('min')}
               onChange={(e) => {
@@ -134,7 +136,7 @@ export function FilterPanel({
             <span className="text-slate-400">-</span>
             <Input
               type="number"
-              placeholder="Max"
+              placeholder={t('buyer.search.maxPlaceholder', 'Max')}
               value={priceMax}
               onFocus={() => setFocusedPriceField('max')}
               onChange={(e) => {
@@ -157,7 +159,7 @@ export function FilterPanel({
 
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Skin Type
+            {t('buyer.search.skinTypeTitle', 'Skin Type')}
           </h4>
           <div className="grid grid-cols-2 gap-2">
             {SKIN_TYPES.map((st) => {
@@ -174,7 +176,7 @@ export function FilterPanel({
                   }`}
                 >
                   <span className="text-base">{st.icon}</span>
-                  <span>{st.label}</span>
+                  <span>{t(st.labelKey, st.label)}</span>
                 </button>
               )
             })}
@@ -183,9 +185,9 @@ export function FilterPanel({
 
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Rating
+            {t('buyer.search.ratingTitle', 'Rating')}
           </h4>
-          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Rating">
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('buyer.search.ratingTitle', 'Rating')}>
             {RATING_OPTIONS.map((rating) => (
               <label
                 key={rating.value}
@@ -204,7 +206,7 @@ export function FilterPanel({
                   className="h-4 w-4 accent-violet-600"
                 />
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                {rating.label}
+                {t(rating.labelKey, rating.label)}
               </label>
             ))}
           </div>
@@ -217,13 +219,13 @@ export function FilterPanel({
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <SlidersHorizontal className="h-4 w-4" />
-        Filters
+        {t('buyer.search.filters', 'Filters')}
       </div>
 
       <div className="space-y-4">
         <div>
           <h4 className="mb-2 border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
-            Category
+            {t('buyer.search.categoryTitle', 'Category')}
           </h4>
           <CategorySelect
             categories={categories}
@@ -235,7 +237,7 @@ export function FilterPanel({
 
         <div>
           <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
-            Skin Type <ChevronUp className="h-3 w-3" />
+            {t('buyer.search.skinTypeTitle', 'Skin Type')} <ChevronUp className="h-3 w-3" />
           </h4>
           <div className="space-y-1.5">
             {SKIN_TYPES.map((st) => (
@@ -244,7 +246,7 @@ export function FilterPanel({
                   checked={params.skinTypes.includes(st.value)}
                   onCheckedChange={() => handleSkinTypeToggle(st.value)}
                 />
-                <span className="text-sm">{st.label}</span>
+                <span className="text-sm">{t(st.labelKey, st.label)}</span>
               </div>
             ))}
           </div>
@@ -254,12 +256,12 @@ export function FilterPanel({
 
         <div>
           <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
-            Price Range <ChevronUp className="h-3 w-3" />
+            {t('buyer.search.priceRangeTitle', 'Price Range')} <ChevronUp className="h-3 w-3" />
           </h4>
           <div className="flex items-center gap-2">
             <Input
               type="number"
-              placeholder="Min"
+              placeholder={t('buyer.search.minPlaceholder', 'Min')}
               value={priceMin}
               onFocus={() => setFocusedPriceField('min')}
               onChange={(e) => {
@@ -280,7 +282,7 @@ export function FilterPanel({
             <span className="text-slate-400">-</span>
             <Input
               type="number"
-              placeholder="Max"
+              placeholder={t('buyer.search.maxPlaceholder', 'Max')}
               value={priceMax}
               onFocus={() => setFocusedPriceField('max')}
               onChange={(e) => {
@@ -310,9 +312,9 @@ export function FilterPanel({
 
         <div>
           <h4 className="mb-2 flex items-center justify-between border-b border-gray-100 pb-2 text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:border-border dark:text-zinc-300">
-            Rating <ChevronUp className="h-3 w-3" />
+            {t('buyer.search.ratingTitle', 'Rating')} <ChevronUp className="h-3 w-3" />
           </h4>
-          <div className="space-y-1.5" role="radiogroup" aria-label="Rating">
+          <div className="space-y-1.5" role="radiogroup" aria-label={t('buyer.search.ratingTitle', 'Rating')}>
             {RATING_OPTIONS.map((r) => (
               <label key={r.value} className="flex cursor-pointer items-center gap-2">
                 <input
@@ -323,7 +325,7 @@ export function FilterPanel({
                   onChange={() => handleRatingChange(r.value)}
                   className="h-4 w-4 accent-violet-600"
                 />
-                <span className="text-sm">{r.label}</span>
+                <span className="text-sm">{t(r.labelKey, r.label)}</span>
               </label>
             ))}
           </div>
@@ -333,7 +335,7 @@ export function FilterPanel({
           <>
             <Separator />
             <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleReset}>
-              Clear All
+              {t('buyer.search.clearAll', 'Clear All')}
             </Button>
           </>
         )}

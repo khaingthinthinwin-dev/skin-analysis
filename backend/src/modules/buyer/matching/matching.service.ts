@@ -81,7 +81,7 @@ export class MatchingService {
       minPrice,
       maxPrice,
       rating,
-      sort = 'matchScore',
+      sort,
       order = 'desc',
       page = 1,
       limit = 20,
@@ -93,6 +93,19 @@ export class MatchingService {
     const effectiveCategoryId = categoryId || category;
 
     const context = await this.determineSource(userId);
+
+    // BR-MATCH-024 defaults: AI results fall back to `matchScore desc` (scored
+    // in memory below); generic results keep buildOrderBy's featured/rating
+    // fallback, which an absent `sort` selects. A stale `sort=matchScore` URL
+    // can outlive the AI analysis that offered it — generic results carry no
+    // scores, so mirror the UI and fall back to Newest (createdAt desc).
+    let effectiveSort =
+      sort ?? (context.source === 'ai' ? 'matchScore' : undefined);
+    let effectiveOrder = order;
+    if (effectiveSort === 'matchScore' && context.source !== 'ai') {
+      effectiveSort = 'createdAt';
+      effectiveOrder = 'desc';
+    }
 
     // The filter panel sends `skinTypes=all` when the buyer clears every skin type
     // checkbox, which means "no skin-type selection". Feeding that sentinel to
@@ -154,8 +167,11 @@ export class MatchingService {
       maxPrice,
       rating,
       categoryId: effectiveCategoryId,
-      sort,
-      order,
+      // The EFFECTIVE sort, not the raw request: a stale generic `matchScore`
+      // resolves to Newest, and two requests that apply the same order must
+      // share one cache entry (while AI `matchScore` must not collide with it).
+      sort: effectiveSort,
+      order: effectiveOrder,
       page,
       limit,
     });
@@ -204,15 +220,20 @@ export class MatchingService {
       where.avgRating = { gte: rating };
     }
 
-    const orderBy = this.buildOrderBy(sort, order);
+    const orderBy = this.buildOrderBy(effectiveSort, effectiveOrder);
 
     const skip = (page - 1) * limit;
+
+    // `matchScore` is computed, not a database column (BR-MATCH-025): the whole
+    // filtered set has to be scored and sorted before pagination, otherwise each
+    // page is re-sorted independently and the order repeats/skips products
+    // across pages. DB-level sorts (price / rating / createdAt) keep skip/take.
+    const globalMatchSort = effectiveSort === 'matchScore';
 
     const [rawProducts, filteredTotal] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        skip,
-        take: limit,
+        ...(globalMatchSort ? {} : { skip, take: limit }),
         orderBy,
         include: {
           merchant: {
@@ -255,31 +276,21 @@ export class MatchingService {
       };
     });
 
-    if (context.source === 'ai' && sort === 'matchScore') {
+    if (globalMatchSort) {
       data.sort((a, b) => {
         const scoreA = a.matchScore ?? 0;
         const scoreB = b.matchScore ?? 0;
-        return order === 'desc' ? scoreB - scoreA : scoreA - scoreB;
+        return effectiveOrder === 'asc' ? scoreA - scoreB : scoreB - scoreA;
       });
+      data = data.slice(skip, skip + limit);
     }
 
-    // Previously recommended products lead page 1: the buyer's own past picks
-    // (still on sale, highest match first) are shown before the fresh grid.
-    // They are selected with the same WHERE as the grid, so a price / rating /
-    // category / skin-type selection is never bypassed at the top of page 1.
-    // They also add nothing to `total`: every one of them is already part of
-    // the filtered match set counted by `count({ where })` (BR-MATCH-027).
-    if (page === 1) {
-      const featured = await this.getPreviouslyRecommendedFeatured(
-        userId,
-        3,
-        where,
-      );
-      if (featured.length > 0) {
-        const featuredIds = new Set(featured.map((p) => p.id));
-        data = [...featured, ...data.filter((p) => !featuredIds.has(p.id))];
-      }
-    }
+    // "Newest" (createdAt) follows the DB order strictly: page 1 must show the
+    // newest products first with no prepended strip, so the selected order is
+    // exactly what the buyer sees (BR-MATCH-025).
+    // NOTE: previously-recommended picks are NOT prepended here — they would
+    // break strict createdAt ordering. They remain available via the
+    // recommendation-history endpoint.
 
     const totalPages = Math.ceil(total / limit);
 
@@ -453,81 +464,6 @@ export class MatchingService {
     };
   }
 
-  /**
-   * The buyer's previously recommended products from the latest analysis that
-   * are still on sale, highest match first. These lead the recommendations
-   * grid so past picks stay visible at the top — but only when they satisfy
-   * the caller's `filters` (the same WHERE the grid query uses), so an active
-   * filter selection is never bypassed.
-   */
-  private async getPreviouslyRecommendedFeatured(
-    userId: string,
-    limit: number,
-    filters: Prisma.ProductWhereInput = {},
-  ): Promise<RecommendationResultDto[]> {
-    const latestAnalysis = await this.prisma.skinAnalysis.findFirst({
-      where: {
-        userId,
-        analysisStatus: 'completed',
-        completedAt: { not: null },
-      },
-      include: {
-        conditions: true,
-        recommendations: {
-          where: { product: filters },
-          include: {
-            product: {
-              include: {
-                merchant: { include: { user: { include: { shop: true } } } },
-              },
-            },
-          },
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-      orderBy: { completedAt: 'desc' },
-    });
-
-    if (!latestAnalysis) return [];
-
-    const scoringSkinType =
-      (latestAnalysis.skinType ?? '')
-        .split(',')
-        .map((type) => type.trim().toLowerCase())
-        .filter((type) => type.length > 0)[0] ?? '';
-    const concerns = latestAnalysis.conditions.map((c) => c.conditionName);
-
-    return (latestAnalysis.recommendations ?? [])
-      .filter(
-        (rec) =>
-          rec.product.isActive &&
-          rec.product.merchant?.user?.shop?.isApproved === true,
-      )
-      .map((rec) => {
-        const product = rec.product;
-        return {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          brandName: product.merchant?.shopName ?? '',
-          shortDescription: product.shortDescription ?? null,
-          price: product.price.toString(),
-          compareAtPrice: product.compareAtPrice?.toString() ?? null,
-          images: product.images,
-          skinTypes: product.skinTypes,
-          avgRating: product.avgRating.toString(),
-          reviewCount: product.reviewCount,
-          isFeatured: product.isFeatured,
-          isInStock: product.stockQuantity > 0,
-          matchScore: this.computeMatchScore(product, scoringSkinType, concerns)
-            .total,
-          categoryBadge: this.getCategoryBadge(product),
-        };
-      })
-      .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
-      .slice(0, limit);
-  }
-
   /** The requested category plus every category nested below it. */
   private async getCategoryDescendants(categoryId: string): Promise<string[]> {
     const descendants: string[] = [categoryId];
@@ -652,13 +588,13 @@ export class MatchingService {
    * for buyers without an AI analysis, and `rating` was never implemented at all
    * (the DTO accepted it, the ordering ignored it).
    *
-   * `matchScore` is not a database column — it is computed per product after the
-   * rows are fetched — so it (and an absent `sort`) falls back to the per-source
-   * default candidate window from BR-MATCH-024: featured, then rating. AI results
-   * are re-sorted by score in memory below.
+   * `matchScore` is not a database column — it is computed per product before
+   * pagination — so it (and an absent `sort`) falls back to the per-source
+   * default candidate window from BR-MATCH-024: featured, then rating. AI
+   * results are scored and re-sorted in memory before the page slice.
    */
   private buildOrderBy(
-    sort: string,
+    sort: string | undefined,
     order: string,
   ):
     | Prisma.ProductOrderByWithRelationInput

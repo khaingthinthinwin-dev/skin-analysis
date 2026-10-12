@@ -68,4 +68,9 @@ export class OrderListQueryDto {
   @IsString()
   @MaxLength(100)
   shopSearch?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  orderSearch?: string;
 }

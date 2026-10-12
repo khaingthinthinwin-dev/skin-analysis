@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, PackageCheck, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OrderStatus } from '../types/orderInsights.types';
+import { toSlashDisplayDate } from '../utils/dateRangeLabel';
 
 const STEP_ORDER: OrderStatus[] = [
   OrderStatus.PLACED,
@@ -75,7 +76,7 @@ export function DeliveryProgress({
           </CardTitle>
           {isBuyer && currentIndex >= 0 && (
             <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-              {t('orders.detail.progressStepCount', `Step ${currentIndex + 1} of ${STEP_ORDER.length}`)}
+              {t('orders.detail.progressStepCount', `Step ${currentIndex + 1} of ${STEP_ORDER.length}`, { current: currentIndex + 1, total: STEP_ORDER.length })}
             </span>
           )}
         </div>
@@ -88,9 +89,7 @@ export function DeliveryProgress({
               // A connector turns purple once it leads into a reached step.
               const connectorIsActive = index <= currentIndex;
               const timestamp = timestamps?.[status];
-              const stampDate =
-                timestamp &&
-                new Date(timestamp).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' });
+              const stampDate = timestamp && toSlashDisplayDate(timestamp);
               const stampTime =
                 timestamp &&
                 new Date(timestamp).toLocaleTimeString(dateLocale, {

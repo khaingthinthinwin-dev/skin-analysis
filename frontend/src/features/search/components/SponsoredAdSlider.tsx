@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowRight, ChevronLeft, ChevronRight, ImageIcon, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -71,6 +72,7 @@ function usePrefersReducedMotion() {
 }
 
 export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { data, isPending, isError } = useSponsoredAds(SEARCH_PAGE_PLACEMENT)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -172,8 +174,8 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
       tabIndex={0}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      aria-roledescription="carousel"
-      aria-label="Sponsored advertisements"
+      aria-roledescription={t('buyer.checkout.sponsoredAds.carouselRoleDescription', 'carousel')}
+      aria-label={t('buyer.checkout.sponsoredAds.ariaLabel', 'Sponsored advertisements')}
     >
       <CardContent
         className="relative flex h-[250px] max-h-[260px] items-center justify-between overflow-hidden rounded-3xl bg-gradient-to-r from-[#8d4eb3] via-[#7268b3] to-[#5d2d7d] p-6 text-white transition-all duration-700"
@@ -244,7 +246,7 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
               <button
                 key={item.id}
                 type="button"
-                aria-label={`Go to advertisement ${idx + 1}`}
+                aria-label={t('buyer.checkout.sponsoredAds.goToAdvertisement', `Go to advertisement ${idx + 1}`, { index: idx + 1 })}
                 aria-current={idx === displayIndex ? 'true' : undefined}
                 onClick={(event) => {
                   event.stopPropagation()

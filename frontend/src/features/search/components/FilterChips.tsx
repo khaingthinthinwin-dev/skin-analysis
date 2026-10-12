@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { SearchParams } from '@/schemas/search.schema'
@@ -11,14 +12,17 @@ interface FilterChipsProps {
 }
 
 export function FilterChips({ params, onRemove, onClearAll, categoryName }: FilterChipsProps) {
+  const { t } = useTranslation()
+  const skinTypeLabel = (slug: string) =>
+    t(`buyer.search.skinTypeOptions.${slug}`, slug.charAt(0).toUpperCase() + slug.slice(1))
   const chips: Array<{ key: string; label: string; value?: string }> = []
 
   if (params.q) chips.push({ key: 'q', label: `"${params.q}"` })
 
-  if (params.categoryId) chips.push({ key: 'categoryId', label: categoryName ?? 'Category' })
+  if (params.categoryId) chips.push({ key: 'categoryId', label: categoryName ?? t('buyer.search.categoryTitle', 'Category') })
 
   params.skinTypes.forEach((st) => {
-    chips.push({ key: 'skinTypes', label: st.charAt(0).toUpperCase() + st.slice(1), value: st })
+    chips.push({ key: 'skinTypes', label: skinTypeLabel(st), value: st })
   })
 
   params.ingredients.forEach((ing) => {
@@ -30,10 +34,10 @@ export function FilterChips({ params, onRemove, onClearAll, categoryName }: Filt
   })
 
   if (params.minPrice !== undefined)
-    chips.push({ key: 'minPrice', label: `Min: Ks ${Number(params.minPrice).toLocaleString('en-US')}` })
+    chips.push({ key: 'minPrice', label: t('buyer.search.minChip', `Min: Ks ${Number(params.minPrice).toLocaleString('en-US')}`, { amount: Number(params.minPrice).toLocaleString('en-US') }) })
   if (params.maxPrice !== undefined)
-    chips.push({ key: 'maxPrice', label: `Max: Ks ${Number(params.maxPrice).toLocaleString('en-US')}` })
-  if (params.rating !== undefined) chips.push({ key: 'rating', label: `${params.rating}+ Stars` })
+    chips.push({ key: 'maxPrice', label: t('buyer.search.maxChip', `Max: Ks ${Number(params.maxPrice).toLocaleString('en-US')}`, { amount: Number(params.maxPrice).toLocaleString('en-US') }) })
+  if (params.rating !== undefined) chips.push({ key: 'rating', label: t('buyer.search.ratingChip', `${params.rating}+ Stars`, { rating: params.rating }) })
 
   if (chips.length === 0) return null
 
@@ -44,7 +48,7 @@ export function FilterChips({ params, onRemove, onClearAll, categoryName }: Filt
           {chip.label}
           <button
             type="button"
-            aria-label={`Remove ${chip.label}`}
+            aria-label={t('buyer.search.removeChipAria', `Remove ${chip.label}`, { label: chip.label })}
             onClick={() => onRemove(chip.key, chip.value)}
             className="ml-0.5 rounded-full p-0.5 hover:bg-purple-100 dark:hover:bg-purple-500/20"
           >
@@ -60,7 +64,7 @@ export function FilterChips({ params, onRemove, onClearAll, categoryName }: Filt
           className="ml-1 h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
           onClick={onClearAll}
         >
-          Clear All
+          {t('buyer.search.clearAll', 'Clear All')}
         </Button>
       )}
     </div>

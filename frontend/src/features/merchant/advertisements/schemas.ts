@@ -1,8 +1,14 @@
 import { z } from 'zod'
 
+// Ads render their description inside a 2-line clamp (line-clamp-2) in every
+// placement (checkout slider, search slider, sidebar, matching panel). At the
+// narrowest of those (~300px on mobile) two lines hold about 100 characters,
+// so anything longer is cut off with "…" on screen.
+export const AD_CONTENT_MAX = 100
+
 const contentFields = {
   title: z.string().min(1, 'Title is required').max(200, 'Title must not exceed 200 characters'),
-  content: z.string().max(5000, 'Content must not exceed 5000 characters'),
+  content: z.string().max(AD_CONTENT_MAX, `Content must not exceed ${AD_CONTENT_MAX} characters`),
   // The image is not uploaded: the merchant picks one of the images already
   // attached to one of their own products, so the value is a stored product
   // image path (e.g. /uploads/products/<file>) and is validated server-side
@@ -54,8 +60,14 @@ export const contentSchema = z.object({
   ...contentFields,
 })
 
+// Payment reference is a numeric transaction reference: at least 8 digits,
+// up to the 100-character column limit.
 export const paymentSchema = z.object({
-  paymentReference: z.string().max(100, 'Payment reference must not exceed 100 characters'),
+  paymentReference: z
+    .string()
+    .min(8, 'Payment reference must be at least 8 digits')
+    .max(100, 'Payment reference must not exceed 100 characters')
+    .regex(/^\d+$/, 'Payment reference must contain only digits'),
 })
 
 export type UploadContentForm = z.infer<typeof uploadContentSchema>

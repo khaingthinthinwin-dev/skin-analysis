@@ -30,6 +30,7 @@
     "@tiptap/react": "^3.31.0",
     "@tiptap/starter-kit": "^3.31.0",
     "@types/react-router-dom": "^5.3.3",
+    "@types/ua-parser-js": "^0.7.39",
     "axios": "^1.19.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
