@@ -10,12 +10,12 @@ import {
 import { SUPPORTED_LANGUAGES } from '@/lib/constants'
 
 export function LanguageToggle() {
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Change language">
+        <Button variant="ghost" size="icon" aria-label={t('nav.menu.changeLanguage', 'Change language')}>
           <Globe className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>

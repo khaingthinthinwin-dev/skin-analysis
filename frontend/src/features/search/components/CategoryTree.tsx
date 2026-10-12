@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { CategoryNode } from '@/types/search.types'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -10,13 +11,14 @@ interface CategoryTreeProps {
 }
 
 export function CategoryTree({ categories, selectedCategoryId, onSelect }: CategoryTreeProps) {
+  const { t } = useTranslation()
   // categories array 
   const safeCategories = Array.isArray(categories) ? categories : []
 
   return (
     <div className="space-y-1">
       <CategoryItem
-        node={{ id: '', name: 'All Categories', slug: '', iconUrl: null, sortOrder: 0, children: [] }}
+        node={{ id: '', name: t('buyer.search.allCategories', 'All Categories'), slug: '', iconUrl: null, sortOrder: 0, children: [] }}
         selectedCategoryId={selectedCategoryId}
         onSelect={onSelect}
         depth={0}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { CategoryNode } from '@/types/search.types'
 
 interface CategorySelectProps {
@@ -31,11 +32,12 @@ export function CategorySelect({
   activeClassName,
   noIndent = false,
 }: CategorySelectProps) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const safeCategories = Array.isArray(categories) ? categories : []
   const flatCategories = flattenCategories(safeCategories)
 
-  const allItems = [{ id: '', name: 'All', depth: 0 }, ...flatCategories]
+  const allItems = [{ id: '', name: t('buyer.search.all', 'All'), depth: 0 }, ...flatCategories]
   const visibleItems = expanded ? allItems : allItems.slice(0, COLLAPSED_COUNT)
   const hasMore = allItems.length > COLLAPSED_COUNT
 
@@ -97,7 +99,7 @@ export function CategorySelect({
               : 'mt-1 pl-4 text-xs font-bold uppercase text-cyan-600 dark:text-cyan-400'
           }
         >
-          {expanded ? 'View Less' : 'View More'}
+          {expanded ? t('buyer.search.viewLess', 'View Less') : t('buyer.search.viewMore', 'View More')}
         </button>
       )}
     </div>

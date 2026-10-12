@@ -2,31 +2,50 @@ import { Badge } from '@/components/ui/badge';
 import { ProductDetail } from '../services/product.service';
 import { StarRating } from './StarRating';
 import { ProductPurchaseActions } from './ProductPurchaseActions';
+import { useTranslation } from 'react-i18next';
 
 interface ProductInfoProps {
   product: ProductDetail;
+  isMerchantView?: boolean;
 }
 
 function formatPrice(price: number | string) {
   return new Intl.NumberFormat('en-US').format(Number(price));
 }
 
-function getStockStatus(product: ProductDetail): {
+function getStockStatus(
+  product: ProductDetail,
+  labels: {
+    outOfStock: string;
+    lowStock: (count: number) => string;
+    inStock: (count: number) => string;
+  },
+): {
   label: string;
   variant: 'destructive' | 'default' | 'secondary';
 } {
   if (product.stockQuantity <= 0) {
-    return { label: 'Out of stock', variant: 'destructive' };
+    return { label: labels.outOfStock, variant: 'destructive' };
   }
   if (product.stockQuantity <= product.lowStockThreshold) {
-    return { label: `Low stock (${product.stockQuantity} left)`, variant: 'secondary' };
+    return { label: labels.lowStock(product.stockQuantity), variant: 'secondary' };
   }
-  return { label: `In stock (${product.stockQuantity})`, variant: 'default' };
+  return { label: labels.inStock(product.stockQuantity), variant: 'default' };
 }
 
-export function ProductInfo({ product }: ProductInfoProps) {
+export function ProductInfo({ product, isMerchantView = false }: ProductInfoProps) {
+  const { t } = useTranslation();
   const discount = product.promotions[0];
-  const stock = getStockStatus(product);
+  const stock = getStockStatus(product, {
+    outOfStock: t('buyer.products.stock.outOfStock', 'Out of stock'),
+    lowStock: (count) =>
+      t('buyer.products.stock.lowStock', 'Low stock ({{count}} left)', { count }),
+    inStock: (count) =>
+      t('buyer.products.stock.inStockStatus', 'In stock ({{count}})', { count }),
+  });
+
+  const showReviews = () =>
+    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="space-y-4">
@@ -38,31 +57,42 @@ export function ProductInfo({ product }: ProductInfoProps) {
         )}
       </div>
 
-      {/* [C2] Rating Summary */}
-      <div className="flex items-center gap-2">
+      {/* [C2] Rating Summary — the whole row jumps to the reviews section */}
+      <button
+        type="button"
+        onClick={showReviews}
+        aria-label={`Go to reviews. Rated ${Number(product.avgRating).toFixed(
+          1,
+        )} out of 5 from ${product.reviewCount} reviews`}
+        className="group flex cursor-pointer items-center gap-2 text-left transition-opacity hover:opacity-80"
+      >
         <StarRating rating={product.avgRating} />
         <span className="text-sm font-medium">{Number(product.avgRating).toFixed(1)}</span>
-        <button
-          type="button"
-          onClick={() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' })}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ({product.reviewCount} reviews)
-        </button>
-      </div>
+        <span className="text-sm text-blue-600 group-hover:underline">
+          {t('buyer.products.reviews.countLabel', '({{count}} reviews)', {
+            count: product.reviewCount,
+          })}
+        </span>
+      </button>
 
       {/* [C3] Price */}
       <div className="flex items-center gap-3">
         <span className="text-2xl font-semibold text-primary">
-          {formatPrice(product.price)} MMK
+          {t('buyer.products.price.amountInMmk', '{{amount}} MMK', {
+            amount: formatPrice(product.price),
+          })}
         </span>
         {product.compareAtPrice && (
           <>
             <span className="text-lg text-muted-foreground line-through">
-              {formatPrice(product.compareAtPrice)} MMK
+              {t('buyer.products.price.amountInMmk', '{{amount}} MMK', {
+                amount: formatPrice(product.compareAtPrice),
+              })}
             </span>
             <Badge variant="destructive">
-              Save {formatPrice(Number(product.compareAtPrice) - Number(product.price))} MMK
+              {t('buyer.products.price.savingsInMmk', 'Save {{amount}} MMK', {
+                amount: formatPrice(Number(product.compareAtPrice) - Number(product.price)),
+              })}
             </Badge>
           </>
         )}
@@ -72,7 +102,9 @@ export function ProductInfo({ product }: ProductInfoProps) {
       <div className="flex flex-wrap items-center gap-1">
         <Badge variant={stock.variant}>{stock.label}</Badge>
         {product.sku && (
-          <span className="text-sm text-muted-foreground">SKU: {product.sku}</span>
+          <span className="text-sm text-muted-foreground">
+            {t('buyer.products.product.sku', 'SKU: {{sku}}', { sku: product.sku })}
+          </span>
         )}
       </div>
 
@@ -91,27 +123,34 @@ export function ProductInfo({ product }: ProductInfoProps) {
       )}
 
       {/* Discount badge (if promotion exists) */}
-      {discount && (
+      {!isMerchantView && discount && (
         <Badge variant="secondary">
           {discount.code}:{' '}
           {discount.discountTypeCode === 'percentage'
-            ? `${discount.discountValue}% off`
-            : `${discount.discountValue} off`}
+            ? t('buyer.products.promotion.discountPercentOff', '{{discountValue}}% off', {
+                discountValue: discount.discountValue,
+              })
+            : t('buyer.products.promotion.discountAmountOff', '{{amount}} off', {
+                amount: discount.discountValue,
+              })}
         </Badge>
       )}
 
       {/* [D] Purchase Actions — hidden on mobile, shown on desktop */}
-      <div className="hidden pt-2 md:block">
-        <ProductPurchaseActions product={product} />
-      </div>
+      {!isMerchantView && (
+        <div className="hidden pt-2 md:block">
+          <ProductPurchaseActions product={product} />
+        </div>
+      )}
 
-      {/* [E] Sold By */}
-      <p className="text-sm text-muted-foreground">
-        Sold by{' '}
-        <span className="font-medium text-foreground">
-          {product.merchant.shopName}
-        </span>
-      </p>
+      {!isMerchantView && (
+        <p className="text-sm text-muted-foreground">
+          Sold by{' '}  
+          <span className="font-medium text-foreground">
+            {product.merchant.shopName}
+          </span>
+        </p>
+      )}
     </div>
   );
 }

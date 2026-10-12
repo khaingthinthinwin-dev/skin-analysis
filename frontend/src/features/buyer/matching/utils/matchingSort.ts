@@ -32,9 +32,11 @@ const MATCH_SCORE_OPTION: MatchingSortOption = {
   label: 'Match Score',
 }
 
+/** AI options keep "Newest" at the top too, so both sources open on the default. */
 const AI_SORT_OPTIONS: readonly MatchingSortOption[] = [
+  COMMON_SORT_OPTIONS[0],
   MATCH_SCORE_OPTION,
-  ...COMMON_SORT_OPTIONS,
+  ...COMMON_SORT_OPTIONS.slice(1),
 ]
 
 export function getMatchingSortOptions(
@@ -46,15 +48,28 @@ export function getMatchingSortOptions(
 /**
  * Resolve the value the sort bar shows for the current URL, falling back to the
  * "Newest" default when the URL carries no explicit sort/order.
+ *
+ * When the result `source` is known, a sort that source cannot offer (a stale
+ * `matchScore` after the AI analysis lapsed, or an unlisted direction like
+ * `rating:asc`) also falls back to "Newest" — otherwise the select would render
+ * its placeholder while the API applies a different order than the one shown.
+ * Pass `undefined` while the source is still loading to avoid flashing the
+ * fallback for a valid AI sort.
  */
 export function resolveMatchingSort(
   filters: Partial<Pick<MatchQueryParams, 'sort' | 'order'>>,
+  source?: RecommendationSource,
 ): {
   sort: MatchingSortField
   order: MatchingSortOrder
 } {
-  return {
-    sort: filters.sort ?? DEFAULT_MATCHING_SORT.sort,
-    order: filters.order ?? DEFAULT_MATCHING_SORT.order,
-  }
+  const sort = filters.sort ?? DEFAULT_MATCHING_SORT.sort
+  const order = filters.order ?? DEFAULT_MATCHING_SORT.order
+
+  const displayable =
+    !source ||
+    getMatchingSortOptions(source).some((option) => option.value === `${sort}:${order}`)
+
+  if (!displayable) return { ...DEFAULT_MATCHING_SORT }
+  return { sort, order }
 }
