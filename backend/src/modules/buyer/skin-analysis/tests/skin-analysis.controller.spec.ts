@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
+import type { App } from 'supertest/types';
 import { Response } from 'express';
 import { SkinAnalysisController } from '../skin-analysis.controller';
 import { SkinAnalysisService } from '../skin-analysis.service';
@@ -71,6 +72,7 @@ function buyerToken(role = 'buyer') {
 
 describe('SkinAnalysisController', () => {
   let app: INestApplication;
+  let server: App;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -91,6 +93,7 @@ describe('SkinAnalysisController', () => {
     app = module.createNestApplication({ logger: false });
     app.useGlobalInterceptors(new TransformInterceptor());
     await app.init();
+    server = app.getHttpServer() as App;
   });
 
   afterEach(async () => {
@@ -99,14 +102,14 @@ describe('SkinAnalysisController', () => {
 
   describe('guards', () => {
     it('should return 401 Unauthorized without a JWT token (BR-SKIN-001)', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .get('/skin-analysis/latest')
         .expect(401);
       expect(res.body.message).toContain('Invalid or expired token');
     });
 
     it('should return 403 Forbidden for admin/merchant roles (BR-SKIN-001)', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .get('/skin-analysis/latest')
         .set('Authorization', `Bearer ${buyerToken('admin')}`)
         .expect(403);
@@ -116,7 +119,7 @@ describe('SkinAnalysisController', () => {
 
   describe('validation', () => {
     it('should return 400 Bad Request (40004) for a malformed UUID', async () => {
-      await request(app.getHttpServer())
+      await request(server)
         .get('/skin-analysis/not-a-uuid')
         .set('Authorization', `Bearer ${buyerToken()}`)
         .expect(400);
@@ -135,7 +138,7 @@ describe('SkinAnalysisController', () => {
         remainingDailyQuota: 4,
       });
 
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .get('/skin-analysis/latest')
         .set('Authorization', `Bearer ${buyerToken()}`)
         .expect(200);
@@ -152,7 +155,7 @@ describe('SkinAnalysisController', () => {
         estimatedWaitSeconds: 15,
       });
 
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .post('/skin-analysis/analyze')
         .send({ blobUrl: '/uploads/skin-scans/user/a1.png' })
         .set('Authorization', `Bearer ${buyerToken()}`)
@@ -174,7 +177,7 @@ describe('SkinAnalysisController', () => {
         },
       );
 
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .get('/skin-analysis/289c9a23-0d3b-4f9e-8d77-47ae410f2cc1/export')
         .set('Authorization', `Bearer ${buyerToken()}`)
         .expect(200);
@@ -189,7 +192,7 @@ describe('SkinAnalysisController', () => {
         message: 'Feedback recorded successfully.',
       });
 
-      await request(app.getHttpServer())
+      await request(server)
         .post(
           '/skin-analysis/recommendations/289c9a23-0d3b-4f9e-8d77-47ae410f2cc1/feedback',
         )

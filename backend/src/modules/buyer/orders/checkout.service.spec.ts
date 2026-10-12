@@ -4,6 +4,8 @@ import { CheckoutService } from './checkout.service';
 const ad = {
   id: 'ad-1',
   title: 'Glow Serum',
+  shop: { name: 'Aura & Essence' },
+  announcementMessage: 'Brighten your skin with Glow Serum',
   content: 'Brighten your routine',
   imageUrl: 'https://cdn.example.com/ad.png',
   sku: 'sku-001',
@@ -141,12 +143,26 @@ describe('CheckoutService getCheckoutPageAds', () => {
         {
           id: 'ad-1',
           placement: 'checkout_page_banner',
+          merchantName: 'Aura & Essence',
           title: 'Glow Serum',
+          announcementMessage: 'Brighten your skin with Glow Serum',
           description: 'Brighten your routine',
           imageUrl: 'https://cdn.example.com/ad.png',
           sku: 'sku-001',
         },
       ],
+    });
+  });
+
+  it('includes the ad shop name in the sponsored ad payload', async () => {
+    await service.getCheckoutPageAds();
+
+    expect(findManyArgs().include).toEqual({
+      shop: {
+        select: {
+          name: true,
+        },
+      },
     });
   });
 

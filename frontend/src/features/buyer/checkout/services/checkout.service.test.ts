@@ -13,7 +13,9 @@ const ads: SponsoredAd[] = [
   {
     id: 'ad-1',
     placement: 'checkout_page_banner',
+    merchantName: 'Aura & Essence',
     title: 'Glow Serum',
+    announcementMessage: 'Brighten your skin with Glow Serum',
     description: 'Brighten your routine',
     imageUrl: 'https://cdn.test/a.png',
     sku: 'sku-001',

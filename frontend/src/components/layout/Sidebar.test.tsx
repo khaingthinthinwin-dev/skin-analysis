@@ -60,7 +60,16 @@ describe('Sidebar Component', () => {
     expect(screen.getByText('Merchant')).toBeInTheDocument()
     expect(screen.getByText(/catalog & sales/i)).toBeInTheDocument()
     expect(screen.getByText('Products')).toBeInTheDocument()
+    expect(screen.getByText('Product Review')).toBeInTheDocument()
     expect(screen.getByText('Promotions')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Product Review' })).toHaveAttribute(
+      'href',
+      '/merchant/product-review',
+    )
+    const merchantLinks = screen.getAllByRole('link').map((link) => link.textContent)
+    expect(merchantLinks.indexOf('Product Review')).toBe(
+      merchantLinks.indexOf('Products') + 1,
+    )
     expect(screen.getByText('Seller Store')).toBeInTheDocument()
   })
 

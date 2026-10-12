@@ -61,6 +61,7 @@ const BuyerMatchingRecommendations = lazy(() => import('@/pages/buyer/MatchingRe
 
 const MerchantDashboard = lazy(() => import('@/pages/merchant/Dashboard'))
 const MerchantProductManagement = lazy(() => import('@/pages/merchant/ProductManagement'))
+const MerchantProductReview = lazy(() => import('@/pages/merchant/ProductReview'))
 const MerchantProductCreate = lazy(() => import('@/pages/merchant/ProductCreate'))
 const MerchantProductEdit = lazy(() => import('@/pages/merchant/ProductEdit'))
 const MerchantAdvertisements = lazy(() => import('@/pages/merchant/Advertisements'))
@@ -487,10 +488,26 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'product-review',
+                element: (
+                  <SuspenseWrapper>
+                    <MerchantProductReview />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
                 path: 'products/new',
                 element: (
                   <SuspenseWrapper>
                     <MerchantProductCreate />
+                  </SuspenseWrapper>
+                ),
+              },
+              {
+                path: 'products/:id/view',
+                element: (
+                  <SuspenseWrapper>
+                    <BuyerProductDetail />
                   </SuspenseWrapper>
                 ),
               },

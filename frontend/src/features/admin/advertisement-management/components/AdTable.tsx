@@ -203,8 +203,8 @@ export function AdTable({
         <td className={`${TD_BASE} ${getCellHighlight(isHighlighted, 9)}`}>
           {formatScheduleRange(ad.startsAt, ad.expiresAt)}
         </td>
-<td
-          className={`${TD_BASE} sticky right-0 z-20 bg-card ${getCellHighlight(isHighlighted, 10)} relative ${isHighlighted ? 'bg-purple-50/50 dark:bg-purple-950/30' : ''}`}
+        <td
+          className={`${TD_BASE} sticky right-0 z-20 bg-card before:absolute before:inset-0 before:-z-10 before:content-[''] ${selected ? 'before:bg-secondary/40' : ''} group-hover:before:bg-muted/40 ${getCellHighlight(isHighlighted, 10)} relative ${isHighlighted ? 'bg-purple-50/50 dark:bg-purple-950/30' : ''}`}
           style={{ zIndex: isHighlighted ? 30 : 20 }}>
           <div className="text-right">
             {ad.approvalStatus === 'pending' ? (

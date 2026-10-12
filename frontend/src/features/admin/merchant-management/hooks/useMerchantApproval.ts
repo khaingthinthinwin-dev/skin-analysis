@@ -20,6 +20,7 @@ export function useMerchantApproval(params?: {
     mutationFn: ({ id }: { id: string }) => merchantService.approveMerchant(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'merchants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
 
@@ -28,6 +29,7 @@ export function useMerchantApproval(params?: {
       merchantService.rejectMerchant(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'merchants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
 

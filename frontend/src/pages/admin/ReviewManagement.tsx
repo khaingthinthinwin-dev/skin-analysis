@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   useAdminReviews,
@@ -114,16 +114,29 @@ function getImageUrl(url: string): string {
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={`text-sm ${
-            star <= rating ? 'text-yellow-400' : 'text-gray-600'
-          }`}
-        >
-          ★
-        </span>
-      ))}
+      {[1, 2, 3, 4, 5].map((star) => {
+        const fill = Math.min(Math.max(rating - (star - 1), 0), 1);
+        const background =
+          fill >= 1
+            ? '#facc15'
+            : fill >= 0.5
+              ? 'linear-gradient(90deg, #facc15 50%, #4b5563 50%)'
+              : '#4b5563';
+        return (
+          <span
+            key={star}
+            className="text-sm"
+            style={{
+              background,
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            ★
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -201,6 +214,75 @@ function ReasonBadge({ reason }: { reason: string }) {
   );
 }
 
+// ─── Notification Target ────────────────────────────────────────────────────
+
+type ModerationTab = 'reviews' | 'reports';
+
+// Review notifications deep-link here with `?tab=reviews|reports&highlight=<id>`
+// so the admin lands on the exact queue entry the notification was about. Once
+// the admin acts on it (e.g. closes the detail modal or switches queues) the
+// highlight is cleared and the `highlight` query param is removed from the URL,
+// so a refresh does not keep re-emphasizing an already-visited row.
+function useNotificationTarget() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedHighlight = searchParams.get('highlight') ?? '';
+  const requestedTab: ModerationTab =
+    searchParams.get('tab') === 'reports' ? 'reports' : 'reviews';
+
+  const [tabChoice, setTabChoice] = useState<ModerationTab>(requestedTab);
+  // Snapshot the deep-linked target on first render so unrelated re-renders
+  // (such as opening or closing the detail modals) cannot clear it on their own.
+  const [highlightId, setHighlightId] = useState<string | null>(
+    requestedHighlight || null,
+  );
+
+  // A live deep-linked target dictates the tab, otherwise the admin's choice wins.
+  const activeTab = highlightId ? requestedTab : tabChoice;
+  const highlightedReviewId = activeTab === 'reviews' ? highlightId : null;
+  const highlightedReportId = activeTab === 'reports' ? highlightId : null;
+
+  const clearHighlight = () => {
+    setHighlightId(null);
+    if (searchParams.has('highlight')) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('highlight');
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  };
+
+  return {
+    activeTab,
+    highlightedReviewId,
+    highlightedReportId,
+    changeTab: (value: string) => {
+      const nextTab = value as ModerationTab;
+      // Only a real tab change dismisses the deep-link target. Re-selecting the
+      // current tab (which Radix also reports) must leave the highlight intact.
+      if (nextTab !== activeTab) {
+        clearHighlight();
+      }
+      setTabChoice(nextTab);
+    },
+    clearHighlight,
+  };
+}
+
+function HighlightBadge() {
+  return (
+    <Badge
+      variant="outline"
+      className="mr-1.5 bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-300"
+    >
+      From notification
+    </Badge>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function ReviewManagement() {
@@ -233,6 +315,28 @@ export default function ReviewManagement() {
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // ── Notification Target ─────────────────────────────────────────────────────
+  const {
+    activeTab,
+    highlightedReviewId,
+    highlightedReportId,
+    changeTab,
+    clearHighlight,
+  } = useNotificationTarget();
+
+  // Closing a detail dialog means the admin has seen/acted on the deep-linked
+  // row, so the notification highlight is dismissed and the URL param dropped.
+  const closeReviewDetail = () => {
+    setDetailReview(null);
+    clearHighlight();
+  };
+
+  const closeReportDetail = () => {
+    setDetailReport(null);
+    setReportAdminNoteError('');
+    clearHighlight();
+  };
 
   // ── Stats ────────────────────────────────────────────────────────────────
   const { stats, refreshStats } = useReviewStats();
@@ -318,7 +422,7 @@ export default function ReviewManagement() {
       {
         onSuccess: () => {
           toast.success('Review approved');
-          setDetailReview(null);
+          closeReviewDetail();
           refreshStats();
         },
         onError: (error: unknown) =>
@@ -337,7 +441,7 @@ export default function ReviewManagement() {
           toast.success('Review rejected');
           setRejectTarget(null);
           setRejectReason('');
-          setDetailReview(null);
+          closeReviewDetail();
           refreshStats();
         },
         onError: (error: unknown) =>
@@ -356,7 +460,7 @@ export default function ReviewManagement() {
       onSuccess: () => {
         toast.success('Review deleted');
         setDeleteTarget(null);
-        setDetailReview(null);
+        closeReviewDetail();
         refreshStats();
       },
         onError: (error: unknown) =>
@@ -473,7 +577,7 @@ export default function ReviewManagement() {
       onSuccess: () => {
         toast.success('Report deleted');
         setReportDeleteTarget(null);
-        setDetailReport(null);
+        closeReportDetail();
       },
       onError: () => toast.error('Failed to delete report'),
     });
@@ -490,7 +594,7 @@ export default function ReviewManagement() {
         onSuccess: () => {
           toast.success('Report rejected');
           setReportRejectOpen(false);
-          setDetailReport(null);
+          closeReportDetail();
         },
         onError: () => toast.error('Failed to reject report'),
       },
@@ -558,7 +662,7 @@ export default function ReviewManagement() {
         </p>
       </div>
 
-      <Tabs defaultValue="reviews">
+      <Tabs value={activeTab} onValueChange={changeTab}>
         {/* ── [B] Screen Tabs ──────────────────────────────────────────── */}
         <TabsList>
           <TabsTrigger value="reviews" className="gap-2">
@@ -725,7 +829,7 @@ export default function ReviewManagement() {
             )}
 
             <div className="overflow-x-auto rounded-md border border-border bg-card">
-              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:border-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40 [&_tbody_tr[data-highlighted]>td]:border-b-0">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -751,14 +855,20 @@ export default function ReviewManagement() {
                     <TableRow>
                       <TableCell
                         colSpan={8}
-                        className="text-center py-12 text-muted-foreground"
+                        className="border-b border-border text-center py-12 text-muted-foreground"
                       >
                         No reviews found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    reviews.map((review) => (
-                      <TableRow key={review.id}>
+                    reviews.map((review) => {
+                      const isHighlighted = review.id === highlightedReviewId;
+                      return (
+                      <TableRow
+                        key={review.id}
+                        className={`review-row border-0${isHighlighted ? ' [&>td]:!border-t-2 [&>td]:!border-b-2 [&>td]:!border-purple-600 [&>td:first-child]:!border-l-2 [&>td:last-child]:!border-r-2 [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg' : ''}`}
+                        data-highlighted={isHighlighted || undefined}
+                      >
                         <TableCell>
                           <Checkbox
                             checked={selectedReviews.includes(review.id)}
@@ -811,6 +921,7 @@ export default function ReviewManagement() {
                           <StarRating rating={review.rating} />
                         </TableCell>
                         <TableCell className="max-w-[180px] truncate text-sm">
+                          {isHighlighted && <HighlightBadge />}
                           {review.title || review.body || '-'}
                         </TableCell>
                         <TableCell>
@@ -840,7 +951,8 @@ export default function ReviewManagement() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -966,7 +1078,7 @@ export default function ReviewManagement() {
           {/* ── Reports Table ──────────────────────────────────────────── */}
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="overflow-x-auto rounded-md border border-border bg-card">
-              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
+              <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:border-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40 [&_tbody_tr[data-highlighted]>td]:border-b-0">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Reporter</TableHead>
@@ -988,8 +1100,14 @@ export default function ReviewManagement() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    reports.map((report) => (
-                      <TableRow key={report.id}>
+                    reports.map((report) => {
+                      const isHighlighted = report.id === highlightedReportId;
+                      return (
+                      <TableRow
+                        key={report.id}
+                        className={isHighlighted ? '[&>td]:!border-t-2 [&>td]:!border-b-2 [&>td]:!border-purple-600 [&>td:first-child]:!border-l-2 [&>td:last-child]:!border-r-2 [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg' : undefined}
+                        data-highlighted={isHighlighted || undefined}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div
@@ -1010,6 +1128,7 @@ export default function ReviewManagement() {
                           </div>
                         </TableCell>
                         <TableCell className="max-w-[250px] truncate">
+                          {isHighlighted && <HighlightBadge />}
                           {report.review?.body || report.review?.title || '-'}
                         </TableCell>
                         <TableCell>
@@ -1055,7 +1174,8 @@ export default function ReviewManagement() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -1080,7 +1200,7 @@ export default function ReviewManagement() {
       {/* ════════════════════════════════════════════════════════════════════ */}
 
       {/* ── Review Detail Modal ─────────────────────────────────────────── */}
-      <Dialog open={!!detailReview} onOpenChange={() => setDetailReview(null)}>
+      <Dialog open={!!detailReview} onOpenChange={closeReviewDetail}>
         <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
@@ -1248,7 +1368,7 @@ export default function ReviewManagement() {
               <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
-                  onClick={() => setDetailReview(null)}
+                  onClick={closeReviewDetail}
                 >
                   Cancel
                 </Button>
@@ -1435,7 +1555,7 @@ export default function ReviewManagement() {
       </Dialog>
 
       {/* ── Report Detail Modal ─────────────────────────────────────────── */}
-      <Dialog open={!!detailReport} onOpenChange={() => { setDetailReport(null); setReportAdminNoteError(''); }}>
+      <Dialog open={!!detailReport} onOpenChange={closeReportDetail}>
         <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
@@ -1565,7 +1685,7 @@ export default function ReviewManagement() {
               <div className="flex justify-end gap-2 pt-1">
                 <Button
                   variant="outline"
-                  onClick={() => setDetailReport(null)}
+                  onClick={closeReportDetail}
                 >
                   Cancel
                 </Button>
@@ -1591,7 +1711,7 @@ export default function ReviewManagement() {
                                   );
                                 }
                                 toast.success('Report resolved');
-                                setDetailReport(null);
+                                closeReportDetail();
                               },
                               onError: () => toast.error('Failed to resolve report'),
                             },

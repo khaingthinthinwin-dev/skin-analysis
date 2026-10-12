@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const AUDIT_LOG_MIN_RETENTION_DAYS = 90;
 export const AUDIT_LOG_EXPORT_MAX_RANGE_DAYS = 365;
-export const AUDIT_LOG_PAGE_SIZES = [25, 50, 100, 200] as const;
+export const AUDIT_LOG_PAGE_SIZES = [10, 20, 50, 100] as const;
 export const AUDIT_SORT_FIELDS = ['created_at', 'action', 'entity_type'] as const;
 
 const uuidSchema = z.string().uuid();
@@ -26,10 +26,10 @@ export const auditLogQuerySchema = z
     search: optionalTrimmed(255),
     page: z.coerce.number().int().min(1).default(1),
     limit: z
-      .union([z.literal('25'), z.literal('50'), z.literal('100'), z.literal('200'), z.number()])
-      .default(50)
+      .union([z.literal('10'), z.literal('20'), z.literal('50'), z.literal('100'), z.number()])
+      .default(10)
       .transform((v) => Number(v))
-      .pipe(z.number().int().min(1).max(200)),
+      .pipe(z.number().int().min(1).max(100)),
     sortBy: z.enum(AUDIT_SORT_FIELDS).default('created_at'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
   })
@@ -44,7 +44,7 @@ export const DEFAULT_AUDIT_LOG_QUERY: AuditLogQueryState = {
   ipAddress: undefined,
   search: undefined,
   page: 1,
-  limit: 50,
+  limit: 10,
   sortBy: 'created_at',
   sortOrder: 'desc',
 };

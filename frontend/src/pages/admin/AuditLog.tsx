@@ -167,40 +167,6 @@ export default function AuditLog() {
     });
   };
 
-  const handleViewUserHistory = (userId: string) => {
-    setDetailId(null);
-    patch(
-      {
-        userId,
-        entityType: undefined,
-        entityId: undefined,
-        action: undefined,
-        ipAddress: undefined,
-        search: undefined,
-        dateFrom: undefined,
-        dateTo: undefined,
-      },
-      { resetPage: true },
-    );
-  };
-
-  const handleViewEntityHistory = (entityType: string, entityId: string) => {
-    setDetailId(null);
-    patch(
-      {
-        entityType: [entityType],
-        entityId,
-        userId: undefined,
-        action: undefined,
-        ipAddress: undefined,
-        search: undefined,
-        dateFrom: undefined,
-        dateTo: undefined,
-      },
-      { resetPage: true },
-    );
-  };
-
   const meta = listQuery.data?.meta;
   const is403 =
     listQuery.error !== null &&
@@ -216,7 +182,7 @@ export default function AuditLog() {
   const showLoadError = listQuery.isError && !listQuery.data;
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
       <AuditLogHeader
         autoRefresh={autoRefresh}
         onAutoRefreshChange={setAutoRefresh}
@@ -226,13 +192,13 @@ export default function AuditLog() {
       />
 
       {(refreshError || showLoadError) && (
-        <p
-          className="text-sm text-destructive"
+        <div
+          className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-sm text-destructive font-medium"
           role="alert"
           data-testid="audit-load-error"
         >
           {extractApiMessage(listQuery.error) ?? t('audit.loadFailed')}
-        </p>
+        </div>
       )}
 
       <AuditLogFilters
@@ -244,14 +210,15 @@ export default function AuditLog() {
       />
 
       {listQuery.isLoading ? (
-        <div className="space-y-2" aria-busy="true" aria-live="polite">
-          <div className="h-10 animate-pulse rounded-md bg-muted" />
-          <div className="h-10 animate-pulse rounded-md bg-muted" />
-          <div className="h-10 animate-pulse rounded-md bg-muted" />
+        <div className="space-y-3 rounded-xl border border-border/60 bg-card/60 p-4" aria-busy="true" aria-live="polite">
+          <div className="h-12 animate-pulse rounded-lg bg-muted/70" />
+          <div className="h-12 animate-pulse rounded-lg bg-muted/60" />
+          <div className="h-12 animate-pulse rounded-lg bg-muted/50" />
+          <div className="h-12 animate-pulse rounded-lg bg-muted/40" />
           <span className="sr-only">{t('audit.loading')}</span>
         </div>
       ) : (
-        <>
+        <div className="space-y-4">
           <AuditLogTable
             logs={listQuery.data?.items ?? []}
             query={query}
@@ -272,7 +239,7 @@ export default function AuditLog() {
               onLimitChange={(limit) => patch({ limit, page: 1 })}
             />
           )}
-        </>
+        </div>
       )}
 
       <AuditLogDetailModal
@@ -281,8 +248,6 @@ export default function AuditLog() {
         detail={detailQuery.data}
         loading={detailQuery.isLoading}
         error={detailQuery.isError}
-        onViewUserHistory={handleViewUserHistory}
-        onViewEntityHistory={handleViewEntityHistory}
       />
 
       <AuditLogExportDialog

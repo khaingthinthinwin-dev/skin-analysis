@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 interface ProductInfoProps {
   product: ProductDetail;
+  isMerchantView?: boolean;
 }
 
 function formatPrice(price: number | string) {
@@ -32,7 +33,7 @@ function getStockStatus(
   return { label: labels.inStock(product.stockQuantity), variant: 'default' };
 }
 
-export function ProductInfo({ product }: ProductInfoProps) {
+export function ProductInfo({ product, isMerchantView = false }: ProductInfoProps) {
   const { t } = useTranslation();
   const discount = product.promotions[0];
   const stock = getStockStatus(product, {
@@ -42,6 +43,9 @@ export function ProductInfo({ product }: ProductInfoProps) {
     inStock: (count) =>
       t('buyer.products.stock.inStockStatus', 'In stock ({{count}})', { count }),
   });
+
+  const showReviews = () =>
+    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="space-y-4">
@@ -53,8 +57,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
         )}
       </div>
 
-      {/* [C2] Rating Summary */}
-      <div className="flex items-center gap-2">
+      {/* [C2] Rating Summary — the whole row jumps to the reviews section */}
+      <button
+        type="button"
+        onClick={showReviews}
+        aria-label={`Go to reviews. Rated ${Number(product.avgRating).toFixed(
+          1,
+        )} out of 5 from ${product.reviewCount} reviews`}
+        className="group flex cursor-pointer items-center gap-2 text-left transition-opacity hover:opacity-80"
+      >
         <StarRating rating={product.avgRating} />
         <span className="text-sm font-medium">{Number(product.avgRating).toFixed(1)}</span>
         <button
@@ -116,7 +127,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
       )}
 
       {/* Discount badge (if promotion exists) */}
-      {discount && (
+      {!isMerchantView && discount && (
         <Badge variant="secondary">
           {discount.code}:{' '}
           {discount.discountTypeCode === 'percentage'
@@ -130,16 +141,20 @@ export function ProductInfo({ product }: ProductInfoProps) {
       )}
 
       {/* [D] Purchase Actions — hidden on mobile, shown on desktop */}
-      <div className="hidden pt-2 md:block">
-        <ProductPurchaseActions product={product} />
-      </div>
+      {!isMerchantView && (
+        <div className="hidden pt-2 md:block">
+          <ProductPurchaseActions product={product} />
+        </div>
+      )}
 
-      {/* [E] Sold By */}
-      <p className="text-sm text-muted-foreground">
-        {t('buyer.products.product.soldBy', 'Sold by {{shopName}}', {
-          shopName: product.merchant.shopName,
-        })}
-      </p>
+      {!isMerchantView && (
+        <p className="text-sm text-muted-foreground">
+          Sold by{' '}  
+          <span className="font-medium text-foreground">
+            {product.merchant.shopName}
+          </span>
+        </p>
+      )}
     </div>
   );
 }

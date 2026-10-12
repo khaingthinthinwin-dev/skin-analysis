@@ -1,6 +1,6 @@
 import { useSearchParams, useNavigate, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search as SearchIcon, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
@@ -29,7 +29,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import type { ViewMode } from '@/types/search.types'
 import type { ProductSummary } from '@/types/search.types'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CategoryNode } from '@/types/search.types'
 
 const VIEW_MODE_KEY = 'search.viewMode'
@@ -65,6 +65,10 @@ export default function Products() {
   const [guestLoginOpen, setGuestLoginOpen] = useState(false)
   const [guestLoginMessage, setGuestLoginMessage] = useState('')
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
+  const priceRangeErrorRef = useRef(false)
+  const [priceValidationResetKey, setPriceValidationResetKey] = useState(0)
+  const [hasPriceValidationError, setHasPriceValidationError] = useState(false)
+  const queryClient = useQueryClient()
 
   const handleWishlistToggle = useCallback(
     async (product: ProductSummary) => {
@@ -130,7 +134,15 @@ export default function Products() {
     localStorage.setItem(VIEW_MODE_KEY, view)
   }, [view])
 
-  const { data, isLoading, isError, params, updateParams } = useProductSearch()
+  const { data, isLoading, isError, params, updateParams } = useProductSearch(!hasPriceValidationError)
+
+  const handlePriceErrorChange = (hasError: boolean) => {
+    priceRangeErrorRef.current = hasError
+    setHasPriceValidationError(hasError)
+    if (hasError) {
+      void queryClient.cancelQueries({ queryKey: ['products'] })
+    }
+  }
 
   const { data: categoryData } = useQuery({
     queryKey: ['categories'] as const,
@@ -139,10 +151,11 @@ export default function Products() {
   })
 
   const categories = categoryData?.data ?? []
-  const products = data?.data ?? []
+  const products = hasPriceValidationError ? [] : (data?.data ?? [])
   const meta = data?.meta
 
-  const serializeToUrl = (p: SearchParams) => {
+  const serializeToUrl = (p: SearchParams, allowPriceError = false) => {
+    if (priceRangeErrorRef.current && !allowPriceError) return
     const entries: [string, string][] = []
     if (p.q) entries.push(['q', p.q])
     if (p.categoryId) entries.push(['categoryId', p.categoryId])
@@ -160,6 +173,7 @@ export default function Products() {
   }
 
   const handleSearchBarSubmit = (q: string) => {
+    if (priceRangeErrorRef.current) return
     updateParams({ q, page: 1 })
   }
 
@@ -199,6 +213,9 @@ export default function Products() {
     params.rating !== undefined
 
   const handleClearAll = () => {
+    priceRangeErrorRef.current = false
+    setHasPriceValidationError(false)
+    setPriceValidationResetKey((key) => key + 1)
     serializeToUrl({
       q: '',
       categoryId: '',
@@ -212,7 +229,12 @@ export default function Products() {
       order: params.order,
       page: 1,
       limit: params.limit,
-    })
+    }, true)
+  }
+
+  const handlePageUpdate = (updates: Partial<SearchParams>) => {
+    if (priceRangeErrorRef.current) return
+    updateParams(updates)
   }
 
   const resolveCategoryName = (categories: CategoryNode[], id: string): string | null => {
@@ -230,7 +252,7 @@ export default function Products() {
   return (
     <div
       className={isGuestRoute
-        ? 'mx-auto w-full max-w-[1400px] space-y-4 bg-[#faf8ff] px-6 py-6 text-slate-900 dark:bg-[#0b0614] dark:text-white sm:px-8 lg:px-12'
+        ? 'mx-auto w-full max-w-7xl space-y-4 bg-[#faf8ff] px-4 py-6 text-slate-900 dark:bg-[#0b0614] dark:text-white sm:px-6 lg:px-8'
         : 'w-full min-w-0 space-y-4 bg-[#faf8ff] p-2 text-slate-900 dark:bg-[#0b0614] dark:text-white lg:p-4'}
     >
       {/* Search bar - full width */}
@@ -240,7 +262,6 @@ export default function Products() {
         onSubmit={handleSearchBarSubmit}
       />
 
-      {/* Advertisement panel */}
       <SponsoredAdSlider fallbackProductId={products[0]?.slug || products[0]?.id} />
 
       <FilterChips
@@ -256,10 +277,12 @@ export default function Products() {
         <aside className="hidden w-full flex-shrink-0 lg:block lg:w-72">
           <div className="max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#181028] lg:sticky lg:top-0">
             <FilterPanel
+              key={`desktop-${priceValidationResetKey}`}
               params={params}
               onUpdate={handleFilterUpdate}
               categories={categories}
               onReset={handleClearAll}
+              onPriceErrorChange={handlePriceErrorChange}
             />
           </div>
         </aside>
@@ -337,7 +360,7 @@ export default function Products() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => updateParams({ ...params, page: params.page > 1 ? params.page - 1 : 1 })}
+                      onClick={() => handlePageUpdate({ ...params, page: params.page > 1 ? params.page - 1 : 1 })}
                       disabled={params.page <= 1}
                       className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
                       <ChevronLeft className="h-5 w-5" />
@@ -348,7 +371,7 @@ export default function Products() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => updateParams({ ...params, page })}
+                        onClick={() => handlePageUpdate({ ...params, page })}
                         className={`
                           flex h-10 w-10 items-center justify-center rounded-xl ${params.page === page
                             ? 'bg-primary font-bold text-primary-foreground'
@@ -362,7 +385,7 @@ export default function Products() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => updateParams({ ...params, page: params.page < meta?.totalPages ? params.page + 1 : meta?.totalPages })}
+                      onClick={() => handlePageUpdate({ ...params, page: params.page < meta?.totalPages ? params.page + 1 : meta?.totalPages })}
                       disabled={params.page >= (meta?.totalPages || 1)}
                       className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
                       <ChevronRight className="h-5 w-5" />
@@ -385,11 +408,13 @@ export default function Products() {
               </div>
             </div>
             <FilterPanel
+              key={`mobile-${priceValidationResetKey}`}
               params={params}
               onUpdate={(updates) => {
                 handleFilterUpdate(updates)
               }}
               categories={categories}
+              onPriceErrorChange={handlePriceErrorChange}
               variant="mobile"
             />
           </div>
