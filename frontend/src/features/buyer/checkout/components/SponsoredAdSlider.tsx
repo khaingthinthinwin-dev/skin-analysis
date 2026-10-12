@@ -62,11 +62,11 @@ export function SponsoredAdSlider() {
       aria-label="Sponsored advertisements"
     >
       <CardContent
-        className="relative min-h-[15rem] bg-gradient-to-r from-[#78349a] via-[#5c5a9f] to-[#562779] px-12 py-6 text-white transition-all duration-700 sm:min-h-[15.5rem] sm:px-16 sm:py-6"
+        className="relative max-w-full overflow-hidden min-h-[15rem] bg-gradient-to-r from-[#78349a] via-[#5c5a9f] to-[#562779] px-6 py-6 text-white transition-all duration-700 sm:min-h-[15.5rem] sm:px-16 sm:py-6"
         onFocusCapture={() => setIsFocused(true)}
         onBlurCapture={() => setIsFocused(false)}
       >
-        <div className="relative z-10 grid items-center gap-5 sm:grid-cols-12 sm:gap-5 lg:gap-6">
+        <div className="relative z-10 grid max-w-full min-w-0 grid-cols-1 items-center gap-5 sm:grid-cols-12 sm:gap-5 lg:gap-6">
           <div className="flex min-w-0 flex-col gap-3 sm:col-span-7 sm:gap-3.5 lg:col-span-7">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white sm:text-xs">
@@ -82,7 +82,7 @@ export function SponsoredAdSlider() {
             </h3>
 
             {ad.description && (
-              <p className="line-clamp-2 max-w-xl text-sm leading-relaxed text-white/80 sm:text-base">
+              <p className="line-clamp-3 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
                 {ad.description}
               </p>
             )}
@@ -98,14 +98,12 @@ export function SponsoredAdSlider() {
           </div>
 
           {ad.imageUrl && (
-            <div className="flex min-w-0 items-center justify-center sm:col-span-5 lg:col-span-5">
-              <div className="w-full max-w-[22rem] overflow-hidden rounded-2xl border-4 border-white/90 bg-[#fffaf5] shadow-2xl">
-                <img
-                  src={getImageUrl(ad.imageUrl)}
-                  alt={ad.title}
-                  className="aspect-[1.74] h-auto w-full object-cover"
-                />
-              </div>
+            <div className="flex min-w-0 items-center justify-center self-center overflow-hidden rounded-[1.75rem] sm:col-span-5 lg:col-span-5">
+              <img
+                src={getImageUrl(ad.imageUrl)}
+                alt={ad.title}
+                className="block h-48 w-auto max-w-full rounded-[1.75rem] object-contain shadow-2xl sm:h-56 sm:max-w-[20rem]"
+              />
             </div>
           )}
         </div>

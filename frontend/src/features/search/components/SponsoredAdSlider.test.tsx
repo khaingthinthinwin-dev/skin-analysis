@@ -269,7 +269,7 @@ describe('SponsoredAdSlider', () => {
     const image = screen.getByRole('img', { name: 'Search banner' })
 
     expect(image).toHaveAttribute('src', 'https://storage.example.com/ads/ad-placeholder.jpg')
-    expect(image.parentElement).toHaveClass('max-w-[22rem]', 'rounded-2xl', 'border-4', 'bg-[#fffaf5]')
+    expect(image).toHaveClass('rounded-[1.75rem]', 'object-contain')
     fireEvent.error(image)
     expect(screen.getByRole('img', { name: 'Search banner' })).toHaveAttribute(
       'src',
