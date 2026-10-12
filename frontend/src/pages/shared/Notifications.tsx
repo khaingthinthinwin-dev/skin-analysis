@@ -12,8 +12,10 @@ import {
   Flag,
   MessageSquareText,
 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useLocation } from 'react-router'
 import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,9 +26,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useNotifications } from '@/features/shared/notifications/hooks/useNotifications'
+import {
+  notificationKeys,
+  useNotifications,
+} from '@/features/shared/notifications/hooks/useNotifications'
+import { notificationService } from '@/features/shared/notifications/services/notification.service'
 import { useAuth } from '@/hooks/useAuth'
 import type { NotificationItem } from '@/types/notification.types'
+
+function dismissedStorageKey(userId: string): string {
+  return `dismissed-notifications:${userId}`
+}
+
+function readDismissedIds(userId: string): Set<string> {
+  try {
+    const stored = sessionStorage.getItem(dismissedStorageKey(userId))
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+    return Array.isArray(parsed)
+      ? new Set(parsed.filter((id): id is string => typeof id === 'string'))
+      : new Set()
+  } catch {
+    return new Set()
+  }
+}
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -234,7 +256,7 @@ function orderActionHint(item: NotificationItem): string | null {
 // plus seeded `order` items). Once the recipient has read one, it leaves the
 // list entirely instead of lingering as a "read" card.
 function isReadOrderInsightNotification(item: NotificationItem): boolean {
-  if (!item.isRead) return false
+  if (!item.isRead && !item.readAt) return false
   const type = normalizeNotificationType(item.type)
   return type === 'ORDER' || ORDER_NOTIFICATION_TYPES.has(type)
 }
@@ -314,10 +336,12 @@ function iconForType(rawType: string, title?: string, message?: string) {
 function NotificationCard({
   item,
   onOpen,
+  isMerchant,
   isAdmin = false,
 }: {
   item: NotificationItem
   onOpen: (item: NotificationItem) => void
+  isMerchant: boolean
   isAdmin?: boolean
 }) {
   const { Icon, color } = iconForType(item.type, item.title, item.message)
@@ -385,11 +409,15 @@ function NotificationCard({
           </button>
           {approvedProductId && (
             <Link
-              to={`/buyer/products/${encodeURIComponent(approvedProductId)}#reviews`}
+              to={
+                isMerchant
+                  ? `/merchant/product-review?highlight=${encodeURIComponent(approvedProductId)}`
+                  : `/buyer/products/${encodeURIComponent(approvedProductId)}#reviews`
+              }
               onClick={() => onOpen(item)}
               className="block text-xs font-semibold text-purple-600 hover:underline"
             >
-              View your review →
+              {isMerchant ? 'View in Product Review →' : 'View your review →'}
             </Link>
           )}
         </div>
@@ -400,32 +428,34 @@ function NotificationCard({
 
 export default function Notifications() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const queryClient = useQueryClient()
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+  const [dismissedNotificationIds, setDismissedNotificationIds] =
+    useState(() =>
+      user ? readDismissedIds(user.id) : new Set<string>(),
+    )
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    location.pathname.startsWith('/admin')
   const [rejectedNotification, setRejectedNotification] = useState<NotificationItem | null>(null)
   const [deactivatedNotification, setDeactivatedNotification] = useState<NotificationItem | null>(null)
 
   const {
     notifications,
-    unreadCount,
     isLoading,
     isError,
     refetch,
-    markAsRead,
     markAllAsRead,
     isMarkingAllRead,
   } = useNotifications({ unreadOnly: true })
 
   const displayedNotifications = useMemo(() => {
-    // Order Insight notifications between merchant and buyer disappear as
-    // soon as they are read; every other type keeps its normal behavior.
-    const withoutReadOrderInsights = notifications.filter(
-      (item) => !isReadOrderInsightNotification(item),
-    )
-
+    let roleNotifications: NotificationItem[]
     if (isAdmin) {
       const seenKeys = new Set<string>()
-      return withoutReadOrderInsights.filter((item) => {
+      roleNotifications = notifications.filter((item) => {
         if (!isAdminNotification(item)) {
           return false
         }
@@ -436,24 +466,60 @@ export default function Notifications() {
         seenKeys.add(key)
         return true
       })
-    }
-
-    if (user?.role === 'merchant') {
-      return withoutReadOrderInsights.filter(
+    } else if (user?.role === 'merchant') {
+      roleNotifications = notifications.filter(
         (item) => !isMerchantSpecificNotification(item) || item.userId === user.id,
       )
+    } else {
+      roleNotifications = notifications
     }
 
-    return withoutReadOrderInsights
-  }, [isAdmin, notifications, user])
+    return roleNotifications.filter((item) => {
+      if (dismissedNotificationIds.has(item.id)) return false
+      // Admin history keeps only unread items; merchants and buyers also drop
+      // read Order Insight cards but keep every other read notification.
+      if (isAdmin) return !item.isRead && !item.readAt
+      return !isReadOrderInsightNotification(item)
+    })
+  }, [dismissedNotificationIds, isAdmin, notifications, user])
 
   const rejectionReason = getRejectionReason(rejectedNotification)
   const deactivationReason = getDeactivationReason(deactivatedNotification)
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead()
+      dismissNotifications(notifications.map((item) => item.id))
+    } catch {
+      toast.error('Failed to mark notifications as read')
+    }
+  }
+
+  const dismissNotifications = (ids: string[]) => {
+    if (!user || ids.length === 0) return
+
+    const dismissed = new Set(dismissedNotificationIds)
+    ids.forEach((id) => dismissed.add(id))
+    setDismissedNotificationIds(dismissed)
+    try {
+      sessionStorage.setItem(
+        dismissedStorageKey(user.id),
+        JSON.stringify([...dismissed]),
+      )
+    } catch {
+      toast.error('Unable to retain cleared notifications for this session')
+    }
+  }
+
   const handleOpen = (item: NotificationItem) => {
-    // Every notification the user opens leaves the history list, whether it was
-    // still unread or not, so the same item is never acted on twice.
-    markAsRead(item.id).catch(() => {})
+    dismissNotifications([item.id])
+    if (!item.isRead) {
+      void Promise.resolve()
+        .then(() => notificationService.markAsRead(item.id))
+        .then(() => queryClient.invalidateQueries({ queryKey: notificationKeys.all }))
+        .catch(() => toast.error('Failed to mark notification as read'))
+    }
+
     if (isMerchantRejectedNotification(item)) {
       setRejectedNotification(item)
       return
@@ -559,12 +625,12 @@ export default function Notifications() {
             Your latest account and order updates
           </p>
         </div>
-        {unreadCount > 0 && (
+        {displayedNotifications.length > 0 && (
           <Button
             variant="outline"
             size="sm"
             disabled={isMarkingAllRead}
-            onClick={() => markAllAsRead().catch(() => {})}
+            onClick={() => void handleMarkAllAsRead()}
           >
             Mark all read
           </Button>
@@ -609,7 +675,13 @@ export default function Notifications() {
       ) : (
         <div className="space-y-3">
           {displayedNotifications.map((item) => (
-            <NotificationCard key={item.id} item={item} onOpen={handleOpen} isAdmin={isAdmin} />
+            <NotificationCard
+              key={item.id}
+              item={item}
+              onOpen={handleOpen}
+              isMerchant={user?.role === 'merchant'}
+              isAdmin={isAdmin}
+            />
           ))}
         </div>
       )}

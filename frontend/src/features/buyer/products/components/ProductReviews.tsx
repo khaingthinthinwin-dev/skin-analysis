@@ -72,15 +72,17 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
                   Verified
                 </span>
               )}
-              <button
-                type="button"
-                onClick={() => setReportReviewId(review.id)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
-                aria-label="Report this review"
-                title="Report this review"
-              >
-                <Flag className="h-4 w-4" />
-              </button>
+              {user?.role !== 'merchant' && (
+                <button
+                  type="button"
+                  onClick={() => setReportReviewId(review.id)}
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                  aria-label="Report this review"
+                  title="Report this review"
+                >
+                  <Flag className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
           {review.title && <p className="mb-1 font-medium">{review.title}</p>}
@@ -108,7 +110,7 @@ export function ProductReviews({ idOrSlug }: ProductReviewsProps) {
         </div>
       )}
 
-      {reportReviewId && (
+      {reportReviewId && user?.role !== 'merchant' && (
         <ReviewReportDialog
           reviewId={reportReviewId}
           open={!!reportReviewId}

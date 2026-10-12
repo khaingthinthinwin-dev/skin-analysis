@@ -5,7 +5,7 @@ import { ProductPurchaseActions } from './ProductPurchaseActions';
 
 interface ProductInfoProps {
   product: ProductDetail;
-  onShowReviews?: () => void;
+  isMerchantView?: boolean;
 }
 
 function formatPrice(price: number | string) {
@@ -25,13 +25,12 @@ function getStockStatus(product: ProductDetail): {
   return { label: `In stock (${product.stockQuantity})`, variant: 'default' };
 }
 
-export function ProductInfo({ product, onShowReviews }: ProductInfoProps) {
+export function ProductInfo({ product, isMerchantView = false }: ProductInfoProps) {
   const discount = product.promotions[0];
   const stock = getStockStatus(product);
 
-  const showReviews =
-    onShowReviews ??
-    (() => document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }));
+  const showReviews = () =>
+    document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="space-y-4">
@@ -99,7 +98,7 @@ export function ProductInfo({ product, onShowReviews }: ProductInfoProps) {
       )}
 
       {/* Discount badge (if promotion exists) */}
-      {discount && (
+      {!isMerchantView && discount && (
         <Badge variant="secondary">
           {discount.code}:{' '}
           {discount.discountTypeCode === 'percentage'
@@ -109,17 +108,20 @@ export function ProductInfo({ product, onShowReviews }: ProductInfoProps) {
       )}
 
       {/* [D] Purchase Actions — hidden on mobile, shown on desktop */}
-      <div className="hidden pt-2 md:block">
-        <ProductPurchaseActions product={product} />
-      </div>
+      {!isMerchantView && (
+        <div className="hidden pt-2 md:block">
+          <ProductPurchaseActions product={product} />
+        </div>
+      )}
 
-      {/* [E] Sold By */}
-      <p className="text-sm text-muted-foreground">
-        Sold by{' '}
-        <span className="font-medium text-foreground">
-          {product.merchant.shopName}
-        </span>
-      </p>
+      {!isMerchantView && (
+        <p className="text-sm text-muted-foreground">
+          Sold by{' '}
+          <span className="font-medium text-foreground">
+            {product.merchant.shopName}
+          </span>
+        </p>
+      )}
     </div>
   );
 }

@@ -140,6 +140,7 @@ export const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
         title: 'Catalog & Sales',
         items: [
           { label: 'Products', href: '/merchant/products', icon: Package },
+          { label: 'Product Review', href: '/merchant/product-review', icon: MessageSquare },
           { label: 'Promotions', href: '/merchant/promotions', icon: Tag },
           { label: 'Advertisements', href: '/merchant/advertisements', icon: Megaphone },
         ],
