@@ -116,7 +116,7 @@ describe('SponsoredAdSlider (checkout)', () => {
     const featured = await screen.findByText('Aura & Essence')
 
     expect(announcement.parentElement).toBe(featured.parentElement)
-    expect(featured).toHaveClass('bg-purple-500/25')
+    expect(featured).toHaveClass('bg-accent')
   })
 
   it('renders the product preview card with a landscape image', async () => {
@@ -127,11 +127,14 @@ describe('SponsoredAdSlider (checkout)', () => {
     const image = await screen.findByAltText('Glow Serum')
     const frame = image.parentElement as HTMLElement
 
+    expect(frame).toHaveClass('h-[220px]')
+    expect(frame).toHaveClass('items-center')
     expect(frame).toHaveClass('max-w-[22rem]')
     expect(frame).toHaveClass('rounded-2xl')
     expect(frame).toHaveClass('shadow-2xl')
-    expect(image).toHaveClass('aspect-[1.74]')
-    expect(image).toHaveClass('object-cover')
+    expect(image).toHaveClass('h-[210px]')
+    expect(image).toHaveClass('block')
+    expect(image).toHaveClass('object-fill')
     expect(screen.queryByText('Featured Promotion')).not.toBeInTheDocument()
   })
 
@@ -161,7 +164,9 @@ describe('SponsoredAdSlider (checkout)', () => {
 
     expect(card.className).toContain('rounded-[1.75rem]')
     expect(card).toHaveAttribute('aria-roledescription', 'carousel')
-    expect(card.querySelector('.bg-gradient-to-r')).toBeInTheDocument()
+    const banner = card.querySelector('.bg-gradient-to-r')
+    expect(banner).toHaveClass('min-h-[15rem]')
+    expect(banner).toHaveClass('sm:min-h-[15.5rem]')
   })
 
   it('advances to the next advertisement and back', async () => {

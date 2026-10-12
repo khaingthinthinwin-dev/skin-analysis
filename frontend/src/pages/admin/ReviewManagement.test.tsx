@@ -283,7 +283,6 @@ describe('ReviewManagement notification highlight', () => {
       '[&>td:last-child]:rounded-r-lg',
     )
     expect(screen.getByText('Beta review').closest('table')).toHaveClass(
-      '[&_tbody_tr[data-highlighted]>td]:bg-purple-500/10',
       '[&_tbody_tr[data-highlighted]>td]:border-b-0',
     )
     expect(screen.getAllByText('From notification')).toHaveLength(1)
@@ -320,7 +319,6 @@ describe('ReviewManagement notification highlight', () => {
       '[&>td:last-child]:rounded-r-lg',
     )
     expect(screen.getByText('Loved it').closest('table')).toHaveClass(
-      '[&_tbody_tr[data-highlighted]>td]:bg-purple-500/10',
       '[&_tbody_tr[data-highlighted]>td]:border-b-0',
     )
     expect(screen.getByText('From notification')).toBeInTheDocument()

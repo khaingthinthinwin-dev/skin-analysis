@@ -100,7 +100,7 @@ export default function ProductReview() {
         ) : (
           <>
             <div className="mx-5 mt-5 overflow-x-auto rounded-md border bg-card">
-              <Table>
+              <Table className="border-separate border-spacing-0 [&_td]:border-b [&_td]:border-border [&_tbody_tr]:border-0">
                 <TableHeader>
                   <TableRow>
                     <TableHead className={productHeaderClass}>Image</TableHead>
@@ -131,7 +131,7 @@ export default function ProductReview() {
                           key={product.id}
                           className={
                             product.id === highlightedProductId
-                              ? 'hover:bg-transparent border-b-0 [&>td]:border-y-2 [&>td]:border-purple-500 [&>td]:bg-purple-500/5 [&>td:first-child]:border-l-2 [&>td:first-child]:rounded-l-md [&>td:last-child]:border-r-2 [&>td:last-child]:rounded-r-md'
+                              ? 'hover:bg-transparent border-b-0 [&>td]:!border-y-2 [&>td]:!border-purple-500 [&>td]:bg-purple-500/5 [&>td:first-child]:!border-l-2 [&>td:first-child]:rounded-l-md [&>td:last-child]:!border-r-2 [&>td:last-child]:rounded-r-md'
                               : 'hover:bg-transparent'
                           }
                         >

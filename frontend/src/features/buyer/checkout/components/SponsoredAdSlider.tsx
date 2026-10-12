@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, Sparkles } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSponsoredAds } from '../hooks/useCheckout'
 import { getImageUrl } from '@/lib/image-url';
@@ -74,11 +75,11 @@ export function SponsoredAdSlider() {
                   ? `${ad.announcementMessage.slice(0, 20)}...`
                   : ad.announcementMessage}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-500/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-purple-100 backdrop-blur-md sm:text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-purple-200" /> {ad.merchantName.length > 20
+              <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
+                {ad.merchantName.length > 20
                   ? `${ad.merchantName.slice(0, 20)}...`
                   : ad.merchantName}
-              </span>
+              </Badge>
             </div>
 
             <h3 className="text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl lg:text-[1.625rem]">
@@ -103,11 +104,11 @@ export function SponsoredAdSlider() {
 
           {ad.imageUrl && (
             <div className="flex min-w-0 items-center justify-center sm:col-span-5 lg:col-span-5">
-              <div className="w-full max-w-[22rem] overflow-hidden rounded-2xl border-4 border-white/90 bg-[#fffaf5] shadow-2xl">
+              <div className="flex h-[220px] w-full max-w-[22rem] items-center overflow-hidden rounded-2xl border-4 border-white/90 bg-[#fffaf5] shadow-2xl">
                 <img
                   src={getImageUrl(ad.imageUrl)}
                   alt={ad.title}
-                  className="aspect-[1.74] h-auto w-full object-cover"
+                  className="block h-[210px] w-full object-fill"
                 />
               </div>
             </div>

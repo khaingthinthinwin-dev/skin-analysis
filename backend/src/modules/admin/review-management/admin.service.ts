@@ -845,14 +845,12 @@ export class AdminService {
         );
       }
       if (!dto.isActive && merchant) {
-        const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst(
-          {
-            where: {
-              statusId: { not: 6 },
-              order: { merchantId: merchant.id },
-            },
+        const hasPendingOrders = await this.prisma.order.findFirst({
+          where: {
+            merchantId: merchant.id,
+            status: { isTerminalState: false },
           },
-        );
+        });
         if (hasPendingOrders) {
           throw new BadRequestException(
             'Cannot deactivate until the order delivery is completed.',
@@ -862,10 +860,10 @@ export class AdminService {
     }
 
     if (user.roleCode === 'buyer' && !dto.isActive) {
-      const hasPendingOrders = await this.prisma.orderStatusHistory.findFirst({
+      const hasPendingOrders = await this.prisma.order.findFirst({
         where: {
-          statusId: { not: 6 },
-          order: { buyerId: userId },
+          buyerId: userId,
+          status: { isTerminalState: false },
         },
       });
       if (hasPendingOrders) {
@@ -1025,6 +1023,91 @@ export class AdminService {
     return report;
   }
 
+  private async notifyReportModerationOutcome(
+    reportId: string,
+    reporterId: string,
+    reviewId: string,
+    status: ReportAction,
+  ): Promise<void> {
+    try {
+      const review = await this.prisma.review.findUnique({
+        where: { id: reviewId },
+        select: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              merchant: { select: { userId: true } },
+            },
+          },
+        },
+      });
+
+      const productName = review?.product?.name ?? 'the reported product';
+      const productId = review?.product?.id ?? null;
+      const merchantUserId = review?.product?.merchant?.userId ?? null;
+      const isResolved = status === ReportAction.RESOLVED;
+
+      const notifications: Array<{
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        entityType: 'ReviewReport' | 'Product';
+        entityId: string | null;
+      }> = [
+        {
+          userId: reporterId,
+          type: isResolved ? 'REPORT_RESOLVED' : 'REPORT_REJECTED',
+          title: isResolved
+            ? 'Your review report was resolved'
+            : 'Your review report was rejected',
+          message: isResolved
+            ? `The review you reported for "${productName}" has been resolved by our moderation team.`
+            : `The review you reported for "${productName}" was rejected by our moderation team.`,
+          entityType: 'ReviewReport',
+          entityId: reportId,
+        },
+      ];
+
+      if (isResolved && merchantUserId) {
+        notifications.push({
+          userId: merchantUserId,
+          type: 'REPORT_RESOLVED',
+          title: 'A product review was resolved',
+          message: `A review for your product "${productName}" was reported and has been resolved by our moderation team.`,
+          entityType: 'Product',
+          entityId: productId,
+        });
+      }
+
+      const uniqueNotifications = Array.from(
+        new Map(
+          notifications
+            .filter((notification) => notification.userId)
+            .map((notification) => [
+              notification.userId + ':' + notification.type,
+              notification,
+            ]),
+        ).values(),
+      );
+
+      if (uniqueNotifications.length === 0) return;
+
+      await this.prisma.notification?.createMany?.({
+        data: uniqueNotifications,
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      // Fail-open: report moderation should still complete even if notifications cannot be created.
+      this.logger.warn(
+        `Failed to create report moderation notifications for report ${reportId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   async updateReportStatus(
     reportId: string,
     dto: UpdateReportStatusDto,
@@ -1046,44 +1129,60 @@ export class AdminService {
       }
     }
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const updated = await tx.reviewReport.update({
-        where: { id: reportId },
-        data: {
-          status: dto.status,
-          adminNote: dto.adminNote,
-          resolvedBy: adminId,
-          resolvedAt: new Date(),
-        },
-      });
-
-      if (dto.status === ReportAction.RESOLVED) {
-        const review = await tx.review.findUnique({
-          where: { id: report.reviewId },
+    const updated = await this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const reportUpdate = await tx.reviewReport.update({
+          where: { id: reportId },
+          data: {
+            status: dto.status,
+            adminNote: dto.adminNote,
+            resolvedBy: adminId,
+            resolvedAt: new Date(),
+          },
         });
-        if (review) {
-          await tx.review.update({
+
+        if (dto.status === ReportAction.RESOLVED) {
+          const review = await tx.review.findUnique({
             where: { id: report.reviewId },
-            data: { status: 'rejected' },
           });
-          await this.recalculateProductStats(tx, review.productId);
-          await this.invalidateProductCache(review.productId);
+          if (review) {
+            await tx.review.update({
+              where: { id: report.reviewId },
+              data: { status: 'rejected' },
+            });
+            await this.recalculateProductStats(tx, review.productId);
+            await this.invalidateProductCache(review.productId);
+          }
         }
-      }
 
-      await this.logAudit(tx, {
-        userId: adminId,
-        action:
-          dto.status === ReportAction.RESOLVED
-            ? 'REPORT_RESOLVED'
-            : 'REPORT_REJECTED',
-        entityType: 'report',
-        entityId: reportId,
-        newValue: { status: dto.status, reviewId: report.reviewId },
-      });
+        await this.logAudit(tx, {
+          userId: adminId,
+          action:
+            dto.status === ReportAction.RESOLVED
+              ? 'REPORT_RESOLVED'
+              : 'REPORT_REJECTED',
+          entityType: 'report',
+          entityId: reportId,
+          newValue: { status: dto.status, reviewId: report.reviewId },
+        });
 
-      return updated;
-    });
+        return reportUpdate;
+      },
+    );
+
+    if (
+      dto.status === ReportAction.RESOLVED ||
+      dto.status === ReportAction.REJECTED
+    ) {
+      await this.notifyReportModerationOutcome(
+        reportId,
+        report.reportedBy,
+        report.reviewId,
+        dto.status,
+      );
+    }
+
+    return updated;
   }
 
   async deleteReport(reportId: string, adminId: string) {

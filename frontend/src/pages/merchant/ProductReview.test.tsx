@@ -92,8 +92,10 @@ describe('ProductReview page', () => {
 
     const row = screen.getByRole('row', { name: /Daily Moisturizer/ })
     expect(row).toHaveClass('border-b-0')
-    expect(row).toHaveClass('[&>td]:border-y-2')
-    expect(row).toHaveClass('[&>td:first-child]:border-l-2')
+    expect(row).toHaveClass('[&>td]:!border-y-2')
+    expect(row).toHaveClass('[&>td:first-child]:!border-l-2')
+    expect(row).toHaveClass('[&>td:first-child]:rounded-l-md')
+    expect(row).toHaveClass('[&>td:last-child]:rounded-r-md')
     expect(vi.mocked(useProduct)).toHaveBeenCalledWith('product-1')
   })
 })

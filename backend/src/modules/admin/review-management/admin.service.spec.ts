@@ -2,7 +2,11 @@ import { AdminService } from './admin.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
-import { ReviewAction, ReportReviewReason } from './dto/moderation.dto';
+import {
+  ReviewAction,
+  ReportReviewReason,
+  ReportAction,
+} from './dto/moderation.dto';
 
 type MockPrisma = Record<string, Record<string, jest.Mock>> & {
   $transaction: jest.Mock;
@@ -32,6 +36,9 @@ describe('AdminService review moderation', () => {
         update: jest.fn(),
       },
       merchant: {
+        findFirst: jest.fn(),
+      },
+      order: {
         findFirst: jest.fn(),
       },
       orderStatusHistory: {
@@ -173,6 +180,102 @@ describe('AdminService review moderation', () => {
     expect(result.status).toBe('pending');
   });
 
+  it('notifies only the reporter when a report is rejected', async () => {
+    prisma.reviewReport.findUnique.mockResolvedValue({
+      id: 'rep1',
+      reviewId: 'r1',
+      reportedBy: 'buyer1',
+      status: 'pending',
+    });
+    prisma.reviewReport.update.mockResolvedValue({
+      id: 'rep1',
+      status: 'rejected',
+    });
+    prisma.review.findUnique.mockResolvedValue({
+      id: 'r1',
+      productId: 'p1',
+      product: {
+        id: 'p1',
+        name: 'Honey Lip Balm',
+        merchant: { userId: 'merchant1' },
+      },
+    });
+
+    await service.updateReportStatus(
+      'rep1',
+      { status: ReportAction.REJECTED, adminNote: 'Not a violation' },
+      'admin1',
+    );
+
+    expect(prisma.notification.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: 'buyer1',
+          type: 'REPORT_REJECTED',
+          title: 'Your review report was rejected',
+          message:
+            'The review you reported for "Honey Lip Balm" was rejected by our moderation team.',
+          entityType: 'ReviewReport',
+          entityId: 'rep1',
+        },
+      ],
+      skipDuplicates: true,
+    });
+  });
+
+  it('notifies the reporter and the product merchant when a report is resolved', async () => {
+    prisma.reviewReport.findUnique.mockResolvedValue({
+      id: 'rep1',
+      reviewId: 'r1',
+      reportedBy: 'buyer1',
+      status: 'pending',
+    });
+    prisma.reviewReport.update.mockResolvedValue({
+      id: 'rep1',
+      status: 'resolved',
+    });
+    prisma.review.findUnique.mockResolvedValue({
+      id: 'r1',
+      productId: 'p1',
+      product: {
+        id: 'p1',
+        name: 'Honey Lip Balm',
+        merchant: { userId: 'merchant1' },
+      },
+    });
+    prisma.review.update.mockResolvedValue({ id: 'r1', status: 'rejected' });
+
+    await service.updateReportStatus(
+      'rep1',
+      { status: ReportAction.RESOLVED, adminNote: 'Policy violation' },
+      'admin1',
+    );
+
+    expect(prisma.notification.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: 'buyer1',
+          type: 'REPORT_RESOLVED',
+          title: 'Your review report was resolved',
+          message:
+            'The review you reported for "Honey Lip Balm" has been resolved by our moderation team.',
+          entityType: 'ReviewReport',
+          entityId: 'rep1',
+        },
+        {
+          userId: 'merchant1',
+          type: 'REPORT_RESOLVED',
+          title: 'A product review was resolved',
+          message:
+            'A review for your product "Honey Lip Balm" was reported and has been resolved by our moderation team.',
+          entityType: 'Product',
+          entityId: 'p1',
+        },
+      ],
+      skipDuplicates: true,
+    });
+  });
+
   it('throws when moderating a missing review', async () => {
     prisma.review.findUnique.mockResolvedValue(null);
 
@@ -187,6 +290,7 @@ describe('AdminService review moderation', () => {
 
   describe('user moderation', () => {
     beforeEach(() => {
+      prisma.order.findFirst.mockResolvedValue(null);
       prisma.orderStatusHistory.findFirst.mockResolvedValue(null);
       prisma.user.update.mockResolvedValue({
         id: 'u1',
@@ -229,6 +333,46 @@ describe('AdminService review moderation', () => {
           },
         },
       });
+    });
+
+    it('allows deactivation when the buyer has no undelivered orders', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        roleCode: 'buyer',
+        isActive: true,
+      });
+      prisma.order.findFirst.mockResolvedValue(null);
+
+      const result = await service.moderateUser(
+        'u1',
+        { isActive: false, reason: 'Account no longer needed' },
+        'admin1',
+      );
+
+      expect(result.isActive).toBe(false);
+      expect(prisma.order.findFirst).toHaveBeenCalledWith({
+        where: {
+          buyerId: 'u1',
+          status: { isTerminalState: false },
+        },
+      });
+    });
+
+    it('blocks deactivation while the buyer has an undelivered order', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        roleCode: 'buyer',
+        isActive: true,
+      });
+      prisma.order.findFirst.mockResolvedValue({ id: 'o1' });
+
+      await expect(
+        service.moderateUser(
+          'u1',
+          { isActive: false, reason: 'Account no longer needed' },
+          'admin1',
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('throws when deactivating without a reason', async () => {
