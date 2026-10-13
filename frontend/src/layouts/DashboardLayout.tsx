@@ -73,7 +73,7 @@ export function DashboardLayout() {
             </Button>
             {isBuyer && (
               <>
-                <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.cart', 'Cart')}>
+                <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.wishlist', 'Wishlist')}>
                   <Link to="/buyer/wishlist" className="relative">
                     <Heart className="h-5 w-5" />
                     {wishlistCount > 0 && (

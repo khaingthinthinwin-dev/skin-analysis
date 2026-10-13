@@ -53,6 +53,8 @@
     "fixed": "သတ်မှတ်ပမာဏ (MMK)",
     "discountValue": "လျှော့စျေးတန်ဖိုး",
     "discountValuePlaceholder": "ဥပမာ 10",
+    "discountValuePercentagePlaceholder": "ဥပမာ 10 (10%)",
+    "discountValueFixedPlaceholder": "ဥပမာ 1000 (1,000 MMK)",
     "minOrderAmount": "အနည်းဆုံး မှာယူမှုပမာဏ (MMK)",
     "minOrderAmountPlaceholder": "ဥပမာ 5000",
     "minOrderAmountHelper": "အနည်းဆုံး မလိုအပ်ပါက ဗလာထားပါ",
