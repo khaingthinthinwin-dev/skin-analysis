@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useId } from 'react'
 import { Search, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -21,6 +22,7 @@ export function SearchBar({
   const [draft, setDraft] = useState(value);
   const [focused, setFocused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { t } = useTranslation()
   const gradientId = `search-icon-gradient-${useId().replace(/:/g, "")}`;
 
   const displayValue = focused ? draft : value;

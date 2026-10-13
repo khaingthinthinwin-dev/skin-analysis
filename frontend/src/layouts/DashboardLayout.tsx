@@ -83,7 +83,7 @@ export function DashboardLayout() {
                     )}
                   </Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild aria-label="Cart">
+                <Button variant="ghost" size="icon" asChild aria-label={t('nav.aria.cart', 'Cart')}>
                   <Link to="/buyer/cart" className="relative">
                     <ShoppingCart className="h-5 w-5" />
                     {cartCount > 0 && (
