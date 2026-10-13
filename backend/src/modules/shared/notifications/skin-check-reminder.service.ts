@@ -52,9 +52,7 @@ export class SkinCheckReminderService implements OnModuleInit {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     // Query users whose LAST completed analysis was 7+ days ago
-    // Using raw query to get the most recent completed_at per user
-    // Table names are lowercase in PostgreSQL: "users", "skin_analyses"
-    // Column names are snake_case due to @map in Prisma schema
+    // AND who have not received a SKIN_CHECK_REMINDER in the last 7 days
     const usersWithOldAnalysis = await this.prisma.$queryRaw<
       Array<{ id: string }>
     >`
@@ -76,6 +74,13 @@ export class SkinCheckReminderService implements OnModuleInit {
             AND sa2."analysis_status" = 'completed'
             AND sa2."completed_at" IS NOT NULL
         ) <= ${sevenDaysAgo}
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "notifications" n
+          WHERE n."user_id" = u.id
+            AND n."type" = 'SKIN_CHECK_REMINDER'
+            AND n."created_at" > ${sevenDaysAgo}
+        )
     `;
 
     this.logger.log(
