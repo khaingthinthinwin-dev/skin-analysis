@@ -24,6 +24,7 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { RedisService } from '../../shared/redis/redis.service';
+import { SkinCheckReminderService } from '../shared/notifications/skin-check-reminder.service';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +37,7 @@ export class AuthService {
     private prisma: PrismaService,
     private redis: RedisService,
     private mailerService: MailerService,
+    private skinCheckReminder: SkinCheckReminderService,
   ) {}
 
   async register(registerDto: RegisterDto, license?: Express.Multer.File) {
@@ -72,6 +74,11 @@ export class AuthService {
         },
       });
       await this.notifyAdminsOfNewMerchant(merchant.id, name, email);
+    }
+
+    // Send welcome skin analysis reminder immediately for new buyers
+    if (role === 'buyer') {
+      await this.skinCheckReminder.triggerFirstAnalysisForUser(user.id);
     }
 
     // Generate tokens
