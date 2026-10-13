@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { useContext, useMemo } from 'react'
 import {
   useQuery,
   useMutation,
@@ -23,6 +23,38 @@ const fallbackClient = new QueryClient({
   },
 })
 
+function hasAccessToken() {
+  return typeof window !== 'undefined' && !!window.localStorage.getItem('accessToken')
+}
+
+function markAsReadInCachedLists(queryClient: QueryClient, id: string) {
+  const now = new Date().toISOString()
+  queryClient.setQueriesData<NotificationListResponse>(
+    { queryKey: [...notificationKeys.all, 'list'], exact: false },
+    (old) => {
+      if (!old) return old
+      const items = old.items.map((item) =>
+        item.id === id ? { ...item, isRead: true, readAt: now } : item,
+      )
+      return { ...old, items }
+    },
+  )
+}
+
+function markAllAsReadInCachedLists(queryClient: QueryClient) {
+  const now = new Date().toISOString()
+  queryClient.setQueriesData<NotificationListResponse>(
+    { queryKey: [...notificationKeys.all, 'list'], exact: false },
+    (old) => {
+      if (!old) return old
+      const items = old.items.map((item) =>
+        item.isRead ? item : { ...item, isRead: true, readAt: now },
+      )
+      return { ...old, items }
+    },
+  )
+}
+
 export function useNotifications(params?: {
   limit?: number
   unreadOnly?: boolean
@@ -33,8 +65,6 @@ export function useNotifications(params?: {
 
   const limit = params?.limit ?? 50
   const unreadOnly = params?.unreadOnly ?? false
-  const hasAccessToken = () =>
-    typeof window !== 'undefined' && !!window.localStorage.getItem('accessToken')
 
   const {
     data: listData,
@@ -71,33 +101,53 @@ export function useNotifications(params?: {
     queryClient,
   )
 
-  const notifications = listData?.items ?? []
+  const markAsReadMutation = useMutation(
+    {
+      mutationFn: (id: string) => notificationService.markAsRead(id),
+      onMutate: (id) => {
+        const cachedLists = queryClient.getQueriesData<NotificationListResponse>(
+          { queryKey: [...notificationKeys.all, 'list'], exact: false },
+        )
+        let wasUnread = false
+        for (const [, cached] of cachedLists) {
+          const match = cached?.items?.find((item) => item.id === id)
+          if (match) {
+            wasUnread = !match.isRead
+            break
+          }
+        }
+        markAsReadInCachedLists(queryClient, id)
+        if (wasUnread) {
+          queryClient.setQueryData<{ count: number }>(
+            notificationKeys.unreadCount(),
+            (old) => (old ? { count: Math.max(0, old.count - 1) } : old),
+          )
+        }
+      },
+      onError: () => {
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+      },
+    },
+    queryClient,
+  )
 
   const markAllAsReadMutation = useMutation(
     {
       mutationFn: () => notificationService.markAllAsRead(),
       onSuccess: () => {
-        const readAt = new Date().toISOString()
-        queryClient.setQueriesData<NotificationListResponse>(
-          { queryKey: [...notificationKeys.all, 'list'], exact: false },
-          (old) =>
-            old
-              ? {
-                  ...old,
-                  items: old.items.map((item) =>
-                    item.isRead ? item : { ...item, isRead: true, readAt },
-                  ),
-                }
-              : old,
-        )
+        markAllAsReadInCachedLists(queryClient)
         queryClient.setQueryData<{ count: number }>(
           notificationKeys.unreadCount(),
-          { count: 0 },
+          (old) => (old ? { count: 0 } : old),
         )
       },
     },
     queryClient,
   )
+
+  const notifications = useMemo(() => {
+    return listData?.items ?? []
+  }, [listData])
 
   return {
     notifications,
@@ -107,6 +157,7 @@ export function useNotifications(params?: {
     isError,
     error,
     refetch,
+    markAsRead: markAsReadMutation.mutateAsync,
     markAllAsRead: markAllAsReadMutation.mutateAsync,
     isMarkingAllRead: markAllAsReadMutation.isPending,
   }

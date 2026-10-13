@@ -66,7 +66,7 @@ function PromotionForm({
   promotion: Promotion
   onNavigateBack: () => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('promotions')
   const navigate = useNavigate()
   const updatePromotion = useUpdatePromotion()
 
@@ -90,8 +90,8 @@ function PromotionForm({
 
     if (!discountValue) newErrors.discountValue = 'Discount value is required'
     else if (Number(discountValue) <= 0) newErrors.discountValue = 'Must be greater than 0'
-    else if (discountTypeCode === 'percentage' && Number(discountValue) > 100)
-      newErrors.discountValue = 'Percentage must not exceed 100'
+    else if (discountTypeCode === 'percentage' && (Number(discountValue) < 1 || Number(discountValue) > 99))
+      newErrors.discountValue = 'Percentage is between 1% to 99%'
     else if (
       discountTypeCode === 'fixed' &&
       minOrderAmount &&
@@ -234,7 +234,7 @@ function PromotionForm({
             {/* Min Order Amount */}
             <div className="space-y-2">
               <Label htmlFor="minOrderAmount">
-                {t('merchant.promotions.form.minOrderAmount')} (MMK)
+                {t('merchant.promotions.form.minOrderAmount')}
               </Label>
               <Input
                 id="minOrderAmount"
@@ -338,7 +338,7 @@ function PromotionForm({
 }
 
 export default function PromotionEdit() {
-  const { t } = useTranslation()
+  const { t } = useTranslation('promotions')
   const { user } = useAuth()
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()

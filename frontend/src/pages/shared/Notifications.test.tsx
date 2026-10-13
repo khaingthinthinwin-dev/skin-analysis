@@ -463,7 +463,7 @@ describe('Notifications Center', () => {
     })
   })
 
-  it('hides read Order Insight notifications for the merchant but keeps unread ones', async () => {
+  it('hides all read notifications for the merchant and keeps only unread ones', async () => {
     mockRole = 'merchant'
     mockUserId = 'merchant-1'
     const mockNotifications = [
@@ -531,15 +531,14 @@ describe('Notifications Center', () => {
       </QueryClientProvider>,
     )
 
-    // Unread Order Insight notification stays visible…
+    // Only unread notification stays visible
     expect(await screen.findByText('New order received')).toBeInTheDocument()
-    // …while read ones disappear (both ORDER_PLACED and ORDER_STATUS_UPDATED).
+    // Read notifications disappear (ORDER_PLACED, ORDER_STATUS_UPDATED, and promo)
     expect(
       screen.queryByText('A buyer placed order ORD-0000002.'),
     ).not.toBeInTheDocument()
     expect(screen.queryByText('Order Shipped')).not.toBeInTheDocument()
-    // Non-order notifications are unaffected even when read.
-    expect(screen.getByText('Merchant Promo Active')).toBeInTheDocument()
+    expect(screen.queryByText('Merchant Promo Active')).not.toBeInTheDocument()
   })
 
   it('links an approved review notification to the merchant Product Review page', async () => {

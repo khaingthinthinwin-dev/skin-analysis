@@ -31,7 +31,7 @@ function getDefaultExpiresAt(): string {
 }
 
 export default function PromotionCreate() {
-  const { t } = useTranslation()
+  const { t } = useTranslation('promotions')
   const { user } = useAuth()
   const navigate = useNavigate()
   const createPromotion = useCreatePromotion()
@@ -85,8 +85,8 @@ export default function PromotionCreate() {
 
     if (!discountValue) newErrors.discountValue = 'Discount value is required'
     else if (Number(discountValue) <= 0) newErrors.discountValue = 'Must be greater than 0'
-    else if (discountTypeCode === 'percentage' && Number(discountValue) > 100)
-      newErrors.discountValue = 'Percentage must not exceed 100'
+    else if (discountTypeCode === 'percentage' && (Number(discountValue) < 1 || Number(discountValue) > 99))
+      newErrors.discountValue = 'Percentage is between 1% to 99%'
     else if (
       discountTypeCode === 'fixed' &&
       minOrderAmount &&
@@ -219,7 +219,7 @@ export default function PromotionCreate() {
             {/* Min Order Amount */}
             <div className="space-y-2">
               <Label htmlFor="minOrderAmount">
-                {t('merchant.promotions.form.minOrderAmount')} (MMK)
+                {t('merchant.promotions.form.minOrderAmount')}
               </Label>
               <Input
                 id="minOrderAmount"
