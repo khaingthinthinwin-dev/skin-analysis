@@ -36,4 +36,68 @@ describe('ProductCard', () => {
     expect(originalPrice).toHaveClass('line-through')
     expect(originalPrice.className).toContain('text-gray-400')
   })
+
+  it('matches the Recommendations badge and action icon styles', () => {
+    render(
+      <MemoryRouter>
+        <ProductCard product={product} view="grid" productLink="/products/p1" />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('SALE')).toHaveClass(
+      'rounded-full',
+      'bg-gradient-to-r',
+      'from-rose-500',
+      'to-pink-500',
+      'text-white',
+    )
+    expect(screen.getByRole('button', { name: 'Add to wishlist' })).toHaveClass(
+      'rounded-full',
+      'bg-white/80',
+      'dark:bg-zinc-800/80',
+      'shadow-sm',
+    )
+    expect(screen.getByRole('button', { name: 'Add Glow Serum to cart' })).toHaveClass(
+      'rounded-full',
+      'bg-violet-600',
+      'text-white',
+      'shadow-sm',
+      'hover:bg-violet-700',
+    )
+  })
+
+  it('renders SALE, wishlist, and cart controls with Recommendations list styles', () => {
+    render(
+      <MemoryRouter>
+        <ProductCard product={product} view="list" productLink="/products/p1" />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('SALE')).toHaveClass(
+      'rounded-full',
+      'bg-gradient-to-r',
+      'from-rose-500',
+      'to-pink-500',
+      'text-white',
+    )
+    expect(screen.getByRole('button', { name: 'Add to wishlist' })).toHaveClass(
+      'h-8',
+      'w-8',
+      'rounded-full',
+      'bg-gray-100',
+      'hover:bg-gray-200',
+      'dark:bg-zinc-800',
+      'dark:hover:bg-zinc-700',
+    )
+    expect(screen.getByRole('button', { name: 'Add Glow Serum to cart' })).toHaveClass(
+      'h-8',
+      'w-8',
+      'rounded-full',
+      'bg-violet-600',
+      'text-white',
+      'shadow-sm',
+      'hover:bg-violet-700',
+    )
+    expect(screen.getByRole('button', { name: 'Add Glow Serum to cart' }).querySelector('svg')).toBeInTheDocument()
+  })
 })
