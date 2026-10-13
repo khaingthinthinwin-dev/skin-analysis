@@ -89,6 +89,7 @@
       "merchants": "出品者",
       "orderInsights": "注文インサイト",
       "advertisements": "広告",
+      "productReview": "レビュー",
       "reviews": "レビュー",
       "content": "コンテンツ",
       "commissionRevenue": "手数料・収益",
@@ -597,7 +598,8 @@
       },
       "product": {
         "sku": "商品番号: {{sku}}",
-        "soldBy": "{{shopName}}が販売"
+        "soldBy": "{{shopName}}が販売",
+        "soldByShop": "<shopName>{{shopName}}</shopName>が販売"
       },
       "reviews": {
         "countLabel_other": "（{{count}}件のレビュー）",
@@ -638,7 +640,8 @@
       },
       "rating": {
         "label": "5段階中{{rating}}の評価",
-        "rateStar_other": "{{count}}つ星で評価"
+        "rateStar_other": "{{count}}つ星で評価",
+        "goToReviews": "レビューに移動。{{reviewCount}}件のレビュー、5段階中{{rating}}の評価"
       },
       "reviewForm": {
         "signInRequired": "レビューを書くにはログインしてください。",
@@ -680,6 +683,12 @@
     },
     "search": {
       "placeholder": "商品名・成分・肌悩みで検索...",
+      "aria": {
+        "productSearch": "商品検索",
+        "searchInput": "商品名・成分・肌悩みで検索",
+        "clearSearch": "検索内容をクリア",
+        "searchProducts": "商品を検索"
+      },
       "filters": "フィルター",
       "categoryTitle": "カテゴリー",
       "all": "すべて",

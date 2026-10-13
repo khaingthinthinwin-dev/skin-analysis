@@ -89,6 +89,7 @@
       "merchants": "ရောင်းချသူများ",
       "orderInsights": "အော်ဒါ အချက်အလက် သုံးသပ်ချက်",
       "advertisements": "ကြော်ငြာများ",
+      "productReview": "သုံးသပ်ချက်များ",
       "reviews": "သုံးသပ်ချက်များ",
       "content": "အကြောင်းအရာ",
       "commissionRevenue": "ကော်မရှင်နှင့် ဝင်ငွေ",
@@ -597,7 +598,8 @@
       },
       "product": {
         "sku": "SKU: {{sku}}",
-        "soldBy": "{{shopName}} မှ ရောင်းချသည်"
+        "soldBy": "{{shopName}} မှ ရောင်းချသည်",
+        "soldByShop": "<shopName>{{shopName}}</shopName> မှ ရောင်းချသည်"
       },
       "reviews": {
         "countLabel_other": "({{count}} ခု သုံးသပ်ချက်)",
@@ -638,7 +640,8 @@
       },
       "rating": {
         "label": "5 မှတ်တွင် {{rating}} မှတ်",
-        "rateStar_other": "ကြယ် {{count}} ပွင့် အဆင့်သတ်မှတ်ရန်"
+        "rateStar_other": "ကြယ် {{count}} ပွင့် အဆင့်သတ်မှတ်ရန်",
+        "goToReviews": "သုံးသပ်ချက်များသို့ သွားရန်။ သုံးသပ်ချက် {{reviewCount}} ခု၊ ၅ မှတ်တွင် {{rating}} မှတ်"
       },
       "reviewForm": {
         "signInRequired": "သုံးသပ်ချက်ရေးရန် အကောင့်ဝင်ပါ။",
@@ -680,6 +683,12 @@
     },
     "search": {
       "placeholder": "ကုန်ပစ္စည်းအမည်၊ ပါဝင်ပစ္စည်း သို့မဟုတ် ပြဿနာဖြင့် ရှာဖွေပါ...",
+      "aria": {
+        "productSearch": "ကုန်ပစ္စည်းရှာရန်",
+        "searchInput": "ကုန်ပစ္စည်းအမည်၊ ပါဝင်ပစ္စည်း သို့မဟုတ် ပြဿနာဖြင့် ရှာဖွေပါ",
+        "clearSearch": "ရှာဖွေမှုကို ရှင်းလင်းရန်",
+        "searchProducts": "ကုန်ပစ္စည်းများ ရှာရန်"
+      },
       "filters": "စစ်ထုတ်မှုများ",
       "categoryTitle": "အမျိုးအစား",
       "all": "အားလုံး",
