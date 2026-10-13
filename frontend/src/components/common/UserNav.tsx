@@ -47,14 +47,14 @@ export function UserNav() {
         <div className="flex items-center gap-2 p-2">
           <p className="text-sm font-medium">{user.name || user.email}</p>
           <span className="ml-auto rounded-full bg-purple-100 dark:bg-purple-950 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700 dark:text-purple-300">
-            {user.role}
+            {t(`roles.${user.role}`, user.role)}
           </span>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to={getDashboardRoute(user.role)} className="flex items-center gap-2 font-semibold text-primary">
             <LayoutDashboard className="h-4 w-4" />
-            Dashboard
+            {t('nav.dashboard', 'Dashboard')}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

@@ -1,4 +1,5 @@
 import { LayoutGrid, List } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import type { ViewMode } from '@/types/search.types'
 
@@ -8,13 +9,14 @@ interface ViewToggleProps {
 }
 
 export function ViewToggle({ view, onChange }: ViewToggleProps) {
+  const { t } = useTranslation()
   return (
-    <div role="group" aria-label="View mode" className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
+    <div role="group" aria-label={t('buyer.search.viewMode', 'View mode')} className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
       <Button
         variant={view === 'grid' ? 'default' : 'ghost'}
         size="icon"
         className="h-8 w-8"
-        aria-label="Grid view"
+        aria-label={t('buyer.search.gridView', 'Grid view')}
         aria-pressed={view === 'grid'}
         onClick={() => onChange('grid')}
       >
@@ -24,7 +26,7 @@ export function ViewToggle({ view, onChange }: ViewToggleProps) {
         variant={view === 'list' ? 'default' : 'ghost'}
         size="icon"
         className="h-8 w-8"
-        aria-label="List view"
+        aria-label={t('buyer.search.listView', 'List view')}
         aria-pressed={view === 'list'}
         onClick={() => onChange('list')}
       >

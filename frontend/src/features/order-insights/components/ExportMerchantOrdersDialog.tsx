@@ -107,7 +107,7 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
               <span>{t('orders.table.payment', 'Payment')}:</span>
               <span className="font-medium text-foreground">
                 {filters.paymentStatus && filters.paymentStatus !== 'all'
-                  ? t(`common.payment.${filters.paymentStatus}`, filters.paymentStatus)
+                  ? t(`common.payment.${filters.paymentStatus}`, formatStatusLabel(filters.paymentStatus))
                   : t('common.filters.all', 'All')}
               </span>
             </div>
@@ -115,12 +115,11 @@ export function ExportMerchantOrdersDialog({ filters, total, onClose }: ExportMe
               {t('merchant.orders.exportDateRange', 'Date Range')}:{' '}
               <span className="font-medium text-foreground">{scopeDateLabel}</span>
             </p>
+            {filters.orderSearch?.trim() && <p className="text-sm text-muted-foreground">{t('merchant.orders.filter.orderNumber', 'Order #')}: <span className="font-medium text-foreground">{filters.orderSearch.trim()}</span></p>}
           </div>
 
           <p className="text-sm text-muted-foreground">
-            {t('merchant.orders.exportResultPrefix', 'Result:')}{' '}
-            <span className="font-medium text-foreground">{statusLabel}</span>{' '}
-            {t('merchant.orders.exportResultSuffix', 'orders within this range')}
+            {t('merchant.orders.exportResult', `Result: ${statusLabel} orders within this range`, { status: statusLabel })}
           </p>
           {platformRateUnavailable && (
             <p className="text-sm text-muted-foreground">

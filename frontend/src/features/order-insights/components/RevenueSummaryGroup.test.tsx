@@ -61,8 +61,8 @@ describe('RevenueSummaryGroup', () => {
 
   it('labels the active period in a pill beside the title', () => {
     render(<RevenueSummaryGroup data={summary} period="this_month" onPeriodChange={vi.fn()} />);
-    expect(screen.getByText('Sep 1 – Sep 30, 2026')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Sep 1 – Sep 30, 2026' })).not.toBeInTheDocument();
+    expect(screen.getByText('2026/09/01 – 2026/09/30')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '2026/09/01 – 2026/09/30' })).not.toBeInTheDocument();
   });
 
   it('opens the custom range modal without fetching, marks Custom active and holds the figures back', () => {
@@ -75,7 +75,7 @@ describe('RevenueSummaryGroup', () => {
     // The open dialog hides the page behind it from the accessibility tree.
     expect(screen.getByRole('button', { name: 'Custom', hidden: true })).toHaveAttribute('aria-pressed', 'true');
     expect(onPeriodChange).not.toHaveBeenCalled();
-    expect(screen.queryByText('Sep 1 – Sep 30, 2026')).not.toBeInTheDocument();
+    expect(screen.queryByText('2026/09/01 – 2026/09/30')).not.toBeInTheDocument();
     // The four figure placeholders; the footer dash is part of its sentence.
     expect(screen.getAllByText('—')).toHaveLength(4);
   });
@@ -91,7 +91,7 @@ describe('RevenueSummaryGroup', () => {
     expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'This Month' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('100 Ks')).toBeInTheDocument();
-    expect(screen.getByText('Sep 1 – Sep 30, 2026')).toBeInTheDocument();
+    expect(screen.getByText('2026/09/01 – 2026/09/30')).toBeInTheDocument();
     expect(onPeriodChange).not.toHaveBeenCalled();
   });
 
@@ -127,8 +127,8 @@ describe('RevenueSummaryGroup', () => {
   it('reopens the modal from the applied custom range pill', () => {
     render(<RevenueSummaryGroup period="custom" from="2024-01-05" to="2024-01-20" onPeriodChange={vi.fn()} />);
 
-    expect(screen.getByText('Jan 5 – Jan 20, 2024')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Jan 5 – Jan 20, 2024' }));
+    expect(screen.getByText('2024/01/05 – 2024/01/20')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '2024/01/05 – 2024/01/20' }));
 
     expect(screen.getByRole('dialog', { name: 'Custom range' })).toBeInTheDocument();
     expect(screen.getByLabelText('Start date')).toHaveValue('2024-01-05');

@@ -92,11 +92,11 @@ export function printInvoice(order: OrderDetailResponseDto): void {
   const paymentStatus = String(order.paymentStatus).toLowerCase();
   const paymentLabel =
     paymentStatus === "completed"
-      ? "✅ Paid"
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>Paid'
       : paymentStatus === "pending"
-        ? "⏳ Payment pending"
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>Payment pending'
         : paymentStatus === "failed"
-          ? "❌ Payment failed"
+          ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12" /></svg>Payment failed'
           : "—";
   const paymentStatusClass =
     paymentStatus === "completed"
@@ -150,7 +150,8 @@ export function printInvoice(order: OrderDetailResponseDto): void {
       .discount { color: #10b981; }
       .total { border-top: 2px solid #e5e7eb; color: ${PURPLE}; font-size: 17px; font-weight: 700; margin-top: 8px; padding-top: 10px; }
       .payment { color: #374151; font-size: 14px; }
-      .payment-status { font-weight: 700; margin-top: 4px; }
+      .payment-status { align-items: center; display: inline-flex; font-weight: 700; gap: 6px; margin-top: 4px; }
+      .payment-status svg { fill: none; height: 15px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; width: 15px; }
       .payment-status-paid { color: #10b981; }
       .payment-status-pending { color: #f59e0b; }
       .payment-status-failed { color: #ef4444; }

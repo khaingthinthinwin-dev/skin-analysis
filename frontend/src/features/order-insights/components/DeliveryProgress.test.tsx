@@ -44,7 +44,7 @@ describe('DeliveryProgress', () => {
     expect(screen.queryAllByText('2')).toHaveLength(0);
     expect(screen.getAllByText('3').length).toBeGreaterThan(0);
     expect(screen.getAllByText('6').length).toBeGreaterThan(0);
-    expect(container.textContent).toMatch(/Sep \d/);
+    expect(container.textContent).toMatch(/\d{4}\/\d{2}\/\d{2}/);
   });
 
   it('merchant variant: delivered shows every step complete with no Next step', () => {
@@ -85,7 +85,7 @@ describe('DeliveryProgress', () => {
       <DeliveryProgress currentStatus={OrderStatus.DELIVERED} variant="merchant" />,
     );
 
-    expect(container.textContent).not.toMatch(/Sep \d/);
+    expect(container.textContent).not.toMatch(/\d{4}\/\d{2}\/\d{2}/);
     expect(container.textContent).not.toMatch(/\d\d?:\d\d [AP]M/);
   });
 });

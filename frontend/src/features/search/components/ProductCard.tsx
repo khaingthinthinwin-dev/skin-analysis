@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ShoppingCart, Heart, Loader2, Store } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,8 +42,11 @@ export function ProductCard({
   isWishlistLoading = false,
   isCartLoading = false,
 }: ProductCardProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const imageUrl = getImageUrl(Array.isArray(product.images) ? product.images[0] : null)
+  const skinTypeLabel = (slug: string) =>
+    t(`buyer.search.skinTypeOptions.${slug}`, slug.charAt(0).toUpperCase() + slug.slice(1))
 
   if (view === 'list') {
     return (
@@ -64,10 +68,10 @@ export function ProductCard({
                     e.currentTarget.nextElementSibling?.classList.remove('hidden')
                   }}
                 />
-                <span className="hidden text-xs text-muted-foreground">No image</span>
+                <span className="hidden text-xs text-muted-foreground">{t('buyer.search.noImage', 'No image')}</span>
               </>
             ) : (
-              <span className="text-xs text-muted-foreground">No image</span>
+              <span className="text-xs text-muted-foreground">{t('buyer.search.noImage', 'No image')}</span>
             )}
           </div>
 
@@ -76,7 +80,7 @@ export function ProductCard({
               <div className="min-w-0">
                 {product.shop_name && (
                   <span className="mt-1 block rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
-                    Sold by {product.shop_name}
+                    {t('buyer.products.product.soldBy', `Sold by ${product.shop_name}`, { shopName: product.shop_name })}
                   </span>
                 )}
                 <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white">{product.name}</h3>
@@ -91,7 +95,7 @@ export function ProductCard({
                   onWishlistToggle?.(product)
                 }}
                 disabled={isWishlistLoading}
-                aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                aria-label={isInWishlist ? t('buyer.search.removeFromWishlist', 'Remove from wishlist') : t('buyer.products.actions.addToWishlistLabel', 'Add to wishlist')}
               >
                 {isWishlistLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -116,7 +120,7 @@ export function ProductCard({
                   </span>
                 )}
               </div>
-              {!product.isInStock && <span className="text-xs font-medium text-destructive">Out of stock</span>}
+              {!product.isInStock && <span className="text-xs font-medium text-destructive">{t('buyer.products.stock.outOfStock', 'Out of stock')}</span>}
             </div>
           </div>
         </div>
@@ -151,24 +155,24 @@ export function ProductCard({
                 }}
               />
               <div className="hidden flex h-full items-center justify-center">
-                <span className="text-xs text-muted-foreground">No image</span>
+                <span className="text-xs text-muted-foreground">{t('buyer.search.noImage', 'No image')}</span>
               </div>
             </>
           ) : (
             <div className="flex h-full items-center justify-center">
-              <span className="text-xs text-muted-foreground">No image</span>
+              <span className="text-xs text-muted-foreground">{t('buyer.search.noImage', 'No image')}</span>
             </div>
           )}
 
           <div className="absolute left-2 top-2 flex flex-col gap-1">
             {product.compareAtPrice && (
               <span className="rounded bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground">
-                SALE
+                {t('buyer.search.sale', 'SALE')}
               </span>
             )}
             {!product.isInStock && (
               <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                OUT OF STOCK
+                {t('buyer.search.outOfStockBadge', 'OUT OF STOCK')}
               </span>
             )}
           </div>
@@ -183,7 +187,7 @@ export function ProductCard({
               onWishlistToggle?.(product)
             }}
             disabled={isWishlistLoading}
-            aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            aria-label={isInWishlist ? t('buyer.search.removeFromWishlist', 'Remove from wishlist') : t('buyer.products.actions.addToWishlistLabel', 'Add to wishlist')}
           >
             {isWishlistLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -198,7 +202,7 @@ export function ProductCard({
         {product.shop_name && (
           <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             <Store className="h-3 w-3" />
-            <span>Sold by {product.shop_name}</span>
+            <span>{t('buyer.products.product.soldBy', `Sold by ${product.shop_name}`, { shopName: product.shop_name })}</span>
           </div>
         )}
 
@@ -215,7 +219,7 @@ export function ProductCard({
                 key={skinType}
                 className="inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground"
               >
-                {skinType.charAt(0).toUpperCase() + skinType.slice(1)}
+                {skinTypeLabel(skinType)}
               </span>
             ))}
           </div>
@@ -233,7 +237,7 @@ export function ProductCard({
           {product.isInStock && (
             <Button
               size="icon"
-              aria-label={`Add ${product.name} to cart`}
+              aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e8ff] p-0 text-[#9333ea] hover:bg-[#f0e6ff] hover:text-[#7e22ce]"
               onClick={(e) => {
                 e.preventDefault()

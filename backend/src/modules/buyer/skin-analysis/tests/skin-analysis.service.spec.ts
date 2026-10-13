@@ -8,6 +8,7 @@ import { RedisService } from '../../../../shared/redis/redis.service';
 import { AiGatewayService } from '../services/ai-gateway.service';
 import { SkinScanStorageService } from '../services/skin-scan-storage.service';
 import { PdfReportService } from '../services/pdf-report.service';
+import { NotificationsService } from '../../../shared/notifications/notifications.service';
 import {
   AnalysisStatus,
   ConditionName,
@@ -233,6 +234,10 @@ describe('SkinAnalysisService', () => {
     mockPrisma.skinAnalysisRecommendation.create.mockResolvedValue({});
     mockStorage.resolveLocalPath.mockReturnValue(null);
 
+    const mockNotifications = {
+      create: jest.fn().mockResolvedValue({}),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SkinAnalysisService,
@@ -241,6 +246,7 @@ describe('SkinAnalysisService', () => {
         { provide: AiGatewayService, useValue: mockAiGateway },
         { provide: SkinScanStorageService, useValue: mockStorage },
         { provide: PdfReportService, useValue: mockPdfReport },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 

@@ -36,6 +36,7 @@ export interface CheckoutData {
 export interface SponsoredAd {
   id: string;
   placement: string;
+  merchantName: string;
   title: string;
   announcementMessage: string;
   description: string | null;

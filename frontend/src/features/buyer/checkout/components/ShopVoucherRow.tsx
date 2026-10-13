@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, Ticket } from 'lucide-react';
 import { VoucherSelectionModal } from './VoucherSelectionModal';
 import { useMerchantPromotions } from '../hooks/useCheckout';
@@ -32,6 +33,7 @@ export function ShopVoucherRow({
   isCouponLoading,
   subtotal,
 }: ShopVoucherRowProps) {
+  const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   const { data: promotions = [] } = useMerchantPromotions(merchantId);
 
@@ -49,9 +51,15 @@ export function ShopVoucherRow({
       };
     }
     if (promotions.length > 0) {
-      return { label: 'Select', hasDiscount: false };
+      return {
+        label: t('buyer.checkout.vouchers.selectLabel', 'Select'),
+        hasDiscount: false,
+      };
     }
-    return { label: 'Enter code', hasDiscount: false };
+    return {
+      label: t('buyer.checkout.vouchers.enterCodeLabel', 'Enter code'),
+      hasDiscount: false,
+    };
   };
 
   const display = getDisplayText();
@@ -66,7 +74,7 @@ export function ShopVoucherRow({
         <div className="flex items-center gap-2">
           <Ticket className="h-4 w-4 text-purple-500 dark:text-purple-400" />
           <span className="font-medium text-purple-700 dark:text-purple-300">
-            Shop Voucher
+            {t('buyer.checkout.vouchers.shopVoucher', 'Shop Voucher')}
           </span>
         </div>
         <div className="flex items-center gap-1">

@@ -33,6 +33,7 @@ describe('OrdersService getOrderHistory', () => {
       count: jest.fn(),
       aggregate: jest.fn(),
     },
+    $queryRaw: jest.fn(),
   };
   const service = new OrdersService(prisma as never);
 
@@ -45,6 +46,7 @@ describe('OrdersService getOrderHistory', () => {
     });
     prisma.shop.findUnique.mockResolvedValue({ userId: 'merchant-user-1' });
     prisma.merchant.findUnique.mockResolvedValue({ id: 'merchant-1' });
+    prisma.$queryRaw.mockResolvedValue([{ id: 'order-1' }]);
   });
 
   it('keeps buyerId scoping while applying filters and sorting', async () => {
@@ -68,6 +70,7 @@ describe('OrdersService getOrderHistory', () => {
           itemCount: 2,
           totalAmount: '120.00',
           paymentStatus: 'completed',
+          shopName: 'Lotus Glow Shop',
         },
       ],
       meta: { page: 2, limit: 20, total: 1 },
@@ -210,6 +213,110 @@ describe('OrdersService getOrderHistory', () => {
       ).rejects.toThrow(ForbiddenException);
     },
   );
+
+  it('narrows an admin order-number search through the visible 8-char reference', async () => {
+    // The table copies `#A1B2C3D4`; the service strips the `#`, lower-cases the
+    // rest and substring-matches the first eight characters of the order UUID.
+    await expect(
+      service.getOrderHistory(
+        'admin-1',
+        'admin',
+        makeQuery({ orderSearch: '#A1B2C3D4' }),
+      ),
+    ).resolves.toMatchObject({ meta: { total: 1 } });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const [, pattern, merchantPredicate] = prisma.$queryRaw.mock.calls[0] as [
+      unknown,
+      string,
+      { sql: string },
+    ];
+    expect(pattern).toBe('%a1b2c3d4%');
+    // Admins read across all merchants, so no merchant predicate is added.
+    expect(merchantPredicate.sql).toBe('');
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { in: ['order-1'] } }) as object,
+      }),
+    );
+  });
+
+  it('keeps a merchant order-number search pinned to their own shop', async () => {
+    prisma.merchant.findUnique.mockResolvedValue({
+      id: 'merchant-1',
+      licenseStatus: 'approved',
+    });
+
+    await service.getOrderHistory(
+      'merchant-user-1',
+      'merchant',
+      makeQuery({ orderSearch: 'A1B2C3D4' }),
+    );
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const [, pattern, merchantPredicate] = prisma.$queryRaw.mock.calls[0] as [
+      unknown,
+      string,
+      { sql: string },
+    ];
+    expect(pattern).toBe('%a1b2c3d4%');
+    expect(merchantPredicate.sql).toContain('merchant_id');
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { in: ['order-1'] } }) as object,
+      }),
+    );
+  });
+
+  it('narrows a buyer order-number search to their own orders', async () => {
+    await expect(
+      service.getOrderHistory(
+        'buyer-1',
+        'buyer',
+        makeQuery({ orderSearch: '#A1B2C3D4' }),
+      ),
+    ).resolves.toMatchObject({ meta: { total: 1 } });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const [, pattern, merchantSlot, buyerPredicate] = prisma.$queryRaw.mock
+      .calls[0] as [unknown, string, { sql: string }, { sql: string }];
+    expect(pattern).toBe('%a1b2c3d4%');
+    // Buyers have no merchant predicate, but the raw lookup stays pinned to
+    // the caller's own rows alongside the scoped Prisma `where`.
+    expect(merchantSlot.sql).toBe('');
+    expect(buyerPredicate.sql).toContain('buyer_id');
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          buyerId: 'buyer-1',
+          id: { in: ['order-1'] },
+        }) as object,
+      }),
+    );
+  });
+
+  it('filters a buyer shop search within their own orders', async () => {
+    await service.getOrderHistory(
+      'buyer-1',
+      'buyer',
+      makeQuery({ shopSearch: '  Lotus  ' }),
+    );
+
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          buyerId: 'buyer-1',
+          merchant: {
+            OR: [
+              { shopName: { contains: 'Lotus', mode: 'insensitive' } },
+              { user: { name: { contains: 'Lotus', mode: 'insensitive' } } },
+            ],
+          },
+        },
+      }),
+    );
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
 
   it('rejects an inverted date range', async () => {
     await expect(

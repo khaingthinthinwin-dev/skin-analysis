@@ -43,7 +43,7 @@ The Order Insights pages give each platform role a read-only view of the orders 
 
 | Field / Behavior | Buyer | Merchant | Admin |
 |------------------|-------|----------|-------|
-| `customerName` list column | Not rendered (no DTO field) | Rendered (BR-OI-015) | Rendered |
+| Buyer / customer name list column | Shop name rendered from `merchant.shopName`; customer name hidden | Customer name rendered (BR-OI-015) | Shop and buyer names rendered |
 | `shopName` list column | Not rendered | Not rendered | Rendered |
 | Sales / Revenue summaries | Never (BR-OI-005) | Rendered (own-shop) | Not rendered on order screens (Revenue & Commission subsystem scope) |
 | Customer-information block (detail) | **No** — only his/her own `shipping_address` | Yes (`customer.name/email/phone` + shipping, BR-OI-033) | Yes (same fields, admin-only per BR-OI-015/033) |
@@ -116,7 +116,7 @@ All seven screens share the same design language: white/surface cards on the rol
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules | Maps to (EL-OI) |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
-| 1 | `tblOrderList` | Order List Table / 注文リストテーブル | Table | — | Yes | Loading skeleton; 20 rows/page; `createdAt DESC` | Columns: Order #, Date, Items, Total, Payment, Status | §7.4 order-history-row DTO | i18n key: `orders.table`. Server-side pagination/sort. | EL-OI-04 |
+| 1 | `tblOrderList` | Order List Table / 注文リストテーブル | Table | — | Yes | Loading skeleton; 10 rows/page; `createdAt DESC` | Columns: Order #, Date, Shop, Items, Total, Payment, Status | §7.4 order-history-row DTO extended with `shopName` from `merchant.shopName` | i18n key: `orders.table`. Server-side pagination/sort. | EL-OI-04 |
 | 2 | `badgeOrderStatus` | Status Badge / ステータスバッジ | Badge | VARCHAR(50) | Yes | One per row | One colour per status code | `order_statuses.status_name` | Colour-coded per BR-OI-031; i18n label. Row-level. | EL-OI-05 |
 | 3 | `lnkTrack` | Track Link / 追跡リンク | Link / Button (ghost) | — | Yes | One per row | Navigates to `/orders/:id/tracking` | — | i18n key: `orders.track`. Row-level. | EL-OI-06 |
 | 4 | `pgOrderList` | Pagination / ページネーション | Control | — | Yes | Page 1 of N; 20/page | Prev / Next; "Page 1 of 3 · 42 orders" | `meta` (page/limit/total) | i18n key: `common.pageInfo`. `page ≥ 1`, `limit` 1–100. | EL-OI-07 |
@@ -127,7 +127,7 @@ All seven screens share the same design language: white/surface cards on the rol
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
 | 1 | `emptyOrderList` | Empty State / 空状態 | Illustration + Text | — | Yes | Hidden by default; shown when 0 rows | Text: "You haven't placed any orders yet." + Browse Products CTA | — | i18n key: `orders.empty`. BR-OI-030 — empty is not an error. | EL-OI-08 |
 
-> **Role note:** the buyer history row DTO exposes **no** `customerName` / `shopName` — the buyer table must not render them (画面項目設計書 §4.1 note).
+> **Role note:** the buyer history row DTO exposes `shopName` for the buyer's own orders but no `customerName`. Render the shop name and do not render a customer name.
 
 **Loading / Empty / Error / Responsive:** skeleton shimmer on the table while `GET /api/v1/orders` is in flight; empty state (illustration + "Browse Products" CTA) when the list has 0 rows; `400/422/429` inline + toast, `401` → login, `500` → alert with retry (FDS §9). On mobile the table scrolls horizontally and the filter bar stacks vertically.
 

@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback, useEffect, useId } from "react";
-import { Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useState, useRef, useCallback, useEffect, useId } from 'react'
+import { Search, X } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 interface SearchBarProps {
   value: string;

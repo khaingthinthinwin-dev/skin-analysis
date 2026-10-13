@@ -25,6 +25,7 @@ export interface OrderListRowDto {
   itemCount: number;
   totalAmount: string;
   paymentStatus: PaymentStatus;
+  shopName?: string;
 }
 
 export interface PaginationMetaDto {

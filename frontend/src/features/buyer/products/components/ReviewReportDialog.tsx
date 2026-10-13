@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -14,10 +15,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useReportReview } from '../hooks/useProductDetail';
 
 const REASONS = [
-  { value: 'spam', label: 'Spam' },
-  { value: 'inappropriate', label: 'Inappropriate content' },
-  { value: 'fake', label: 'Fake review' },
-  { value: 'other', label: 'Other' },
+  { value: 'spam', key: 'buyer.products.report.reasonSpam', fallback: 'Spam' },
+  {
+    value: 'inappropriate',
+    key: 'buyer.products.report.reasonInappropriate',
+    fallback: 'Inappropriate content',
+  },
+  { value: 'fake', key: 'buyer.products.report.reasonFake', fallback: 'Fake review' },
+  { value: 'other', key: 'buyer.products.report.reasonOther', fallback: 'Other' },
 ] as const;
 
 interface ReviewReportDialogProps {
@@ -27,6 +32,7 @@ interface ReviewReportDialogProps {
 }
 
 export function ReviewReportDialog({ reviewId, open, onOpenChange }: ReviewReportDialogProps) {
+  const { t } = useTranslation();
   const report = useReportReview(reviewId);
   const [reason, setReason] = useState<string>('');
   const [description, setDescription] = useState('');
@@ -51,10 +57,12 @@ export function ReviewReportDialog({ reviewId, open, onOpenChange }: ReviewRepor
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Report Review</DialogTitle>
+          <DialogTitle>{t('buyer.products.report.title', 'Report Review')}</DialogTitle>
           <DialogDescription>
-            Let us know why you are reporting this review. Reports are reviewed by our moderation
-            team.
+            {t(
+              'buyer.products.report.description',
+              'Let us know why you are reporting this review. Reports are reviewed by our moderation team.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -62,13 +70,16 @@ export function ReviewReportDialog({ reviewId, open, onOpenChange }: ReviewRepor
           {REASONS.map((r) => (
             <div key={r.value} className="flex items-center gap-2">
               <RadioGroupItem value={r.value} id={`reason-${r.value}`} />
-              <Label htmlFor={`reason-${r.value}`}>{r.label}</Label>
+              <Label htmlFor={`reason-${r.value}`}>{t(r.key, r.fallback)}</Label>
             </div>
           ))}
         </RadioGroup>
 
         <Textarea
-          placeholder="Provide additional details... (optional)"
+          placeholder={t(
+            'buyer.products.report.detailsPlaceholder',
+            'Provide additional details... (optional)',
+          )}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={1000}
@@ -81,10 +92,12 @@ export function ReviewReportDialog({ reviewId, open, onOpenChange }: ReviewRepor
             onClick={() => onOpenChange(false)}
             disabled={report.isPending}
           >
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
-            {report.isPending ? 'Submitting...' : 'Submit Report'}
+            {report.isPending
+              ? t('buyer.products.actions.submitting', 'Submitting...')
+              : t('buyer.products.report.submit', 'Submit Report')}
           </Button>
         </DialogFooter>
       </DialogContent>

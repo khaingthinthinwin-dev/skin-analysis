@@ -12,13 +12,14 @@ const DEFAULT_FILTERS: AdminOrderFilterFormData = {
   from: '',
   to: '',
   page: 1,
-  limit: 20,
+  limit: 10,
   sort: 'createdAt',
   order: 'desc',
   merchantId: undefined,
   shopId: undefined,
   shopSearch: '',
   paymentStatus: 'all',
+  orderSearch: '',
 };
 
 function parseFilters(params: URLSearchParams): AdminOrderFilterFormData {
@@ -27,13 +28,14 @@ function parseFilters(params: URLSearchParams): AdminOrderFilterFormData {
     from: params.get('from') ?? '',
     to: params.get('to') ?? '',
     page: params.get('page') ?? 1,
-    limit: params.get('limit') ?? 20,
+    limit: params.get('limit') ?? 10,
     sort: params.get('sort') ?? 'createdAt',
     order: params.get('order') ?? 'desc',
     merchantId: params.get('merchantId') ?? undefined,
     shopId: params.get('shopId') ?? undefined,
     shopSearch: params.get('shopSearch') ?? '',
     paymentStatus: params.get('paymentStatus') ?? 'all',
+    orderSearch: params.get('orderSearch') ?? '',
   });
   return parsed.success ? { ...DEFAULT_FILTERS, ...parsed.data } : DEFAULT_FILTERS;
 }

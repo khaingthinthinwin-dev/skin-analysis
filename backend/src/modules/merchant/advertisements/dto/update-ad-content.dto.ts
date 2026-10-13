@@ -14,7 +14,9 @@ export class UpdateAdContentDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  // Same 100-character limit as UploadAdContentDto.content: the ad cards clamp
+  // the description to 2 lines, so longer copy is cut off on screen.
+  @MaxLength(100, { message: 'Content must not exceed 100 characters' })
   content?: string;
 
   // Optional so an edit that does not touch the image keeps the currently saved

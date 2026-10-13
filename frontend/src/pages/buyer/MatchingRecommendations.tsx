@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ImgHTMLAttributes } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ImgHTMLAttributes } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -21,7 +21,7 @@ import { SkeletonGrid } from '@/features/buyer/matching/components/SkeletonGrid'
 import { HistoryAccordion } from '@/features/buyer/matching/components/HistoryAccordion'
 import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
 import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
-import { getMatchingSortOptions, resolveMatchingSort } from '@/features/buyer/matching/utils/matchingSort'
+import { DEFAULT_MATCHING_SORT, getMatchingSortOptions, resolveMatchingSort } from '@/features/buyer/matching/utils/matchingSort'
 import { filterProductsBySkinType } from '@/features/buyer/matching/utils/skinTypeFilter'
 import { SortSelect } from '@/features/search/components/SortSelect'
 import { ViewToggle } from '@/features/search/components/ViewToggle'
@@ -76,7 +76,6 @@ export default function MatchingRecommendations() {
   const { items: wishlistItems, addToWishlist, removeFromWishlist, isAdding: isWishlistLoading } = useWishlist()
   const { items: cartItems, addToCart, isAdding: isCartLoading } = useCart()
   const { filters, updateFilters, resetFilters } = useMatchFilters()
-  const resolvedSort = resolveMatchingSort(filters)
   const [view, setView] = useState<ViewMode>('grid')
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false)
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
@@ -156,6 +155,27 @@ export default function MatchingRecommendations() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
 
+  // A load or refresh always keeps "Newest" selected: when the URL carries no
+  // explicit sort, persist `sort=createdAt&order=desc` via `replace` so the
+  // select shows Newest and a refresh keeps it (schema defaults alone leave
+  // the URL bare, so a reload cannot tell "buyer picked Newest" apart).
+  // Mount-only (ref) — a sort the buyer picks later must never be touched —
+  // and `keepPage` so persisting never bumps the buyer back to page 1.
+  const [searchParams] = useSearchParams()
+  const newestPinnedOnMount = useRef(false)
+  useLayoutEffect(() => {
+    if (newestPinnedOnMount.current) return
+    newestPinnedOnMount.current = true
+    const hasExplicitSort =
+      searchParams.has('sort') || searchParams.has('order')
+    if (!hasExplicitSort) {
+      updateFilters(
+        { sort: DEFAULT_MATCHING_SORT.sort, order: DEFAULT_MATCHING_SORT.order },
+        { replace: true, keepPage: true },
+      )
+    }
+  }, [searchParams, updateFilters])
+
   // Filter changes only refresh the product grid in place — no scrolling,
   // the filter panel and viewport stay where the buyer tapped.
 
@@ -193,6 +213,10 @@ export default function MatchingRecommendations() {
   // even while a refresh is in flight (placeholder data can still be from a
   // previous larger selection).
   const source = recData?.source ?? 'generic'
+  // Clamp the displayed sort to what this source can actually offer — but only
+  // once the source is known, so a valid AI "matchScore" selection doesn't
+  // flash "Newest" while the first response is still loading.
+  const resolvedSort = resolveMatchingSort(filters, recData ? source : undefined)
   const analysisAge = recData?.analysisAge ?? null
   const skinTypes = recData?.skinTypes ?? []
   const meta = recData?.meta ?? { page: 1, limit: 12, total: 0, totalPages: 0 }
@@ -494,19 +518,32 @@ export default function MatchingRecommendations() {
                         {/* Rating */}
                         <div className="flex items-center gap-1.5 text-xs">
                           <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={cn(
-                                  'h-3.5 w-3.5',
-                                  star <= Math.round(Number(product.avgRating))
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'fill-gray-200 text-gray-200 dark:fill-zinc-700 dark:text-zinc-700'
-                                )}
-                              />
-                            ))}
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const fill = Math.min(
+                                Math.max(Number(product.avgRating) - (star - 1), 0),
+                                1,
+                              );
+                              return (
+                                <span key={star} className="relative inline-flex">
+                                  <Star
+                                    className={cn(
+                                      'h-3.5 w-3.5',
+                                      'fill-gray-200 text-gray-200 dark:fill-zinc-700 dark:text-zinc-700',
+                                    )}
+                                  />
+                                  {fill > 0 && (
+                                    <span
+                                      className="absolute inset-0 overflow-hidden"
+                                      style={{ width: fill >= 1 ? '100%' : '50%' }}
+                                    >
+                                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                    </span>
+                                  )}
+                                </span>
+                              );
+                            })}
                           </div>
-                          <span className="font-medium text-foreground">{Number(product.avgRating).toFixed(2)}</span>
+                          <span className="font-medium text-foreground">{Number(product.avgRating).toFixed(1)}</span>
                           <span className="text-muted-foreground">({product.reviewCount})</span>
                         </div>
                         {/* Skin Types */}
@@ -629,19 +666,32 @@ export default function MatchingRecommendations() {
                             </div>
                             <div className="flex items-center gap-1.5 mt-1 text-xs">
                               <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={cn(
-                                      'h-3 w-3',
-                                      star <= Math.round(Number(product.avgRating))
-                                        ? 'fill-amber-400 text-amber-400'
-                                        : 'fill-gray-200 text-gray-200 dark:fill-zinc-700 dark:text-zinc-700'
-                                    )}
-                                  />
-                                ))}
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const fill = Math.min(
+                                    Math.max(Number(product.avgRating) - (star - 1), 0),
+                                    1,
+                                  );
+                                  return (
+                                    <span key={star} className="relative inline-flex">
+                                      <Star
+                                        className={cn(
+                                          'h-3 w-3',
+                                          'fill-gray-200 text-gray-200 dark:fill-zinc-700 dark:text-zinc-700',
+                                        )}
+                                      />
+                                      {fill > 0 && (
+                                        <span
+                                          className="absolute inset-0 overflow-hidden"
+                                          style={{ width: fill >= 1 ? '100%' : '50%' }}
+                                        >
+                                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
+                                })}
                               </div>
-                              <span className="font-medium text-foreground">{Number(product.avgRating).toFixed(2)}</span>
+                              <span className="font-medium text-foreground">{Number(product.avgRating).toFixed(1)}</span>
                               <span className="text-muted-foreground">({product.reviewCount})</span>
                             </div>
                             {product.skinTypes.length > 0 && (

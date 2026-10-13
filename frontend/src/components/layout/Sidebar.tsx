@@ -10,6 +10,7 @@ import {
   User as UserIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { roleNavConfigs, type UserRole, type NavItem } from '@/lib/navConfig'
 import { useAuth } from '@/hooks/useAuth'
@@ -81,7 +82,7 @@ export function Sidebar({
           className={cn(
             'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-purple-600 px-1.5 text-[11px] font-bold text-white'
           )}
-          aria-label={`${unreadCount} unread notifications`}
+          aria-label={t('nav.menu.unreadNotifications', `${unreadCount} unread notifications`, { count: unreadCount })}
         >
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
@@ -133,7 +134,7 @@ export function Sidebar({
               </span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {config.portalTitle}
+                  {t(config.portalTitleKey, config.portalTitle)}
                 </span>
                 <span
                   className={cn(
@@ -141,7 +142,7 @@ export function Sidebar({
                     config.roleBadgeColor
                   )}
                 >
-                  {config.roleLabel}
+                  {t(config.roleLabelKey, config.roleLabel)}
                 </span>
               </div>
             </div>
@@ -154,7 +155,7 @@ export function Sidebar({
           size="icon"
           className="lg:hidden shrink-0"
           onClick={onClose}
-          aria-label="Close navigation sidebar"
+          aria-label={t('nav.aria.closeSidebar', 'Close navigation sidebar')}
         >
           <X className="h-5 w-5 text-muted-foreground" />
         </Button>
@@ -163,7 +164,7 @@ export function Sidebar({
       {/* Main Navigation Items */}
       <nav
         className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-none"
-        aria-label="Sidebar main navigation"
+        aria-label={t('nav.aria.sidebarMain', 'Sidebar main navigation')}
       >
         {config.sections.map((section, idx) => (
           <div key={section.title || idx} className="space-y-1">
@@ -171,7 +172,7 @@ export function Sidebar({
               <div className="px-3 pb-1">
                 {!isCollapsed ? (
                   <h2 className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground/70">
-                    {section.title}
+                    {section.titleKey ? t(section.titleKey, section.title) : section.title}
                   </h2>
                 ) : (
                   <div className="h-px bg-border/40 my-2" />
@@ -187,7 +188,7 @@ export function Sidebar({
                   key={item.href}
                   to={item.href}
                   onClick={onClose}
-                  title={isCollapsed ? item.label : undefined}
+                  title={isCollapsed ? t(item.labelKey, item.label) : undefined}
                   className={cn(
                     'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
@@ -206,7 +207,7 @@ export function Sidebar({
 
                   {!isCollapsed && (
                     <span className="truncate text-sm tracking-tight">
-                      {item.label}
+                      {t(item.labelKey, item.label)}
                     </span>
                   )}
 
@@ -235,7 +236,7 @@ export function Sidebar({
           size="sm"
           onClick={handleToggleCollapse}
           className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={isCollapsed ? t('nav.aria.expandSidebar', 'Expand sidebar') : t('common.collapseSidebar', 'Collapse Sidebar')}
         >
           {isCollapsed ? (
             <>
@@ -255,13 +256,20 @@ export function Sidebar({
         {user ? (
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800">
-                {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="h-4 w-4" />}
-              </div>
+              <Avatar className="h-9 w-9 shrink-0 border border-purple-200 dark:border-purple-800">
+                <AvatarImage
+                  src={user.avatar || user.avatarUrl || undefined}
+                  alt={user.name || user.email}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold">
+                  {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
               {!isCollapsed && (
                 <div className="flex flex-col min-w-0">
                   <span className="truncate text-xs font-bold text-foreground">
-                    {user.name || 'User'}
+                    {user.name || t('nav.menu.user', 'User')}
                   </span>
                   <span className="truncate text-[11px] text-muted-foreground">
                     {user.email}
@@ -276,8 +284,8 @@ export function Sidebar({
                 size="icon"
                 onClick={handleLogoutClick}
                 className="shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                title={t('common.logout', 'Log out')}
-                aria-label={t('common.logout', 'Log out')}
+                title={t('nav.menu.logOut', 'Log out')}
+                aria-label={t('nav.menu.logOut', 'Log out')}
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -290,10 +298,10 @@ export function Sidebar({
               'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-destructive/10 hover:text-destructive',
               isCollapsed && 'justify-center'
             )}
-            title={t('common.logout', 'Log out')}
+            title={t('nav.menu.logOut', 'Log out')}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!isCollapsed && <span>{t('common.logout', 'Log out')}</span>}
+            {!isCollapsed && <span>{t('nav.menu.logOut', 'Log out')}</span>}
           </button>
         )}
       </div>
