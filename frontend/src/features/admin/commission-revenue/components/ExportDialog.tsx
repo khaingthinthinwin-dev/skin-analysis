@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -40,10 +41,10 @@ interface ExportDialogProps {
   merchants?: PayoutMerchant[];
 }
 
-const REPORT_LABELS: Record<ExportReportType, string> = {
-  commission: 'Commission',
-  revenue: 'Revenue',
-  payout: 'Payout',
+const REPORT_LABEL_KEYS: Record<ExportReportType, string> = {
+  commission: 'admin.commission.reportTypes.commission',
+  revenue: 'admin.commission.reportTypes.revenue',
+  payout: 'admin.commission.reportTypes.payout',
 };
 
 // [S] Export modal (DD_02). Shared across both tabs. Selects a date range and
@@ -56,6 +57,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   initialValues,
   merchants = [],
 }) => {
+  const { t } = useTranslation();
+  const reportLabel = t(REPORT_LABEL_KEYS[reportType], reportType);
   const [dateFrom, setDateFrom] = useState(initialValues?.dateFrom ?? '');
   const [dateTo, setDateTo] = useState(initialValues?.dateTo ?? '');
   const [format, setFormat] = useState<ExportFormat>('csv');
@@ -65,16 +68,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   const [generating, setGenerating] = useState(false);
   const validate = (): ExportRequestBody | null => {
     if (!dateFrom || !dateTo) {
-      setError('Please select a start and end date.');
+      setError(t('admin.commission.export.validation.dateRequired', 'Please select a start and end date.'));
       return null;
     }
     if (new Date(dateFrom) > new Date(dateTo)) {
-      setError('End date must be after start date.');
+      setError(t('admin.commission.export.validation.dateOrder', 'End date must be after start date.'));
       return null;
     }
     const diff = new Date(dateTo).getTime() - new Date(dateFrom).getTime();
     if (diff > 365 * 24 * 60 * 60 * 1000) {
-      setError('Date range cannot exceed 365 days.');
+      setError(t('admin.commission.export.validation.maxRange', 'Date range cannot exceed 365 days.'));
       return null;
     }
     setError('');
@@ -95,8 +98,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       const selectedMerchantName = merchants.find((merchant) => merchant.id === merchantId)?.name;
       await commissionService.exportReport(reportType, body, selectedMerchantName);
       toast({
-        title: 'Export generated',
-        description: `${REPORT_LABELS[reportType]} report is downloading.`,
+        title: t('admin.commission.export.successTitle', 'Export generated'),
+        description: t('admin.commission.export.successDescription', '{{reportType}} report is downloading.', { reportType: reportLabel }),
       });
       onGenerated?.({
         reportType,
@@ -107,7 +110,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       });
       onOpenChange(false);
     } catch {
-      toast({ title: 'Export failed', variant: 'destructive' });
+      toast({ title: t('admin.commission.export.failed', 'Export failed'), variant: 'destructive' });
     } finally {
       setGenerating(false);
     }
@@ -117,31 +120,31 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Export Report</DialogTitle>
+          <DialogTitle>{t('admin.commission.export.title', 'Export Report')}</DialogTitle>
           <DialogDescription>
-            Download a {REPORT_LABELS[reportType]} report for the selected date range.
+            {t('admin.commission.export.description', 'Download a {{reportType}} report for the selected date range.', { reportType: reportLabel })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Report Type</span>
-            <span className="font-medium">{REPORT_LABELS[reportType]}</span>
+            <span className="text-xs text-muted-foreground">{t('admin.commission.export.reportType', 'Report Type')}</span>
+            <span className="font-medium">{reportLabel}</span>
           </div>
           {reportType === 'commission' && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Group By</span>
-              <span className="font-medium capitalize">{groupBy === 'day' ? 'Day' : groupBy === 'order' ? 'Order' : 'Merchant'}</span>
+              <span className="text-xs text-muted-foreground">{t('admin.commission.export.groupBy', 'Group By')}</span>
+              <span className="font-medium capitalize">{t(`admin.commission.groupBy.${groupBy}`, groupBy)}</span>
             </div>
           )}
           {reportType === 'payout' && merchants.length > 0 && (
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Merchant</span>
+              <span className="text-xs text-muted-foreground">{t('admin.commission.payout.merchant', 'Merchant')}</span>
               <select
                 className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 value={merchantId}
                 onChange={(e) => setMerchantId(e.target.value)}
               >
-                <option value="">All Merchants</option>
+                <option value="">{t('admin.commission.export.allMerchants', 'All Merchants')}</option>
                 {merchants.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -151,16 +154,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             </div>
           )}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">Start Date</span>
+            <span className="text-xs text-muted-foreground">{t('admin.commission.export.startDate', 'Start Date')}</span>
             <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">End Date</span>
+            <span className="text-xs text-muted-foreground">{t('admin.commission.export.endDate', 'End Date')}</span>
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
            <div className="space-y-1.5">
-            <span className="text-xs text-muted-foreground">Format</span>
-            <div className="flex gap-2" role="radiogroup" aria-label="Export format">
+            <span className="text-xs text-muted-foreground">{t('admin.commission.export.format', 'Format')}</span>
+            <div className="flex gap-2" role="radiogroup" aria-label={t('admin.commission.export.formatLabel', 'Export format')}>
               <Button
                 type="button"
                 size="sm"
@@ -185,10 +188,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={generating}>
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleGenerate} disabled={generating}>
-            {generating ? 'Generating...' : 'Generate'}
+            {generating ? t('admin.commission.export.generating', 'Generating...') : t('admin.commission.export.generate', 'Generate')}
           </Button>
         </DialogFooter>
       </DialogContent>

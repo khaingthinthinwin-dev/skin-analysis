@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -41,6 +42,7 @@ export function AdReviewModal({
   onReject,
   onClose,
 }: AdReviewModalProps) {
+  const { t } = useTranslation()
   const [showReject, setShowReject] = useState(false)
   const [reason, setReason] = useState('')
 
@@ -51,32 +53,40 @@ export function AdReviewModal({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isReadOnly ? 'View Advertisement' : 'Review Advertisement'}</DialogTitle>
+          <DialogTitle>
+            {isReadOnly
+              ? t('admin.ads.reviewModal.viewTitle', 'View Advertisement')
+              : t('admin.ads.reviewModal.reviewTitle', 'Review Advertisement')}
+          </DialogTitle>
           <DialogDescription>
-            {ad ? `Advertisement by ${ad.shopName}` : 'Loading advertisement details...'}
+            {ad
+              ? t('admin.ads.reviewModal.advertisementBy', 'Advertisement by {{shopName}}', { shopName: ad.shopName })
+              : t('admin.ads.reviewModal.loadingDetails', 'Loading advertisement details...')}
           </DialogDescription>
         </DialogHeader>
 
         {isLoading || !ad ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">Loading...</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {t('common.loading', 'Loading...')}
+          </p>
         ) : (
           <div className="space-y-4">
-            <section aria-label="Shop information" className="grid gap-2 rounded-md border p-4 sm:grid-cols-3">
+            <section aria-label={t('admin.ads.reviewModal.shopInformation', 'Shop information')} className="grid gap-2 rounded-md border p-4 sm:grid-cols-3">
               <div>
-                <p className="text-xs text-muted-foreground">Shop</p>
+                <p className="text-xs text-muted-foreground">{t('admin.ads.reviewModal.shop', 'Shop')}</p>
                 <p className="font-medium">{ad.shopName}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Placement</p>
-                <p className="font-medium">{PLACEMENT_LABELS[ad.placement]}</p>
+                <p className="text-xs text-muted-foreground">{t('admin.ads.reviewModal.placement', 'Placement')}</p>
+                <p className="font-medium">{t(`admin.ads.placement.${ad.placement}`, PLACEMENT_LABELS[ad.placement])}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Tier</p>
+                <p className="text-xs text-muted-foreground">{t('admin.ads.reviewModal.tier', 'Tier')}</p>
                 <TierBadge tier={ad.tier} />
               </div>
             </section>
 
-            <section aria-label="Advertisement preview" className="space-y-3 rounded-md border p-4">
+            <section aria-label={t('admin.ads.reviewModal.preview', 'Advertisement preview')} className="space-y-3 rounded-md border p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="text-sm font-medium">{ad.title}</p>
                 <StatusBadge status={ad.approvalStatus} />
@@ -89,85 +99,91 @@ export function AdReviewModal({
                     className="max-h-[320px] w-full object-contain"
                   />
                 ) : (
-                  <span className="px-4 py-16 text-xs text-muted-foreground">No banner image</span>
+                  <span className="px-4 py-16 text-xs text-muted-foreground">
+                    {t('admin.ads.reviewModal.noBannerImage', 'No banner image')}
+                  </span>
                 )}
               </div>
               {ad.announcementMessage && (
                 <div className="rounded-md border bg-secondary/40 px-3 py-2.5">
-                  <p className="text-xs font-medium text-muted-foreground">Announcement</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t('admin.ads.reviewModal.announcement', 'Announcement')}
+                  </p>
                   <p className="mt-0.5 text-sm font-medium">{ad.announcementMessage}</p>
                 </div>
               )}
               {ad.content && <p className="text-sm text-muted-foreground">{ad.content}</p>}
               {ad.sku && (
                 <span className="inline-flex items-center gap-1 text-sm text-primary">
-                  SKU: {ad.sku}
+                  {t('admin.ads.reviewModal.skuLabel', 'SKU: {{sku}}', { sku: ad.sku })}
                 </span>
               )}
               <div className="grid gap-2 text-sm sm:grid-cols-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Start date</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.ads.reviewModal.startDate', 'Start date')}</p>
                   <p>{formatDate(ad.startsAt)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">End date</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.ads.reviewModal.endDate', 'End date')}</p>
                   <p>{formatDate(ad.expiresAt)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Duration</p>
-                  <p>{ad.feeInfo.durationDays} days</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.ads.reviewModal.duration', 'Duration')}</p>
+                  <p>{t('admin.ads.reviewModal.durationDays', '{{count}} days', { count: ad.feeInfo.durationDays })}</p>
                 </div>
               </div>
             </section>
 
-            <section aria-label="Fee and payment" className="space-y-2 rounded-md border p-4">
+            <section aria-label={t('admin.ads.reviewModal.feeAndPayment', 'Fee and payment')} className="space-y-2 rounded-md border p-4">
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-                <span>Daily rate</span>
+                <span>{t('admin.ads.reviewModal.dailyRate', 'Daily rate')}</span>
                 <span className="font-medium">{formatPrice(Number(ad.feeInfo.dailyRate))}</span>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-                <span>Duration</span>
-                <span className="font-medium">{ad.feeInfo.durationDays} days</span>
+                <span>{t('admin.ads.reviewModal.duration', 'Duration')}</span>
+                <span className="font-medium">{t('admin.ads.reviewModal.durationDays', '{{count}} days', { count: ad.feeInfo.durationDays })}</span>
               </div>
               <Separator />
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-                <span>Total fee</span>
+                <span>{t('admin.ads.reviewModal.totalFee', 'Total fee')}</span>
                 <span className="font-medium">{formatPrice(Number(ad.feeInfo.totalFee))}</span>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-                <span>Fee paid</span>
+                <span>{t('admin.ads.reviewModal.feePaid', 'Fee paid')}</span>
                 <span className="font-medium">{formatPrice(Number(ad.paymentInfo.amount))}</span>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-                <span>Payment status</span>
+                <span>{t('admin.ads.reviewModal.paymentStatus', 'Payment status')}</span>
                 <PaymentBadge status={ad.paymentInfo.paymentStatus} />
               </div>
               {ad.paymentInfo.paidAt && (
-                <p className="text-xs text-muted-foreground">Paid on {formatDate(ad.paymentInfo.paidAt)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('admin.ads.reviewModal.paidOn', 'Paid on {{date}}', { date: formatDate(ad.paymentInfo.paidAt) })}
+                </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Fee locked at purchase time; later fee setting changes do not affect this advertisement.
+                {t('admin.ads.reviewModal.feeLockedNotice', 'Fee locked at purchase time; later fee setting changes do not affect this advertisement.')}
               </p>
             </section>
 
             {!isPending && ad.rejectionReason && (
-              <section aria-label="Rejection reason" className="rounded-md border border-red-200 bg-red-50/50 p-4 text-sm">
-                <p className="text-xs font-medium text-destructive">Rejection reason</p>
+              <section aria-label={t('admin.ads.reviewModal.rejectionReason', 'Rejection reason')} className="rounded-md border border-red-200 bg-red-50/50 p-4 text-sm">
+                <p className="text-xs font-medium text-destructive">{t('admin.ads.reviewModal.rejectionReason', 'Rejection reason')}</p>
                 <p className="mt-1">{ad.rejectionReason}</p>
               </section>
             )}
 
             {isPending && !isReadOnly && showReject && (
-              <section aria-label="Rejection reason input" className="space-y-2 rounded-md border border-red-200 p-4">
+              <section aria-label={t('admin.ads.reviewModal.rejectionInput', 'Rejection reason input')} className="space-y-2 rounded-md border border-red-200 p-4">
                 <label htmlFor="rejection-reason" className="text-sm font-medium">
-                  Rejection reason <span className="text-destructive">*</span>
+                  {t('admin.ads.reviewModal.rejectionReason', 'Rejection reason')} <span className="text-destructive">*</span>
                 </label>
                 <Textarea
                   id="rejection-reason"
                   value={reason}
                   maxLength={REASON_MAX}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Describe why this advertisement is rejected..."
+                  placeholder={t('admin.ads.reviewModal.rejectionPlaceholder', 'Describe why this advertisement is rejected...')}
                   rows={4}
                   className={reason.length > REASON_MAX ? 'border-destructive' : ''}
                 />
@@ -176,7 +192,7 @@ export function AdReviewModal({
                 </p>
                 {reason.trim().length === 0 && (
                   <p role="alert" className="text-sm text-destructive">
-                    Rejection reason is required.
+                    {t('admin.ads.reviewModal.rejectionRequired', 'Rejection reason is required.')}
                   </p>
                 )}
               </section>
@@ -188,19 +204,21 @@ export function AdReviewModal({
           {isPending && !isReadOnly ? (
             <>
               <Button variant="outline" onClick={onClose} disabled={isApproving || isRejecting}>
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </Button>
               {showReject ? (
                 <>
                   <Button variant="ghost" onClick={() => setShowReject(false)} disabled={isRejecting}>
-                    Back
+                    {t('common.back', 'Back')}
                   </Button>
                   <Button
                     variant="destructive"
                     disabled={!canReject || isApproving}
                     onClick={() => onReject(reason.trim())}
                   >
-                    {isRejecting ? 'Rejecting...' : 'Confirm Reject'}
+                    {isRejecting
+                      ? t('admin.ads.reviewModal.rejecting', 'Rejecting...')
+                      : t('admin.ads.reviewModal.confirmReject', 'Confirm Reject')}
                   </Button>
                 </>
               ) : (
@@ -210,17 +228,19 @@ export function AdReviewModal({
                     onClick={() => setShowReject(true)}
                     disabled={isApproving}
                   >
-                    Reject
+                    {t('admin.ads.reviewModal.reject', 'Reject')}
                   </Button>
                   <Button onClick={onApprove} disabled={isRejecting}>
-                    {isApproving ? 'Approving...' : 'Approve'}
+                    {isApproving
+                      ? t('admin.ads.reviewModal.approving', 'Approving...')
+                      : t('admin.ads.reviewModal.approve', 'Approve')}
                   </Button>
                 </>
               )}
             </>
           ) : (
             <Button variant="outline" onClick={onClose}>
-              Close
+              {t('common.close', 'Close')}
             </Button>
           )}
         </DialogFooter>

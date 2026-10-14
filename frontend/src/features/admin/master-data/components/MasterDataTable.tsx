@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -23,11 +24,14 @@ interface Column {
   render: (row: MasterRow) => React.ReactNode;
 }
 
-const statusBadge = (active: boolean) => (
-  <Badge variant={active ? 'default' : 'secondary'}>
-    {active ? 'Active' : 'Inactive'}
-  </Badge>
-);
+function StatusBadge({ active }: { active: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <Badge variant={active ? 'default' : 'secondary'}>
+      {active ? t('admin.masterData.status.active', 'Active') : t('admin.masterData.status.inactive', 'Inactive')}
+    </Badge>
+  );
+}
 
 const columnsByType: Record<MasterDataCrudType, Column[]> = {
   'user-roles': [
@@ -44,7 +48,7 @@ const columnsByType: Record<MasterDataCrudType, Column[]> = {
         </span>
       ),
     },
-    { header: 'Status', render: (row) => statusBadge((row as UserRoleRow).isActive) },
+    { header: 'Status', render: (row) => <StatusBadge active={(row as UserRoleRow).isActive} /> },
   ],
   'order-statuses': [
     {
@@ -55,7 +59,7 @@ const columnsByType: Record<MasterDataCrudType, Column[]> = {
     { header: 'Order', render: (row) => (row as OrderStatusRow).displayOrder },
     {
       header: 'Terminal',
-      render: (row) => statusBadge((row as OrderStatusRow).isTerminalState),
+      render: (row) => <StatusBadge active={(row as OrderStatusRow).isTerminalState} />,
     },
     {
       header: 'Description',
@@ -72,7 +76,7 @@ const columnsByType: Record<MasterDataCrudType, Column[]> = {
       render: (row) => <code>{(row as DiscountTypeRow).typeCode}</code>,
     },
     { header: 'Name', render: (row) => (row as DiscountTypeRow).typeName },
-    { header: 'Status', render: (row) => statusBadge((row as DiscountTypeRow).isActive) },
+    { header: 'Status', render: (row) => <StatusBadge active={(row as DiscountTypeRow).isActive} /> },
   ],
   categories: [
     { header: 'Name', render: (row) => (row as CategoryRow).name },
@@ -96,7 +100,20 @@ export const MasterDataTable: React.FC<MasterDataTableProps> = ({
   rows = [],
   isLoading = false,
 }) => {
-  const columns = columnsByType[type];
+  const { t } = useTranslation();
+  const headerKeys: Record<string, string> = {
+    Code: 'admin.masterData.table.code',
+    Name: 'admin.masterData.table.name',
+    Description: 'admin.masterData.table.description',
+    Status: 'admin.masterData.table.status',
+    Order: 'admin.masterData.table.order',
+    Terminal: 'admin.masterData.table.terminal',
+    Slug: 'admin.masterData.table.slug',
+  };
+  const columns = columnsByType[type].map((column) => ({
+    ...column,
+    header: t(headerKeys[column.header], column.header),
+  }));
 
   return (
     <div className="overflow-x-auto rounded-md border bg-card">
@@ -117,7 +134,7 @@ export const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 colSpan={columns.length}
                 className="py-6 text-center text-muted-foreground"
               >
-                Loading master data...
+                {t('admin.masterData.loading', 'Loading master data...')}
               </TableCell>
             </TableRow>
           ) : rows.length === 0 ? (
@@ -126,7 +143,7 @@ export const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 colSpan={columns.length}
                 className="py-6 text-center text-muted-foreground"
               >
-                No entries found.
+                {t('admin.masterData.empty', 'No entries found.')}
               </TableCell>
             </TableRow>
           ) : (

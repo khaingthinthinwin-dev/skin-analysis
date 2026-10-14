@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({ label, options, value, onChange }: MultiSelectProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
   const toggle = (optionValue: string) => {
@@ -28,10 +30,10 @@ export function MultiSelect({ label, options, value, onChange }: MultiSelectProp
 
   const summary =
     value.length === 0
-      ? `Select ${label.toLowerCase()}`
+      ? t('admin.ads.multiSelect.select', 'Select {{label}}', { label: label.toLowerCase() })
       : value.length === options.length
-        ? `All ${label.toLowerCase()}`
-        : `${value.length} selected`
+        ? t('admin.ads.multiSelect.all', 'All {{label}}', { label: label.toLowerCase() })
+        : t('admin.ads.multiSelect.selectedCount', '{{count}} selected', { count: value.length })
 
   return (
     <div className="relative w-full min-w-0 sm:w-52">
@@ -66,7 +68,7 @@ export function MultiSelect({ label, options, value, onChange }: MultiSelectProp
                 className="mb-1 w-full rounded-lg border-b border-border/40 px-3 py-1.5 text-left text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
                 onClick={() => onChange([])}
               >
-                Clear selection
+                {t('admin.ads.multiSelect.clear', 'Clear selection')}
               </button>
             )}
             <div className="space-y-0.5">
@@ -100,7 +102,9 @@ export function MultiSelect({ label, options, value, onChange }: MultiSelectProp
               })}
             </div>
             {options.length === 0 && (
-              <p className="px-3 py-2 text-sm text-muted-foreground">No options</p>
+              <p className="px-3 py-2 text-sm text-muted-foreground">
+                {t('admin.ads.multiSelect.noOptions', 'No options')}
+              </p>
             )}
           </div>
         </>

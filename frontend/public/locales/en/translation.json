@@ -9,7 +9,9 @@
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
+    "close": "Close",
     "delete": "Delete",
+    "ok": "OK",
     "submit": "Submit",
     "back": "Back",
     "next": "Next",
@@ -31,7 +33,14 @@
       "searching": "Searching..."
     },
     "pagination": {
-      "rows": "Rows:"
+      "rows": "Rows:",
+      "row": "Row",
+      "rowsPerPage": "Rows per page",
+      "showingRange": "Showing <range>{{from}}-{{to}}</range> of <total>{{total}}</total> {{itemLabel}}",
+      "previousPageLabel": "Previous page",
+      "previous": "Prev",
+      "nextPageLabel": "Next page",
+      "next": "Next"
     },
     "payment": {
       "pending": "Pending",
@@ -1163,6 +1172,950 @@
     "dismiss": "Dismiss banner"
   },
   "admin": {
+    "dashboard": {
+      "console": "Admin Governance Console",
+      "welcome": "Welcome, {{name}}!",
+      "administrator": "Administrator",
+      "subtitle": "Platform-wide system metrics, merchant approvals, content moderation, and audit controls.",
+      "reviewMerchantApprovals": "Review Merchant Approvals",
+      "userGovernance": "User Governance",
+      "accountsRoles": "Accounts & roles",
+      "userGovernanceDescription": "Manage platform buyers, merchants, and admin permissions with role-based access control.",
+      "manageUsers": "Manage Users",
+      "adApprovals": "Ad Approvals",
+      "merchantCampaigns": "Merchant campaigns",
+      "adApprovalsDescription": "Review and approve merchant advertising banner requests before live display on buyer feeds.",
+      "manageAds": "Manage Ads",
+      "commissionRevenue": "Commission & Revenue",
+      "financialAnalytics": "Financial analytics",
+      "commissionRevenueDescription": "Track Marketplace commission rates, order settlements, and overall platform revenue.",
+      "viewRevenue": "View Revenue",
+      "stats": {
+        "totalUsers": "Total Users",
+        "totalMerchants": "Total Merchants",
+        "pendingMerchants": "Pending Merchants",
+        "pendingAds": "Pending Ads",
+        "pendingReports": "Pending Reports"
+      }
+    },
+    "masterData": {
+      "title": "Master Data",
+      "subtitle": "Reference data that drives roles, order flow, promotions and the product catalogue",
+      "newCategory": "New Category",
+      "tabs": {
+        "userRoles": "User Roles",
+        "orderStatuses": "Order Statuses",
+        "discountTypes": "Discount Types",
+        "categories": "Categories",
+        "adPlacements": "Ad Placements"
+      },
+      "toast": {
+        "categoryCreated": "Category created",
+        "categoryCreateFailed": "Failed to create category"
+      },
+      "adPlacementsDescription": "Placements are the fixed slots ads can be bought for. This tab shows the default placement definitions (code + name) only — tier packages, duration, max ads and daily rates are stored in ad_fee_settings and managed under Advertisements.",
+      "table": {
+        "code": "Code",
+        "name": "Name",
+        "description": "Description",
+        "status": "Status",
+        "order": "Order",
+        "terminal": "Terminal",
+        "slug": "Slug"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "loading": "Loading master data...",
+      "empty": "No entries found.",
+      "form": {
+        "title": "New Category",
+        "description": "Add a product category to the catalogue tree. Leave the slug empty to generate it from the name.",
+        "slugValidation": "Lowercase letters, numbers and hyphens only",
+        "nameRequired": "Name is required",
+        "name": "Name",
+        "namePlaceholder": "Lipstick",
+        "slug": "Slug",
+        "slugPlaceholder": "lipstick",
+        "cancel": "Cancel",
+        "creating": "Creating...",
+        "submit": "Create Category"
+      },
+      "placements": {
+        "code": "Placement Code",
+        "name": "Placement Name",
+        "searchPageBanner": "Search Page Banner",
+        "recommendationPageBanner": "Recommendation Page Banner",
+        "checkoutPageBanner": "Checkout Page Banner",
+        "productDetailPageBanner": "Product Detail Page Banner"
+      }
+    },
+    "merchants": {
+      "title": "Merchant Management",
+      "subtitle": "Review business licenses and manage merchant registrations",
+      "stats": {
+        "total": "Total Merchants",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "filters": {
+        "searchPlaceholder": "Search merchants by name or email..."
+      },
+      "sort": {
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "nameAsc": "Name (A-Z)",
+        "nameDesc": "Name (Z-A)"
+      },
+      "field": {
+        "shop": "Shop",
+        "owner": "Owner",
+        "registered": "Registered",
+        "licenseStatus": "License Status"
+      },
+      "table": {
+        "actions": "Actions",
+        "empty": "No merchants found.",
+        "shopName": "Shop Name",
+        "userEmail": "User Email",
+        "submittedAt": "Submitted At",
+        "emptyApplications": "No merchant applications.",
+        "viewLicense": "View License",
+        "viewDetails": "View merchant details"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "na": "N/A",
+      "license": {
+        "link": "License"
+      },
+      "pagination": {
+        "itemLabel": "merchants"
+      },
+      "detail": {
+        "title": "Merchant Detail",
+        "information": "Merchant Information",
+        "registered": "Registered {{date}}",
+        "businessLicense": "Business License",
+        "licenseDocument": "Business License Document",
+        "pdfDocument": "PDF document",
+        "download": "Download",
+        "status": "Status",
+        "submitted": "Submitted",
+        "rejectionReason": "Rejection Reason"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "toast": {
+        "approved": "Merchant approved",
+        "approveFailed": "Failed to approve merchant",
+        "rejected": "Merchant rejected",
+        "rejectFailed": "Failed to reject merchant"
+      },
+      "approve": {
+        "title": "Approve Merchant",
+        "confirm": "Are you sure you want to approve {{name}}? Its status will change to Approved."
+      },
+      "reject": {
+        "title": "Reject Merchant",
+        "confirm": "Are you sure you want to reject {{name}}?",
+        "reasonPlaceholder": "Enter rejection reason (required, max 500 characters)..."
+      }
+    },
+    "reviews": {
+      "countLabel_one": "({{count}} reviews)",
+      "countLabel_other": "({{count}} reviews)",
+      "loading": "Loading reviews...",
+      "loadError": "Unable to load reviews.",
+      "empty": "No reviews yet.",
+      "pending": "Pending",
+      "verified": "Verified",
+      "reportLabel": "Report this review",
+      "imageAlt": "Review image {{index}}",
+      "loadMore": "Load more reviews",
+      "title": "Review & Report Management",
+      "subtitle": "Moderate product reviews and reports",
+      "fromNotification": "From notification",
+      "tabs": {
+        "reviews": "Reviews",
+        "reports": "Reports"
+      },
+      "stats": {
+        "total": "Total Reviews",
+        "totalReports": "Total Reports"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "reviewed": "Reviewed",
+        "resolved": "Resolved"
+      },
+      "sort": {
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "ratingHighLow": "Rating (High-Low)",
+        "ratingLowHigh": "Rating (Low-High)"
+      },
+      "filters": {
+        "reviewSearch": "Search reviews by user, product, or content...",
+        "reportSearch": "Search reports..."
+      },
+      "selectedCount_one": "{{count}} selected",
+      "selectedCount_other": "{{count}} selected",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "resolve": "Resolve",
+        "approveAll": "Approve All",
+        "rejectAll": "Reject All",
+        "deleteAll": "Delete All"
+      },
+      "table": {
+        "user": "User",
+        "product": "Product",
+        "rating": "Rating",
+        "reviewContent": "Review Content",
+        "title": "Title",
+        "status": "Status",
+        "date": "Date",
+        "actions": "Actions",
+        "emptyReviews": "No reviews found.",
+        "reporter": "Reporter",
+        "review": "Review",
+        "noComment": "No comment",
+        "reason": "Reason",
+        "emptyReports": "No reports found."
+      },
+      "pagination": {
+        "reviews": "reviews",
+        "reports": "reports"
+      },
+      "detail": {
+        "reviewTitle": "Review Detail",
+        "information": "Review Information",
+        "reviewer": "Reviewer",
+        "priceUnavailable": "Price unavailable",
+        "submitted": "Submitted",
+        "content": "Review Content",
+        "images": "Images",
+        "rejectionReason": "Rejection Reason",
+        "reportTitle": "Report Detail",
+        "reportInformation": "Report Information",
+        "reportDetails": "Report Details",
+        "reportedReview": "Reported Review",
+        "reviewBy": "By: {{name}} ({{email}})",
+        "noReviewContent": "No review content available.",
+        "adminNote": "Admin Note",
+        "adminNotePlaceholder": "Add internal resolution notes...",
+        "adminNoteRequired": "Admin note is required."
+      },
+      "na": "N/A",
+      "verifiedPurchase": "Verified Purchase",
+      "dialog": {
+        "rejectionPlaceholder": "Enter rejection reason (required)...",
+        "rejectReviewTitle": "Reject Review",
+        "deleteReviewTitle": "Delete Review",
+        "deleteReviewDescription": "Are you sure you want to permanently delete this review? This action cannot be undone.",
+        "bulkApproveTitle": "Approve {{count}} Reviews",
+        "bulkApproveTitle_one": "Approve {{count}} Review",
+        "bulkApproveTitle_other": "Approve {{count}} Reviews",
+        "bulkApproveDescription": "Are you sure you want to approve the selected {{count}} reviews? Their status will change to Approved.",
+        "bulkApproveDescription_one": "Are you sure you want to approve the selected review? Its status will change to Approved.",
+        "bulkApproveDescription_other": "Are you sure you want to approve the selected {{count}} reviews? Their status will change to Approved.",
+        "bulkRejectTitle": "Reject {{count}} Reviews",
+        "bulkRejectTitle_one": "Reject {{count}} Review",
+        "bulkRejectTitle_other": "Reject {{count}} Reviews",
+        "bulkDeleteTitle": "Delete {{count}} Reviews",
+        "bulkDeleteTitle_one": "Delete {{count}} Review",
+        "bulkDeleteTitle_other": "Delete {{count}} Reviews",
+        "bulkDeleteDescription": "Are you sure you want to permanently delete the selected {{count}} reviews? This action cannot be undone.",
+        "bulkDeleteDescription_one": "Are you sure you want to permanently delete the selected review? This action cannot be undone.",
+        "bulkDeleteDescription_other": "Are you sure you want to permanently delete the selected {{count}} reviews? This action cannot be undone.",
+        "rejectReportTitle": "Reject Report",
+        "rejectReportDescription": "Are you sure you want to reject this report? Its status will change to Rejected.",
+        "deleteReportTitle": "Delete Report",
+        "deleteReportDescription": "Are you sure you want to permanently delete this report? This action cannot be undone."
+      },
+      "toast": {
+        "reviewApproved": "Review approved",
+        "reviewApproveFailed": "Failed to approve review",
+        "reviewRejected": "Review rejected",
+        "reviewRejectFailed": "Failed to reject review",
+        "reviewDeleted": "Review deleted",
+        "reviewDeleteFailed": "Failed to delete review",
+        "onlyPendingApprove": "Only pending reviews can be approved",
+        "onlyPendingReject": "Only pending reviews can be rejected",
+        "bulkApprovePartial": "{{processed}} of {{total}} approved, {{failed}} failed",
+        "bulkApproved_one": "{{count}} review approved",
+        "bulkApproved_other": "{{count}} reviews approved",
+        "bulkApproveFailed": "Failed to approve reviews",
+        "bulkRejectPartial": "{{processed}} of {{total}} rejected, {{failed}} failed",
+        "bulkRejected_one": "{{count}} review rejected",
+        "bulkRejected_other": "{{count}} reviews rejected",
+        "bulkRejectFailed": "Failed to reject reviews",
+        "bulkDeletePartial": "{{processed}} of {{total}} deleted, {{failed}} failed",
+        "bulkDeleted_one": "{{count}} review deleted",
+        "bulkDeleted_other": "{{count}} reviews deleted",
+        "bulkDeleteFailed": "Failed to delete reviews",
+        "reportDeleted": "Report deleted",
+        "reportDeleteFailed": "Failed to delete report",
+        "reportRejected": "Report rejected",
+        "reportRejectFailed": "Failed to reject report",
+        "reportResolved": "Report resolved",
+        "reportResolveFailed": "Failed to resolve report",
+        "reportUpdateFailed": "Failed to update report"
+      }
+    },
+    "commission": {
+      "title": "Commission & Revenue",
+      "actions": { "export": "Export" },
+      "tabs": { "commission": "Commission", "revenue": "Revenue" },
+      "reportTitle": "Commission Report ({{groupBy}})",
+      "reportTitlePlain": "Commission Report",
+      "groupBy": {
+        "daily": "daily",
+        "order": "by order",
+        "merchant": "by merchant",
+        "byDay": "By Day",
+        "byOrder": "By Order",
+        "byMerchant": "By Merchant"
+      },
+      "export": {
+        "revenue": "Export Revenue",
+        "payout": "Export Payout",
+        "title": "Export Report",
+        "description": "Download a {{reportType}} report for the selected date range.",
+        "reportType": "Report Type",
+        "groupBy": "Group By",
+        "allMerchants": "All Merchants",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "format": "Format",
+        "formatLabel": "Export format",
+        "generating": "Generating...",
+        "generate": "Generate",
+        "failed": "Export failed",
+        "successTitle": "Export generated",
+        "successDescription": "{{reportType}} report is downloading.",
+        "validation": {
+          "dateRequired": "Please select a start and end date.",
+          "dateOrder": "End date must be after start date.",
+          "maxRange": "Date range cannot exceed 365 days."
+        }
+      },
+      "filters": {
+        "from": "From",
+        "to": "To",
+        "fromDate": "From date",
+        "toDate": "To date",
+        "apply": "Apply",
+        "reset": "Reset",
+        "invalidDateRange": "Start date must be before end date."
+      },
+      "kpi": { "periodLabel": "{{period}} revenue" },
+      "payout": {
+        "merchant": "Merchant",
+        "allPeriods": "All periods",
+        "breakdown": "Payout breakdown",
+        "commissionFee": "Commission fee",
+        "completedDate": "Completed Date",
+        "completedOrders_one": "{{count}} completed order",
+        "completedOrders_other": "{{count}} completed orders",
+        "confirmDelete": "Confirm delete",
+        "confirmDescription": "This will mark the payout as completed. Ad fees are excluded from payouts (net = total amount - commission).",
+        "confirmTitle": "Process payout for {{merchantName}}?",
+        "deleteDescription": "This action cannot be undone.",
+        "deleteSelected": "Delete selected payouts",
+        "deleteTitle": "Are you sure you want to delete these rows?",
+        "deleting": "Deleting...",
+        "detailDescription": "Payout details",
+        "detailTitle": "Payout Details",
+        "empty": "No payouts found.",
+        "netPayout": "Net Payout",
+        "paidDate": "Paid Date",
+        "pendingOrders_one": "{{count}} pending order",
+        "pendingOrders_other": "{{count}} pending orders",
+        "period": "Period",
+        "process": "Process",
+        "processing": "Processing...",
+        "searchLabel": "Search payouts",
+        "searchPlaceholder": "Search merchant or period",
+        "selectItem": "Select payout",
+        "selectPage": "Select all payouts on this page",
+        "totalAmount": "Total Amount",
+        "totalOrders": "Total Orders",
+        "viewDetails": "View Details"
+      },
+      "payouts": { "title": "Merchant Payouts" },
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Completed",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "payoutStatus": "Payout Status",
+      "adFees": {
+        "title": "Ad Fee Summary",
+        "activeAds": "Active Ads",
+        "totalCollected": "Total Collected"
+      },
+      "adPaymentStatus": "Ad Payment Status",
+      "table": {
+        "action": "Action",
+        "commission": "Commission",
+        "date": "Date",
+        "empty": "No commission reports found.",
+        "merchant": "Merchant",
+        "orderNumber": "Order Number",
+        "orders": "Orders",
+        "rate": "Commission Rate",
+        "revenue": "Revenue",
+        "status": "Status"
+      },
+      "rate": {
+        "title": "Commission Rate",
+        "description": "Platform fee applied to each completed transaction",
+        "edit": "Edit Rate",
+        "appliedHint": "Applied to all new orders from the moment saved",
+        "dialogTitle": "Edit Commission Rate",
+        "dialogDescription": "Set the platform fee percentage. Applies to all new transactions from the moment saved.",
+        "inputLabel": "Commission rate",
+        "validation": "Commission rate must be between 0 and 100"
+      },
+      "target": {
+        "validation": "Target amount must be a positive number with up to 2 decimal places.",
+        "editTitle": "Edit Revenue Target",
+        "setTitle": "Set Revenue Target",
+        "dialogDescription": "Define the revenue target for the {{period}} period. Changes apply to the selected period only.",
+        "amount": "Target Amount",
+        "amountPlaceholder": "0.00",
+        "period": "Period",
+        "saving": "Saving...",
+        "save": "Save Target",
+        "actualRevenue": "Actual Revenue",
+        "description": "Set a target to track revenue performance.",
+        "edit": "Edit target",
+        "empty": "No revenue target set for this period.",
+        "progress": "{{progress}}% of target",
+        "progressLabel": "Progress",
+        "set": "Set target",
+        "title": "Revenue Target"
+      },
+      "toast": {
+        "rateUpdated": "Commission rate updated",
+        "rateUpdateFailed": "Failed to update commission rate",
+        "payoutAlreadyProcessed": "Payout already processed",
+        "payoutCannotDelete": "Payout cannot be deleted",
+        "payoutDeleteFailed": "Failed to delete payout",
+        "payoutPartial": "Payout partially processed",
+        "payoutPartialDescription": "{{success}} payouts processed; {{failed}} failed.",
+        "payoutProcessed": "Payout processed",
+        "payoutsDeleted_one": "{{count}} payout deleted",
+        "payoutsDeleted_other": "{{count}} payouts deleted",
+        "targetSaveFailed": "Failed to save revenue target",
+        "targetSaveFailedTitle": "Failed to save target",
+        "targetUpdated": "Revenue target updated"
+      },
+      "trend": {
+        "adFee": "Ad Fees",
+        "aiForecast": "AI Forecast",
+        "chartLabel": "Revenue",
+        "chartTitle": "Revenue Trend",
+        "commission": "Commission",
+        "description": "Revenue earned over time",
+        "descriptionWithForecast": "Revenue history and forecast",
+        "empty": "No revenue data available.",
+        "revenue": "Revenue",
+        "title": "Revenue Trend"
+      }
+    },
+    "ads": {
+      "placement": {
+        "search_page_banner": "Search Page Banner",
+        "recommendation_page_banner": "Recommendation Page Banner",
+        "checkout_page_banner": "Checkout Page Banner",
+        "productDetail_page_banner": "Product Detail Page Banner"
+      },
+      "tier": {
+        "basic": "Basic",
+        "standard": "Standard",
+        "premium": "Premium"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "completed": "Completed",
+        "refunded": "Refunded",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "reviewModal": {
+        "viewTitle": "View Advertisement",
+        "reviewTitle": "Review Advertisement",
+        "advertisementBy": "Advertisement by {{shopName}}",
+        "loadingDetails": "Loading advertisement details...",
+        "shopInformation": "Shop information",
+        "shop": "Shop",
+        "placement": "Placement",
+        "tier": "Tier",
+        "preview": "Advertisement preview",
+        "noBannerImage": "No banner image",
+        "announcement": "Announcement",
+        "skuLabel": "SKU: {{sku}}",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "duration": "Duration",
+        "durationDays_one": "{{count}} day",
+        "durationDays_other": "{{count}} days",
+        "feeAndPayment": "Fee and payment",
+        "dailyRate": "Daily rate",
+        "totalFee": "Total fee",
+        "feePaid": "Fee paid",
+        "paymentStatus": "Payment status",
+        "paidOn": "Paid on {{date}}",
+        "feeLockedNotice": "Fee locked at purchase time; later fee setting changes do not affect this advertisement.",
+        "rejectionReason": "Rejection reason",
+        "rejectionInput": "Rejection reason input",
+        "rejectionPlaceholder": "Describe why this advertisement is rejected...",
+        "rejectionRequired": "Rejection reason is required.",
+        "rejecting": "Rejecting...",
+        "confirmReject": "Confirm Reject",
+        "reject": "Reject",
+        "approving": "Approving...",
+        "approve": "Approve"
+      },
+      "bulk": {
+        "selectedCount_one": "{{count}} ad selected",
+        "selectedCount_other": "{{count}} ads selected",
+        "maxSelection": "Maximum 50 ads per bulk operation.",
+        "approveSelected": "Approve all selected advertisements",
+        "approveAll": "All Approve",
+        "rejectSelected": "Reject all selected advertisements",
+        "rejectAll": "All Reject"
+      },
+      "bulkApprove": {
+        "title": "Bulk Approve Ads",
+        "description_one": "You are about to approve {{count}} advertisement.",
+        "description_other": "You are about to approve {{count}} advertisements.",
+        "approving": "Approving...",
+        "confirm": "Confirm Approve"
+      },
+      "bulkReject": {
+        "title": "Bulk Reject Ads",
+        "description_one": "You are about to reject {{count}} advertisement.",
+        "description_other": "You are about to reject {{count}} advertisements.",
+        "refundNotice": "The advertisements will not be displayed. Paid amounts will be refunded in full (100%) according to the refund rule.",
+        "reason": "Rejection reason",
+        "reasonPlaceholder": "Describe why these advertisements are rejected...",
+        "reasonRequired": "Rejection reason is required.",
+        "rejecting": "Rejecting...",
+        "confirm": "Confirm Reject"
+      },
+      "dateRange": {
+        "from": "From",
+        "to": "To",
+        "clear": "Clear date range"
+      },
+      "multiSelect": {
+        "select": "Select {{label}}",
+        "all": "All {{label}}",
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected",
+        "clear": "Clear selection",
+        "noOptions": "No options"
+      },
+      "pagination": {
+        "rows": "Rows:",
+        "rowsPerPage": "Rows per page",
+        "showingPage": "Showing page {{page}} of {{totalPages}}",
+        "previousPageLabel": "Previous page",
+        "previous": "Prev",
+        "goToPage": "Go to page {{page}}",
+        "nextPageLabel": "Next page",
+        "next": "Next"
+      },
+      "analytics": {
+        "title": "Revenue Analytics",
+        "subtitle": "Revenue overview from approved advertisements",
+        "backToAds": "Back to Ads",
+        "dateRange": "Date range",
+        "placement": "Placement",
+        "placementsLabel": "placements",
+        "tier": "Tier",
+        "tiersLabel": "tiers",
+        "tables": {
+          "placementTier": "Placement / Tier",
+          "adCount": "Ad Count",
+          "totalRevenue": "Total Revenue",
+          "averageCtr": "Avg CTR",
+          "noData": "No data",
+          "byPlacementTitle": "Ads by Placement",
+          "byPlacementDescription": "Advertisement breakdown by placement",
+          "byTierTitle": "Ads by Tier",
+          "byTierDescription": "Advertisement breakdown by tier"
+        },
+        "charts": {
+          "noData": "No data",
+          "pieChartLabel": "{{title}} pie chart",
+          "segmentTitle": "{{label}}: {{revenue}} ({{percent}}%)",
+          "revenueByPlacement": "Revenue by Placement",
+          "revenueByPlacementDescription": "Revenue share grouped by ad placement",
+          "revenueByTier": "Revenue by Tier",
+          "revenueByTierDescription": "Revenue share grouped by advertising tier",
+          "revenueTrend": "Revenue Trend",
+          "dailyRevenue": "Daily revenue over the selected period",
+          "trendChartLabel": "Revenue trend line chart",
+          "pointTitle": "{{date}}: {{revenue}}"
+        }
+      },
+      "export": {
+        "title": "Export Reports",
+        "subtitle": "Generate CSV reports for advertisements and fee history",
+        "backToAds": "Back to Ads",
+        "dateRange": "Date range",
+        "exportFormatLabel": "Export format",
+        "format": "Format",
+        "generateFailed": "Failed to generate report",
+        "generateSuccess": "Report generated and download started",
+        "generateReport": "Generate Report",
+        "generateReportLabel": "Generate report",
+        "generating": "Generating...",
+        "helperText": "Generates and downloads a CSV report. Filters are optional; leave empty to include all.",
+        "invalidRange": "End date must be after start date.",
+        "placement": "Placement",
+        "placementsLabel": "placements",
+        "searchShopNameLabel": "Search shop name",
+        "searchShopPlaceholder": "Search shop...",
+        "shop": "Shop",
+        "status": "Status",
+        "statusesLabel": "statuses",
+        "tier": "Tier",
+        "tiersLabel": "tiers"
+      },
+      "feeHistory": {
+        "title": "Fee Change History",
+        "subtitle": "Audit trail of fee setting changes",
+        "backToPackages": "Back to Packages",
+        "month": "Month",
+        "monthFilterLabel": "Month filter",
+        "allMonths": "All months",
+        "placement": "Placement",
+        "placementFilterLabel": "Placement filter",
+        "allPlacements": "All placements",
+        "tier": "Tier",
+        "tierFilterLabel": "Tier filter",
+        "allTiers": "All tiers",
+        "date": "Date",
+        "oldRate": "Old Rate",
+        "newRate": "New Rate",
+        "changedBy": "Changed By",
+        "reason": "Reason",
+        "actions": "Actions",
+        "selectAllLabel": "Select all deletable fee change history",
+        "selectRowLabel": "Select fee change history from {{date}}",
+        "deleteRecordTitle": "Delete this history record",
+        "deleteRecordLabel": "Delete fee change history from {{date}}",
+        "empty": "No fee change history found.",
+        "maxBulkSelection": "Maximum 50 records per bulk operation",
+        "deleteSelectedLabel": "Delete selected fee change history",
+        "currentMonthProtected": "Fee change history from the current month is protected and cannot be deleted. Select records from previous months to remove them.",
+        "deleteSuccessSingle": "Fee change history deleted",
+        "deleteSuccessCount_one": "{{count}} fee change history record deleted",
+        "deleteSuccessCount_other": "{{count}} fee change history records deleted",
+        "deleteFailed": "Failed to delete fee change history",
+        "selectedCount_one": "{{count}} record selected",
+        "selectedCount_other": "{{count}} records selected"
+      },
+      "list": {
+        "title": "Advertisement Management",
+        "subtitle": "Review merchant ads and manage advertising fees",
+        "managePackages": "Manage Packages",
+        "revenueAnalytics": "Revenue Analytics",
+        "pendingCount_one": "{{count}} pending advertisement",
+        "pendingCount_other": "{{count}} pending advertisements",
+        "approveSuccess": "Advertisement approved",
+        "approveFailed": "Failed to approve advertisement",
+        "rejectSuccess": "Advertisement rejected",
+        "rejectFailed": "Failed to reject advertisement",
+        "bulkApproved": "{{count}} advertisements approved",
+        "bulkRejected": "{{count}} advertisements rejected",
+        "bulkApproveFailed": "Bulk approve failed",
+        "bulkRejectFailed": "Bulk reject failed",
+        "empty": "No advertisements found.",
+        "noSubmissions": "No advertisement submissions.",
+        "approve": "Approve",
+        "reject": "Reject",
+        "selectAll": "Select all pending advertisements",
+        "selectAdvertisement": "Select advertisement {{title}}",
+        "reviewAdvertisement": "Review {{title}}",
+        "viewAdvertisement": "View {{title}}",
+        "newBadge": "NEW",
+        "filters": {
+          "searchShop": "Search shop...",
+          "searchShopLabel": "Search shop name",
+          "statusFilterLabel": "Status filter",
+          "allStatuses": "All Status",
+          "placementFilterLabel": "Placement filter",
+          "allPlacements": "All Placements",
+          "tierFilterLabel": "Tier filter",
+          "allTiers": "All Tiers",
+          "reset": "Reset all filters"
+        },
+        "table": {
+          "shop": "Shop",
+          "title": "Title",
+          "placement": "Placement",
+          "tier": "Tier",
+          "status": "Status",
+          "approval": "Approval",
+          "payment": "Payment",
+          "fee": "Fee",
+          "submitted": "Submitted",
+          "schedule": "Schedule",
+          "actions": "Actions"
+        }
+      },
+      "packages": {
+        "title": "Package & Fee Management",
+        "subtitle": "Configure advertising fees by placement and tier",
+        "backToAds": "Back to Ads",
+        "viewHistory": "View History",
+        "allCreatedTooltip": "All 12 placement & tier packages have been created",
+        "createFeeSetting": "Create Fee Setting",
+        "createSuccess": "Fee setting created",
+        "createFailed": "Failed to create fee setting",
+        "updateSuccess": "Fee setting updated",
+        "updateFailed": "Failed to update fee setting",
+        "deactivateSuccess": "Fee setting deactivated",
+        "deactivateFailed": "Failed to deactivate fee setting",
+        "reactivateSuccess": "Fee setting reactivated",
+        "reactivateFailed": "Failed to reactivate fee setting"
+      },
+      "fee": {
+        "adTable": {
+          "header": {
+            "placement": "Placement Location",
+            "tier": "Tier",
+            "dailyRate": "Daily Rate (KS)",
+            "actions": "Actions"
+          },
+          "empty": "No fee settings configured.",
+          "updateRate": "Update Rate"
+        },
+        "table": {
+          "header": {
+            "placement": "Placement",
+            "tier": "Tier",
+            "dailyRate": "Daily Rate",
+            "duration": "Duration",
+            "totalFee": "Total Fee",
+            "maxAds": "Max Ads",
+            "status": "Status",
+            "actions": "Actions"
+          },
+          "empty": "No fee settings found.",
+          "durationDays_one": "{{count}} day",
+          "durationDays_other": "{{count}} days"
+        },
+        "create": {
+          "title": "Create Fee Setting",
+          "description": "Define a new advertising fee for a placement and tier combination.",
+          "placementLabel": "Placement",
+          "placementPlaceholder": "Select placement",
+          "tierLabel": "Tier",
+          "tierPlaceholder": "Select tier",
+          "creating": "Creating...",
+          "submit": "Create Fee Setting",
+          "optionAlreadyExists": "A fee setting already exists for this placement and tier."
+        },
+        "dailyRateLabel": "Daily rate",
+        "durationLabel": "Duration (days)",
+        "maxAdsLabel": "Max ads",
+        "totalFeeLabel": "Total fee (Daily rate x Duration)",
+        "effectiveFromLabel": "Effective from",
+        "changeReasonLabel": "Change reason",
+        "deactivate": {
+          "title": "Deactivate Fee Setting",
+          "descriptionFallback": "Deactivate fee setting.",
+          "notice": "Existing advertisements are unaffected by this change (fee locking rule). New purchases for this placement and tier will not be available while inactive.",
+          "changeReasonPlaceholder": "Why is this fee setting deactivated?",
+          "changeReasonRequired": "Change reason is required.",
+          "deactivating": "Deactivating...",
+          "confirm": "Confirm Deactivate"
+        },
+        "deleteHistory": {
+          "title": "Delete Fee Change History",
+          "descriptionOne": "Permanently delete this history record from the fee change history.",
+          "descriptionCount": "Permanently delete these {{count}} history records from the fee change history.",
+          "warning": "This action cannot be undone. History records created in the current month are protected and will always be rejected.",
+          "deleting": "Deleting...",
+          "confirm": "Confirm Delete"
+        },
+        "edit": {
+          "title": "Edit Fee Setting",
+          "descriptionFallback": "Edit fee setting details.",
+          "changeReasonPlaceholder": "Why is this fee setting changed?",
+          "currentTotalFee": "Current total fee",
+          "saving": "Saving...",
+          "submit": "Save Changes"
+        },
+        "reactivate": {
+          "title": "Reactivate Fee Setting",
+          "descriptionFallback": "Reactivate fee setting.",
+          "notice": "This package will become available to merchants again with its current rate and configuration.",
+          "optional": "(optional)",
+          "changeReasonPlaceholder": "Why is this fee setting reactivated?",
+          "reactivating": "Reactivating...",
+          "confirm": "Confirm Reactivate"
+        },
+        "validation": {
+          "placementRequired": "Placement is required",
+          "tierRequired": "Tier is required",
+          "dailyRate": "Daily rate must be greater than 0",
+          "duration": "Duration must be at least 1 day",
+          "maxAds": "Max ads must be at least 1",
+          "effectiveFrom": "Effective date is required",
+          "changeReasonRequired": "Change reason is required",
+          "changeReasonMax": "Change reason must not exceed 1000 characters"
+        }
+      }
+    },
+    "content": {
+      "title": "Product Content Moderation",
+      "subtitle": "Review and moderate product content",
+      "stats": { "total": "Total Products" },
+      "filters": { "searchPlaceholder": "Search products by name or shop..." },
+      "status": { "active": "Active", "inactive": "Inactive" },
+      "sort": {
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "priceHighLow": "Price (High-Low)",
+        "priceLowHigh": "Price (Low-High)",
+        "nameAsc": "Name (A-Z)",
+        "nameDesc": "Name (Z-A)"
+      },
+      "bulk": {
+        "deactivateAll": "Deactivate All",
+        "activateAll": "Activate All",
+        "deactivateTitle": "Deactivate Selected Products",
+        "activateTitle": "Activate Selected Products",
+        "deactivateDescription": "The selected products will be deactivated and hidden from the storefront. This can be undone later.",
+        "activateDescription": "The selected products will be activated and visible on the storefront."
+      },
+      "table": {
+        "product": "Product",
+        "shop": "Shop",
+        "price": "Price",
+        "status": "Status",
+        "created": "Created",
+        "actions": "Actions",
+        "empty": "No products found.",
+        "selected": "{{count}} selected"
+      },
+      "na": "N/A",
+      "pagination": { "itemLabel": "products" },
+      "detail": {
+        "title": "Product Moderation",
+        "info": "Product Information",
+        "images": "Product Images"
+      },
+      "action": { "deactivate": "Deactivate", "reactivate": "Reactivate" },
+      "dialog": {
+        "deactivateTitle": "Deactivate Product",
+        "reactivateTitle": "Reactivate Product"
+      },
+      "reasonPlaceholder": "Enter deactivation reason (required, max 500 characters)...",
+      "queue": {
+        "title": "Content Moderation Queue",
+        "empty": "No flagged products or content items requiring moderation.",
+        "reason": "Reason: {{reason}}",
+        "reported": "Reported"
+      },
+      "license": {
+        "title": "Business License Review: {{shopName}}",
+        "documentUrl": "Document URL:",
+        "rejectionReason": "Rejection Reason:",
+        "rejectionPlaceholder": "State rejection details (e.g. expired document)...",
+        "confirmRejection": "Confirm Rejection",
+        "reject": "Reject",
+        "approve": "Approve Merchant"
+      },
+      "toast": {
+        "deactivated": "Product deactivated",
+        "reactivated": "Product reactivated",
+        "updateFailed": "Failed to update product",
+        "bulkFailed": "Failed to update products",
+        "bulkActivated": "{{count}} products activated",
+        "bulkDeactivated": "{{count}} products deactivated",
+        "bulkPartial": "{{successCount}} products updated; {{failureCount}} failed"
+      }
+    },
+    "users": {
+      "title": "User Management",
+      "subtitle": "Manage user accounts, activate or deactivate users",
+      "stats": { "total": "Total Users" },
+      "filters": { "searchPlaceholder": "Search users by name or email..." },
+      "status": { "active": "Active", "inactive": "Inactive" },
+      "tooltip": {
+        "adminNoDeactivate": "Admin accounts cannot be deactivated.",
+        "licenseStatus": "License status: {{status}}. Only merchants with approved licenses can be deactivated or reactivated."
+      },
+      "sort": {
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "nameAsc": "Name (A-Z)",
+        "nameDesc": "Name (Z-A)"
+      },
+      "toast": {
+        "deactivated": "User deactivated",
+        "deactivateFailed": "Failed to deactivate user",
+        "reactivated": "User reactivated",
+        "reactivateFailed": "Failed to reactivate user"
+      },
+      "table": {
+        "user": "User",
+        "actions": "Actions",
+        "noUsers": "No users found."
+      },
+      "field": {
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "joined": "Joined",
+        "name": "Name"
+      },
+      "na": "N/A",
+      "pagination": { "itemLabel": "users" },
+      "detail": {
+        "title": "User Detail",
+        "userInfo": "User Information",
+        "account": "Account",
+        "userId": "User ID",
+        "profile": "Profile"
+      },
+      "deactivate": {
+        "button": "Deactivate",
+        "title": "Deactivate User",
+        "confirm": "Are you sure you want to deactivate {{name}}? They will not be able to log in.",
+        "reasonPlaceholder": "Enter reason for deactivation (required)..."
+      },
+      "reactivate": {
+        "button": "Reactivate",
+        "title": "Reactivate User",
+        "confirm": "Are you sure you want to reactivate {{name}}? They will be able to log in again."
+      },
+      "activate": { "button": "Activate" }
+    },
     "orders": {
       "title": "All Orders",
       "subtitle": "View platform orders across all shops and merchants.",

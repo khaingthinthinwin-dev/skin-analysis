@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAdmin } from '@/features/admin/user-management/hooks/useAdmin'
 import { AdminStats } from '@/features/admin/components/AdminStats'
 import { useAuth } from '@/hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
 export default function AdminDashboard() {
   const { dashboardQuery } = useAdmin()
   const { user } = useAuth()
+  const { t } = useTranslation()
 
   return (
     <div className="space-y-6 p-2 lg:p-4">
@@ -17,18 +19,20 @@ export default function AdminDashboard() {
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-rose-300 text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="h-4 w-4 text-rose-400" />
-            <span>Admin Governance Console</span>
+            <span>{t('admin.dashboard.console', 'Admin Governance Console')}</span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight">
-            Welcome, {user?.name || 'Administrator'}!
+            {t('admin.dashboard.welcome', 'Welcome, {{name}}!', {
+              name: user?.name || t('admin.dashboard.administrator', 'Administrator'),
+            })}
           </h1>
           <p className="text-sm text-slate-300">
-            Platform-wide system metrics, merchant approvals, content moderation, and audit controls.
+            {t('admin.dashboard.subtitle', 'Platform-wide system metrics, merchant approvals, content moderation, and audit controls.')}
           </p>
         </div>
         <Button asChild size="lg" className="bg-rose-600 hover:bg-rose-700 text-white font-bold shrink-0 shadow-md">
           <Link to="/admin/merchants">
-            <UserCheck className="mr-2 h-4 w-4" /> Review Merchant Approvals
+            <UserCheck className="mr-2 h-4 w-4" /> {t('admin.dashboard.reviewMerchantApprovals', 'Review Merchant Approvals')}
           </Link>
         </Button>
       </div>
@@ -45,18 +49,18 @@ export default function AdminDashboard() {
                 <Users className="h-6 w-6" />
               </div>
               <div>
-                <CardTitle className="text-lg">User Governance</CardTitle>
-                <CardDescription>Accounts & roles</CardDescription>
+                <CardTitle className="text-lg">{t('admin.dashboard.userGovernance', 'User Governance')}</CardTitle>
+                <CardDescription>{t('admin.dashboard.accountsRoles', 'Accounts & roles')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-xs text-muted-foreground mb-4">
-              Manage platform buyers, merchants, and admin permissions with role-based access control.
+              {t('admin.dashboard.userGovernanceDescription', 'Manage platform buyers, merchants, and admin permissions with role-based access control.')}
             </p>
             <Button asChild variant="outline" className="w-full justify-between">
               <Link to="/admin/users">
-                Manage Users <ArrowRight className="h-4 w-4" />
+                {t('admin.dashboard.manageUsers', 'Manage Users')} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -69,18 +73,18 @@ export default function AdminDashboard() {
                 <Megaphone className="h-6 w-6" />
               </div>
               <div>
-                <CardTitle className="text-lg">Ad Approvals</CardTitle>
-                <CardDescription>Merchant campaigns</CardDescription>
+                <CardTitle className="text-lg">{t('admin.dashboard.adApprovals', 'Ad Approvals')}</CardTitle>
+                <CardDescription>{t('admin.dashboard.merchantCampaigns', 'Merchant campaigns')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-xs text-muted-foreground mb-4">
-              Review and approve merchant advertising banner requests before live display on buyer feeds.
+              {t('admin.dashboard.adApprovalsDescription', 'Review and approve merchant advertising banner requests before live display on buyer feeds.')}
             </p>
             <Button asChild variant="outline" className="w-full justify-between">
               <Link to="/admin/ads">
-                Manage Ads <ArrowRight className="h-4 w-4" />
+                {t('admin.dashboard.manageAds', 'Manage Ads')} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -93,18 +97,18 @@ export default function AdminDashboard() {
                 <DollarSign className="h-6 w-6" />
               </div>
               <div>
-                <CardTitle className="text-lg">Commission & Revenue</CardTitle>
-                <CardDescription>Financial analytics</CardDescription>
+                <CardTitle className="text-lg">{t('admin.dashboard.commissionRevenue', 'Commission & Revenue')}</CardTitle>
+                <CardDescription>{t('admin.dashboard.financialAnalytics', 'Financial analytics')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-xs text-muted-foreground mb-4">
-              Track Marketplace commission rates, order settlements, and overall platform revenue.
+              {t('admin.dashboard.commissionRevenueDescription', 'Track Marketplace commission rates, order settlements, and overall platform revenue.')}
             </p>
             <Button asChild variant="outline" className="w-full justify-between">
               <Link to="/admin/commission-revenue">
-                View Revenue <ArrowRight className="h-4 w-4" />
+                {t('admin.dashboard.viewRevenue', 'View Revenue')} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardContent>

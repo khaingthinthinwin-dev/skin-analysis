@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { useTranslation } from 'react-i18next'
 
 interface BulkActionBarProps {
   selectedCount: number
@@ -13,6 +14,7 @@ export function BulkActionBar({
   onBulkReject,
   onClear,
 }: BulkActionBarProps) {
+  const { t } = useTranslation()
   if (selectedCount === 0) return null
 
   const overLimit = selectedCount > 50
@@ -20,14 +22,16 @@ export function BulkActionBar({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-card px-4 py-3">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium">{selectedCount} ads selected</span>
+        <span className="text-sm font-medium">
+          {t('admin.ads.bulk.selectedCount', '{{count}} ads selected', { count: selectedCount })}
+        </span>
         {overLimit && (
           <span role="alert" className="text-sm text-destructive">
-            Maximum 50 ads per bulk operation.
+            {t('admin.ads.bulk.maxSelection', 'Maximum 50 ads per bulk operation.')}
           </span>
         )}
         <Button variant="ghost" size="sm" onClick={onClear}>
-          Clear
+          {t('common.filters.clear', 'Clear')}
         </Button>
       </div>
       <div className="flex items-center gap-2">
@@ -35,18 +39,18 @@ export function BulkActionBar({
           size="sm"
           disabled={overLimit}
           onClick={onBulkApprove}
-          aria-label="All approve selected advertisements"
+          aria-label={t('admin.ads.bulk.approveSelected', 'Approve all selected advertisements')}
         >
-          All Approve
+          {t('admin.ads.bulk.approveAll', 'Approve All')}
         </Button>
         <Button
           size="sm"
           variant="destructive"
           disabled={overLimit}
           onClick={onBulkReject}
-          aria-label="All reject selected advertisements"
+          aria-label={t('admin.ads.bulk.rejectSelected', 'Reject all selected advertisements')}
         >
-          All Reject
+          {t('admin.ads.bulk.rejectAll', 'Reject All')}
         </Button>
       </div>
     </div>

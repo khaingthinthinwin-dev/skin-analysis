@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -23,9 +24,9 @@ interface RevenueTargetCardProps {
   saving?: boolean;
 }
 
-const PERIOD_LABELS: { value: TargetPeriod; label: string }[] = [
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
+const PERIOD_LABELS: { value: TargetPeriod; key: string; fallback: string }[] = [
+  { value: "monthly", key: "admin.commission.period.monthly", fallback: "Monthly" },
+  { value: "quarterly", key: "admin.commission.period.quarterly", fallback: "Quarterly" },
 ];
 
 // [I] Revenue target progress card (DD_02). Period toggle, target amount,
@@ -37,6 +38,7 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
   onSaveTarget,
   saving,
 }) => {
+  const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const actual = target?.actualRevenue ?? "0.00";
   const progress = target ? parseFloat(target.progressPercent) : 0;
@@ -46,7 +48,7 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">Revenue Target</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('admin.commission.target.title', 'Revenue Target')}</CardTitle>
           <div className="inline-flex items-center gap-1 rounded-md border p-1">
             {PERIOD_LABELS.map((p) => (
               <Button
@@ -57,14 +59,15 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
                 className="h-6 px-2 text-xs"
                 onClick={() => onPeriodChange(p.value)}
               >
-                {p.label}
+                {t(p.key, p.fallback)}
               </Button>
             ))}
           </div>
         </div>
         <CardDescription className="text-xs">
-          {period === "monthly" ? "Monthly" : "Quarterly"} target vs. actual
-          revenue.
+          {t('admin.commission.target.description', '{{period}} target vs. actual revenue.', {
+            period: t(period === "monthly" ? PERIOD_LABELS[0].key : PERIOD_LABELS[1].key, period),
+          })}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -72,19 +75,19 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
           <>
             <div className="space-y-1">
               <span className="text-xs text-muted-foreground">
-                Target Amount
+                {t('admin.commission.target.amount', 'Target Amount')}
               </span>
               <p className="text-xl font-semibold">{formatCurrency(target.targetAmount)} Ks</p>
             </div>
             <div className="space-y-1">
               <span className="text-xs text-muted-foreground">
-                Actual Revenue
+                {t('admin.commission.target.actualRevenue', 'Actual Revenue')}
               </span>
               <p className="text-xl font-semibold">{formatCurrency(actual)} Ks</p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Progress</span>
+                <span className="text-xs text-muted-foreground">{t('admin.commission.target.progress', 'Progress')}</span>
                 <span className="text-xs font-medium">
                   {clamped.toFixed(0)}%
                 </span>
@@ -95,7 +98,7 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
                 aria-valuenow={clamped}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label={`Revenue target progress: ${clamped.toFixed(0)}%`}
+                aria-label={t('admin.commission.target.progressLabel', 'Revenue target progress: {{percent}}%', { percent: clamped.toFixed(0) })}
               >
                 <div
                   className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-in-out"
@@ -106,11 +109,11 @@ export const RevenueTargetCard: React.FC<RevenueTargetCardProps> = ({
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No target set for this period.
+            {t('admin.commission.target.empty', 'No target set for this period.')}
           </p>
         )}
         <Button size="sm" onClick={() => setDialogOpen(true)}>
-          {target ? 'Edit Target' : 'Set Target'}
+          {target ? t('admin.commission.target.edit', 'Edit Target') : t('admin.commission.target.set', 'Set Target')}
         </Button>
 
         <EditTargetDialog

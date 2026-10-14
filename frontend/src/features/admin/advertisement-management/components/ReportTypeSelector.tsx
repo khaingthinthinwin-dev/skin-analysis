@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { BarChart3, FileDown, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
@@ -35,6 +36,8 @@ interface ReportTypeSelectorProps {
 }
 
 export function ReportTypeSelector({ value, onChange }: ReportTypeSelectorProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {REPORT_TYPES.map((report) => {
@@ -50,15 +53,15 @@ export function ReportTypeSelector({ value, onChange }: ReportTypeSelectorProps)
             onClick={() => onChange(report.value)}
             role="button"
             aria-pressed={selected}
-            aria-label={report.label}
+            aria-label={t(`admin.ads.export.reportTypes.${report.value}.label`, report.label)}
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary">
                 <Icon className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">{report.label}</p>
-                <p className="text-xs text-muted-foreground">{report.description}</p>
+                <p className="text-sm font-medium">{t(`admin.ads.export.reportTypes.${report.value}.label`, report.label)}</p>
+                <p className="text-xs text-muted-foreground">{t(`admin.ads.export.reportTypes.${report.value}.description`, report.description)}</p>
               </div>
             </div>
           </Card>

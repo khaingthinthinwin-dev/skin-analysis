@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +20,7 @@ export const LicenseReviewModal: React.FC<LicenseReviewModalProps> = ({
   onApprove,
   onReject,
 }) => {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
 
@@ -37,12 +39,18 @@ export const LicenseReviewModal: React.FC<LicenseReviewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Business License Review: {merchant.shopName}</DialogTitle>
+          <DialogTitle>
+            {t('admin.content.license.title', 'Business License Review: {{shopName}}', {
+              shopName: merchant.shopName,
+            })}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Document URL:</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              {t('admin.content.license.documentUrl', 'Document URL:')}
+            </p>
             <a
               href={merchant.businessLicenseUrl}
               target="_blank"
@@ -55,9 +63,14 @@ export const LicenseReviewModal: React.FC<LicenseReviewModalProps> = ({
 
           {isRejecting ? (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Rejection Reason:</label>
+              <label className="text-sm font-medium">
+                {t('admin.content.license.rejectionReason', 'Rejection Reason:')}
+              </label>
               <Textarea
-                placeholder="State rejection details (e.g. expired document)..."
+                placeholder={t(
+                  'admin.content.license.rejectionPlaceholder',
+                  'State rejection details (e.g. expired document)...',
+                )}
                 value={reason}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
               />
@@ -69,16 +82,16 @@ export const LicenseReviewModal: React.FC<LicenseReviewModalProps> = ({
           {isRejecting ? (
             <>
               <Button variant="outline" onClick={() => setIsRejecting(false)}>
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </Button>
               <Button variant="destructive" onClick={handleRejectSubmit}>
-                Confirm Rejection
+                {t('admin.content.license.confirmRejection', 'Confirm Rejection')}
               </Button>
             </>
           ) : (
             <>
               <Button variant="destructive" onClick={() => setIsRejecting(true)}>
-                Reject
+                {t('admin.content.license.reject', 'Reject')}
               </Button>
               <Button
                 onClick={() => {
@@ -86,7 +99,7 @@ export const LicenseReviewModal: React.FC<LicenseReviewModalProps> = ({
                   onClose();
                 }}
               >
-                Approve Merchant
+                {t('admin.content.license.approve', 'Approve Merchant')}
               </Button>
             </>
           )}

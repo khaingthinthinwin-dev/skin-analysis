@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
   settings,
   onUpdateRate,
 }) => {
+  const { t } = useTranslation();
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<string>(settings?.rate ?? "10.00");
 
@@ -53,10 +55,10 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-base font-semibold">
-            Commission Rate
+            {t("admin.commission.rate.title", "Commission Rate")}
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Platform fee applied to each completed transaction
+            {t("admin.commission.rate.description", "Platform fee applied to each completed transaction")}
           </p>
         </div>
         <Button
@@ -65,7 +67,7 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
           className="h-7 px-3 text-xs font-medium"
           onClick={handleOpenEdit}
         >
-          Edit Rate
+          {t("admin.commission.rate.edit", "Edit Rate")}
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -74,7 +76,7 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
             {settings?.rate ? Number(settings.rate) : "—"}%
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Applied to all new orders from the moment saved
+            {t("admin.commission.rate.appliedHint", "Applied to all new orders from the moment saved")}
           </p>
         </div>
 
@@ -82,10 +84,9 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle>Edit Commission Rate</DialogTitle>
+              <DialogTitle>{t("admin.commission.rate.dialogTitle", "Edit Commission Rate")}</DialogTitle>
               <DialogDescription>
-                Set the platform fee percentage. Applies to all new transactions
-                from the moment saved.
+                {t("admin.commission.rate.dialogDescription", "Set the platform fee percentage. Applies to all new transactions from the moment saved.")}
               </DialogDescription>
             </DialogHeader>
 
@@ -98,14 +99,14 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 className="text-center"
-                aria-label="Commission rate"
+                aria-label={t("admin.commission.rate.inputLabel", "Commission rate")}
               />
               <span className="font-semibold">%</span>
             </div>
 
             {!canSave && (
               <p className="text-sm text-destructive" role="alert">
-                Commission rate must be between 0 and 100
+                {t("admin.commission.rate.validation", "Commission rate must be between 0 and 100")}
               </p>
             )}
 
@@ -115,10 +116,10 @@ export const CommissionTable: React.FC<CommissionTableProps> = ({
                 variant="outline"
                 onClick={handleCancel}
               >
-                Cancel
+                {t("common.cancel", "Cancel")}
               </Button>
               <Button size="sm" disabled={!canSave} onClick={handleSave}>
-                Save
+                {t("common.save", "Save")}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { Trans, useTranslation } from 'react-i18next'
 
 export interface TablePaginationProps {
   page: number
@@ -57,6 +58,7 @@ export function TablePagination({
   pageSizeOptions = [10, 20, 50, 100],
   className,
 }: TablePaginationProps) {
+  const { t } = useTranslation()
   const safeTotalPages = Math.max(totalPages || 1, 1)
   const prevDisabled = page <= 1
   const nextDisabled = page >= safeTotalPages
@@ -72,9 +74,11 @@ export function TablePagination({
       )}
     >
       <div className="flex items-center gap-3">
-        <span className="text-[13px] text-muted-foreground">Row</span>
+        <span className="text-[13px] text-muted-foreground">
+          {t('common.pagination.row', 'Row')}
+        </span>
         <select
-          aria-label="Rows per page"
+          aria-label={t('common.pagination.rowsPerPage', 'Rows per page')}
           value={limit}
           onChange={(e) => {
             onLimitChange(Number(e.target.value))
@@ -90,23 +94,27 @@ export function TablePagination({
         </select>
 
         <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
-          Showing{' '}
-          <span className="font-semibold text-foreground">
-            {from}-{to}
-          </span>{' '}
-          of <span className="font-semibold text-foreground">{total}</span> {itemLabel}
+          <Trans
+            i18nKey="common.pagination.showingRange"
+            defaults="Showing <range>{{from}}-{{to}}</range> of <total>{{total}}</total> {{itemLabel}}"
+            values={{ from, to, total, itemLabel }}
+            components={{
+              range: <span className="font-semibold text-foreground" />,
+              total: <span className="font-semibold text-foreground" />,
+            }}
+          />
         </span>
       </div>
 
       <div className="flex items-center gap-1.5">
         <button
-          aria-label="Previous page"
+          aria-label={t('common.pagination.previousPageLabel', 'Previous page')}
           type="button"
           className={navButtonClass(prevDisabled)}
           disabled={prevDisabled}
           onClick={() => onPageChange(page - 1)}
         >
-          ‹ Prev
+          ‹ {t('common.pagination.previous', 'Prev')}
         </button>
 
         <div className="flex items-center gap-1">
@@ -137,13 +145,13 @@ export function TablePagination({
         </div>
 
         <button
-          aria-label="Next page"
+          aria-label={t('common.pagination.nextPageLabel', 'Next page')}
           type="button"
           className={navButtonClass(nextDisabled)}
           disabled={nextDisabled}
           onClick={() => onPageChange(page + 1)}
         >
-          Next ›
+          {t('common.pagination.next', 'Next')} ›
         </button>
       </div>
     </div>

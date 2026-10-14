@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -40,6 +41,7 @@ function ChartSkeleton() {
 }
 
 export default function RevenueAnalyticsPage() {
+  const { t } = useTranslation()
   const [dateFrom, setDateFrom] = useState(daysAgoIso(29))
   const [dateTo, setDateTo] = useState(todayIso())
   const [placement, setPlacement] = useState<string[]>([])
@@ -65,20 +67,20 @@ export default function RevenueAnalyticsPage() {
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Revenue Analytics</h1>
-          <p className="text-muted-foreground">Revenue overview from approved advertisements</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('admin.ads.analytics.title', 'Revenue Analytics')}</h1>
+          <p className="text-muted-foreground">{t('admin.ads.analytics.subtitle', 'Revenue overview from approved advertisements')}</p>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link to="/admin/ads">
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to Ads
+            {t('admin.ads.analytics.backToAds', 'Back to Ads')}
           </Link>
         </Button>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-3">
         <div className="w-full min-w-0 sm:w-auto">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Date range</span>
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.ads.analytics.dateRange', 'Date range')}</span>
           <DateRangePicker
             value={{ from: dateFrom, to: dateTo }}
             onChange={(range) => {
@@ -88,12 +90,28 @@ export default function RevenueAnalyticsPage() {
           />
         </div>
         <div className="w-full min-w-0 sm:w-auto">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Placement</span>
-          <MultiSelect label="placements" options={PLACEMENT_OPTIONS} value={placement} onChange={setPlacement} />
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.ads.analytics.placement', 'Placement')}</span>
+          <MultiSelect
+            label={t('admin.ads.analytics.placementsLabel', 'placements')}
+            options={PLACEMENT_OPTIONS.map((option) => ({
+              ...option,
+              label: t(`admin.ads.placement.${option.value}`, option.label),
+            }))}
+            value={placement}
+            onChange={setPlacement}
+          />
         </div>
         <div className="w-full min-w-0 sm:w-auto">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Tier</span>
-          <MultiSelect label="tiers" options={TIER_OPTIONS} value={tier} onChange={setTier} />
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.ads.analytics.tier', 'Tier')}</span>
+          <MultiSelect
+            label={t('admin.ads.analytics.tiersLabel', 'tiers')}
+            options={TIER_OPTIONS.map((option) => ({
+              ...option,
+              label: t(`admin.ads.tier.${option.value}`, option.label),
+            }))}
+            value={tier}
+            onChange={setTier}
+          />
         </div>
       </div>
 

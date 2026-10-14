@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,23 +27,25 @@ import type { CreateCategoryInput } from '../services/masterData.service';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-const formSchema = z.object({
+const createFormSchema = (t: TFunction) => z.object({
   name: z.string().max(120).optional(),
   slug: z
     .union([
       z.literal(''),
-      z.string().regex(SLUG_PATTERN, 'Lowercase letters, numbers and hyphens only'),
+      z.string().regex(SLUG_PATTERN, t('admin.masterData.form.slugValidation', 'Lowercase letters, numbers and hyphens only')),
     ])
     .optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-const schema = formSchema.superRefine((values, ctx) => {
+}).superRefine((values, ctx) => {
   if (!values.name || values.name.trim().length === 0) {
-    ctx.addIssue({ code: 'custom', path: ['name'], message: 'Name is required' });
+    ctx.addIssue({
+      code: 'custom',
+      path: ['name'],
+      message: t('admin.masterData.form.nameRequired', 'Name is required'),
+    });
   }
 });
+
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 function buildPayload(values: FormValues): CreateCategoryInput {
   return {
@@ -68,6 +72,8 @@ export function MasterDataFormDialog({
   onSubmit,
   onClose,
 }: MasterDataFormDialogProps) {
+  const { t } = useTranslation();
+  const schema = createFormSchema(t);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: EMPTY_VALUES,
@@ -83,10 +89,9 @@ export function MasterDataFormDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New Category</DialogTitle>
+          <DialogTitle>{t('admin.masterData.form.title', 'New Category')}</DialogTitle>
           <DialogDescription>
-            Add a product category to the catalogue tree. Leave the slug empty to generate it from
-            the name.
+            {t('admin.masterData.form.description', 'Add a product category to the catalogue tree. Leave the slug empty to generate it from the name.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -100,9 +105,9 @@ export function MasterDataFormDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t('admin.masterData.form.name', 'Name')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Lipstick" className="h-11" {...field} />
+                    <Input placeholder={t('admin.masterData.form.namePlaceholder', 'Lipstick')} className="h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -114,9 +119,9 @@ export function MasterDataFormDialog({
               name="slug"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Slug</FormLabel>
+                  <FormLabel>{t('admin.masterData.form.slug', 'Slug')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="lipstick" className="h-11" {...field} />
+                    <Input placeholder={t('admin.masterData.form.slugPlaceholder', 'lipstick')} className="h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -125,16 +130,16 @@ export function MasterDataFormDialog({
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-                Cancel
+                {t('admin.masterData.form.cancel', 'Cancel')}
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    {t('admin.masterData.form.creating', 'Creating...')}
                   </>
                 ) : (
-                  'Create Category'
+                  t('admin.masterData.form.submit', 'Create Category')
                 )}
               </Button>
             </DialogFooter>

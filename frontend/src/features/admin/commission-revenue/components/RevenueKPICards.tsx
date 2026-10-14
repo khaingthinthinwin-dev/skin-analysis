@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RevenueKPI, TrendRange } from '../services/commission.service';
 import { formatCurrency } from '../utils/format';
@@ -10,40 +11,45 @@ interface RevenueKPICardsProps {
 }
 
 const PERIOD_LABEL: Record<TrendRange, string> = {
-  '7d': 'weekly',
-  '30d': 'monthly',
-  '90d': 'quarterly',
-  '1y': 'yearly',
+  '7d': 'admin.commission.period.weekly',
+  '30d': 'admin.commission.period.monthly',
+  '90d': 'admin.commission.period.quarterly',
+  '1y': 'admin.commission.period.yearly',
 };
 
-const KPI_ITEMS: { key: keyof RevenueKPI; label: string; description?: string }[] = [
-  { key: 'totalRevenue', label: 'Total Revenue' },
-  { key: 'totalCommission', label: 'Total Commission' },
-  { key: 'adFeeRevenue', label: 'Ad Fee Revenue' },
+const KPI_ITEMS: { key: keyof RevenueKPI; labelKey: string; label: string; descriptionKey?: string; description?: string }[] = [
+  { key: 'totalRevenue', labelKey: 'admin.commission.kpi.totalRevenue', label: 'Total Revenue' },
+  { key: 'totalCommission', labelKey: 'admin.commission.kpi.totalCommission', label: 'Total Commission' },
+  { key: 'adFeeRevenue', labelKey: 'admin.commission.kpi.adFeeRevenue', label: 'Ad Fee Revenue' },
   {
     key: 'totalIncome',
+    labelKey: 'admin.commission.kpi.totalIncome',
     label: 'Total Income',
+    descriptionKey: 'admin.commission.kpi.totalIncomeDescription',
     description: 'Total Commission + Ad Fee Revenue',
   },
-  { key: 'avgOrderValue', label: 'Avg Order Value' },
-  { key: 'netRevenue', label: 'Net Revenue' },
+  { key: 'avgOrderValue', labelKey: 'admin.commission.kpi.avgOrderValue', label: 'Avg Order Value' },
+  { key: 'netRevenue', labelKey: 'admin.commission.kpi.netRevenue', label: 'Net Revenue' },
 ];
 
 // [G] KPI cards grid — 6 cards (DD_02). Values are decimal strings from the API.
 export const RevenueKPICards: React.FC<RevenueKPICardsProps> = ({ kpis, loading, range }) => {
-  const periodLabel = range ? ` (${PERIOD_LABEL[range]})` : '';
+  const { t } = useTranslation();
+  const periodLabel = range
+    ? t('admin.commission.kpi.periodLabel', ' ({{period}})', { period: t(PERIOD_LABEL[range]) })
+    : '';
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {KPI_ITEMS.map((item) => (
         <Card key={item.key}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {item.label}
+              {t(item.labelKey, item.label)}
               {periodLabel}
             </CardTitle>
             {item.description && (
               <p className="text-xs text-muted-foreground/70">
-                ({item.description})
+                ({t(item.descriptionKey ?? '', item.description ?? '')})
               </p>
             )}
           </CardHeader>

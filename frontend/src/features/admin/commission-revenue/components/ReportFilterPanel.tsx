@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { CommissionGroupBy, CommissionReportFilter } from '../services/commission.service';
 
@@ -15,6 +16,7 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
   onReset,
   groupBy: initialGroupBy = 'merchant',
 }) => {
+  const { t } = useTranslation();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [groupBy, setGroupBy] = useState<CommissionGroupBy>(initialGroupBy);
@@ -23,7 +25,7 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
   const handleApply = () => {
     setError('');
     if (from && to && new Date(from) > new Date(to)) {
-      setError('From date must be earlier than or equal to To date.');
+      setError(t('admin.commission.filters.invalidDateRange', 'From date must be earlier than or equal to To date.'));
       return;
     }
     onApply({ from: from || undefined, to: to || undefined, groupBy });
@@ -46,15 +48,15 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
     <div className="bg-card border border-border rounded-xl p-3 sm:p-5">
       <div className="flex items-center justify-between mb-4">
         <span className="text-card-foreground text-[15px] font-bold">
-          Commission Report
+          {t('admin.commission.reportTitlePlain', 'Commission Report')}
         </span>
       </div>
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex flex-wrap items-center gap-2">
         {([ 
-          ['merchant', 'By Merchant'],
-          ['day', 'By Day'],
-          ['order', 'By Order'],
+          ['merchant', t('admin.commission.groupBy.byMerchant', 'By Merchant')],
+          ['day', t('admin.commission.groupBy.byDay', 'By Day')],
+          ['order', t('admin.commission.groupBy.byOrder', 'By Order')],
         ] as const).map(([value, label]) => (
           <button
             key={value}
@@ -74,20 +76,20 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
 
         </div>
         <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
-          <span className="text-sm text-muted-foreground font-medium">From</span>
+          <span className="text-sm text-muted-foreground font-medium">{t('admin.commission.filters.from', 'From')}</span>
           <input
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            aria-label="From date"
+            aria-label={t('admin.commission.filters.fromDate', 'From date')}
             className="flex-1 px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none min-w-[140px]"
           />
-          <span className="text-sm text-muted-foreground font-medium">To</span>
+          <span className="text-sm text-muted-foreground font-medium">{t('admin.commission.filters.to', 'To')}</span>
           <input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            aria-label="To date"
+            aria-label={t('admin.commission.filters.toDate', 'To date')}
             className="flex-1 px-3 py-2 border border-border rounded-md text-[13px] bg-muted text-foreground outline-none min-w-[140px]"
           />
         </div>
@@ -96,11 +98,11 @@ export const ReportFilterPanel: React.FC<ReportFilterPanelProps> = ({
           onClick={handleApply}
           className="px-4 py-2 text-[13px] font-semibold rounded-lg border-none bg-primary text-primary-foreground cursor-pointer"
         >
-          Apply
+          {t('admin.commission.filters.apply', 'Apply')}
         </button>
         {/* Ghost variant so the Reset button matches the Revenue tab Reset colour. */}
         <Button variant="outline" size="sm" onClick={handleReset}>
-          Reset
+          {t('admin.commission.filters.reset', 'Reset')}
         </Button>
         </div>
       </div>

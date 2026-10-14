@@ -1,4 +1,5 @@
 import { Pencil, Ban, RotateCcw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatPrice } from '@/lib/format'
@@ -45,20 +46,21 @@ export function FeeSettingsTable({
   onReactivate,
   isLoading = false,
 }: FeeSettingsTableProps) {
+  const { t } = useTranslation()
   if (isLoading) {
     return (
       <div className="overflow-x-auto rounded-lg border bg-card">
         <table className="w-full border-separate border-spacing-0">
           <thead className="sticky top-0 z-10">
             <tr>
-              <th scope="col" className={TH_CLASS}>Placement</th>
-              <th scope="col" className={TH_CLASS}>Tier</th>
-              <th scope="col" className={`${TH_CLASS} text-right`}>Daily Rate</th>
-              <th scope="col" className={`${TH_CLASS} ${DURATION_COL_CLASS} text-right`}>Duration</th>
-              <th scope="col" className={`${TH_CLASS} text-right`}>Total Fee</th>
-              <th scope="col" className={`${TH_CLASS} ${MAX_ADS_COL_CLASS} text-right`}>Max Ads</th>
-              <th scope="col" className={TH_CLASS}>Status</th>
-              <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+              <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.table.header.placement', 'Placement')}</th>
+              <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.table.header.tier', 'Tier')}</th>
+              <th scope="col" className={`${TH_CLASS} text-right`}>{t('admin.ads.fee.table.header.dailyRate', 'Daily Rate')}</th>
+              <th scope="col" className={`${TH_CLASS} ${DURATION_COL_CLASS} text-right`}>{t('admin.ads.fee.table.header.duration', 'Duration')}</th>
+              <th scope="col" className={`${TH_CLASS} text-right`}>{t('admin.ads.fee.table.header.totalFee', 'Total Fee')}</th>
+              <th scope="col" className={`${TH_CLASS} ${MAX_ADS_COL_CLASS} text-right`}>{t('admin.ads.fee.table.header.maxAds', 'Max Ads')}</th>
+              <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.table.header.status', 'Status')}</th>
+              <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>{t('admin.ads.fee.table.header.actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -92,29 +94,29 @@ export function FeeSettingsTable({
       <table className="w-full border-separate border-spacing-0">
         <thead className="sticky top-0 z-10">
           <tr>
-            <th scope="col" className={TH_CLASS}>Placement</th>
-            <th scope="col" className={TH_CLASS}>Tier</th>
-            <th scope="col" className={`${TH_CLASS} text-right`}>Daily Rate</th>
-            <th scope="col" className={`${TH_CLASS} ${DURATION_COL_CLASS} text-right`}>Duration</th>
-            <th scope="col" className={`${TH_CLASS} text-right`}>Total Fee</th>
-            <th scope="col" className={`${TH_CLASS} ${MAX_ADS_COL_CLASS} text-right`}>Max Ads</th>
-            <th scope="col" className={TH_CLASS}>Status</th>
-            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.table.header.placement', 'Placement')}</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.table.header.tier', 'Tier')}</th>
+            <th scope="col" className={`${TH_CLASS} text-right`}>{t('admin.ads.fee.table.header.dailyRate', 'Daily Rate')}</th>
+            <th scope="col" className={`${TH_CLASS} ${DURATION_COL_CLASS} text-right`}>{t('admin.ads.fee.table.header.duration', 'Duration')}</th>
+            <th scope="col" className={`${TH_CLASS} text-right`}>{t('admin.ads.fee.table.header.totalFee', 'Total Fee')}</th>
+            <th scope="col" className={`${TH_CLASS} ${MAX_ADS_COL_CLASS} text-right`}>{t('admin.ads.fee.table.header.maxAds', 'Max Ads')}</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.table.header.status', 'Status')}</th>
+            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>{t('admin.ads.fee.table.header.actions', 'Actions')}</th>
           </tr>
         </thead>
         <tbody>
           {feeSettings.length === 0 ? (
             <tr>
               <td colSpan={8} className={`${TD_CLASS} py-10 text-center text-muted-foreground`}>
-                No fee settings found.
+                {t('admin.ads.fee.table.empty', 'No fee settings found.')}
               </td>
             </tr>
           ) : (
             feeSettings.map((feeSetting) => (
               <tr key={feeSetting.id} className={ROW_CLASS}>
                 <td className={`${TD_CLASS} font-medium text-foreground`}>
-                  <div className="max-w-[140px] truncate" title={PLACEMENT_LABELS[feeSetting.placement]}>
-                    {PLACEMENT_LABELS[feeSetting.placement]}
+                  <div className="max-w-[140px] truncate" title={t(`admin.ads.placement.${feeSetting.placement}`, PLACEMENT_LABELS[feeSetting.placement])}>
+                    {t(`admin.ads.placement.${feeSetting.placement}`, PLACEMENT_LABELS[feeSetting.placement])}
                   </div>
                 </td>
                 <td className={TD_CLASS}>
@@ -124,7 +126,13 @@ export function FeeSettingsTable({
                   {formatPrice(Number(feeSetting.dailyRate))}
                 </td>
                 <td className={`${TD_CLASS} ${DURATION_COL_CLASS} text-right tabular-nums whitespace-nowrap`}>
-                  {feeSetting.durationDays} days
+                  {feeSetting.durationDays === 1
+                    ? t('admin.ads.fee.table.durationDays_one', '{{count}} day', {
+                        count: feeSetting.durationDays,
+                      })
+                    : t('admin.ads.fee.table.durationDays_other', '{{count}} days', {
+                        count: feeSetting.durationDays,
+                      })}
                 </td>
                 <td className={`${TD_CLASS} text-right text-foreground font-semibold tabular-nums`}>
                   {formatPrice(Number(feeSetting.totalFee))}
