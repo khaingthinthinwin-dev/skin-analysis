@@ -9,9 +9,9 @@
 | **Document ID** | SKM-PCL-SIGNUP-001 |
 | **Target Screen** | Sign-up / Login / Password Reset |
 | **Subsystem** | Authentication |
-| **Version** | 2.1 |
+| **Version** | 2.2 |
 | **Created** | 2026-09-16 |
-| **Last Updated** | 2026-09-17 |
+| **Last Updated** | 2026-10-14 |
 | **Status** | Active |
 
 ---
@@ -210,7 +210,6 @@
   - **Expected Result**: Success — password updated, show success message, user can log in with the new password
   - **Business Rules**: BR-AUTH-030, BR-AUTH-031, BR-AUTH-035
   - **API**: `POST /api/v1/auth/reset-password`
-  - **Note**: No e2e for valid-token success flow yet (existing test only covers guard redirect when opened without a code). Left unchecked until a real test exists.
 
 - [x] **N-15**: Navigate back to login from reset password
   - **Evidence**:
@@ -232,7 +231,6 @@
     3. Verify form container centered, no horizontal scroll, labels/inputs aligned
   - **Expected Result**: Desktop layout displays correctly — max-width form card, no overflow
   - **Business Rules**: None (Responsive)
-  - **Note**: No e2e test yet; left unchecked until a real test exists.
 
 - [x] **N-17**: Responsive layout on mobile viewport
   - **Evidence**:
@@ -245,7 +243,6 @@
     3. Verify form stacks full-width, buttons tappable, page scrolls vertically only
   - **Expected Result**: Mobile layout stacks and scrolls correctly — no horizontal scroll, no clipped inputs
   - **Business Rules**: None (Responsive)
-  - **Note**: No e2e test yet; left unchecked until a real test exists.
 
 - [x] **N-18**: No horizontal scroll on auth pages at narrow width
   - **Evidence**:
@@ -258,7 +255,6 @@
     3. Check `document.documentElement.scrollWidth <= clientWidth`
   - **Expected Result**: Zero horizontal overflow even at 320px width
   - **Business Rules**: None (Responsive)
-  - **Note**: No e2e test yet; left unchecked until a real test exists.
 
 ---
 
@@ -448,7 +444,6 @@
     1. Navigate to protected route (e.g., `/merchant/products`)
   - **Expected Result**: Not logged in — cannot open protected page, redirect to `/login`
   - **Business Rules**: BR-AUTH-006
-  - **Note**: No e2e test yet for this scenario (previously a wrong-credentials test was incorrectly mapped here). Left unchecked until a real test exists.
 
 - [x] **A-17**: Submit reset password with mismatched passwords
   - **Evidence**:
@@ -768,7 +763,7 @@
   - **Expected Response**: Login response sets a refresh_token cookie that is HttpOnly, Secure, SameSite=strict
   - **Business Rules**: BR-AUTH-017, BR-AUTH-018
   - **API**: `POST /api/v1/auth/login`
-  - **Note**: Not testable via Playwright `request` API; requires raw HTTP inspection.
+  - **Note**: No automated test is mapped for this scenario. Verify the `Set-Cookie` header with raw HTTP inspection because the current Playwright request-based API tests do not cover cookie flags.
 
 - [x] **I-17**: Register with merchant role creates merchants record
   - **Evidence**:
@@ -804,4 +799,4 @@
 | Test scenarios defined (N, A, B, I) | ☑️ |
 | E2E tests implemented | ☑️ |
 | PCL auto-update verified | ☑️ |
-| Next review date | 2026-09-30 |
+| Next review date | 2026-10-28 |

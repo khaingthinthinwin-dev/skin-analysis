@@ -56,7 +56,7 @@ test.describe('Login Page', () => {
       await loginPage.clickSubmit();
       await loginPage.expectRedirectTo(ROUTES.BUYER_DASHBOARD);
       await expect(
-        page.getByRole('heading', { name: 'Cosmetics Search & Filter' })
+        page.getByRole('search', { name: 'Product search' })
       ).toBeVisible({ timeout: 10_000 });
       await captureScreenshot(
         page,
@@ -71,7 +71,7 @@ test.describe('Login Page', () => {
 
       await loginPage.expectRedirectTo(ROUTES.BUYER_DASHBOARD);
       await expect(
-        page.getByRole('heading', { name: 'Cosmetics Search & Filter' })
+        page.getByRole('search', { name: 'Product search' })
       ).toBeVisible({ timeout: 10_000 });
       const toast = page.locator('[data-sonner-toaster] li');
       await expect(toast.first()).toBeVisible({ timeout: 5000 });

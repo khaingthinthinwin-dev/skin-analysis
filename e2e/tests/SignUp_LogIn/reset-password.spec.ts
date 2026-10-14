@@ -53,9 +53,9 @@ test.describe('Reset Password Page', () => {
 
       await page.locator('button[type="submit"]').click();
 
-      await expect(page.getByText(/password reset successful/i)).toBeVisible({
-        timeout: 15_000,
-      });
+      await expect(
+        page.getByRole('heading', { name: /password reset successful/i })
+      ).toBeVisible({ timeout: 15_000 });
       await captureScreenshot(page, 'N-14_2_success_message');
 
       await page.goto(ROUTES.LOGIN);

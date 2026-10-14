@@ -209,7 +209,9 @@ test.describe('N-07: Multi-language Toggle', () => {
     await settlePaint(page);
     await loginPage.capture('N-07_1_lang_initial');
 
-    const langToggle = page.getByRole('button', { name: /change language/i });
+    const langToggle = page.getByRole('button', {
+      name: /change language|言語を変更|ဘာသာစကား ပြောင်းရန်/i,
+    });
     if (await langToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
       await langToggle.click();
       const jaOption = page.getByRole('menuitem', { name: /ja|japanese|日本語/i });
