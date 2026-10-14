@@ -34,11 +34,11 @@ function formatCurrency(amount: string | number): string {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  if (Number.isNaN(d.getTime())) return iso;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}/${month}/${day}`;
 }
 
 function formatTime(iso: string): string {

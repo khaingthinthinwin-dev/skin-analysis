@@ -116,11 +116,11 @@ export function SponsoredAdSlider() {
 
           {ad.imageUrl && (
             <div className="flex min-w-0 items-center justify-center sm:col-span-5 lg:col-span-5">
-              <div className="flex h-[220px] w-full max-w-[22rem] items-center overflow-hidden rounded-2xl border-4 border-white/90 bg-[#fffaf5] shadow-2xl">
+              <div className="flex h-[241.6px] w-full max-w-[22rem] items-center overflow-hidden rounded-2xl border-4 border-white/90 bg-[#fffaf5] shadow-2xl">
                 <img
                   src={getImageUrl(ad.imageUrl)}
                   alt={ad.title}
-                  className="block h-[210px] w-full object-fill"
+                  className="block h-full w-full object-fill"
                 />
               </div>
             </div>

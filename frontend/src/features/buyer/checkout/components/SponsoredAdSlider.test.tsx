@@ -127,12 +127,12 @@ describe('SponsoredAdSlider (checkout)', () => {
     const image = await screen.findByAltText('Glow Serum')
     const frame = image.parentElement as HTMLElement
 
-    expect(frame).toHaveClass('h-[220px]')
+    expect(frame).toHaveClass('h-[241.6px]')
     expect(frame).toHaveClass('items-center')
     expect(frame).toHaveClass('max-w-[22rem]')
     expect(frame).toHaveClass('rounded-2xl')
     expect(frame).toHaveClass('shadow-2xl')
-    expect(image).toHaveClass('h-[210px]')
+    expect(image).toHaveClass('h-full')
     expect(image).toHaveClass('block')
     expect(image).toHaveClass('object-fill')
     expect(screen.queryByText('Featured Promotion')).not.toBeInTheDocument()
