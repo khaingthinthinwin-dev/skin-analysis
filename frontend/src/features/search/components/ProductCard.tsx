@@ -111,7 +111,7 @@ export function ProductCard({
               <StarRating rating={Number(product.avgRating)} totalReviews={product.reviewCount} />
             </div>
 
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-2 flex items-center justify-between gap-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-base font-bold text-purple-600 dark:text-purple-400">{formatKs(product.price)}</span>
                 {product.compareAtPrice && (
@@ -120,7 +120,27 @@ export function ProductCard({
                   </span>
                 )}
               </div>
-              {!product.isInStock && <span className="text-xs font-medium text-destructive">{t('buyer.products.stock.outOfStock', 'Out of stock')}</span>}
+              {product.isInStock ? (
+                <Button
+                  size="icon"
+                  aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 p-0 text-white shadow-sm hover:bg-violet-700"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onAddToCart?.(product)
+                  }}
+                  disabled={isCartLoading}
+                >
+                  {isCartLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="h-4 w-4" />
+                  )}
+                </Button>
+              ) : (
+                <span className="text-xs font-medium text-destructive">{t('buyer.products.stock.outOfStock', 'Out of stock')}</span>
+              )}
             </div>
           </div>
         </div>
@@ -238,7 +258,7 @@ export function ProductCard({
             <Button
               size="icon"
               aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e8ff] p-0 text-[#9333ea] hover:bg-[#f0e6ff] hover:text-[#7e22ce]"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 p-0 text-white shadow-sm hover:bg-violet-700"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()

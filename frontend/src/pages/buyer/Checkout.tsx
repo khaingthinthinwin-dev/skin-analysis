@@ -19,7 +19,7 @@ import type {
   ShippingAddress,
   PaymentMethod,
 } from '@/types/checkout.types';
-import { SponsoredAdSlider } from '@/features/buyer/checkout/components/SponsoredAdSlider';
+import { AdBannerSlider } from '@/components/shared/AdBannerSlider';
 import {
   Dialog,
   DialogContent,
@@ -190,7 +190,7 @@ export default function Checkout() {
         </Button>
       </header>
 
-      <SponsoredAdSlider />
+      <AdBannerSlider placement="checkout_page_banner" />
 
       <CheckoutForm
         summary={
