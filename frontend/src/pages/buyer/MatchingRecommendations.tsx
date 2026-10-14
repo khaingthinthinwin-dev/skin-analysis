@@ -11,7 +11,7 @@ import { useAuth } from '@/providers/AuthProvider'
 import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
 import { useCart } from '@/features/buyer/cart/hooks/useCart'
 import { useMatchFilters } from '@/features/buyer/matching/hooks/useMatchFilters'
-import { usePersonalizedRecommendations, useRecommendationHistory, useAdPanel } from '@/features/buyer/matching/hooks/useMatching'
+import { usePersonalizedRecommendations, useRecommendationHistory } from '@/features/buyer/matching/hooks/useMatching'
 import { matchingService } from '@/features/buyer/matching/services/matching.service'
 import { FiltersPanel } from '@/features/buyer/matching/components/FiltersPanel'
 import { MatchingFilterChips } from '@/features/buyer/matching/components/MatchingFilterChips'
@@ -19,7 +19,7 @@ import { EmptyState } from '@/features/buyer/matching/components/EmptyState'
 import { ErrorBanner } from '@/features/buyer/matching/components/ErrorBanner'
 import { SkeletonGrid } from '@/features/buyer/matching/components/SkeletonGrid'
 import { HistoryAccordion } from '@/features/buyer/matching/components/HistoryAccordion'
-import { AdSlidePanel } from '@/features/buyer/matching/components/AdSlidePanel'
+import { AdBannerSlider } from '@/components/shared/AdBannerSlider'
 import { ProfilePromptBanner } from '@/features/buyer/matching/components/ProfilePromptBanner'
 import { DEFAULT_MATCHING_SORT, getMatchingSortOptions, resolveMatchingSort } from '@/features/buyer/matching/utils/matchingSort'
 import { filterProductsBySkinType } from '@/features/buyer/matching/utils/skinTypeFilter'
@@ -43,21 +43,6 @@ function ProductImage({ src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement
     return <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-4xl">🧴</div>
   }
   return <img src={getImageUrl(src)} alt={alt} onError={() => setError(true)} {...props} />
-}
-
-const RECOMMENDATION_AD_PLACEMENT = 'recommendation_page_banner'
-
-function isAdInSchedule(ad: { startsAt?: string | null; expiresAt?: string | null }): boolean {
-  const now = Date.now()
-  if (ad.startsAt) {
-    const start = Date.parse(ad.startsAt)
-    if (Number.isNaN(start) || start > now) return false
-  }
-  if (ad.expiresAt) {
-    const end = Date.parse(ad.expiresAt)
-    if (Number.isNaN(end) || end <= now) return false
-  }
-  return true
 }
 
 const BADGE_STYLES: Record<string, string> = {
@@ -182,19 +167,6 @@ export default function MatchingRecommendations() {
   const { data: recData, isLoading, isFetching, error: recError, refetch } = usePersonalizedRecommendations(filters)
   // Collapsed: first 5 sessions. Expanded ("see more"): fetch all (max 50/page per HistoryQueryDto).
   const { data: historyData, isFetching: isHistoryFetching } = useRecommendationHistory(1, historyExpanded ? 50 : 5)
-  const { data: adPanelData } = useAdPanel(RECOMMENDATION_AD_PLACEMENT)
-
-  // Client-side guard for placement + date condition:
-  // placement must equal recommendation_page_banner (or be absent for legacy rows),
-  // and startsAt <= now < expiresAt. Backend already filters the same way.
-  const sidebarAds = useMemo(
-    () =>
-      (adPanelData?.data ?? []).filter((ad) => {
-        if (ad.placement && ad.placement !== RECOMMENDATION_AD_PLACEMENT) return false
-        return isAdInSchedule(ad)
-      }),
-    [adPanelData],
-  )
 
   const handlePageChange = (page: number) => {
     if (page === filters.page) return
@@ -365,10 +337,10 @@ export default function MatchingRecommendations() {
       </div>
 
       {/* Ad Carousel */}
-      <AdSlidePanel
-        ads={sidebarAds}
+      <AdBannerSlider
+        placement="recommendation_page_banner"
         onImpression={(adIds) => matchingService.trackImpression(adIds)}
-        onClick={(adId) => matchingService.trackClick(adId)}
+        onAdClick={(adId) => matchingService.trackClick(adId)}
       />
 
       {/* Analysis Status Banner */}

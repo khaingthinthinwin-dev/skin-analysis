@@ -120,7 +120,7 @@ export function ProductCard({
               <StarRating rating={Number(product.avgRating)} totalReviews={product.reviewCount} />
             </div>
 
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-2 flex items-center justify-between gap-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-base font-bold text-purple-600 dark:text-purple-400">{formatKs(product.price)}</span>
                 {product.compareAtPrice && (
@@ -132,14 +132,14 @@ export function ProductCard({
               {product.isInStock ? (
                 <Button
                   size="icon"
-                  className="h-8 w-8 rounded-full bg-violet-600 text-white shadow-sm hover:bg-violet-700"
+                  aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 p-0 text-white shadow-sm hover:bg-violet-700"
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     onAddToCart?.(product)
                   }}
                   disabled={isCartLoading}
-                  aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
                 >
                   {isCartLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -271,7 +271,7 @@ export function ProductCard({
             <Button
               size="icon"
               aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
-              className="h-9 w-9 rounded-full bg-violet-600 text-white shadow-sm hover:bg-violet-700"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 p-0 text-white shadow-sm hover:bg-violet-700"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()

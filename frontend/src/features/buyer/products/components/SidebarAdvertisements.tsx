@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
 import { useSidebarAds } from '../hooks/useProductDetail';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
