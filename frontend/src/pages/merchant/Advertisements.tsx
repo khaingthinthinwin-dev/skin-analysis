@@ -186,9 +186,7 @@ export default function Advertisements() {
   const [packagesPage, setPackagesPage] = useState(1)
   const [highlightedPackageId, setHighlightedPackageId] = useState<string | null>(null)
   const [navigateToPackageId, setNavigateToPackageId] = useState<string | null>(null)
-  const [highlightAdId, setHighlightAdId] = useState<string | null>(() =>
-    searchParams.get('highlightAdId')
-  )
+  const highlightAdId = searchParams.get('highlightAdId')
   const isDeactivated =
     user?.isActive === false ||
     user?.is_active === false ||
@@ -299,25 +297,20 @@ export default function Advertisements() {
     return () => window.clearTimeout(timer)
   }, [highlightedPackageId])
 
-  // Handle highlightAdId from URL (e.g., from AD_APPROVED notification)
+  // Keep notification highlights visible for three seconds, including on initial load.
   useEffect(() => {
-    const adId = searchParams.get('highlightAdId')
-    if (adId && adId !== highlightAdId) {
-      // Defer state update to avoid synchronous setState in effect
-      window.setTimeout(() => {
-        setHighlightAdId(adId)
-        // Auto-clear highlight after 5 seconds
-        const timer = window.setTimeout(() => {
-          setHighlightAdId(null)
-          // Clean up URL
-          const params = new URLSearchParams(searchParams)
-          params.delete('highlightAdId')
-          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
-        }, 5000)
-        return () => window.clearTimeout(timer)
-      }, 0)
-    }
-  }, [searchParams, highlightAdId])
+    if (!highlightAdId) return
+
+    const timer = window.setTimeout(() => {
+      setSearchParams((current) => {
+        const params = new URLSearchParams(current)
+        if (params.get('highlightAdId') === highlightAdId) params.delete('highlightAdId')
+        return params
+      }, { replace: true })
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [highlightAdId, setSearchParams])
 
   // When coming from notification (highlightAdId in URL), clear approvalStatus filter to show all ads
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import { Eye, MessageSquare, Search } from 'lucide-react'
+import { Eye, MessageSquare, Search, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useProduct, useProducts } from '@/hooks/useProducts'
+import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
+import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
 import { formatPrice } from '@/lib/format'
 import type { ProductQueryParams } from '@/types/product.types'
 
@@ -60,8 +63,41 @@ export default function ProductReview() {
   const productHeaderClass =
     'text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-primary/10 hover:bg-primary/10 whitespace-nowrap'
 
+  // Merchant status guard
+  const guard = useMerchantProductsGuard()
+  const showDeactivatedBanner = guard.showDeactivatedBanner
+  const showPendingBanner = guard.showPendingBanner
+  const showRejectionBanner = guard.showRejectionBanner
+
   return (
     <div className="space-y-6 p-2 lg:p-4">
+      {showDeactivatedBanner && <AccountDeactivatedBanner />}
+
+      {showPendingBanner && (
+        <Alert variant="warning">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Account Pending</AlertTitle>
+          <AlertDescription>
+            Your merchant account is currently pending admin approval. Some features are restricted until your license is
+            approved.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {showRejectionBanner && (
+        <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle>Account Rejected</AlertTitle>
+          <AlertDescription>
+            Your merchant account has been rejected. Product management features are restricted. You can resubmit your
+            license from your Profile page.{' '}
+            <a href="/merchant/profile" className="underline font-semibold">
+              Go to Profile
+            </a>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <div className="flex flex-col gap-4 p-5 pb-0 sm:flex-row sm:items-center sm:justify-between">
           <div>

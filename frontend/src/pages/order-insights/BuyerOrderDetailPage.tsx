@@ -424,7 +424,7 @@ function BuyerOrderDetailContent() {
           </Card>
         </div>
 
-        <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[901px]:sticky min-[901px]:top-20 dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
+        <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
           <section className="border-b border-[#f3f4f6] p-5 dark:border-[#29252f] oidark:border-outline-variant">
             <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#111827] dark:text-slate-100 oidark:text-foreground"><MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />{t("orders.detail.shippingTitle", "Shipping Address")}</h2>
             <div>
