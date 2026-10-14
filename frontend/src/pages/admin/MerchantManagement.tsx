@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMerchantApproval } from '@/features/admin/merchant-management/hooks/useMerchantApproval';
@@ -200,6 +201,7 @@ const getCellHighlight = (isHighlighted: boolean, index: number): string => {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function MerchantManagement() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlMerchantId = searchParams.get('merchantId');
   const [highlightMerchantId, setHighlightMerchantId] = useState<string | null>(null);
@@ -300,12 +302,12 @@ export default function MerchantManagement() {
   // ── Sort Mapping ────────────────────────────────────────────────────────
   const sortOptions = useMemo(
     () => [
-      { value: 'createdAt:desc', label: 'Newest' },
-      { value: 'createdAt:asc', label: 'Oldest' },
-      { value: 'shopName:asc', label: 'Name (A-Z)' },
-      { value: 'shopName:desc', label: 'Name (Z-A)' },
+      { value: 'createdAt:desc', label: t('admin.merchants.sort.newest', 'Newest') },
+      { value: 'createdAt:asc', label: t('admin.merchants.sort.oldest', 'Oldest') },
+      { value: 'shopName:asc', label: t('admin.merchants.sort.nameAsc', 'Name (A-Z)') },
+      { value: 'shopName:desc', label: t('admin.merchants.sort.nameDesc', 'Name (Z-A)') },
     ],
-    [],
+    [t],
   );
 
   const currentSortValue = `${merchantSort}:${merchantOrder}`;
@@ -328,12 +330,12 @@ export default function MerchantManagement() {
       { id: approveTarget.id },
       {
         onSuccess: () => {
-          toast.success('Merchant approved');
+          toast.success(t('admin.merchants.toast.approved', 'Merchant approved'));
           setApproveTarget(null);
           setDetailMerchant(null);
           refreshStats();
         },
-        onError: () => toast.error('Failed to approve merchant'),
+        onError: () => toast.error(t('admin.merchants.toast.approveFailed', 'Failed to approve merchant')),
       },
     );
   };
@@ -349,13 +351,13 @@ export default function MerchantManagement() {
       { id: rejectTarget.id, reason: rejectReason },
       {
         onSuccess: () => {
-          toast.success('Merchant rejected');
+          toast.success(t('admin.merchants.toast.rejected', 'Merchant rejected'));
           setRejectTarget(null);
           setRejectReason('');
           setDetailMerchant(null);
           refreshStats();
         },
-        onError: () => toast.error('Failed to reject merchant'),
+        onError: () => toast.error(t('admin.merchants.toast.rejectFailed', 'Failed to reject merchant')),
       },
     );
   };
@@ -365,10 +367,10 @@ export default function MerchantManagement() {
       {/* ── [A] Page Header ──────────────────────────────────────────────── */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Merchant Management
+          {t('admin.merchants.title', 'Merchant Management')}
         </h1>
         <p className="text-muted-foreground">
-          Review business licenses and manage merchant registrations
+          {t('admin.merchants.subtitle', 'Review business licenses and manage merchant registrations')}
         </p>
       </div>
 
@@ -376,7 +378,7 @@ export default function MerchantManagement() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
           {
-            label: 'Total Merchants',
+            label: t('admin.merchants.stats.total', 'Total Merchants'),
             value: stats.total,
             icon: Store,
             color: 'text-blue-400',
@@ -384,7 +386,7 @@ export default function MerchantManagement() {
             filter: '',
           },
           {
-            label: 'Pending',
+            label: t('admin.merchants.stats.pending', 'Pending'),
             value: stats.pending,
             icon: Clock,
             color: 'text-amber-400',
@@ -392,7 +394,7 @@ export default function MerchantManagement() {
             filter: 'pending',
           },
           {
-            label: 'Approved',
+            label: t('admin.merchants.stats.approved', 'Approved'),
             value: stats.approved,
             icon: CheckCircle,
             color: 'text-emerald-400',
@@ -400,7 +402,7 @@ export default function MerchantManagement() {
             filter: 'approved',
           },
           {
-            label: 'Rejected',
+            label: t('admin.merchants.stats.rejected', 'Rejected'),
             value: stats.rejected,
             icon: XCircle,
             color: 'text-red-400',
@@ -453,7 +455,7 @@ export default function MerchantManagement() {
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search merchants by name or email..."
+            placeholder={t('admin.merchants.filters.searchPlaceholder', 'Search merchants by name or email...')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -483,11 +485,11 @@ export default function MerchantManagement() {
           <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-24 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-24 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
             <TableHeader>
               <TableRow>
-                <TableHead>Shop</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Registered</TableHead>
-                <TableHead>License Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('admin.merchants.field.shop', 'Shop')}</TableHead>
+                <TableHead>{t('admin.merchants.field.owner', 'Owner')}</TableHead>
+                <TableHead>{t('admin.merchants.field.registered', 'Registered')}</TableHead>
+                <TableHead>{t('admin.merchants.field.licenseStatus', 'License Status')}</TableHead>
+                <TableHead className="text-right">{t('admin.merchants.table.actions', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -497,7 +499,7 @@ export default function MerchantManagement() {
                     colSpan={5}
                     className="text-center py-12 text-muted-foreground"
                   >
-                    No merchants found.
+                    {t('admin.merchants.table.empty', 'No merchants found.')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -520,7 +522,7 @@ export default function MerchantManagement() {
                           </div>
                           <div className="min-w-0">
                             <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.shopName}>
-                              {truncateText(merchant.shopName || 'N/A')}
+                              {truncateText(merchant.shopName || t('admin.merchants.na', 'N/A'))}
                             </p>
                             {merchant.businessLicenseUrl && (
                               <a
@@ -530,7 +532,7 @@ export default function MerchantManagement() {
                                 className="text-xs text-primary hover:underline flex items-center gap-1"
                               >
                                 <FileText className="h-3 w-3" />
-                                License
+                                {t('admin.merchants.license.link', 'License')}
                               </a>
                             )}
                           </div>
@@ -538,8 +540,8 @@ export default function MerchantManagement() {
                       </TableCell>
                       <TableCell className={getCellHighlight(isHighlighted, 1)}>
                         <div>
-                          <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.user?.name || 'N/A'}>
-                            {truncateText(merchant.user?.name || 'N/A')}
+                          <p className="max-w-[20ch] truncate text-sm font-medium" title={merchant.user?.name || t('admin.merchants.na', 'N/A')}>
+                            {truncateText(merchant.user?.name || t('admin.merchants.na', 'N/A'))}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {merchant.user?.email || ''}
@@ -580,7 +582,7 @@ export default function MerchantManagement() {
           limit={limit}
           onLimitChange={setLimit}
           total={total}
-          itemLabel="merchants"
+          itemLabel={t('admin.merchants.pagination.itemLabel', 'merchants')}
         />
       </div>
 
@@ -596,7 +598,7 @@ export default function MerchantManagement() {
         <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
-              Merchant Detail
+              {t('admin.merchants.detail.title', 'Merchant Detail')}
             </DialogTitle>
           </DialogHeader>
           {detailMerchant && (
@@ -604,13 +606,13 @@ export default function MerchantManagement() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Merchant Information
+                    {t('admin.merchants.detail.information', 'Merchant Information')}
                   </p>
                 </div>
 
                 <div className="rounded-md border border-slate-200 bg-white p-2">
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                    Shop
+                    {t('admin.merchants.field.shop', 'Shop')}
                   </p>
                   <div className="flex items-center gap-3">
                     <div
@@ -625,10 +627,12 @@ export default function MerchantManagement() {
                         className="truncate text-sm font-medium text-slate-900"
                         title={detailMerchant.shopName}
                       >
-                        {truncateText(detailMerchant.shopName || 'N/A')}
+                        {truncateText(detailMerchant.shopName || t('admin.merchants.na', 'N/A'))}
                       </p>
                       <p className="text-xs text-slate-600">
-                        Registered {new Date(detailMerchant.createdAt).toLocaleDateString()}
+                        {t('admin.merchants.detail.registered', 'Registered {{date}}', {
+                          date: new Date(detailMerchant.createdAt).toLocaleDateString(),
+                        })}
                       </p>
                     </div>
                   </div>
@@ -637,14 +641,14 @@ export default function MerchantManagement() {
                 {detailMerchant.businessLicenseUrl && (
                   <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                      Business License
+                      {t('admin.merchants.detail.businessLicense', 'Business License')}
                     </p>
                     {detailMerchant.businessLicenseUrl.endsWith('.pdf') ? (
                       <div className="flex items-center gap-3">
                         <FileText className="h-8 w-8 text-slate-400" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-900">Business License Document</p>
-                          <p className="text-xs text-slate-600">PDF document</p>
+                          <p className="text-sm font-medium text-slate-900">{t('admin.merchants.detail.licenseDocument', 'Business License Document')}</p>
+                          <p className="text-xs text-slate-600">{t('admin.merchants.detail.pdfDocument', 'PDF document')}</p>
                         </div>
                         <Button size="sm" variant="outline" asChild className="border-slate-200 text-slate-700">
                           <a
@@ -653,14 +657,14 @@ export default function MerchantManagement() {
                             rel="noopener noreferrer"
                           >
                             <Download className="h-4 w-4 mr-1" />
-                            Download
+                            {t('admin.merchants.detail.download', 'Download')}
                           </a>
                         </Button>
                       </div>
                     ) : (
                       <img
                         src={getImageUrl(detailMerchant.businessLicenseUrl)}
-                        alt="Business License"
+                        alt={t('admin.merchants.detail.businessLicense', 'Business License')}
                         className="w-full rounded object-contain max-h-64"
                       />
                     )}
@@ -669,7 +673,7 @@ export default function MerchantManagement() {
 
                 <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                    Owner
+                    {t('admin.merchants.field.owner', 'Owner')}
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700">
@@ -683,12 +687,12 @@ export default function MerchantManagement() {
                     <div className="min-w-0">
                       <p
                         className="truncate text-sm font-medium text-slate-900"
-                        title={detailMerchant.user?.name || 'N/A'}
+                        title={detailMerchant.user?.name || t('admin.merchants.na', 'N/A')}
                       >
-                        {truncateText(detailMerchant.user?.name || 'N/A')}
+                        {truncateText(detailMerchant.user?.name || t('admin.merchants.na', 'N/A'))}
                       </p>
                       <p className="truncate text-xs text-slate-600">
-                        {detailMerchant.user?.email || 'N/A'}
+                        {detailMerchant.user?.email || t('admin.merchants.na', 'N/A')}
                       </p>
                     </div>
                   </div>
@@ -697,7 +701,7 @@ export default function MerchantManagement() {
                 <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Status
+                      {t('admin.merchants.detail.status', 'Status')}
                     </p>
                     <div className="mt-1">
                       <MerchantStatusBadge status={detailMerchant.licenseStatus} />
@@ -706,7 +710,7 @@ export default function MerchantManagement() {
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Submitted
+                      {t('admin.merchants.detail.submitted', 'Submitted')}
                     </p>
                     <p className="mt-1 text-sm text-slate-700">
                       {new Date(detailMerchant.createdAt).toLocaleDateString()}
@@ -718,7 +722,7 @@ export default function MerchantManagement() {
               {detailMerchant.rejectionReason && (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Rejection Reason
+                    {t('admin.merchants.detail.rejectionReason', 'Rejection Reason')}
                   </p>
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="whitespace-pre-wrap text-xs leading-5 text-slate-700">
@@ -733,7 +737,7 @@ export default function MerchantManagement() {
                   variant="outline"
                   onClick={() => setDetailMerchant(null)}
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </Button>
                 {detailMerchant.licenseStatus === 'pending' && (
                   <>
@@ -743,7 +747,7 @@ export default function MerchantManagement() {
                         openApproveDialog(detailMerchant);
                       }}
                     >
-                      <Check className="h-4 w-4 mr-1" /> Approve
+                      <Check className="h-4 w-4 mr-1" /> {t('admin.merchants.actions.approve', 'Approve')}
                     </Button>
                     <Button
                       variant="destructive"
@@ -752,7 +756,7 @@ export default function MerchantManagement() {
                         openRejectDialog(detailMerchant);
                       }}
                     >
-                      <X className="h-4 w-4 mr-1" /> Reject
+                      <X className="h-4 w-4 mr-1" /> {t('admin.merchants.actions.reject', 'Reject')}
                     </Button>
                   </>
                 )}
@@ -766,22 +770,24 @@ export default function MerchantManagement() {
       <Dialog open={!!approveTarget} onOpenChange={() => setApproveTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve Merchant</DialogTitle>
+            <DialogTitle>{t('admin.merchants.approve.title', 'Approve Merchant')}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to approve{' '}
-            <strong className="text-foreground">{approveTarget?.shopName}</strong>?
-            Its status will change to Approved.
+            {t(
+              'admin.merchants.approve.confirm',
+              'Are you sure you want to approve {{name}}? Its status will change to Approved.',
+              { name: approveTarget?.shopName },
+            )}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setApproveTarget(null)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               onClick={handleApprove}
               disabled={approveMutation.isPending}
             >
-              Approve
+              {t('admin.merchants.actions.approve', 'Approve')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -797,14 +803,18 @@ export default function MerchantManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Merchant</DialogTitle>
+            <DialogTitle>{t('admin.merchants.reject.title', 'Reject Merchant')}</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to reject{' '}
-            <strong>{rejectTarget?.shopName}</strong>?
+            {t('admin.merchants.reject.confirm', 'Are you sure you want to reject {{name}}?', {
+              name: rejectTarget?.shopName,
+            })}
           </p>
           <Textarea
-            placeholder="Enter rejection reason (required, max 500 characters)..."
+            placeholder={t(
+              'admin.merchants.reject.reasonPlaceholder',
+              'Enter rejection reason (required, max 500 characters)...',
+            )}
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             maxLength={500}
@@ -820,14 +830,14 @@ export default function MerchantManagement() {
                 setRejectReason('');
               }}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               variant="destructive"
               disabled={!rejectReason.trim()}
               onClick={handleReject}
             >
-              Reject
+              {t('admin.merchants.actions.reject', 'Reject')}
             </Button>
           </DialogFooter>
         </DialogContent>
