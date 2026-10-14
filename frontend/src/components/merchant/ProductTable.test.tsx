@@ -8,6 +8,37 @@ vi.mock('@/lib/format', () => ({
   formatPrice: (v: number) => `$${v.toFixed(2)}`,
 }))
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, values?: { name?: string; amount?: string }) => {
+      const labels: Record<string, string> = {
+        'merchant.products.noImage': 'No image',
+        'merchant.products.filter.active': 'Active',
+        'merchant.products.filter.inactive': 'Inactive',
+        'merchant.products.empty': 'No products found',
+        'merchant.products.table.image': 'Image',
+        'merchant.products.table.name': 'Product Name',
+        'merchant.products.table.sku': 'SKU',
+        'merchant.products.table.price': 'Price (Discount Price)',
+        'merchant.products.table.compareAtPrice': 'Compare At Price',
+        'merchant.products.table.stock': 'Stock',
+        'merchant.products.table.status': 'Status',
+        'merchant.products.table.featured': 'Featured',
+        'merchant.products.table.actions': 'Actions',
+        'merchant.products.table.selectAll': 'Select all',
+        'merchant.products.table.selectProduct': 'Select {{name}}',
+        'merchant.products.table.saved': 'Saved {{amount}}',
+        'merchant.products.table.toggleStatus': 'Toggle status for {{name}}',
+        'merchant.products.table.toggleFeatured': 'Toggle featured for {{name}}',
+        'merchant.products.table.editProduct': 'Edit {{name}}',
+      }
+      return (labels[key] ?? key)
+        .replace('{{name}}', values?.name ?? '')
+        .replace('{{amount}}', values?.amount ?? '')
+    },
+  }),
+}))
+
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router')
   return { ...actual, useNavigate: vi.fn() }
@@ -88,7 +119,7 @@ describe('ProductTable', () => {
       expect(screen.getByText('Price (Discount Price)')).toBeInTheDocument()
       expect(screen.getByText('Stock')).toBeInTheDocument()
       expect(screen.getByText('Status')).toBeInTheDocument()
-      expect(screen.getByText('isFeatured')).toBeInTheDocument()
+      expect(screen.getByText('Featured')).toBeInTheDocument()
     })
 
     it('renders product rows with data', () => {

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router'
 import { Save, ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,14 +22,15 @@ interface ProductFormProps {
 }
 
 const SKIN_TYPES = [
-  { value: 'dry', label: 'Dry' },
-  { value: 'oily', label: 'Oily' },
-  { value: 'combination', label: 'Combination' },
-  { value: 'sensitive', label: 'Sensitive' },
-  { value: 'normal', label: 'Normal' },
+  { value: 'dry', key: 'dry' },
+  { value: 'oily', key: 'oily' },
+  { value: 'combination', key: 'combination' },
+  { value: 'sensitive', key: 'sensitive' },
+  { value: 'normal', key: 'normal' },
 ]
 
 export function ProductForm({ product, mode }: ProductFormProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
@@ -56,13 +58,13 @@ export function ProductForm({ product, mode }: ProductFormProps) {
       }
       if (mode === 'create') {
         await createProduct.mutateAsync(submittedData)
-        toast.success('Product created successfully')
+        toast.success(t('merchant.products.toast.created'))
       } else if (product) {
         await updateProduct.mutateAsync({
           id: product.id,
           data: submittedData,
         })
-        toast.success('Product updated successfully')
+        toast.success(t('merchant.products.toast.updated'))
       }
       navigate('/merchant/products')
     } catch (err: unknown) {
@@ -72,7 +74,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         ? Array.isArray(backendMessage)
           ? backendMessage.join(', ')
           : backendMessage
-        : axiosErr?.message || 'Something went wrong. Please try again.'
+        : axiosErr?.message || t('merchant.products.error.generic')
       toast.error(message)
     }
   }
@@ -93,7 +95,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h2 className="text-lg font-bold">
-            {mode === 'create' ? 'Create New Product' : `Edit: ${product?.name}`}
+            {mode === 'create' ? t('merchant.products.form.createTitle') : t('merchant.products.form.editTitle', { name: product?.name })}
           </h2>
         </div>
         <div className="flex items-center gap-3">
@@ -103,7 +105,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            {mode === 'create' ? 'Create Product' : 'Save Changes'}
+            {mode === 'create' ? t('merchant.products.form.create') : t('merchant.products.form.saveChanges')}
           </Button>
         </div>
       </div>
@@ -113,23 +115,23 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Basic Information</CardTitle>
+              <CardTitle className="text-sm">{t('merchant.products.form.basicInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Product Name *</Label>
-                <Input id="name" {...register('name')} placeholder="e.g., Vitamin C Serum" />
+                <Label htmlFor="name">{t('merchant.products.form.productName')} *</Label>
+                <Input id="name" {...register('name')} placeholder={t('merchant.products.form.productNamePlaceholder')} />
                 {errors.name && (
                   <p className="text-sm text-destructive">{errors.name.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="shortDescription">Short Description *</Label>
+                <Label htmlFor="shortDescription">{t('merchant.products.form.shortDescription')} *</Label>
                 <Textarea
                   id="shortDescription"
                   {...register('shortDescription')}
-                  placeholder="Brief product description (max 500 chars)"
+                  placeholder={t('merchant.products.form.shortDescriptionPlaceholder')}
                   rows={2}
                 />
                 {errors.shortDescription && (
@@ -138,11 +140,11 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Full Description *</Label>
+                <Label htmlFor="description">{t('merchant.products.form.fullDescription')} *</Label>
                 <RichTextEditor
                   value={watch('description') || ''}
                   onChange={(val) => setValue('description', val)}
-                  placeholder="Detailed product description"
+                  placeholder={t('merchant.products.form.fullDescriptionPlaceholder')}
                 />
                 {errors.description && (
                   <p className="text-sm text-destructive">{errors.description.message}</p>
@@ -153,7 +155,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Media</CardTitle>
+              <CardTitle className="text-sm">{t('merchant.products.form.media')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {mode === 'edit' && product && (
@@ -176,20 +178,20 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Tags & Attributes</CardTitle>
+              <CardTitle className="text-sm">{t('merchant.products.form.tagsAttributes')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Tags</Label>
+                <Label>{t('merchant.products.form.tags')}</Label>
                 <TagInput
                   tags={watch('tags') || []}
                   onTagsChange={(tags) => setValue('tags', tags)}
-                  placeholder="Add a tag..."
+                  placeholder={t('merchant.products.form.addTagPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Skin Types</Label>
+                <Label>{t('merchant.products.form.skinTypes')}</Label>
                 <div className="flex flex-wrap gap-2">
                   {SKIN_TYPES.map((st) => {
                     const selected = (watch('skinTypes') || []).some(
@@ -214,7 +216,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                           }
                         }}
                       >
-                        {st.label}
+                        {t(`merchant.products.form.skinType.${st.key}`)}
                       </Button>
                     )
                   })}
@@ -225,11 +227,11 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label>Ingredients</Label>
+                <Label>{t('merchant.products.form.ingredients')}</Label>
                 <TagInput
                   tags={watch('ingredients') || []}
                   onTagsChange={(tags) => setValue('ingredients', tags)}
-                  placeholder="Add an ingredient..."
+                  placeholder={t('merchant.products.form.addIngredientPlaceholder')}
                 />
               </div>
             </CardContent>
@@ -240,11 +242,11 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Organization</CardTitle>
+              <CardTitle className="text-sm">{t('merchant.products.form.organization')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Category *</Label>
+                <Label>{t('merchant.products.form.category')} *</Label>
                 <CategorySelect
                   value={watch('categoryId') || ''}
                   onChange={(val) => setValue('categoryId', val)}
@@ -256,7 +258,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="sku">SKU</Label>
-                <Input id="sku" {...register('sku')} placeholder="e.g., VCS-001" disabled className="disabled:opacity-50 disabled:cursor-not-allowed" />
+                <Input id="sku" {...register('sku')} placeholder={t('merchant.products.form.skuPlaceholder')} disabled className="disabled:opacity-50 disabled:cursor-not-allowed" />
                 {errors.sku && (
                   <p className="text-sm text-destructive">{errors.sku.message}</p>
                 )}
@@ -266,20 +268,20 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Pricing & Inventory</CardTitle>
+              <CardTitle className="text-sm">{t('merchant.products.form.pricingInventory')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="price">
-                  Price (Discount Price){' '}
-                  <span className="font-normal text-muted-foreground">(Optional)</span>
+                  {t('merchant.products.form.price')} ({t('merchant.products.form.discountPrice')}){' '}
+                  <span className="font-normal text-muted-foreground">({t('merchant.products.form.optional')})</span>
                 </Label>
                 <Input
                   id="price"
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="Optional sale price"
+                  placeholder={t('merchant.products.form.salePricePlaceholder')}
                   {...register('price', {
                     setValueAs: (value) => (value === '' ? null : Number(value)),
                   })}
@@ -290,13 +292,13 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="compareAtPrice">Compare At Price *</Label>
+                <Label htmlFor="compareAtPrice">{t('merchant.products.form.compareAtPrice')} *</Label>
                 <Input
                   id="compareAtPrice"
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="e.g., 25000"
+                  placeholder={t('merchant.products.form.compareAtPricePlaceholder')}
                   {...register('compareAtPrice', {
                     setValueAs: (value) => (value === '' ? null : Number(value)),
                   })}
@@ -307,7 +309,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="stockQuantity">Stock Quantity *</Label>
+                <Label htmlFor="stockQuantity">{t('merchant.products.form.stockQuantity')} *</Label>
                 <Input
                   id="stockQuantity"
                   type="number"
@@ -320,7 +322,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                <Label htmlFor="lowStockThreshold">{t('merchant.products.form.lowStockThreshold')}</Label>
                 <Input
                   id="lowStockThreshold"
                   type="number"

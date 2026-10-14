@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useProducts } from '@/hooks/useProducts'
 import { getImageUrl } from '@/lib/image-url'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 const PAGE_SIZE = 3
 
@@ -53,13 +54,14 @@ function Thumb({ url, alt }: { url: string; alt: string }) {
  * lazily so the product request only runs once the merchant opens it.
  */
 export function ProductImagePicker({ value, onChange, error }: ProductImagePickerProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
   return (
     <div className="space-y-2">
-      <Button type="button" variant="outline" onClick={() => setOpen(true)} aria-label="Choose image">
+      <Button type="button" variant="outline" onClick={() => setOpen(true)} aria-label={t('merchant.advertisements.form.chooseImage')}>
         <Images className="mr-2 h-4 w-4" />
-        {value ? 'Change Image' : 'Choose Image'}
+        {value ? t('merchant.advertisements.form.changeImage') : t('merchant.advertisements.form.chooseImage')}
       </Button>
 
       {error && (
@@ -83,6 +85,7 @@ export function ProductImagePicker({ value, onChange, error }: ProductImagePicke
 }
 
 function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductImageDialogProps) {
+  const { t } = useTranslation()
   const [page, setPage] = useState(1)
   // Staged choice: clicking a thumbnail only previews it here, the footer Confirm
   // button is what commits it to the form (Cancel discards the staged value).
@@ -101,8 +104,8 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
     <Dialog open onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="flex max-h-[90vh] w-[calc(100%-1rem)] flex-col overflow-y-auto sm:max-w-3xl sm:w-full">
         <DialogHeader>
-          <DialogTitle>Select Product Image</DialogTitle>
-          <DialogDescription>Pick one of the images attached to your own products.</DialogDescription>
+          <DialogTitle>{t('merchant.advertisements.form.selectProductImage')}</DialogTitle>
+          <DialogDescription>{t('merchant.advertisements.form.selectProductImageDescription')}</DialogDescription>
         </DialogHeader>
 
         {isPending ? (
@@ -113,11 +116,11 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
           </div>
         ) : isError ? (
           <p role="alert" className="text-sm text-destructive">
-            Could not load your product images. Please try again.
+            {t('merchant.advertisements.form.productImagesLoadFailed')}
           </p>
         ) : options.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            You have no product images yet. Upload an image to one of your products first.
+            {t('merchant.advertisements.form.noProductImages')}
           </div>
         ) : (
           <div className="grid flex-1 grid-cols-3 gap-3">
@@ -152,7 +155,7 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
         {!isPending && !isError && totalPages > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="text-muted-foreground">
-              Page {page} of {totalPages}
+              {t('merchant.advertisements.pageInfo', { page, totalPages })}
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -162,7 +165,7 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={page <= 1 || isPending}
               >
-                <ChevronLeft className="mr-1 h-4 w-4" /> Prev
+                <ChevronLeft className="mr-1 h-4 w-4" /> {t('common.actions.previous')}
               </Button>
               {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
                 <Button
@@ -183,7 +186,7 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
                 onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                 disabled={page >= totalPages || isPending}
               >
-                Next <ChevronRight className="ml-1 h-4 w-4" />
+                {t('common.actions.next')} <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -191,10 +194,10 @@ function SelectProductImageDialog({ value, onSelect, onClose }: SelectProductIma
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" onClick={() => selected && onSelect(selected)} disabled={!selected}>
-            Confirm
+            {t('common.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -41,6 +41,8 @@
       "previous": "前へ",
       "nextPageLabel": "次のページ",
       "next": "次へ"
+      "showingOrders": "注文 {{start}}–{{end}} 件 / 全 {{total}} 件中"
+
     },
     "payment": {
       "pending": "保留中",
@@ -61,7 +63,9 @@
     "confirm": "確認",
     "copied": "コピーしました",
     "copyFailed": "クリップボードにコピーできませんでした。",
-    "view": "表示"
+    "view": "表示",
+    "close": "閉じる",
+    "clear": "クリア"
   },
   "nav": {
     "home": "ホーム",
@@ -840,6 +844,163 @@
     "copyright": "© 2026 Cosmetics Finder. 全著作権所有。"
   },
   "merchant": {
+    "account": {
+      "deactivatedTitle": "アカウント停止中",
+      "deactivated": "販売者アカウントは停止されています。管理者が再有効化するまで一部の機能は制限されます。",
+      "pendingOperation": "販売者アカウントは承認待ちです。ライセンスが承認されるまでこの操作は制限されています。",
+      "rejectedContactSupport": "販売者アカウントは却下されました。サポートにお問い合わせください。"
+    },
+    "dashboard": {
+      "portal": "販売者ポータル",
+      "welcome": "{{name}}さん、ようこそ",
+      "defaultName": "販売者",
+      "subtitle": "ショップを管理してビジネスを成長させましょう。",
+      "addProduct": "商品を追加",
+      "pendingTitle": "アカウント承認待ち",
+      "pendingDescription": "販売者アカウントは管理者の承認待ちです。ライセンスが承認されるまで一部の機能は制限されます。",
+      "rejectedTitle": "アカウント却下",
+      "rejectedDescription": "販売者アカウントは却下されました。商品管理機能は制限されています。プロフィールページからライセンスを再提出できます。",
+      "goToProfile": "プロフィールへ",
+      "catalogTitle": "商品カタログ",
+      "catalogDescription": "商品を管理",
+      "catalogHelp": "商品を追加し、カタログを最新の状態に保ちましょう。",
+      "manageProducts": "商品を管理",
+      "promotionsTitle": "プロモーション",
+      "promotionsDescription": "顧客に割引を提供",
+      "promotionsHelp": "プロモーションを作成・管理します。",
+      "managePromotions": "プロモーションを管理",
+      "adsTitle": "広告",
+      "adsDescription": "商品を宣伝",
+      "adsHelp": "キャンペーンを作成して商品の認知度を高めます。",
+      "manageAds": "広告を管理",
+      "stats": {
+        "totalProducts": "商品合計",
+        "totalProductsChange": "カタログ内の商品",
+        "activePromotions": "有効なプロモーション",
+        "activePromotionsChange": "顧客が利用できる特典",
+        "runningAds": "配信中の広告",
+        "runningAdsChange": "現在配信中のキャンペーン",
+        "orderInsights": "注文分析",
+        "orderInsightsChange": "今月の注文"
+      }
+    },
+    "products": {
+      "title": "商品管理", "subtitle": "在庫、価格、商品情報を管理", "addNew": "新しい商品を追加",
+      "searchPlaceholder": "商品を検索...", "statusPlaceholder": "ステータス", "sortPlaceholder": "並べ替え",
+      "deleteButton": "削除", "retry": "再試行", "empty": "商品が見つかりません", "noImage": "画像なし",
+      "imageAlt": "{{name}}の画像", "imageAltGeneric": "商品", "loadingCategories": "カテゴリを読み込み中...",
+      "selectCategory": "カテゴリを選択", "noCategories": "利用可能なカテゴリはありません", "existingImages": "登録済み画像",
+      "imageRetentionHint": "画像をクリックして保持するか切り替えます。保持した画像は保存時に残ります。",
+      "filter": { "all": "すべて", "active": "有効", "inactive": "無効" },
+      "sort": { "newest": "新着順", "price": "価格", "rating": "評価", "name": "名前" },
+      "table": {
+        "image": "画像", "name": "商品名", "sku": "SKU", "price": "価格（割引価格）", "compareAtPrice": "通常価格",
+        "stock": "在庫", "status": "ステータス", "featured": "おすすめ", "action": "操作", "actions": "操作",
+        "selectAll": "すべて選択", "selectProduct": "{{name}}を選択", "saved": "{{amount}}お得",
+        "toggleStatus": "{{name}}のステータスを切り替え", "toggleFeatured": "{{name}}のおすす表示を切り替え", "editProduct": "{{name}}を編集"
+      },
+      "banner": {
+        "pendingTitle": "アカウント承認待ち",
+        "pendingDescription": "販売者アカウントは管理者の承認待ちです。ライセンスが承認されるまで一部の機能は制限されます。",
+        "rejectedTitle": "アカウント却下",
+        "rejectedDescription": "販売者アカウントは却下されました。商品管理機能は制限されています。プロフィールページからライセンスを再提出できます。",
+        "goToProfile": "プロフィールへ"
+      },
+      "error": {
+        "load": "商品の読み込みに失敗しました。もう一度お試しください。", "loadTitle": "商品を読み込めません",
+        "loadDetails": "商品詳細を読み込めませんでした。もう一度お試しください。", "generic": "問題が発生しました。もう一度お試しください。"
+      },
+      "backToProducts": "商品一覧へ戻る",
+      "toast": {
+        "stockUpdated": "在庫を更新しました", "stockUpdateFailed": "在庫の更新に失敗しました",
+        "featuredUpdated": "おすすめ設定を更新しました", "featuredUpdateFailed": "おすすめ設定の更新に失敗しました",
+        "activated": "商品を有効にしました", "deactivated": "商品を無効にしました",
+        "activateFailed": "商品の有効化に失敗しました", "deactivateFailed": "商品の無効化に失敗しました",
+        "noProductsProcessed": "処理された商品はありません。", "deleteFailed": "商品の削除に失敗しました",
+        "deleteAllFailed": "一括削除に失敗しました。もう一度お試しください。", "created": "商品を作成しました", "updated": "商品を更新しました"
+      },
+      "delete": {
+        "title": "商品を削除", "selectedTitle": "選択した商品を削除", "none": "削除する商品はありません。",
+        "noneSelected": "商品が選択されていません。", "confirmSelected": "商品{{count}}件を削除しますか？",
+        "confirmAll": "商品{{count}}件をすべて削除しますか？", "deactivatedCount": "{{count}}件を無効化します",
+        "permanentlyDeletedCount": "論理削除済みの商品{{count}}件を完全に削除します",
+        "skippedActiveOrders": "注文処理中の商品{{count}}件をスキップします", "deleting": "削除中..."
+      },
+      "form": {
+        "createTitle": "新しい商品を作成", "editTitle": "編集：{{name}}", "create": "商品を作成", "saveChanges": "変更を保存",
+        "basicInformation": "基本情報", "productName": "商品名", "productNamePlaceholder": "例：ビタミンCセラム",
+        "shortDescription": "短い説明", "shortDescriptionPlaceholder": "商品の簡単な説明（最大500文字）",
+        "fullDescription": "詳細説明", "fullDescriptionPlaceholder": "商品の詳細な説明", "media": "メディア",
+        "tagsAttributes": "タグと属性", "tags": "タグ", "addTagPlaceholder": "タグを追加...", "skinTypes": "肌タイプ",
+        "skinType": { "dry": "乾燥肌", "oily": "脂性肌", "combination": "混合肌", "sensitive": "敏感肌", "normal": "普通肌" },
+        "ingredients": "成分", "addIngredientPlaceholder": "成分を追加...", "organization": "分類",
+        "category": "カテゴリ", "skuPlaceholder": "例：VCS-001", "pricingInventory": "価格と在庫", "price": "価格",
+        "discountPrice": "割引価格", "optional": "任意", "salePricePlaceholder": "任意のセール価格",
+        "compareAtPrice": "通常価格", "compareAtPricePlaceholder": "例：25000", "stockQuantity": "在庫数", "lowStockThreshold": "低在庫しきい値"
+      },
+      "bulk": {
+        "selected": "商品{{count}}件を選択中", "activate": "有効にする", "deactivate": "無効にする",
+        "deleteConfirmation": "選択した商品{{count}}件を完全に削除しますか？関連データは復元できません。注文処理中の商品はスキップされます。"
+      }
+    },
+    "productReview": {
+      "title": "商品レビュー", "subtitle": "商品のレビュー数を確認", "searchLabel": "商品を検索",
+      "reviewCount": "レビュー数", "viewProduct": "{{name}}を表示", "highlightUnavailable": "通知からリンクされた商品を読み込めませんでした。"
+    },
+    "advertisements": {
+      "title": "広告", "subtitle": "広告パッケージを選び、コンテンツを登録して広告を管理します。",
+      "availablePackages": "利用可能なパッケージ", "packageDescription": "管理者が作成した、掲載期間が固定のパッケージです。",
+      "noPackages": "現在利用できる広告パッケージはありません。後でもう一度ご確認ください。", "updated": "更新済み",
+      "perDay": "/日", "durationDays": "{{count}}日間のキャンペーン", "upToAds": "広告最大{{count}}件", "totalFee": "合計料金",
+      "selectPackage": "パッケージを選択", "yourAds": "あなたの広告", "searchLabel": "広告を検索", "searchPlaceholder": "広告を検索...",
+      "statusFilter": "ステータスで絞り込み", "status": "ステータス", "statusAll": "ステータス：すべて", "statusActive": "有効", "statusInactive": "無効", "statusExpired": "期限切れ",
+      "approvalFilter": "承認ステータスで絞り込み", "approvalLabel": "承認", "approvalAll": "承認：すべて", "approvalPending": "承認：保留中",
+      "approvalApproved": "承認：承認済み", "approvalRejected": "承認：却下", "refresh": "更新", "empty": "広告が見つかりません。",
+      "emptyHint": "上のパッケージを選択して最初の広告を作成してください。", "selectPackageTitle": "広告パッケージを選択",
+      "tierLabel": "プラン", "dailyRate": "日額", "duration": "期間", "selecting": "選択中...", "confirmSelection": "選択を確定",
+      "payFeeTitle": "広告料金を支払う", "advertisingFee": "広告料金", "calculatedAtPayment": "支払い時に計算",
+      "paymentReference": "支払い参照番号", "paymentReferencePlaceholder": "決済取引の参照番号", "paymentReferenceHint": "8桁以上を入力してください。",
+      "processingPayment": "支払い処理中...", "paySubmit": "支払って送信", "payFee": "料金を支払う", "deleteTitle": "広告を削除",
+      "deleteUnpaidNamed": "「{{title}}」を削除しますか？未払いのため、システムから完全に削除されます。",
+      "deleteUnpaidDraft": "この下書きを削除しますか？未払いのため、システムから完全に削除されます。",
+      "deleteExpiredNamed": "「{{title}}」を削除しますか？広告は期限切れのため、システムから完全に削除されます。",
+      "deleteExpired": "この広告を削除しますか？期限切れのため、システムから完全に削除されます。",
+      "deleteKeepHistoryNamed": "「{{title}}」を削除しますか？広告は無効化され、履歴として保存されます。",
+      "deleteKeepHistory": "この広告を削除しますか？広告は無効化され、履歴として保存されます。",
+      "pageInfo": "{{totalPages}}ページ中{{page}}ページ", "draftAd": "広告の下書き", "placement": "掲載位置", "package": "パッケージ",
+      "startDate": "開始日", "endDate": "終了日", "expiresTomorrow": "広告は明日期限切れになります。", "expiresToday": "広告は本日期限切れになります。",
+      "expired": "広告の有効期限が切れています。", "editResubmit": "編集して再提出", "createdAt": "作成日：{{date}}", "editAd": "広告を編集",
+      "edit": "編集", "deleteAd": "広告を削除", "delete": "削除", "viewAd": "広告を表示", "view": "表示", "toggleActive": "有効状態を切り替え",
+      "state": { "active": "有効", "scheduled": "予約済み", "pending_approval": "承認待ち", "expired": "期限切れ", "inactive": "無効", "rejected": "却下", "content_uploaded": "コンテンツ登録済み", "draft": "下書き" },
+      "approval": { "rejected": "却下", "approved": "承認済み", "pending": "保留中", "contentUploaded": "コンテンツ登録済み", "draft": "下書き" },
+      "approvalLabel": "承認", "paymentLabel": "支払い", "created": "作成日", "detailTitle": "広告詳細", "saving": "保存中...",
+      "savePay": "保存して支払う", "saveContinue": "保存して続行", "uploadContentTitle": "広告コンテンツを登録", "editContentTitle": "広告コンテンツを編集",
+      "tier": { "basic": "ベーシック", "standard": "スタンダード", "premium": "プレミアム" },
+      "payment": { "pending": "保留中", "completed": "完了", "refunded": "返金済み" },
+      "stats": { "active": "有効な広告", "pending": "承認待ち", "expired": "期限切れ" },
+      "toast": {
+        "draftCreated": "広告の下書きを作成しました", "packageUnavailable": "選択した広告パッケージは利用できません",
+        "contentSaved": "広告コンテンツを保存しました", "contentSaveFailed": "広告コンテンツを保存できませんでした",
+        "savedPaymentRequired": "広告を保存しました。再提出には支払いが必要です。", "submitted": "広告を承認に提出しました",
+        "paymentFailed": "支払いに失敗しました。もう一度お試しください。", "deleted": "広告を削除しました", "deleteFailed": "広告を削除できませんでした",
+        "activated": "広告を有効にしました", "deactivated": "広告を無効にしました", "statusUpdateFailed": "広告ステータスを更新できませんでした"
+      },
+      "invalidPaymentReference": "支払い参照番号が無効です",
+      "form": {
+        "title": "タイトル", "titlePlaceholder": "広告タイトルを入力", "content": "コンテンツ", "contentPlaceholder": "広告コンテンツを入力",
+        "image": "広告画像", "required": "必須", "imageHelper": "商品の画像を選択してください。独自画像のアップロードはできません。",
+        "imagePreview": "広告プレビュー", "announcement": "告知メッセージ", "announcementPlaceholder": "バナーの告知メッセージを入力",
+        "endDateAuto": "終了日（自動計算）", "scheduleHint": "{{date}}以降の日付を選択してください（本日から3日後）。",
+        "resubmitScheduleHint": "{{date}}以降の開始日を選択してください（本日から3日後）。終了日は自動的に再計算されます。",
+        "chooseImage": "画像を選択", "changeImage": "画像を変更", "selectProductImage": "商品画像を選択",
+        "selectProductImageDescription": "ご自身の商品に登録されている画像から選択してください。",
+        "productImagesLoadFailed": "商品画像を読み込めませんでした。もう一度お試しください。",
+        "noProductImages": "商品画像がありません。先に商品へ画像を登録してください。"
+      }
+    },
+    "errorBoundary": {
+      "title": "問題が発生しました", "unexpected": "予期しないエラーが発生しました。", "backToDashboard": "ダッシュボードへ戻る"
+    },
     "promotions": {
       "title": "プロモーション",
       "addNew": "プロモーション追加",

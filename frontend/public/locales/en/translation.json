@@ -41,6 +41,8 @@
       "previous": "Prev",
       "nextPageLabel": "Next page",
       "next": "Next"
+      "showingOrders": "Showing {{start}}–{{end}} of {{total}} orders"
+
     },
     "payment": {
       "pending": "Pending",
@@ -61,7 +63,9 @@
     "confirm": "Confirm",
     "copied": "Copied",
     "copyFailed": "Could not copy to the clipboard.",
-    "view": "View"
+    "view": "View",
+    "close": "Close",
+    "clear": "Clear"
   },
   "nav": {
     "home": "Home",
@@ -902,6 +906,179 @@
     "copyright": "© 2026 Cosmetics Finder. All rights reserved."
   },
   "merchant": {
+    "account": {
+      "deactivatedTitle": "Account Deactivated",
+      "deactivated": "Your merchant account is deactivated. Some features are restricted until an admin reactivates your account.",
+      "pendingOperation": "Your merchant account is pending approval. This operation is restricted until your license is approved.",
+      "rejectedContactSupport": "Your merchant account has been rejected. Please contact support."
+    },
+    "dashboard": {
+      "portal": "Merchant Portal",
+      "welcome": "Welcome, {{name}}",
+      "defaultName": "Merchant",
+      "subtitle": "Manage your store and grow your business.",
+      "addProduct": "Add Product",
+      "pendingTitle": "Account Pending",
+      "pendingDescription": "Your merchant account is pending admin approval. Some features are restricted until your license is approved.",
+      "rejectedTitle": "Account Rejected",
+      "rejectedDescription": "Your merchant account has been rejected. Product management features are restricted. You can resubmit your license from your Profile page.",
+      "goToProfile": "Go to Profile",
+      "catalogTitle": "Product Catalog",
+      "catalogDescription": "Manage your products",
+      "catalogHelp": "Add products and keep your catalog up to date.",
+      "manageProducts": "Manage Products",
+      "promotionsTitle": "Promotions",
+      "promotionsDescription": "Offer discounts to customers",
+      "promotionsHelp": "Create and manage your promotional offers.",
+      "managePromotions": "Manage Promotions",
+      "adsTitle": "Advertisements",
+      "adsDescription": "Promote your products",
+      "adsHelp": "Create campaigns to increase product visibility.",
+      "manageAds": "Manage Ads",
+      "stats": {
+        "totalProducts": "Total Products",
+        "totalProductsChange": "Products in your catalog",
+        "activePromotions": "Active Promotions",
+        "activePromotionsChange": "Offers available to customers",
+        "runningAds": "Running Ads",
+        "runningAdsChange": "Campaigns currently running",
+        "orderInsights": "Order Insights",
+        "orderInsightsChange": "Orders this month"
+      }
+    },
+    "products": {
+      "title": "Product Management",
+      "subtitle": "Manage inventory, prices, and product details",
+      "addNew": "Add New Product",
+      "searchPlaceholder": "Search products...",
+      "statusPlaceholder": "Status",
+      "sortPlaceholder": "Sort by",
+      "deleteButton": "Delete",
+      "retry": "Retry",
+      "empty": "No products found",
+      "noImage": "No image",
+      "imageAlt": "Image of {{name}}",
+      "imageAltGeneric": "Product",
+      "loadingCategories": "Loading categories...",
+      "selectCategory": "Select a category",
+      "noCategories": "No categories available",
+      "existingImages": "Existing images",
+      "imageRetentionHint": "Click an image to toggle retention. Retained images will be kept when saving.",
+      "filter": { "all": "All", "active": "Active", "inactive": "Inactive" },
+      "sort": { "newest": "Newest", "price": "Price", "rating": "Rating", "name": "Name" },
+      "table": {
+        "image": "Image", "name": "Product Name", "sku": "SKU", "price": "Price (Discount Price)",
+        "compareAtPrice": "Compare At Price", "stock": "Stock", "status": "Status", "featured": "Featured",
+        "action": "Action", "actions": "Actions", "selectAll": "Select all", "selectProduct": "Select {{name}}",
+        "saved": "Saved {{amount}}", "toggleStatus": "Toggle status for {{name}}", "toggleFeatured": "Toggle featured for {{name}}",
+        "editProduct": "Edit {{name}}"
+      },
+      "banner": {
+        "pendingTitle": "Account Pending",
+        "pendingDescription": "Your merchant account is currently pending admin approval. Some features are restricted until your license is approved.",
+        "rejectedTitle": "Account Rejected",
+        "rejectedDescription": "Your merchant account has been rejected. Product management features are restricted. You can resubmit your license from your Profile page.",
+        "goToProfile": "Go to Profile"
+      },
+      "error": {
+        "load": "Failed to load products. Please try again.",
+        "loadTitle": "Failed to Load Product",
+        "loadDetails": "Unable to load the product details. Please try again.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "backToProducts": "Back to Products",
+      "toast": {
+        "stockUpdated": "Stock updated", "stockUpdateFailed": "Failed to update stock",
+        "featuredUpdated": "Featured status updated", "featuredUpdateFailed": "Failed to update featured status",
+        "activated": "Product activated", "deactivated": "Product deactivated",
+        "activateFailed": "Failed to activate product", "deactivateFailed": "Failed to deactivate product",
+        "noProductsProcessed": "No products were processed.", "deleteFailed": "Failed to delete products",
+        "deleteAllFailed": "Delete all failed. Please try again.", "created": "Product created successfully",
+        "updated": "Product updated successfully"
+      },
+      "delete": {
+        "title": "Delete Products", "selectedTitle": "Delete Selected Products", "none": "No products to delete.",
+        "noneSelected": "No products selected.", "confirmSelected": "Are you sure you want to delete {{count}} product(s)?",
+        "confirmAll": "Are you sure you want to delete all {{count}} products?", "deactivatedCount": "{{count}} will be deactivated",
+        "permanentlyDeletedCount": "{{count}} soft-deleted product(s) will be permanently deleted",
+        "skippedActiveOrders": "{{count}} product(s) with active orders will be skipped", "deleting": "Deleting..."
+      },
+      "form": {
+        "createTitle": "Create New Product", "editTitle": "Edit: {{name}}", "create": "Create Product", "saveChanges": "Save Changes",
+        "basicInformation": "Basic Information", "productName": "Product Name", "productNamePlaceholder": "e.g., Vitamin C Serum",
+        "shortDescription": "Short Description", "shortDescriptionPlaceholder": "Brief product description (max 500 chars)",
+        "fullDescription": "Full Description", "fullDescriptionPlaceholder": "Detailed product description", "media": "Media",
+        "tagsAttributes": "Tags & Attributes", "tags": "Tags", "addTagPlaceholder": "Add a tag...", "skinTypes": "Skin Types",
+        "skinType": { "dry": "Dry", "oily": "Oily", "combination": "Combination", "sensitive": "Sensitive", "normal": "Normal" },
+        "ingredients": "Ingredients", "addIngredientPlaceholder": "Add an ingredient...", "organization": "Organization",
+        "category": "Category", "skuPlaceholder": "e.g., VCS-001", "pricingInventory": "Pricing & Inventory", "price": "Price",
+        "discountPrice": "Discount Price", "optional": "Optional", "salePricePlaceholder": "Optional sale price",
+        "compareAtPrice": "Compare At Price", "compareAtPricePlaceholder": "e.g., 25000", "stockQuantity": "Stock Quantity",
+        "lowStockThreshold": "Low Stock Threshold"
+      },
+      "bulk": {
+        "selected": "{{count}} product(s) selected", "activate": "Activate", "deactivate": "Deactivate",
+        "deleteConfirmation": "Permanently delete {{count}} selected product(s)? Related data will be lost and cannot be recovered. Products with active orders will be skipped."
+      }
+    },
+    "productReview": {
+      "title": "Product Review", "subtitle": "View review counts for your products", "searchLabel": "Search products",
+      "reviewCount": "Review Count", "viewProduct": "View {{name}}", "highlightUnavailable": "The product linked from this notification could not be loaded."
+    },
+    "advertisements": {
+      "title": "Advertisements", "subtitle": "Select an advertising package, upload your content, and manage your advertisements.",
+      "availablePackages": "Available Packages", "packageDescription": "Admin-created packages with fixed campaign durations.",
+      "noPackages": "No advertisement packages are available right now. Please check back later.", "updated": "Updated",
+      "perDay": "/day", "durationDays": "{{count}}-day campaign", "upToAds": "Up to {{count}} ads", "totalFee": "Total fee",
+      "selectPackage": "Select Package", "yourAds": "Your Advertisements", "searchLabel": "Search ads", "searchPlaceholder": "Search ads...",
+      "statusFilter": "Status filter", "status": "Status", "statusAll": "Status: All", "statusActive": "Active", "statusInactive": "Inactive", "statusExpired": "Expired",
+      "approvalFilter": "Approval status filter", "approvalLabel": "Approval", "approvalAll": "Approval: All", "approvalPending": "Approval: Pending",
+      "approvalApproved": "Approval: Approved", "approvalRejected": "Approval: Rejected", "refresh": "Refresh", "empty": "No advertisements found.",
+      "emptyHint": "Select a package above to create your first advertisement.", "selectPackageTitle": "Select Advertising Package", "tierLabel": "Tier",
+      "dailyRate": "Daily Rate", "duration": "Duration", "selecting": "Selecting...", "confirmSelection": "Confirm Selection",
+      "payFeeTitle": "Pay Advertising Fee", "advertisingFee": "Advertising Fee", "calculatedAtPayment": "Calculated at payment",
+      "paymentReference": "Payment reference", "paymentReferencePlaceholder": "Payment transaction reference", "paymentReferenceHint": "Enter at least 8 digits.",
+      "processingPayment": "Processing payment...", "paySubmit": "Pay & Submit", "payFee": "Pay fee", "deleteTitle": "Delete Advertisement",
+      "deleteUnpaidNamed": "Are you sure you want to delete \"{{title}}\"? It has not been paid and will be permanently deleted from the system.",
+      "deleteUnpaidDraft": "Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.",
+      "deleteExpiredNamed": "Are you sure you want to delete \"{{title}}\"? The advertisement has expired and will be permanently deleted from the system.",
+      "deleteExpired": "Are you sure you want to delete this advertisement? It has expired and will be permanently deleted from the system.",
+      "deleteKeepHistoryNamed": "Are you sure you want to delete \"{{title}}\"? The advertisement will be deactivated and kept for history.",
+      "deleteKeepHistory": "Are you sure you want to delete this advertisement? It will be deactivated and kept for history.",
+      "pageInfo": "Page {{page}} of {{totalPages}}", "draftAd": "Draft advertisement", "placement": "Placement", "package": "Package",
+      "startDate": "Start date", "endDate": "End date", "expiresTomorrow": "Your advertisement will expire tomorrow.", "expiresToday": "Your advertisement will expire today.",
+      "expired": "Your advertisement has expired.", "editResubmit": "Edit & Resubmit", "createdAt": "Created {{date}}", "editAd": "Edit advertisement",
+      "edit": "Edit", "deleteAd": "Delete advertisement", "delete": "Delete", "viewAd": "View advertisement", "view": "View", "toggleActive": "Toggle active",
+      "state": { "active": "Active", "scheduled": "Scheduled", "pending_approval": "Pending Approval", "expired": "Expired", "inactive": "Inactive", "rejected": "Rejected", "content_uploaded": "Content Uploaded", "draft": "Draft" },
+      "approval": { "rejected": "Rejected", "approved": "Approved", "pending": "Pending", "contentUploaded": "Content Uploaded", "draft": "Draft" },
+      "approvalLabel": "Approval", "paymentLabel": "Payment", "created": "Created", "detailTitle": "Advertisement Detail", "saving": "Saving...",
+      "savePay": "Save & Pay", "saveContinue": "Save & Continue", "uploadContentTitle": "Upload Advertisement Content", "editContentTitle": "Edit Advertisement Content",
+      "tier": { "basic": "Basic", "standard": "Standard", "premium": "Premium" },
+      "payment": { "pending": "Pending", "completed": "Completed", "refunded": "Refunded" },
+      "stats": { "active": "Active Ads", "pending": "Pending Approval", "expired": "Expired" },
+      "toast": {
+        "draftCreated": "Advertisement draft created", "packageUnavailable": "Selected advertising package is unavailable",
+        "contentSaved": "Advertisement content saved", "contentSaveFailed": "Unable to save advertisement content",
+        "savedPaymentRequired": "Advertisement saved. Payment required to resubmit.", "submitted": "Advertisement submitted for approval",
+        "paymentFailed": "Payment failed. Please try again.", "deleted": "Advertisement deleted", "deleteFailed": "Unable to delete advertisement",
+        "activated": "Advertisement activated", "deactivated": "Advertisement deactivated", "statusUpdateFailed": "Unable to update advertisement status"
+      },
+      "invalidPaymentReference": "Invalid payment reference",
+      "form": {
+        "title": "Title", "titlePlaceholder": "Enter advertisement title", "content": "Content", "contentPlaceholder": "Enter advertisement content",
+        "image": "Advertisement image", "required": "Required", "imageHelper": "Choose an image from one of your products. Custom image uploads are not accepted.",
+        "imagePreview": "Advertisement preview", "announcement": "Announcement message", "announcementPlaceholder": "Enter banner announcement message",
+        "endDateAuto": "End date (auto-calculated)", "scheduleHint": "Select a date from {{date}} (3 days from today) onward.",
+        "resubmitScheduleHint": "Select a start date from {{date}} (3 days from today) onward. The end date is recalculated automatically.",
+        "chooseImage": "Choose image", "changeImage": "Change Image", "selectProductImage": "Select Product Image",
+        "selectProductImageDescription": "Pick one of the images attached to your own products.",
+        "productImagesLoadFailed": "Could not load your product images. Please try again.",
+        "noProductImages": "You have no product images yet. Upload an image to one of your products first."
+      }
+    },
+    "errorBoundary": {
+      "title": "Something went wrong", "unexpected": "An unexpected error occurred.", "backToDashboard": "Back to Dashboard"
+    },
     "promotions": {
       "title": "Promotions",
       "addNew": "Add Promotion",

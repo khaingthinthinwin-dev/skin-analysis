@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from 'react-i18next'
 
 interface DeleteConfirmDialogProps {
   open: boolean
@@ -24,9 +25,10 @@ export function DeleteConfirmDialog({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Delete',
+  confirmLabel,
   isLoading = false,
 }: DeleteConfirmDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -40,14 +42,14 @@ export function DeleteConfirmDialog({
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="destructive"
             onClick={onConfirm}
             disabled={isLoading}
           >
-            {isLoading ? 'Deleting...' : confirmLabel}
+            {isLoading ? t('merchant.products.delete.deleting') : confirmLabel || t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

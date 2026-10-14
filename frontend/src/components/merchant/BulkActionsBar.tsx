@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ export function BulkActionsBar({
   onClearSelection,
   className,
 }: BulkActionsBarProps) {
+  const { t } = useTranslation()
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   if (selectedIds.length === 0) return null
@@ -35,33 +37,21 @@ export function BulkActionsBar({
       >
         <Package className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium">
-          {selectedIds.length} product{selectedIds.length > 1 ? 's' : ''} selected
+      {t('merchant.products.bulk.selected', { count: selectedIds.length })}
         </span>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onBulkActivate(selectedIds)}
-          >
-            Activate
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onBulkDeactivate(selectedIds)}
-          >
-            Deactivate
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setBulkDeleteOpen(true)}
-          >
-            Delete
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onClearSelection}>
-            Clear
-          </Button>
+      <Button variant="outline" size="sm" onClick={() => onBulkActivate(selectedIds)}>
+        {t('merchant.products.bulk.activate')}
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => onBulkDeactivate(selectedIds)}>
+        {t('merchant.products.bulk.deactivate')}
+      </Button>
+      <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
+        {t('common.delete')}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onClearSelection}>
+        {t('common.clear')}
+      </Button>
         </div>
       </div>
 
@@ -72,8 +62,8 @@ export function BulkActionsBar({
           onBulkDelete(selectedIds)
           setBulkDeleteOpen(false)
         }}
-        title="Delete Products"
-        description={`Are you sure you want to permanently delete these ${selectedIds.length} product(s)? All related data will be lost and cannot be recovered. Products with active orders will be skipped.`}
+      title={t('merchant.products.delete.title')}
+      description={t('merchant.products.bulk.deleteConfirmation', { count: selectedIds.length })}
       />
     </>
   )

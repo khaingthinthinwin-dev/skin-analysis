@@ -614,7 +614,7 @@ function MerchantOrderDetailContent() {
           </Card>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-4 min-[901px]:sticky min-[901px]:top-20">
+        <div className="flex min-w-0 flex-col gap-4">
           <CustomerInformationCard customer={order.customer} />
 
           <Card className="min-w-0 rounded-xl border-[#f3f4f6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-[#29252f] dark:bg-[#111014] dark:shadow-none oidark:border-outline-variant oidark:bg-surface-container-low oidark:shadow-none">
