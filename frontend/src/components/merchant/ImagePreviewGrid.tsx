@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X, ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 function getImageUrl(url: string): string {
   if (!url) return ''
@@ -19,6 +20,7 @@ interface ImagePreviewGridProps {
 
 function PreviewImage({ url }: { url: string }) {
   const [error, setError] = useState(false)
+  const { t } = useTranslation()
 
   if (!url || error) {
     return (
@@ -31,7 +33,7 @@ function PreviewImage({ url }: { url: string }) {
   return (
     <img
       src={getImageUrl(url)}
-      alt="Product"
+      alt={t('merchant.products.imageAltGeneric')}
       className="h-full w-full object-cover"
       onError={() => setError(true)}
     />
@@ -44,6 +46,7 @@ export function ImagePreviewGrid({
   onRetainedUrlsChange,
   className,
 }: ImagePreviewGridProps) {
+  const { t } = useTranslation()
   const toggleRetain = (url: string) => {
     if (retainedUrls.includes(url)) {
       onRetainedUrlsChange(retainedUrls.filter((u) => u !== url))
@@ -56,7 +59,7 @@ export function ImagePreviewGrid({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <p className="text-sm font-medium text-muted-foreground">Existing images</p>
+      <p className="text-sm font-medium text-muted-foreground">{t('merchant.products.existingImages')}</p>
       <div className="flex flex-wrap gap-2">
         {images.map((url) => {
           const isRetained = retainedUrls.includes(url)
@@ -88,7 +91,7 @@ export function ImagePreviewGrid({
         })}
       </div>
       <p className="text-xs text-muted-foreground">
-        Click an image to toggle retention. Retained images will be kept when saving.
+        {t('merchant.products.imageRetentionHint')}
       </p>
     </div>
   )

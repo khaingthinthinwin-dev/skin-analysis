@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Edit } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -40,11 +41,12 @@ function getImageUrl(url: string): string {
 
 function ProductImage({ url, alt }: { url: string; alt: string }) {
   const [error, setError] = useState(false)
+  const { t } = useTranslation()
 
   if (!url || error) {
     return (
       <div className="h-10 w-10 rounded bg-muted flex items-center justify-center text-xs text-muted-foreground">
-        No img
+        {t('merchant.products.noImage')}
       </div>
     )
   }
@@ -85,6 +87,7 @@ export function ProductTable({
   highlightedProductId,
 }: ProductTableProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const toggleAll = () => {
     if (selectedIds.length === products.length) {
@@ -106,13 +109,13 @@ export function ProductTable({
     if (product.isActive) {
       return (
         <Badge className="bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 text-[10px]">
-          Active
+          {t('merchant.products.filter.active')}
         </Badge>
       )
     }
     return (
       <Badge variant="secondary" className="text-[10px]">
-        Inactive
+        {t('merchant.products.filter.inactive')}
       </Badge>
     )
   }
@@ -133,26 +136,26 @@ export function ProductTable({
                     selectedIds.length === products.length
                   }
                   onCheckedChange={toggleAll}
-                  aria-label="Select all"
+                  aria-label={t('merchant.products.table.selectAll')}
                 />
               </th>
             )}
-            <th scope="col" className={thClass}>Image</th>
-            <th scope="col" className={thClass}>Product Name</th>
-            <th scope="col" className={thClass}>SKU</th>
-            <th scope="col" className={thClass}>Price (Discount Price)</th>
-            <th scope="col" className={thClass}>Compare At Price</th>
-            <th scope="col" className={thClass}>Stock</th>
-            <th scope="col" className={thClass}>Status</th>
-            <th scope="col" className={thClass}>isFeatured</th>
-            {showActions && <th scope="col" className={`${thClass} text-right`}>Actions</th>}
+            <th scope="col" className={thClass}>{t('merchant.products.table.image')}</th>
+            <th scope="col" className={thClass}>{t('merchant.products.table.name')}</th>
+            <th scope="col" className={thClass}>{t('merchant.products.table.sku')}</th>
+            <th scope="col" className={thClass}>{t('merchant.products.table.price')}</th>
+            <th scope="col" className={thClass}>{t('merchant.products.table.compareAtPrice')}</th>
+            <th scope="col" className={thClass}>{t('merchant.products.table.stock')}</th>
+            <th scope="col" className={thClass}>{t('merchant.products.table.status')}</th>
+            <th scope="col" className={thClass}>{t('merchant.products.table.featured')}</th>
+            {showActions && <th scope="col" className={`${thClass} text-right`}>{t('merchant.products.table.actions')}</th>}
           </tr>
         </thead>
         <tbody>
           {products.length === 0 ? (
             <tr>
               <td colSpan={showActions ? 10 : 8} className={`${tdClass} text-center py-6 text-muted-foreground`}>
-                No products found
+                {t('merchant.products.empty')}
               </td>
             </tr>
           ) : (
@@ -171,7 +174,7 @@ export function ProductTable({
                       <Checkbox
                         checked={selectedIds.includes(product.id)}
                         onCheckedChange={() => toggleOne(product.id)}
-                        aria-label={`Select ${product.name}`}
+                        aria-label={t('merchant.products.table.selectProduct', { name: product.name })}
                       />
                     </td>
                   )}
@@ -203,7 +206,7 @@ export function ProductTable({
                           </div>
                           {hasDiscount && (
                             <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                              Saved {formatPrice(compareAtPrice! - price!)}
+                              {t('merchant.products.table.saved', { amount: formatPrice(compareAtPrice! - price!) })}
                             </div>
                           )}
                         </div>
@@ -247,7 +250,7 @@ export function ProductTable({
                         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
                           product.isActive ? 'bg-green-500' : 'bg-input'
                         }`}
-                        aria-label={`Toggle status for ${product.name}`}
+                        aria-label={t('merchant.products.table.toggleStatus', { name: product.name })}
                       >
                         <span
                           className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
@@ -268,7 +271,7 @@ export function ProductTable({
                         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
                           product.isFeatured ? 'bg-primary' : 'bg-input'
                         }`}
-                        aria-label={`Toggle featured for ${product.name}`}
+                        aria-label={t('merchant.products.table.toggleFeatured', { name: product.name })}
                       >
                         <span
                           className={`pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform ${
@@ -278,7 +281,7 @@ export function ProductTable({
                       </button>
                     ) : product.isFeatured ? (
                       <Badge variant="outline" className="text-[10px]">
-                        Featured
+                        {t('merchant.products.table.featured')}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
@@ -292,7 +295,7 @@ export function ProductTable({
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => navigate(`/merchant/products/${product.id}/edit`)}
-                          aria-label={`Edit ${product.name}`}
+                          aria-label={t('merchant.products.table.editProduct', { name: product.name })}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>

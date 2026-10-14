@@ -1,17 +1,19 @@
 import { ShieldAlert } from 'lucide-react'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { useTranslation } from 'react-i18next'
 
 interface AccountDeactivatedBannerProps {
   className?: string
 }
 
 export function AccountDeactivatedBanner({ className }: AccountDeactivatedBannerProps) {
+  const { t } = useTranslation()
   return (
     <Alert variant="destructive" className={className}>
       <ShieldAlert className="h-4 w-4" />
-      <AlertTitle>Account Deactivate</AlertTitle>
+      <AlertTitle>{t('merchant.account.deactivatedTitle')}</AlertTitle>
       <AlertDescription>
-        Your merchant account is currently Deactivate. Some features may be restricted until an admin activates your account.
+        {t('merchant.account.deactivated')}
       </AlertDescription>
     </Alert>
   )

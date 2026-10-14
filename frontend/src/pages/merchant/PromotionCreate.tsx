@@ -134,7 +134,7 @@ export default function PromotionCreate() {
         onError: (err: unknown) => {
           const axiosErr = err as { response?: { data?: { message?: string | string[] } }; message?: string }
           const backendMessage = axiosErr?.response?.data?.message
-          toast.error(backendMessage ? String(backendMessage) : 'Failed to create promotion')
+          toast.error(backendMessage ? String(backendMessage) : t('merchant.promotions.createFailed'))
         },
       },
     )
