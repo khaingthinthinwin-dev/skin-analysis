@@ -36,6 +36,7 @@ import type { PromotionQueryParams, Promotion } from '@/types/promotion.types'
 
 export default function Promotions() {
   const { t } = useTranslation('promotions')
+  const { t: tUI } = useTranslation()
   const { user } = useAuth()
   const guard = useMerchantProductsGuard()
   const status = user?.licenseStatus || user?.license_status
@@ -113,7 +114,7 @@ export default function Promotions() {
     (id: string) => {
       toggleActive.mutate(id, {
         onSuccess: () => toast.success(t('merchant.promotions.toggleSuccess')),
-        onError: () => toast.error('Failed to update status'),
+        onError: () => toast.error(t('merchant.promotions.toggleFailed')),
       })
     },
     [toggleActive, t],
@@ -155,7 +156,7 @@ export default function Promotions() {
           <p className="text-destructive">{errorInfo.message}</p>
           {errorInfo.type === 'network' || errorInfo.type === 'server' || errorInfo.type === 'unknown' ? (
             <Button className="mt-4" onClick={() => window.location.reload()}>
-              Retry
+              {tUI('common.actions.retry')}
             </Button>
           ) : null}
         </CardContent>
@@ -172,10 +173,9 @@ export default function Promotions() {
       {showPendingBanner && (
         <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Account Pending</AlertTitle>
+          <AlertTitle>{tUI('merchant.products.banner.pendingTitle')}</AlertTitle>
           <AlertDescription>
-            Your merchant account is currently pending admin approval. Some features are restricted until your license is
-            approved.
+            {tUI('merchant.products.banner.pendingDescription')}
           </AlertDescription>
         </Alert>
       )}
@@ -183,12 +183,11 @@ export default function Promotions() {
       {guard.showRejectionBanner && (
         <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
           <ShieldAlert className="h-4 w-4 text-destructive" />
-          <AlertTitle>Account Rejected</AlertTitle>
+          <AlertTitle>{tUI('merchant.products.banner.rejectedTitle')}</AlertTitle>
           <AlertDescription>
-            Your merchant account has been rejected. Product management features are restricted. You can
-            resubmit your license from your Profile page.{' '}
+            {tUI('merchant.products.banner.rejectedDescription')}{' '}
             <Link to="/merchant/profile" className="underline font-semibold">
-              Go to Profile
+              {tUI('merchant.products.banner.goToProfile')}
             </Link>
           </AlertDescription>
         </Alert>
@@ -251,12 +250,12 @@ export default function Promotions() {
               onValueChange={(val) => setSortBy(val as PromotionQueryParams['sortBy'])}
             >
               <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder={t('merchant.promotions.sortBy')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="oldest">Oldest</SelectItem>
-                <SelectItem value="code">Code</SelectItem>
+                <SelectItem value="newest">{t('merchant.promotions.sort.newest')}</SelectItem>
+                <SelectItem value="oldest">{t('merchant.promotions.sort.oldest')}</SelectItem>
+                <SelectItem value="code">{t('merchant.promotions.sort.code')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -295,7 +294,7 @@ export default function Promotions() {
                       <button
                         onClick={() => handleCopyCode(promo.code)}
                         className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                        title="Copy code"
+                        title={t('merchant.promotions.copyCode')}
                       >
                         {copiedCode === promo.code ? (
                           <Check className="h-3.5 w-3.5 text-green-600" />
@@ -321,7 +320,7 @@ export default function Promotions() {
                     <div>
                       <span className="text-muted-foreground text-xs">{t('merchant.promotions.discountType')}</span>
                       <p className="mt-0.5 font-medium">
-                        {promo.discountTypeCode === 'percentage' ? 'Percentage' : 'Fixed Amount'}
+                        {promo.discountTypeCode === 'percentage' ? t('merchant.promotions.form.percentage') : t('merchant.promotions.form.fixed')}
                       </p>
                     </div>
                     <div>
@@ -358,11 +357,11 @@ export default function Promotions() {
                             checked={promo.isActive}
                             onCheckedChange={() => handleToggleActive(promo.id)}
                             disabled={isExpired(promo) || toggleActive.isPending}
-                            aria-label="Toggle active"
+                            aria-label={t('merchant.promotions.toggleActive')}
                           />
                         ) : (
                           <span className="text-muted-foreground">
-                            {promo.isActive ? 'Yes' : 'No'}
+                            {promo.isActive ? t('merchant.promotions.yes') : t('merchant.promotions.no')}
                           </span>
                         )}
                       </div>
@@ -474,7 +473,7 @@ export default function Promotions() {
                   </th>
                   {showCrudActions && (
                     <th scope="col" className="text-left align-middle h-12 px-4 text-sm font-bold text-muted-foreground border-b border-border bg-muted text-right">
-                      Actions
+                      {t('merchant.promotions.actions')}
                     </th>
                   )}
                 </tr>
@@ -491,7 +490,7 @@ export default function Promotions() {
                         <button
                           onClick={() => handleCopyCode(promo.code)}
                           className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                          title="Copy code"
+                          title={t('merchant.promotions.copyCode')}
                         >
                           {copiedCode === promo.code ? (
                             <Check className="h-3.5 w-3.5 text-green-600" />
@@ -510,8 +509,8 @@ export default function Promotions() {
                     <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card">
                       <span className="block truncate">
                         {promo.discountTypeCode === 'percentage'
-                          ? 'Percentage'
-                          : 'Fixed Amount'}
+                          ? t('merchant.promotions.form.percentage')
+                          : t('merchant.promotions.form.fixed')}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card font-medium">
@@ -547,11 +546,11 @@ export default function Promotions() {
                           checked={promo.isActive}
                           onCheckedChange={() => handleToggleActive(promo.id)}
                           disabled={isExpired(promo) || toggleActive.isPending}
-                          aria-label="Toggle active"
+                          aria-label={t('merchant.promotions.toggleActive')}
                         />
                       ) : (
                         <span className="text-muted-foreground block truncate">
-                          {promo.isActive ? 'Yes' : 'No'}
+                          {promo.isActive ? t('merchant.promotions.yes') : t('merchant.promotions.no')}
                         </span>
                       )}
                     </td>

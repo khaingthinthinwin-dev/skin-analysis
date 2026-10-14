@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { Eye, MessageSquare, Search } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -25,6 +26,7 @@ function getImageUrl(url: string): string {
 }
 
 export default function ProductReview() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const highlightedProductId = searchParams.get('highlight')
@@ -67,17 +69,17 @@ export default function ProductReview() {
           <div>
             <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
               <MessageSquare className="h-5 w-5 text-purple-600 sm:h-6 sm:w-6" />
-              Product Review
+              {t('merchant.productReview.title')}
             </h1>
             <p className="text-sm text-muted-foreground">
-              View review counts for your products
+              {t('merchant.productReview.subtitle')}
             </p>
           </div>
           <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              aria-label="Search products"
-              placeholder="Search products..."
+              aria-label={t('merchant.productReview.searchLabel')}
+              placeholder={t('merchant.products.searchPlaceholder')}
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value)
@@ -92,9 +94,9 @@ export default function ProductReview() {
           <LoadingSpinner className="min-h-[400px]" />
         ) : error ? (
           <CardContent className="py-10 text-center">
-            <p className="text-destructive">Failed to load products. Please try again.</p>
+            <p className="text-destructive">{t('merchant.products.error.load')}</p>
             <Button className="mt-4" onClick={() => window.location.reload()}>
-              Retry
+              {t('merchant.products.retry')}
             </Button>
           </CardContent>
         ) : (
@@ -103,20 +105,20 @@ export default function ProductReview() {
               <Table className="border-separate border-spacing-0 [&_td]:border-b [&_td]:border-border [&_tbody_tr]:border-0">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className={productHeaderClass}>Image</TableHead>
-                    <TableHead className={productHeaderClass}>Product Name</TableHead>
-                    <TableHead className={productHeaderClass}>SKU</TableHead>
-                    <TableHead className={productHeaderClass}>Price (Discount Price)</TableHead>
-                    <TableHead className={productHeaderClass}>Compare At Price</TableHead>
-                    <TableHead className={productHeaderClass}>Review Count</TableHead>
-                    <TableHead className={`${productHeaderClass} text-right`}>Action</TableHead>
+                    <TableHead className={productHeaderClass}>{t('merchant.products.table.image')}</TableHead>
+                    <TableHead className={productHeaderClass}>{t('merchant.products.table.name')}</TableHead>
+                    <TableHead className={productHeaderClass}>{t('merchant.products.table.sku')}</TableHead>
+                    <TableHead className={productHeaderClass}>{t('merchant.products.table.price')}</TableHead>
+                    <TableHead className={productHeaderClass}>{t('merchant.products.table.compareAtPrice')}</TableHead>
+                    <TableHead className={productHeaderClass}>{t('merchant.productReview.reviewCount')}</TableHead>
+                    <TableHead className={`${productHeaderClass} text-right`}>{t('merchant.products.table.action')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {displayedProducts.length === 0 ? (
                     <TableRow className="hover:bg-transparent">
                       <TableCell colSpan={7} className="py-6 text-center text-muted-foreground">
-                        No products found
+                        {t('merchant.products.empty')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -139,12 +141,12 @@ export default function ProductReview() {
                             {product.images[0] ? (
                               <img
                                 src={getImageUrl(product.images[0])}
-                                alt={product.name}
+                                alt={t('merchant.products.imageAlt', { name: product.name })}
                                 className="h-10 w-10 rounded object-cover"
                               />
                             ) : (
                               <div className="flex h-10 w-10 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
-                                No img
+                                {t('merchant.products.noImage')}
                               </div>
                             )}
                           </TableCell>
@@ -177,7 +179,7 @@ export default function ProductReview() {
                                   `/merchant/products/${product.slug || product.id}/view`,
                                 )
                               }
-                              aria-label={`View ${product.name}`}
+                              aria-label={t('merchant.productReview.viewProduct', { name: product.name })}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -191,7 +193,7 @@ export default function ProductReview() {
             </div>
             {highlightedProductUnavailable && (
               <p className="px-5 pt-3 text-sm text-destructive" role="alert">
-                The product linked from this notification could not be loaded.
+                {t('merchant.productReview.highlightUnavailable')}
               </p>
             )}
             {meta && (

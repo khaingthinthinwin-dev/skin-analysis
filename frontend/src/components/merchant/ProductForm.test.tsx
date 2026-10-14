@@ -4,6 +4,54 @@ import { MemoryRouter } from 'react-router'
 import { ProductForm } from './ProductForm'
 import type { Product } from '@/types/product.types'
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, values?: { name?: string }) => {
+      const labels: Record<string, string> = {
+        'merchant.products.toast.created': 'Product created successfully',
+        'merchant.products.toast.updated': 'Product updated successfully',
+        'merchant.products.error.generic': 'Something went wrong. Please try again.',
+        'merchant.products.form.createTitle': 'Create New Product',
+        'merchant.products.form.editTitle': 'Edit: {{name}}',
+        'merchant.products.form.create': 'Create Product',
+        'merchant.products.form.saveChanges': 'Save Changes',
+        'merchant.products.form.basicInformation': 'Basic Information',
+        'merchant.products.form.productName': 'Product Name',
+        'merchant.products.form.productNamePlaceholder': 'e.g., Vitamin C Serum',
+        'merchant.products.form.shortDescription': 'Short Description',
+        'merchant.products.form.shortDescriptionPlaceholder': 'Brief product description (max 500 chars)',
+        'merchant.products.form.fullDescription': 'Full Description',
+        'merchant.products.form.fullDescriptionPlaceholder': 'Detailed product description',
+        'merchant.products.form.media': 'Media',
+        'merchant.products.form.tagsAttributes': 'Tags & Attributes',
+        'merchant.products.form.tags': 'Tags',
+        'merchant.products.form.addTagPlaceholder': 'Add a tag...',
+        'merchant.products.form.skinTypes': 'Skin Types',
+        'merchant.products.form.skinType.dry': 'Dry',
+        'merchant.products.form.skinType.oily': 'Oily',
+        'merchant.products.form.skinType.combination': 'Combination',
+        'merchant.products.form.skinType.sensitive': 'Sensitive',
+        'merchant.products.form.skinType.normal': 'Normal',
+        'merchant.products.form.ingredients': 'Ingredients',
+        'merchant.products.form.addIngredientPlaceholder': 'Add an ingredient...',
+        'merchant.products.form.organization': 'Organization',
+        'merchant.products.form.category': 'Category',
+        'merchant.products.form.skuPlaceholder': 'e.g., VCS-001',
+        'merchant.products.form.pricingInventory': 'Pricing & Inventory',
+        'merchant.products.form.price': 'Price',
+        'merchant.products.form.discountPrice': 'Discount Price',
+        'merchant.products.form.optional': 'Optional',
+        'merchant.products.form.salePricePlaceholder': 'Optional sale price',
+        'merchant.products.form.compareAtPrice': 'Compare At Price',
+        'merchant.products.form.compareAtPricePlaceholder': 'e.g., 25000',
+        'merchant.products.form.stockQuantity': 'Stock Quantity',
+        'merchant.products.form.lowStockThreshold': 'Low Stock Threshold',
+      }
+      return (labels[key] ?? key).replace('{{name}}', values?.name ?? '')
+    },
+  }),
+}))
+
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router')
   return { ...actual, useNavigate: vi.fn() }

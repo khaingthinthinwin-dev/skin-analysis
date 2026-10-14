@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProduct } from '@/hooks/useProducts'
 import { useAuth } from '@/hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
 export default function ProductEdit() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -27,25 +29,25 @@ export default function ProductEdit() {
   useEffect(() => {
     if (isDeactivated) {
       toast.error(
-        'Your merchant account is currently Deactivate. Some features may be restricted until an admin activates your account.',
+        t('merchant.account.deactivated'),
       )
       navigate('/merchant/products', { replace: true })
       return
     }
     if (status === 'pending') {
       toast.error(
-        'Your merchant account is pending approval. This operation is restricted until your license is approved.',
+        t('merchant.account.pendingOperation'),
       )
       navigate('/merchant/products', { replace: true })
       return
     }
     if (status === 'rejected') {
       toast.error(
-        'Your merchant account has been rejected. Please contact support.',
+        t('merchant.account.rejectedContactSupport'),
       )
       navigate('/merchant/products', { replace: true })
     }
-  }, [status, isDeactivated, navigate])
+  }, [status, isDeactivated, navigate, t])
 
   if (isDeactivated || status === 'pending' || status === 'rejected') {
     return null
@@ -62,17 +64,17 @@ export default function ProductEdit() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Failed to Load Product
+              {t('merchant.products.error.loadTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Unable to load the product details. Please try again.
+              {t('merchant.products.error.loadDetails')}
             </p>
             <div className="flex gap-2">
-              <Button onClick={() => refetch()}>Retry</Button>
+              <Button onClick={() => refetch()}>{t('merchant.products.retry')}</Button>
               <Button variant="outline" onClick={() => navigate('/merchant/products')}>
-                Back to Products
+                {t('merchant.products.backToProducts')}
               </Button>
             </div>
           </CardContent>
