@@ -1,6 +1,7 @@
 import type { SummaryPeriod } from '../types/merchantOrderInsights.types';
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2}T/;
 
 export interface DateRange {
   from: string;
@@ -12,11 +13,23 @@ export function isIsoDate(value?: string): value is string {
   return typeof value === 'string' && ISO_DATE_PATTERN.test(value);
 }
 
+/** True when the value is an ISO datetime string (e.g., `2026-01-15T10:30:00Z`). */
+export function isIsoDateTime(value?: string): value is string {
+  return typeof value === 'string' && ISO_DATETIME_PATTERN.test(value);
+}
+
 /** Local-time `yyyy-mm-dd` value used by the date inputs and the API query params. */
 export function toIsoDate(date: Date): string {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** UTC `yyyy-mm-dd` value from a Date (avoids timezone shift). */
+export function toUtcIsoDate(date: Date): string {
+  const month = `${date.getUTCMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getUTCDate()}`.padStart(2, '0');
+  return `${date.getUTCFullYear()}-${month}-${day}`;
 }
 
 /** `yyyy/mm/dd` display of an ISO date (empty string when the value is not a date). */
@@ -25,13 +38,18 @@ export function toSlashDate(value?: string): string {
 }
 
 /**
- * `yyyy/mm/dd` display of any date-like value in local time (empty string when
- * the value is not a date). Plain `yyyy-mm-dd` strings are converted without
- * parsing so they never shift a day in a negative-offset timezone.
+ * `yyyy/mm/dd` display of any date-like value. Plain `yyyy-mm-dd` strings are
+ * converted without parsing so they never shift a day. ISO datetime strings
+ * (e.g., `2026-01-15T10:30:00Z`) are parsed in UTC to avoid timezone shifts.
  */
 export function toSlashDisplayDate(value?: string): string {
-  if (isIsoDate(value)) return toSlashDate(value);
   if (!value) return '';
+  if (ISO_DATE_PATTERN.test(value)) return toSlashDate(value);
+  if (ISO_DATETIME_PATTERN.test(value)) {
+    // Extract UTC date from ISO datetime string to avoid timezone shift
+    const utcDateStr = value.slice(0, 10);
+    return toSlashDate(utcDateStr);
+  }
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '';
   return toIsoDate(parsed).split('-').join('/');

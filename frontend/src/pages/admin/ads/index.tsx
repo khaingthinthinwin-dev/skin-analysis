@@ -23,7 +23,8 @@ export default function AdminAdListPage() {
   // Deep-linked from the AD_SUBMITTED notification, which points at the pending
   // review queue the new submission just joined. Only the status filter is
   // seeded from the URL; the rest stay local until the admin changes them.
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const highlightAdId = searchParams.get('highlightAdId')
   const [filters, setFilters] = useState<AdListFilters>(() => {
     const status = toApprovalStatus(searchParams.get('status'))
     return status ? { status } : {}
@@ -35,9 +36,6 @@ export default function AdminAdListPage() {
   const [review, setReview] = useState<{ id: string; viewOnly: boolean } | null>(null)
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false)
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false)
-  const [highlightAdId, setHighlightAdId] = useState<string | null>(() =>
-    searchParams.get('highlightAdId')
-  )
 
   const params: AdminAdListQuery = useMemo(
     () => ({ ...filters, page, limit }),
@@ -139,25 +137,20 @@ export default function AdminAdListPage() {
     )
   }
 
-  // Handle highlightAdId from URL (e.g., from AD_SUBMITTED notification)
+  // Keep notification highlights visible for three seconds, including on initial load.
   useEffect(() => {
-    const adId = searchParams.get('highlightAdId')
-    if (adId && adId !== highlightAdId) {
-      // Defer state update to avoid synchronous setState in effect
-      window.setTimeout(() => {
-        setHighlightAdId(adId)
-        // Auto-clear highlight after 8 seconds
-        const timer = window.setTimeout(() => {
-          setHighlightAdId(null)
-          // Clean up URL
-          const params = new URLSearchParams(searchParams)
-          params.delete('highlightAdId')
-          window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`)
-        }, 8000)
-        return () => window.clearTimeout(timer)
-      }, 0)
-    }
-  }, [searchParams, highlightAdId])
+    if (!highlightAdId) return
+
+    const timer = window.setTimeout(() => {
+      setSearchParams((current) => {
+        const params = new URLSearchParams(current)
+        if (params.get('highlightAdId') === highlightAdId) params.delete('highlightAdId')
+        return params
+      }, { replace: true })
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [highlightAdId, setSearchParams])
 
   // When coming from notification (highlightAdId in URL), clear status filter to show all ads
   useEffect(() => {
