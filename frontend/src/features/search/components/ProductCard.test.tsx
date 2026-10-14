@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ProductCard } from './ProductCard'
 
 const product = {
@@ -35,5 +35,24 @@ describe('ProductCard', () => {
     expect(currentPrice).toHaveClass('font-bold')
     expect(originalPrice).toHaveClass('line-through')
     expect(originalPrice.className).toContain('text-gray-400')
+  })
+
+  it('shows the list-view cart button and calls add-to-cart when clicked', () => {
+    const onAddToCart = vi.fn()
+
+    render(
+      <MemoryRouter>
+        <ProductCard
+          product={product}
+          view="list"
+          productLink="/products/p1"
+          onAddToCart={onAddToCart}
+        />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Glow Serum to cart' }))
+
+    expect(onAddToCart).toHaveBeenCalledWith(product)
   })
 })

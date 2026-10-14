@@ -78,6 +78,11 @@ export function ProductCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
+                {product.compareAtPrice && (
+                  <span className="mb-1 inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
+                    {t('buyer.search.sale', 'SALE')}
+                  </span>
+                )}
                 {product.shop_name && (
                   <span className="mt-1 block rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
                     {t('buyer.products.product.soldBy', `Sold by ${product.shop_name}`, { shopName: product.shop_name })}
@@ -88,7 +93,7 @@ export function ProductCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0"
+                className="h-8 w-8 shrink-0 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -100,7 +105,11 @@ export function ProductCard({
                 {isWishlistLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Heart
+                    className={`h-4 w-4 transition-colors ${
+                      isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500 dark:text-zinc-300'
+                    }`}
+                  />
                 )}
               </Button>
             </div>
@@ -111,7 +120,7 @@ export function ProductCard({
               <StarRating rating={Number(product.avgRating)} totalReviews={product.reviewCount} />
             </div>
 
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-2 flex items-center justify-between gap-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-base font-bold text-purple-600 dark:text-purple-400">{formatKs(product.price)}</span>
                 {product.compareAtPrice && (
@@ -120,7 +129,27 @@ export function ProductCard({
                   </span>
                 )}
               </div>
-              {!product.isInStock && <span className="text-xs font-medium text-destructive">{t('buyer.products.stock.outOfStock', 'Out of stock')}</span>}
+              {product.isInStock ? (
+                <Button
+                  size="icon"
+                  aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 p-0 text-white shadow-sm hover:bg-violet-700"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onAddToCart?.(product)
+                  }}
+                  disabled={isCartLoading}
+                >
+                  {isCartLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="h-4 w-4" />
+                  )}
+                </Button>
+              ) : (
+                <span className="text-xs font-medium text-destructive">{t('buyer.products.stock.outOfStock', 'Out of stock')}</span>
+              )}
             </div>
           </div>
         </div>
@@ -166,7 +195,7 @@ export function ProductCard({
 
           <div className="absolute left-2 top-2 flex flex-col gap-1">
             {product.compareAtPrice && (
-              <span className="rounded bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground">
+              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                 {t('buyer.search.sale', 'SALE')}
               </span>
             )}
@@ -180,7 +209,7 @@ export function ProductCard({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-2 top-2 h-8 w-8"
+            className="absolute right-2 top-2 z-10 h-8 w-8 rounded-full bg-white/80 shadow-sm hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-800"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -192,7 +221,11 @@ export function ProductCard({
             {isWishlistLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-foreground/80 hover:text-foreground'}`} />
+              <Heart
+                className={`h-4 w-4 transition-colors ${
+                  isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500 dark:text-zinc-300'
+                }`}
+              />
             )}
           </Button>
         </div>
@@ -238,7 +271,7 @@ export function ProductCard({
             <Button
               size="icon"
               aria-label={t('buyer.search.addToCartAria', `Add ${product.name} to cart`, { name: product.name })}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e8ff] p-0 text-[#9333ea] hover:bg-[#f0e6ff] hover:text-[#7e22ce]"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 p-0 text-white shadow-sm hover:bg-violet-700"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()

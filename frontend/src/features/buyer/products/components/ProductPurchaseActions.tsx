@@ -13,6 +13,8 @@ import {
 import { useAuth } from '@/providers/AuthProvider';
 import { useCart } from '@/features/buyer/cart/hooks/useCart';
 import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist';
+import { isAccountDeactivated } from '@/lib/account-status';
+import { AccountDeactivatedDialog } from '@/components/shared/AccountDeactivatedDialog';
 import { ProductDetail } from '../services/product.service';
 import { QuantityStepper } from './QuantityStepper';
 import { useTranslation } from 'react-i18next';
@@ -31,9 +33,11 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
   const [quantity, setQuantity] = useState(1);
   const [cartDuplicateOpen, setCartDuplicateOpen] = useState(false);
   const [wishlistDuplicateOpen, setWishlistDuplicateOpen] = useState(false);
+  const [deactivatedOpen, setDeactivatedOpen] = useState(false);
 
   const inStock = product.stockQuantity > 0;
   const isBuyer = user?.role === 'buyer';
+  const accountDeactivated = isAccountDeactivated(user);
   const isInWishlist = wishlistItems.some((item) => item.productId === product.id);
   const cartDisabled = !inStock || isAdding;
   const wishlistDisabled = !isAuthenticated || !isBuyer || isWishlisting;
@@ -45,6 +49,10 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
     }
     if (!isBuyer) {
       window.location.href = '/unauthorized';
+      return;
+    }
+    if (accountDeactivated) {
+      setDeactivatedOpen(true);
       return;
     }
     try {
@@ -65,6 +73,10 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
     }
     if (!isBuyer) {
       window.location.href = '/unauthorized';
+      return;
+    }
+    if (accountDeactivated) {
+      setDeactivatedOpen(true);
       return;
     }
     try {
@@ -170,6 +182,12 @@ export function ProductPurchaseActions({ product, className }: ProductPurchaseAc
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AccountDeactivatedDialog
+        open={deactivatedOpen}
+        onOpenChange={setDeactivatedOpen}
+        deactivationReason={user?.deactivationReason}
+      />
     </div>
   );
 }

@@ -70,12 +70,13 @@ export function AnalysisHistoryTable({ initialParams = {} }: AnalysisHistoryTabl
   const { data, isLoading, error, refetch } = useAnalysisHistory(params)
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${date.getFullYear()}/${month}/${day}`
+  }
 
   const handleExportSingle = async (analysisId: string) => {
     try {

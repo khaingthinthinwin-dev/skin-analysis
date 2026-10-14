@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import {
@@ -63,6 +63,93 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-700',
 }
 
+function parseDateInput(value: string): string | undefined {
+  const match = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(value)
+  if (!match) return undefined
+
+  const [, yearText, monthText, dayText] = match
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  const date = new Date(0)
+  date.setFullYear(year, month - 1, day)
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return undefined
+  }
+
+  return `${yearText}-${monthText}-${dayText}`
+}
+
+interface DateFilterInputProps {
+  id: string
+  label: string
+  value?: string
+  onChange: (value?: string) => void
+}
+
+function DateFilterInput({ id, label, value, onChange }: DateFilterInputProps) {
+  const [draft, setDraft] = useState(value?.replace(/-/g, '/') ?? '')
+  const pickerRef = useRef<HTMLInputElement>(null)
+
+  const openCalendar = () => {
+    const picker = pickerRef.current
+    if (!picker) return
+    if (typeof picker.showPicker === 'function') picker.showPicker()
+    else picker.click()
+  }
+
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type="text"
+        inputMode="numeric"
+        maxLength={10}
+        placeholder="yyyy/mm/dd"
+        value={draft}
+        className="pr-10"
+        onChange={(event) => {
+          const nextDraft = event.target.value
+          setDraft(nextDraft)
+          if (!nextDraft) onChange(undefined)
+          else {
+            const parsed = parseDateInput(nextDraft)
+            if (parsed) onChange(parsed)
+          }
+        }}
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={`Choose ${label}`}
+        className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+        onClick={openCalendar}
+      >
+        <CalendarRange className="h-4 w-4" />
+      </Button>
+      <Input
+        ref={pickerRef}
+        type="date"
+        value={value ?? ''}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="sr-only"
+        onChange={(event) => {
+          const nextValue = event.target.value || undefined
+          setDraft(nextValue?.replace(/-/g, '/') ?? '')
+          onChange(nextValue)
+        }}
+      />
+    </div>
+  )
+}
+
 export default function SkinAnalysisHistoryPage() {
   const { t } = useTranslation('skin')
   const navigate = useNavigate()
@@ -76,6 +163,7 @@ export default function SkinAnalysisHistoryPage() {
     skinType: undefined,
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [dateFilterResetKey, setDateFilterResetKey] = useState(0)
 
   // ── Selection state ───────────────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -91,12 +179,13 @@ export default function SkinAnalysisHistoryPage() {
   const isDeleting = deleteSingle.isPending || deleteBulk.isPending
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${date.getFullYear()}/${month}/${day}`
+  }
 
   // ── Selection ─────────────────────────────────────────────────────────────
   const allIds = useMemo(
@@ -203,11 +292,12 @@ export default function SkinAnalysisHistoryPage() {
                   <CalendarRange className="h-3.5 w-3.5" />
                   {t('history.dateFrom')}
                 </Label>
-                <Input
+                <DateFilterInput
+                  key={`${dateFilterResetKey}-${params.dateFrom ?? ''}`}
                   id="dateFrom"
-                  type="date"
+                  label={t('history.dateFrom')}
                   value={params.dateFrom ?? ''}
-                  onChange={(e) => setParams((p) => ({ ...p, dateFrom: e.target.value || undefined, page: 1 }))}
+                  onChange={(dateFrom) => setParams((p) => ({ ...p, dateFrom, page: 1 }))}
                 />
               </div>
               <div className="space-y-1.5">
@@ -215,11 +305,12 @@ export default function SkinAnalysisHistoryPage() {
                   <CalendarRange className="h-3.5 w-3.5" />
                   {t('history.dateTo')}
                 </Label>
-                <Input
+                <DateFilterInput
+                  key={`${dateFilterResetKey}-${params.dateTo ?? ''}`}
                   id="dateTo"
-                  type="date"
+                  label={t('history.dateTo')}
                   value={params.dateTo ?? ''}
-                  onChange={(e) => setParams((p) => ({ ...p, dateTo: e.target.value || undefined, page: 1 }))}
+                  onChange={(dateTo) => setParams((p) => ({ ...p, dateTo, page: 1 }))}
                 />
               </div>
               <div className="space-y-1.5">
@@ -247,7 +338,11 @@ export default function SkinAnalysisHistoryPage() {
                   variant="ghost"
                   size="sm"
                   className="h-9 gap-1.5 px-3 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => { setParams({ page: 1, pageSize: 10 }); setShowFilters(false) }}
+                  onClick={() => {
+                    setParams({ page: 1, pageSize: 10 })
+                    setDateFilterResetKey((key) => key + 1)
+                    setShowFilters(false)
+                  }}
                 >
                   <X className="h-3.5 w-3.5" />
                   {t('common.clearFilters')}
@@ -445,7 +540,7 @@ export default function SkinAnalysisHistoryPage() {
             onPageChange={(page) => setParams((p) => ({ ...p, page }))}
             limit={data.meta.pageSize}
             onLimitChange={(pageSize) => setParams((p) => ({ ...p, pageSize, page: 1 }))}
-            pageSizeOptions={[10, 20, 50]}
+            pageSizeOptions={[10, 20, 50, 100]}
           />
         </>
       ) : null}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { PaginationControls } from '@/components/PaginationControls';
 import { PaginationMetaDto } from '../types/orderInsights.types';
 
 interface OrderPaginationProps {
