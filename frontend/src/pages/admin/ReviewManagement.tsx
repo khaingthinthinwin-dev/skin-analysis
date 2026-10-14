@@ -236,11 +236,6 @@ function useNotificationTarget() {
     requestedHighlight || null,
   );
 
-  // A live deep-linked target dictates the tab, otherwise the admin's choice wins.
-  const activeTab = highlightId ? requestedTab : tabChoice;
-  const highlightedReviewId = activeTab === 'reviews' ? highlightId : null;
-  const highlightedReportId = activeTab === 'reports' ? highlightId : null;
-
   const clearHighlight = () => {
     setHighlightId(null);
     if (searchParams.has('highlight')) {
@@ -254,6 +249,11 @@ function useNotificationTarget() {
       );
     }
   };
+
+  // A live deep-linked target dictates the tab, otherwise the admin's choice wins.
+  const activeTab = highlightId ? requestedTab : tabChoice;
+  const highlightedReviewId = activeTab === 'reviews' ? highlightId : null;
+  const highlightedReportId = activeTab === 'reports' ? highlightId : null;
 
   return {
     activeTab,

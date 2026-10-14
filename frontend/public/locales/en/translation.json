@@ -31,7 +31,9 @@
       "searching": "Searching..."
     },
     "pagination": {
-      "rows": "Rows:"
+      "rows": "Rows:",
+      "rowsAria": "Rows per page",
+      "showingOrders": "Showing {{start}}–{{end}} of {{total}} orders"
     },
     "payment": {
       "pending": "Pending",

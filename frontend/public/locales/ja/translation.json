@@ -31,7 +31,9 @@
       "searching": "検索中..."
     },
     "pagination": {
-      "rows": "表示件数:"
+      "rows": "表示件数:",
+      "rowsAria": "ページあたりの表示件数",
+      "showingOrders": "注文 {{start}}–{{end}} 件 / 全 {{total}} 件中"
     },
     "payment": {
       "pending": "保留中",

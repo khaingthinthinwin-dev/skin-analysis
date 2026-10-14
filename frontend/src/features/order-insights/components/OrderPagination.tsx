@@ -1,8 +1,6 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PaginationMetaDto } from '../types/orderInsights.types';
 
 interface OrderPaginationProps {
@@ -12,53 +10,119 @@ interface OrderPaginationProps {
   sizes?: number[];
 }
 
-export function OrderPagination({ meta, onPageChange, onLimitChange, sizes = [10, 20, 30] }: OrderPaginationProps) {
+export function OrderPagination({ meta, onPageChange, onLimitChange, sizes = [10, 20, 50, 100] }: OrderPaginationProps) {
   const { t } = useTranslation();
 
-  const totalPages = Math.ceil(meta.total / meta.limit);
+  const startIndex = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
+  const endIndex = Math.min(meta.page * meta.limit, meta.total);
 
-  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+  const totalPages = Math.ceil(meta.total / meta.limit);
+  const safeTotal = Math.max(totalPages || 1, 1);
+  const prevDisabled = meta.page <= 1;
+  const nextDisabled = meta.page >= safeTotal;
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (safeTotal <= 7) {
+      for (let i = 1; i <= safeTotal; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (meta.page > 3) pages.push('...');
+      const start = Math.max(2, meta.page - 1);
+      const end = Math.min(safeTotal - 1, meta.page + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (meta.page < safeTotal - 2) pages.push('...');
+      pages.push(safeTotal);
+    }
+    return pages;
+  };
 
   return (
-    <div className="flex flex-col gap-3 px-0 pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-2">
-        <span>{t('common.pagination.rows', 'Rows:')}</span>
-        <Select value={String(meta.limit)} onValueChange={(value) => onLimitChange(Number(value))}>
-          <SelectTrigger className="h-10 w-[78px] border-border px-3 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {sizes.map((size) => (
-              <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 select-none">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+          <span className="hidden sm:inline">{t('common.pagination.rows', 'Rows:')}</span>
+          <select
+            aria-label={t('common.pagination.rowsAria', 'Rows per page')}
+            value={meta.limit}
+            onChange={(e) => onLimitChange(Number(e.target.value))}
+            className="h-8 rounded-md border border-border bg-card px-2.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
+          >
+            {sizes.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
             ))}
-          </SelectContent>
-        </Select>
-        <span className="ml-1">Showing page <span className="font-medium text-foreground">{meta.page}</span> of <span className="font-medium text-foreground">{totalPages}</span></span>
+          </select>
+        </div>
+
+        <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
+          {t(
+            'common.pagination.showingOrders',
+            'Showing {start}–{end} of {total} orders',
+            { start: startIndex, end: endIndex, total: meta.total }
+          )}
+        </span>
       </div>
 
-      <div className="flex items-center justify-end gap-1.5">
+      <div className="flex items-center gap-1.5">
         <button
+          aria-label={t('common.actions.previous', 'Previous page')}
           type="button"
-          className="inline-flex h-10 items-center justify-center rounded-md border border-border px-3 text-sm hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={meta.page <= 1}
+          className={`h-8 px-2.5 rounded-md flex items-center justify-center text-[13px] border font-medium
+            transition-all duration-200 ease-in-out active:scale-95
+            ${prevDisabled
+              ? 'bg-card border-border text-muted-foreground/40 cursor-not-allowed opacity-50 active:scale-100'
+              : 'bg-card border-border text-muted-foreground cursor-pointer hover:bg-primary/10 hover:border-primary/50 hover:text-primary'
+            }`}
+          disabled={prevDisabled}
           onClick={() => onPageChange(meta.page - 1)}
-          aria-label={t('common.actions.previous', 'Previous')}
         >
-          <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />Prev
+          {'<'} Prev
         </button>
-        {pageNumbers.map((page) => (
-          <button key={page} type="button" aria-current={meta.page === page ? 'page' : undefined}
-            className={`inline-flex h-10 min-w-10 items-center justify-center rounded-md border px-3 text-sm font-semibold ${meta.page === page ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground hover:border-primary hover:text-primary'}`}
-            onClick={() => onPageChange(page)}>{page}</button>
-        ))}
+
+        <div className="flex items-center gap-1">
+          {getPageNumbers().map((p, idx) => {
+            if (typeof p === 'string') {
+              return (
+                <span key={`ellipsis-${idx}`} className="px-1 text-xs text-muted-foreground select-none">
+                  •••
+                </span>
+              );
+            }
+            const isCurrent = p === meta.page;
+            return (
+              <button
+                key={p}
+                type="button"
+                aria-current={isCurrent ? 'page' : undefined}
+                className={`h-8 w-8 rounded-md flex items-center justify-center text-[13px] font-medium border
+                  transition-all duration-200 ease-in-out active:scale-95
+                  ${isCurrent
+                    ? 'bg-primary border-primary text-primary-foreground font-semibold shadow-sm scale-105'
+                    : 'bg-card border-border text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-muted/50 cursor-pointer'
+                  }`}
+                onClick={() => onPageChange(p)}
+              >
+                {p}
+              </button>
+            );
+          })}
+        </div>
+
         <button
+          aria-label={t('common.actions.next', 'Next page')}
           type="button"
-          className="inline-flex h-10 items-center justify-center rounded-md border border-border px-3 text-sm hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={meta.page >= totalPages}
+          className={`h-8 px-2.5 rounded-md flex items-center justify-center text-[13px] border font-medium
+            transition-all duration-200 ease-in-out active:scale-95
+            ${nextDisabled
+              ? 'bg-card border-border text-muted-foreground/40 cursor-not-allowed opacity-50 active:scale-100'
+              : 'bg-card border-border text-muted-foreground cursor-pointer hover:bg-primary/10 hover:border-primary/50 hover:text-primary'
+            }`}
+          disabled={nextDisabled}
           onClick={() => onPageChange(meta.page + 1)}
-          aria-label={t('common.actions.next', 'Next')}
         >
-          Next<ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
+          Next {'>'}
         </button>
       </div>
     </div>

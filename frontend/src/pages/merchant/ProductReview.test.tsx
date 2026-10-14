@@ -10,6 +10,14 @@ vi.mock('@/hooks/useProducts', () => ({
   useProducts: vi.fn(),
 }))
 
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    refreshUser: vi.fn(),
+  }),
+}))
+
 const product: Product = {
   id: 'product-1',
   name: 'Daily Moisturizer',
