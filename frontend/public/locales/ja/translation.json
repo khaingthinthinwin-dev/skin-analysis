@@ -40,7 +40,7 @@
       "previousPageLabel": "前のページ",
       "previous": "前へ",
       "nextPageLabel": "次のページ",
-      "next": "次へ"
+      "next": "次へ",
       "showingOrders": "注文 {{start}}–{{end}} 件 / 全 {{total}} 件中"
 
     },

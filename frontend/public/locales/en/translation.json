@@ -40,7 +40,7 @@
       "previousPageLabel": "Previous page",
       "previous": "Prev",
       "nextPageLabel": "Next page",
-      "next": "Next"
+      "next": "Next",
       "showingOrders": "Showing {{start}}–{{end}} of {{total}} orders"
 
     },
