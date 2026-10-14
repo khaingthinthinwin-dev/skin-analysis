@@ -97,6 +97,12 @@ export function ConditionSeveritySection({
             const severity = condition?.severity ?? 'NONE'
             const score = condition?.severityScore ?? 0
             const tag = TAG_FOR_SEVERITY[severity]
+            const descriptionKey = `conditionDescriptions.${name}.${severity}`
+            const description =
+              condition &&
+              t(descriptionKey, { lng: 'en', defaultValue: '' }) === condition.description
+                ? t(descriptionKey)
+                : condition?.description
 
             return (
               <div
@@ -109,7 +115,7 @@ export function ConditionSeveritySection({
                       className={cn('h-2 w-2 shrink-0 rounded-full', DOT_CLASSES[tag])}
                       aria-hidden="true"
                     />
-                    {CONDITION_LABELS[name]}
+                    {t(`condition.${name}`, { defaultValue: CONDITION_LABELS[name] })}
                   </span>
                   <span
                     className={cn(
@@ -127,7 +133,7 @@ export function ConditionSeveritySection({
                   aria-valuenow={score}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={CONDITION_LABELS[name]}
+                  aria-label={t(`condition.${name}`, { defaultValue: CONDITION_LABELS[name] })}
                 >
                   <div
                     className={cn(
@@ -141,7 +147,7 @@ export function ConditionSeveritySection({
                 <div className="mt-2 flex items-start justify-between gap-3">
                   {condition ? (
                     <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                      {condition.description}
+                      {description}
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">{t('conditions.none')}</p>

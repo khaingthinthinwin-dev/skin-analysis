@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ImgHTMLAttributes } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -50,12 +51,13 @@ const BADGE_STYLES: Record<string, string> = {
   bestSeller: 'bg-orange-100 text-orange-700',
 }
 
-const BADGE_LABELS: Record<string, string> = {
-  topRated: '🏆 Top Rated',
-  bestSeller: '🔥 Best Seller',
+const BADGE_LABEL_KEYS: Record<string, string> = {
+  topRated: 'matchingPage.badges.topRated',
+  bestSeller: 'matchingPage.badges.bestSeller',
 }
 
 export default function MatchingRecommendations() {
+  const { t: translate } = useTranslation('skin')
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
   const { items: wishlistItems, addToWishlist, removeFromWishlist, isAdding: isWishlistLoading } = useWishlist()
@@ -79,7 +81,7 @@ export default function MatchingRecommendations() {
         return
       }
       if (!isBuyer) {
-        toast.error('Shopping features are only available to buyers.')
+        toast.error(translate('matchingPage.toasts.buyerOnly'))
         return
       }
 
@@ -87,21 +89,21 @@ export default function MatchingRecommendations() {
       try {
         if (isInWishlist) {
           await removeFromWishlist(product.id)
-          toast.success('Removed from wishlist')
+          toast.success(translate('matchingPage.toasts.removedFromWishlist'))
         } else {
           await addToWishlist(product.id)
-          toast.success('Added to wishlist')
+          toast.success(translate('matchingPage.toasts.addedToWishlist'))
         }
       } catch (err: unknown) {
         const axiosErr = err as { response?: { status?: number } }
         if (axiosErr?.response?.status === 409) {
-          toast.info('Already in your wishlist')
+          toast.info(translate('matchingPage.toasts.alreadyInWishlist'))
         } else {
-          toast.error('Something went wrong. Please try again.')
+          toast.error(translate('matchingPage.toasts.error'))
         }
       }
     },
-    [isAuthenticated, isBuyer, wishlistProductIds, addToWishlist, removeFromWishlist],
+    [isAuthenticated, isBuyer, wishlistProductIds, addToWishlist, removeFromWishlist, translate],
   )
 
   const handleAddToCart = useCallback(
@@ -111,7 +113,7 @@ export default function MatchingRecommendations() {
         return
       }
       if (!isBuyer) {
-        toast.error('Shopping features are only available to buyers.')
+        toast.error(translate('matchingPage.toasts.buyerOnly'))
         return
       }
       if (cartProductIds.has(product.id)) {
@@ -121,17 +123,17 @@ export default function MatchingRecommendations() {
 
       try {
         await addToCart({ productId: product.id, quantity: 1 })
-        toast.success('Added to cart')
+        toast.success(translate('matchingPage.toasts.addedToCart'))
       } catch (err: unknown) {
         const axiosErr = err as { response?: { status?: number } }
         if (axiosErr?.response?.status === 409) {
           setCartDuplicateOpen(true)
         } else {
-          toast.error('Something went wrong. Please try again.')
+          toast.error(translate('matchingPage.toasts.error'))
         }
       }
     },
-    [isAuthenticated, isBuyer, cartProductIds, addToCart],
+    [isAuthenticated, isBuyer, cartProductIds, addToCart, translate],
   )
 
   // Arriving on Recommendations (nav / dashboard link) — start at the top.
@@ -213,10 +215,10 @@ export default function MatchingRecommendations() {
 
   const pageNav =
     meta.total > 0 && meta.totalPages > 1 ? (
-      <nav aria-label="Pagination" className="mt-6 flex items-center justify-center gap-2">
+      <nav aria-label={translate('matchingPage.pagination.label')} className="mt-6 flex items-center justify-center gap-2">
         <button
           type="button"
-          aria-label="Previous page"
+          aria-label={translate('matchingPage.pagination.previousPage')}
           disabled={meta.page <= 1}
           onClick={() => handlePageChange(meta.page - 1)}
           className={`flex h-10 items-center gap-1 rounded-lg border px-3 text-sm font-medium transition-colors ${
@@ -226,7 +228,7 @@ export default function MatchingRecommendations() {
           }`}
         >
           <span aria-hidden="true">‹</span>
-          <span>Prev</span>
+          <span>{translate('matchingPage.pagination.previous')}</span>
         </button>
         {getPageItems(meta.page, meta.totalPages).map((item, idx) =>
           item === 'ellipsis' ? (
@@ -241,7 +243,7 @@ export default function MatchingRecommendations() {
             <button
               key={item}
               type="button"
-              aria-label={`Go to page ${item}`}
+              aria-label={translate('matchingPage.pagination.goToPage', { page: item })}
               aria-current={item === meta.page ? 'page' : undefined}
               disabled={item === meta.page}
               onClick={() => handlePageChange(item)}
@@ -257,7 +259,7 @@ export default function MatchingRecommendations() {
         )}
         <button
           type="button"
-          aria-label="Next page"
+          aria-label={translate('matchingPage.pagination.nextPage')}
           disabled={meta.page >= meta.totalPages}
           onClick={() => handlePageChange(meta.page + 1)}
           className={`flex h-10 items-center gap-1 rounded-lg border px-3 text-sm font-medium transition-colors ${
@@ -266,13 +268,19 @@ export default function MatchingRecommendations() {
               : 'border-border bg-background text-muted-foreground hover:bg-muted'
           }`}
         >
-          <span>Next</span>
+          <span>{translate('matchingPage.pagination.next')}</span>
           <span aria-hidden="true">›</span>
         </button>
       </nav>
     ) : null
 
-  const skinTypeLabel = skinTypes.length > 0 ? skinTypes.join(', ') : 'All Types'
+  const skinTypeLabel = skinTypes.length > 0
+    ? skinTypes
+      .map((skinType) =>
+        translate(`matchingPage.skinTypes.${skinType.toLowerCase()}`, { defaultValue: skinType }),
+      )
+      .join(', ')
+    : translate('matchingPage.allTypes')
 
   const handleRemoveFilterChip = (key: string, value?: string) => {
     if (key === 'skinTypes' && value) {
@@ -309,7 +317,7 @@ export default function MatchingRecommendations() {
       onClick={() => setMobileFilterOpen(true)}
     >
       <SlidersHorizontal className="mr-2 h-4 w-4" />
-      Filters
+      {translate('matchingPage.filters')}
     </Button>
   )
 
@@ -318,7 +326,7 @@ export default function MatchingRecommendations() {
       {/* Page Header */}
       <div className="scroll-mt-4">
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Recommended for You</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">{translate('matchingPage.title')}</h1>
           <span className={cn(
             'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold',
             source === 'ai'
@@ -326,13 +334,15 @@ export default function MatchingRecommendations() {
               : 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400'
           )}>
             {source === 'ai' ? <FlaskConical className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {source === 'ai' ? 'AI Analysis' : 'General Picks'}
+            {source === 'ai'
+              ? translate('matchingPage.aiAnalysis')
+              : translate('matchingPage.generalPicks')}
           </span>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           {source === 'ai'
-            ? `Based on your AI analysis · ${skinTypeLabel} · ${meta.total} results`
-            : 'Showing featured products · No skin analysis found'}
+            ? translate('matchingPage.aiDescription', { skinType: skinTypeLabel, count: meta.total })
+            : translate('matchingPage.genericDescription')}
         </p>
       </div>
 
@@ -367,7 +377,7 @@ export default function MatchingRecommendations() {
           {isFetching && !isLoading && (
             <div className="flex items-center justify-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Refreshing recommendations…
+              {translate('matchingPage.refreshing')}
             </div>
           )}
           {isLoading ? (
@@ -417,12 +427,12 @@ export default function MatchingRecommendations() {
                           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                             {product.compareAtPrice && (
                               <span className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
-                                SALE
+                                {translate('matchingPage.sale')}
                               </span>
                             )}
                             {!product.isInStock && (
                               <span className="inline-flex items-center rounded-full bg-gray-900 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
-                                OUT OF STOCK
+                                {translate('matchingPage.outOfStock')}
                               </span>
                             )}
                           </div>
@@ -431,7 +441,7 @@ export default function MatchingRecommendations() {
                           {source === 'ai' && product.matchScore !== null && (
                             <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md">
                               <Check className="h-3 w-3" />
-                              {product.matchScore}% Match
+                              {translate('matchingPage.matchPercent', { percent: product.matchScore })}
                             </span>
                           )}
 
@@ -441,7 +451,9 @@ export default function MatchingRecommendations() {
                           'absolute top-3 left-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold',
                           BADGE_STYLES[product.categoryBadge]
                         )}>
-                          {BADGE_LABELS[product.categoryBadge]}
+                          {BADGE_LABEL_KEYS[product.categoryBadge]
+                            ? translate(BADGE_LABEL_KEYS[product.categoryBadge])
+                            : undefined}
                         </span>
                       )}
 
@@ -456,7 +468,9 @@ export default function MatchingRecommendations() {
                               void handleWishlistToggle(product)
                             }}
                             disabled={isWishlistLoading}
-                            aria-label={wishlistProductIds.has(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                            aria-label={wishlistProductIds.has(product.id)
+                              ? translate('matchingPage.removeFromWishlist')
+                              : translate('matchingPage.addToWishlist')}
                           >
                             {isWishlistLoading ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -478,7 +492,7 @@ export default function MatchingRecommendations() {
                         {product.brandName && (
                           <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                             <Store className="h-3 w-3" />
-                            <span>Sold by {product.brandName}</span>
+                            <span>{translate('matchingPage.soldBy', { brand: product.brandName })}</span>
                           </div>
                         )}
                         {/* Product Name */}
@@ -525,7 +539,9 @@ export default function MatchingRecommendations() {
                               key={t}
                               className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 px-2 py-0.5 text-[10px] font-medium"
                             >
-                              {t.charAt(0).toUpperCase() + t.slice(1)}
+                              {translate(`matchingPage.skinTypes.${t.toLowerCase()}`, {
+                                defaultValue: t.charAt(0).toUpperCase() + t.slice(1),
+                              })}
                             </span>
                           ))}
                           {product.skinTypes.length > 2 && (
@@ -556,7 +572,7 @@ export default function MatchingRecommendations() {
                                 void handleAddToCart(product)
                               }}
                               disabled={isCartLoading}
-                              aria-label="Add to cart"
+                              aria-label={translate('matchingPage.addToCart')}
                             >
                               {isCartLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -583,7 +599,7 @@ export default function MatchingRecommendations() {
                             {product.matchScore !== null && (
                               <span className="absolute bottom-1.5 left-1.5 z-10 inline-flex items-center gap-1 bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[9px] font-bold shadow-md">
                                 <Check className="h-2.5 w-2.5" />
-                                {product.matchScore}% Match
+                                {translate('matchingPage.matchPercent', { percent: product.matchScore })}
                               </span>
                             )}
                           </div>
@@ -593,19 +609,19 @@ export default function MatchingRecommendations() {
                                 <div className="flex items-center gap-2 mb-1">
                                   {product.compareAtPrice && (
                                     <span className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
-                                      SALE
+                                      {translate('matchingPage.sale')}
                                     </span>
                                   )}
                                   {!product.isInStock && (
                                     <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm">
-                                      OUT OF STOCK
+                                      {translate('matchingPage.outOfStock')}
                                     </span>
                                   )}
                                 </div>
                                 {product.brandName && (
                                   <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     <Store className="h-3 w-3" />
-                                    <span>Sold by {product.brandName}</span>
+                                    <span>{translate('matchingPage.soldBy', { brand: product.brandName })}</span>
                                   </div>
                                 )}
                                 <h3 className="truncate text-sm font-semibold">{product.name}</h3>
@@ -620,7 +636,9 @@ export default function MatchingRecommendations() {
                                   void handleWishlistToggle(product)
                                 }}
                                 disabled={isWishlistLoading}
-                                aria-label={wishlistProductIds.has(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                                aria-label={wishlistProductIds.has(product.id)
+                                  ? translate('matchingPage.removeFromWishlist')
+                                  : translate('matchingPage.addToWishlist')}
                               >
                                 {isWishlistLoading ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -673,7 +691,9 @@ export default function MatchingRecommendations() {
                                     key={t}
                                     className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 px-2 py-0.5 text-[10px] font-medium"
                                   >
-                                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                                    {translate(`matchingPage.skinTypes.${t.toLowerCase()}`, {
+                                      defaultValue: t.charAt(0).toUpperCase() + t.slice(1),
+                                    })}
                                   </span>
                                 ))}
                                 {product.skinTypes.length > 2 && (
@@ -704,7 +724,7 @@ export default function MatchingRecommendations() {
                                     void handleAddToCart(product)
                                   }}
                                   disabled={isCartLoading}
-                                  aria-label="Add to cart"
+                                  aria-label={translate('matchingPage.addToCart')}
                                 >
                                   {isCartLoading ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -743,10 +763,12 @@ export default function MatchingRecommendations() {
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-700 disabled:opacity-60 dark:text-violet-400 dark:hover:text-violet-300"
                 >
                   {historyExpanded
-                    ? 'Show less'
+                    ? translate('matchingPage.showLess')
                     : isHistoryFetching
-                      ? 'Loading all history…'
-                      : `See more${historyData?.meta ? ` (${historyData.meta.total - 5} more)` : ''}`}
+                    ? translate('matchingPage.loadingAllHistory')
+                    : translate('matchingPage.seeMoreHistory', {
+                        count: historyData?.meta ? historyData.meta.total - 5 : undefined,
+                      })}
                   <span aria-hidden="true">{historyExpanded ? '↑' : '↓'}</span>
                 </button>
               </div>
@@ -755,8 +777,8 @@ export default function MatchingRecommendations() {
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <div className="text-4xl mb-4">📭</div>
-            <p className="font-medium">No recommendation history yet</p>
-            <p className="text-sm mt-1">Complete a skin analysis to see your past recommendations here.</p>
+            <p className="font-medium">{translate('matchingPage.noHistory')}</p>
+            <p className="text-sm mt-1">{translate('matchingPage.noHistoryDescription')}</p>
           </div>
         )}
       </div>
@@ -764,13 +786,13 @@ export default function MatchingRecommendations() {
       <Dialog open={cartDuplicateOpen} onOpenChange={setCartDuplicateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Already in Cart</DialogTitle>
+            <DialogTitle>{translate('matchingPage.cartDialog.title')}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This product is already in cart.
+            {translate('matchingPage.cartDialog.description')}
           </p>
           <DialogFooter>
-            <Button onClick={() => setCartDuplicateOpen(false)}>OK</Button>
+            <Button onClick={() => setCartDuplicateOpen(false)}>{translate('matchingPage.ok')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -778,16 +800,16 @@ export default function MatchingRecommendations() {
       <Dialog open={loginRequiredModal !== null} onOpenChange={() => setLoginRequiredModal(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Log In Required</DialogTitle>
+            <DialogTitle>{translate('matchingPage.loginDialog.title')}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             {loginRequiredModal === 'wishlist'
-              ? 'Please log in to add items to your wishlist.'
-              : 'Please log in to add items to your cart.'}
+              ? translate('matchingPage.loginDialog.wishlistDescription')
+              : translate('matchingPage.loginDialog.cartDescription')}
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLoginRequiredModal(null)}>Cancel</Button>
-            <Button onClick={() => { setLoginRequiredModal(null); navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`) }}>Log In</Button>
+            <Button variant="outline" onClick={() => setLoginRequiredModal(null)}>{translate('matchingPage.cancel')}</Button>
+            <Button onClick={() => { setLoginRequiredModal(null); navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`) }}>{translate('matchingPage.login')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -797,7 +819,7 @@ export default function MatchingRecommendations() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-6 w-7 rounded-full bg-slate-200/80 dark:bg-white/10" />
-                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Filters</h2>
+                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{translate('matchingPage.filters')}</h2>
               </div>
             </div>
             <FiltersPanel
@@ -813,14 +835,14 @@ export default function MatchingRecommendations() {
               onClick={resetFilters}
               className="shrink-0 text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
             >
-              Clear All
+              {translate('matchingPage.clearAll')}
             </button>
             <Button
               type="button"
               onClick={() => setMobileFilterOpen(false)}
               className="h-11 flex-1 rounded-full bg-slate-950 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
             >
-              Show {meta.total} Products
+              {translate('matchingPage.showProducts', { count: meta.total })}
             </Button>
           </div>
         </SheetContent>

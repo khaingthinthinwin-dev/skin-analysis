@@ -365,8 +365,12 @@
   "wishlist": {
     "title": "My Wishlist",
     "itemCount": "{{count}} items saved",
+    "savedForFuturePurchase_one": "{{count}} item saved for future purchase",
+    "savedForFuturePurchase_other": "{{count}} items saved for future purchase",
     "moveToCart": "Add to Cart",
     "remove": "Remove",
+    "removeProduct": "Remove {{product}} from wishlist",
+    "uncategorized": "Uncategorized",
     "emptyTitle": "No items saved yet",
     "emptyMessage": "Browse products to add favorites.",
     "continueShopping": "Continue Shopping",
@@ -440,11 +444,69 @@
     }
   },
   "buyer": {
+    "dashboard": {
+      "beautyHub": "Buyer Beauty Hub",
+      "welcome": "Welcome back, {{name}}!",
+      "beautyEnthusiast": "Beauty Enthusiast",
+      "welcomeDescription": "Check your AI skin profile results, matched recommendations, and saved skincare routines.",
+      "startAiScan": "Start AI Skin Scan",
+      "stats": {
+        "skinAnalysis": "AI Skin Analysis",
+        "analyzed": "Analyzed",
+        "combinationSkin": "Combination Skin",
+        "aiMatches": "AI Matches",
+        "matchCount": "12 Items",
+        "personalized": "Personalized for you",
+        "wishlist": "Wishlist Items",
+        "savedCount": "8 Saved",
+        "savedProducts": "Saved products",
+        "cart": "Shopping Cart",
+        "cartCount": "3 Items",
+        "readyForCheckout": "Ready for checkout"
+      },
+      "skinScan": {
+        "title": "AI Skin Scan",
+        "subtitle": "Instant facial skin diagnosis",
+        "description": "Upload or take a photo to analyze your skin type, hydration levels, and specific skincare concerns.",
+        "action": "Perform Scan"
+      },
+      "recommendations": {
+        "title": "Product Recommendations",
+        "subtitle": "Personalized match scores",
+        "description": "View skincare products tailored specifically to your skin profile with high confidence match ratings.",
+        "action": "View Recommendations"
+      },
+      "catalog": {
+        "title": "Cosmetics Catalog",
+        "subtitle": "Search & filter products",
+        "description": "Search top brands, filter by skincare concerns, ingredient lists, price ranges, and verified reviews.",
+        "action": "Search Catalog"
+      },
+      "trust": {
+        "title": "Dermatologist Approved AI Engine",
+        "description": "All skin analysis algorithms and recommendations are modeled after clinical skincare guidelines.",
+        "action": "Skin Profile Settings"
+      }
+    },
     "orders": {
       "exportCsv": "Export CSV",
       "exportCsvTooltip": "Download your orders as a CSV file",
       "exportEmpty": "No orders to export",
       "title": "My Orders",
+      "summary": {
+        "totalOrders": "Total Orders",
+        "totalSpent": "Total Spent",
+        "inProgress": "In Progress",
+        "delivered": "Delivered",
+        "placedOrders": "Placed Orders",
+        "placedValue": "Placed Value",
+        "awaitingShipment": "Awaiting Shipment",
+        "completed": "Completed",
+        "deliveredOrders": "Delivered Orders",
+        "deliveredValue": "Delivered Value",
+        "filteredOrders": "Filtered Orders",
+        "filteredValue": "Filtered Value"
+      },
       "error": {
         "loadFailed": "Unable to load orders."
       },

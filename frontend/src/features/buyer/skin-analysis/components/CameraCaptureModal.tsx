@@ -96,7 +96,7 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCaptureMo
         <DialogHeader className="border-b">
           <DialogTitle className="flex items-center justify-between">
             <span>{t('camera.title')}</span>
-            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('common.close')}>
               <X className="h-5 w-5" />
             </Button>
           </DialogTitle>
