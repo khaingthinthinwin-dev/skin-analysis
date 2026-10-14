@@ -26,7 +26,8 @@ const shippingSchema = z.object({
   recipientName: z
     .string()
     .min(1, 'Recipient name is required')
-    .max(200, 'Name must not exceed 200 characters'),
+    .max(200, 'Name must not exceed 200 characters')
+    .regex(/^[\p{L}\s]*$/u, 'Name must contain letters and spaces only'),
   phone: z
     .string()
     .min(1, 'Phone number is required')
@@ -86,6 +87,8 @@ const VALIDATION_KEYS: Record<string, string> = {
   'Recipient name is required': 'buyer.checkout.shippingAddress.recipientNameRequired',
   'Name must not exceed 200 characters':
     'buyer.checkout.shippingAddress.recipientNameMaxLength',
+  'Name must contain letters and spaces only':
+    'buyer.checkout.shippingAddress.recipientNameLettersOnly',
   'Phone number is required': 'buyer.checkout.shippingAddress.phoneRequired',
   'Phone number must contain digits only':
     'buyer.checkout.shippingAddress.phoneDigitsOnly',
@@ -177,6 +180,10 @@ export function CheckoutForm({ summary, onSubmit, isSubmitting }: CheckoutFormPr
                     <Input
                       placeholder={t('buyer.checkout.shippingAddress.recipientNamePlaceholder', 'Full name')}
                       {...field}
+                      onChange={(e) => {
+                        const lettersOnly = e.target.value.replace(/[^\p{L}\s]/gu, '');
+                        field.onChange(lettersOnly);
+                      }}
                     />
                   </FormControl>
                   <CheckoutValidationMessage />

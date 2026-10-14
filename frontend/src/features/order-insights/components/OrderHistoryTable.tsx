@@ -8,6 +8,7 @@ import { StatusBadge } from './StatusBadge';
 import { PaymentBadge } from './PaymentBadge';
 import { Button } from '@/components/ui/button';
 import { OrderListRowDto, OrderSortField } from '../types/orderInsights.types';
+import { formatCurrencyAmount } from '../types/merchantOrderInsights.types';
 import { toSlashDisplayDate } from '../utils/dateRangeLabel';
 
 export interface OrderHistoryTableProps {
@@ -92,10 +93,10 @@ export function OrderHistoryTable({
 
   return (
     <>
-      <div className="hidden max-w-full overflow-x-auto rounded-md border bg-card sm:block [&>div]:overflow-visible">
+      <div className="max-h-[285px] w-full max-w-full overflow-x-auto overflow-y-auto rounded-md border bg-card [&>div]:overflow-visible">
       <Table className="min-w-[1120px] border-separate border-spacing-0 text-[13px]">
-        <TableHeader className="sticky top-0 z-10">
-          <TableRow className="border-b-0 bg-primary/10 hover:bg-primary/10">
+        <TableHeader className="sticky top-0 z-20 border-b-2 border-[#7c3aed] bg-[#f3f0ff] dark:border-violet-500 dark:bg-[#211a29] oidark:border-primary oidark:bg-muted">
+          <TableRow className="border-b-0 bg-[#f3f0ff] hover:bg-[#f3f0ff] dark:bg-[#211a29] dark:hover:bg-[#211a29] oidark:bg-muted oidark:hover:bg-muted">
             <TableHead className="h-[60px] w-[130px] text-sm font-medium text-muted-foreground">{t('orders.table.orderId', 'Order #')}</TableHead>
             {renderSortableHeader(t('orders.table.date', 'Date'), 'createdAt', 'w-[130px]')}
             <TableHead className="h-[60px] w-[180px] text-sm font-medium text-muted-foreground">{t('orders.table.shop', 'Shop')}</TableHead>
@@ -108,27 +109,27 @@ export function OrderHistoryTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} className="border-b border-border transition-colors hover:bg-muted/40">
-              <TableCell className="border-b border-border px-3.5 py-3 font-mono text-xs font-medium dark:text-slate-100">
+            <TableRow key={row.id} className="h-[45px] border-b border-border transition-colors hover:bg-muted/40">
+              <TableCell className="border-b border-border px-3.5 py-2 font-mono text-xs font-medium dark:text-slate-100">
                 #{row.id.slice(0, 8).toUpperCase()}
               </TableCell>
-              <TableCell className="border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">
+              <TableCell className="border-b border-border px-3.5 py-2 text-[13px] text-muted-foreground">
                 {toSlashDisplayDate(row.createdAt)}
               </TableCell>
-              <TableCell className="border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">{row.shopName || '—'}</TableCell>
-              <TableCell className="border-b border-border px-3.5 py-3 text-center text-[13px] text-muted-foreground">
+              <TableCell className="border-b border-border px-3.5 py-2 text-[13px] text-muted-foreground">{row.shopName || '—'}</TableCell>
+              <TableCell className="border-b border-border px-3.5 py-2 text-center text-[13px] text-muted-foreground">
                 {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
               </TableCell>
-              <TableCell className="border-b border-border px-3.5 py-3 text-right text-[13px] text-muted-foreground">
-                ${parseFloat(row.totalAmount).toFixed(2)}
+              <TableCell className="border-b border-border px-3.5 py-2 text-right text-[13px] text-muted-foreground">
+                {formatCurrencyAmount(row.totalAmount)}
               </TableCell>
-              <TableCell className="border-b border-border px-3.5 py-3 text-center text-[13px] text-muted-foreground">
+              <TableCell className="border-b border-border px-3.5 py-2 text-center text-[13px] text-muted-foreground">
                 <PaymentBadge status={row.paymentStatus} />
               </TableCell>
-              <TableCell className="border-b border-border px-3.5 py-3 text-center text-[13px]">
+              <TableCell className="border-b border-border px-3.5 py-2 text-center text-[13px]">
                 <StatusBadge status={row.status} />
               </TableCell>
-              <TableCell className="border-b border-border px-3.5 py-3 text-right text-[13px]">
+              <TableCell className="border-b border-border px-3.5 py-2 text-right text-[13px]">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -145,55 +146,6 @@ export function OrderHistoryTable({
         </TableBody>
       </Table>
     </div>
-      <div className="space-y-3 sm:hidden">
-      {rows.map((row) => (
-        <div key={row.id} className="rounded-lg border bg-card p-4 dark:border-[#29252f] dark:bg-[#111014] dark:text-slate-100 oidark:border-outline-variant oidark:bg-surface-container-low">
-          <div className="flex items-center justify-between gap-3">
-            <span className="font-mono text-xs font-medium">
-              #{row.id.slice(0, 8).toUpperCase()}
-            </span>
-            <StatusBadge status={row.status} />
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.date', 'Date')}</p>
-              <p className="mt-1">
-                {toSlashDisplayDate(row.createdAt)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.total', 'Total')}</p>
-              <p className="mt-1 font-semibold">${parseFloat(row.totalAmount).toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.items', 'Items')}</p>
-              <p className="mt-1">
-                {row.itemCount} {row.itemCount === 1 ? t('orders.table.item', 'Item') : t('orders.table.items', 'Items')}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.shop', 'Shop')}</p>
-              <p className="mt-1">{row.shopName || '—'}</p>
-            </div>
-            <div>
-              <p className="text-right text-xs text-muted-foreground dark:text-slate-300">{t('orders.table.payment', 'Payment')}</p>
-              <div className="mt-1 flex justify-end">
-                <PaymentBadge status={row.paymentStatus} />
-              </div>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-4 w-full dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100"
-            onClick={() => onTrack(row.id)}
-          >
-            <Truck className="h-4 w-4" aria-hidden="true" />
-            {t('orders.track', 'Track')}
-          </Button>
-        </div>
-      ))}
-      </div>
     </>
   );
 }

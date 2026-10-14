@@ -8,7 +8,10 @@ import { cn } from '@/lib/utils'
 function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    if (Number.isNaN(date.getTime())) return dateStr
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${date.getFullYear()}/${month}/${day}`
   } catch {
     return dateStr
   }

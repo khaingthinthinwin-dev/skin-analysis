@@ -18,6 +18,9 @@ const mockPrisma = {
     findMany: jest.fn(),
     count: jest.fn(),
   },
+  skinAnalysisRecommendation: {
+    findMany: jest.fn(),
+  },
   product: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -48,6 +51,11 @@ describe('MatchingService', () => {
 
     service = module.get<MatchingService>(MatchingService);
     jest.clearAllMocks();
+    // Default: the latest analysis stored no recommendations. The service no
+    // longer consults that table (`not.toHaveBeenCalled` asserts below);
+    // clearing mock implementations is NOT done by jest.clearAllMocks(), so
+    // re-state the default here to avoid leakage.
+    mockPrisma.skinAnalysisRecommendation.findMany.mockResolvedValue([]);
   });
 
   it('should be defined', () => {
@@ -337,7 +345,7 @@ describe('MatchingService', () => {
         ]);
       });
 
-      it('should override the analysed skin types with the selection (BR-MATCH-006)', async () => {
+      it('should scope the selection to the analysis result set (custom rule)', async () => {
         mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
           id: 'analysis-1',
           skinType: 'oily,combination',
@@ -350,17 +358,27 @@ describe('MatchingService', () => {
 
         await service.getPersonalized(userId, { skinTypes: 'oily' });
 
-        // One condition only: the explicit selection replaces the analysis
-        // result instead of being ANDed with it.
+        // TWO conditions: the selection narrows the grid, and the analysed
+        // skin types keep the result inside the analysis result set.
         const where = getMockWhere(mockPrisma.product.findMany);
-        expect(where.AND).toBeUndefined();
-        expect(where.OR).toEqual([
-          { skinTypes: { hasSome: ['oily'] } },
-          { skinTypes: { has: 'all' } },
+        expect(where.OR).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily', 'combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
         ]);
       });
 
-      it('should apply every selected skin type regardless of the analysis', async () => {
+      it('should apply every selected skin type while keeping the analysis scope', async () => {
         mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
           id: 'analysis-1',
           skinType: 'oily,combination',
@@ -373,33 +391,296 @@ describe('MatchingService', () => {
 
         await service.getPersonalized(userId, { skinTypes: 'oily,dry' });
 
+        // OR within each condition (a product carrying EITHER selected type
+        // matches), AND between the selection and the analysis result scope.
         const where = getMockWhere(mockPrisma.product.findMany);
-        expect(where.AND).toBeUndefined();
-        expect(where.OR).toEqual([
-          { skinTypes: { hasSome: ['oily', 'dry'] } },
-          { skinTypes: { has: 'all' } },
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily', 'dry'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily', 'combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
         ]);
       });
 
-      it('should query with the selection alone when it is outside the analysis', async () => {
+      it('should keep the analysis scope when the selection is outside the analysis', async () => {
         mockAiSource();
         mockPrisma.product.findMany.mockResolvedValue([]);
         mockPrisma.product.count.mockResolvedValue(0);
 
         await service.getPersonalized(userId, { skinTypes: 'dry' });
 
-        // BR-MATCH-006: the selection overrides the analysed "oily" type, so
-        // dry-only products are part of the result set (plus "all"-tagged ones).
+        // Custom rule: even a selection outside the analysed types stays inside
+        // the analysis result set (selection AND analysis scope), so the grid
+        // only narrows — it never widens to catalogue-wide dry products.
         expect(mockPrisma.product.findMany).toHaveBeenCalled();
         const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.OR).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['dry'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+      });
+
+      it('should keep a multi-type analysis result product visible under a selection (custom rule)', async () => {
+        // Reported case: the latest analysis (skin type "normal") shows "UV
+        // Protection Sunscreen SPF50" — tagged with EVERY skin type — in the
+        // result grid. Selecting one of its types must keep it visible, so the
+        // selection scopes to the ANALYSIS RESULT SET, not to stored
+        // `skin_analysis_recommendations` rows (the product is in none).
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'normal',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'p-uv',
+            name: 'UV Protection Sunscreen SPF50',
+            slug: 'uv-protection-sunscreen-spf50',
+            price: 20000,
+            compareAtPrice: null,
+            images: ['uv.jpg'],
+            skinTypes: ['dry', 'oily', 'combination', 'sensitive', 'normal'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4,
+            reviewCount: 1,
+            isFeatured: false,
+            stockQuantity: 87,
+            createdAt: new Date(),
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(1);
+
+        const result = await service.getPersonalized(userId, {
+          skinTypes: 'dry',
+        });
+
+        // No stored-recommendation lookup anymore: the query ANDs the
+        // selection with the analysed skin types instead.
+        expect(
+          mockPrisma.skinAnalysisRecommendation.findMany,
+        ).not.toHaveBeenCalled();
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.id).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['dry'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['normal'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+        // Carries the selected "dry" AND the analysed "normal" -> visible.
+        expect(result.data.map((p) => p.id)).toEqual(['p-uv']);
+      });
+
+      it('should show a multi-type analysis result when the selection matches at least one analysed type', async () => {
+        // The analysis result reports SEVERAL skin types ("oily,combination").
+        // Selecting one of them must show the result products that carry it —
+        // matching at least ONE type of each condition is enough (OR inside).
+        mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
+          id: 'analysis-1',
+          skinType: 'oily,combination',
+          completedAt: new Date(),
+          conditions: [],
+        });
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'p-multi',
+            name: 'Balancing Toner',
+            slug: 'balancing-toner',
+            price: 12000,
+            compareAtPrice: null,
+            images: ['toner.jpg'],
+            skinTypes: ['combination', 'dry'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4,
+            reviewCount: 3,
+            isFeatured: false,
+            stockQuantity: 20,
+            createdAt: new Date(),
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(1);
+
+        const result = await service.getPersonalized(userId, {
+          skinTypes: 'combination',
+        });
+
+        const where = getMockWhere(mockPrisma.product.findMany);
+        // Selection ("combination") AND analysis result scope
+        // ("oily,combination") - the product satisfies both and shows.
+        expect(where.id).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily', 'combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+        expect(result.data.map((p) => p.id)).toEqual(['p-multi']);
+        expect(result.skinTypes).toEqual(['oily', 'combination']);
+      });
+
+      it('should keep an "all"-tagged result product for any selected skin type', async () => {
+        mockAiSource();
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'p-all',
+            name: 'Soothing Aloe Vera Gel',
+            slug: 'soothing-aloe-vera-gel',
+            price: 8000,
+            compareAtPrice: null,
+            images: ['all.jpg'],
+            skinTypes: ['all'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4,
+            reviewCount: 1,
+            isFeatured: false,
+            stockQuantity: 50,
+            createdAt: new Date(),
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(1);
+
+        const result = await service.getPersonalized(userId, {
+          skinTypes: 'oily',
+        });
+
+        const where = getMockWhere(mockPrisma.product.findMany);
+        // The `has: 'all'` branch exists in BOTH conditions, so a universal
+        // product satisfies the selection and the analysis scope alike.
+        expect(where.id).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+        expect(result.data.map((p) => p.id)).toEqual(['p-all']);
+      });
+
+      it('should fall back to the analysis scope alone when the analysis stored no recommendations', async () => {
+        mockAiSource();
+        mockRedis.get.mockResolvedValue(null);
+        // beforeEach default: skinAnalysisRecommendation.findMany -> [], and
+        // the service no longer consults that table at all — the scope comes
+        // from the analysed skin types, so the grid never blanks out.
+        mockPrisma.product.findMany.mockResolvedValue([
+          {
+            id: 'p-dry',
+            name: 'Hydrating Night Cream',
+            slug: 'hydrating-night-cream',
+            price: 25000,
+            compareAtPrice: null,
+            images: ['dry.jpg'],
+            skinTypes: ['dry', 'oily'],
+            tags: [],
+            ingredients: [],
+            avgRating: 4,
+            reviewCount: 1,
+            isFeatured: false,
+            stockQuantity: 10,
+            createdAt: new Date(),
+          },
+        ]);
+        mockPrisma.product.count.mockResolvedValue(1);
+
+        const result = await service.getPersonalized(userId, {
+          skinTypes: 'dry',
+        });
+
+        expect(
+          mockPrisma.skinAnalysisRecommendation.findMany,
+        ).not.toHaveBeenCalled();
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.id).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['dry'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+        ]);
+        expect(result.data.map((p) => p.id)).toEqual(['p-dry']);
+      });
+
+      it('should not apply the selection scope when no skin type is explicitly selected', async () => {
+        mockAiSource();
+        mockRedis.get.mockResolvedValue(null);
+        mockPrisma.product.findMany.mockResolvedValue([]);
+        mockPrisma.product.count.mockResolvedValue(0);
+
+        await service.getPersonalized(userId, {});
+
+        // The scope only applies to an explicit selection; the default
+        // (analysis-derived) view stays one condition with no `id` restriction.
+        expect(
+          mockPrisma.skinAnalysisRecommendation.findMany,
+        ).not.toHaveBeenCalled();
+        const where = getMockWhere(mockPrisma.product.findMany);
+        expect(where.id).toBeUndefined();
         expect(where.AND).toBeUndefined();
         expect(where.OR).toEqual([
-          { skinTypes: { hasSome: ['dry'] } },
+          { skinTypes: { hasSome: ['oily'] } },
           { skinTypes: { has: 'all' } },
         ]);
       });
 
-      it('should apply the selection alone for a combination analysis with an oily selection', async () => {
+      it('should scope an oily selection to the combination analysis result', async () => {
         mockPrisma.skinAnalysis.findFirst.mockResolvedValue({
           id: 'analysis-1',
           skinType: 'combination',
@@ -430,15 +711,26 @@ describe('MatchingService', () => {
           skinTypes: 'oily',
         });
 
-        // The oily selection replaces the combination analysis result, so the
-        // query is a plain hasSome on the selection (BR-MATCH-006) — oily
-        // products are shown even though the analysis label says combination.
+        // The oily selection narrows within the combination analysis result:
+        // products tagged {oily, combination} satisfy BOTH conditions and
+        // show, mirroring the real catalogue (every oily product is also
+        // tagged combination).
         expect(result.data).toHaveLength(1);
         const where = getMockWhere(mockPrisma.product.findMany);
-        expect(where.AND).toBeUndefined();
-        expect(where.OR).toEqual([
-          { skinTypes: { hasSome: ['oily'] } },
-          { skinTypes: { has: 'all' } },
+        expect(where.OR).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
         ]);
       });
 
@@ -484,10 +776,20 @@ describe('MatchingService', () => {
         });
 
         const where = getMockWhere(mockPrisma.product.findMany);
-        expect(where.AND).toBeUndefined();
-        expect(where.OR).toEqual([
-          { skinTypes: { hasSome: ['combination'] } },
-          { skinTypes: { has: 'all' } },
+        expect(where.OR).toBeUndefined();
+        expect(where.AND).toEqual([
+          {
+            OR: [
+              { skinTypes: { hasSome: ['combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
+          {
+            OR: [
+              { skinTypes: { hasSome: ['oily', 'combination'] } },
+              { skinTypes: { has: 'all' } },
+            ],
+          },
         ]);
         expect(where.price).toEqual({ gte: 1000, lte: 5000 });
         expect(where.avgRating).toEqual({ gte: 4 });
