@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useId } from 'react'
 import { Search, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -21,6 +22,7 @@ export function SearchBar({
   const [draft, setDraft] = useState(value);
   const [focused, setFocused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { t } = useTranslation()
   const gradientId = `search-icon-gradient-${useId().replace(/:/g, "")}`;
 
   const displayValue = focused ? draft : value;
@@ -75,7 +77,7 @@ export function SearchBar({
   return (
     <form
       role="search"
-      aria-label="Product search"
+      aria-label={t('buyer.search.aria.productSearch', 'Product search')}
       onSubmit={handleSubmit}
       className="flex w-full gap-2"
     >
@@ -109,17 +111,18 @@ export function SearchBar({
             onChange={(e) => handleTyping(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={handleBlur}
-            placeholder={
-              placeholder ?? "Search by product name, ingredient, or concern..."
-            }
-            aria-label="Search by product name, ingredient, or concern"
+            placeholder={placeholder ?? t('buyer.search.placeholder', 'Search by product name, ingredient, or concern...')}
+            aria-label={t(
+              'buyer.search.aria.searchInput',
+              'Search by product name, ingredient, or concern',
+            )}
             className="border-0 bg-transparent pl-9 pr-9 text-slate-800 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 dark:text-white dark:placeholder:text-gray-400"
           />
           {displayValue && (
             <button
               type="button"
               onClick={handleClear}
-              aria-label="Clear search"
+              aria-label={t('buyer.search.aria.clearSearch', 'Clear search')}
               className="absolute right-11 top-1/2 -translate-y-1/2 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] focus-visible:ring-offset-2"
             >
               <X className="h-4 w-4" />
@@ -131,7 +134,7 @@ export function SearchBar({
         type="submit"
         size="icon"
         variant="default"
-        aria-label="Search products"
+        aria-label={t('buyer.search.aria.searchProducts', 'Search products')}
         className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white shadow-md shadow-purple-500/20 transition-all duration-200 hover:from-[#7C3AED] hover:to-[#DB2777] hover:shadow-lg hover:shadow-pink-500/25 active:scale-95 active:from-[#6D28D9] active:to-[#BE185D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] focus-visible:ring-offset-2"
       >
         <Search className="h-4 w-4" />

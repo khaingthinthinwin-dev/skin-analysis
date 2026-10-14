@@ -91,6 +91,7 @@
       "merchants": "Merchants",
       "orderInsights": "Order Insights",
       "advertisements": "Advertisements",
+      "productReview": "Product Review",
       "reviews": "Reviews",
       "content": "Content",
       "commissionRevenue": "Commission & Revenue",
@@ -234,7 +235,124 @@
     "hero": {
       "title": "Your Cosmetics Finder Journey",
       "subtitle": "Discover personalized skincare products powered by advanced AI analysis",
-      "cta": "Get Started"
+      "cta": "Get Started",
+      "badge": "AI Skin Diagnosis & Skincare Marketplace",
+      "heading": "Smart AI Analysis. <highlight>Personalized Skincare You Can Buy.</highlight>",
+      "paragraph": "Take the guesswork out of beauty shopping. Scan your skin with advanced AI to understand your exact skin concerns, then instantly purchase dermatologist-backed products formulated specifically for you.",
+      "ctaPrimary": "Start Free AI Skin Scan",
+      "ctaSecondary": "Browse Skincare Shop"
+    },
+    "trustBadges": {
+      "genuine": "100% Genuine Brands",
+      "instant": "Instant AI Diagnosis",
+      "verified": "Verified Merchants"
+    },
+    "mockup": {
+      "aiScan": "AI Scan",
+      "liveReady": "LIVE READY",
+      "hydration": "Hydration 88%",
+      "mildRedness": "Mild Redness",
+      "bestMatch": "Best AI Match (98%)",
+      "inStock": "In Stock",
+      "barrierScore": "Barrier Score: 94%",
+      "optimalBalance": "Optimal balance",
+      "productsCount": "1,200+ Products",
+      "testedReady": "Tested & Ready"
+    },
+    "promo": {
+      "slide1": {
+        "tag": "Featured Promotion",
+        "title": "Hydration & Barrier Repair Essentials",
+        "subtitle": "Nourish dry & sensitive skin with deep ceramides and hyaluronic acid formulas.",
+        "discount": "Up to 25% OFF",
+        "buttonText": "Shop Hydration Sale"
+      },
+      "slide2": {
+        "tag": "AI Recommendation Spotlight",
+        "title": "Clinically Proven Blemish & Acne Care",
+        "subtitle": "Target breakouts with AI-selected gentle salicylic acid & niacinamide solutions.",
+        "discount": "Buy 2 Get 10% Off",
+        "buttonText": "Explore Acne Solutions"
+      },
+      "slide3": {
+        "tag": "Seasonal Must-Have",
+        "title": "Daily High-Protection Sunscreens (SPF 50+)",
+        "subtitle": "Lightweight, invisible finish with broad spectrum UV protection for all skin types.",
+        "discount": "Free Shipping",
+        "buttonText": "Discover Sunscreens"
+      },
+      "verifiedBrand": "Verified Brand",
+      "previousSlide": "Previous slide",
+      "nextSlide": "Next slide",
+      "goToSlide": "Go to slide {{number}}"
+    },
+    "concerns": {
+      "deepHydration": {
+        "title": "Deep Hydration",
+        "description": "For dry, flaky, or tight skin needing moisture balance"
+      },
+      "acnePores": {
+        "title": "Acne & Pores",
+        "description": "Target breakouts, blackheads, and excess sebum"
+      },
+      "sunProtection": {
+        "title": "Sun Protection",
+        "description": "Broad spectrum UV defense to prevent photoaging"
+      },
+      "soothingRedness": {
+        "title": "Soothing & Redness",
+        "description": "Calm sensitive, irritated, or compromised skin barrier"
+      }
+    },
+    "shopByConcern": {
+      "eyebrow": "Curated Collections",
+      "title": "Shop Skincare by Concern",
+      "desc": "Find products tailored for your specific skin goals and dermatological needs.",
+      "link": "View Full Catalog"
+    },
+    "howItWorks": {
+      "sectionBadge": "Simple 3-Step Process",
+      "sectionTitle": "How Cosmetic Finder Works",
+      "sectionDesc": "From scanning your skin to delivering the ideal skincare regimen directly to your door.",
+      "step1": {
+        "title": "AI Skin Diagnosis",
+        "description": "Upload a selfie or complete our smart skin assessment. Our AI analyzes your hydration, pore clarity, redness, and oil balance.",
+        "badge": "Quick & Accurate"
+      },
+      "step2": {
+        "title": "Ingredient Compatibility Match",
+        "description": "Our intelligent algorithm cross-references thousands of skincare formulations to find what actually works for your skin chemistry.",
+        "badge": "Smart Matching"
+      },
+      "step3": {
+        "title": "Direct Marketplace Purchase",
+        "description": "Order genuine, dermatologist-approved skincare directly from verified merchants with transparent reviews and prompt delivery.",
+        "badge": "Verified Merchants"
+      },
+      "cta": "Experience It Now — Free Skin Scan"
+    },
+    "why": {
+      "eyebrow": "Our Commitment",
+      "title": "Why Shop & Analyze With Us?",
+      "desc": "We bridge artificial intelligence with authentic skincare commerce.",
+      "card1": {
+        "title": "Accurate AI Analysis",
+        "description": "Deep learning algorithms that analyze skin hydration, texture, redness, and pores in seconds."
+      },
+      "card2": {
+        "title": "100% Genuine Skincare",
+        "description": "Every merchant is verified and products are certified authentic, safe, and stored in optimal conditions."
+      },
+      "card3": {
+        "title": "Personalized Matching",
+        "description": "No more wasted money on products that cause irritation. Get matched with ingredients that work."
+      }
+    },
+    "cta": {
+      "title": "Ready for Healthier, Radiant Skin?",
+      "desc": "Join thousands of buyers discovering their tailored skincare routine with AI analysis.",
+      "primary": "Get Started Free",
+      "secondary": "Explore Products"
     }
   },
   "wishlist": {
@@ -483,7 +601,8 @@
       },
       "product": {
         "sku": "SKU: {{sku}}",
-        "soldBy": "Sold by {{shopName}}"
+        "soldBy": "Sold by {{shopName}}",
+        "soldByShop": "Sold by <shopName>{{shopName}}</shopName>"
       },
       "reviews": {
         "countLabel_one": "({{count}} reviews)",
@@ -527,7 +646,8 @@
       "rating": {
         "label": "Rated {{rating}} out of 5",
         "rateStar_one": "Rate {{count}} star",
-        "rateStar_other": "Rate {{count}} stars"
+        "rateStar_other": "Rate {{count}} stars",
+        "goToReviews": "Go to reviews. Rated {{rating}} out of 5 from {{reviewCount}} reviews"
       },
       "reviewForm": {
         "signInRequired": "Please sign in to write a review.",
@@ -569,6 +689,12 @@
     },
     "search": {
       "placeholder": "Search by product name, ingredient, or concern...",
+      "aria": {
+        "productSearch": "Product search",
+        "searchInput": "Search by product name, ingredient, or concern",
+        "clearSearch": "Clear search",
+        "searchProducts": "Search products"
+      },
       "filters": "Filters",
       "categoryTitle": "Category",
       "all": "All",
@@ -1204,5 +1330,86 @@
         "e_wallet": "E Wallet"
       }
     }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page Not Found",
+      "desc": "The page you are looking for does not exist or has been moved."
+    },
+    "unauthorized": {
+      "title": "Access Denied",
+      "desc": "You do not have permission to access this page.",
+      "button": "Go Home"
+    }
+  },
+  "about": {
+    "hero": {
+      "heading": "Pioneering the Future of <highlight>AI Skincare</highlight>",
+      "paragraph": "Cosmetics Finder connects buyers seeking personalized skincare solutions with merchants selling skincare products, powered by AI skin analysis and smart product recommendations.",
+      "cta": "Try AI Analysis"
+    },
+    "story": {
+      "badge": "Our Story",
+      "title": "Decoding Beauty through Intelligence",
+      "p1": "Consumers struggle to find skincare products suited to their individual skin types and concerns. Traditional e-commerce lacks personalization, leading to poor product choices and wasted spending.",
+      "p2": "Our proprietary AI model analyzes thousands of data points — from ingredient interactions to individual skin phenotypes — to construct a regimen that is unequivocally yours. We believe that clarity is the ultimate luxury."
+    },
+    "missionVision": {
+      "missionTitle": "Our Mission",
+      "missionDesc": "To provide personalized skincare product recommendations based on AI analysis, increasing conversion rates through targeted product matching and merchant tools for product management and sales analytics.",
+      "visionTitle": "Our Vision",
+      "visionDesc": "A future where trial-and-error is obsolete. We envision a seamlessly integrated digital ecosystem where your biological needs instantly align with perfect product formulations through multi-vendor marketplace growth."
+    },
+    "engine": {
+      "title": "The Intelligence Engine",
+      "desc": "A seamless four-step process engineered to deliver unprecedented accuracy. AI skin analysis processing completes in under 10 seconds."
+    },
+    "capabilities": {
+      "sectionTitle": "What You Can Do",
+      "sectionDesc": "Everything you need for a personalized skincare journey.",
+      "aiSkinAnalysis": {
+        "title": "AI Skin Analysis",
+        "desc": "Upload a photo and get instant insights on your skin type, conditions, and age estimation."
+      },
+      "smartRecommendations": {
+        "title": "Smart Recommendations",
+        "desc": "Receive personalized product suggestions matched to your unique skin profile and concerns."
+      },
+      "curatedMarketplace": {
+        "title": "Curated Marketplace",
+        "desc": "Browse thousands of skincare products from trusted brands, filtered by your skin needs."
+      },
+      "multiLanguageSupport": {
+        "title": "Multi-Language Support",
+        "desc": "Use the platform in English, Myanmar, or Japanese — your language, your choice."
+      },
+      "securePrivate": {
+        "title": "Secure & Private",
+        "desc": "Your data is protected with enterprise-grade security and privacy-first design."
+      },
+      "instantResults": {
+        "title": "Instant Results",
+        "desc": "Get AI-powered analysis in under 10 seconds with real-time product matching."
+      }
+    },
+    "steps": {
+      "step1Title": "Upload Photo",
+      "step1Desc": "Take or upload a clear facial photo for analysis.",
+      "step2Title": "AI Analysis",
+      "step2Desc": "Our model analyzes skin type, condition, and age estimation.",
+      "step3Title": "Smart Matching",
+      "step3Desc": "Cross-references ingredient data with your skin profile.",
+      "step4Title": "Recommendations",
+      "step4Desc": "Receive a personalized, optimized skincare routine."
+    }
+  },
+  "settings": {
+    "subtitle": "Customize your experience",
+    "cardTitle": "Preferences",
+    "cardDesc": "Manage your app preferences",
+    "themeLabel": "Theme",
+    "themeDesc": "Select your preferred theme",
+    "languageLabel": "Language",
+    "languageDesc": "Choose your preferred language"
   }
 }

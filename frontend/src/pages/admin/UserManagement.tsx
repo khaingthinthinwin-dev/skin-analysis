@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAdmin } from '@/features/admin/user-management/hooks/useAdmin';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -124,6 +126,7 @@ function useDebounced(value: string, delay: number) {
 // ─── Helper Components ──────────────────────────────────────────────────────
 
 function UserStatusBadge({ isActive }: { isActive: boolean }) {
+  const { t } = useTranslation();
   return (
     <Badge
       variant="outline"
@@ -138,12 +141,13 @@ function UserStatusBadge({ isActive }: { isActive: boolean }) {
       ) : (
         <XCircle className="h-3 w-3 mr-1" />
       )}
-      {isActive ? 'Active' : 'Inactive'}
+      {isActive ? t('admin.users.status.active', 'Active') : t('admin.users.status.inactive', 'Inactive')}
     </Badge>
   );
 }
 
 function RoleBadge({ role }: { role: string }) {
+  const { t } = useTranslation();
   const variants: Record<string, string> = {
     admin: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     merchant: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -152,7 +156,7 @@ function RoleBadge({ role }: { role: string }) {
   return (
     <Badge variant="outline" className={variants[role] || ''}>
       {role === 'admin' && <Shield className="h-3 w-3 mr-1" />}
-      {role.charAt(0).toUpperCase() + role.slice(1)}
+      {t(`roles.${role}`, role.charAt(0).toUpperCase() + role.slice(1))}
     </Badge>
   );
 }
@@ -178,16 +182,20 @@ function isAdminUser(user: User): boolean {
   return user.roleCode.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'admin';
 }
 
-function getDeactivateTooltip(user: User): string | null {
-  if (isAdminUser(user)) return 'Admin accounts cannot be deactivated.';
-  return getLicenseStatusTooltip(user);
+function getDeactivateTooltip(user: User, t: TFunction): string | null {
+  if (isAdminUser(user)) return t('admin.users.tooltip.adminNoDeactivate', 'Admin accounts cannot be deactivated.');
+  return getLicenseStatusTooltip(user, t);
 }
 
-function getLicenseStatusTooltip(user: User): string | null {
+function getLicenseStatusTooltip(user: User, t: TFunction): string | null {
   if (user.roleCode !== 'merchant') return null;
   if (!user.merchant) return null;
   if (user.merchant.licenseStatus === 'approved') return null;
-  return `License status: ${user.merchant.licenseStatus}. Only merchants with approved licenses can be deactivated or reactivated.`;
+  return t(
+    'admin.users.tooltip.licenseStatus',
+    'License status: {{status}}. Only merchants with approved licenses can be deactivated or reactivated.',
+    { status: user.merchant.licenseStatus },
+  );
 }
 
 const avatarColors = [
@@ -216,6 +224,7 @@ function truncateText(value: string, maxLength = 20) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function UserManagement() {
+  const { t } = useTranslation();
   // ── State ───────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -252,12 +261,12 @@ export default function UserManagement() {
   // ── Sort Mapping ────────────────────────────────────────────────────────
   const sortOptions = useMemo(
     () => [
-      { value: 'createdAt:desc', label: 'Newest' },
-      { value: 'createdAt:asc', label: 'Oldest' },
-      { value: 'name:asc', label: 'Name (A-Z)' },
-      { value: 'name:desc', label: 'Name (Z-A)' },
+      { value: 'createdAt:desc', label: t('admin.users.sort.newest', 'Newest') },
+      { value: 'createdAt:asc', label: t('admin.users.sort.oldest', 'Oldest') },
+      { value: 'name:asc', label: t('admin.users.sort.nameAsc', 'Name (A-Z)') },
+      { value: 'name:desc', label: t('admin.users.sort.nameDesc', 'Name (Z-A)') },
     ],
-    [],
+    [t],
   );
 
   const currentSortValue = `${userSort}:${userOrder}`;
@@ -279,7 +288,7 @@ export default function UserManagement() {
       { userId: user.id, isActive: false, reason: deactivateReason },
       {
         onSuccess: () => {
-          toast.success('User deactivated');
+          toast.success(t('admin.users.toast.deactivated', 'User deactivated'));
           setDeactivateTarget(null);
           setDeactivateReason('');
           setDetailUser(null);
@@ -288,7 +297,7 @@ export default function UserManagement() {
         onError: (error: unknown) => {
           const msg =
             (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-            'Failed to deactivate user';
+            t('admin.users.toast.deactivateFailed', 'Failed to deactivate user');
           toast.error(msg);
         },
       },
@@ -300,7 +309,7 @@ export default function UserManagement() {
       { userId: user.id, isActive: true },
       {
         onSuccess: () => {
-          toast.success('User reactivated');
+          toast.success(t('admin.users.toast.reactivated', 'User reactivated'));
           setReactivateTarget(null);
           setDetailUser(null);
           refreshStats();
@@ -308,7 +317,7 @@ export default function UserManagement() {
         onError: (error: unknown) => {
           const msg =
             (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-            'Failed to reactivate user';
+            t('admin.users.toast.reactivateFailed', 'Failed to reactivate user');
           toast.error(msg);
         },
       },
@@ -320,10 +329,10 @@ export default function UserManagement() {
       {/* ── [A] Page Header ──────────────────────────────────────────────── */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          User Management
+          {t('admin.users.title', 'User Management')}
         </h1>
         <p className="text-muted-foreground">
-          Manage user accounts, activate or deactivate users
+          {t('admin.users.subtitle', 'Manage user accounts, activate or deactivate users')}
         </p>
       </div>
 
@@ -331,7 +340,7 @@ export default function UserManagement() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
           {
-            label: 'Total Users',
+            label: t('admin.users.stats.total', 'Total Users'),
             value: stats.total,
             icon: Users,
             color: 'text-blue-400',
@@ -339,7 +348,7 @@ export default function UserManagement() {
             filter: '',
           },
           {
-            label: 'Active',
+            label: t('admin.users.status.active', 'Active'),
             value: stats.active,
             icon: CheckCircle,
             color: 'text-emerald-400',
@@ -347,7 +356,7 @@ export default function UserManagement() {
             filter: 'active',
           },
           {
-            label: 'Inactive',
+            label: t('admin.users.status.inactive', 'Inactive'),
             value: stats.inactive,
             icon: XCircle,
             color: 'text-red-400',
@@ -355,7 +364,7 @@ export default function UserManagement() {
             filter: 'inactive',
           },
           {
-            label: 'Admin',
+            label: t('roles.admin', 'Admin'),
             value: stats.admin,
             icon: Shield,
             color: 'text-purple-400',
@@ -408,7 +417,7 @@ export default function UserManagement() {
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search users by name or email..."
+            placeholder={t('admin.users.filters.searchPlaceholder', 'Search users by name or email...')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -438,12 +447,12 @@ export default function UserManagement() {
         <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40">
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t('admin.users.table.user', 'User')}</TableHead>
+              <TableHead>{t('admin.users.field.email', 'Email')}</TableHead>
+              <TableHead>{t('admin.users.field.role', 'Role')}</TableHead>
+              <TableHead>{t('admin.users.field.status', 'Status')}</TableHead>
+              <TableHead>{t('admin.users.field.joined', 'Joined')}</TableHead>
+              <TableHead className="text-right">{t('admin.users.table.actions', 'Actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -453,7 +462,7 @@ export default function UserManagement() {
                   colSpan={6}
                   className="text-center py-12 text-muted-foreground"
                 >
-                  No users found.
+                  {t('admin.users.table.noUsers', 'No users found.')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -476,10 +485,10 @@ export default function UserManagement() {
                           {getInitials(user.name || '?')}
                         </div>
                       )}
-                      <p className="max-w-[20ch] truncate text-sm font-medium" title={user.name || 'N/A'}>
-                        {(user.name || 'N/A').length > 20
-                          ? `${(user.name || 'N/A').slice(0, 20)}...`
-                          : user.name || 'N/A'}
+                      <p className="max-w-[20ch] truncate text-sm font-medium" title={user.name || t('admin.users.na', 'N/A')}>
+                        {(user.name || t('admin.users.na', 'N/A')).length > 20
+                          ? `${(user.name || t('admin.users.na', 'N/A')).slice(0, 20)}...`
+                          : user.name || t('admin.users.na', 'N/A')}
                       </p>
                     </div>
                   </TableCell>
@@ -521,9 +530,9 @@ export default function UserManagement() {
                                 </Button>
                               </span>
                             </TooltipTrigger>
-                            {getDeactivateTooltip(user) && (
+                            {getDeactivateTooltip(user, t) && (
                               <TooltipContent>
-                                <p>{getDeactivateTooltip(user)}</p>
+                                <p>{getDeactivateTooltip(user, t)}</p>
                               </TooltipContent>
                             )}
                           </Tooltip>
@@ -545,9 +554,9 @@ export default function UserManagement() {
                                 </Button>
                               </span>
                             </TooltipTrigger>
-                            {getLicenseStatusTooltip(user) && (
+                            {getLicenseStatusTooltip(user, t) && (
                               <TooltipContent>
-                                <p>{getLicenseStatusTooltip(user)}</p>
+                                <p>{getLicenseStatusTooltip(user, t)}</p>
                               </TooltipContent>
                             )}
                           </Tooltip>
@@ -570,7 +579,7 @@ export default function UserManagement() {
         limit={limit}
         onLimitChange={setLimit}
         total={total}
-        itemLabel="users"
+        itemLabel={t('admin.users.pagination.itemLabel', 'users')}
       />
     </div>
 
@@ -583,7 +592,7 @@ export default function UserManagement() {
         <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
-              User Detail
+              {t('admin.users.detail.title', 'User Detail')}
             </DialogTitle>
           </DialogHeader>
           {detailUser && (
@@ -591,13 +600,13 @@ export default function UserManagement() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    User Information
+                    {t('admin.users.detail.userInfo', 'User Information')}
                   </p>
                 </div>
 
                 <div className="rounded-md border border-slate-200 bg-white p-2">
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                    Account
+                    {t('admin.users.detail.account', 'Account')}
                   </p>
                   <div className="flex items-center gap-3">
                     {detailUser.avatarUrl ? (
@@ -621,7 +630,7 @@ export default function UserManagement() {
                         className="truncate text-sm font-medium text-slate-900"
                         title={detailUser.name}
                       >
-                        {truncateText(detailUser.name || 'N/A')}
+                        {truncateText(detailUser.name || t('admin.users.na', 'N/A'))}
                       </p>
                       <p className="truncate text-xs text-slate-600">
                         {detailUser.email}
@@ -633,7 +642,7 @@ export default function UserManagement() {
                 <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Role
+                      {t('admin.users.field.role', 'Role')}
                     </p>
                     <div className="mt-1">
                       <RoleBadge role={detailUser.roleCode} />
@@ -642,7 +651,7 @@ export default function UserManagement() {
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Status
+                      {t('admin.users.field.status', 'Status')}
                     </p>
                     <div className="mt-1">
                       <UserStatusBadge isActive={detailUser.isActive} />
@@ -653,7 +662,7 @@ export default function UserManagement() {
                 <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Joined
+                      {t('admin.users.field.joined', 'Joined')}
                     </p>
                     <p className="mt-1 text-sm text-slate-700">
                       {new Date(detailUser.createdAt).toLocaleDateString()}
@@ -662,7 +671,7 @@ export default function UserManagement() {
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      User ID
+                      {t('admin.users.detail.userId', 'User ID')}
                     </p>
                     <p className="mt-1 text-xs font-mono text-slate-600">
                       {detailUser.id.slice(0, 8)}...
@@ -674,28 +683,28 @@ export default function UserManagement() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Profile
+                    {t('admin.users.detail.profile', 'Profile')}
                   </p>
                 </div>
 
                 <div className="rounded-md border border-slate-200 bg-white p-2">
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                    Name
+                    {t('admin.users.field.name', 'Name')}
                   </p>
                   <p
                     className="truncate text-sm text-slate-900"
-                    title={detailUser.name || 'N/A'}
+                    title={detailUser.name || t('admin.users.na', 'N/A')}
                   >
-                    {truncateText(detailUser.name || 'N/A')}
+                    {truncateText(detailUser.name || t('admin.users.na', 'N/A'))}
                   </p>
                 </div>
 
                 <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                    Email
+                    {t('admin.users.field.email', 'Email')}
                   </p>
                   <p className="text-sm text-slate-900">
-                    {detailUser.email || 'N/A'}
+                    {detailUser.email || t('admin.users.na', 'N/A')}
                   </p>
                 </div>
               </div>
@@ -705,7 +714,7 @@ export default function UserManagement() {
                   variant="outline"
                   onClick={() => setDetailUser(null)}
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </Button>
                 {detailUser.isActive &&
                   detailUser.id !== currentUserId &&
@@ -722,13 +731,13 @@ export default function UserManagement() {
                               setDeactivateTarget(detailUser);
                             }}
                           >
-                            <UserX className="h-4 w-4 mr-1" /> Deactivate
+                            <UserX className="h-4 w-4 mr-1" /> {t('admin.users.deactivate.button', 'Deactivate')}
                           </Button>
                         </span>
                       </TooltipTrigger>
-                      {getDeactivateTooltip(detailUser) && (
+                      {getDeactivateTooltip(detailUser, t) && (
                         <TooltipContent>
-                          <p>{getDeactivateTooltip(detailUser)}</p>
+                          <p>{getDeactivateTooltip(detailUser, t)}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -747,13 +756,13 @@ export default function UserManagement() {
                               setReactivateTarget(detailUser);
                             }}
                           >
-                            <UserCheck className="h-4 w-4 mr-1" /> Reactivate
+                            <UserCheck className="h-4 w-4 mr-1" /> {t('admin.users.reactivate.button', 'Reactivate')}
                           </Button>
                         </span>
                       </TooltipTrigger>
-                      {getLicenseStatusTooltip(detailUser) && (
+                      {getLicenseStatusTooltip(detailUser, t) && (
                         <TooltipContent>
-                          <p>{getLicenseStatusTooltip(detailUser)}</p>
+                          <p>{getLicenseStatusTooltip(detailUser, t)}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -775,15 +784,13 @@ export default function UserManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Deactivate User</DialogTitle>
+            <DialogTitle>{t('admin.users.deactivate.title', 'Deactivate User')}</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to deactivate{' '}
-            <strong>{deactivateTarget?.name}</strong>? They will not be able to
-            log in.
+            {t('admin.users.deactivate.confirm', 'Are you sure you want to deactivate {{name}}? They will not be able to log in.', { name: deactivateTarget?.name })}
           </p>
           <Textarea
-            placeholder="Enter reason for deactivation (required)..."
+            placeholder={t('admin.users.deactivate.reasonPlaceholder', 'Enter reason for deactivation (required)...')}
             value={deactivateReason}
             onChange={(e) => setDeactivateReason(e.target.value)}
             maxLength={500}
@@ -799,14 +806,14 @@ export default function UserManagement() {
                 setDeactivateReason('');
               }}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               variant="destructive"
               disabled={!deactivateReason.trim()}
               onClick={() => deactivateTarget && handleDeactivate(deactivateTarget)}
             >
-              Deactivate
+              {t('admin.users.deactivate.button', 'Deactivate')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -819,22 +826,20 @@ export default function UserManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reactivate User</DialogTitle>
+            <DialogTitle>{t('admin.users.reactivate.title', 'Reactivate User')}</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to reactivate{' '}
-            <strong>{reactivateTarget?.name}</strong>? They will be able to log
-            in again.
+            {t('admin.users.reactivate.confirm', 'Are you sure you want to reactivate {{name}}? They will be able to log in again.', { name: reactivateTarget?.name })}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReactivateTarget(null)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               onClick={() => reactivateTarget && handleReactivate(reactivateTarget)}
               disabled={toggleUserStatusMutation.isPending}
             >
-              Reactivate
+              {t('admin.users.reactivate.button', 'Reactivate')}
             </Button>
           </DialogFooter>
         </DialogContent>

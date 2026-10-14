@@ -174,6 +174,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
                   />
               ) : (
                 <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner">
+                  <ImageIcon className="w-10 h-10 text-white/80 mb-2" />
                   <Megaphone className="w-10 h-10 text-white/80 mb-2" />
                   <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">
                     {t('buyer.products.ads.merchantPartner', 'Merchant Partner')}
