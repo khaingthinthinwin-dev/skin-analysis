@@ -1,12 +1,12 @@
 import { useParams, useNavigate, useLocation } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { AdBannerSlider } from '@/components/shared/AdBannerSlider';
 import { ArrowLeft } from 'lucide-react';
 import { ProductGallery } from '@/features/buyer/products/components/ProductGallery';
 import { ProductInfo } from '@/features/buyer/products/components/ProductInfo';
 import { ProductTabs } from '@/features/buyer/products/components/ProductTabs';
 import { SimilarProducts } from '@/features/buyer/products/components/SimilarProducts';
-import { SidebarAdvertisements } from '@/features/buyer/products/components/SidebarAdvertisements';
 import { ProductPurchaseActions } from '@/features/buyer/products/components/ProductPurchaseActions';
 import { useProductDetail } from '@/features/buyer/products/hooks/useProductDetail';
 import { useAuth } from '@/providers/AuthProvider';
@@ -76,7 +76,9 @@ export default function ProductDetail() {
       >
         <ArrowLeft className="h-5 w-5" />
       </Button>
-      {!isMerchantView && <SidebarAdvertisements idOrSlug={product.id} />}
+      {!isMerchantView && (
+        <AdBannerSlider placement="productDetail_page_banner" fallbackProductId={product.id} />
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
         <ProductGallery images={product.images} name={product.name} />

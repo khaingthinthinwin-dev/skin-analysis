@@ -216,6 +216,10 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
           )}
         </div>
       </div>
+
+      <p className="text-xs text-muted-foreground text-center mt-2 italic">
+        Sponsored products are paid placements from merchants
+      </p>
     </div>
   )
 }
