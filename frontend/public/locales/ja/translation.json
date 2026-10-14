@@ -89,6 +89,7 @@
       "merchants": "出品者",
       "orderInsights": "注文インサイト",
       "advertisements": "広告",
+      "productReview": "レビュー",
       "reviews": "レビュー",
       "content": "コンテンツ",
       "commissionRevenue": "手数料・収益",
@@ -231,7 +232,124 @@
     "hero": {
       "title": "Cosmetics Finder 体験",
       "subtitle": "高度なAI分析によるパーソナライズされたスキンケア製品を発見",
-      "cta": "始める"
+      "cta": "始める",
+      "badge": "AIスキン診断＆スキンケアマーケットプレイス",
+      "heading": "スマートAI分析。<highlight>あなたにぴったりのスキンケアをご提案します。</highlight>",
+      "paragraph": "美しさの買い物から推測を排除しましょう。高度なAIで肌をスキャンし、正確な肌悩みを把握。皮膚科的に裏付けされた製品をその場で購入できます。",
+      "ctaPrimary": "無料AIスキン診断を始める",
+      "ctaSecondary": "スキンケアショップを見る"
+    },
+    "trustBadges": {
+      "genuine": "100%正規品",
+      "instant": "即時AI診断",
+      "verified": "認証済みマーチャント"
+    },
+    "mockup": {
+      "aiScan": "AI診断",
+      "liveReady": "ライブ対応",
+      "hydration": "水分量 88%",
+      "mildRedness": "軽度の赤み",
+      "bestMatch": "ベストAIマッチ (98%)",
+      "inStock": "在庫あり",
+      "barrierScore": "バリアスコア: 94%",
+      "optimalBalance": "バランス良好",
+      "productsCount": "1,200+ 製品",
+      "testedReady": "テスト済み"
+    },
+    "promo": {
+      "slide1": {
+        "tag": "おすすめキャンペーン",
+        "title": "保湿・バリアケアの基本",
+        "subtitle": "セラミドとヒアルロン酸配合で乾燥・敏感肌をしっとり保湿",
+        "discount": "最大25%OFF",
+        "buttonText": "保湿セールを見る"
+      },
+      "slide2": {
+        "tag": "AIおすすめ特集",
+        "title": "ニキビ・毛穴ケアの臨床的根拠あり",
+        "subtitle": "AIが選ぶサリチル酸・ナイアシンアミド配合でやさしくブレイクアウトをケア",
+        "discount": "2個で10%OFF",
+        "buttonText": "ニキビケアを見る"
+      },
+      "slide3": {
+        "tag": "季節の必需品",
+        "title": "高SPF50+ 日焼け止め",
+        "subtitle": "すべての肌タイプに軽く透明感のある幅広いUVカット",
+        "discount": "送料無料",
+        "buttonText": "日焼け止めを見る"
+      },
+      "verifiedBrand": "認証済みブランド",
+      "previousSlide": "前のスライド",
+      "nextSlide": "次のスライド",
+      "goToSlide": "スライド{{number}}へ移動"
+    },
+    "concerns": {
+      "deepHydration": {
+        "title": "高保湿",
+        "description": "乾燥・粉吹き・つっぱり感のある肌に"
+      },
+      "acnePores": {
+        "title": "ニキビ・毛穴",
+        "description": "ニキビ・黒ずみ・皮脂過多をケア"
+      },
+      "sunProtection": {
+        "title": "日焼け止め",
+        "description": "光老化を防ぐ幅広いUVカット"
+      },
+      "soothingRedness": {
+        "title": "鎮静・赤み",
+        "description": "敏感・刺激・バリア機能の低下を落ち着かせる"
+      }
+    },
+    "shopByConcern": {
+      "eyebrow": "厳選コレクション",
+      "title": "肌悩み別でスキンケアを購入",
+      "desc": "肌悩みと目的に合わせた製品を見つけてください。",
+      "link": "フルカタログを見る"
+    },
+    "howItWorks": {
+      "sectionBadge": "かんたん3ステップ",
+      "sectionTitle": "Cosmetics Finderの仕組み",
+      "sectionDesc": "肌をスキャンして理想的なスキンケアルーティンをお届けします。",
+      "step1": {
+        "title": "AIスキン診断",
+        "description": "自撮りまたは質問に回答して水分・毛穴・赤み・皮脂バランスを解析",
+        "badge": "迅速・正確"
+      },
+      "step2": {
+        "title": "成分マッチング",
+        "description": "あなたの肌に合う成分を何千もの処方からAIが絞り込み",
+        "badge": "スマートマッチング"
+      },
+      "step3": {
+        "title": "マーケットから購入",
+        "description": "認証済みマーチャントから正規品をレビューとともに安全に購入",
+        "badge": "認証済みマーチャント"
+      },
+      "cta": "今すぐ体験 — 無料スキン診断"
+    },
+    "why": {
+      "eyebrow": "私たちの取り組み",
+      "title": "なぜCosmetics Finderで購入・診断するのか",
+      "desc": "AIと本物のスキンケアコマースをつなぎます。",
+      "card1": {
+        "title": "高精度AI診断",
+        "description": "水分・質感・赤み・毛穴を数秒で解析する深層学習モデル"
+      },
+      "card2": {
+        "title": "100%正規スキンケア",
+        "description": "全てのマーチャントは認証済みで、製品は正規・安全・最適な状態で保管されています"
+      },
+      "card3": {
+        "title": "パーソナライズマッチング",
+        "description": "肌への刺激を避け、効果的な成分からあなたに合う製品を提案"
+      }
+    },
+    "cta": {
+      "title": "より健やかで輝く肌へ",
+      "desc": "AI診断で最適なスキンケアルーティンを見つけた購入者が多数います。",
+      "primary": "無料で始める",
+      "secondary": "製品を見る"
     }
   },
   "wishlist": {
@@ -480,7 +598,8 @@
       },
       "product": {
         "sku": "商品番号: {{sku}}",
-        "soldBy": "{{shopName}}が販売"
+        "soldBy": "{{shopName}}が販売",
+        "soldByShop": "<shopName>{{shopName}}</shopName>が販売"
       },
       "reviews": {
         "countLabel_other": "（{{count}}件のレビュー）",
@@ -521,7 +640,8 @@
       },
       "rating": {
         "label": "5段階中{{rating}}の評価",
-        "rateStar_other": "{{count}}つ星で評価"
+        "rateStar_other": "{{count}}つ星で評価",
+        "goToReviews": "レビューに移動。{{reviewCount}}件のレビュー、5段階中{{rating}}の評価"
       },
       "reviewForm": {
         "signInRequired": "レビューを書くにはログインしてください。",
@@ -563,6 +683,12 @@
     },
     "search": {
       "placeholder": "商品名・成分・肌悩みで検索...",
+      "aria": {
+        "productSearch": "商品検索",
+        "searchInput": "商品名・成分・肌悩みで検索",
+        "clearSearch": "検索内容をクリア",
+        "searchProducts": "商品を検索"
+      },
       "filters": "フィルター",
       "categoryTitle": "カテゴリー",
       "all": "すべて",
@@ -1197,6 +1323,87 @@
         "e_wallet": "電子ウォレット"
       },
       "itemsCount_one": "({{count}}点)"
+    }
+  },
+  "about": {
+    "hero": {
+      "heading": "<highlight>AIスキンケア</highlight>の未来を切り拓く",
+      "paragraph": "Cosmetics Finderは、AIスキン診断とスマートな製品レコメンドで、パーソナライズされたスキンケアを求める購入者と販売者をつなぎます。",
+      "cta": "AI診断を試す"
+    },
+    "story": {
+      "badge": "私たちのストーリー",
+      "title": "美しさをインテリジェンスで読み解く",
+      "p1": "多くの人が自分に合うスキンケア製品を見つけられず、従来のECではパーソナライズが不足しています。",
+      "p2": "独自のAIモデルが成分相互作用や肌の特性を分析し、一人ひとりに最適なルーティンを提案します。"
+    },
+    "missionVision": {
+      "missionTitle": "ミッション",
+      "missionDesc": "AI診断によるパーソナライズ製品レコメンドで購買につなぎ、マーチャントには管理・売上分析ツールを提供します。",
+      "visionTitle": "ビジョン",
+      "visionDesc": "試行錯誤の時代を終わらせ、AIとマルチベンダーECが生体ニーズと完璧な処方を瞬時に結びつける未来を目指します。"
+    },
+    "engine": {
+      "title": "インテリジェンスエンジン",
+      "desc": "前例のない精度を実現する、シームレスな4ステッププロセス。AIスキン分析は10秒以内に完了します。"
+    },
+    "capabilities": {
+      "sectionTitle": "できること",
+      "sectionDesc": "パーソナライズされたスキンケアのために必要なすべてを提供します。",
+      "aiSkinAnalysis": {
+        "title": "AIスキン診断",
+        "desc": "写真をアップロードして肌タイプ・肌悩み・年齢推定を即時に確認できます。"
+      },
+      "smartRecommendations": {
+        "title": "スマートレコメンド",
+        "desc": "あなたの肌タイプと悩みに合わせた製品をパーソナライズして提案します。"
+      },
+      "curatedMarketplace": {
+        "title": "厳選マーケットプレイス",
+        "desc": "信頼できるブランドのスキンケア製品を多数掲載し、肌悩みで絞り込めます。"
+      },
+      "multiLanguageSupport": {
+        "title": "多言語対応",
+        "desc": "英語・ミャンマー語・日本語で利用可能 — あなたの言語で、あなたの選択で。"
+      },
+      "securePrivate": {
+        "title": "安全・プライバシー重視",
+        "desc": "エンタープライズ級のセキュリティとプライバシーファースト設計でデータを保護します。"
+      },
+      "instantResults": {
+        "title": "即時結果",
+        "desc": "10秒未満でAI解析とリアルタイムの製品マッチングを実現します。"
+      }
+    },
+    "steps": {
+      "step1Title": "写真をアップロード",
+      "step1Desc": "鮮明な顔写真を撮影またはアップロードします。",
+      "step2Title": "AI解析",
+      "step2Desc": "肌タイプ・状態・年齢をAIが解析します。",
+      "step3Title": "スマートマッチング",
+      "step3Desc": "成分データとあなたの肌プロファイルを照合します。",
+      "step4Title": "レコメンド",
+      "step4Desc": "最適化されたパーソナライズスキンケアルーティンを受け取ります。"
+    }
+  },
+  "settings": {
+    "subtitle": "体験をカスタマイズ",
+    "cardTitle": "環境設定",
+    "cardDesc": "アプリの設定を管理",
+    "themeLabel": "テーマ",
+    "themeDesc": "お好みのテーマを選択",
+    "languageLabel": "言語",
+    "languageDesc": "お好みの言語を選択"
+  },
+  "errors": {
+    "notFound": {
+      "title": "ページが見つかりません",
+      "desc": "お探しのページは存在しないか、移動されました。"
+    },
+    "unauthorized": {
+      "title": "アクセス拒否",
+      "desc": "このページにアクセスする権限がありません。",
+      "button": "ホームへ戻る"
     }
   }
 }

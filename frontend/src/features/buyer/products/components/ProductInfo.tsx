@@ -1,8 +1,8 @@
+import { Trans, useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { ProductDetail } from '../services/product.service';
 import { StarRating } from './StarRating';
 import { ProductPurchaseActions } from './ProductPurchaseActions';
-import { useTranslation } from 'react-i18next';
 
 interface ProductInfoProps {
   product: ProductDetail;
@@ -61,9 +61,7 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
       <button
         type="button"
         onClick={showReviews}
-        aria-label={`Go to reviews. Rated ${Number(product.avgRating).toFixed(
-          1,
-        )} out of 5 from ${product.reviewCount} reviews`}
+        aria-label={t('buyer.products.rating.goToReviews', `Go to reviews. Rated ${Number(product.avgRating).toFixed(1)} out of 5 from ${product.reviewCount} reviews`, { rating: Number(product.avgRating).toFixed(1), reviewCount: product.reviewCount })}
         className="group flex cursor-pointer items-center gap-2 text-left transition-opacity hover:opacity-80"
       >
         <StarRating rating={product.avgRating} />
@@ -145,10 +143,12 @@ export function ProductInfo({ product, isMerchantView = false }: ProductInfoProp
 
       {!isMerchantView && (
         <p className="text-sm text-muted-foreground">
-          Sold by{' '}  
-          <span className="font-medium text-foreground">
-            {product.merchant.shopName}
-          </span>
+          <Trans
+            i18nKey="buyer.products.product.soldByShop"
+            defaults="Sold by <shopName>{{shopName}}</shopName>"
+            values={{ shopName: product.merchant.shopName }}
+            components={{ shopName: <span className="font-medium text-foreground" /> }}
+          />
         </p>
       )}
     </div>

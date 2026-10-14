@@ -125,7 +125,7 @@ describe('SponsoredAdSlider (checkout)', () => {
     renderSlider()
 
     const image = await screen.findByAltText('Glow Serum')
-    const frame = image.parentElement
+    const frame = image.parentElement as HTMLElement
 
     expect(frame).toHaveClass('h-[241.6px]')
     expect(frame).toHaveClass('items-center')

@@ -31,7 +31,7 @@ export function StarRating({
         const fill = Math.min(Math.max(displayRating - index, 0), 1);
 
         const starVisual = (
-          <span className="relative block">
+          <span className="relative block" aria-label={t('buyer.products.rating.rateStar', value === 1 ? `Rate ${value} star` : `Rate ${value} stars`, { count: value })}>
             <Star
               className={cn(
                 starSize,
