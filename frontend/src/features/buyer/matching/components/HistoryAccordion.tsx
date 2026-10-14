@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/card'
 import { ChevronDown } from 'lucide-react'
 import type { HistorySession } from '@/schemas/matching.schema'
@@ -30,13 +31,14 @@ interface HistoryAccordionProps {
 }
 
 export function HistoryAccordion({ sessions }: HistoryAccordionProps) {
+  const { t } = useTranslation('skin')
   const [openId, setOpenId] = useState<string | null>(sessions[0]?.sessionId ?? null)
 
   if (!sessions || sessions.length === 0) return null
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-bold">Previously Recommended</h3>
+      <h3 className="text-lg font-bold">{t('matchingPage.previouslyRecommended')}</h3>
       {sessions.map((session) => {
         const isOpen = openId === session.sessionId
         const products = session.products ?? []
@@ -47,8 +49,17 @@ export function HistoryAccordion({ sessions }: HistoryAccordionProps) {
               className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
             >
               <div>
-                <p className="text-sm font-semibold text-foreground">{formatDate(session.sessionDate)} — {(session.skinTypesUsed ?? [])[0] || 'Unknown'} Analysis</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{products.length} products recommended</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {t('matchingPage.historyTitle', {
+                    date: formatDate(session.sessionDate),
+                    skinType: t(`matchingPage.skinTypes.${(session.skinTypesUsed ?? [])[0]?.toLowerCase()}`, {
+                      defaultValue: (session.skinTypesUsed ?? [])[0] || t('matchingPage.unknown'),
+                    }),
+                  })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('matchingPage.productsRecommended', { count: products.length })}
+                </p>
               </div>
               <ChevronDown className={cn(
                 'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
@@ -79,7 +90,7 @@ export function HistoryAccordion({ sessions }: HistoryAccordionProps) {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground truncate">{rec.name}</p>
                         {rec.matchScore !== null && (
-                          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{rec.matchScore}% match</p>
+                          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{t('matchingPage.matchPercent', { percent: rec.matchScore })}</p>
                         )}
                         <p className="text-xs text-muted-foreground">{Number(rec.price).toLocaleString()}Ks</p>
                       </div>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Eye, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -73,6 +74,7 @@ export function AdTable({
   isLoading = false,
   highlightAdId = null,
 }: AdTableProps) {
+  const { t } = useTranslation()
   const selectableAds = ads.filter((ad) => ad.approvalStatus === 'pending')
   const allSelectableSelected =
     selectableAds.length > 0 && selectableAds.every((ad) => selectedIds.includes(ad.id))
@@ -117,20 +119,20 @@ export function AdTable({
               checked={allSelectableSelected}
               onCheckedChange={onSelectAll}
               disabled={selectableAds.length === 0}
-              aria-label="Select all pending advertisements"
+              aria-label={t('admin.ads.list.selectAll', 'Select all pending advertisements')}
             />
           )}
         </th>
-        <th scope="col" className={TH_CLASS}>Shop</th>
-        <th scope="col" className={TH_CLASS}>Title</th>
-        <th scope="col" className={`${TH_CLASS} ${PLACEMENT_COL_CLASS}`}>Placement</th>
-        <th scope="col" className={TH_CLASS}>Tier</th>
-        <th scope="col" className={TH_CLASS}>Status</th>
-        <th scope="col" className={TH_CLASS}>Payment</th>
-        <th scope="col" className={`${TH_CLASS} text-right`}>Fee</th>
-        <th scope="col" className={`${TH_CLASS} ${SUBMITTED_COL_CLASS}`}>Submitted</th>
-        <th scope="col" className={TH_CLASS}>Schedule</th>
-        <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+        <th scope="col" className={TH_CLASS}>{t('admin.ads.list.table.shop', 'Shop')}</th>
+        <th scope="col" className={TH_CLASS}>{t('admin.ads.list.table.title', 'Title')}</th>
+        <th scope="col" className={`${TH_CLASS} ${PLACEMENT_COL_CLASS}`}>{t('admin.ads.list.table.placement', 'Placement')}</th>
+        <th scope="col" className={TH_CLASS}>{t('admin.ads.list.table.tier', 'Tier')}</th>
+        <th scope="col" className={TH_CLASS}>{t('admin.ads.list.table.status', 'Status')}</th>
+        <th scope="col" className={TH_CLASS}>{t('admin.ads.list.table.payment', 'Payment')}</th>
+        <th scope="col" className={`${TH_CLASS} text-right`}>{t('admin.ads.list.table.fee', 'Fee')}</th>
+        <th scope="col" className={`${TH_CLASS} ${SUBMITTED_COL_CLASS}`}>{t('admin.ads.list.table.submitted', 'Submitted')}</th>
+        <th scope="col" className={TH_CLASS}>{t('admin.ads.list.table.schedule', 'Schedule')}</th>
+        <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>{t('admin.ads.list.table.actions', 'Actions')}</th>
       </tr>
     </thead>
   )
@@ -139,7 +141,7 @@ export function AdTable({
     <tbody>
       <tr>
         <td colSpan={COLUMNS} className={`${TD_BASE} text-center py-6 text-muted-foreground`}>
-          No advertisements found.
+          {t('admin.ads.list.empty', 'No advertisements found.')}
         </td>
       </tr>
     </tbody>
@@ -150,6 +152,7 @@ export function AdTable({
     const selected = selectedIds.includes(ad.id)
     const isHighlighted = highlightAdId === ad.id
     const rowClass = `${ROW_BASE}${selected ? ' bg-secondary/40' : ''}`
+    const placementLabel = t(`admin.ads.placement.${ad.placement}`, PLACEMENT_LABELS[ad.placement])
 
     return (
       <tr
@@ -162,7 +165,7 @@ export function AdTable({
             checked={selected}
             onCheckedChange={(checked) => onSelectAd(ad.id, checked)}
             disabled={!selectable}
-            aria-label={`Select advertisement ${ad.title}`}
+            aria-label={t('admin.ads.list.selectAdvertisement', 'Select advertisement {{title}}', { title: ad.title })}
           />
         </td>
         <td className={`${TD_BASE} text-foreground font-semibold ${getCellHighlight(isHighlighted, 1)}`}>
@@ -175,14 +178,14 @@ export function AdTable({
             {ad.title}
             {isHighlighted && (
               <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white animate-pulse">
-                NEW
+                {t('admin.ads.list.newBadge', 'NEW')}
               </span>
             )}
           </div>
         </td>
         <td className={`${TD_BASE} ${PLACEMENT_COL_CLASS} ${getCellHighlight(isHighlighted, 3)}`}>
-          <div className="max-w-[120px] truncate" title={PLACEMENT_LABELS[ad.placement]}>
-            {PLACEMENT_LABELS[ad.placement]}
+          <div className="max-w-[120px] truncate" title={placementLabel}>
+            {placementLabel}
           </div>
         </td>
         <td className={`${TD_BASE} ${getCellHighlight(isHighlighted, 4)}`}>
@@ -212,7 +215,7 @@ export function AdTable({
                 size="sm"
                 variant="outline"
                 onClick={() => onReview(ad.id)}
-                aria-label={`Review ${ad.title}`}
+                aria-label={t('admin.ads.list.reviewAdvertisement', 'Review {{title}}', { title: ad.title })}
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -221,7 +224,7 @@ export function AdTable({
                 size="sm"
                 variant="outline"
                 onClick={() => onView(ad.id)}
-                aria-label={`View ${ad.title}`}
+                aria-label={t('admin.ads.list.viewAdvertisement', 'View {{title}}', { title: ad.title })}
               >
                 <Eye className="h-4 w-4" />
               </Button>

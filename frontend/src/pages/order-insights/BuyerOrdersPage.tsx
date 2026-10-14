@@ -40,22 +40,22 @@ type BuyerKpiSet = {
 
 const FIXED_KPIS: Partial<Record<'all' | 'placed' | 'delivered', BuyerKpiSet>> = {
   all: {
-    orders: { label: 'Total Orders', value: 30 },
-    value: { label: 'Total Spent', value: 893500, isCurrency: true },
-    progress: { label: 'In Progress', value: 26 },
-    completed: { label: 'Delivered', value: 4 },
+    orders: { label: 'buyer.orders.summary.totalOrders', value: 30 },
+    value: { label: 'buyer.orders.summary.totalSpent', value: 893500, isCurrency: true },
+    progress: { label: 'buyer.orders.summary.inProgress', value: 26 },
+    completed: { label: 'buyer.orders.summary.delivered', value: 4 },
   },
   placed: {
-    orders: { label: 'Placed Orders', value: 5 },
-    value: { label: 'Placed Value', value: 90000, isCurrency: true },
-    progress: { label: 'Awaiting Shipment', value: 5 },
-    completed: { label: 'Completed', value: 0 },
+    orders: { label: 'buyer.orders.summary.placedOrders', value: 5 },
+    value: { label: 'buyer.orders.summary.placedValue', value: 90000, isCurrency: true },
+    progress: { label: 'buyer.orders.summary.awaitingShipment', value: 5 },
+    completed: { label: 'buyer.orders.summary.completed', value: 0 },
   },
   delivered: {
-    orders: { label: 'Delivered Orders', value: 4 },
-    value: { label: 'Delivered Value', value: 176000, isCurrency: true },
-    progress: { label: 'In Progress', value: 0 },
-    completed: { label: 'Completed', value: 4 },
+    orders: { label: 'buyer.orders.summary.deliveredOrders', value: 4 },
+    value: { label: 'buyer.orders.summary.deliveredValue', value: 176000, isCurrency: true },
+    progress: { label: 'buyer.orders.summary.inProgress', value: 0 },
+    completed: { label: 'buyer.orders.summary.completed', value: 4 },
   },
 };
 
@@ -91,10 +91,10 @@ function BuyerOrdersPageContent() {
   const hasDateFilter = Boolean(filters.from || filters.to);
   const fixedKpis = hasDateFilter ? undefined : FIXED_KPIS[filters.status as 'all' | 'placed' | 'delivered'];
   const kpis: BuyerKpiSet = fixedKpis ?? {
-    orders: { label: 'Filtered Orders', value: data?.meta.total ?? 0 },
-    value: { label: 'Filtered Value', value: data?.summary.totalSpent ?? 0, isCurrency: true },
-    progress: { label: 'In Progress', value: data?.summary.inProgress ?? 0 },
-    completed: { label: 'Completed', value: data?.summary.completed ?? 0 },
+    orders: { label: 'buyer.orders.summary.filteredOrders', value: data?.meta.total ?? 0 },
+    value: { label: 'buyer.orders.summary.filteredValue', value: data?.summary.totalSpent ?? 0, isCurrency: true },
+    progress: { label: 'buyer.orders.summary.inProgress', value: data?.summary.inProgress ?? 0 },
+    completed: { label: 'buyer.orders.summary.completed', value: data?.summary.completed ?? 0 },
   };
 
   const formatKpiValue = (kpi: BuyerKpi) =>
@@ -283,7 +283,7 @@ function BuyerOrdersPageContent() {
           >
             <div>
               <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
-                {kpis.orders.label}
+                {t(kpis.orders.label)}
               </p>
               <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.orders)}
@@ -299,7 +299,7 @@ function BuyerOrdersPageContent() {
           >
             <div>
               <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
-                {kpis.value.label}
+                {t(kpis.value.label)}
               </p>
               <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.value)}
@@ -315,7 +315,7 @@ function BuyerOrdersPageContent() {
           >
             <div>
               <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
-                {kpis.progress.label}
+                {t(kpis.progress.label)}
               </p>
               <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.progress)}
@@ -331,7 +331,7 @@ function BuyerOrdersPageContent() {
           >
             <div>
               <p className="m-0 text-[12.5px] font-medium tracking-[0.2px] text-gray-500 dark:text-slate-300 oidark:text-muted-foreground">
-                {kpis.completed.label}
+                {t(kpis.completed.label)}
               </p>
               <p className="mt-[6px] text-[22px] font-bold tracking-[-0.3px] text-gray-900 dark:text-slate-100 oidark:text-foreground">
                 {formatKpiValue(kpis.completed)}

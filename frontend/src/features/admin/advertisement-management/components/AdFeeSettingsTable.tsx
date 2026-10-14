@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { AdminAdFeeSetting } from '@/types/admin-ad-management';
+import { PLACEMENT_LABELS } from '../utils/labels';
 
 interface AdFeeSettingsTableProps {
   feeSettings?: AdminAdFeeSetting[];
@@ -29,31 +31,32 @@ export const AdFeeSettingsTable: React.FC<AdFeeSettingsTableProps> = ({
   feeSettings = [],
   onUpdateRate,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="w-full border-separate border-spacing-0">
         <thead className="sticky top-0 z-10">
           <tr>
-            <th scope="col" className={TH_CLASS}>Placement Location</th>
-            <th scope="col" className={TH_CLASS}>Tier</th>
-            <th scope="col" className={TH_CLASS}>Daily Rate (KS)</th>
-            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.adTable.header.placement', 'Placement Location')}</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.adTable.header.tier', 'Tier')}</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.fee.adTable.header.dailyRate', 'Daily Rate (KS)')}</th>
+            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>{t('admin.ads.fee.adTable.header.actions', 'Actions')}</th>
           </tr>
         </thead>
         <tbody>
           {feeSettings.length === 0 ? (
             <tr>
               <td colSpan={4} className={`${TD_CLASS} py-6 text-center text-muted-foreground`}>
-                No fee settings configured.
+                {t('admin.ads.fee.adTable.empty', 'No fee settings configured.')}
               </td>
             </tr>
           ) : (
             feeSettings.map((setting) => (
               <tr key={setting.id} className={ROW_CLASS}>
                 <td className={`${TD_CLASS} font-medium capitalize text-foreground`}>
-                  {setting.placement.replace('_', ' ')}
+                  {t(`admin.ads.placement.${setting.placement}`, PLACEMENT_LABELS[setting.placement])}
                 </td>
-                <td className={`${TD_CLASS} capitalize`}>{setting.tier}</td>
+                <td className={`${TD_CLASS} capitalize`}>{t(`admin.ads.tier.${setting.tier}`, setting.tier)}</td>
                 <td className={`${TD_CLASS} whitespace-nowrap`}>
                   <Input
                     type="number"
@@ -70,7 +73,7 @@ export const AdFeeSettingsTable: React.FC<AdFeeSettingsTableProps> = ({
                       if (input) onUpdateRate?.(setting.id, parseFloat(input.value));
                     }}
                   >
-                    Update Rate
+                    {t('admin.ads.fee.adTable.updateRate', 'Update Rate')}
                   </Button>
                 </td>
               </tr>

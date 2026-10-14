@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,25 +23,26 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatPrice } from '@/lib/format'
+import i18n from '@/i18n'
 import { ADMIN_AD_PLACEMENTS, ADMIN_AD_TIERS, type AdminAdFeeSetting, type CreateFeeSettingInput } from '@/types/admin-ad-management'
 import type { Placement, Tier } from '@/types/admin-ad-management'
 import { PLACEMENT_LABELS, TIER_LABELS, todayIso } from '../utils/labels'
 
 const createFeeFormSchema = z.object({
-  placement: z.enum(ADMIN_AD_PLACEMENTS, { message: 'Placement is required' }),
-  tier: z.enum(ADMIN_AD_TIERS, { message: 'Tier is required' }),
+  placement: z.enum(ADMIN_AD_PLACEMENTS, { error: () => i18n.t('admin.ads.fee.validation.placementRequired', 'Placement is required') }),
+  tier: z.enum(ADMIN_AD_TIERS, { error: () => i18n.t('admin.ads.fee.validation.tierRequired', 'Tier is required') }),
   daily_rate: z
-    .string({ message: 'Daily rate must be greater than 0' })
-    .refine((v) => Number(v) > 0, 'Daily rate must be greater than 0'),
+    .string({ error: () => i18n.t('admin.ads.fee.validation.dailyRate', 'Daily rate must be greater than 0') })
+    .refine((v) => Number(v) > 0, { error: () => i18n.t('admin.ads.fee.validation.dailyRate', 'Daily rate must be greater than 0') }),
   duration_days: z
-    .string({ message: 'Duration must be at least 1 day' })
-    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, 'Duration must be at least 1 day'),
+    .string({ error: () => i18n.t('admin.ads.fee.validation.duration', 'Duration must be at least 1 day') })
+    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, { error: () => i18n.t('admin.ads.fee.validation.duration', 'Duration must be at least 1 day') }),
   max_ads: z
-    .string({ message: 'Max ads must be at least 1' })
-    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, 'Max ads must be at least 1'),
+    .string({ error: () => i18n.t('admin.ads.fee.validation.maxAds', 'Max ads must be at least 1') })
+    .refine((v) => Number.isInteger(Number(v)) && Number(v) >= 1, { error: () => i18n.t('admin.ads.fee.validation.maxAds', 'Max ads must be at least 1') }),
   effective_from: z
-    .string({ message: 'Effective date is required' })
-    .refine((v) => !isNaN(Date.parse(v)), 'Effective date is required'),
+    .string({ error: () => i18n.t('admin.ads.fee.validation.effectiveFrom', 'Effective date is required') })
+    .refine((v) => !isNaN(Date.parse(v)), { error: () => i18n.t('admin.ads.fee.validation.effectiveFrom', 'Effective date is required') }),
 })
 
 // Creating a package does not collect a change reason, but POST /admin/ad-fees
@@ -65,6 +67,7 @@ export function CreateFeeModal({
   onSubmit,
   onClose,
 }: CreateFeeModalProps) {
+  const { t } = useTranslation()
   const form = useForm<CreateFeeFormValues>({
     resolver: zodResolver(createFeeFormSchema),
     defaultValues: {
@@ -110,9 +113,9 @@ export function CreateFeeModal({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl sm:gap-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle>Create Fee Setting</DialogTitle>
+          <DialogTitle>{t('admin.ads.fee.create.title', 'Create Fee Setting')}</DialogTitle>
           <DialogDescription>
-            Define a new advertising fee for a placement and tier combination.
+            {t('admin.ads.fee.create.description', 'Define a new advertising fee for a placement and tier combination.')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -136,11 +139,11 @@ export function CreateFeeModal({
                 name="placement"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Placement</FormLabel>
+                    <FormLabel>{t('admin.ads.fee.create.placementLabel', 'Placement')}</FormLabel>
                     <Select value={field.value ?? ''} onValueChange={(value) => handlePlacementChange(value as Placement)}>
                       <FormControl>
-                        <SelectTrigger aria-label="Placement" className="h-11">
-                          <SelectValue placeholder="Select placement" />
+                        <SelectTrigger aria-label={t('admin.ads.fee.create.placementLabel', 'Placement')} className="h-11">
+                          <SelectValue placeholder={t('admin.ads.fee.create.placementPlaceholder', 'Select placement')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -150,10 +153,12 @@ export function CreateFeeModal({
                             value={placement}
                             disabled={selectedTier !== undefined && isCombinationTaken(placement, selectedTier)}
                           >
-                            {PLACEMENT_LABELS[placement]}
                             {selectedTier !== undefined && isCombinationTaken(placement, selectedTier)
-                              ? ' (already exists)'
-                              : ''}
+                              ? t('admin.ads.fee.create.optionAlreadyExists', {
+                                  label: t(`admin.ads.placement.${placement}`, PLACEMENT_LABELS[placement]),
+                                  defaultValue: '{{label}} (already exists)',
+                                })
+                              : t(`admin.ads.placement.${placement}`, PLACEMENT_LABELS[placement])}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -167,14 +172,14 @@ export function CreateFeeModal({
                 name="tier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tier</FormLabel>
+                    <FormLabel>{t('admin.ads.fee.create.tierLabel', 'Tier')}</FormLabel>
                     <Select
                         value={field.value ?? ''}
                         onValueChange={(value) => handleTierChange(value as Tier)}
                       >
                         <FormControl>
-                          <SelectTrigger aria-label="Tier" className="h-11">
-                            <SelectValue placeholder="Select tier" />
+                          <SelectTrigger aria-label={t('admin.ads.fee.create.tierLabel', 'Tier')} className="h-11">
+                            <SelectValue placeholder={t('admin.ads.fee.create.tierPlaceholder', 'Select tier')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -184,10 +189,12 @@ export function CreateFeeModal({
                               value={tier}
                               disabled={selectedPlacement !== undefined && isCombinationTaken(selectedPlacement, tier)}
                             >
-                              {TIER_LABELS[tier]}
                               {selectedPlacement !== undefined && isCombinationTaken(selectedPlacement, tier)
-                                ? ' (already exists)'
-                                : ''}
+                                ? t('admin.ads.fee.create.optionAlreadyExists', {
+                                    label: t(`admin.ads.tier.${tier}`, TIER_LABELS[tier]),
+                                    defaultValue: '{{label}} (already exists)',
+                                  })
+                                : t(`admin.ads.tier.${tier}`, TIER_LABELS[tier])}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -204,7 +211,7 @@ export function CreateFeeModal({
                 name="daily_rate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Daily rate</FormLabel>
+                    <FormLabel>{t('admin.ads.fee.dailyRateLabel', 'Daily rate')}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" min="0.01" placeholder="0.00" className="h-11" {...field} />
                     </FormControl>
@@ -217,7 +224,7 @@ export function CreateFeeModal({
                 name="duration_days"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration (days)</FormLabel>
+                    <FormLabel>{t('admin.ads.fee.durationLabel', 'Duration (days)')}</FormLabel>
                     <FormControl>
                       <Input type="number" step="1" min="1" placeholder="7" className="h-11" {...field} />
                     </FormControl>
@@ -230,7 +237,7 @@ export function CreateFeeModal({
                 name="max_ads"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Max ads</FormLabel>
+                    <FormLabel>{t('admin.ads.fee.maxAdsLabel', 'Max ads')}</FormLabel>
                     <FormControl>
                       <Input type="number" step="1" min="1" placeholder="5" className="h-11" {...field} />
                     </FormControl>
@@ -241,7 +248,7 @@ export function CreateFeeModal({
             </div>
 
             <div className="flex items-center justify-between rounded-md border bg-muted/30 p-4 text-sm">
-              <span>Total fee (Daily rate x Duration)</span>
+              <span>{t('admin.ads.fee.totalFeeLabel', 'Total fee (Daily rate x Duration)')}</span>
               <span className="font-semibold">{formatPrice(totalFeePreview)}</span>
             </div>
 
@@ -250,7 +257,7 @@ export function CreateFeeModal({
               name="effective_from"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Effective from</FormLabel>
+                  <FormLabel>{t('admin.ads.fee.effectiveFromLabel', 'Effective from')}</FormLabel>
                   <FormControl>
                     <Input type="date" className="h-11" {...field} />
                   </FormControl>
@@ -261,16 +268,16 @@ export function CreateFeeModal({
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </Button>
               <Button type="submit" disabled={isLoading || isTakenCombination}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    {t('admin.ads.fee.create.creating', 'Creating...')}
                   </>
                 ) : (
-                  'Create Fee Setting'
+                  t('admin.ads.fee.create.submit', 'Create Fee Setting')
                 )}
               </Button>
             </DialogFooter>

@@ -110,6 +110,52 @@
     "moderate": "Moderate",
     "severe": "Severe"
   },
+  "condition": {
+    "acne": "Acne & Blemishes",
+    "redness": "Facial Redness",
+    "texture": "Skin Texture",
+    "pigmentation": "Pigmentation & Spots",
+    "dryness": "Dryness",
+    "pore_size": "Pore Size"
+  },
+  "conditionDescriptions": {
+    "acne": {
+      "NONE": "Minimal bacterial or inflammatory lesions detected.",
+      "MILD": "A sparse collection of small lesions confined to the lower face.",
+      "MODERATE": "Multiple active lesions with mild inflammation in the U-zone.",
+      "SEVERE": "Widespread inflammatory lesions with nodular structure across multiple zones."
+    },
+    "redness": {
+      "NONE": "Even skin tone with no visible vascular dilation.",
+      "MILD": "Slight vascular dilation observed around central cheek area.",
+      "MODERATE": "Persistent vascular congestion across the central face.",
+      "SEVERE": "Diffuse erythema with notable vascular prominence and flushing episodes."
+    },
+    "texture": {
+      "NONE": "Smooth surface with uniform micro-texture.",
+      "MILD": "Minor epidermal roughness present on light-reflective zones.",
+      "MODERATE": "Irregular texture with visible surface roughness and fine creping.",
+      "SEVERE": "Pronounced roughness with deep creping and enlarged skin structure."
+    },
+    "pigmentation": {
+      "NONE": "Even melanin distribution with negligible photo-damage.",
+      "MILD": "Faint localized pigmentation with light sun exposure marks.",
+      "MODERATE": "Clustered hyperpigmentation with darkened patches on exposed skin.",
+      "SEVERE": "Dense hyperpigmentation covering large continuous surface areas."
+    },
+    "dryness": {
+      "NONE": "Well-hydrated surface with intact lipid barrier.",
+      "MILD": "Noticeable but minor moisture depletion in exposed regions.",
+      "MODERATE": "Noticeable moisture depletion detected along the lateral jawline.",
+      "SEVERE": "Severe dehydration with flaking and compromised barrier function."
+    },
+    "pore_size": {
+      "NONE": "Pores are compact with minimal follicular dilation.",
+      "MILD": "Slight follicular dilation in the nasal bridge and inner cheek junction.",
+      "MODERATE": "Enlarged pores with visible sebum accumulation across the T-Zone.",
+      "SEVERE": "Severe follicular dilation with obstructed and highly visible pores."
+    }
+  },
   "findings": {
     "title": "Clinical Findings",
     "overallAssessment": "Overall Assessment",
@@ -298,5 +344,140 @@
     "low": "LOW",
     "moderate": "MODERATE",
     "high": "HIGH"
+  },
+  "scanner": {
+    "viewHistory": "View History",
+    "liveScan": "Live scan",
+    "uploadPhotos": "Upload photos",
+    "whatWeCheck": "WHAT WE CHECK",
+    "metricsTitlePrefix": "10 skin metrics in",
+    "metricsTitleEmphasis": "one selfie",
+    "metricsTitleEnd": ".",
+    "metricsDescription": "Our on-device model scores acne, dark circles, pigmentation, oiliness, redness, hydration, pores, fine lines, dark spots and overall tone — then matches your routine.",
+    "deviceTitle": "Stays on your device",
+    "deviceDescription": "Frames never leave your browser.",
+    "trackingTitle": "Live face tracking",
+    "trackingDescription": "We auto-capture the sharpest moment.",
+    "daylightTitle": "Best with daylight",
+    "daylightDescription": "Face a window — no harsh overhead light.",
+    "averageScan": "Average scan: 30 s",
+    "freeNoSignup": "Free, no signup",
+    "capturedSharp": "Selfie captured & sharp",
+    "liveTracking": "Live tracking active",
+    "closeCamera": "Close camera",
+    "captureFrame": "Capture frame",
+    "readyWhen": "Ready when you are",
+    "framesLocal": "Frames stay on your device. Nothing is uploaded until you press Analyze.",
+    "useCameraDialog": "Use camera dialog",
+    "cameraOpenError": "Unable to open camera. Please check camera permissions or upload a photo.",
+    "imageLoaded": "Image loaded & validated",
+    "chooseAnotherFile": "Choose another file",
+    "supportedFormats": "Supports JPG, PNG, WebP (Max 10MB)",
+    "browseFiles": "Browse Files",
+    "privateOnDevice": "Private — on-device",
+    "liveAiOverlay": "Live AI overlay",
+    "concernsAnalyzed": "10 concerns analysed",
+    "capturedCount": "1/1 captured",
+    "notCapturedCount": "0/1 captured",
+    "reset": "Reset",
+    "analyzeSkin": "Analyze my skin"
+  },
+  "matchingPage": {
+    "title": "Recommended for You",
+    "aiAnalysis": "AI Analysis",
+    "generalPicks": "General Picks",
+    "aiDescription": "Based on your AI analysis · {{skinType}} · {{count}} results",
+    "genericDescription": "Showing featured products · No skin analysis found",
+    "allTypes": "All Types",
+    "filters": "Filters",
+    "category": "Category",
+    "skinType": "Skin Type",
+    "priceRange": "Price Range",
+    "min": "Min",
+    "max": "Max",
+    "rating": "Rating",
+    "ratingOption": "{{rating}}+ Stars",
+    "resetFilters": "Reset Filters",
+    "clearAll": "Clear All",
+    "minPriceChip": "Min: {{price}}Ks",
+    "maxPriceChip": "Max: {{price}}Ks",
+    "removeFilter": "Remove {{label}}",
+    "matchPercent": "{{percent}}% Match",
+    "sale": "SALE",
+    "outOfStock": "OUT OF STOCK",
+    "soldBy": "Sold by {{brand}}",
+    "addToCart": "Add to cart",
+    "addToWishlist": "Add to wishlist",
+    "removeFromWishlist": "Remove from wishlist",
+    "previouslyRecommended": "Previously Recommended",
+    "historyTitle": "{{date}} — {{skinType}} Analysis",
+    "unknown": "Unknown",
+    "productsRecommended_one": "{{count}} product recommended",
+    "productsRecommended_other": "{{count}} products recommended",
+    "showLess": "Show less",
+    "loadingAllHistory": "Loading all history…",
+    "seeMoreHistory": "See more{{countSuffix}}",
+    "noHistory": "No recommendation history yet",
+    "noHistoryDescription": "Complete a skin analysis to see your past recommendations here.",
+    "refreshing": "Refreshing recommendations…",
+    "emptyState": "No products match your filters. Try adjusting your criteria.",
+    "error": "Something went wrong. Please try again.",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "login": "Log In",
+    "showProducts": "Show {{count}} Products",
+    "priceErrors": {
+      "minGreaterThanMax": "Minimum price cannot be greater than maximum price.",
+      "negative": "Price cannot be negative.",
+      "invalid": "Please enter a valid price."
+    },
+    "skinTypes": {
+      "oily": "Oily",
+      "dry": "Dry",
+      "combination": "Combination",
+      "sensitive": "Sensitive",
+      "normal": "Normal"
+    },
+    "badges": {
+      "featured": "⭐ Featured",
+      "topRated": "🏆 Top Rated",
+      "bestSeller": "🔥 Best Seller",
+      "new": "✨ New"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "previousPage": "Previous page",
+      "previous": "Prev",
+      "nextPage": "Next page",
+      "next": "Next",
+      "goToPage": "Go to page {{page}}"
+    },
+    "freshResults": {
+      "title": "Want Fresh Results?",
+      "description": "Retake your skin analysis for updated recommendations",
+      "retake": "Retake Analysis"
+    },
+    "profilePrompt": {
+      "title": "Get Personalized Recommendations",
+      "description": "Run an AI skin analysis to receive products matched to your skin type and concerns",
+      "start": "Start Skin Analysis"
+    },
+    "cartDialog": {
+      "title": "Already in Cart",
+      "description": "This product is already in cart."
+    },
+    "loginDialog": {
+      "title": "Log In Required",
+      "wishlistDescription": "Please log in to add items to your wishlist.",
+      "cartDescription": "Please log in to add items to your cart."
+    },
+    "toasts": {
+      "buyerOnly": "Shopping features are only available to buyers.",
+      "removedFromWishlist": "Removed from wishlist",
+      "addedToWishlist": "Added to wishlist",
+      "alreadyInWishlist": "Already in your wishlist",
+      "error": "Something went wrong. Please try again.",
+      "addedToCart": "Added to cart"
+    }
   }
 }

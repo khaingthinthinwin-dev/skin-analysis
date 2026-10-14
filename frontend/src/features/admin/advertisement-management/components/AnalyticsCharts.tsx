@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Card,
   CardContent,
@@ -32,6 +33,7 @@ const PIE_COLORS = [
 
 // Renders revenue share as an accessible SVG pie chart with a legend.
 function RevenuePieChart({ title, description, rows }: PieChartProps) {
+  const { t } = useTranslation()
   const total = rows.reduce((sum, row) => sum + Number(row.revenue), 0)
   const slices =
     total > 0
@@ -71,23 +73,37 @@ function RevenuePieChart({ title, description, rows }: PieChartProps) {
       </CardHeader>
       <CardContent>
         {rows.length === 0 || total <= 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No data</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {t('admin.ads.analytics.charts.noData', 'No data')}
+          </p>
         ) : (
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
             <svg
               viewBox="0 0 180 180"
               className="h-44 w-44 shrink-0"
               role="img"
-              aria-label={`${title} pie chart`}
+              aria-label={t('admin.ads.analytics.charts.pieChartLabel', '{{title}} pie chart', { title })}
             >
               {slices.map((slice) =>
                 slice.path ? (
                   <path key={slice.key} d={slice.path} fill={slice.color}>
-                    <title>{`${slice.label}: ${formatPrice(slice.revenue)} (${slice.percent}%)`}</title>
+                    <title>
+                      {t('admin.ads.analytics.charts.segmentTitle', '{{label}}: {{revenue}} ({{percent}}%)', {
+                        label: slice.label,
+                        revenue: formatPrice(slice.revenue),
+                        percent: slice.percent,
+                      })}
+                    </title>
                   </path>
                 ) : (
                   <circle key={slice.key} cx={90} cy={90} r={80} fill={slice.color}>
-                    <title>{`${slice.label}: ${formatPrice(slice.revenue)} (${slice.percent}%)`}</title>
+                    <title>
+                      {t('admin.ads.analytics.charts.segmentTitle', '{{label}}: {{revenue}} ({{percent}}%)', {
+                        label: slice.label,
+                        revenue: formatPrice(slice.revenue),
+                        percent: slice.percent,
+                      })}
+                    </title>
                   </circle>
                 ),
               )}
@@ -122,10 +138,11 @@ interface RevenueByPlacementChartProps {
 }
 
 export function RevenueByPlacementChart({ rows }: RevenueByPlacementChartProps) {
+  const { t } = useTranslation()
   return (
     <RevenuePieChart
-      title="Revenue by Placement"
-      description="Revenue share grouped by ad placement"
+      title={t('admin.ads.analytics.charts.revenueByPlacement', 'Revenue by Placement')}
+      description={t('admin.ads.analytics.charts.revenueByPlacementDescription', 'Revenue share grouped by ad placement')}
       rows={rows.map((row) => ({
         label: row.placementName,
         name: row.placement,
@@ -140,10 +157,11 @@ interface RevenueByTierChartProps {
 }
 
 export function RevenueByTierChart({ rows }: RevenueByTierChartProps) {
+  const { t } = useTranslation()
   return (
     <RevenuePieChart
-      title="Revenue by Tier"
-      description="Revenue share grouped by advertising tier"
+      title={t('admin.ads.analytics.charts.revenueByTier', 'Revenue by Tier')}
+      description={t('admin.ads.analytics.charts.revenueByTierDescription', 'Revenue share grouped by advertising tier')}
       rows={rows.map((row) => ({
         label: row.tierName,
         name: row.tier,
@@ -158,17 +176,20 @@ interface RevenueTrendChartProps {
 }
 
 export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
+  const { t } = useTranslation()
   const [hovered, setHovered] = useState<number | null>(null)
 
   if (rows.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Revenue Trend</CardTitle>
-          <CardDescription>Daily revenue over the selected period</CardDescription>
+          <CardTitle className="text-base">{t('admin.ads.analytics.charts.revenueTrend', 'Revenue Trend')}</CardTitle>
+          <CardDescription>{t('admin.ads.analytics.charts.dailyRevenue', 'Daily revenue over the selected period')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="py-6 text-center text-sm text-muted-foreground">No data</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {t('admin.ads.analytics.charts.noData', 'No data')}
+          </p>
         </CardContent>
       </Card>
     )
@@ -217,8 +238,8 @@ export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Revenue Trend</CardTitle>
-        <CardDescription>Daily revenue over the selected period</CardDescription>
+        <CardTitle className="text-base">{t('admin.ads.analytics.charts.revenueTrend', 'Revenue Trend')}</CardTitle>
+        <CardDescription>{t('admin.ads.analytics.charts.dailyRevenue', 'Daily revenue over the selected period')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="relative">
@@ -226,7 +247,7 @@ export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
             viewBox={`0 0 ${width} ${height}`}
             className="h-56 w-full"
             role="img"
-            aria-label="Revenue trend line chart"
+            aria-label={t('admin.ads.analytics.charts.trendChartLabel', 'Revenue trend line chart')}
             onMouseLeave={() => setHovered(null)}
           >
             <defs>
@@ -249,7 +270,12 @@ export function RevenueTrendChart({ rows }: RevenueTrendChartProps) {
                   stroke="#3B82F6"
                   strokeWidth="2"
                 >
-                  <title>{`${point.label}: ${formatPrice(point.revenue)}`}</title>
+                  <title>
+                    {t('admin.ads.analytics.charts.pointTitle', '{{date}}: {{revenue}}', {
+                      date: point.label,
+                      revenue: formatPrice(point.revenue),
+                    })}
+                  </title>
                 </circle>
                 {/* Invisible hover hit area */}
                 <rect

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { BarChart3, Download, LayoutGrid } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ function toApprovalStatus(value: string | null): ApprovalStatus | undefined {
 }
 
 export default function AdminAdListPage() {
+  const { t } = useTranslation()
   // Deep-linked from the AD_SUBMITTED notification, which points at the pending
   // review queue the new submission just joined. Only the status filter is
   // seeded from the URL; the rest stay local until the admin changes them.
@@ -74,11 +76,11 @@ export default function AdminAdListPage() {
     if (!review) return
     approveMutation.mutate(review.id, {
       onSuccess: () => {
-        toast({ title: 'Advertisement approved', variant: 'default' })
+        toast({ title: t('admin.ads.list.approveSuccess', 'Advertisement approved'), variant: 'default' })
         setReview(null)
       },
       onError: () => {
-        toast({ title: 'Failed to approve advertisement', variant: 'destructive' })
+        toast({ title: t('admin.ads.list.approveFailed', 'Failed to approve advertisement'), variant: 'destructive' })
       },
     })
   }
@@ -89,11 +91,11 @@ export default function AdminAdListPage() {
       { id: review.id, rejection_reason: reason },
       {
         onSuccess: () => {
-          toast({ title: 'Advertisement rejected', variant: 'default' })
+          toast({ title: t('admin.ads.list.rejectSuccess', 'Advertisement rejected'), variant: 'default' })
           setReview(null)
         },
         onError: () => {
-          toast({ title: 'Failed to reject advertisement', variant: 'destructive' })
+          toast({ title: t('admin.ads.list.rejectFailed', 'Failed to reject advertisement'), variant: 'destructive' })
         },
       },
     )
@@ -105,14 +107,17 @@ export default function AdminAdListPage() {
       {
         onSuccess: (data) => {
           toast({
-            title: `${data.approved ?? selectedIds.length} advertisements approved`,
+            title: t('admin.ads.list.bulkApproved', {
+              count: data.approved ?? selectedIds.length,
+              defaultValue: '{{count}} advertisements approved',
+            }),
             variant: 'default',
           })
           setBulkApproveOpen(false)
           setSelectedIds([])
         },
         onError: () => {
-          toast({ title: 'Bulk approve failed', variant: 'destructive' })
+          toast({ title: t('admin.ads.list.bulkApproveFailed', 'Bulk approve failed'), variant: 'destructive' })
         },
       },
     )
@@ -124,14 +129,17 @@ export default function AdminAdListPage() {
       {
         onSuccess: (data) => {
           toast({
-            title: `${data.rejected ?? selectedIds.length} advertisements rejected`,
+            title: t('admin.ads.list.bulkRejected', {
+              count: data.rejected ?? selectedIds.length,
+              defaultValue: '{{count}} advertisements rejected',
+            }),
             variant: 'default',
           })
           setBulkRejectOpen(false)
           setSelectedIds([])
         },
         onError: () => {
-          toast({ title: 'Bulk reject failed', variant: 'destructive' })
+          toast({ title: t('admin.ads.list.bulkRejectFailed', 'Bulk reject failed'), variant: 'destructive' })
         },
       },
     )
@@ -167,29 +175,29 @@ export default function AdminAdListPage() {
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Advertisement Management</h1>
-          <p className="text-muted-foreground">Review merchant ads and manage advertising fees</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('admin.ads.list.title', 'Advertisement Management')}</h1>
+          <p className="text-muted-foreground">{t('admin.ads.list.subtitle', 'Review merchant ads and manage advertising fees')}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-            {pendingCount} pending
+            {t('admin.ads.list.pendingCount', { count: pendingCount, defaultValue: '{{count}} pending' })}
           </Badge>
           <Button asChild size="sm" variant="outline">
             <Link to="/admin/ads/packages">
               <LayoutGrid className="mr-1 h-4 w-4" />
-              Manage Packages
+              {t('admin.ads.list.managePackages', 'Manage Packages')}
             </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link to="/admin/ads/analytics">
               <BarChart3 className="mr-1 h-4 w-4" />
-              Revenue Analytics
+              {t('admin.ads.list.revenueAnalytics', 'Revenue Analytics')}
             </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link to="/admin/ads/export">
               <Download className="mr-1 h-4 w-4" />
-              Export
+              {t('common.actions.export', 'Export')}
             </Link>
           </Button>
         </div>

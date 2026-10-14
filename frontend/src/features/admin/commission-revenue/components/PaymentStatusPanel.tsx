@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaymentStatusStat } from './badges';
 
@@ -19,10 +20,11 @@ export const PaymentStatusPanel: React.FC<PaymentStatusPanelProps> = ({
   statusCounts,
   loading,
 }) => {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Payout Status</CardTitle>
+        <CardTitle className="text-sm font-medium">{t('admin.commission.payoutStatus', 'Payout Status')}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (

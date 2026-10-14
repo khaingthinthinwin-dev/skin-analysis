@@ -133,6 +133,7 @@ function getImageUrl(url: string): string {
 // ─── Helper Components ──────────────────────────────────────────────────────
 
 function MerchantStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const variants: Record<string, string> = {
     pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -146,7 +147,7 @@ function MerchantStatusBadge({ status }: { status: string }) {
   return (
     <Badge variant="outline" className={variants[status] || ''}>
       {icons[status]}
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {t(`admin.merchants.status.${status}`, status.charAt(0).toUpperCase() + status.slice(1))}
     </Badge>
   );
 }
@@ -560,6 +561,7 @@ export default function MerchantManagement() {
                             size="icon"
                             variant="outline"
                             className="h-8 w-8"
+                            aria-label={t('admin.merchants.table.viewDetails', 'View merchant details')}
                             onClick={() => setDetailMerchant(merchant)}
                           >
                             <Eye className="h-4 w-4" />

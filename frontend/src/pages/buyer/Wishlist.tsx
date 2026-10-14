@@ -67,10 +67,9 @@ export default function Wishlist() {
   };
 
   const hasWishlistItems = Array.isArray(items) && items.length > 0;
-  const countText =
-    (totalCount ?? items.length ?? 0) === 1
-      ? '1 item saved for future purchase'
-      : `${totalCount ?? items.length ?? 0} items saved for future purchase`;
+  const countText = t('wishlist.savedForFuturePurchase', {
+    count: totalCount ?? items.length ?? 0,
+  });
 
   if (isLoading) {
     return (

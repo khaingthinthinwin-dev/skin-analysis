@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -10,33 +11,28 @@ import { useCategoryTree } from '@/features/search/hooks/useCategoryTree'
 import type { MatchQueryParams } from '@/schemas/matching.schema'
 import { SKIN_TYPES } from '@/constants/matchingConstants'
 
-const RATING_OPTIONS = [
-  { value: 4.5, label: '4.5+ Stars' },
-  { value: 4.0, label: '4.0+ Stars' },
-  { value: 3.5, label: '3.5+ Stars' },
-  { value: 3.0, label: '3.0+ Stars' },
-]
+const RATING_OPTIONS = [4.5, 4.0, 3.5, 3.0]
+type PriceErrorKey =
+  | 'matchingPage.priceErrors.minGreaterThanMax'
+  | 'matchingPage.priceErrors.negative'
+  | 'matchingPage.priceErrors.invalid'
 
-const PRICE_ERROR_MIN_MAX = 'Minimum price cannot be greater than maximum price.'
-const PRICE_ERROR_NEGATIVE = 'Price cannot be negative.'
-const PRICE_ERROR_INVALID = 'Please enter a valid price.'
-
-function validatePriceRange(minValue?: string, maxValue?: string): string | null {
+function validatePriceRange(minValue?: string, maxValue?: string): PriceErrorKey | null {
   const parsedMin = minValue && minValue.trim() !== '' ? Number(minValue) : undefined
   const parsedMax = maxValue && maxValue.trim() !== '' ? Number(maxValue) : undefined
 
   for (const value of [parsedMin, parsedMax]) {
-    if (value !== undefined && Number.isNaN(value)) return PRICE_ERROR_INVALID
+    if (value !== undefined && Number.isNaN(value)) return 'matchingPage.priceErrors.invalid'
   }
   for (const value of [parsedMin, parsedMax]) {
-    if (value !== undefined && value < 0) return PRICE_ERROR_NEGATIVE
+    if (value !== undefined && value < 0) return 'matchingPage.priceErrors.negative'
   }
   if (
     parsedMin !== undefined &&
     parsedMax !== undefined &&
     parsedMin > parsedMax
   ) {
-    return PRICE_ERROR_MIN_MAX
+    return 'matchingPage.priceErrors.minGreaterThanMax'
   }
   return null
 }
@@ -50,10 +46,11 @@ interface FiltersPanelProps {
 }
 
 export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 'desktop' }: FiltersPanelProps) {
+  const { t } = useTranslation('skin')
   const [priceMinDraft, setPriceMinDraft] = useState(filters.minPrice?.toString() ?? '')
   const [priceMaxDraft, setPriceMaxDraft] = useState(filters.maxPrice?.toString() ?? '')
   const [focusedPriceField, setFocusedPriceField] = useState<'min' | 'max' | null>(null)
-  const [priceError, setPriceError] = useState<string | null>(null)
+  const [priceError, setPriceError] = useState<PriceErrorKey | null>(null)
   const { data: categoryData } = useCategoryTree()
   const categories = categoryData?.data ?? []
 
@@ -84,7 +81,9 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
     const validationError = validatePriceRange(priceMin, priceMax)
     setPriceError(validationError)
     // Commit even on min>max so the API returns empty results; skip on negative/NaN
-    const shouldCommit = validationError === null || validationError === PRICE_ERROR_MIN_MAX
+    const shouldCommit =
+      validationError === null ||
+      validationError === 'matchingPage.priceErrors.minGreaterThanMax'
     if (shouldCommit) {
       onUpdate({
         minPrice: priceMin && priceMin.trim() !== '' ? Number(priceMin) : undefined,
@@ -107,7 +106,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
       <div className="space-y-5">
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Category
+            {t('matchingPage.category')}
           </h4>
           <CategorySelect
             variant="pills"
@@ -119,13 +118,13 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
 
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Price Range
+            {t('matchingPage.priceRange')}
           </h4>
           <div className="flex items-center gap-2">
             <Input
               type="number"
               min={0}
-              placeholder="Min"
+              placeholder={t('matchingPage.min')}
               value={priceMin}
               onChange={(e) => {
                 setFocusedPriceField('min')
@@ -139,7 +138,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
             <Input
               type="number"
               min={0}
-              placeholder="Max"
+              placeholder={t('matchingPage.max')}
               value={priceMax}
               onChange={(e) => {
                 setFocusedPriceField('max')
@@ -152,14 +151,14 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
           </div>
           {priceError && (
             <p role="alert" className="mt-1.5 text-xs font-medium text-destructive">
-              {priceError}
+              {t(priceError)}
             </p>
           )}
         </div>
 
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Skin Type
+            {t('matchingPage.skinType')}
           </h4>
           <div className="grid grid-cols-2 gap-2">
             {SKIN_TYPES.map((type) => {
@@ -185,7 +184,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
                   >
                     {checked && <Check className="h-3 w-3" />}
                   </span>
-                  <span>{type.label}</span>
+                  <span>{t(`matchingPage.skinTypes.${type.value}`, { defaultValue: type.label })}</span>
                 </button>
               )
             })}
@@ -194,14 +193,14 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
 
         <div>
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-            Rating
+            {t('matchingPage.rating')}
           </h4>
-          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Rating">
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('matchingPage.rating')}>
             {RATING_OPTIONS.map((rating) => (
               <label
-                key={rating.value}
+                key={rating}
                 className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm text-slate-700 dark:text-slate-200 ${
-                  filters.rating === rating.value
+                  filters.rating === rating
                     ? 'border-violet-200 bg-violet-50 dark:border-violet-400/40 dark:bg-violet-400/15'
                     : 'border-slate-200 bg-white dark:border-white/10 dark:bg-white/5'
                 }`}
@@ -209,13 +208,13 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
                 <input
                   type="radio"
                   name="match-rating-filter"
-                  value={rating.value}
-                  checked={filters.rating === rating.value}
-                  onChange={() => onUpdate({ rating: rating.value })}
+                  value={rating}
+                  checked={filters.rating === rating}
+                  onChange={() => onUpdate({ rating })}
                   className="h-4 w-4 accent-violet-600"
                 />
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                {rating.label}
+                {t('matchingPage.ratingOption', { rating })}
               </label>
             ))}
           </div>
@@ -228,13 +227,13 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
     <Card className={`overflow-hidden border-border/80 shadow-xs ${className ?? ''}`}>
       <div className="flex w-full items-center gap-2 p-4">
         <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-bold text-foreground">Filters</h3>
+        <h3 className="text-sm font-bold text-foreground">{t('matchingPage.filters')}</h3>
         {hasActiveFilters && <span className="h-2 w-2 rounded-full bg-primary" />}
       </div>
 
       <div className="space-y-4 border-t border-border/50 px-4 pb-4 pt-4">
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</h4>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('matchingPage.category')}</h4>
           <CategorySelect
             variant="nav"
             categories={categories}
@@ -247,7 +246,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
         <Separator />
 
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Skin Type</h4>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('matchingPage.skinType')}</h4>
           <div className="space-y-2">
             {SKIN_TYPES.map((type) => (
               <label key={type.value} className="flex cursor-pointer items-center gap-2.5">
@@ -255,7 +254,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
                   checked={selectedSkinTypes.includes(type.value)}
                   onCheckedChange={() => toggleSkinType(type.value)}
                 />
-                <span className="text-sm text-foreground">{type.label}</span>
+                <span className="text-sm text-foreground">{t(`matchingPage.skinTypes.${type.value}`, { defaultValue: type.label })}</span>
               </label>
             ))}
           </div>
@@ -264,12 +263,12 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
         <Separator />
 
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Price Range</h4>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('matchingPage.priceRange')}</h4>
           <div className="flex items-center gap-2">
             <Input
               type="number"
               min={0}
-              placeholder="Min"
+              placeholder={t('matchingPage.min')}
               value={priceMin}
               onChange={(e) => {
                 setFocusedPriceField('min')
@@ -283,7 +282,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
             <Input
               type="number"
               min={0}
-              placeholder="Max"
+              placeholder={t('matchingPage.max')}
               value={priceMax}
               onChange={(e) => {
                 setFocusedPriceField('max')
@@ -296,7 +295,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
           </div>
           {priceError && (
             <p role="alert" className="mt-1.5 text-xs font-medium text-destructive">
-              {priceError}
+              {t(priceError)}
             </p>
           )}
         </div>
@@ -304,16 +303,16 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
         <Separator />
 
         <div>
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rating</h4>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('matchingPage.rating')}</h4>
           <RadioGroup
             value={filters.rating?.toString() ?? ''}
             onValueChange={(value) => onUpdate({ rating: value ? Number(value) : undefined })}
             className="space-y-1.5"
           >
             {RATING_OPTIONS.map((rating) => (
-              <label key={rating.value} className="flex cursor-pointer items-center gap-2">
-                <RadioGroupItem value={rating.value.toString()} className="mt-0.5" />
-                <span className="text-sm text-foreground">{rating.label}</span>
+              <label key={rating} className="flex cursor-pointer items-center gap-2">
+                <RadioGroupItem value={rating.toString()} className="mt-0.5" />
+                <span className="text-sm text-foreground">{t('matchingPage.ratingOption', { rating })}</span>
               </label>
             ))}
           </RadioGroup>
@@ -328,7 +327,7 @@ export function FiltersPanel({ filters, onUpdate, onReset, className, variant = 
               className="flex w-full items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Reset Filters
+              {t('matchingPage.resetFilters')}
             </button>
           </>
         )}

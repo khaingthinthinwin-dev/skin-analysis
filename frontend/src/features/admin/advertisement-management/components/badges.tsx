@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge'
+import { useTranslation } from 'react-i18next'
 import type { ApprovalStatus, PaymentStatus, Tier } from '@/types/admin-ad-management'
 
 const STATUS_STYLES: Record<ApprovalStatus, string> = {
@@ -28,36 +29,42 @@ const TIER_STYLES: Record<Tier, string> = {
 }
 
 export function StatusBadge({ status }: { status: ApprovalStatus }) {
+  const { t } = useTranslation()
   return (
     <Badge variant="outline" className={`capitalize ${STATUS_STYLES[status]}`}>
-      {status}
+      {t(`admin.ads.status.${status}`, status)}
     </Badge>
   )
 }
 
 export function PaymentBadge({ status }: { status: PaymentStatus }) {
+  const { t } = useTranslation()
   return (
     <Badge variant="outline" className={`capitalize ${PAYMENT_STYLES[status]}`}>
-      {status}
+      {t(`admin.ads.status.${status}`, status)}
     </Badge>
   )
 }
 
 export function TierBadge({ tier }: { tier: Tier }) {
+  const { t } = useTranslation()
   return (
     <Badge variant="outline" className={`capitalize ${TIER_STYLES[tier]}`}>
-      {tier}
+      {t(`admin.ads.tier.${tier}`, tier)}
     </Badge>
   )
 }
 
 export function FeeStatusBadge({ active }: { active: boolean }) {
+  const { t } = useTranslation()
   return (
     <Badge
       variant="outline"
       className={active ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-gray-100 text-gray-800 hover:bg-gray-100'}
     >
-      {active ? 'Active' : 'Inactive'}
+      {active
+        ? t('admin.ads.status.active', 'Active')
+        : t('admin.ads.status.inactive', 'Inactive')}
     </Badge>
   )
 }

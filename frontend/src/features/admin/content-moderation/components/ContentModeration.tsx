@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, Trash2 } from 'lucide-react';
@@ -26,18 +27,22 @@ export const ContentModeration: React.FC<ContentModerationProps> = ({
   flaggedItems = [],
   onRemoveItem,
 }) => {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-amber-500" />
-          Content Moderation Queue
+          {t('admin.content.queue.title', 'Content Moderation Queue')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {flaggedItems.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            No flagged products or content items requiring moderation.
+            {t(
+              'admin.content.queue.empty',
+              'No flagged products or content items requiring moderation.',
+            )}
           </p>
         ) : (
           <div className="space-y-3">
@@ -48,10 +53,15 @@ export const ContentModeration: React.FC<ContentModerationProps> = ({
               >
                 <div>
                   <h4 className="font-medium text-sm">{item.name || item.title}</h4>
-                  <p className="text-xs text-muted-foreground">Reason: {item.flagReason || 'Reported'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('admin.content.queue.reason', 'Reason: {{reason}}', {
+                      reason: item.flagReason || t('admin.content.queue.reported', 'Reported'),
+                    })}
+                  </p>
                 </div>
                 <Button size="sm" variant="destructive" onClick={() => onRemoveItem?.(item.id)}>
-                  <Trash2 className="h-4 w-4 mr-1" /> Deactivate
+                  <Trash2 className="h-4 w-4 mr-1" />{' '}
+                  {t('admin.content.action.deactivate', 'Deactivate')}
                 </Button>
               </div>
             ))}

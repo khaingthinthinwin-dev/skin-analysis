@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, History, Plus } from 'lucide-react'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
@@ -33,6 +34,7 @@ function apiErrorMessage(error: unknown): string {
 }
 
 export default function PackageFeeManagementPage() {
+  const { t } = useTranslation()
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<AdminAdFeeSetting | null>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<AdminAdFeeSetting | null>(null)
@@ -56,12 +58,12 @@ export default function PackageFeeManagementPage() {
   const handleCreate = (input: CreateFeeSettingInput) => {
     createMutation.mutate(input, {
       onSuccess: () => {
-        toast({ title: 'Fee setting created', variant: 'default' })
+        toast({ title: t('admin.ads.packages.createSuccess', 'Fee setting created'), variant: 'default' })
         setCreateOpen(false)
       },
       onError: (error) => {
         toast({
-          title: 'Failed to create fee setting',
+          title: t('admin.ads.packages.createFailed', 'Failed to create fee setting'),
           description: apiErrorMessage(error),
           variant: 'destructive',
         })
@@ -74,12 +76,12 @@ export default function PackageFeeManagementPage() {
       { id, data },
       {
         onSuccess: () => {
-          toast({ title: 'Fee setting updated', variant: 'default' })
+          toast({ title: t('admin.ads.packages.updateSuccess', 'Fee setting updated'), variant: 'default' })
           setEditTarget(null)
         },
         onError: (error) => {
           toast({
-            title: 'Failed to update fee setting',
+            title: t('admin.ads.packages.updateFailed', 'Failed to update fee setting'),
             description: apiErrorMessage(error),
             variant: 'destructive',
           })
@@ -94,12 +96,12 @@ export default function PackageFeeManagementPage() {
       { id: deactivateTarget.id, change_reason: reason },
       {
         onSuccess: () => {
-          toast({ title: 'Fee setting deactivated', variant: 'default' })
+          toast({ title: t('admin.ads.packages.deactivateSuccess', 'Fee setting deactivated'), variant: 'default' })
           setDeactivateTarget(null)
         },
         onError: (error) => {
           toast({
-            title: 'Failed to deactivate fee setting',
+            title: t('admin.ads.packages.deactivateFailed', 'Failed to deactivate fee setting'),
             description: apiErrorMessage(error),
             variant: 'destructive',
           })
@@ -114,12 +116,12 @@ export default function PackageFeeManagementPage() {
       { id: reactivateTarget.id, change_reason: reason },
       {
         onSuccess: () => {
-          toast({ title: 'Fee setting reactivated', variant: 'default' })
+          toast({ title: t('admin.ads.packages.reactivateSuccess', 'Fee setting reactivated'), variant: 'default' })
           setReactivateTarget(null)
         },
         onError: (error) => {
           toast({
-            title: 'Failed to reactivate fee setting',
+            title: t('admin.ads.packages.reactivateFailed', 'Failed to reactivate fee setting'),
             description: apiErrorMessage(error),
             variant: 'destructive',
           })
@@ -132,20 +134,20 @@ export default function PackageFeeManagementPage() {
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Package & Fee Management</h1>
-          <p className="text-muted-foreground">Configure advertising fees by placement and tier</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('admin.ads.packages.title', 'Package & Fee Management')}</h1>
+          <p className="text-muted-foreground">{t('admin.ads.packages.subtitle', 'Configure advertising fees by placement and tier')}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button asChild size="sm" variant="outline">
             <Link to="/admin/ads">
               <ArrowLeft className="mr-1 h-4 w-4" />
-              Back to Ads
+              {t('admin.ads.packages.backToAds', 'Back to Ads')}
             </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link to="/admin/ads/fee-history">
               <History className="mr-1 h-4 w-4" />
-              View History
+              {t('admin.ads.packages.viewHistory', 'View History')}
             </Link>
           </Button>
           <Button
@@ -154,12 +156,12 @@ export default function PackageFeeManagementPage() {
             disabled={allPackagesCreated}
             title={
               allPackagesCreated
-                ? 'All 12 placement & tier packages have been created'
+                ? t('admin.ads.packages.allCreatedTooltip', 'All 12 placement & tier packages have been created')
                 : undefined
             }
           >
             <Plus className="mr-1 h-4 w-4" />
-            Create Fee Setting
+            {t('admin.ads.packages.createFeeSetting', 'Create Fee Setting')}
           </Button>
         </div>
       </div>

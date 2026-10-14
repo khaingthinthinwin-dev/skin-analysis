@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 const PAGE_SIZES = [10, 20, 50, 100] as const
 
 interface PaginationProps {
@@ -33,6 +35,7 @@ export function Pagination({
   onPageChange,
   onLimitChange,
 }: PaginationProps) {
+  const { t } = useTranslation()
   const safeTotal = Math.max(totalPages || 1, 1)
   const prevDisabled = page <= 1
   const nextDisabled = page >= safeTotal
@@ -42,9 +45,9 @@ export function Pagination({
       <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
         {onLimitChange && (
           <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-            <span className="hidden sm:inline">Rows:</span>
+            <span className="hidden sm:inline">{t('admin.ads.pagination.rows', 'Rows:')}</span>
             <select
-              aria-label="Rows per page"
+              aria-label={t('admin.ads.pagination.rowsPerPage', 'Rows per page')}
               value={limit}
               onChange={(e) => onLimitChange(Number(e.target.value))}
               className="h-8 rounded-md border border-border bg-card px-2.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer hover:border-primary/50 transition-colors"
@@ -59,15 +62,17 @@ export function Pagination({
         )}
 
         <span className="text-[13px] text-muted-foreground transition-opacity duration-200">
-          Showing page <span className="font-medium text-foreground">{page}</span> of{' '}
-          <span className="font-medium text-foreground">{safeTotal}</span>
+          {t('admin.ads.pagination.showingPage', 'Showing page {{page}} of {{totalPages}}', {
+            page,
+            totalPages: safeTotal,
+          })}
         </span>
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         <button
           type="button"
-          aria-label="Previous page"
+          aria-label={t('admin.ads.pagination.previousPageLabel', 'Previous page')}
           className={`h-8 px-2.5 rounded-md flex items-center justify-center text-[13px] font-medium border
             transition-all duration-200 ease-in-out active:scale-95
             ${prevDisabled
@@ -77,7 +82,7 @@ export function Pagination({
           disabled={prevDisabled}
           onClick={() => onPageChange(page - 1)}
         >
-          {'<'} Prev
+          {'<'} {t('admin.ads.pagination.previous', 'Prev')}
         </button>
 
         <div className="flex items-center gap-1">
@@ -95,7 +100,7 @@ export function Pagination({
                 key={p}
                 type="button"
                 aria-current={isCurrent ? 'page' : undefined}
-                aria-label={`Go to page ${p}`}
+                aria-label={t('admin.ads.pagination.goToPage', 'Go to page {{page}}', { page: p })}
                 className={`h-8 w-8 rounded-md flex items-center justify-center text-[13px] font-medium border
                   transition-all duration-200 ease-in-out active:scale-95
                   ${isCurrent
@@ -112,7 +117,7 @@ export function Pagination({
 
         <button
           type="button"
-          aria-label="Next page"
+          aria-label={t('admin.ads.pagination.nextPageLabel', 'Next page')}
           className={`h-8 px-2.5 rounded-md flex items-center justify-center text-[13px] font-medium border
             transition-all duration-200 ease-in-out active:scale-95
             ${nextDisabled
@@ -122,7 +127,7 @@ export function Pagination({
           disabled={nextDisabled}
           onClick={() => onPageChange(page + 1)}
         >
-          Next {'>'}
+          {t('admin.ads.pagination.next', 'Next')} {'>'}
         </button>
       </div>
     </div>
