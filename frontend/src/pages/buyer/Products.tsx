@@ -1,7 +1,7 @@
 import { useSearchParams, useNavigate, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search as SearchIcon, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
+import { Search as SearchIcon, Loader2, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SearchParams } from '@/schemas/search.schema'
 import { categoryService } from '@/features/search/services/category.service'
@@ -11,6 +11,7 @@ import { FilterChips } from '@/features/search/components/FilterChips'
 import { ViewToggle } from '@/features/search/components/ViewToggle'
 import { SortSelect } from '@/features/search/components/SortSelect'
 import { SponsoredAdSlider } from '@/features/search/components/SponsoredAdSlider'
+import '@/features/search/components/SponsoredAdSliderResponsive.css'
 import { ProductCard } from '@/features/search/components/ProductCard'
 import { useProductSearch } from '@/features/search/hooks/useProductSearch'
 import { useWishlist } from '@/features/buyer/wishlist/hooks/useWishlist'
@@ -237,6 +238,13 @@ export default function Products() {
     updateParams(updates)
   }
 
+  const getPageItems = (page: number, totalPages: number): Array<number | 'ellipsis'> => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    if (page <= 2) return [1, 2, 'ellipsis', totalPages]
+    if (page >= totalPages - 1) return [1, 'ellipsis', totalPages - 1, totalPages]
+    return [1, 'ellipsis', page - 1, page, page + 1, 'ellipsis', totalPages]
+  }
+
   const resolveCategoryName = (categories: CategoryNode[], id: string): string | null => {
     if (!id) return null
     for (const cat of categories) {
@@ -262,7 +270,9 @@ export default function Products() {
         onSubmit={handleSearchBarSubmit}
       />
 
-      <SponsoredAdSlider fallbackProductId={products[0]?.slug || products[0]?.id} />
+      <div className="search-sponsored-ad-slider w-full min-w-0">
+        <SponsoredAdSlider fallbackProductId={products[0]?.slug || products[0]?.id} />
+      </div>
 
       <FilterChips
         params={params}
@@ -353,45 +363,64 @@ export default function Products() {
                 ))}
               </div>
 
-              {meta && (
-                <div className="mt-4 border-t border-border pt-3">
-                  <div className="flex justify-center items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePageUpdate({ ...params, page: params.page > 1 ? params.page - 1 : 1 })}
-                      disabled={params.page <= 1}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    {Array.from({ length: meta?.totalPages || 1 }, (_, i) => i + 1).map((page) => (
-                      <Button
-                        key={page}
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handlePageUpdate({ ...params, page })}
-                        className={`
-                          flex h-10 w-10 items-center justify-center rounded-xl ${params.page === page
-                            ? 'bg-primary font-bold text-primary-foreground'
-                            : 'border border-border bg-background text-foreground hover:bg-muted'}
-                        `}
+              {meta && meta.total > 0 && meta.totalPages > 1 && (
+                <nav aria-label="Pagination" className="mt-6 flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="Previous page"
+                    disabled={params.page <= 1}
+                    onClick={() => handlePageUpdate({ ...params, page: params.page - 1 })}
+                    className={`flex h-10 items-center gap-1 rounded-lg border px-3 text-sm font-medium transition-colors ${
+                      params.page <= 1
+                        ? 'cursor-not-allowed border-border bg-muted/50 text-muted-foreground/50'
+                        : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span aria-hidden="true">‹</span>
+                    <span>Prev</span>
+                  </button>
+                  {getPageItems(params.page, meta.totalPages).map((item, idx) =>
+                    item === 'ellipsis' ? (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        aria-hidden="true"
+                        className="flex h-10 w-8 items-center justify-center text-sm font-bold tracking-widest text-muted-foreground"
                       >
-                        {page}
-                      </Button>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePageUpdate({ ...params, page: params.page < meta?.totalPages ? params.page + 1 : meta?.totalPages })}
-                      disabled={params.page >= (meta?.totalPages || 1)}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:bg-muted disabled:opacity-40">
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        aria-label={`Go to page ${item}`}
+                        aria-current={item === params.page ? 'page' : undefined}
+                        disabled={item === params.page}
+                        onClick={() => handlePageUpdate({ ...params, page: item })}
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
+                          item === params.page
+                            ? 'bg-violet-600 text-white'
+                            : 'border border-border bg-background text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    ),
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Next page"
+                    disabled={params.page >= meta.totalPages}
+                    onClick={() => handlePageUpdate({ ...params, page: params.page + 1 })}
+                    className={`flex h-10 items-center gap-1 rounded-lg border px-3 text-sm font-medium transition-colors ${
+                      params.page >= meta.totalPages
+                        ? 'cursor-not-allowed border-border bg-muted/50 text-muted-foreground/50'
+                        : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span>Next</span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                </nav>
               )}
             </div>
           )}

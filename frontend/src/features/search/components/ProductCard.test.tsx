@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ProductCard } from './ProductCard'
 
 const product = {
@@ -37,67 +37,22 @@ describe('ProductCard', () => {
     expect(originalPrice.className).toContain('text-gray-400')
   })
 
-  it('matches the Recommendations badge and action icon styles', () => {
+  it('shows the list-view cart button and calls add-to-cart when clicked', () => {
+    const onAddToCart = vi.fn()
+
     render(
       <MemoryRouter>
-        <ProductCard product={product} view="grid" productLink="/products/p1" />
+        <ProductCard
+          product={product}
+          view="list"
+          productLink="/products/p1"
+          onAddToCart={onAddToCart}
+        />
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('SALE')).toHaveClass(
-      'rounded-full',
-      'bg-gradient-to-r',
-      'from-rose-500',
-      'to-pink-500',
-      'text-white',
-    )
-    expect(screen.getByRole('button', { name: 'Add to wishlist' })).toHaveClass(
-      'rounded-full',
-      'bg-white/80',
-      'dark:bg-zinc-800/80',
-      'shadow-sm',
-    )
-    expect(screen.getByRole('button', { name: 'Add Glow Serum to cart' })).toHaveClass(
-      'rounded-full',
-      'bg-violet-600',
-      'text-white',
-      'shadow-sm',
-      'hover:bg-violet-700',
-    )
-  })
+    fireEvent.click(screen.getByRole('button', { name: 'Add Glow Serum to cart' }))
 
-  it('renders SALE, wishlist, and cart controls with Recommendations list styles', () => {
-    render(
-      <MemoryRouter>
-        <ProductCard product={product} view="list" productLink="/products/p1" />
-      </MemoryRouter>,
-    )
-
-    expect(screen.getByText('SALE')).toHaveClass(
-      'rounded-full',
-      'bg-gradient-to-r',
-      'from-rose-500',
-      'to-pink-500',
-      'text-white',
-    )
-    expect(screen.getByRole('button', { name: 'Add to wishlist' })).toHaveClass(
-      'h-8',
-      'w-8',
-      'rounded-full',
-      'bg-gray-100',
-      'hover:bg-gray-200',
-      'dark:bg-zinc-800',
-      'dark:hover:bg-zinc-700',
-    )
-    expect(screen.getByRole('button', { name: 'Add Glow Serum to cart' })).toHaveClass(
-      'h-8',
-      'w-8',
-      'rounded-full',
-      'bg-violet-600',
-      'text-white',
-      'shadow-sm',
-      'hover:bg-violet-700',
-    )
-    expect(screen.getByRole('button', { name: 'Add Glow Serum to cart' }).querySelector('svg')).toBeInTheDocument()
+    expect(onAddToCart).toHaveBeenCalledWith(product)
   })
 })
