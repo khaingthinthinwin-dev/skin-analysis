@@ -61,6 +61,7 @@ export const skinAnalysisService = {
     pageSize?: number
     dateFrom?: string
     dateTo?: string
+    skinType?: SkinAnalysisSchema.HistoryQueryParams['skinType']
   }): Promise<SkinAnalysisSchema.HistoryResponse> {
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
