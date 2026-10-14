@@ -119,13 +119,12 @@ describe('SponsoredAdSlider (checkout)', () => {
     expect(featured).toHaveClass('bg-accent')
   })
 
-  it('renders the product preview card with a landscape image', async () => {
+  it('renders the product preview image fully without cropping', async () => {
     mockedGetSponsoredAds.mockResolvedValue({ data: ads })
 
     renderSlider()
 
     const image = await screen.findByAltText('Glow Serum')
-    const frame = image.parentElement as HTMLElement
 
     expect(frame).toHaveClass('h-[241.6px]')
     expect(frame).toHaveClass('items-center')

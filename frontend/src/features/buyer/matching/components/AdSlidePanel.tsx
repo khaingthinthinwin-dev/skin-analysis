@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router'
-import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/useAuth'
@@ -30,13 +30,17 @@ function usePrefersReducedMotion() {
 export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelProps) {
   const [current, setCurrent] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
-  const [isFocused, setIsFocused] = useState(false)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const panelRef = useRef<HTMLDivElement>(null)
   const reducedMotion = usePrefersReducedMotion()
   const { isAuthenticated } = useAuth()
   const basePath = isAuthenticated ? '/buyer/products' : '/products'
 
-  const paused = isHovered || isFocused || reducedMotion
+  const paused = isHovered || reducedMotion
+
+  // Clamp the slide when the ad list shrinks (e.g. schedule filtering)
+  // without resetting the 5s interval. Deriving directly keeps the
+  // rotation timer intact and avoids a setState-in-effect cascade.
   const displayIndex = ads.length > 0 ? current % ads.length : 0
 
   const next = useCallback(() => {
@@ -44,16 +48,22 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
     setCurrent((prev) => (prev + 1) % ads.length)
   }, [ads.length])
 
+  // A dead image URL (404 / bad path) falls back to the clean white
+  // placeholder instead of the broken-image glyph + alt text.
+  const handleImageError = useCallback((adId: string) => {
+    setFailedImages((prev) => new Set(prev).add(adId))
+  }, [])
+
+  useEffect(() => {
+    if (paused || ads.length <= 1) return
+    const timer = setInterval(next, AUTO_SLIDE_MS)
+    return () => clearInterval(timer)
+  }, [paused, ads.length, next])
+
   const prev = useCallback(() => {
     if (ads.length <= 1) return
     setCurrent((prev) => (prev - 1 + ads.length) % ads.length)
   }, [ads.length])
-
-  useEffect(() => {
-    if (paused || ads.length <= 1) return
-    const timer = setTimeout(next, AUTO_SLIDE_MS)
-    return () => clearTimeout(timer)
-  }, [paused, ads.length, next, current])
 
   useEffect(() => {
     if (!panelRef.current || !onImpression || ads.length === 0) return
@@ -89,15 +99,13 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
       className="relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onFocusCapture={() => setIsFocused(true)}
-      onBlurCapture={() => setIsFocused(false)}
       aria-roledescription="carousel"
       aria-label="Sponsored advertisements"
     >
-      <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50">
-        <div className="relative px-11 sm:px-14 md:px-16 py-6 md:py-8 bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950/90 text-white transition-all duration-700">
-          <div className="relative z-10 grid gap-5 md:grid-cols-12 md:items-center">
-            <div className="space-y-3 md:col-span-8">
+      <div className="relative overflow-hidden rounded-3xl shadow-2xl border border-border/50">
+        <div className="relative overflow-hidden px-11 sm:px-14 md:px-16 py-6 md:py-8 bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950/90 text-white transition-all duration-700">
+          <div className="relative z-10 grid gap-5 lg:gap-3 md:grid-cols-12 md:items-center">
+            <div className="space-y-3 md:col-span-8 min-w-0 flex flex-col justify-center">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge
                   variant="outline"
@@ -119,7 +127,7 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
               </h2>
 
               {content && (
-                <p className="text-sm sm:text-base text-zinc-200/90 max-w-xl line-clamp-2">
+                <p className="text-sm sm:text-base text-zinc-200/90 max-w-none line-clamp-3">
                   {content}
                 </p>
               )}
@@ -148,22 +156,18 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
               </div>
             </div>
 
-            <div className="flex md:col-span-4 justify-center items-center">
-              {ad.imageUrl ? (
-                <div className="relative w-full max-w-sm h-32 sm:h-36 md:h-40 lg:h-48 rounded-2xl overflow-hidden border border-white/20 shadow-inner">
+            <div className="flex min-w-0 items-center justify-center self-center overflow-hidden rounded-[1.75rem] md:col-span-4">
+              {ad.imageUrl && !failedImages.has(ad.adId) ? (
                   <img
                     src={getImageUrl(ad.imageUrl)}
                     alt={ad.title}
                     loading="lazy"
-                    className="h-full w-full object-cover"
+                    onError={() => handleImageError(ad.adId)}
+                    className="block h-48 w-auto max-w-full rounded-[1.75rem] object-contain shadow-inner sm:h-56"
                   />
-                </div>
               ) : (
-                <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner">
-                  <Megaphone className="w-10 h-10 text-white/80 mb-2" />
-                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">
-                    Merchant Partner
-                  </span>
+                <div className="flex w-full max-w-sm aspect-[16/10] items-center justify-center rounded-2xl bg-white shadow-inner">
+                  <ImageIcon className="h-8 w-8 text-purple-300" />
                 </div>
               )}
             </div>
