@@ -25,11 +25,13 @@ function isUniversal(type: string): boolean {
 /**
  * Skin type conditions a product has to satisfy.
  *
- * BR-MATCH-006 / DD_MATCH_05 §2.1 step 3: an explicit panel selection
- * OVERRIDES the analysis-derived skin types for that query, so picking "dry"
- * on a "combination" analysis filters on dry alone. Without a selection the
- * analysis result supplies the types (personalized results), and generic
- * results without a selection are unrestricted.
+ * Custom rule (supersedes DD_MATCH_05 §2.1 step 5): an explicit panel
+ * selection filters WITHIN the analysis result set — the products the grid
+ * shows with no selection — so on the AI source BOTH conditions apply: the
+ * product must match at least one selected type (BR-MATCH-016 OR semantics)
+ * AND stay compatible with at least one analysed type. Products tagged
+ * `all` satisfy either condition. Generic results carry no analysis scope and
+ * filter by the selection alone.
  */
 export function resolveSkinTypeConditions({
   source,
@@ -43,9 +45,14 @@ export function resolveSkinTypeConditions({
   const analysis = normalize(analysisSkinTypes)
   const requested = normalize(requestedSkinTypes)
 
-  // BR-MATCH-006: an explicit selection replaces the analysis result.
   if (requested.length > 0) {
-    return { required: [], selected: requested, restrict: true }
+    // The selection narrows the analysis result set (AI), never widens it;
+    // generic results have nothing to narrow against.
+    return {
+      required: source === 'ai' ? analysis : [],
+      selected: requested,
+      restrict: true,
+    }
   }
 
   if (source !== 'ai') {
@@ -57,9 +64,12 @@ export function resolveSkinTypeConditions({
 
 /**
  * Client-side counterpart of the API skin-type filter. The API already applies
- * the same rule; this keeps the rendered grid consistent with the analysis
- * result (and with products tagged for every skin type) even when a cached
- * response predates a filter change.
+ * the same rule — on the AI source with an explicit selection, the product has
+ * to match the selection AND remain inside the analysis result set (custom
+ * rule, DD_MATCH_05 §2.1 step 5) — so this only re-applies the skin-type
+ * conditions to keep the rendered grid consistent with a cached response that
+ * predates a filter change. It never widens the set: products outside the
+ * analysis result never reach the client.
  */
 export function filterProductsBySkinType<
   T extends { skinTypes: string[] },
@@ -80,8 +90,8 @@ export function filterProductsBySkinType<
   }
 
   return products.filter((product) => {
-    // Effective condition: either the analysis types (no selection) or the
-    // selection alone (BR-MATCH-006) — never both at once.
+    // Both conditions can apply at once on the AI source with a selection:
+    // the analysed skin types scope the result set, the selection narrows it.
     if (required.length > 0 && !matches(product, required)) return false
     if (selected.length > 0 && !matches(product, selected)) return false
     return true

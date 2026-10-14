@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateReview, useCanReview } from '../hooks/useProductDetail';
+import { AccountDeactivatedAlertDialog } from '@/components/buyer/AccountDeactivatedAlertDialog';
 import { StarRating } from './StarRating';
 
 interface ReviewFormProps {
@@ -21,14 +22,22 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   const [draftTitle, setDraftTitle] = useState('');
   const [draftBody, setDraftBody] = useState('');
   const [errors, setErrors] = useState<{ rating?: string; body?: string; submit?: string }>({});
+  const [deactivatedAlertOpen, setDeactivatedAlertOpen] = useState(false);
 
   const isBuyer = user?.role === 'buyer';
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive';
   const canReview = canReviewData?.canReview ?? false;
 
   const validate = (): boolean => {
     const newErrors: { rating?: string; body?: string; submit?: string } = {};
     if (!user) {
       newErrors.submit = 'Please sign in to write a review.';
+    } else if (isDeactivated) {
+      newErrors.submit = 'Your account is deactivated. You cannot write new reviews.';
     } else if (!isBuyer) {
       newErrors.submit = 'Only buyers who purchased this product can leave a review.';
     } else if (isCheckingEligibility) {
@@ -53,6 +62,10 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
   };
 
   const handleReviewSubmit = () => {
+    if (isDeactivated) {
+      setDeactivatedAlertOpen(true);
+      return;
+    }
     if (!validate()) return;
     createReview({ rating: draftRating, title: draftTitle, body: draftBody });
   };
@@ -97,6 +110,11 @@ export function ReviewForm({ idOrSlug }: ReviewFormProps) {
       <Button onClick={handleReviewSubmit} disabled={isSubmitting || isCheckingEligibility}>
         {isSubmitting ? 'Submitting...' : 'Submit Review'}
       </Button>
+      <AccountDeactivatedAlertDialog
+        open={deactivatedAlertOpen}
+        onOpenChange={setDeactivatedAlertOpen}
+        feature="reviews"
+      />
     </div>
   );
 }

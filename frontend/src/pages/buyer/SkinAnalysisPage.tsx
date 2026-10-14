@@ -8,6 +8,8 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/useAuth'
+import { AccountDeactivatedAlertDialog } from '@/components/buyer/AccountDeactivatedAlertDialog'
 import {
   useSkinAnalysis,
   useLatestAnalysis,
@@ -27,10 +29,18 @@ export default function SkinAnalysisPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { id: routeAnalysisId } = useParams<{ id: string }>()
+  const { user } = useAuth()
 
   const [requestedView, setViewMode] = useState<ViewMode>('scanner')
   const [cameraOpen, setCameraOpen] = useState(false)
   const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null)
+  const [deactivatedAlertOpen, setDeactivatedAlertOpen] = useState(false)
+
+  const isDeactivated =
+    user?.isActive === false ||
+    user?.is_active === false ||
+    user?.status === 'deactivated' ||
+    user?.status === 'inactive'
 
   const viewMode: ViewMode = routeAnalysisId ? 'results' : requestedView
 
@@ -52,13 +62,17 @@ export default function SkinAnalysisPage() {
 
   const handleUpload = useCallback(
     async (file: File, consent: boolean) => {
+      if (isDeactivated) {
+        setDeactivatedAlertOpen(true)
+        return
+      }
       const result = await uploadImage({ file, consent })
       const analysisResult = await startAnalysis(result.blobUrl)
       setCurrentAnalysisId(analysisResult.analysisId)
       setViewMode('processing')
       return result
     },
-    [uploadImage, startAnalysis],
+    [uploadImage, startAnalysis, isDeactivated],
   )
 
   const handleCameraCapture = useCallback(
@@ -182,6 +196,12 @@ export default function SkinAnalysisPage() {
         open={cameraOpen}
         onClose={() => setCameraOpen(false)}
         onCapture={handleCameraCapture}
+      />
+
+      <AccountDeactivatedAlertDialog
+        open={deactivatedAlertOpen}
+        onOpenChange={setDeactivatedAlertOpen}
+        feature="skin analyses"
       />
     </div>
   )
