@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Calendar, RotateCcw, Search } from 'lucide-react';
+import { Calendar, CalendarRange, RotateCcw, Search } from 'lucide-react';
 import { type OrderListFilterFormData } from '../schemas/orderFilters.schema';
 
 interface OrderFilterBarProps {
@@ -31,6 +31,10 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
   const { control, formState: { errors } } = methods;
   const from = methods.watch('from');
   const to = methods.watch('to');
+  // My Orders uniquely includes the shop search filter; keep merchant date controls unchanged.
+  const showSlashDateInputs = showShopSearch;
+  const fromPickerRef = useRef<HTMLInputElement>(null);
+  const toPickerRef = useRef<HTMLInputElement>(null);
   const orderSearch = methods.watch('orderSearch') ?? '';
   const shopSearch = methods.watch('shopSearch') ?? '';
   const onOrderSearchChangeRef = useRef(onOrderSearchChange);
@@ -73,9 +77,9 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
         : 'sm:grid-cols-[130px_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto_auto] md:grid-cols-[130px_minmax(150px,220px)_minmax(150px,220px)_1fr_auto_auto_auto]';
 
   return (
-    <form onSubmit={methods.handleSubmit(handleSubmit)} className={`mb-[14px] flex w-full flex-col gap-4 rounded-lg border bg-muted/30 px-4 py-[14px] dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end sm:gap-3 ${gridColumns}`}>
+    <form onSubmit={methods.handleSubmit(handleSubmit)} className={`mb-[14px] flex w-full flex-col rounded-lg border bg-muted/30 dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container sm:grid sm:items-end ${showShopSearch ? 'h-auto max-h-none gap-2 overflow-visible px-3 pt-3 pb-3 sm:gap-2' : 'gap-4 px-4 py-[14px] sm:gap-3'} ${gridColumns}`}>
       {showShopSearch && (
-        <div className="min-w-0 pb-5 sm:col-span-2 xl:col-span-1">
+        <div className="min-w-0 sm:col-span-2 xl:col-span-1">
           <label htmlFor="filter-shop-search" className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
             {t('orders.filter.shop', 'Shop')}
           </label>
@@ -90,7 +94,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
         </div>
       )}
       {showOrderSearch && (
-        <div className="min-w-0 pb-5 sm:col-span-2 xl:col-span-1">
+        <div className={`min-w-0 sm:col-span-2 xl:col-span-1 ${showShopSearch ? '' : 'pb-5'}`}>
           <label htmlFor="filter-order-search" className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
             {t('merchant.orders.filter.orderNumber', 'Order #')}
           </label>
@@ -104,7 +108,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
           />
         </div>
       )}
-      <div className="flex-1 min-w-0 pb-5 sm:w-[130px]">
+      <div className={`flex-1 min-w-0 sm:w-[130px] ${showShopSearch ? '' : 'pb-5'}`}>
         <label htmlFor="filter-status" className="block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300 mb-1">
           {t('orders.filter.status', 'Status')}
         </label>
@@ -136,7 +140,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
       </div>
 
       {showPaymentStatusFilter && (
-        <div className="min-w-0 pb-5 sm:w-[130px]">
+        <div className={`min-w-0 sm:w-[130px] ${showShopSearch ? '' : 'pb-5'}`}>
           <label htmlFor="filter-payment-status" className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
             {t('orders.table.payment', 'Payment')}
           </label>
@@ -163,7 +167,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
       )}
 
       <div className="flex w-full flex-col items-end gap-2 sm:contents">
-        <div className="relative w-full pb-5 sm:min-w-0">
+        <div className={`relative w-full sm:min-w-0 ${showShopSearch ? '' : 'pb-5'}`}>
           <span className="mb-1 block text-sm font-medium text-muted-foreground dark:text-slate-300 oidark:text-slate-300">
             {t('orders.filter.dateRange.orderDate', 'Order date')}
           </span>
@@ -171,55 +175,163 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             {t('orders.filter.dateRange.from', 'From')}
           </label>
           <div className="relative">
-            <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
             <Controller
               name="from"
               control={control}
-              render={({ field }) => (
-                <Input
-                  id="filter-from"
-                  type="date"
-                  value={field.value ? field.value.split('T')[0] : ''}
-                  onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      methods.handleSubmit(handleSubmit)();
-                    }
-                  }}
-                  className="h-10 pl-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 dark:[color-scheme:dark] oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
-                  placeholder={t('orders.filter.dateRange.from', 'From')}
-                />
+              render={({ field }) => showSlashDateInputs ? (
+                <>
+                  <Input
+                    key={field.value ?? ''}
+                    id="filter-from"
+                    type="text"
+                    defaultValue={field.value ? field.value.slice(0, 10).replaceAll('-', '/') : ''}
+                    readOnly
+                    onClick={() => {
+                      const picker = fromPickerRef.current;
+                      if (typeof picker?.showPicker === 'function') picker.showPicker();
+                      else picker?.click();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        methods.handleSubmit(handleSubmit)();
+                      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                        e.preventDefault();
+                        field.onChange('');
+                      }
+                    }}
+                    className="pr-10"
+                    placeholder="yyyy/mm/dd"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('orders.filter.dateRange.from', 'From')}
+                    className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                    onClick={() => {
+                      const picker = fromPickerRef.current;
+                      if (typeof picker?.showPicker === 'function') picker.showPicker();
+                      else picker?.click();
+                    }}
+                  >
+                    <CalendarRange className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Input
+                    ref={fromPickerRef}
+                    type="date"
+                    value={field.value ? field.value.split('T')[0] : ''}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value ? new Date(value).toISOString() : '');
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
+                  <Input
+                    id="filter-from"
+                    type="date"
+                    value={field.value ? field.value.split('T')[0] : ''}
+                    onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        methods.handleSubmit(handleSubmit)();
+                      }
+                    }}
+                    className="h-10 pl-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 dark:[color-scheme:dark] oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
+                    placeholder="yyyy/mm/dd"
+                  />
+                </>
               )}
             />
           </div>
           {errors.from && <p className="absolute bottom-0 left-0 text-sm text-red-500" role="alert">{errors.from.message}</p>}
         </div>
 
-        <div className="relative w-full pb-5 sm:min-w-0">
+        <div className={`relative w-full sm:min-w-0 ${showShopSearch ? '' : 'pb-5'}`}>
           <label htmlFor="filter-to" className="sr-only">
             {t('orders.filter.dateRange.to', 'To')}
           </label>
           <div className="relative">
-            <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
             <Controller
               name="to"
               control={control}
-              render={({ field }) => (
-                <Input
-                  id="filter-to"
-                  type="date"
-                  value={field.value ? field.value.split('T')[0] : ''}
-                  onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      methods.handleSubmit(handleSubmit)();
-                    }
-                  }}
-                  className="h-10 pl-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 dark:[color-scheme:dark] oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
-                  placeholder={t('orders.filter.dateRange.to', 'To')}
-                />
+              render={({ field }) => showSlashDateInputs ? (
+                <>
+                  <Input
+                    key={field.value ?? ''}
+                    id="filter-to"
+                    type="text"
+                    defaultValue={field.value ? field.value.slice(0, 10).replaceAll('-', '/') : ''}
+                    readOnly
+                    onClick={() => {
+                      const picker = toPickerRef.current;
+                      if (typeof picker?.showPicker === 'function') picker.showPicker();
+                      else picker?.click();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        methods.handleSubmit(handleSubmit)();
+                      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                        e.preventDefault();
+                        field.onChange('');
+                      }
+                    }}
+                    className="pr-10"
+                    placeholder="yyyy/mm/dd"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('orders.filter.dateRange.to', 'To')}
+                    className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                    onClick={() => {
+                      const picker = toPickerRef.current;
+                      if (typeof picker?.showPicker === 'function') picker.showPicker();
+                      else picker?.click();
+                    }}
+                  >
+                    <CalendarRange className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Input
+                    ref={toPickerRef}
+                    type="date"
+                    value={field.value ? field.value.split('T')[0] : ''}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value ? new Date(value).toISOString() : '');
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-slate-300 oidark:text-slate-300" aria-hidden="true" />
+                  <Input
+                    id="filter-to"
+                    type="date"
+                    value={field.value ? field.value.split('T')[0] : ''}
+                    onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        methods.handleSubmit(handleSubmit)();
+                      }
+                    }}
+                    className="h-10 pl-10 dark:border-[#393440] dark:bg-[#0b0a0d] dark:text-slate-100 dark:[color-scheme:dark] oidark:border-outline-variant oidark:bg-surface-container-lowest oidark:text-foreground oidark:[color-scheme:dark]"
+                    placeholder="yyyy/mm/dd"
+                  />
+                </>
               )}
             />
           </div>
@@ -237,13 +349,13 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             aria-label={t('common.filters.search', 'Search')}
             disabled={isDateRangeInvalid}
             title={iconOnlySearch ? t('common.filters.search', 'Search') : undefined}
-            className={`h-10 w-full shrink-0 gap-2 sm:-translate-y-5 sm:w-auto disabled:cursor-not-allowed disabled:opacity-50 ${iconOnlySearch ? 'sm:px-0 sm:w-11' : ''}`}
+            className={`h-10 w-full shrink-0 gap-2 sm:w-auto disabled:cursor-not-allowed disabled:opacity-50 ${showShopSearch ? '' : 'sm:-translate-y-5'} ${iconOnlySearch ? 'sm:px-0 sm:w-11' : ''}`}
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             {!iconOnlySearch && <span>{t('common.filters.search', 'Search')}</span>}
           </Button>
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={onReset} aria-label={t('common.filters.clear', 'Clear')} title={iconOnlySearch ? t('common.filters.clear', 'Clear') : undefined} className={`h-10 w-full gap-2 sm:-translate-y-5 sm:w-auto ${iconOnlySearch ? 'sm:px-0 sm:w-11' : ''}`}>
+        <Button type="button" variant="outline" size="sm" onClick={onReset} aria-label={t('common.filters.clear', 'Clear')} title={iconOnlySearch ? t('common.filters.clear', 'Clear') : undefined} className={`h-10 w-full gap-2 sm:w-auto ${showShopSearch ? '' : 'sm:-translate-y-5'} ${iconOnlySearch ? 'sm:px-0 sm:w-11' : ''}`}>
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
           {!iconOnlySearch && <span>{t('common.filters.clear', 'Clear')}</span>}
         </Button>
@@ -252,7 +364,7 @@ export function OrderFilterBar({ methods, onApply, onStatusChange, showPaymentSt
             type="button"
             onClick={onExport}
             disabled={exportDisabled || isDateRangeInvalid}
-            className="h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary sm:-translate-y-5 disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:opacity-70 disabled:hover:border-muted disabled:hover:bg-muted disabled:hover:text-muted-foreground"
+            className={`h-10 w-full shrink-0 rounded-[7px] border border-[#e5e7eb] bg-white px-[18px] text-[13px] font-semibold text-[#374151] shadow-none hover:border-[#7c3aed] hover:bg-white hover:text-[#7c3aed] dark:border-[#393440] dark:bg-[#211a29] dark:text-slate-100 dark:hover:border-violet-400 dark:hover:bg-[#211a29] dark:hover:text-violet-300 oidark:border-outline-variant oidark:bg-surface-container-high oidark:text-on-surface-variant oidark:hover:border-primary oidark:hover:bg-surface-container-high oidark:hover:text-primary ${showShopSearch ? '' : 'sm:-translate-y-5'} disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:opacity-70 disabled:hover:border-muted disabled:hover:bg-muted disabled:hover:text-muted-foreground`}
           >
             &#x2193; {exportLabel ?? t('buyer.orders.exportCsv', 'Export CSV')}
           </Button>

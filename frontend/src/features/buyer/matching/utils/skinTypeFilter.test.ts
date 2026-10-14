@@ -23,7 +23,7 @@ describe('resolveSkinTypeConditions', () => {
     })
   })
 
-  it('overrides the analysis with the selection (BR-MATCH-006)', () => {
+  it('scopes the selection to the analysed skin types (custom rule)', () => {
     expect(
       resolveSkinTypeConditions({
         source: 'ai',
@@ -31,13 +31,13 @@ describe('resolveSkinTypeConditions', () => {
         requestedSkinTypes: ['dry'],
       }),
     ).toEqual({
-      required: [],
+      required: ['oily', 'combination'],
       selected: ['dry'],
       restrict: true,
     })
   })
 
-  it('overrides the analysis with all selected types (BR-MATCH-006)', () => {
+  it('keeps the analysis scope with all selected types (custom rule)', () => {
     expect(
       resolveSkinTypeConditions({
         source: 'ai',
@@ -45,13 +45,13 @@ describe('resolveSkinTypeConditions', () => {
         requestedSkinTypes: ['oily', 'dry'],
       }),
     ).toEqual({
-      required: [],
+      required: ['oily', 'combination'],
       selected: ['oily', 'dry'],
       restrict: true,
     })
   })
 
-  it('replaces the analysis result with the selection when they overlap', () => {
+  it('applies selection and analysis together when they overlap', () => {
     expect(
       resolveSkinTypeConditions({
         source: 'ai',
@@ -59,7 +59,7 @@ describe('resolveSkinTypeConditions', () => {
         requestedSkinTypes: ['combination'],
       }),
     ).toEqual({
-      required: [],
+      required: ['oily', 'combination'],
       selected: ['combination'],
       restrict: true,
     })
@@ -99,14 +99,16 @@ describe('filterProductsBySkinType', () => {
     ).toEqual([OILY, UNIVERSAL, SENSITIVE_UNIVERSAL])
   })
 
-  it('shows the selected skin type even when it is outside the analysis (BR-MATCH-006)', () => {
+  it('scopes a selection outside the analysis to the analysis result set (custom rule)', () => {
+    // The selection never widens the grid: dry-only products that are
+    // incompatible with the analysed types stay hidden, universal ones show.
     expect(
       filterProductsBySkinType(CATALOG, {
         source: 'ai',
         analysisSkinTypes,
         requestedSkinTypes: ['dry'],
       }),
-    ).toEqual([DRY, UNIVERSAL, SENSITIVE_UNIVERSAL])
+    ).toEqual([UNIVERSAL, SENSITIVE_UNIVERSAL])
   })
 
   it('filters generic results by the selection as-is', () => {
@@ -127,6 +129,36 @@ describe('filterProductsBySkinType', () => {
         requestedSkinTypes: [],
       }),
     ).toEqual(CATALOG)
+  })
+
+  it('keeps the multi-type UV sunscreen visible when one of its types is selected (reported case)', () => {
+    // Reported case: analysis = "normal", the result grid shows UV Protection
+    // Sunscreen SPF50 (dry,oily,combination,sensitive,normal). Selecting
+    // "dry" must keep it visible: it matches the selection AND the analysed
+    // type — even though it is stored in no skin_analysis_recommendations row.
+    const uv = {
+      id: 'uv',
+      skinTypes: ['dry', 'oily', 'combination', 'sensitive', 'normal'],
+    }
+    const dryOnly = { id: 'dry-only', skinTypes: ['dry'] }
+    expect(
+      filterProductsBySkinType([uv, dryOnly], {
+        source: 'ai',
+        analysisSkinTypes: ['normal'],
+        requestedSkinTypes: ['dry'],
+      }),
+    ).toEqual([uv])
+  })
+
+  it('keeps a product that carries the analysed type among several', () => {
+    const multi = { id: 'multi', skinTypes: ['dry', 'normal'] }
+    expect(
+      filterProductsBySkinType([multi], {
+        source: 'ai',
+        analysisSkinTypes: ['normal'],
+        requestedSkinTypes: [],
+      }),
+    ).toEqual([multi])
   })
 })
 
@@ -184,9 +216,11 @@ describe('analysis-result matching (requirement examples)', () => {
     ])
   })
 
-  it('shows the whole selected type regardless of the analysis (BR-MATCH-006)', () => {
+  it('scopes an oily selection to the combination analysis result (custom rule)', () => {
     // Reported case: analysis = Combination with an "Oily" filter selected.
-    // The selection overrides the analysis, so every oily product shows.
+    // The selection narrows within the analysis result, so products tagged
+    // {oily, combination} and "all"-tagged ones show — dry/combination-only
+    // products behave exactly like the default analysis view.
     const visible = filterProductsBySkinType(EXAMPLE_CATALOG, {
       source: 'ai',
       analysisSkinTypes: ['combination'],
@@ -194,20 +228,21 @@ describe('analysis-result matching (requirement examples)', () => {
     })
 
     expect(ids(visible)).toEqual([
-      'oily',
       'oily-combination',
       'all',
       'all-mixed-case',
     ])
   })
 
-  it('shows products that match only the selection, not the analysis (BR-MATCH-006)', () => {
+  it('hides products outside the analysis result even when selected (custom rule)', () => {
     const visible = filterProductsBySkinType(EXAMPLE_CATALOG, {
       source: 'ai',
       analysisSkinTypes: ANALYSIS_SKIN_TYPES,
       requestedSkinTypes: ['dry'],
     })
 
-    expect(ids(visible)).toEqual(['dry', 'all', 'all-mixed-case'])
+    // "dry" is not part of the analysed types: only universal products
+    // survive, so the selection narrows the grid instead of widening it.
+    expect(ids(visible)).toEqual(['all', 'all-mixed-case'])
   })
 })

@@ -16,6 +16,8 @@ import type { Product, Prisma, Merchant } from '@prisma/client';
 
 interface PersonalizationContext {
   source: 'ai' | 'generic';
+  /** Latest completed analysis id (`null` on the generic source). */
+  analysisId: string | null;
   skinTypes: string[];
   skinConcerns: string[];
   analysisAge: number | null;
@@ -130,9 +132,9 @@ export class MatchingService {
           ? analysisSkinTypes
           : [];
 
-    // One condition only: the effective types with `hasSome` semantics
-    // (BR-MATCH-016). On the AI source, products tagged for every skin type
-    // stay compatible with either source of the types.
+    // The effective types with `hasSome` semantics (BR-MATCH-016). On the AI
+    // source, products tagged for every skin type stay compatible with either
+    // source of the types. A selection may add a second condition below.
     const skinTypeConditions: Prisma.ProductWhereInput[] = [];
     if (effectiveSkinTypes.length > 0) {
       skinTypeConditions.push(
@@ -145,6 +147,27 @@ export class MatchingService {
             }
           : { skinTypes: { hasSome: effectiveSkinTypes } },
       );
+    }
+
+    // Custom rule (supersedes DD_MATCH_05 §2.1 step 5): an explicit selection
+    // on the AI source filters the ANALYSIS RESULT SET — the same products the
+    // grid shows with no selection — rather than the stored
+    // `skin_analysis_recommendations` rows. Scoping to those rows hid visible
+    // multi-type products such as "UV Protection Sunscreen SPF50" (tagged with
+    // every skin type, but stored in no analysis recommendation). The product
+    // must satisfy the selection AND stay compatible with the analysed skin
+    // types; "all"-tagged products satisfy both via the `has: 'all'` branch.
+    if (
+      context.source === 'ai' &&
+      requestedSkinTypes.length > 0 &&
+      analysisSkinTypes.length > 0
+    ) {
+      skinTypeConditions.push({
+        OR: [
+          { skinTypes: { hasSome: analysisSkinTypes } },
+          { skinTypes: { has: ALL_SKIN_TYPES } },
+        ],
+      });
     }
 
     // Recommendations stay personalized even while a skin type is selected, so
@@ -500,6 +523,7 @@ export class MatchingService {
     if (!latestAnalysis) {
       return {
         source: 'generic',
+        analysisId: null,
         skinTypes: [],
         skinConcerns: [],
         analysisAge: null,
@@ -520,6 +544,7 @@ export class MatchingService {
 
     return {
       source: 'ai',
+      analysisId: latestAnalysis.id,
       skinTypes,
       skinConcerns,
       analysisAge,

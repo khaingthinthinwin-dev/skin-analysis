@@ -17,6 +17,22 @@ vi.mock('react-router', async () => {
   }
 })
 
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: {
+      id: '99999999-9999-4999-8999-999999999999',
+      email: 'buyer@example.com',
+      name: 'Test Buyer',
+      role: 'buyer',
+      status: 'active',
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+    refreshUser: vi.fn(),
+    isLoading: false,
+  }),
+}))
+
 vi.mock('@/features/buyer/skin-analysis/services/skin-analysis.service', () => ({
   skinAnalysisService: {
     uploadImage: vi.fn(),

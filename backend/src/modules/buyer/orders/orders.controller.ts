@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { ActiveUserGuard } from '../../../common/guards/active-user.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import {
   CurrentUser,
@@ -37,6 +38,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
+  @UseGuards(ActiveUserGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Place a new order' })
   async placeOrder(@CurrentUser() user: AuthUser, @Body() dto: CreateOrderDto) {

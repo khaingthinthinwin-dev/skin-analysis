@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Megaphone, Image as ImageIcon } from 'lucide-react';
 import { useSidebarAds } from '../hooks/useProductDetail';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -54,6 +54,13 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
   const fallbackPath = `${basePath}/${idOrSlug}`;
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
+  // A dead image URL (404 / bad path) falls back to the clean white
+  // placeholder instead of the broken-image glyph + alt text.
+  const handleImageError = useCallback((key: string) => {
+    setFailedImages((prev) => new Set(prev).add(key));
+  }, []);
 
   // Placement + date condition (productDetail_page_banner, startsAt <= now < expiresAt).
   // Backend getSidebarAds() already filters the same way; this guards legacy/stale payloads.
@@ -64,16 +71,16 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
 
   const total = eligibleAds.length;
 
-  // Auto-rotate every 5s. Hover pauses; leaving the hover restarts a full
-  // 5s countdown. Rotation state is never paused by focus, so returning to
-  // this page always resumes rotating.
+  // Auto-rotate every 5s via a steady interval. Hover pauses; leaving the
+  // hover restarts a full 5s countdown. Rotation state is never paused by
+  // focus, so returning to this page always resumes rotating.
   useEffect(() => {
     if (total <= 1 || paused) return;
-    const timer = setTimeout(() => {
+    const timer = setInterval(() => {
       setCurrent((c) => (c + 1) % total);
     }, AUTO_SLIDE_MS);
-    return () => clearTimeout(timer);
-  }, [total, paused, current]);
+    return () => clearInterval(timer);
+  }, [total, paused]);
 
   const handlePause = () => setPaused(true);
   const handleResume = () => {
@@ -105,14 +112,15 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
 
   return (
     <div
+      key={total}
       className="relative"
       onMouseEnter={handlePause}
       onMouseLeave={handleResume}
     >
-      <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50">
-        <div className="relative px-11 sm:px-14 md:px-16 py-6 md:py-8 bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950/90 text-white transition-all duration-700">
-          <div className="relative z-10 grid gap-5 md:grid-cols-12 md:items-center">
-            <div className="space-y-3 md:col-span-8">
+      <div className="relative overflow-hidden rounded-3xl shadow-2xl border border-border/50">
+        <div className="relative overflow-hidden px-11 sm:px-14 md:px-16 py-6 md:py-8 bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950/90 text-white transition-all duration-700">
+          <div className="relative z-10 grid gap-5 lg:gap-3 md:grid-cols-12 md:items-center">
+            <div className="space-y-3 md:col-span-8 min-w-0 flex flex-col justify-center">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge
                   variant="outline"
@@ -136,7 +144,7 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               </h2>
 
               {content && (
-                <p className="text-sm sm:text-base text-zinc-200/90 max-w-xl line-clamp-2">
+                <p className="text-sm sm:text-base text-zinc-200/90 max-w-none line-clamp-3">
                   {content}
                 </p>
               )}
@@ -155,19 +163,18 @@ export function SidebarAdvertisements({ idOrSlug }: SidebarAdvertisementsProps) 
               </div>
             </div>
 
-            <div className="flex md:col-span-4 justify-center items-center">
-              {imageUrl ? (
-                <div className="relative w-full max-w-sm h-32 sm:h-36 md:h-40 lg:h-48 rounded-2xl overflow-hidden border border-white/20 shadow-inner">
+            <div className="flex min-w-0 items-center justify-center self-center md:col-span-4">
+              {imageUrl && !failedImages.has(ad.id) ? (
                   <img
                     src={getImageUrl(imageUrl)}
                     alt={title}
                     loading="lazy"
-                    className="h-full w-full object-cover"
+                    onError={() => handleImageError(ad.id)}
+                    className="block h-48 w-auto max-w-full rounded-[1.75rem] object-contain shadow-inner sm:h-56"
                   />
-                  
-                </div>
               ) : (
                 <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center p-4 text-center shadow-inner">
+                  <ImageIcon className="w-10 h-10 text-white/80 mb-2" />
                   <Megaphone className="w-10 h-10 text-white/80 mb-2" />
                   <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">
                     {t('buyer.products.ads.merchantPartner', 'Merchant Partner')}

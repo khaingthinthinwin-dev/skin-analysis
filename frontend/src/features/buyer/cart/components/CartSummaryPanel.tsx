@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,17 @@ import type { CartSummary } from '@/types/wishlist-cart.types';
 interface CartSummaryPanelProps {
   summary: CartSummary;
   isLoading?: boolean;
+  checkoutBlocked?: boolean;
+  onCheckoutBlocked?: () => void;
 }
 
 export function CartSummaryPanel({
   summary,
-  isLoading,
+  checkoutBlocked = false,
+  onCheckoutBlocked,
 }: CartSummaryPanelProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
@@ -23,6 +27,14 @@ export function CartSummaryPanel({
 
   const shippingAmount = parseFloat(summary.shippingEstimate || '0');
   const totalAmount = parseFloat(summary.total || '0');
+
+  const handleCheckoutClick = () => {
+    if (checkoutBlocked) {
+      onCheckoutBlocked?.();
+      return;
+    }
+    navigate('/buyer/checkout');
+  };
 
   return (
     <Card className="border-border/80 shadow-xs h-fit lg:sticky lg:top-4 overflow-hidden">
@@ -55,14 +67,13 @@ export function CartSummaryPanel({
         </div>
         <div className="space-y-2 pt-2">
           <Button
-            asChild
+            type="button"
             size="lg"
             className="w-full h-11 text-sm font-bold bg-primary hover:bg-primary/90"
-            disabled={!summary.canCheckout || isLoading}
+            onClick={handleCheckoutClick}
           >
-            <Link to="/buyer/checkout">
-              {t('cart.checkout', 'Proceed to Checkout')} <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
+            {t('cart.checkout', 'Proceed to Checkout')}{' '}
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           <Button asChild variant="ghost" className="w-full h-10 text-sm">
             <Link to="/buyer/search">{t('cart.continueShopping')}</Link>

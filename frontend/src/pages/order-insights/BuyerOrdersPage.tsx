@@ -346,7 +346,7 @@ function BuyerOrdersPageContent() {
 
       <Card className="border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container-low">
         <CardContent className="min-w-0 space-y-0 overflow-visible p-3 pb-3 sm:p-4">
-          <div className="shrink-0">
+          <div className="mt-[13px] shrink-0 [&>div]:mt-0">
             <OrderFilterBar
               methods={methods}
               onApply={handleApply}
@@ -383,11 +383,12 @@ function BuyerOrdersPageContent() {
       </Card>
 
       {data && data.meta.total > 0 && (
-        <div className="shrink-0">
+        <div className="shrink-0 [&>div]:!mt-[10px]">
           <OrderPagination
-            meta={data.meta}
+            meta={{ ...data.meta, page: filters.page, limit: filters.limit }}
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
+            sizes={[10, 20, 50, 100]}
           />
         </div>
       )}
