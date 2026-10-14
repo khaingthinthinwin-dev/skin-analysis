@@ -102,10 +102,13 @@ export function RevenueSummaryGroup({ data, loading, period, from, to, onPeriodC
         t('merchant.revenue.rateCurrent', '(current rate)'),
         displayData?.commissionRateLocked ?? false,
       ) ?? '—';
-  const ordersWord = orderCount === 1
-    ? t('merchant.revenue.orderOne', 'order')
-    : t('merchant.revenue.orderOther', 'orders');
-  const footerText = `${t('merchant.revenue.basisPrefix', 'Based on')} ${orderCount} ${ordersWord} · ${t('merchant.revenue.commissionAt', 'Commission at')} ${rateLabel}`;
+  const basisText = t(
+    'merchant.revenue.basis',
+    `Based on ${orderCount} order${orderCount === 1 ? '' : 's'}`,
+    { count: orderCount },
+  );
+  const commissionText = t('merchant.revenue.commissionAtRate', `Commission at ${rateLabel}`, { rate: rateLabel });
+  const footerText = `${basisText} · ${commissionText}`;
   const rateNote = t('merchant.revenue.rateNote', 'Commission is calculated with the current platform rate; historical rate locking is pending.');
 
   return <Card className={cardClassName}><CardContent className="space-y-5 p-5 sm:p-6">

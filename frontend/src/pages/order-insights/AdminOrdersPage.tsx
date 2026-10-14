@@ -1,26 +1,28 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { AdminFilterChipKey } from '@/features/order-insights/components/AdminActiveFilterChips';
 import { AdminOrderFilterBar } from '@/features/order-insights/components/AdminOrderFilterBar';
+import { AdminOrderKpiTiles } from '@/features/order-insights/components/AdminOrderKpiTiles';
+import { ExportAdminOrdersDialog } from '@/features/order-insights/components/ExportAdminOrdersDialog';
 import { AdminOrderTable } from '@/features/order-insights/components/AdminOrderTable';
 import { OrderPagination } from '@/features/order-insights/components/OrderPagination';
 import { useAdminOrderFilters } from '@/features/order-insights/hooks/useAdminOrderFilters';
 import { useAdminOrders } from '@/features/order-insights/hooks/useAdminOrders';
-import { getAllAdminOrders } from '@/features/order-insights/services/adminOrderService';
-import { buildAdminOrdersExportFilename, exportAdminOrdersCsv } from '@/features/order-insights/utils/exportAdminOrdersCsv';
 import type { AdminOrderFilterFormData } from '@/features/order-insights/schemas/orderFilters.schema';
 import type { OrderSortField } from '@/features/order-insights/types/orderInsights.types';
 
 const DEFAULT_FILTERS: AdminOrderFilterFormData = {
-  status: 'all', paymentStatus: 'all', shopSearch: '', from: '', to: '', page: 1, limit: 20, sort: 'createdAt', order: 'desc',
+  status: 'all', paymentStatus: 'all', shopSearch: '', orderSearch: '', from: '', to: '', page: 1, limit: 10, sort: 'createdAt', order: 'desc',
 };
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation();
   const { methods, filters, patch } = useAdminOrderFilters();
   const ordersQuery = useAdminOrders(filters);
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportError, setExportError] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   const resetFilters = () => {
     methods.reset(DEFAULT_FILTERS);
@@ -55,6 +57,10 @@ export default function AdminOrdersPage() {
     patch({ sort: field, order, page: 1 });
   };
   const changeShopSearch = (shopSearch: string) => {
+    // No-op guard mirrors changeOrderSearch: without it the mount-time debounce
+    // fires with '', patches `?page=1`, and the resulting URL-driven reset wipes
+    // characters the admin is still typing into another filter field.
+    if ((filters.shopSearch ?? '').trim() === shopSearch) return;
     methods.setValue('page', 1, { shouldValidate: false });
     patch({
       shopSearch,
@@ -63,25 +69,52 @@ export default function AdminOrdersPage() {
       page: 1,
     });
   };
-  const exportOrders = async () => {
-    setIsExporting(true);
-    setExportError(false);
-    try {
-      const rows = await getAllAdminOrders(filters);
-      if (rows.length) exportAdminOrdersCsv(rows, buildAdminOrdersExportFilename(filters));
-    } catch {
-      setExportError(true);
-    } finally {
-      setIsExporting(false);
-    }
+  const changeOrderSearch = (orderSearch: string) => {
+    if ((filters.orderSearch ?? '').trim() === orderSearch) return;
+    methods.setValue('page', 1, { shouldValidate: false });
+    patch({ orderSearch, page: 1 });
   };
-
+  /** Drops one filter group and returns to page 1, leaving the rest of the filter set alone. */
+  const clearFilter = (key: AdminFilterChipKey) => {
+    methods.setValue('page', 1, { shouldValidate: false });
+    if (key === 'orderNumber') {
+      methods.setValue('orderSearch', '', { shouldValidate: false });
+      patch({ orderSearch: '', page: 1 });
+      return;
+    }
+    if (key === 'shop') {
+      methods.setValue('shopSearch', '', { shouldValidate: false });
+      methods.setValue('merchantId', undefined, { shouldValidate: false });
+      methods.setValue('shopId', undefined, { shouldValidate: false });
+      patch({ shopSearch: '', merchantId: undefined, shopId: undefined, page: 1 });
+      return;
+    }
+    if (key === 'status') {
+      methods.setValue('status', 'all', { shouldValidate: false });
+      patch({ status: 'all', page: 1 });
+      return;
+    }
+    if (key === 'paymentStatus') {
+      methods.setValue('paymentStatus', 'all', { shouldValidate: false });
+      patch({ paymentStatus: 'all', page: 1 });
+      return;
+    }
+    methods.setValue('from', '', { shouldValidate: false });
+    methods.setValue('to', '', { shouldValidate: false });
+    patch({ from: '', to: '', page: 1 });
+  };
   return (
     <main className="flex min-w-0 flex-col gap-4 p-2 lg:p-4">
       <header>
-        <h1 className="text-[22px] font-bold text-foreground">All Orders</h1>
-        <p className="mt-1 text-sm text-muted-foreground">View platform orders across all shops and merchants.</p>
+        <h1 className="text-[22px] font-bold text-foreground">{t('admin.orders.title', 'All Orders')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t('admin.orders.subtitle', 'View platform orders across all shops and merchants.')}</p>
       </header>
+
+      <AdminOrderKpiTiles
+        meta={ordersQuery.data?.meta}
+        summary={ordersQuery.data?.summary}
+        loading={ordersQuery.isLoading}
+      />
 
       <Card className="border-border/80 shadow-xs oidark:border-outline-variant oidark:bg-surface-container-low">
         <CardContent className="p-3 sm:p-4">
@@ -90,36 +123,34 @@ export default function AdminOrdersPage() {
             onApply={applyFilters}
             onReset={resetFilters}
             onShopSearchChange={changeShopSearch}
+            onOrderSearchChange={changeOrderSearch}
             onStatusChange={changeStatus}
             onPaymentStatusChange={changePaymentStatus}
-            onExport={() => void exportOrders()}
-            exportDisabled={isExporting || ordersQuery.isLoading || !ordersQuery.data?.meta.total}
-            exporting={isExporting}
+            onClearFilter={clearFilter}
+            onExport={() => setIsExportDialogOpen(true)}
+            exportDisabled={ordersQuery.isLoading || !ordersQuery.data?.meta.total}
           />
-
-          {exportError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTitle>Unable to export orders</AlertTitle>
-              <AlertDescription>Please try again.</AlertDescription>
-            </Alert>
-          )}
 
           {ordersQuery.error ? (
             <Alert variant="destructive">
-              <AlertTitle>Unable to load orders</AlertTitle>
+              <AlertTitle>{t('admin.orders.error.loadFailed', 'Unable to load orders')}</AlertTitle>
               <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-                <span>Please try again.</span>
-                <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>Retry</Button>
+                <span>{t('admin.orders.error.tryAgain', 'Please try again.')}</span>
+                <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>{t('common.actions.retry', 'Retry')}</Button>
               </AlertDescription>
             </Alert>
           ) : ordersQuery.data?.meta.total === 0 ? (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <p className="text-muted-foreground">No orders match the current filters.</p>
-              <Button variant="outline" onClick={resetFilters}>Clear Filters</Button>
+              <p className="text-muted-foreground">{t('admin.orders.empty', 'No orders match the current filters.')}</p>
+              <Button variant="outline" onClick={resetFilters}>{t('admin.orders.clearFilters', 'Clear Filters')}</Button>
             </div>
           ) : (
             <>
-              {ordersQuery.data && <p className="mb-3 text-sm text-muted-foreground">{ordersQuery.data.meta.total} orders match the current filters.</p>}
+              {ordersQuery.data && (
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {t('admin.orders.matchCount', `${ordersQuery.data.meta.total} orders match the current filters.`, { total: ordersQuery.data.meta.total })}
+                </p>
+              )}
               <AdminOrderTable
                 rows={ordersQuery.data?.orders ?? []}
                 loading={ordersQuery.isLoading}
@@ -135,6 +166,7 @@ export default function AdminOrdersPage() {
       {ordersQuery.data && ordersQuery.data.meta.total > 0 && (
         <OrderPagination meta={ordersQuery.data.meta} onPageChange={changePage} onLimitChange={changeLimit} sizes={[10, 20, 50]} />
       )}
+      {isExportDialogOpen && <ExportAdminOrdersDialog filters={filters} total={ordersQuery.data?.meta.total ?? 0} onClose={() => setIsExportDialogOpen(false)} />}
     </main>
   );
 }

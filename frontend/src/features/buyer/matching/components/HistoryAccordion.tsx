@@ -6,12 +6,15 @@ import { Link } from 'react-router'
 import { cn } from '@/lib/utils'
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  if (Number.isNaN(date.getTime())) return dateStr
-  const year = date.getFullYear()
-  const month = date.toLocaleDateString('en-US', { month: 'short' })
-  const day = date.getDate()
-  return `${year}, ${month} ${day}`
+  try {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${date.getFullYear()}/${month}/${day}`
+  } catch {
+    return dateStr
+  }
 }
 
 function getImageUrl(url: string): string {

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -11,21 +10,25 @@ import { SidebarAdvertisements } from '@/features/buyer/products/components/Side
 import { ProductPurchaseActions } from '@/features/buyer/products/components/ProductPurchaseActions';
 import { useProductDetail } from '@/features/buyer/products/hooks/useProductDetail';
 import { useAuth } from '@/providers/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const idOrSlug = id ?? '';
-  const [reviewsFocusRequest, setReviewsFocusRequest] = useState(0);
+  const isMerchantView = user?.role === 'merchant';
 
   const { data: product, isLoading, isError } = useProductDetail(idOrSlug);
 
   if (!id) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground">Invalid product.</p>
+        <p className="text-muted-foreground">
+          {t('buyer.products.page.invalidProduct', 'Invalid product.')}
+        </p>
       </div>
     );
   }
@@ -50,15 +53,17 @@ export default function ProductDetail() {
   if (isError || !product) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <p className="text-muted-foreground mb-4">Product not found.</p>
+        <p className="text-muted-foreground mb-4">
+          {t('buyer.products.page.notFound', 'Product not found.')}
+        </p>
         <Button asChild>
-          <a href="/products">Browse products</a>
+          <a href="/products">{t('buyer.products.page.browseProducts', 'Browse products')}</a>
         </Button>
       </div>
     );
   }
 
-  const showCTA = !isAuthenticated || user?.role === 'buyer';
+  const showCTA = !isMerchantView && (!isAuthenticated || user?.role === 'buyer');
 
   return (
     <div key={location.pathname} className="container mx-auto px-4 py-8">
@@ -67,22 +72,23 @@ export default function ProductDetail() {
         size="icon"
         className="mb-4"
         onClick={() => navigate(-1)}
-        aria-label="Go back"
+        aria-label={t('buyer.products.page.goBack', 'Go back')}
       >
         <ArrowLeft className="h-5 w-5" />
       </Button>
-      <SidebarAdvertisements idOrSlug={product.id} />
+      {!isMerchantView && <SidebarAdvertisements idOrSlug={product.id} />}
 
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-2">
         <ProductGallery images={product.images} name={product.name} />
-        <ProductInfo
-          product={product}
-          onShowReviews={() => setReviewsFocusRequest((n) => n + 1)}
-        />
+        <ProductInfo product={product} isMerchantView={isMerchantView} />
       </div>
 
-      <ProductTabs product={product} focusReviewsRequest={reviewsFocusRequest} />
-      <SimilarProducts idOrSlug={product.id} />
+      <ProductTabs
+        product={product}
+        showReviewForm={!isMerchantView}
+        showProductDetails={!isMerchantView}
+      />
+      {!isMerchantView && <SimilarProducts idOrSlug={product.id} />}
 
       {showCTA && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 backdrop-blur md:hidden">

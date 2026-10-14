@@ -70,7 +70,7 @@ function formatStatusLabel(status: OrderListFilterFormData['status']): string {
 
 function BuyerOrdersPageContent() {
   const { t } = useTranslation();
-  const { methods, filters } = useOrderListFilters();
+  const { methods, filters } = useOrderListFilters(10);
   const { patch } = useOrderQueryParams();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -78,6 +78,8 @@ function BuyerOrdersPageContent() {
 
   const { data, isLoading, error, refetch } = useBuyerOrders({
     status: filters.status === 'all' ? undefined : filters.status,
+    shopSearch: filters.shopSearch || undefined,
+    orderSearch: filters.orderSearch || undefined,
     from: filters.from || undefined,
     to: filters.to || undefined,
     page: filters.page,
@@ -113,18 +115,34 @@ function BuyerOrdersPageContent() {
     patch({ status, page: 1 });
   };
 
+  const changeShopSearch = (shopSearch: string) => {
+    if ((filters.shopSearch ?? '').trim() === shopSearch) return;
+    setExportMessage('');
+    methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+    patch({ shopSearch, page: 1 });
+  };
+
+  const changeOrderSearch = (orderSearch: string) => {
+    if ((filters.orderSearch ?? '').trim() === orderSearch) return;
+    setExportMessage('');
+    methods.setValue('page', 1, { shouldValidate: false, shouldDirty: false });
+    patch({ orderSearch, page: 1 });
+  };
+
   const handleReset = () => {
     setExportMessage('');
     methods.reset({
       status: 'all',
+      shopSearch: '',
+      orderSearch: '',
       from: '',
       to: '',
       page: 1,
-      limit: 20,
+      limit: 10,
       sort: 'createdAt',
       order: 'desc',
     });
-    patch({ status: 'all', from: '', to: '', page: 1, limit: 20, sort: 'createdAt', order: 'desc' });
+    patch({ status: 'all', shopSearch: '', orderSearch: '', from: '', to: '', page: 1, limit: 10, sort: 'createdAt', order: 'desc' });
   };
 
   const handleSort = (field: 'createdAt' | 'totalAmount' | 'status') => {
@@ -170,6 +188,8 @@ function BuyerOrdersPageContent() {
       do {
         const response = await orderService.getBuyerOrders({
           status: filters.status,
+          shopSearch: filters.shopSearch ?? '',
+          orderSearch: filters.orderSearch ?? '',
           from: filters.from || '',
           to: filters.to || '',
           page,
@@ -248,8 +268,7 @@ function BuyerOrdersPageContent() {
 
   return (
     <div
-      className="flex min-w-0 flex-col gap-4 overflow-x-hidden overflow-y-auto p-2 sm:overflow-hidden lg:p-4"
-      style={{ height: '100%' }}
+      className="flex min-w-0 flex-col gap-4 p-2 lg:p-4"
     >
       <div className="mb-2 shrink-0">
         <h1 className="m-0 text-[22px] font-bold text-gray-900 dark:text-slate-100 oidark:text-foreground">
@@ -325,30 +344,35 @@ function BuyerOrdersPageContent() {
         </div>
       )}
 
-      <Card className="flex flex-col overflow-visible border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014] sm:min-h-0 sm:flex-1 sm:overflow-hidden oidark:border-outline-variant oidark:bg-surface-container-low">
-        <CardContent className="flex min-w-0 flex-col space-y-0 overflow-visible p-3 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-hidden sm:p-4">
-          <div className="shrink-0">
+      <Card className="border-border/80 shadow-xs dark:border-[#29252f] dark:bg-[#111014] oidark:border-outline-variant oidark:bg-surface-container-low">
+        <CardContent className="min-w-0 space-y-0 overflow-visible p-3 pb-3 sm:p-4">
+          <div className="mt-[13px] shrink-0 [&>div]:mt-0">
             <OrderFilterBar
               methods={methods}
               onApply={handleApply}
               onStatusChange={handleStatusChange}
+              showShopSearch
+              showOrderSearch
+              iconOnlySearch
+              onShopSearchChange={changeShopSearch}
+              onOrderSearchChange={changeOrderSearch}
               onReset={handleReset}
               onExport={handleOpenExportModal}
-              exportDisabled={isExporting}
-              exportLabel="Export CSV"
+              exportDisabled={isExporting || (data?.meta.total ?? 0) === 0}
+              exportLabel="Export"
             />
           </div>
 
           {data && data.meta.total === 0 ? (
             <EmptyOrderState />
           ) : (
-            <div className="min-w-0 overflow-visible sm:flex sm:min-h-0 sm:flex-1 sm:flex-col sm:overflow-hidden">
+            <div className="min-w-0 overflow-visible">
               <OrderHistoryTable
                 rows={data?.orders || []}
                 loading={isLoading}
                 onTrack={(id) => window.location.href = `/orders/${id}`}
                 onSort={handleSort}
-                pagination={data?.meta ?? { page: 1, limit: 20, total: 0 }}
+                pagination={data?.meta ?? { page: 1, limit: 10, total: 0 }}
                 onPageChange={handlePageChange}
                 currentSort={methods.watch('sort')}
                 currentOrder={methods.watch('order')}
@@ -359,11 +383,12 @@ function BuyerOrdersPageContent() {
       </Card>
 
       {data && data.meta.total > 0 && (
-        <div className="shrink-0">
+        <div className="shrink-0 [&>div]:!mt-[10px]">
           <OrderPagination
-            meta={data.meta}
+            meta={{ ...data.meta, page: filters.page, limit: filters.limit }}
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
+            sizes={[10, 20, 50, 100]}
           />
         </div>
       )}
@@ -394,6 +419,22 @@ function BuyerOrdersPageContent() {
                     : 'All dates'}
                 </span>
               </p>
+              {filters.shopSearch?.trim() && (
+                <p className="text-sm text-muted-foreground">
+                  Shop:{' '}
+                  <span className="font-medium text-foreground">
+                    {filters.shopSearch.trim()}
+                  </span>
+                </p>
+              )}
+              {filters.orderSearch?.trim() && (
+                <p className="text-sm text-muted-foreground">
+                  Order #:{' '}
+                  <span className="font-medium text-foreground">
+                    {filters.orderSearch.trim()}
+                  </span>
+                </p>
+              )}
             </div>
 
             <p className="text-sm text-muted-foreground">
@@ -420,6 +461,7 @@ function BuyerOrdersPageContent() {
               type="button"
               onClick={handleExportCsv}
               disabled={isExporting || data?.meta.total === 0}
+              className="disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:opacity-70 disabled:hover:bg-muted disabled:hover:text-muted-foreground"
             >
               {isExporting ? 'Exporting...' : 'Export CSV'}
             </Button>

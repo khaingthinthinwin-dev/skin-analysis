@@ -190,9 +190,59 @@ describe('SponsoredAdSlider', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/buyer/products/DMC-004')
   })
 
-  it('binds the matching product name, description, tag and image to the slide', () => {
+  it('prefers the ad title, content and announcement over the linked product text and uses the product image', () => {
     mockedUseSponsoredAds.mockReturnValue({
-      data: { data: [makeAd({ sku: 'GFC-001', title: 'Ad 2026-11', description: 'Promotional content for 2026-11' })] },
+      data: {
+        data: [
+          makeAd({
+            sku: 'GFC-001',
+            title: 'Ad 2026-11',
+            description: 'Promotional content for 2026-11',
+            content: 'Ad 2026-11 update',
+            announcement_message: 'Ad 2026-11 new',
+          }),
+        ],
+      },
+    } as never)
+    mockedUseAdProducts.mockReturnValue({
+      data: {
+        'GFC-001': {
+          name: 'Gentle Foam Cleanser',
+          description: 'A mild foam cleanser that removes impurities without stripping moisture.',
+          shortDescription: 'Mild foam cleanser for daily use',
+          sku: 'GFC-001',
+          images: ['/uploads/products/cd8048d7-ab84-463f-8851-17bb1659b9ee.png'],
+          merchant: { id: 'm1', shopName: 'Glow Beauty Shop', licenseStatus: 'approved' },
+          category: { id: 'c1', name: 'Cleansers', slug: 'cleansers' },
+        },
+      },
+    } as never)
+
+    render(<SponsoredAdSlider />)
+
+    expect(screen.getByRole('heading', { name: 'Ad 2026-11' })).toBeInTheDocument()
+    expect(screen.getByText('Ad 2026-11 update')).toBeInTheDocument()
+    expect(screen.getByText('Glow Beauty Shop')).toHaveClass('bg-pink-500')
+    const bannerImage = screen.getByRole('img', { name: 'Ad 2026-11' })
+    expect(bannerImage).toHaveClass('h-full', 'w-auto', 'max-w-full', 'object-contain', 'object-center')
+    expect(bannerImage).toHaveAttribute(
+      'src',
+      expect.stringContaining('/uploads/products/cd8048d7-ab84-463f-8851-17bb1659b9ee.png'),
+    )
+  })
+
+  it('falls back to product name and description only when the ad has none', () => {
+    mockedUseSponsoredAds.mockReturnValue({
+      data: {
+        data: [
+          makeAd({
+            sku: 'GFC-001',
+            title: '',
+            description: null,
+            content: null,
+          }),
+        ],
+      },
     } as never)
     mockedUseAdProducts.mockReturnValue({
       data: {
@@ -214,11 +264,6 @@ describe('SponsoredAdSlider', () => {
     expect(
       screen.getByText('A mild foam cleanser that removes impurities without stripping moisture.'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Glow Beauty Shop')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Gentle Foam Cleanser' })).toHaveAttribute(
-      'src',
-      expect.stringContaining('/uploads/products/cd8048d7-ab84-463f-8851-17bb1659b9ee.png'),
-    )
   })
 
   it('shows the active ad dot and advances with carousel controls', () => {
@@ -229,6 +274,7 @@ describe('SponsoredAdSlider', () => {
     render(<SponsoredAdSlider />)
 
     expect(screen.getByRole('button', { name: 'Go to advertisement 1' })).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByRole('button', { name: 'Go to advertisement 1' }).parentElement).toHaveClass('left-1/2')
     fireEvent.click(screen.getByRole('button', { name: 'Next advertisement' }))
     expect(screen.getByRole('heading', { name: 'Second banner' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Go to advertisement 2' })).toHaveAttribute('aria-current', 'true')
@@ -260,7 +306,7 @@ describe('SponsoredAdSlider', () => {
     )
   })
 
-  it('shows the ad photo in the white product container and substitutes the sample image on failure', () => {
+  it('confines the ad photo inside the fixed right-hand card and substitutes the sample image on failure', () => {
     mockedUseSponsoredAds.mockReturnValue({
       data: { data: [makeAd({ imageUrl: 'https://storage.example.com/ads/ad-placeholder.jpg' })] },
     } as never)
@@ -269,7 +315,30 @@ describe('SponsoredAdSlider', () => {
     const image = screen.getByRole('img', { name: 'Search banner' })
 
     expect(image).toHaveAttribute('src', 'https://storage.example.com/ads/ad-placeholder.jpg')
-    expect(image).toHaveClass('rounded-[1.75rem]', 'object-contain')
+    expect(image).toHaveClass('h-full', 'w-auto', 'max-w-full', 'object-contain', 'object-center')
+    expect(image.parentElement).toHaveClass(
+      'h-[232px]',
+      'w-fit',
+      'max-w-[49%]',
+      'mr-12',
+      'overflow-hidden',
+      'rounded-2xl',
+      'bg-white',
+    )
+    expect(screen.getByRole('heading', { name: 'Search banner' }).parentElement).toHaveClass('pl-12')
+    expect(image.parentElement?.parentElement).toHaveClass(
+      'flex',
+      'h-[250px]',
+      'max-h-[260px]',
+      'items-center',
+      'justify-between',
+      'overflow-hidden',
+      'p-6',
+    )
+    expect(screen.getByRole('button', { name: /learn more/i })).toHaveClass(
+      'lg:h-9',
+      'lg:px-5',
+    )
     fireEvent.error(image)
     expect(screen.getByRole('img', { name: 'Search banner' })).toHaveAttribute(
       'src',

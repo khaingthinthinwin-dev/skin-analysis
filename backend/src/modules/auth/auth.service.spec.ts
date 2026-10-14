@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { RedisService } from '../../shared/redis/redis.service';
+import { SkinCheckReminderService } from '../shared/notifications/skin-check-reminder.service';
 
 jest.mock('argon2', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -85,6 +86,11 @@ const mockMailerService = {
   sendMail: jest.fn().mockResolvedValue({}),
 };
 
+const mockSkinCheckReminderService = {
+  triggerFirstAnalysisForUser: jest.fn().mockResolvedValue(undefined),
+  triggerForUser: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -98,6 +104,10 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: RedisService, useValue: mockRedis },
         { provide: MailerService, useValue: mockMailerService },
+        {
+          provide: SkinCheckReminderService,
+          useValue: mockSkinCheckReminderService,
+        },
       ],
     }).compile();
 

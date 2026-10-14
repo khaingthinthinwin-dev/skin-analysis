@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { AlertCircle, X } from 'lucide-react'
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 
 export function DeactivationBanner() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [dismissed, setDismissed] = useState(false)
 
@@ -32,16 +34,16 @@ export function DeactivationBanner() {
               <AlertCircle className="h-5 w-5 text-red-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-red-700">Account Deactivated</h3>
+              <h3 className="text-sm font-semibold text-red-700">{t('banner.deactivatedTitle', 'Account Deactivated')}</h3>
               <p className="text-sm text-red-700 mt-1">
-                Your account is currently deactivated. Some features may be restricted until an admin activates your account.
+                {t('banner.deactivatedMessage', 'Your account is currently deactivated. Some features may be restricted until an admin activates your account.')}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setDismissed(true)}
               className="flex-shrink-0 rounded-md p-1.5 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-red-50"
-              aria-label="Dismiss banner"
+              aria-label={t('banner.dismiss', 'Dismiss banner')}
             >
               <X className="h-4 w-4" />
             </button>

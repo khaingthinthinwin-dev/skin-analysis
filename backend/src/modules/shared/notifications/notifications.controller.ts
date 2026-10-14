@@ -106,4 +106,16 @@ export class NotificationsController {
     await this.skinCheckReminderService.checkAndSendReminders();
     return { message: 'Skin check reminder cron job executed manually' };
   }
+
+  @Post('trigger/skin-check-reminders')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Trigger skin check reminders for all eligible users (re-analysis + first analysis)',
+  })
+  async triggerSkinCheckReminders() {
+    await this.skinCheckReminderService.checkAndSendReminders();
+    await this.skinCheckReminderService.checkAndSendFirstAnalysisReminders();
+    return { message: 'Skin check reminders triggered for all eligible users' };
+  }
 }
