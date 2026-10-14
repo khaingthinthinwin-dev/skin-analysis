@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { ActiveUserGuard } from '../../../common/guards/active-user.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../../common/decorators/current-user.decorator';
@@ -45,6 +46,7 @@ export class WishlistController {
   }
 
   @Post(':productId')
+  @UseGuards(ActiveUserGuard)
   @ApiOperation({ summary: 'Add product to wishlist' })
   @ApiParam({ name: 'productId', description: 'Product UUID' })
   @HttpCode(HttpStatus.CREATED)
@@ -70,6 +72,7 @@ export class WishlistController {
   }
 
   @Post(':productId/move-to-cart')
+  @UseGuards(ActiveUserGuard)
   @ApiOperation({ summary: 'Move wishlist item to cart' })
   @ApiParam({ name: 'productId', description: 'Product UUID' })
   async moveToCart(

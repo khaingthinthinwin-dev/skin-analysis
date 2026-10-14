@@ -8,11 +8,18 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/providers/AuthProvider';
+import { isAccountDeactivated } from '@/lib/account-status';
+import { AccountDeactivatedDialog } from '@/components/shared/AccountDeactivatedDialog';
 import { toast } from 'sonner';
 
 export default function Cart() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [deactivatedOpen, setDeactivatedOpen] = useState(false);
+
+  const accountDeactivated = isAccountDeactivated(user);
 
   const {
     items,
@@ -156,7 +163,11 @@ export default function Cart() {
           </div>
 
           <div className="lg:col-span-1">
-            <CartSummaryPanel summary={summary} />
+            <CartSummaryPanel
+              summary={summary}
+              checkoutBlocked={accountDeactivated}
+              onCheckoutBlocked={() => setDeactivatedOpen(true)}
+            />
           </div>
         </div>
       ) : (
@@ -177,6 +188,11 @@ export default function Cart() {
         isLoading={isClearing}
       />
 
+      <AccountDeactivatedDialog
+        open={deactivatedOpen}
+        onOpenChange={setDeactivatedOpen}
+        deactivationReason={user?.deactivationReason}
+      />
     </div>
   );
 }
