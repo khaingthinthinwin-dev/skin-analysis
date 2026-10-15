@@ -1,15 +1,17 @@
 # DD_SEARCH_05 — Business Logic
 
-> **Doc ID:** SKM-DD-SEARCH-05 | **Version:** 1.2 | **Status:** Released  
-> **Last Updated:** 2026-08-25
+> **Doc ID:** SKM-DD-SEARCH-05 | **Version:** 1.3 | **Status:** Released  
+> **Last Updated:** 2026-10-15
+
+> **Codebase alignment:** Aligned with `backend/src/modules/catalog/search/search.service.ts` as of 2026-10-15.
 
 ---
 
 ## 1. Overview
 
-This document specifies the core business logic, caching strategy, filter building, and query execution implemented in the `SearchService`.
+This document specifies the core business logic, caching strategy, filter building, and query execution implemented in `SearchService`. It also describes the frontend ad-panel behavior that consumes the ads endpoint.
 
-- **Location:** `src/modules/products/search.service.ts`
+- **Location:** `backend/src/modules/catalog/search/search.service.ts`
 
 ---
 
@@ -17,55 +19,56 @@ This document specifies the core business logic, caching strategy, filter buildi
 
 ### 2.1 searchProducts(query)
 
-1. **Validation:** Handled by `ProductQueryDto` with class-validator (whitelist + forbidNonWhitelisted).
+1. **Validation:** Handled by the global `ValidationPipe` (`whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`) against `ProductQueryDto`.
 2. **Logic:**
-   - Compute cache key from serialized query params
-   - Check Redis cache (`cache:products:list:{hash}`)
-   - **HIT:** Deserialize and return cached JSON (TTL 2 min)
+   - Compute cache key from the serialized (key-sorted) query params
+   - Check Redis cache (`cache:products:list:v2:{md5}`)
+   - **HIT:** Deserialize and return cached JSON
    - **MISS:**
-     - Build Prisma `WHERE` clause (Sec 3.1)
-     - Build Prisma `orderBy` clause (Sec 4.1)
-     - Run `findMany` + `count` in a transaction
-     - Serialize Decimal fields (`price`, `compareAtPrice`, `avgRating`) as strings
-     - Compute `isInStock` from `stock_quantity > 0`
-     - Compute `totalPages = Math.ceil(total / limit)`
-     - Seed Redis with TTL 2 min
+     - Build Prisma `WHERE` clause (§3.1)
+     - Build Prisma `orderBy` clause (§4.1)
+     - Compute `skip`/`take` (§5.1)
+     - Run `findMany` + `count` in a single `$transaction`
+     - Serialize product rows (§7.1), including `shop_name` from `merchant.shopName`
+     - Compute `meta` (`totalPages = Math.ceil(total / limit)`)
+     - Seed Redis with TTL 120 seconds
    - Return `{ data, meta }`
-3. **Transaction Boundaries:** `findMany` + `count` run in a single Prisma transaction
+3. **Transaction Boundaries:** `findMany` + `count` run in a single Prisma `$transaction`.
 
 ### 2.2 getCategoryTree()
 
 1. **Logic:**
    - Check Redis cache (`cache:categories`)
-   - **HIT:** Return cached tree (TTL 30 min)
+   - **HIT:** Return cached `{ data: tree }`
    - **MISS:**
      - Query all categories ordered by `sortOrder ASC`
-     - Build tree from `parent_id` self-reference (Sec 3.3)
-     - Seed Redis with TTL 30 min
+     - Build the tree from the `parent_id` self-reference (§8.1)
+     - Seed Redis with TTL 1800 seconds
    - Return `{ data: tree }`
 
 ### 2.3 getProductBySlug(slug)
 
 1. **Logic:**
-   - Find product by `slug` where `is_active = true`
-   - Join with `shops` where `is_approved = true` AND `merchants` where `license_status = 'approved'` (BR-SEARCH-013)
-   - If not found, return 404 NOT_FOUND
-   - Serialize Decimal fields as strings
+   - `findFirst` where `slug`, `isActive = true`, and `merchant.licenseStatus = 'approved'`
+   - Include `category` and `merchant`
+   - If not found, throw `NotFoundException` (404)
+   - Serialize Decimal fields as strings and `isInStock = stockQuantity > 0`
    - Return `{ data: productDetail }`
+2. **Alias:** `findBySlug(slug)` delegates to `getProductBySlug(slug)`.
 
 ### 2.4 getAdsByPlacement(placement)
 
 1. **Logic:**
-   - Check Redis cache (`cache:ads:{placement}`)
-   - **HIT:** Return cached ads (TTL 5 min)
-   - **MISS:**
-     - Query `advertisements` where `approval_status = 'approved'`
-     - Filter: `starts_at <= NOW()` AND `expires_at >= NOW()`
-     - Join with `shops` where `is_approved = true` AND `merchants` where `license_status = 'approved'` (BR-SEARCH-013)
-    - Apply the advertisement selection and rotation algorithm: Premium > Standard > Basic, round-robin within tier, maximum 5 ads (Sec 9.1, REQ §5.3)
-     - Cap at maximum 5 ads (BR-SEARCH-026)
-     - Seed Redis with TTL 5 min (BR-SEARCH-028)
-   - Return `{ data: ads }` (empty array if no ads)
+   - Query `advertisement` where `feeSetting.placement = placement`, `approvalStatus = 'approved'`, `isActive = true`, `startsAt <= NOW()` and `expiresAt >= NOW()`, and `shop.isApproved = true`
+   - Include `shop` and `feeSetting`; order by `startsAt DESC`; `take: 5`
+   - Map each row to `SponsoredAdDto` (`description` from `content`, `tier = 'standard'`)
+   - Return `{ data }` (empty array if no ads)
+   - No Redis caching is performed for ads.
+
+### 2.5 Cache Invalidation
+
+- `invalidateProductCache()` — deletes all `cache:products:list:*` keys (via `redis.getClient().keys(...)`)
+- `invalidateCategoryCache()` — deletes `cache:categories`
 
 ---
 
@@ -74,18 +77,15 @@ This document specifies the core business logic, caching strategy, filter buildi
 ### 3.1 Search Query Filter Builder
 
 ```typescript
-private buildSearchWhere(query: ProductQueryDto) {
+private async buildSearchWhere(query: ProductQueryDto): Promise<Prisma.ProductWhereInput> {
   const where: Prisma.ProductWhereInput = {
     // BR-SEARCH-012: Active products only
     isActive: true,
-    // BR-SEARCH-013: Approved merchant/shop only (REQ §2.4, DEV §12.2)
-    shop: {
-      isApproved: true,
-      merchant: { licenseStatus: 'approved' },
-    },
+    // BR-SEARCH-013: Approved merchant only
+    merchant: { licenseStatus: 'approved' },
   };
 
-  // BR-SEARCH-001: Partial keyword matching
+  // BR-SEARCH-001: Partial keyword matching (case-insensitive)
   if (query.q) {
     where.OR = [
       { name: { contains: query.q, mode: 'insensitive' } },
@@ -140,7 +140,7 @@ private async getCategoryDescendants(categoryId: string): Promise<string[]> {
   const queue = [categoryId];
 
   while (queue.length > 0) {
-    const currentId = queue.shift();
+    const currentId = queue.shift()!;
     const children = await this.prisma.category.findMany({
       where: { parentId: currentId },
       select: { id: true },
@@ -162,7 +162,7 @@ private async getCategoryDescendants(categoryId: string): Promise<string[]> {
 ### 4.1 OrderBy Builder
 
 ```typescript
-private buildOrderBy(sort: string, order: string): Prisma.ProductOrderByWithRelationInput {
+private buildOrderBy(sort?: string, order?: string): Prisma.ProductOrderByWithRelationInput {
   // BR-SEARCH-015: Sort allowlist
   const sortFieldMap: Record<string, string> = {
     price: 'price',
@@ -170,7 +170,7 @@ private buildOrderBy(sort: string, order: string): Prisma.ProductOrderByWithRela
     createdAt: 'createdAt',
   };
 
-  const field = sortFieldMap[sort] || 'createdAt';
+  const field = sortFieldMap[sort || 'createdAt'] || 'createdAt';
   const direction = order === 'asc' ? 'asc' : 'desc';
 
   return { [field]: direction };
@@ -184,8 +184,7 @@ private buildOrderBy(sort: string, order: string): Prisma.ProductOrderByWithRela
 ### 5.1 Skip/Take Calculation
 
 ```typescript
-private calculatePagination(page: number, limit: number) {
-  // BR-SEARCH-016: Defaults
+private calculatePagination(page?: number, limit?: number) {
   const safePage = Math.max(1, page || 1);
   const safeLimit = Math.min(100, Math.max(1, limit || 20));
 
@@ -199,15 +198,19 @@ private calculatePagination(page: number, limit: number) {
 ### 5.2 Meta Computation
 
 ```typescript
-private computeMeta(total: number, page: number, limit: number) {
+private computeMeta(total: number, page?: number, limit?: number) {
+  const safePage = page || 1;
+  const safeLimit = limit || 20;
   return {
-    page,
-    limit,
+    page: safePage,
+    limit: safeLimit,
     total,
-    totalPages: Math.ceil(total / limit),
+    totalPages: Math.ceil(total / safeLimit),
   };
 }
 ```
+
+> **Effective default page size:** `calculatePagination` / `computeMeta` fall back to `20` only when `limit` is absent. The Search & Filter screen's Zod schema defaults `limit` to **12** and always sends `limit=12`, so screen-issued requests use **12**.
 
 ---
 
@@ -219,7 +222,7 @@ private computeMeta(total: number, page: number, limit: number) {
 private generateCacheKey(query: ProductQueryDto): string {
   const normalized = JSON.stringify(query, Object.keys(query).sort());
   const hash = createHash('md5').update(normalized).digest('hex');
-  return `cache:products:list:${hash}`;
+  return `cache:products:list:v2:${hash}`;
 }
 ```
 
@@ -228,30 +231,28 @@ private generateCacheKey(query: ProductQueryDto): string {
 ```typescript
 async searchProducts(query: ProductQueryDto): Promise<ProductListResponseDto> {
   const cacheKey = this.generateCacheKey(query);
-
-  // Check Redis
   const cached = await this.redis.get(cacheKey);
   if (cached) {
-    return JSON.parse(cached);
+    return JSON.parse(cached) as ProductListResponseDto;
   }
 
-  // Query DB
-  const where = this.buildSearchWhere(query);
+  const where = await this.buildSearchWhere(query);
   const orderBy = this.buildOrderBy(query.sort, query.order);
   const { skip, take } = this.calculatePagination(query.page, query.limit);
 
   const [products, total] = await this.prisma.$transaction([
-    this.prisma.product.findMany({ where, orderBy, skip, take, include: { category: true } }),
+    this.prisma.product.findMany({
+      where, orderBy, skip, take,
+      include: { category: true, merchant: { select: { shopName: true } } },
+    }),
     this.prisma.product.count({ where }),
   ]);
 
-  // Serialize
-  const data = products.map(this.serializeProduct);
+  const data = products.map((p) => this.serializeProduct(p));
   const meta = this.computeMeta(total, query.page, query.limit);
   const result = { data, meta };
 
-  // Seed Redis (2 min TTL)
-  await this.redis.setex(cacheKey, 120, JSON.stringify(result));
+  await this.redis.set(cacheKey, JSON.stringify(result), 120);
 
   return result;
 }
@@ -261,16 +262,14 @@ async searchProducts(query: ProductQueryDto): Promise<ProductListResponseDto> {
 
 ```typescript
 async invalidateProductCache(): Promise<void> {
-  const keys = await this.redis.keys('cache:products:list:*');
-  if (keys.length) await this.redis.del(...keys);
+  const client = this.redis.getClient();
+  if (!client) return;
+  const keys = await client.keys('cache:products:list:*');
+  if (keys.length) await client.del(...keys);
 }
 
 async invalidateCategoryCache(): Promise<void> {
   await this.redis.del('cache:categories');
-}
-
-async invalidateAdCache(placement: string): Promise<void> {
-  await this.redis.del(`cache:ads:${placement}`);
 }
 ```
 
@@ -281,25 +280,26 @@ async invalidateAdCache(placement: string): Promise<void> {
 ### 7.1 Decimal Serialization
 
 ```typescript
-private serializeProduct(product: Product): ProductSummaryDto {
+private serializeProduct(product): ProductSummaryDto {
   return {
     id: product.id,
     name: product.name,
     slug: product.slug,
-    shortDescription: product.shortDescription,
-    price: product.price.toString(),          // BR-SEARCH-018
+    shortDescription: product.shortDescription ?? '',
+    price: product.price.toString(),                    // BR-SEARCH-018
     compareAtPrice: product.compareAtPrice?.toString() ?? null,
     images: product.images,
     skinTypes: product.skinTypes,
     tags: product.tags,
-    avgRating: product.avgRating.toString(),   // BR-SEARCH-018
+    avgRating: product.avgRating.toString(),             // BR-SEARCH-018
     reviewCount: product.reviewCount,
-    isInStock: product.stockQuantity > 0,      // BR-SEARCH-014
+    isInStock: product.stockQuantity > 0,                // BR-SEARCH-014
     category: {
       id: product.category.id,
       name: product.category.name,
       slug: product.category.slug,
     },
+    shop_name: product.merchant?.shopName ?? null,
   };
 }
 ```
@@ -311,27 +311,21 @@ private serializeProduct(product: Product): ProductSummaryDto {
 ### 8.1 Tree Construction
 
 ```typescript
-private buildCategoryTree(categories: Category[]): CategoryNodeDto[] {
+private buildCategoryTree(categories): CategoryNodeDto[] {
   const map = new Map<string, CategoryNodeDto>();
   const roots: CategoryNodeDto[] = [];
 
-  // Initialize nodes
   for (const cat of categories) {
     map.set(cat.id, {
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      iconUrl: cat.iconUrl,
-      sortOrder: cat.sortOrder,
-      children: [],
+      id: cat.id, name: cat.name, slug: cat.slug,
+      iconUrl: cat.iconUrl, sortOrder: cat.sortOrder, children: [],
     });
   }
 
-  // Build tree
   for (const cat of categories) {
-    const node = map.get(cat.id);
+    const node = map.get(cat.id)!;
     if (cat.parentId && map.has(cat.parentId)) {
-      map.get(cat.parentId).children.push(node);
+      map.get(cat.parentId)!.children.push(node);
     } else {
       roots.push(node);
     }
@@ -345,95 +339,78 @@ private buildCategoryTree(categories: Category[]): CategoryNodeDto[] {
 
 ## 9. Ad Display Logic
 
-### 9.1 Advertisement Selection and Rotation Logic
+### 9.1 Advertisement Selection (backend)
 
 ```typescript
-private async getSearchTopAds(): Promise<SponsoredAdDto[]> {
+async getAdsByPlacement(placement: AdPlacement): Promise<{ data: SponsoredAdDto[] }> {
   const now = new Date();
 
   const ads = await this.prisma.advertisement.findMany({
     where: {
-      // BR-SEARCH-026: Search Results Top placement only
-      placement: 'search_top',
+      feeSetting: { placement },
       approvalStatus: 'approved',
+      isActive: true,
       startsAt: { lte: now },
       expiresAt: { gte: now },
-      shop: {
-        isApproved: true,
-        merchant: { licenseStatus: 'approved' },
-      },
+      shop: { isApproved: true },
     },
-    include: { shop: true },
+    include: { shop: true, feeSetting: true },
+    orderBy: { startsAt: 'desc' },
+    take: 5,
   });
 
-  // BR-SEARCH-026 (REQ §5.3): Apply explicit tier priority, then rotate
-  // ads within each tier using a persisted Redis offset before taking the cap.
-  const byTier = groupBy(ads, (ad) => ad.tier);
-  const ordered: Advertisement[] = [];
+  const data: SponsoredAdDto[] = ads.map((ad) => ({
+    id: ad.id,
+    placement: ad.feeSetting?.placement ?? '',
+    title: ad.title,
+    announcementMessage: ad.announcementMessage,
+    description: ad.content,
+    imageUrl: ad.imageUrl,
+    sku: ad.sku,
+    tier: 'standard',
+    approvalStatus: ad.approvalStatus,
+    startsAt: ad.startsAt,
+    expiresAt: ad.expiresAt,
+  }));
 
-  for (const tier of ['premium', 'standard', 'basic'] as const) {
-    const tierAds = byTier[tier] ?? [];
-    if (tierAds.length === 0) continue;
-
-    const rotationKey = `rotation:ads:search-top:${tier}`;
-    const offset = await this.redis.incr(rotationKey) % tierAds.length;
-    ordered.push(...rotate(tierAds, offset));
-  }
-
-  return ordered.slice(0, 5).map(this.serializeAd);
+  return { data };
 }
 ```
 
 **Selection algorithm:**
 
-1. Query only advertisements with `approval_status = 'approved'` and `placement = 'search_top'`.
-2. Require the current time to be within the inclusive active window: `starts_at <= NOW() <= expires_at`.
-3. Require the linked shop to have `shops.is_approved = true` and the linked merchant to have `merchants.license_status = 'approved'`.
-4. Group eligible ads by tier and process tiers in strict priority order: **Premium**, then **Standard**, then **Basic**. Tier ordering is applied explicitly and must not depend on database enum or lexical ordering.
-5. For each tier containing multiple ads, use a Redis-backed round-robin offset (`rotation:ads:search-top:{tier}`) to rotate the starting ad on each selection. Preserve the tier order while rotating within that tier so exposure is distributed fairly without allowing a lower tier to precede a higher tier.
-6. Concatenate the rotated tier groups and return only the first 5 ads. If fewer than 5 eligible ads exist, return all eligible ads.
-7. Cache the selected result for 5 minutes. Rotation state is maintained independently of the response cache so repeated selection cycles advance the offset fairly.
+1. Query advertisements whose fee-setting placement equals the requested `placement`.
+2. Require `approval_status = 'approved'` and `is_active = true`.
+3. Require the current time to be within the inclusive window: `starts_at <= NOW() <= expires_at`.
+4. Require the linked shop to have `shop.is_approved = true`.
+5. Order by `starts_at DESC` and return at most **5** rows (`take: 5`). If fewer than 5 eligible ads exist, return all of them.
+6. The response is **not cached**; each request re-queries the database.
 
-### 9.2 Ad Slide-Down Panel Behavior
+### 9.2 Ad Slide Panel Behavior (frontend)
 
-The `slotAdTop` sponsored ad panel renders between the page header ([A]) and the search bar + filters row ([B]+[C]):
+The `SponsoredAdSlider` panel renders below the full-width search bar and above the filter chips and filters/results row:
 
-1. **Mount:** Fetch `GET /api/v1/ads?placement=search_top` in parallel with product results.
-2. **Slide-down entrance:** If ads exist, panel slides down (height 0 → auto, translateY −100% → 0, 300ms ease-out, once per mount), pushing [B]+[C] and results down.
-3. **Auto-slide:** Vertical slide-down transition every 5 seconds (500ms ease-in-out). Max 5 slides, loops.
-4. **Responsive:** Desktop/tablet (≥ 768px): horizontal layout (image left, text right). Mobile (< 768px): stacked (image top, content below). CSS-only switching — no refetch, no rotation reset.
-5. **Pause on interaction:** Auto-advancement pauses on hover/keyboard focus; resumes on leave/blur (WCAG 2.2.2).
-6. **`prefers-reduced-motion: reduce`:** Disables entrance/slide animations; 5-second interval unchanged.
-7. **Error handling:** On fetch error or empty response, panel is entirely hidden — graceful degradation; ad failure never blocks product results.
-8. **Accessibility:** `role="region"` + `aria-label` (`search.sponsored.panelLabel`). Slide changes announced via `aria-live="polite"` (`search.sponsored.slideStatus`). Images carry `alt` from `search.sponsored.adAlt`. CTA is a focusable link with visible primary focus ring.
+1. **Mount:** Fetch `GET /api/v1/search/ads?placement=search_page_banner` in parallel with product results via `useSponsoredAds('search_page_banner')`.
+2. **Client-side eligibility filter:** keep only ads where `placement === 'search_page_banner'`, `approvalStatus === 'approved'`, and the current time is within `[startsAt, expiresAt]`.
+3. **Fallback:** when no eligible ads remain and the request is not pending/errored, render the built-in `FALLBACK_ADS` set.
+4. **Auto-slide:** advance every `AUTO_SLIDE_MS = 5000`; pauses while the panel is hovered or keyboard-focused, and when `prefers-reduced-motion: reduce` matches.
+5. **Product hydration:** ad titles/descriptions may be hydrated from the linked `sku` via `useAdProducts`, which calls `GET /api/v1/products/:sku` (`getDetail`).
+6. **Click-through:** `/buyer/products/{sku}` when a SKU exists, else `fallbackProductId`, else `ad.target_url` / `ad.linkUrl`, else `/buyer/products`; external `http(s)` URLs open via `window.location.assign`.
+7. **Graceful degradation:** hides (`return null`) when there are no ads; ad failure never blocks product results.
+8. **Images:** fall back in order product image → ad image → sample image → placeholder.
 
 ---
 
 ## 10. Rate Limiting Logic
 
-### 10.1 Rate Limit Configuration
+A global `RateLimitInterceptor` adds rate-limit headers (see DD_SEARCH_03 §4). It does not reject requests and there is no search-specific throttle.
 
 ```typescript
-const RATE_LIMIT_CONFIG = {
-  products: { limit: 60, window: 60 },   // 60 requests per minute
-  productDetail: { limit: 60, window: 60 },
-};
+const DEFAULT_CONFIG = { windowMs: 15 * 60 * 1000, maxRequests: 100 };
+const STRICT_CONFIG  = { windowMs: 15 * 60 * 1000, maxRequests: 10 }; // /auth/login, /auth/register
 ```
 
-### 10.2 Rate Limit Check
-
-```typescript
-async checkRateLimit(key: string, limit: number, window: number): Promise<boolean> {
-  const redisKey = `rate:search:${key}`;
-  const current = await this.redis.incr(redisKey);
-
-  if (current === 1) {
-    await this.redis.expire(redisKey, window);
-  }
-
-  return current <= limit;
-}
-```
+Response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `X-RateLimit-Policy`.
 
 ---
 
@@ -446,10 +423,11 @@ async checkRateLimit(key: string, limit: number, window: number): Promise<boolea
 | `q` | Optional, max 255 chars | "Keyword must be 255 characters or fewer" |
 | `categoryId` | Optional, valid UUID | "Invalid category ID" |
 | `skinTypes` | Optional, valid enum values | "Invalid skin type" |
-| `ingredients` | Optional, array of strings | "Invalid ingredients" |
+| `ingredients` | Optional, array of strings (max 50) | (array/string constraints) |
+| `tags` | Optional, array of strings (max 20) | (array/string constraints) |
 | `minPrice` | Optional, ≥ 0 | "Minimum price must be 0 or more" |
 | `maxPrice` | Optional, ≥ 0 | "Maximum price must be 0 or more" |
-| `minPrice` ≤ `maxPrice` | Cross-field: min ≤ max | "Minimum price cannot exceed maximum price" |
+| `minPrice` ≤ `maxPrice` | Frontend-only (Zod `.refine` / `validatePriceRange`) | "Minimum price cannot exceed maximum price" |
 | `rating` | Optional, 1–5 | "Rating must be between 1 and 5" |
 | `sort` | Optional, price/rating/createdAt | "Invalid sort field" |
 | `order` | Optional, asc/desc | "Invalid sort direction" |
@@ -464,7 +442,8 @@ async checkRateLimit(key: string, limit: number, window: number): Promise<boolea
 |-----------------|---------|
 | [DD_SEARCH_03](./DD_Search_And_Filter_03_API_ENDPOINTS.md) | Endpoint routing to these methods |
 | [DD_SEARCH_04](./DD_Search_And_Filter_04_DTOS_AND_TYPES.md) | DTO definitions used in validation |
-| [DD_SEARCH_06](./DD_Search_And_Filter_06_TEST_SPEC.md) | Test specification |
+| [DD_SEARCH_06](./DD_Search_And_Filter_06_TEST_SPEC.md) | Test specification (synced to PCL scenario IDs) |
+| [SearchAndFilter_PCL](../SearchAndFilter_PCL.md) | Program checklist (scenario IDs N / A / B / I) |
 | [機能設計書_Search_And_Filter](../機能設計書%20_Search_And_Filter.md) | Full functional specification (v2.3) |
 | [画面項目設計書_Search_And_Filter](../画面項目設計書_Search_And_Filter.md) | Screen items specification (v2.6) |
 | [Requirement Spec](../../core-work/要件定義書_REQUIREMENT_SPEC.md) | Source business rules |
