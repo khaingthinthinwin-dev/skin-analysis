@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getApiErrorMessage } from '../utils/api-error'
+import { validateHumanFace } from '../utils/face-detection.util'
 
 interface DualModeScannerCardProps {
   onAnalyze: (file: File, consent: boolean) => Promise<unknown>
@@ -46,6 +47,7 @@ export function DualModeScannerCard({
   const [stagedPreview, setStagedPreview] = useState<string | null>(null)
   const [consent, setConsent] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isValidatingFace, setIsValidatingFace] = useState(false)
 
   // Camera stream state
   const [isStreaming, setIsStreaming] = useState(false)
@@ -57,7 +59,7 @@ export function DualModeScannerCard({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
-  const busy = isUploading || isAnalyzing
+  const busy = isUploading || isAnalyzing || isValidatingFace
 
   // Stop camera stream helper
   const stopCameraStream = useCallback(() => {
@@ -108,10 +110,10 @@ export function DualModeScannerCard({
       setIsStreaming(true)
     } catch (err) {
       console.warn('Unable to start inline camera stream:', err)
-      setCameraError(t('scanner.cameraOpenError'))
+      setCameraError('Unable to open camera. Please check camera permissions or upload a photo.')
       setIsStreaming(false)
     }
-  }, [facingMode, stopCameraStream, t])
+  }, [facingMode, stopCameraStream])
 
   // Attach the stream to <video> after React renders it into the DOM.
   useEffect(() => {
@@ -136,9 +138,24 @@ export function DualModeScannerCard({
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     canvas.toBlob(
-      (blob) => {
+      async (blob) => {
         if (!blob) return
         const file = new File([blob], `selfie-scan-${Date.now()}.jpg`, { type: 'image/jpeg' })
+
+        setIsValidatingFace(true)
+        try {
+          const result = await validateHumanFace(file)
+          if (!result.isHumanFace) {
+            setError(t('upload.error.notHumanFace'))
+            return
+          }
+        } catch {
+          setError(t('upload.error.faceValidationFailed'))
+          return
+        } finally {
+          setIsValidatingFace(false)
+        }
+
         setStagedFile(file)
         setStagedPreview(URL.createObjectURL(file))
         stopCameraStream()
@@ -146,7 +163,7 @@ export function DualModeScannerCard({
       'image/jpeg',
       0.95,
     )
-  }, [stopCameraStream])
+  }, [stopCameraStream, t])
 
   // Toggle front/back camera
   const handleToggleFacingMode = useCallback(() => {
@@ -170,7 +187,7 @@ export function DualModeScannerCard({
 
   // Handle uploaded file
   const handleProcessFile = useCallback(
-    (file: File) => {
+    async (file: File) => {
       setError(null)
       if (!ACCEPTED_TYPES.includes(file.type)) {
         setError(t('upload.error.invalidFormat', { types: 'JPG, PNG, WebP' }))
@@ -179,6 +196,20 @@ export function DualModeScannerCard({
       if (file.size > MAX_SIZE) {
         setError(t('upload.error.fileTooLarge', { maxSize: '10MB' }))
         return
+      }
+
+      setIsValidatingFace(true)
+      try {
+        const result = await validateHumanFace(file)
+        if (!result.isHumanFace) {
+          setError(t('upload.error.notHumanFace'))
+          return
+        }
+      } catch {
+        setError(t('upload.error.faceValidationFailed'))
+        return
+      } finally {
+        setIsValidatingFace(false)
       }
 
       setStagedFile(file)
@@ -235,7 +266,7 @@ export function DualModeScannerCard({
             }`}
           >
             <ScanFace className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-            <span>{t('scanner.liveScan')}</span>
+            <span>Live scan</span>
             <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-[11px] font-medium text-purple-600 dark:text-purple-300">
               {t('camera.title')}
             </span>
@@ -255,7 +286,7 @@ export function DualModeScannerCard({
             }`}
           >
             <Upload className="h-4 w-4 text-pink-600 dark:text-pink-400" />
-            <span>{t('scanner.uploadPhotos')}</span>
+            <span>Upload photos</span>
             <span className="rounded-full bg-pink-500/10 px-2 py-0.5 text-[11px] font-medium text-pink-600 dark:text-pink-300">
               {t('upload.title')}
             </span>
@@ -274,19 +305,21 @@ export function DualModeScannerCard({
                 className="gap-1.5 rounded-full bg-purple-500/10 px-3 py-1 text-[11px] font-bold text-purple-600 dark:text-purple-300 border border-purple-500/20"
               >
                 <Sparkles className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                {t('scanner.whatWeCheck')}
+                WHAT WE CHECK
               </Badge>
 
               <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                {t('scanner.metricsTitlePrefix')}{' '}
+                10 skin metrics in{' '}
                 <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-                  {t('scanner.metricsTitleEmphasis')}
+                  one selfie
                 </span>
-                {t('scanner.metricsTitleEnd')}
+                .
               </h2>
 
               <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                {t('scanner.metricsDescription')}
+                Our on-device model scores acne, dark circles, pigmentation, oiliness, redness,
+                hydration, pores, fine lines, dark spots and overall tone — then matches your
+                routine.
               </p>
             </div>
 
@@ -297,8 +330,8 @@ export function DualModeScannerCard({
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">{t('scanner.deviceTitle')}</h3>
-                  <p className="text-xs text-muted-foreground">{t('scanner.deviceDescription')}</p>
+                  <h3 className="text-sm font-bold text-foreground">Stays on your device</h3>
+                  <p className="text-xs text-muted-foreground">Frames never leave your browser.</p>
                 </div>
               </div>
 
@@ -307,8 +340,8 @@ export function DualModeScannerCard({
                   <ScanFace className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">{t('scanner.trackingTitle')}</h3>
-                  <p className="text-xs text-muted-foreground">{t('scanner.trackingDescription')}</p>
+                  <h3 className="text-sm font-bold text-foreground">Live face tracking</h3>
+                  <p className="text-xs text-muted-foreground">We auto-capture the sharpest moment.</p>
                 </div>
               </div>
 
@@ -317,8 +350,8 @@ export function DualModeScannerCard({
                   <Sun className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">{t('scanner.daylightTitle')}</h3>
-                  <p className="text-xs text-muted-foreground">{t('scanner.daylightDescription')}</p>
+                  <h3 className="text-sm font-bold text-foreground">Best with daylight</h3>
+                  <p className="text-xs text-muted-foreground">Face a window — no harsh overhead light.</p>
                 </div>
               </div>
             </div>
@@ -327,11 +360,11 @@ export function DualModeScannerCard({
             <div className="flex flex-wrap items-center gap-2 pt-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
-                {t('scanner.averageScan')}
+                Average scan: 30 s
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
                 <Zap className="h-3 w-3 text-pink-500" />
-                {t('scanner.freeNoSignup')}
+                Free, no signup
               </span>
             </div>
           </div>
@@ -347,13 +380,13 @@ export function DualModeScannerCard({
                     <div className="relative h-full w-full overflow-hidden rounded-2xl">
                       <img
                         src={stagedPreview}
-                        alt={t('camera.capturedAlt')}
+                        alt="Captured Face Preview"
                         className="h-full w-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                       <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-purple-300 backdrop-blur-md">
                         <CheckCircle2 className="h-3.5 w-3.5 text-pink-400" />
-                        {t('scanner.capturedSharp')}
+                        Selfie captured & sharp
                       </div>
                     </div>
 
@@ -403,7 +436,7 @@ export function DualModeScannerCard({
                     <div className="relative z-10 flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-purple-300 backdrop-blur-md">
                         <span className="h-2 w-2 rounded-full bg-pink-500 animate-ping" />
-                        {t('scanner.liveTracking')}
+                        Live tracking active
                       </span>
 
                       <div className="flex items-center gap-1.5">
@@ -423,7 +456,7 @@ export function DualModeScannerCard({
                           size="icon"
                           onClick={stopCameraStream}
                           className="h-8 w-8 rounded-full bg-black/50 text-white hover:bg-black/70"
-                          title={t('scanner.closeCamera')}
+                          title="Close camera"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -436,7 +469,7 @@ export function DualModeScannerCard({
                         type="button"
                         onClick={handleSnapPhoto}
                         className="group relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg ring-4 ring-purple-400/40 transition-transform active:scale-95"
-                        aria-label={t('scanner.captureFrame')}
+                        aria-label="Capture frame"
                       >
                         <Camera className="h-7 w-7 text-purple-600 transition-transform group-hover:scale-110" />
                       </button>
@@ -459,13 +492,13 @@ export function DualModeScannerCard({
 
                       <div className="space-y-1.5">
                         <h3 className="text-xl font-extrabold tracking-tight sm:text-2xl">
-                          {t('scanner.readyWhen')}
+                          Ready when you are
                         </h3>
                         <p className="text-xs text-purple-200/80 font-medium">
                           {t('camera.ready')}
                         </p>
                         <p className="text-xs text-slate-400 leading-relaxed">
-                          {t('scanner.framesLocal')}
+                          Frames stay on your device. Nothing is uploaded until you press Analyze.
                         </p>
                       </div>
 
@@ -482,7 +515,7 @@ export function DualModeScannerCard({
                               className="rounded-full border-purple-500/40 text-purple-300 hover:bg-purple-950/40 text-xs"
                             >
                               <RotateCw className="mr-1.5 h-3 w-3" />
-                              {t('common.retry')}
+                              Try again
                             </Button>
                             {onOpenModalCamera && (
                               <Button
@@ -493,7 +526,7 @@ export function DualModeScannerCard({
                                 className="rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-5 font-bold text-white text-xs shadow-md hover:opacity-95"
                               >
                                 <Camera className="mr-1.5 h-3 w-3" />
-                                {t('scanner.useCameraDialog')}
+                                Use camera dialog
                               </Button>
                             )}
                           </div>
@@ -565,7 +598,7 @@ export function DualModeScannerCard({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                     <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-purple-300 backdrop-blur-md">
                       <CheckCircle2 className="h-3.5 w-3.5 text-pink-400" />
-                      {t('scanner.imageLoaded')}
+                      Image loaded & validated
                     </div>
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
                       <Button
@@ -576,7 +609,7 @@ export function DualModeScannerCard({
                         className="rounded-full bg-white/20 text-white backdrop-blur hover:bg-white/30"
                       >
                         <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                        {t('scanner.chooseAnotherFile')}
+                        Choose another file
                       </Button>
                     </div>
                   </div>
@@ -591,7 +624,7 @@ export function DualModeScannerCard({
                         {t('upload.dragDrop')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {t('scanner.supportedFormats')}
+                        Supports JPG, PNG, WebP (Max 10MB)
                       </p>
                     </div>
 
@@ -603,7 +636,7 @@ export function DualModeScannerCard({
                       className="rounded-full font-semibold border-purple-500/40 text-purple-600 hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-purple-950/40"
                     >
                       <Upload className="mr-2 h-4 w-4" />
-                      {t('scanner.browseFiles')}
+                      Browse Files
                     </Button>
                   </div>
                 )}
@@ -640,15 +673,15 @@ export function DualModeScannerCard({
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-3.5 py-1 font-semibold text-purple-600 dark:text-purple-300">
             <Shield className="h-3.5 w-3.5" />
-            {t('scanner.privateOnDevice')}
+            Private — on-device
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-pink-500/30 bg-pink-500/10 px-3.5 py-1 font-semibold text-pink-600 dark:text-pink-300">
             <ScanFace className="h-3.5 w-3.5" />
-            {t('scanner.liveAiOverlay')}
+            Live AI overlay
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-3.5 py-1 font-semibold text-purple-600 dark:text-purple-300">
             <Sparkles className="h-3.5 w-3.5" />
-            {t('scanner.concernsAnalyzed')}
+            10 concerns analysed
           </span>
         </div>
 
@@ -661,10 +694,10 @@ export function DualModeScannerCard({
             {stagedFile ? (
               <span className="text-purple-600 dark:text-purple-300 font-bold flex items-center gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5 text-pink-500" />
-                {t('scanner.capturedCount')}
+                1/1 captured
               </span>
             ) : (
-              <span>{t('scanner.notCapturedCount')}</span>
+              <span>0/1 captured</span>
             )}
           </div>
 
@@ -678,7 +711,7 @@ export function DualModeScannerCard({
               className="rounded-full text-xs font-semibold"
             >
               <RotateCw className="mr-1.5 h-3.5 w-3.5" />
-              {t('scanner.reset')}
+              Reset
             </Button>
 
             <Button
@@ -691,12 +724,12 @@ export function DualModeScannerCard({
               {busy ? (
                 <>
                   <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                  {t('upload.analyzing')}
+                  Analyzing...
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {t('scanner.analyzeSkin')}
+                  Analyze my skin
                 </>
               )}
             </Button>

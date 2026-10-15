@@ -184,20 +184,20 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
       >
         <div className="relative z-10 flex min-w-0 flex-1 flex-col pl-12">
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white md:text-xs">
               <Megaphone className="h-3.5 w-3.5" /> {announcementBadge}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-500 px-3 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-500 px-3 py-1 text-[11px] font-semibold text-white shadow-sm md:text-xs">
               {badgeText}
             </span>
           </div>
 
-          <h3 className="mb-1.5 truncate text-2xl font-bold leading-tight tracking-tight text-white">
+          <h3 className="mb-1.5 truncate text-xl font-bold leading-tight tracking-tight text-white md:text-2xl">
             {title}
           </h3>
 
           {description && (
-            <p className="mb-3 max-w-sm line-clamp-2 text-xs font-normal leading-relaxed text-purple-100/80">
+            <p className="mb-3 text-sm font-normal leading-relaxed text-purple-100/80 md:pr-6 md:text-base">
               {stripHtml(description)}
             </p>
           )}
@@ -209,10 +209,10 @@ export function SponsoredAdSlider({ fallbackProductId }: SponsoredAdSliderProps)
                 event.stopPropagation()
                 navigateToAd()
               }}
-              className="h-auto gap-1.5 rounded-lg bg-white px-3 py-1 text-[11px] font-semibold text-gray-900 shadow-sm transition-colors hover:bg-gray-100 lg:h-9 lg:px-5"
+              className="h-auto gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm transition-colors hover:bg-gray-100 md:px-4 md:text-sm lg:h-9 lg:px-5"
             >
               Learn more
-              <ArrowRight className="h-3 w-3" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

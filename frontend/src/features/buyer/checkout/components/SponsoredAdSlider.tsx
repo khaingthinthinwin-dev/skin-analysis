@@ -89,26 +89,26 @@ export function SponsoredAdSlider() {
                     t('buyer.checkout.sponsoredAds.sponsoredBadge', 'Sponsored'),
                 )}
               </span>
-              <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
+              <Badge className="bg-accent text-white font-bold text-[11px] sm:text-xs py-1 px-3">
                 {truncateBadgeText(ad.merchantName)}
               </Badge>
             </div>
 
-            <h3 className="text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl lg:text-[1.625rem]">
+            <h3 className="text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl">
               {ad.title}
             </h3>
 
             {ad.description && (
-              <p className="line-clamp-3 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
+              <p className="max-w-none text-sm leading-relaxed text-white/80 sm:text-base">
                 {ad.description}
               </p>
             )}
 
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-              <Button asChild size="lg" className="h-12 gap-4 rounded-md bg-[#f8f7f5] px-8 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-white sm:text-base">
+              <Button asChild size="lg" className="h-9 gap-1.5 rounded-md bg-[#f8f7f5] px-5 text-xs font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-white sm:text-sm">
                 <a href={ctaHref}>
                   {t('buyer.checkout.sponsoredAds.learnMore', 'Learn more')}
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </a>
               </Button>
             </div>
