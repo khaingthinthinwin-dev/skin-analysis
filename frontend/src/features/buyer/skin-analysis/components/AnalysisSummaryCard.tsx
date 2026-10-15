@@ -144,12 +144,12 @@ export function AnalysisSummaryCard({ analysis, onViewHistory, onViewTrends, cla
 
         {/* Quick Links */}
         <div className="flex gap-3 pt-2">
-          <Button variant="outline" size="sm" onClick={onViewHistory} className="flex-1">
-            <Calendar className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={onViewHistory} className="flex-1 font-semibold text-foreground hover:bg-muted">
+            <Calendar className="mr-2 h-4 w-4 text-violet-600 dark:text-violet-400" />
             {t('summary.viewHistory')}
           </Button>
-          <Button variant="outline" size="sm" onClick={onViewTrends} className="flex-1">
-            <Droplets className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={onViewTrends} className="flex-1 font-semibold text-foreground hover:bg-muted">
+            <Droplets className="mr-2 h-4 w-4 text-pink-600 dark:text-pink-400" />
             {t('summary.viewTrends')}
           </Button>
         </div>

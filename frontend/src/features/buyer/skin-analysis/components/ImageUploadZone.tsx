@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getApiErrorMessage } from '../utils/api-error'
+import { validateHumanFace } from '../utils/face-detection.util'
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
@@ -43,7 +44,7 @@ export function ImageUploadZone({
   }, [t])
 
   const handleFileChange = useCallback(
-    (f: File | null) => {
+    async (f: File | null) => {
       if (!f) {
         setFile(null)
         setPreview(null)
@@ -59,11 +60,30 @@ export function ImageUploadZone({
         return
       }
 
+      try {
+        const result = await validateHumanFace(f)
+        if (!result.isHumanFace) {
+          const msg = t('upload.error.notHumanFace')
+          setError({ message: msg, errorCode: '40006' })
+          onError?.({ message: msg, errorCode: '40006' })
+          setFile(null)
+          setPreview(null)
+          return
+        }
+      } catch {
+        const msg = t('upload.error.faceValidationFailed')
+        setError({ message: msg, errorCode: '40006' })
+        onError?.({ message: msg, errorCode: '40006' })
+        setFile(null)
+        setPreview(null)
+        return
+      }
+
       setError(null)
       setFile(f)
       setPreview(URL.createObjectURL(f))
     },
-    [validateFile, onError],
+    [validateFile, onError, t],
   )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {

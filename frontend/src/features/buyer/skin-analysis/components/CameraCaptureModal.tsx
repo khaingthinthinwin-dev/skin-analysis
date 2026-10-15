@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { validateHumanFace } from '../utils/face-detection.util'
 
 interface CameraCaptureModalProps {
   open: boolean
@@ -20,6 +21,8 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCaptureMo
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [captured, setCaptured] = useState(false)
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null)
+  const [isValidatingFace, setIsValidatingFace] = useState(false)
+  const [faceError, setFaceError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -55,7 +58,7 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCaptureMo
     }
   }, [open, facingMode])
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     if (!videoRef.current || !canvasRef.current) return
 
     const video = videoRef.current
@@ -67,6 +70,22 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCaptureMo
     ctx?.drawImage(video, 0, 0, canvas.width, canvas.height)
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+
+    setIsValidatingFace(true)
+    setFaceError(null)
+    try {
+      const result = await validateHumanFace(dataUrl)
+      if (!result.isHumanFace) {
+        setFaceError(t('upload.error.notHumanFace'))
+        return
+      }
+    } catch {
+      setFaceError(t('upload.error.faceValidationFailed'))
+      return
+    } finally {
+      setIsValidatingFace(false)
+    }
+
     setPhotoDataUrl(dataUrl)
     setCaptured(true)
   }
@@ -96,7 +115,7 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCaptureMo
         <DialogHeader className="border-b">
           <DialogTitle className="flex items-center justify-between">
             <span>{t('camera.title')}</span>
-            <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('common.close')}>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
               <X className="h-5 w-5" />
             </Button>
           </DialogTitle>
@@ -139,10 +158,13 @@ export function CameraCaptureModal({ open, onClose, onCapture }: CameraCaptureMo
                   {t('camera.switch')}
                 </Button>
                 <div className="flex-1" />
-                <Button onClick={handleCapture} size="lg" className="h-20 w-20 rounded-full bg-violet-600 ring-4 ring-violet-200 hover:bg-violet-700 dark:ring-violet-900" disabled={!stream}>
+                <Button onClick={handleCapture} size="lg" className="h-20 w-20 rounded-full bg-violet-600 ring-4 ring-violet-200 hover:bg-violet-700 dark:ring-violet-900" disabled={!stream || isValidatingFace}>
                   <Camera className="h-10 w-10 text-white" />
                 </Button>
               </div>
+              {faceError && (
+                <p className="mt-2 text-center text-xs text-rose-400">{faceError}</p>
+              )}
             </div>
           )}
         </CardContent>

@@ -4,6 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { ImageUploadZone } from './ImageUploadZone'
 import { initTestI18n } from '@/test/i18nTest'
 
+vi.mock('../utils/face-detection.util', () => ({
+  validateHumanFace: vi.fn().mockResolvedValue({ isHumanFace: true, confidence: 0.95, method: 'heuristic' }),
+}))
+
 beforeAll(async () => {
   await initTestI18n()
   if (typeof URL.createObjectURL !== 'function') {
