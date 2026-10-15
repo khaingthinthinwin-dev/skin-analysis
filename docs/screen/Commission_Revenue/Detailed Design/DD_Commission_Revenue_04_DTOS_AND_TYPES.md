@@ -1,16 +1,31 @@
 # DD_COMM_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-COMM-04 | **Version:** 2.0 | **Status:** Released  
-> **Last Updated:** 2026-08-26
+> **Doc ID:** SKM-DD-COMM-04 | **Version:** 2.1 | **Status:** Released  
+> **Last Updated:** 2026-10-15 (aligned to implementation)
 
 ---
 
 ## 1. Overview
 
-This document specifies the Data Transfer Objects (DTOs) and TypeScript types used by the Commission & Revenue module's API endpoints. These DTOs utilize `class-validator` for request validation and `class-transformer` for data transformation.
+This document specifies the Data Transfer Objects (DTOs) and TypeScript types used by the Commission & Revenue module's API endpoints. Backend DTOs use `class-validator` for request validation and `class-transformer` for query transformation; all DTOs are defined as classes (global `ValidationPipe` performs validation).
 
-- **Backend Location:** `src/modules/admin/commission/dto/`, `src/modules/admin/revenue/dto/`, `src/modules/admin/export/dto/`
-- **Frontend Location:** `frontend/src/features/commission/types/`, `frontend/src/features/revenue/types/`, `frontend/src/features/shared/types/`
+- **Backend DTOs:** `backend/src/modules/admin/commission-revenue/dto/` (9 files)
+- **Backend response shapes:** plain objects returned by the services (no response DTO classes exist)
+- **Frontend types:** `frontend/src/features/admin/commission-revenue/services/commission.service.ts` (single file; no separate `types/` folders exist for this feature)
+
+### DTO File Inventory (Backend)
+
+| File | Used by |
+|------|---------|
+| `update-commission-rate.dto.ts` | `PATCH /admin/commission` |
+| `commission-report-query.dto.ts` | `GET /admin/commission/reports` |
+| `save-revenue-target.dto.ts` | `PUT /admin/revenue/targets` (defines `TargetPeriod`) |
+| `revenue-target-query.dto.ts` | `GET /admin/revenue/target` |
+| `revenue-trend-query.dto.ts` | `GET /admin/revenue/{kpis,trends,payments/status,ad-fee}` (defines `TrendRange`) |
+| `revenue-forecast-query.dto.ts` | `GET /admin/revenue/forecast` |
+| `payout-query.dto.ts` | `GET /admin/revenue/payouts` (defines `PayoutStatus`) |
+| `delete-payouts.dto.ts` | `DELETE /admin/revenue/payouts` |
+| `export-request.dto.ts` | All three export endpoints (defines `ExportFormat`) |
 
 ---
 
@@ -18,7 +33,7 @@ This document specifies the Data Transfer Objects (DTOs) and TypeScript types us
 
 ### 2.1 UpdateCommissionRateDto
 
-Used for `PATCH /api/v1/admin/commission` to update the platform commission rate.
+Used for `PATCH /api/v1/admin/commission`.
 
 ```typescript
 import { IsString, IsNotEmpty, Matches } from 'class-validator';
@@ -29,45 +44,46 @@ export class UpdateCommissionRateDto {
   @Matches(/^\d+(\.\d{1,2})?$/, {
     message: 'Commission rate must be a number with up to 2 decimal places',
   })
-  rate: string; // Transmitted as string to preserve decimal precision
+  rate: string; // decimal string to preserve precision
 }
 ```
+
+> Range check (`0 < rate ≤ 100`) is **not** in the DTO — the service throws `400 'Commission rate must be greater than 0 and at most 100'`.
 
 ### 2.2 CommissionReportQueryDto
 
-Used for `GET /api/v1/admin/commission/reports` to filter and paginate commission reports.
+Used for `GET /api/v1/admin/commission/reports`.
 
 ```typescript
-import { IsOptional, IsDateString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsDateString, IsInt, Min, Max, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export type GroupByType = 'merchant' | 'day' | 'order';
+
 export class CommissionReportQueryDto {
-  @IsOptional()
-  @IsDateString({}, { message: 'Invalid from date' })
+  @IsOptional() @IsDateString({}, { message: 'Invalid from date' })
   from?: string;
 
-  @IsOptional()
-  @IsDateString({}, { message: 'Invalid to date' })
+  @IsOptional() @IsDateString({}, { message: 'Invalid to date' })
   to?: string;
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  page?: number;   // controller/service default: 1
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  limit?: number;  // service default: 20
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 20;
+  @IsIn(['merchant', 'day', 'order'], { message: 'groupBy must be merchant, day, or order' })
+  groupBy?: GroupByType; // service default: 'merchant'
 }
 ```
 
+> `from > to` is rejected in the service (`400 'From date must be earlier than or equal to To date'`), not by the DTO.
+
 ### 2.3 SaveRevenueTargetDto
 
-Used for `PUT /api/v1/admin/revenue/targets` to save or update a revenue target.
+Used for `PUT /api/v1/admin/revenue/targets`.
 
 ```typescript
 import { IsString, IsNotEmpty, IsEnum, Matches } from 'class-validator';
@@ -92,7 +108,7 @@ export class SaveRevenueTargetDto {
 
 ### 2.4 RevenueTrendQueryDto
 
-Used for `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/forecast`, and `GET /api/v1/admin/revenue/ad-fees`.
+Used for `GET /admin/revenue/kpis`, `/trends`, `/payments/status`, `/ad-fee` (default `30d` is applied in the controller when `range` is absent).
 
 ```typescript
 import { IsEnum, IsOptional } from 'class-validator';
@@ -107,81 +123,93 @@ export enum TrendRange {
 export class RevenueTrendQueryDto {
   @IsOptional()
   @IsEnum(TrendRange, { message: 'Invalid range' })
-  range: TrendRange = TrendRange.THIRTY_DAYS;
+  range?: TrendRange;
 }
 ```
 
 ### 2.5 RevenueTargetQueryDto
 
-Used for `GET /api/v1/admin/revenue/targets` to specify the target period.
+Used for `GET /api/v1/admin/revenue/target` (singular path).
 
 ```typescript
-import { IsOptional, IsEnum } from 'class-validator';
-import { TargetPeriod } from './save-revenue-target.dto';
-
 export class RevenueTargetQueryDto {
   @IsOptional()
   @IsEnum(TargetPeriod, { message: 'Invalid target period' })
-  period: TargetPeriod = TargetPeriod.MONTHLY;
+  period?: TargetPeriod; // controller default: 'monthly'
 }
 ```
 
-### 2.6 PayoutQueryDto
+### 2.6 RevenueForecastQueryDto
 
-Used for `GET /api/v1/admin/revenue/payouts` to filter and paginate payout records.
+Used for `GET /api/v1/admin/revenue/forecast`.
 
 ```typescript
-import { IsOptional, IsEnum, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+export class RevenueForecastQueryDto {
+  @IsOptional()
+  @IsEnum(TrendRange, { message: 'Invalid range' })
+  range?: TrendRange; // controller default: '30d'
+}
+```
 
+### 2.7 PayoutQueryDto
+
+Used for `GET /api/v1/admin/revenue/payouts`.
+
+```typescript
 export enum PayoutStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
   COMPLETED = 'completed',
-  FAILED = 'failed',
-}
+} // NOTE: no FAILED member — 'failed' cannot be used as a filter value
 
 export class PayoutQueryDto {
-  @IsOptional()
-  @IsEnum(PayoutStatus, { message: 'Invalid status' })
+  @IsOptional() @IsEnum(PayoutStatus, { message: 'Invalid status' })
   status?: PayoutStatus;
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
+  @IsOptional() @IsDateString({}, { message: 'Invalid from date' })
+  from?: string;
+
+  @IsOptional() @IsDateString({}, { message: 'Invalid to date' })
+  to?: string;
+
+  @IsOptional()               // plain string (not validated by decorators)
+  merchantId?: string;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 20;
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'Invalid period' })
+  period?: string;            // 'YYYY-MM'
+
+  @IsOptional() @IsString() @MaxLength(100)
+  search?: string;            // merchant name/e-mail or period patterns
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  page?: number;              // default: 1
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
+  limit?: number;             // default: 20
 }
 ```
 
-### 2.7 PayoutProcessParamsDto
+### 2.8 DeletePayoutsDto
 
-Used for `POST /api/v1/admin/revenue/payouts/:id/process`.
+Used for `DELETE /api/v1/admin/revenue/payouts`.
 
 ```typescript
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsUUID } from 'class-validator';
 
-export class PayoutProcessParamsDto {
-  @IsUUID('4', { message: 'Invalid payout ID' })
-  @IsNotEmpty()
-  id: string;
+export class DeletePayoutsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  payoutIds!: string[];
 }
 ```
 
-### 2.8 ExportRequestDto
+### 2.9 ExportRequestDto
 
-Used for `POST /api/v1/admin/commission/export`, `POST /api/v1/admin/revenue/export`, and `POST /api/v1/admin/revenue/payouts/export`.
+Used for `POST /admin/commission/export`, `POST /admin/revenue/export`, `POST /admin/revenue/payouts/export`.
 
 ```typescript
-import { IsString, IsNotEmpty, IsEnum, IsDateString, Validate } from 'class-validator';
-
 export enum ExportFormat {
   CSV = 'csv',
   XLSX = 'xlsx',
@@ -189,607 +217,524 @@ export enum ExportFormat {
 
 export class ExportRequestDto {
   @IsDateString({}, { message: 'Start date is required' })
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Start date is required' })
   dateFrom: string;
 
   @IsDateString({}, { message: 'End date is required' })
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'End date is required' })
   dateTo: string;
 
   @IsEnum(ExportFormat, { message: 'Invalid export format. Use CSV or Excel.' })
   format: ExportFormat;
+
+  @IsOptional()
+  @IsIn(['merchant', 'day', 'order'], { message: 'groupBy must be merchant, day, or order' })
+  groupBy?: GroupByType;   // commission export only; default 'merchant'
+
+  @IsOptional() @IsString()
+  merchantId?: string;     // payout export only (single-merchant export)
 }
 ```
 
-**Custom validation:** `dateFrom <= dateTo` and date range ≤ 365 days enforced via `ValidationPipe` or custom class-validator decorator.
+> Date ordering and the 365-day cap are enforced in `ExportService.validateRange()` (`400`: `End date must be after start date`, `Date range cannot exceed 365 days`) — **not** by class-validator decorators.
+
+### 2.10 Non-existent DTO (removed in v2.1)
+
+`PayoutProcessParamsDto` — **does not exist.** `POST /payouts/:id/process` and `/review` take the id from the route parameter (`@Param('id')`) with no DTO/validation class.
 
 ---
 
-## 3. Response DTOs (Backend)
+## 3. Response Payload Shapes (Backend)
 
-### 3.1 CommissionSettingsResponseDto
+All JSON responses are wrapped as `{ "data": <payload> }` by the global `TransformInterceptor`. The shapes below are the **inner** payloads (plain objects — no response DTO classes are declared in code).
 
-Returned by `GET /api/v1/admin/commission`.
+### 3.1 Commission settings — `GET /admin/commission`
 
 ```typescript
-export class CommissionSettingsResponseDto {
-  rate: string; // e.g. "10.00"
-}
+{ rate: string } // fmtDecimal: trailing zeros stripped → "12", "12.5"
 ```
 
-### 3.2 CommissionReportRowDto
+### 3.2 Commission report rows — `GET /admin/commission/reports`
 
 ```typescript
-export class CommissionReportRowDto {
-  merchantId: string;      // UUID
+// groupBy = 'merchant' (default)
+type ReportRow = {
+  merchantId: string;
   merchantName: string;
+  commissionRate: string; // effective rate for the grouped orders
   orders: number;
-  revenue: string;         // Decimal string
-  commission: string;      // Decimal string
-}
+  revenue: string;
+  commission: string;
+};
+
+// groupBy = 'day'  → adds date: 'YYYY-MM-DD'
+// groupBy = 'order → adds orderId, orderNumber, date (ISO); omits orders
+
+type ReportsResponse = {
+  reports: ReportRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
 ```
 
-### 3.3 PaginationMetaDto
+### 3.3 Revenue KPIs — `GET /admin/revenue/kpis`
 
 ```typescript
-export class PaginationMetaDto {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-```
-
-### 3.4 CommissionReportsResponseDto
-
-```typescript
-export class CommissionReportsResponseDto {
-  reports: CommissionReportRowDto[];
-  pagination: PaginationMetaDto;
-}
-```
-
-### 3.5 RevenueKPIsResponseDto
-
-```typescript
-export class RevenueKPIsResponseDto {
+{
   kpis: {
     totalRevenue: string;
     totalCommission: string;
     adFeeRevenue: string;
-    totalIncome: string;
+    totalIncome: string;    // totalCommission + adFeeRevenue
     avgOrderValue: string;
-    netRevenue: string;
+    netRevenue: string;     // totalRevenue - totalCommission
   };
 }
 ```
 
-### 3.6 TrendPointDto
+### 3.4 Revenue trends — `GET /admin/revenue/trends`
 
 ```typescript
-export class TrendPointDto {
-  date: string;
-  revenue: string;
-  commission: string;
-  adFee: string;
-  totalIncome: string;
+{
+  trendPoints: Array<{
+    date: string;         // 'YYYY-MM-DD' (or 'YYYY-MM' when range = '1y')
+    revenue: string;
+    commission: string;
+    adFee: string;
+    totalIncome: string;
+  }>;
 }
 ```
 
-### 3.7 RevenueTrendsResponseDto
+### 3.5 Revenue forecast — `GET /admin/revenue/forecast`
 
 ```typescript
-export class RevenueTrendsResponseDto {
-  trendPoints: TrendPointDto[];
+{
+  forecastPoints: Array<{
+    date: string;
+    forecastRevenue: string;
+    forecastCommission: string;
+    forecastAdFee: string;
+  }>;
+  note?: string; // 'Not enough historical data to generate a forecast' (< 7 populated buckets)
 }
 ```
 
-### 3.8 RevenueTargetResponseDto
+### 3.6 Revenue target — `GET /admin/revenue/target`
 
 ```typescript
-export class RevenueTargetResponseDto {
+{
   target: {
     targetAmount: string;
     period: 'monthly' | 'quarterly';
     actualRevenue: string;
     progressPercent: string;
-  } | null;
+  } | null; // null when no active target exists for the period
 }
 ```
 
-### 3.9 RevenueTargetSaveResponseDto
+### 3.7 Revenue target save — `PUT /admin/revenue/targets`
 
 ```typescript
-export class RevenueTargetSaveResponseDto {
+{
   targetAmount: string;
   targetPeriod: 'monthly' | 'quarterly';
   actualRevenue: string;
   progressPercent: string;
-}
+} // flat object — NOT wrapped in { target }
 ```
 
-### 3.10 ForecastPointDto
+### 3.8 Payment status counts — `GET /admin/revenue/payments/status`
 
 ```typescript
-export class ForecastPointDto {
-  date: string;
-  forecastRevenue: string;
-  forecastCommission: string;
-  forecastAdFee: string;
-}
+{ completed: number; processing: number; pending: number }
+// Counts PAYOUT rows in the selected range (not orders). Flat object — no { payments } wrapper.
 ```
 
-### 3.11 RevenueForecastResponseDto
+### 3.9 Ad fee revenue — `GET /admin/revenue/ad-fee`
 
 ```typescript
-export class RevenueForecastResponseDto {
-  forecastPoints: ForecastPointDto[];
-  note?: string; // Present when data is insufficient
-}
-```
-
-### 3.12 AdFeeKPIsDto
-
-```typescript
-export class AdFeeKPIsDto {
-  totalAdFees: string;
-  activeAds: number;
-  pendingPayments: number;
-  completedPayments: number;
-}
-```
-
-### 3.13 AdFeeTrendPointDto
-
-```typescript
-export class AdFeeTrendPointDto {
-  date: string;
-  adFee: string;
-}
-```
-
-### 3.14 AdFeePaymentStatusDto
-
-```typescript
-export class AdFeePaymentStatusDto {
-  completed: number;
-  pending: number;
-  refunded: number;
-}
-```
-
-### 3.15 AdFeeRevenueResponseDto
-
-```typescript
-export class AdFeeRevenueResponseDto {
-  adFeeKpis: AdFeeKPIsDto;
-  adFeeTrendPoints: AdFeeTrendPointDto[];
-  adFeePaymentStatus: AdFeePaymentStatusDto;
-}
-```
-
-### 3.16 PaymentStatusResponseDto
-
-```typescript
-export class PaymentStatusResponseDto {
-  payments: {
-    completed: number;
-    pending: number;
+{
+  adFeeKpis: {
+    totalAdFees: string;
+    activeAds: number;
+    pendingPayments: number;
+    completedPayments: number;
   };
+  adFeeTrendPoints: Array<{ date: string; adFee: string }>;
+  adFeePaymentStatus: { completed: number; pending: number; refunded: number };
 }
 ```
 
-**Note:** Order `payment_status` enum per DATABASE_SPEC v2.4 is `pending`/`completed` only — no `failed` or `refunded` for orders.
-
-### 3.17 PayoutRowDto
+### 3.10 Payout merchants — `GET /admin/revenue/payouts/merchants`
 
 ```typescript
-export class PayoutRowDto {
-  payoutId: string;
+Array<{ id: string; name: string }>
+```
+
+### 3.11 Payout row & list — `GET /admin/revenue/payouts`
+
+```typescript
+type PayoutRow = {
+  id: string;
+  payoutId: string;            // same UUID as id
+  payoutIds: string[];         // [payoutId] — supports grouped multi-process in the UI
   merchantId: string;
   merchantName: string;
+  period: string;              // 'YYYY-MM' derived from periodStart
+  orderId: null;               // always null (row = payout, not order)
+  commissionRate: string;      // derived: commissionAmount / totalAmount × 100
   totalAmount: string;
   commissionAmount: string;
-  adFeeAmount: string;       // Always "0.00" for new payouts (ad fee deduction removed per BR-ADFE-004)
-  netAmount: string;         // Calculated: totalAmount - commissionAmount (ad fees excluded per BR-REV-016)
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  createdAt: string;
+  adFeeAmount: '0.00';         // constant — ad fees are never deducted
+  netAmount: string;           // totalAmount - commissionAmount
+  status: 'pending' | 'processing' | 'completed';
+  failureReason: null;         // always null (no such column)
+  createdAt: string;           // ISO
   processedAt: string | null;
-}
+  canDelete: boolean;          // completed && createdAt <= now - 3 months
+  completedCount: number; completedTotal: string; completedCommission: string;
+  pendingCount: number;  pendingTotal: string;  pendingCommission: string;
+  // completed* are non-zero only for completed payouts; pending* for the rest
+};
+
+type PayoutsResponse = {
+  items: PayoutRow[];          // NOT { payouts } and NOT { pagination }
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  statusCounts: { completed: number; processing: number; pending: number }; // over the filtered set
+  periods: string[];           // distinct 'YYYY-MM', newest first, ignores filters
+};
 ```
 
-### 3.18 PayoutsResponseDto
+### 3.12 Payout process — `POST /admin/revenue/payouts/:id/process`
 
 ```typescript
-export class PayoutsResponseDto {
-  payouts: PayoutRowDto[];
-  pagination: PaginationMetaDto;
-}
-```
-
-### 3.19 PayoutProcessResponseDto
-
-```typescript
-export class PayoutProcessResponseDto {
+{
   payoutId: string;
   merchantId: string;
   totalAmount: string;
   commissionAmount: string;
-  adFeeAmount: string;       // Always "0.00" (ad fee deduction removed per BR-ADFE-004)
-  status: 'completed' | 'failed';
+  adFeeAmount: '0.00';
+  netAmount: string;
+  status: 'completed';         // terminal — API never returns 'failed' here
   processedAt: string;
-  idempotencyKey: string;
+  idempotencyKey: string;      // `payout-<payoutId>`
 }
 ```
 
-### 3.20 ExportResponseDto
-
-Returned by export endpoints as a file stream (not JSON).
+### 3.13 Payout review — `POST /admin/revenue/payouts/:id/review`
 
 ```typescript
-// Response headers for successful export:
-// Content-Type: text/csv | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-// Content-Disposition: attachment; filename="{reportType}-report.{format}"
+{ payoutId: string; status: string } // status after call: 'processing' or unchanged when not pending
 ```
 
-### 3.21 ExportErrorResponseDto
+### 3.14 Payout delete — `DELETE /admin/revenue/payouts`
 
 ```typescript
-export class ExportErrorResponseDto {
-  statusCode: number;        // 400 or 500
-  error: string;
-  errorCode: 'EXP_001' | 'EXP_002' | 'EXP_003' | 'EXP_004' | 'EXP_005';
-  message: string;
-  timestamp: string;
-  path: string;
-}
+{ payoutIds: string[]; deleted: true }
 ```
+
+### 3.15 Export responses
+
+File stream (raw, not `{data}`-wrapped):
+
+```
+Content-Type: text/csv
+  | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Content-Disposition: attachment; filename="<label> report <YYYYMMDD-YYYYMMDD>(<YYYYMMDD>)(<csv|xlsx>)"
+Content-Length: <bytes>
+```
+
+- Commission label: `commission report(by merchant|by date|by order)`
+- Revenue label: `revenue`
+- Payout (no format suffix): `payout report(for <shopName|all>)<range>(<genDate>)`
 
 ---
 
 ## 4. Frontend Types
 
+All types live in `frontend/src/features/admin/commission-revenue/services/commission.service.ts`.
+
 ### 4.1 Commission Types
 
 ```typescript
-// frontend/src/features/commission/types/commission.types.ts
-
-export interface CommissionSettings {
-  rate: string;
-}
+export interface CommissionSettings { rate?: string; }
 
 export interface CommissionReport {
-  merchantId: string;
+  merchantId?: string;
   merchantName: string;
-  orders: number;
+  commissionRate: string;
+  orders?: number;
   revenue: string;
   commission: string;
+  date?: string;        // groupBy = 'day'
+  orderId?: string;     // groupBy = 'order'
+  orderNumber?: string; // groupBy = 'order'
 }
+
+export interface PaginationMeta { page: number; limit: number; total: number; totalPages: number; }
+export interface CommissionReportsResponse { reports: CommissionReport[]; pagination: PaginationMeta; }
 
 export interface CommissionReportFilter {
-  from?: string;
-  to?: string;
+  from?: string; to?: string; page?: number; limit?: number; groupBy?: CommissionGroupBy;
 }
-
-export interface CommissionPagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-export interface CommissionReportsResponse {
-  reports: CommissionReport[];
-  pagination: CommissionPagination;
-}
+export type CommissionGroupBy = 'merchant' | 'day' | 'order';
 ```
 
-### 4.2 Revenue Types
+### 4.2 Payout Types
 
 ```typescript
-// frontend/src/features/revenue/types/revenue.types.ts
-
-export interface RevenueKPIs {
-  totalRevenue: string;
-  totalCommission: string;
-  adFeeRevenue: string;
-  totalIncome: string;
-  avgOrderValue: string;
-  netRevenue: string;
-}
-
-export type TrendRange = '7d' | '30d' | '90d' | '1y';
-
-export interface TrendPoint {
-  date: string;
-  revenue: string;
-  commission: string;
-  adFee: string;
-  totalIncome: string;
-}
-
-export interface ForecastPoint {
-  date: string;
-  forecastRevenue: string;
-  forecastCommission: string;
-  forecastAdFee: string;
-}
-
-export interface RevenueTarget {
-  targetAmount: string;
-  period: 'monthly' | 'quarterly';
-  actualRevenue: string;
-  progressPercent: string;
-}
-
-export interface PaymentStatus {
-  completed: number;
-  pending: number;
-}
-```
-
-**Note:** Order payment status per DATABASE_SPEC v2.4: `pending`/`completed` only. For ad payment status, see `AdFeePaymentStatus`.
-
-export type PayoutStatus = 'pending' | 'processing' | 'completed' | 'failed';
-
-export interface PayoutRow {
+export interface Payout {
+  id: string;
   payoutId: string;
+  payoutIds?: string[];
   merchantId: string;
   merchantName: string;
+  period: string;
+  orderId: string | null;
+  commissionRate: string;
   totalAmount: string;
   commissionAmount: string;
-  adFeeAmount: string;
+  adFeeAmount: string;   // always "0.00" — "ad fees are platform revenue, never deducted"
   netAmount: string;
-  status: PayoutStatus;
+  status: 'pending' | 'processing' | 'completed' | 'failed'; // union includes legacy 'failed'; API returns only the first three
+  failureReason?: string | null;
   createdAt: string;
-  processedAt: string | null;
-}
-
-export interface AdFeeKPIs {
-  totalAdFees: string;
-  activeAds: number;
-  pendingPayments: number;
-  completedPayments: number;
-}
-
-export interface AdFeeTrendPoint {
-  date: string;
-  adFee: string;
-}
-
-export interface AdFeePaymentStatus {
-  completed: number;
-  pending: number;
-  refunded: number;
-}
-
-export interface AdFeeRevenueData {
-  adFeeKpis: AdFeeKPIs;
-  adFeeTrendPoints: AdFeeTrendPoint[];
-  adFeePaymentStatus: AdFeePaymentStatus;
+  processedAt?: string | null;
+  canDelete: boolean;
+  completedCount: number; completedTotal: string; completedCommission: string;
+  pendingCount: number;  pendingTotal: string;  pendingCommission: string;
 }
 
 export interface PayoutsResponse {
-  payouts: PayoutRow[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  items: Payout[];
+  total: number; page: number; limit: number; totalPages: number;
+  statusCounts: { completed: number; processing: number; pending: number };
+  periods?: string[];
 }
+
+export interface PayoutProcessResult {
+  payoutId: string; merchantId: string;
+  totalAmount: string; commissionAmount: string; adFeeAmount: string; netAmount: string;
+  status: 'completed' | 'failed';
+  processedAt: string;
+}
+
+export interface PayoutFilter {
+  status?: string; merchantId?: string; from?: string; to?: string;
+  period?: string; search?: string; page?: number; limit?: number;
+}
+
+export interface PayoutMerchant { id: string; name: string; }
 ```
 
-### 4.3 Export Types
+### 4.3 Revenue Types
 
 ```typescript
-// frontend/src/features/shared/types/export.types.ts
+export interface RevenueKPI {
+  totalRevenue: string; totalCommission: string; adFeeRevenue: string;
+  totalIncome: string; avgOrderValue: string; netRevenue: string;
+}
+export interface TrendPoint { date: string; revenue: string; commission: string; adFee: string; totalIncome: string; }
+export interface ForecastPoint { date: string; forecastRevenue: string; forecastCommission: string; forecastAdFee: string; }
+export interface RevenueForecast { forecastPoints: ForecastPoint[]; note?: string; }
+export interface RevenueTarget { targetAmount: string; period: string; actualRevenue: string; progressPercent: string; }
+export type TargetPeriod = 'monthly' | 'quarterly';
+export interface SaveRevenueTargetPayload { targetAmount: string; targetPeriod: TargetPeriod; }
+export interface SaveRevenueTargetResult { targetAmount: string; targetPeriod: string; actualRevenue: string; progressPercent: string; }
+export interface PaymentStatus { completed: number; processing: number; pending: number; }
+export type TrendRange = '7d' | '30d' | '90d' | '1y';
 
-export type ExportFormat = 'csv' | 'xlsx';
+export interface AdFeeKpis { totalAdFees: string; activeAds: number; pendingPayments: number; completedPayments: number; }
+export interface AdFeeTrendPoint { date: string; adFee: string; }
+export interface AdFeePaymentStatus { completed: number; pending: number; refunded: number; }
+export interface AdFeeRevenueResponse { adFeeKpis: AdFeeKpis; adFeeTrendPoints: AdFeeTrendPoint[]; adFeePaymentStatus: AdFeePaymentStatus; }
+```
 
+### 4.4 Export Types
+
+```typescript
 export type ExportReportType = 'commission' | 'revenue' | 'payout';
-
-export interface ExportRequest {
-  dateFrom: string;
-  dateTo: string;
-  format: ExportFormat;
+export type ExportFormat = 'csv' | 'xlsx';
+export interface ExportRequestBody {
+  dateFrom: string; dateTo: string; format: ExportFormat;
+  groupBy?: CommissionGroupBy;  // commission only
+  merchantId?: string;          // payout only
 }
 
+// Defined in components/ExportDialog.tsx — local UI callback record only;
+// there is NO export history API, no export status, and no downloadUrl.
 export interface ExportRecord {
-  reportType: ExportReportType;
-  format: ExportFormat;
-  dateRange: { from: string; to: string };
-  status: 'processing' | 'ready' | 'expired';
-  generatedAt: string;
-  downloadUrl?: string;
+  reportType: ExportReportType; format: ExportFormat;
+  dateFrom: string; dateTo: string; generatedAt: string;
 }
-
-export type ExportErrorCode =
-  | 'EXP_001'
-  | 'EXP_002'
-  | 'EXP_003'
-  | 'EXP_004'
-  | 'EXP_005';
 ```
 
 ---
 
 ## 5. Enums Reference
 
-### 5.1 TrendRange
+### 5.1 TrendRange (backend enum + frontend union)
 
-| Value | Label (EN) | Label (JA) | DB Mapping |
-|-------|------------|------------|------------|
-| `7d` | 7 Days | 7日 | Last 7 days of data |
-| `30d` | 30 Days | 30日 | Last 30 days of data (default) |
-| `90d` | 90 Days | 90日 | Last 90 days of data |
-| `1y` | 1 Year | 1年 | Last 12 months of data |
+| Value | EN label | JA label | Bucketing |
+|-------|----------|----------|-----------|
+| `7d` | 7 Days | 7日 | per day |
+| `30d` | 30 Days | 30日 | per day (default) |
+| `90d` | 90 Days | 90日 | per day |
+| `1y` | 1 Year | 1年 | per month (`YYYY-MM`) |
 
-### 5.2 TargetPeriod
+### 5.2 TargetPeriod (backend enum + frontend union)
 
-| Value | Label (EN) | Label (JA) | DB Column |
-|-------|------------|------------|-----------|
-| `monthly` | Monthly | 月次 | `revenue_targets.period` |
-| `quarterly` | Quarterly | 四半期 | `revenue_targets.period` |
+| Value | EN | JA |
+|-------|----|----|
+| `monthly` | Monthly | 月次 |
+| `quarterly` | Quarterly | 四半期 |
 
 ### 5.3 PayoutStatus
 
-| Value | Label (EN) | Label (JA) | Badge Color |
-|-------|------------|------------|-------------|
+**Backend enum (`payout-query.dto.ts`)** — filterable values only:
+
+```typescript
+export enum PayoutStatus { PENDING = 'pending', PROCESSING = 'processing', COMPLETED = 'completed' }
+```
+
+| Value | EN | JA | Badge tone (`components/badges.tsx`) |
+|-------|----|----|--------------------------------------|
 | `pending` | Pending | 保留中 | `bg-amber-100 text-amber-800` |
-| `processing` | Processing | 処理中 | `bg-blue-100 text-blue-800` |
+| `processing` | Processing | 処理中 | `bg-purple-100 text-purple-800` |
 | `completed` | Completed | 完了 | `bg-green-100 text-green-800` |
-| `failed` | Failed | 失敗 | `bg-red-100 text-red-800` |
+| `failed` (legacy) | Failed | 失敗 | `bg-red-100 text-red-800` |
 
-### 5.4 TargetPeriod (Backend Enum)
+> `failed` exists only in the frontend union/badge maps and DB history; the API filter rejects it, `statusCounts` never contains it, and no code path sets it.
 
-```typescript
-export enum TargetPeriod {
-  MONTHLY = 'monthly',
-  QUARTERLY = 'quarterly',
-}
-```
+### 5.4 ExportFormat (backend enum)
 
-### 5.5 TrendRange (Backend Enum)
+| Value | Label | MIME type |
+|-------|-------|-----------|
+| `csv` | CSV | `text/csv` |
+| `xlsx` | Excel | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
 
 ```typescript
-export enum TrendRange {
-  SEVEN_DAYS = '7d',
-  THIRTY_DAYS = '30d',
-  NINETY_DAYS = '90d',
-  ONE_YEAR = '1y',
-}
-```
-
-### 5.6 PayoutStatus (Backend Enum)
-
-```typescript
-export enum PayoutStatus {
-  PENDING = 'pending',
-  PROCESSING = 'processing',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-}
-```
-
-### 5.7 ExportFormat (Backend Enum)
-
-| Value | Label (EN) | Label (JA) | MIME Type |
-|-------|------------|------------|-----------|
-| `csv` | CSV | CSV | `text/csv` |
-| `xlsx` | Excel | Excel | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
-
-```typescript
-export enum ExportFormat {
-  CSV = 'csv',
-  XLSX = 'xlsx',
-}
+export enum ExportFormat { CSV = 'csv', XLSX = 'xlsx' }
 ```
 
 ---
 
 ## 6. Error Response Types
 
-### 6.1 ErrorResponse
+### 6.1 ErrorResponse (global `AllExceptionsFilter`)
 
 ```typescript
 export interface ErrorResponse {
-  statusCode: number;
-  error: string;
-  errorCode: string;
-  message: string | string[];
-  timestamp: string;
-  path: string;
+  statusCode: number;      // 400 | 401 | 403 | 404 | 409 | 429 | 500 | 503
+  error: string;           // HttpStatus name, e.g. 'BAD_REQUEST'
+  errorCode: string;       // see 6.2
+  message: string | string[]; // array when thrown by class-validator
+  timestamp: string;       // ISO
+  path: string;            // request URL
+  details?: { validationErrors: unknown }; // only when the exception carries `errors`
 }
 ```
 
-### 6.2 Commission Error Codes
+### 6.2 Error codes emitted by this module
 
-```typescript
-export enum CommissionErrorCode {
-  INVALID_RATE = 'COMM_001',
-  UNAUTHORIZED = 'COMM_002',
-  PAYOUT_NOT_FOUND = 'COMM_003',
-  PAYOUT_ALREADY_PROCESSED = 'COMM_004',
-  INVALID_TARGET = 'COMM_005',
-  INSUFFICIENT_FORECAST_DATA = 'COMM_006',
-  SERVER_ERROR = 'SYS_001',
-  NETWORK_ERROR = 'NET_ERR',
-}
-```
+| HTTP | errorCode | Example scenario |
+|------|-----------|------------------|
+| 400 | `VAL_001` | DTO validation; rate out of range; `from > to`; export date/format errors; process from `failed` |
+| 401 | `AUTH_001` | Missing/invalid token |
+| 403 | `RES_004` | Non-admin role |
+| 404 | `RES_001` | `Payout not found` / `Payout not found: <ids>` |
+| 409 | `RES_003` | `Payout has already been processed`; payout not deletable |
+| 429 | `RATE_001` | Rate limit (global; not enforced by this module's limiter) |
+| 500 | `SYS_001` | Server error |
 
-### 6.3 Export Error Codes
-
-```typescript
-export enum ExportErrorCode {
-  MISSING_DATE_RANGE = 'EXP_001',
-  DATE_TO_BEFORE_DATE_FROM = 'EXP_002',
-  DATE_RANGE_EXCEEDS_365_DAYS = 'EXP_003',
-  INVALID_FORMAT = 'EXP_004',
-  GENERATION_FAILED = 'EXP_005',
-}
-```
+> **Removed in v2.1:** `CommissionErrorCode` (`COMM_001`–`COMM_006`) and `ExportErrorCode` (`EXP_001`–`EXP_005`) enums — these codes do not exist anywhere in the codebase.
 
 ---
 
 ## 7. Database Column Mapping Reference
 
-### 7.1 Commission Settings
+### 7.1 Commission Settings (`commission_settings`)
+
+| API Field | DB Column | Data Type |
+|-----------|-----------|-----------|
+| `rate` | `commission_rate` | `Decimal(5,2)`, default `12.00` |
+| — | `updated_by` | UUID FK → users |
+| — | `updated_at` | TIMESTAMPTZ |
+
+### 7.2 Commission Rate History (`commission_rate_history`) — **newly documented in v2.1**
+
+| API Field | DB Column | Data Type |
+|-----------|-----------|-----------|
+| `rate` (history entry) | `commission_rate` | `Decimal(5,2)` |
+| `effectiveFrom` | `effective_from` | TIMESTAMPTZ (indexed) |
+| `updatedBy` | `created_by` | UUID FK → users |
+
+Used by every effective-rate lookup (reports, KPIs, trends, forecast basis).
+
+### 7.3 Orders (`orders`)
+
+| API Field | DB Column | Data Type |
+|-----------|-----------|-----------|
+| `revenue` | `total_amount` | `Decimal(12,2)` |
+| `merchantId` | `merchant_id` | UUID FK |
+| (filter) | `payment_status` | VARCHAR (`'completed'`) |
+
+### 7.4 Payouts (`payouts`)
+
+| API Field | DB Column | Data Type |
+|-----------|-----------|-----------|
+| `payoutId` | `id` | UUID PK |
+| `merchantId` | `merchant_id` | UUID FK (unique with period) |
+| `period` | `period_start` / `period_end` | TIMESTAMP(3) |
+| — | `order_count` | INT |
+| `totalAmount` | `total_amount` | `Decimal(12,2)` |
+| `commissionAmount` | `commission_amount` | `Decimal(12,2)` |
+| — | `net_payout` | `Decimal(12,2)` (response computes `netAmount` live) |
+| `status` | `status` | VARCHAR(20) — `'pending' \| 'processing' \| 'completed'` |
+| `processedAt` | `processed_at` | TIMESTAMPTZ |
+| — | `processed_by` | UUID FK → users |
+| `idempotencyKey` | `idempotency_key` | VARCHAR(255), unique |
+
+> **No `ad_fee_amount` and no `failure_reason` columns exist** on `payouts`; the API returns constant `adFeeAmount: "0.00"` and `failureReason: null`.
+
+### 7.5 Payout Items (`payout_items`) — **newly documented in v2.1**
+
+| API Field | DB Column | Data Type |
+|-----------|-----------|-----------|
+| — | `payout_id` | UUID FK (indexed) |
+| — | `order_id` | UUID FK, unique |
+| (export row) | `order_amount` | `Decimal(12,2)` |
+| (export row) | `commission_amount` | `Decimal(12,2)` |
+
+### 7.6 Revenue Targets (`revenue_targets`)
+
+| API Field | DB Column | Data Type |
+|-----------|-----------|-----------|
+| `targetAmount` | `target_amount` | `Decimal(12,2)` |
+| `period` | `period` | VARCHAR (`monthly`/`quarterly`) |
+| — | `is_active` | BOOLEAN (unique with `period`) |
+
+### 7.7 Ad Payments / Advertisements
 
 | API Field | DB Column | Table | Data Type |
 |-----------|-----------|-------|-----------|
-| `rate` | `commission_rate` | `commission_settings` | Decimal(5,2) |
+| `totalAdFees` | `amount` | `ad_payments` | `Decimal(10,2)` |
+| `adFeePaymentStatus` | `payment_status` | `ad_payments` | VARCHAR (`pending/completed/refunded`) |
+| `activeAds` | COUNT(*) | `advertisements` | `is_active = true AND approval_status = 'approved' AND expires_at >= now` |
 
-### 7.2 Orders
+### 7.8 Audit Logs (`audit_logs`)
 
-| API Field | DB Column | Table | Data Type |
-|-----------|-----------|-------|-----------|
-| `revenue` | `total_amount` | `orders` | Decimal(10,2) |
-| `merchantId` | `merchant_id` | `orders` | UUID FK |
+Export/rate/payout audit payloads are stored as **JSON columns**, not dedicated columns:
 
-### 7.3 Payouts
-
-| API Field | DB Column | Table | Data Type |
-|-----------|-----------|-------|-----------|
-| `payoutId` | `id` | `payouts` | UUID PK |
-| `merchantId` | `merchant_id` | `payouts` | UUID FK |
-| `totalAmount` | `total_amount` | `payouts` | Decimal(12,2) |
-| `commissionAmount` | `commission_amount` | `payouts` | Decimal(12,2) |
-| `adFeeAmount` | `ad_fee_amount` | `payouts` | Decimal(12,2) |
-| `status` | `status` | `payouts` | VARCHAR(20) |
-| `idempotencyKey` | `idempotency_key` | `payouts` | VARCHAR(255) |
-| `failureReason` | `failure_reason` | `payouts` | TEXT |
-| `processedBy` | `processed_by` | `payouts` | UUID FK |
-| `processedAt` | `processed_at` | `payouts` | TIMESTAMPTZ |
-
-### 7.4 Revenue Targets
-
-| API Field | DB Column | Table | Data Type |
-|-----------|-----------|-------|-----------|
-| `targetAmount` | `target_amount` | `revenue_targets` | Decimal(12,2) |
-| `period` | `period` | `revenue_targets` | VARCHAR(20) |
-
-### 7.5 Ad Payments
-
-| API Field | DB Column | Table | Data Type |
-|-----------|-----------|-------|-----------|
-| `totalAdFees` | `amount` | `ad_payments` | Decimal(10,2) |
-| `adFeePaymentStatus` | `payment_status` | `ad_payments` | VARCHAR(20) |
-
-### 7.6 Advertisements
-
-| API Field | DB Column | Table | Data Type |
-|-----------|-----------|-------|-----------|
-| `activeAds` | COUNT(*) | `advertisements` | Integer |
-
-### 7.7 Audit Logs (Export)
-
-| API Field | DB Column | Table | Data Type |
-|-----------|-----------|-------|-----------|
-| `reportType` | `report_type` | `audit_logs` | VARCHAR(50) |
-| `format` | `format` | `audit_logs` | VARCHAR(10) |
-| `dateFrom` | `date_from` | `audit_logs` | DATE |
-| `dateTo` | `date_to` | `audit_logs` | DATE |
+| Field | DB Column | Data Type |
+|-------|-----------|-----------|
+| `action` | `action` | VARCHAR (indexed) |
+| `oldValue` | `old_value` | JSON |
+| `newValue` | `new_value` | JSON (e.g. `{reportType, format, dateFrom, dateTo, rowCount}`) |
+| `ipAddress` | `ip_address` | VARCHAR |
 
 ---
 
@@ -800,5 +745,5 @@ export enum ExportErrorCode {
 | [DD_COMM_03](./DD_Commission_Revenue_03_API_ENDPOINTS.md) | Endpoints that consume these DTOs |
 | [DD_COMM_05](./DD_Commission_Revenue_05_BUSINESS_LOGIC.md) | Business rules for validation |
 | [DD_COMM_06](./DD_Commission_Revenue_06_TEST_SPEC.md) | Test specification |
-| [機能設計書_Commission_&_Revenue](../機能設計書_Commission_&_Revenue.md) | Full functional specification (v8.0) |
-| [画面項目設計書_Commission_&_Revenue](../画面項目設計書_Commission_&_Revenue.md) | Screen items specification (v5.0) |
+| [機能設計書_Commission_&_Revenue](../機能設計書_Commission_&_Revenue.md) | Full functional specification (v8.1) |
+| [画面項目設計書_Commission_&_Revenue](../画面項目設計書_Commission_&_Revenue.md) | Screen items specification (v5.1) |

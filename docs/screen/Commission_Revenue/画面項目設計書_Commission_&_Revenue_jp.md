@@ -1,1011 +1,922 @@
-# 画面項目設計書 — 手数料・収益管理
+# Screen Items Specification (画面項目設計書) — Commission & Revenue
 
-**文書ID:** SKM-SIS-COMM-001  
-**対象画面:** 管理者 手数料・収益ダッシュボード (手数料・収益管理)  
-**サブシステム:** 手数料管理・収益追跡  
-**機能ID:** FN-COMM-001  
-**バージョン:** 5.0  
-**作成日:** 2026-08-10  
-**最終更新日:** 2026-08-25  
-**作成者:** シニアシステムエンジニア  
-**レビュー状況:** リリース済み (要件定義書 v2.11、データベース設計書 v2.5、機能設計書 v8.0 準拠)  
-**分類:** 社内 — エンジニアリング部門
+**Document ID:** SKM-SIS-COMM-001  
+**Target Screen:** Admin Commission / Revenue Dashboard (手数料・収益管理)  
+**Subsystem:** Commission Management & Revenue Tracking  
+**Function ID:** FN-COMM-001  
+**Version:** 5.1  
+**Created:** 2026-08-10  
+**Last Updated:** 2026-10-15  
+**Author:** Senior System Engineer  
+**Review Status:** Released (Aligned with REQUIREMENT_SPEC v2.11, DATABASE_SPEC v2.5, Functional Spec v8.1)  
+**Classification:** Internal — Engineering Division
 
 ---
 
-## 1. ドキュメント管理
+## 1. Document Control (ドキュメント管理)
 
-### 1.1 文書改訂履歴
+### 1.1 Document Revision History
 
-| バージョン | 日付 | 作成者 | 変更内容 |
+| Version | Date | Author | Description of Changes |
 | :--- | :--- | :--- | :--- |
-| 1.0 | 2026-08-10 | シニアシステムエンジニア | 初版リリース。管理者手数料・収益ページの画面項目仕様。SKM-FDS-COMM-001 (機能設計書) 準拠。 |
-| 2.0 | 2026-08-11 | シニアシステムエンジニア | 収益目標進捗 (設定可能なゲージバー) およびAI収益予測 (点線) セクション、動作、バリデーションエラー、データベース/APIマッピング、i18nキー、テストを追加。SKM-FDS-COMM-001 v3.0 準拠。 |
-| 2.1 | 2026-08-17 | システムエンジニア | データベースフィールドマッピングをデータベース設計書 v2.0 に合わせて更新 (UUID PK、Decimal型)。テーブル参照、FKデータ型 (VARCHAR(25) → UUID)、データ型精度を更新。要件定義書 v1.5 および開発ルール v2.0 との整合性を確認。 |
-| 2.2 | 2026-08-17 | シニアシステムエンジニア | バージョン参照を要件定義書 v1.7、データベース設計書 v2.2、開発ルール v2.1、機能設計書 v5.0 に更新。広告料金収益セクション、動作、i18nキー、テストケースを追加。 |
-| 2.3 | 2026-08-17 | シニアシステムエンジニア | 広告支払いステータスパネル、広告料金サマリーカード、広告料金トレンド系列、広告料金APIレスポンスを追加。全コンテンツを機能設計書 v5.0 に合わせて更新。 |
-| 2.4 | 2026-08-18 | シニアシステムエンジニア | データベース列マッピングをデータベース設計書 v2.2 に合わせて修正 (commission_settings.commission_rate、orders.total_amount、ad_payments.payment_status)。出金DB列 (commission_amount、ad_fee_amount、idempotency_key、failure_reason) を追加。出金APIレスポンスを更新。要件定義書 v1.10 準拠。 |
-| 2.5 | 2026-08-18 | シニアシステムエンジニア | 手数料範囲および財務レポートマッピングを要件定義書 v1.10 およびデータベース設計書 v2.2 と調整。手数料および収益集計を完了済み支払いに限定し、出品者ソースマッピングを修正し、注文ごとの手数料スナップショットのスキーマギャップを文書化。 |
-| 3.0 | 2026-08-22 | シニアシステムエンジニア | 機能設計書 v6.0 およびデータベース設計書 v2.4 に合わせて更新: 出金計算から広告料金控除を削除 (純出金 = 合計 - 手数料のみ)、広告支払いパネルに失敗ステータスを追加、率の検証を厳密な > 0 に修正、監査保持を2年/1年に更新、出金テーブル列を修正。 |
-| 3.1 | 2026-08-22 | シニアシステムエンジニア | セクション3.1 画面レイアウトおよびセクション4 項目定義を再構築: 各レイアウト (手数料ページ、手数料率編集ダイアログ、収益ページ、出金確認ダイアログ、目標編集ダイアログ) は独立したアルファベットラベルを [A] から使用。全項目定義および相互参照を更新。 |
-| 4.0 | 2026-08-22 | シニアシステムエンジニア | 手数料ページと収益ページをタブ付き単一ページに統合 (`/admin/commission-revenue`)。タブ1: 手数料 (手数料率設定 + レポート)。タブ2: 収益 (KPI + チャート + 目標 + 出金)。全レイアウト図、項目定義、動作トリガー、ルート参照を更新。重複項目定義を削除。バージョン参照を機能設計書 v7.0 に更新。 |
-| 4.1 | 2026-08-24 | シニアシステムエンジニア | 支払いステータス列挙型を機能設計書 v7.1 / データベース設計書 v2.4 に合わせて更新 (注文支払い: pending/completed; 広告支払い: pending/completed/refunded)。 |
-| 4.2 | 2026-08-24 | シニアシステムエンジニア | 支払いステータスパネル (セクション [J]) から「失敗」および「返金」バッジを削除し、広告支払いステータスパネル (セクション [K]) から「広告失敗」バッジを削除。バッジグリッドレイアウトと間隔を調整 — 注文バッジは1行2列グリッド、広告バッジは1行3列グリッド。下流の項目定義を振り直し、未使用のi18nキーを削除、APIレスポンス例とテストチェックリストを更新。機能設計書 v7.2 準拠。 |
-| 5.0 | 2026-08-25 | シニアシステムエンジニア | エクスポート機能を追加: 手数料タブ (セクション [F])、収益タブ (セクション [O])、出金テーブル (セクション [M]) にエクスポートボタン項目を追加。レイアウト5 (エクスポートモーダル) に11項目定義を追加 (日付範囲ピッカー、形式選択、生成/キャンセルボタン、最近のエクスポートテーブル)。エクスポート動作セクション (5.16~5.19)、エクスポートバリデーションエラーコード (VAL-EXP-001~004)、エクスポートAPIエラーコード (EXP_001~007)、エクスポートDBフィールドマッピング (セクション7.7)、エクスポートAPIレスポンスマッピング (セクション8.15~8.19)、エクスポートi18nキー (EN/JA)、エクスポートテストケースを追加。機能設計書 v8.0 準拠。 |
+| 1.0 | 2026-08-10 | Senior System Engineer | Initial release. Admin Commission / Revenue 画面の項目定義書。SKM-FDS-COMM-001（機能設計書）に準拠。 |
+| 2.0 | 2026-08-11 | Senior System Engineer | 収益目標進捗（ゲージバー）とAI収益予測（点線）のセクション・挙動・バリデーションエラー・DB/APIマッピング・i18nキー・テストを追加。機能設計書 v3.0 に準拠。 |
+| 2.1 | 2026-08-17 | System Engineer | DBフィールドマッピングを DATABASE_SPEC v2.0 に準拠（UUID PK、Decimal型）。 |
+| 2.2 | 2026-08-17 | Senior System Engineer | バージョン参照を REQUIREMENT_SPEC v1.7 / DATABASE_SPEC v2.2 / DEVELOPMENT_RULES v2.1 / 機能設計書 v5.0 に更新。広告料金収益セクションを追加。 |
+| 2.3 | 2026-08-17 | Senior System Engineer | 広告支払いステータスパネル・広告料金サマリーカード・広告料金トレンド系列・広告料金APIレスポンスを追加。 |
+| 2.4 | 2026-08-18 | Senior System Engineer | DBカラムマッピングを DATABASE_SPEC v2.2 に修正。ペイアウトDBカラム（commission_amount、idempotency_key）を追加。 |
+| 2.5 | 2026-08-18 | Senior System Engineer | コミッション範囲と財務レポートのマッピングを REQUIREMENT_SPEC v1.10 / DATABASE_SPEC v2.2 に調整。 |
+| 3.0 | 2026-08-22 | Senior System Engineer | 機能設計書 v6.0 / DATABASE_SPEC v2.4 に準拠：ペイアウト計算から広告料金控除を削除（純ペイアウト = total − commission）、rateバリデーションを strict > 0 に、監査保持期間を2年/1年に。 |
+| 3.1 | 2026-08-22 | Senior System Engineer | セクション3.1のレイアウト図とセクション4の項目定義を再構成。各レイアウトが独立したラベル（[A]～）を使用。 |
+| 4.0 | 2026-08-22 | Senior System Engineer | Commission Page と Revenue Page をタブ付き単一ページ（`/admin/commission-revenue`）に統合。全レイアウト図・項目定義・挙動トリガー・ルート参照を更新。 |
+| 4.1 | 2026-08-24 | Senior System Engineer | 支払いステータス列挙型を機能設計書 v7.1 / DATABASE_SPEC v2.4 に準拠。 |
+| 4.2 | 2026-08-24 | Senior System Engineer | 支払いステータスパネルから「失敗」「返金」バッジを削除。グリッド間隔を調整（注文：1行2列、広告：1行3列）。 |
+| 5.0 | 2026-08-25 | Senior System Engineer | エクスポート機能を追加：Commissionタブ・収益タブ・ペイアウトテーブルのボタン、レイアウト5（エクスポートモーダル）、エクスポート挙動・バリデーション・エラーコード・DBマッピング・APIレスポンス・マッピング・i18nキー・テスト。機能設計書 v8.0 に準拠。 |
+| 5.1 | 2026-10-15 | Senior System Engineer | 実装に準拠（2026-10-15）：存在しないページフッター（言語/テーマトグルは管理レイアウトに存在）とエクスポートの見積もり行数/履歴UIを削除。ペイアウトパネルをペイアウトステータス（pending/processing/completed）に修正。ペイアウトフィルタ（status/merchant/period/search）、複数選択チェックボックス、View/Deleteアクション、groupByトグルをレイアウトに追加。VAL-COMM-*/VAL-EXP-*/COMM_*/EXP_* コードをグローバルエンベループのエラーコードに置換。DBマッピングを修正（`payouts` に `ad_fee_amount`/`failure_reason` 列は存在しない）。i18nリファレンスを実際の `admin.commission.*` キーセット（既知のギャップ付き）に書き直し。APIレスポンス例を修正（ペイアウト処理の `adFeeAmount: "0.00"`、監査ペイロード形状）。 |
 
-### 1.2 関連文書
+### 1.2 Related Documents
 
-| No. | 文書ID | 文書名 | ファイルパス | バージョン | 備考 |
+| No. | Document ID | Document Name | File Path | Version | Remarks |
 | :-- | :--- | :--- | :--- | :--- | :--- |
-| 1 | SKM-REQ-001 | 要件定義書 | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 2.11 | ビジネスワークフローロジック、ユーザー役割、出品者状態、ルール。 |
-| 2 | SKM-DBS-001 | データベース設計書 | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.5 | UUID PK、Decimal型、FKリレーションシップ、制約付きテーブル構造。 |
-| 3 | SKM-DEV-001 | 開発ルール | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | 命名規則、セキュリティルール、デザインテークン、エラーレスポンス、RBAC。 |
-| 4 | SKM-FDS-COMM-001 | 機能設計書 — 手数料・収益 | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 8.0 | ユースケース、状態遷移、バリデーションルール、ビジネスルール、エラーハンドリング。 |
+| 1 | SKM-REQ-001 | Requirements Definition | `docs/core-work/要件定義書_REQUIREMENT_SPEC.md` | 2.11 | Business workflow logic, user roles, merchant states, and rules. |
+| 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | 2.5 | Table structures with UUID PKs, Decimal types, FK relationships, and constraints. |
+| 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | 2.1 | Naming conventions, security rules, design tokens, error responses, and RBAC. |
+| 4 | SKM-FDS-COMM-001 | Functional Specification — Commission & Revenue | `docs/screen/Commission_Revenue/機能設計書_Commission_&_Revenue.md` | 8.1 | Use cases, state transitions, validation rules, business rules, and error handling. |
 
 ---
 
-## 2. 画面概要・目的
+## 2. Screen Overview & Purpose (画面概要・目的)
 
-### 2.1 目的
-手数料・収益ページは、Cosmetics Finderプラットフォームの管理者側財務管理画面です。プラットフォーム管理者がプラットフォーム手数料率を設定し、出品者レベルの手数料レポートを閲覧し、広告料金収益を含む収益KPIとトレンドを監視し、注文と広告の両方の支払いステータスを確認し、出品者出金を処理できます。さらに、管理者は月次/四半期収益目標を設定し、ゲージバーで現在の進捗を監視し、トレンドチャート上に点線として履歴データからAI生成の収益およびプラットフォーム手数料予測を表示し、財務レポート (手数料、収益、出金) をCSVまたはExcelファイルとしてエクスポートできます。
+### 2.1 Purpose (目的)
+Commission / Revenue 画面は、Cosmetics Finder プラットフォームの管理者向け財務管理画面です。プラットフォーム手数料率の設定、出品者別の手数料レポートの閲覧、広告料金収益を含む収益KPIとトレンドの監視、ペイアウトおよび広告支払いステータスの確認、出品者ペイアウト（レビュー/処理/削除）の管理を行えます。さらに、月次/四半期の収益目標を設定しゲージバーで進捗を確認し、AIによる収益予測をトレンドチャート上に点線として表示し、財務レポート（手数料・収益・ペイアウト）をCSV/Excelでエクスポートできます。
 
-### 2.2 対象ユーザーと権限
+### 2.2 Target Users & Roles (対象ユーザーと権限)
 
-| 属性 | 値 |
+| Attribute | Value |
 | :--- | :--- |
-| **主要アクター** | プラットフォーム管理者 (Admin) |
-| **必要な認証** | JWTアクセストークン |
-| **データ範囲** | 手数料設定、レポート、収益KPI、収益目標、予測データ、広告料金収益、広告支払いステータス、出金記録、監査ログ |
-| **アクセス制御** | 保護されたルート — 管理者のみ (`ProtectedRoute roles={['admin']}`) |
+| **Primary Actor** | Platform Administrator (Admin) |
+| **Required Authentication** | JWT access token |
+| **Data Scope** | Commission settings, reports, revenue KPIs, revenue targets, forecast data, ad fee revenue, ad payment status, payout records |
+| **Access Control** | Protected route — `admin` / `super_admin` ロール（`roles={['admin', 'super_admin']}`） |
 
-### 2.3 主要機能・基本設計方針
-1. **手数料率設定** — 新規トランザクションに適用されるプラットフォーム手数料率を設定および永続化。
-2. **手数料レポート生成** — フィルタリング、ソート、ページネーション付きの出品者レベル手数料レポート。
-3. **収益ダッシュボードKPI** — 広告料金収益を含む、設定可能な範囲での収益KPIとトレンド可視化を表示。
-4. **支払いステータス内訳** — 完了、保留中、返金済みレコードの支払いステータスを集計 (注文支払い: pending/completed; 広告支払い: pending/completed/refunded)。
-5. **出品者出金管理** — 冪等性とステータス追跡付きで出品者出金を処理。
-6. **収益目標進捗** — 月次/四半期収益目標を設定し、ゲージバーで現在の進捗を表示。
-7. **AI収益予測** — 履歴データから収益およびプラットフォーム手数料を予測し、現在のトレンドに重ねて点線としてレンダリング。
-8. **エクスポート機能** — 手数料レポート、収益データ、出金履歴を設定可能な日付範囲でCSVまたはExcelファイルとしてエクスポート。
-9. **エラーハンドリング** — アラートバナーおよびインラインフィールドエラーによる一貫したエラー状態。
-10. **国際化** — EN、JA、MYの完全なi18nサポート。
-11. **レスポンシブデザイン** — レスポンシブKPIグリッド、テーブル、チャートレイアウト。
-
----
-
-## 3. 画面レイアウト構成
-
-### 3.1 全体画面構成
-
-手数料と収益の2つのタブを持つ単一ページ。各セクションは独立したアルファベットラベルを [A] から使用。エクスポートモーダル (レイアウト5) は両タブ間で共有。
+### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
+1. **Commission Rate Configuration** — 新規取引に適用されるプラットフォーム手数料率を設定・永続化する。
+2. **Commission Report Generation** — フィルタリング、グループ化（merchant/day/order）、ページネーションを備えた出品者別手数料レポート。
+3. **Revenue Dashboard KPI** — 広告料金収益を含む収益KPIとトレンド可視化。
+4. **Payout Status Breakdown** — ペイアウトステータス（pending/processing/completed。ペイアウトリスト由来）と広告支払いステータス（pending/completed/refunded）を集計。
+5. **Merchant Payout Management** — ペイアウトレビュー（pending → processing）、処理（→ completed）、削除（完了済み・3ヶ月以上経過）を冪等性付きで管理。
+6. **Revenue Target Progress** — 月次/四半期の収益目標を設定しゲージバーで進捗を表示。
+7. **AI Revenue Forecast** — 過去データから収益と広告料金を予測（7件以上の populated バケットに対する線形回帰）し、点線としてトレンドに沿って描画。
+8. **Export Functionality** — 日付範囲を指定して手数料レポート・収益データ・ペイアウト履歴をCSV/Excelでエクスポート。
+9. **Error Handling** — API結果のトースト通知、フィールドバリデーションのインラインテキスト、ペイアウト削除失敗時のAlertDialog。
+10. **Internationalization** — `admin.commission.*` キーによるEN/JA/MYのi18n対応（インライン付き）。
+11. **Responsive Design** — レスポンシブなKPIグリッド、テーブル、チャートレイアウト。
 
 ---
 
-#### レイアウト1: 手数料・収益ページ (`/admin/commission-revenue`)
+## 3. Screen Layout (画面レイアウト構成)
+
+### 3.1 Overall Page Structure (全体画面構成)
+
+単一ページ（`frontend/src/pages/admin/CommissionRevenue.tsx`）に Commission と Revenue の2タブ。以下の各レイアウトは独立したラベル（[A]～）を使用。エクスポートモーダル（レイアウト5）は両タブで共用。ページはスタンドアロンのコンテナ（`max-w-[1400px]`）であり、言語/テーマトグルを持つフッターは描画しない（これらは管理レイアウトのヘッダーに存在する）。
+
+---
+
+#### Layout 1: Commission & Revenue Page (`/admin/commission-revenue`)
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    ブラウザビューポート                     │
+│                    BROWSER VIEWPORT                     │
 ├─────────────────────────────────────────────────────────┤
 │  ┌───────────────────────────────────────────────────┐  │
-│  │   [A] ページヘッダー                                 │  │
-│  │   "Commission & Revenue"  +  [管理者ユーザーメニュー]    │  │
+│  │   [A] PAGE HEADER                                 │  │
+│  │   "Commission & Revenue"                          │  │
 │  └───────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │   [B] エラーアラート (条件付き)                         │  │
-│  └───────────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │   [C] タブグループ                                   │  │
-│  │   [ タブ1: 手数料 ] [ タブ2: 収益 ]                   │  │
+│  │   [C] TAB GROUP                                   │  │
+│  │   [ Tab 1: Commission ] [ Tab 2: Revenue ]        │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │   [タブ1 コンテンツ — 手数料]                          │  │
-│  │                                                   │  │
-│  │   [D] 手数料率カード                                 │  │
-│  │   [D1] 現在の手数料率  [D2] 手数料率の値               │  │
-│  │   [D3] 手数料率編集ボタン                             │  │
-│  │                                                   │  │
-│  │   [E] レポートフィルターパネル                         │  │
-│  │   [E1] 開始日  [E2] 終了日                           │  │
-│  │   [E3] 適用ボタン  [E4] リセットボタン                  │  │
-│  │                                                   │  │
-│  │   [F] 手数料レポートテーブル                          │  │
-│  │   出品者 / 注文数 / 売上 / 手数料                      │  │
-│  │   [F1] ページネーション                               │  │
-│  │   [F2] 手数料エクスポートボタン                        │  │
+│  │   [TAB 1 CONTENT — COMMISSION]                    │  │
+│  │   [D] COMMISSION RATE CARD (CommissionTable)      │  │
+│  │       Current Rate %  +  [Edit Rate]              │  │
+│  │   [E] REPORT FILTER PANEL (ReportFilterPanel)     │  │
+│  │       [By Merchant|By Day|By Order]               │  │
+│  │       [E1] From  [E2] To  [E3] Apply  [E4] Reset  │  │
+│  │   [F] REPORT TABLE CARD                           │  │
+│  │       title + [Export] button                     │  │
+│  │       CommissionReportsTable (sticky header)      │  │
+│  │       PaginationControls (10/20/50/100)           │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │   [タブ2 コンテンツ — 収益]                           │  │
-│  │                                                   │  │
-│  │   [G] KPIカード                                    │  │
-│  │   [G1] 総売上  [G2] 総手数料                        │  │
-│  │   [G3] 広告料金収益  [G4] 総収入                     │  │
-│  │   [G5] 平均注文金額  [G6] 純収益                     │  │
-│  │                                                   │  │
-│  │   [H] トレンドチャート + 期間切替                     │  │
-│  │   [H1] エリア/ラインチャート  [H2] 予測点線           │  │
-│  │   [H3] 広告料金トレンド系列 (重ねて表示)               │  │
-│  │   [H4] "AI予測" 凡例 (条件付き)                      │  │
-│  │   [H5] 予測不可ノート (条件付き)                      │  │
-│  │   [H6] 7日 | 30日 | 90日 | 1年 切替グループ           │  │
-│  │                                                   │  │
-│  │   [I] 収益目標進捗カード                             │  │
-│  │   [I1] 期間切替  [I2] 目標金額                       │  │
-│  │   [I3] ゲージバー  [I4] 進捗%                        │  │
-│  │   [I5] 目標編集ボタン                                │  │
-│  │                                                   │  │
-│  │   [J] 支払いステータスパネル                          │  │
-│  │   [J1] 完了  [J2] 保留中                             │  │
-│  │                                                   │  │
-│  │   [K] 広告支払いステータスパネル                       │  │
-│  │   [K1] 広告完了  [K2] 広告保留中                      │  │
-│  │   [K3] 広告返金                                     │  │
-│  │                                                   │  │
-│  │   [L] 広告料金サマリーカード                          │  │
-│  │   アクティブ広告 / 回収総額 / 保留中                   │  │
-│  │                                                   │  │
-│  │   [O] エクスポートボタン                              │  │
-│  │   [O1] 収益エクスポートボタン  [O2] 出金エクスポート    │  │
-│  │                                                   │  │
-│  │   [M] 出金テーブル                                   │  │
-│  │   [M1] 出品者  [M2] 合計  [M3] 手数料                 │  │
-│  │   [M4] 純額  [M5] ステータス  [M6] 日付              │  │
-│  │   [M7] 処理ボタン (保留中行のみ)                      │  │
-│  │   [M8] ページネーション  [M9] 出金エクスポートボタン    │  │
+│  │   [TAB 2 CONTENT — REVENUE] (RevenueTab)          │  │
+│  │   [O1] [Export Revenue] (top-right)               │  │
+│  │   [G] KPI CARDS (RevenueKPICards, 6)              │  │
+│  │   [H] TREND CHART CARD (RevenueTrendChart)        │  │
+│  │       legend + inline SVG + [RangeToggle]         │  │
+│  │   [I] REVENUE TARGET CARD (RevenueTargetCard)     │  │
+│  │       [Monthly|Quarterly] target/actual/progress  │  │
+│  │       bar + [Edit Target|Set Target]              │  │
+│  │   [J][K][L] STATUS GRID (md:2 / lg:3)             │  │
+│  │       PaymentStatusPanel (payout statuses)        │  │
+│  │       AdPaymentStatusPanel                       │  │
+│  │       AdFeeSummaryCard                            │  │
+│  │   [M] PAYOUT SECTION                              │  │
+│  │       "Merchant Payouts" + [Export Payout]        │  │
+│  │       filters: Status|Merchant|Period|Search      │  │
+│  │       [Reset] [Delete selected (red)]             │  │
+│  │       PayoutTable (checkboxes, sticky header)     │  │
+│  │       PaginationControls                          │  │
 │  └───────────────────────────────────────────────────┘  │
 │                                                         │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │   [N] フッターコントロール                            │  │
-│  │   [言語] [テーマ]                                    │  │
+│  │   [S] EXPORT DIALOG (ExportDialog, shared)        │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### レイアウト2: 手数料率編集ダイアログ (モーダル)
+#### Layout 2: Edit Rate Dialog (Modal、CommissionTable 内)
 
 ```text
 ┌─────────────────────────────────────────────┐
-│              [A] 手数料率編集ダイアログ        │
+│              [A] EDIT RATE DIALOG           │
 │  ┌─────────────────────────────────────┐    │
-│  │   [B] 手数料率入力                    │    │
-│  │   [C] インラインフィールドエラー (条件付き) │    │
+│  │   [B] Rate Input + "%"              │    │
+│  │   [C] Inline Field Error (cond.)    │    │
 │  └─────────────────────────────────────┘    │
-│  [D] キャンセルボタン   [E] 保存ボタン        │
+│  [D] Cancel Button   [E] Save Button        │
 └─────────────────────────────────────────────┘
 ```
 
-#### レイアウト3: 出金確認ダイアログ (モーダル)
+#### Layout 3: Payout Confirmation Dialog (Modal)
 
 ```text
 ┌─────────────────────────────────────────────┐
-│              [A] 確認ダイアログ               │
+│              [A] CONFIRMATION DIALOG        │
 │   "Process payout for {merchant}?"          │
-│  ┌─────────────────────────────────────┐    │
-│  │   [B] 金額: {amount}                 │    │
-│  └─────────────────────────────────────┘    │
-│  [C] キャンセルボタン   [D] 確認ボタン        │
+│  [B] Total Amount / Commission Fee /        │
+│      Net Payout (+ completed/pending        │
+│      breakdown when > 1 underlying order)   │
+│  [C] Cancel Button   [D] Confirm Button     │
+│  (Cancel reviews the payout when pending)  │
 └─────────────────────────────────────────────┘
 ```
 
-#### レイアウト4: 目標編集ダイアログ (モーダル)
+#### Layout 4: Edit Target Dialog (Modal、RevenueTargetCard 内)
 
 ```text
 ┌─────────────────────────────────────────────┐
-│              [A] 目標編集ダイアログ           │
+│              [A] EDIT TARGET DIALOG         │
 │  ┌─────────────────────────────────────┐    │
-│  │   [B] 目標金額入力                    │    │
-│  │   [C] インラインフィールドエラー (条件付き) │    │
+│  │   [B] Target Amount Input           │    │
+│  │   [C] Inline Field Error (cond.)    │    │
 │  └─────────────────────────────────────┘    │
 │  ┌─────────────────────────────────────┐    │
-│  │   [D] 目標期間選択                    │    │
+│  │   [D] Target Period Toggle          │    │
+│  │   (Monthly / Quarterly buttons)     │    │
 │  └─────────────────────────────────────┘    │
-│  [E] キャンセルボタン   [F] 保存ボタン        │
+│  [E] Cancel Button   [F] Save Button        │
 └─────────────────────────────────────────────┘
 ```
 
-#### レイアウト5: エクスポートモーダル
+#### Layout 5: Export Modal (エクスポートモーダル、共用)
 
 ```text
 ┌─────────────────────────────────────────────┐
-│              [A] エクスポートモーダル          │
-│  ┌─────────────────────────────────────┐    │
-│  │   [B] モーダルタイトル                 │    │
-│  │   "Export Report"                   │    │
-│  └─────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────┐    │
-│  │   [C] レポートタイプ表示               │    │
-│  │   (Commission / Revenue / Payout)   │    │
-│  └─────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────┐    │
-│  │   [D] 日付範囲ピッカー                │    │
-│  │   [E] 日付範囲エラー (条件付き)        │    │
-│  └─────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────┐    │
-│  │   [F] 形式ラジオグループ               │    │
-│  │   (CSV / Excel)                     │    │
-│  └─────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────┐    │
-│  │   [G] 推定行数テキスト (条件付き)       │    │
-│  └─────────────────────────────────────┘    │
-│  [H] 生成ボタン   [I] キャンセルボタン        │
-│  ┌─────────────────────────────────────┐    │
-│  │   [J] 最近のエクスポート見出し          │    │
-│  │   "Recent Exports"                  │    │
-│  └─────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────┐    │
-│  │   [K] 最近のエクスポートテーブル        │    │
-│  │   タイプ / 形式 / 範囲 / ステータス     │    │
-│  │   / 生成日時 / ダウンロード             │    │
-│  └─────────────────────────────────────┘    │
+│              [A] EXPORT MODAL               │
+│  [B] Modal Title "Export Report"            │
+│  [C] Report Type Display (read-only)        │
+│  [D] Group By Display (commission, read-only)│
+│  [E] Merchant Select (payout only, cond.)   │
+│  [F] Start/End Date Inputs                  │
+│  [G] Format Toggle Buttons (CSV / Excel)    │
+│  [H] Inline Error (cond.)                   │
+│  [I] Generate Button   [J] Cancel Button    │
 └─────────────────────────────────────────────┘
 ```
 
-### 3.2 レスポンシブ対応
+### 3.2 Responsive Layout Breakpoints (レスポンシブ対応)
 
-| ブレイクポイント | 最小幅 | レイアウト動作 |
+| Breakpoint | Min Width | Layout Behavior |
 | :--- | :--- | :--- |
-| モバイル (デフォルト) | 0px | KPIカードを積み重ね、単一列、テーブルを水平スクロール。エクスポートモーダルは全幅。 |
-| タブレット (`md:`) | 768px | 2列KPIグリッド、スクロール可能なテーブル。エクスポートモーダルは中央揃えで固定幅。 |
-| デスクトップ (`lg:`) | 1024px | 複数列KPIグリッド、全幅テーブル。エクスポートモーダルは中央揃えで最大幅。 |
-| ワイド (`xl:`) | 1280px | 複数列KPIグリッド、拡張間隔の全幅テーブル。エクスポートモーダルは中央揃えで最大幅。 |
+| Mobile (default) | 0px | KPIカードは1列、テーブルは横スクロール。ペイアウトフィルタは縦積み。 |
+| Tablet (`md:`) | 640px | KPIグリッド2列、ステータスパネルグリッド2列、ペイアウトフィルタは折り返し。 |
+| Desktop (`lg:`) | 1024px | ステータスパネルグリッド3列、全幅テーブル。 |
+| Wide (`xl:`) | 1280px | KPIグリッド3列（`xl:grid-cols-3`）。 |
 
 ---
 
-## 4. 画面項目定義
+## 4. Item Definitions (画面項目定義)
 
-各レイアウトセクションは独立したアルファベットラベルを [A] から使用。
-
----
-
-### 4.1 レイアウト1: 手数料・収益ページ
-
-#### セクション [A]: ページヘッダー
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 1 | `lblPageTitle` | ページタイトル | テキスト | String | — | 表示。テキスト: "Commission & Revenue" | — | ハードコードされたUIテキスト | i18nキー: `commissionRevenue.title`。 |
-| 2 | `menuAdminUser` | 管理者ユーザーメニュー | メニュー (ドロップダウン) | — | — | 表示。管理者IDを表示。 | — | `users.role` = `'admin'` | アカウント/設定メニューを開く。ユーザーは要件定義書 §2.5 に従って管理者ロールを持つ必要がある。 |
-
-#### セクション [B]: エラーアラート
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 3 | `alertError` | エラーアラートバナー | アラート (`destructive`) | String | 条件付き | デフォルト非表示。APIエラー発生時に表示。 | — | APIエラーレスポンスメッセージ | -dismissible。`role="alert"`。該当する場合はリトライオプションを含む。 |
-
-#### セクション [C]: タブグループ
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 4 | `tabGroup` | タブグループ | タブ | Enum | はい | デフォルト: タブ1 (手数料) | オプション: `commission`, `revenue` | — | 手数料と収益のタブコンテンツを切替。 |
-
-#### セクション [D]: 手数料率カード — タブ1
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 5 | `lblCurrentRate` | 現在の手数料率ラベル | スタティックラベル (`<label>`) | String | — | テキスト: "Commission Rate" | — | ハードコードされたUIテキスト | i18nキー: `commission.rate`。 |
-| 6 | `txtCurrentRate` | 現在の手数料率値 | テキスト | String | 必須 | 読み込み中はスケルトン。 | フォーマット: パーセンテージ文字列 (例: "10.00%")。 | `commission_settings.commission_rate` | 精度を保持するため文字列としてレンダリング。 |
-| 7 | `btnEditRate` | 手数料率編集ボタン | ボタン (`primary`) | — | 必須 | 表示。テキスト: "Edit Rate" | — | — | 手数料率編集ダイアログ (レイアウト2) を開く。i18nキー: `commission.editRate`。 |
-
-#### セクション [E]: レポートフィルターパネル — タブ1
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 8 | `lblFromDate` | 開始日ラベル | スタティックラベル (`<label>`) | String | — | テキスト: "From" | — | ハードコードされたUIテキスト | i18nキー: `commission.from`。 |
-| 9 | `txtFromDate` | 開始日ピッカー | 入力 (`date`) | DATE | いいえ | 空 (全日付)。 | 有効なISO日付。`from <= to`。 | クエリパラメータ `from` | レポートクエリに適用。 |
-| 10 | `lblToDate` | 終了日ラベル | スタティックラベル (`<label>`) | String | — | テキスト: "To" | — | ハードコードされたUIテキスト | i18nキー: `commission.to`。 |
-| 11 | `txtToDate` | 終了日ピッカー | 入力 (`date`) | DATE | いいえ | 空 (全日付)。 | 有効なISO日付。`to >= from`。 | クエリパラメータ `to` | レポートクエリに適用。 |
-| 12 | `btnApplyFilter` | 適用ボタン | ボタン (`primary`) | — | いいえ | 表示。テキスト: "Apply" | — | — | フィルタリングされたレポート行を取得。i18nキー: `commission.apply`。 |
-| 13 | `btnResetFilter` | リセットボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Reset" | — | — | フィルタをクリアし、デフォルトレポートを再読み込み。i18nキー: `commission.reset`。 |
-
-#### セクション [F]: 手数料レポートテーブル — タブ1
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 14 | `tblReport` | 手数料レポートテーブル | テーブル | — | 必須 | 読み込み中はスケルトン。 | — | 手数料レポートクエリ | 列: 出品者、注文数、売上、手数料。 |
-| 15 | `tblReportMerchant` | 出品者列 | 列 (`sortable`) | String(255) | — | — | ソート可能。 | `merchants.shop_name` via `orders.merchant_id` | 出品者レベルグループ化。 |
-| 16 | `tblReportOrders` | 注文数列 | 列 (`sortable`) | Integer | — | — | ソート可能。 | `orders.id` のカウント (where `payment_status = 'completed'`) | 範囲内の完了/決済済み注文数。 |
-| 17 | `tblReportRevenue` | 売上列 | 列 (`sortable`) | Decimal(12,2) | — | — | 通貨文字列としてレンダリング。 | `orders.total_amount` の合計 (where `payment_status = 'completed'`) | ロケールによる通貨フォーマット。完了/決済済み注文のみ含む。 |
-| 18 | `tblReportCommission` | 手数料列 | 列 (`sortable`) | Decimal(12,2) | — | — | 通貨文字列としてレンダリング。 | アプリケーションレベル集計 (各トランザクション作成時に有効だった率を使用) | 手数料 = 完了注文合計 × トランザクション時点の手数料率。過去のトランザクションは現在の設定で再計算してはならない。 |
-| 19 | `pgReport` | ページネーション | ページネーション | — | いいえ | 最初のページ。 | デフォルトページサイズ 20。 | クエリパラメータ `page`, `limit` | レポートテーブルのページ制御。開発ルールに従い、管理者のみのエンドポイントは `@UseGuards(JwtAuthGuard, RolesGuard)` および `@Roles('admin')` で検証する必要がある。 |
-| 20 | `btnExportCommission` | 手数料エクスポートボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Export" | — | — | エクスポートモーダル (レイアウト5) をレポートタイプ「手数料」に事前設定して開く。i18nキー: `commission.export`。 |
-
-#### セクション [G]: KPIカード — タブ2
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 20 | `lblTotalRevenue` | 総売上カード | カード | Decimal(12,2) | 必須 | 読み込み中はスケルトン。 | 通貨文字列。 | 完了した `orders.total_amount` の合計 | i18nキー: `revenue.totalRevenue`。 |
-| 21 | `lblTotalCommission` | 総手数料カード | カード | Decimal(12,2) | 必須 | 読み込み中はスケルトン。 | 通貨文字列。 | 完了注文の手数料集計 | i18nキー: `revenue.totalCommission`。 |
-| 22 | `lblAdFeeRevenue` | 広告料金収益カード | カード | Decimal(12,2) | 必須 | 読み込み中はスケルトン。 | 通貨文字列。 | 完了した `ad_payments.amount` の合計 | 総広告料金収益。i18nキー: `revenue.adFeeRevenue`。 |
-| 23 | `lblTotalIncome` | 総収入カード | カード | Decimal(12,2) | 必須 | 読み込み中はスケルトン。 | 通貨文字列。 | 総収入集計 | 結合プラットフォーム収入 (手数料 + 完了した広告料金)。i18nキー: `revenue.totalIncome`。 |
-| 24 | `lblAvgOrderValue` | 平均注文金額カード | カード | Decimal(12,2) | 必須 | 読み込み中はスケルトン。 | 通貨文字列。 | 完了注文総売上 / 完了注文数 | i18nキー: `revenue.avgOrderValue`。 |
-| 25 | `lblNetRevenue` | 純収益カード | カード | Decimal(12,2) | 必須 | 読み込み中はスケルトン。 | 通貨文字列。 | 完了注文売上から返金を除いた額 | 返金を除く。i18nキー: `revenue.netRevenue`。 |
-
-#### セクション [H]: トレンドチャート・期間切替 — タブ2
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 26 | `chtTrend` | トレンドチャート | チャート (エリア/ライン) | — | 必須 | 読み込み中はスケルトン。 | — | 収益トレンドクエリ | 系列: 売上 + 手数料。 |
-| 27 | `serForecast` | 予測系列 | チャート系列 (点線) | — | いいえ | デフォルト非表示。予測データが利用可能な場合に表示。 | 現在のトレンドラインから続く点線。 | 予測サービス (`GET /api/v1/admin/revenue/forecast`) | 系列: 予測売上 + 予測プラットフォーム手数料。非確定的な見積もり — 財務記録には書き戻されない。 |
-| 28 | `serAdFeeTrend` | 広告料金トレンド系列 | チャート系列 | — | いいえ | デフォルト非表示。広告料金データが利用可能な場合に表示。 | トレンドチャートに重ねて表示するライン系列。 | 広告料金トレンド集計 | 手数料収益系列とは別のライン。i18nキー: `revenue.adFeeRevenue`。 |
-| 29 | `lblForecastLegend` | 予測凡例 | テキスト | String | いいえ | 予測データが返されるまで非表示。テキスト: "AI Forecast" | — | ハードコードされたUIテキスト | トレンドチャートの横の点線凡例。i18nキー: `revenue.forecast`。 |
-| 30 | `lblForecastNote` | 予測不可ノート | スタティックラベル (ヘルパー) | String | いいえ | デフォルト非表示。 | — | — | 履歴データが不十分な場合に表示。情報ノート。点線は非表示。i18nキー: `revenue.forecastUnavailable`。 |
-| 31 | `tglRange` | 期間切替 | 切替グループ | Enum | いいえ | デフォルト: `30d` | オプション: `7d`, `30d`, `90d`, `1y`。 | クエリパラメータ `range` | 変更時にトレンド系列を再取得。i18nキー: `revenue.range`。 |
-
-#### セクション [I]: 収益目標進捗カード — タブ2
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 32 | `lblTargetProgress` | 目標進捗カード | カード | — | いいえ | 読み込み中はスケルトン。 | — | 収益目標レコード + 集計 | 期間切替、目標金額、ゲージバー、編集ボタンを含む。i18nキー: `revenue.targetProgress`。 |
-| 33 | `tglTargetPeriod` | 目標期間切替 | 切替グループ | Enum | いいえ | デフォルト: `monthly` | オプション: `monthly`, `quarterly`。 | クエリパラメータ `period` | 変更時に目標進捗を再取得。i18nキー: `revenue.targetPeriod`。 |
-| 34 | `lblTargetAmount` | 目標金額表示 | テキスト | Decimal(12,2) | いいえ | 目標が設定されていない場合非表示。 | 通貨文字列。 | `revenue_targets.target_amount` | 精度を保持するため文字列としてレンダリング。i18nキー: `revenue.targetAmount`。 |
-| 35 | `gaugeTargetProgress` | ゲージバー | 進捗インジケーター | Integer | いいえ | 目標が設定されるまで0%を表示。 | 0–100%にクランプして表示。100%超は「目標超過」として別途表示。 | バックエンド計算 (進捗%) | `aria-valuenow` は表示されたパーセンテージを反映。i18nキー: `revenue.progress`。 |
-| 36 | `lblProgressPercentage` | 進捗パーセンテージ | テキスト | String | いいえ | 目標設定まで非表示。 | パーセンテージ文字列 (例: "64.5%")。 | バックエンド計算 (進捗%) | ゲージバーの横に表示。i18nキー: `revenue.progressLabel`。 |
-| 37 | `btnEditTarget` | 目標編集ボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Edit Target" | — | — | 目標編集ダイアログ (レイアウト4) を開く。i18nキー: `revenue.editTarget`。 |
-
-#### セクション [J]: 支払いステータスパネル — タブ2
-
-注文支払いステータスのみを表示 (完了、保留中)。機能設計書 v7.2 に従い「失敗」および「返金」バッジを削除 (データベース設計書 v2.4: 注文 `payment_status` は `pending`/`completed` のみ)。残りの2つのバッジは1行2列グリッド (`grid-cols-2`) に均等に配置し、パネルが均衡を保つようにする。
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 38 | `lblPayCompleted` | 完了バッジ | バッジ (`success`) | Integer | — | 読み込み中はスケルトン。 | カウント + ラベル。 | 支払い集計 | `bg-green-100 text-green-800`。2列バッジグリッドの左セルにレンダリング。 |
-| 39 | `lblPayPending` | 保留中バッジ | バッジ (`warning`) | Integer | — | 読み込み中はスケルトン。 | カウント + ラベル。 | 支払い集計 | `bg-amber-100 text-amber-800`。2列バッジグリッドの右セルにレンダリング。 |
-
-#### セクション [K]: 広告支払いステータスパネル — タブ2
-
-広告料金支払いステータスを表示 (完了、保留中、返金)。機能設計書 v7.2 に従い「広告失敗」バッジを削除 (データベース設計書 v2.4: 広告 `payment_status` は `pending`/`completed`/`refunded` のみ)。残りの3つのバッジは1行3列グリッド (`grid-cols-3`) に均等に配置。
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 40 | `pnlAdPaymentStatus` | 広告支払いステータスパネル | パネル | — | いいえ | 読み込み中はスケルトン。 | — | 広告支払いステータス集計 | 広告料金支払いのサマリーバッジ。注文支払いステータスと並んで表示。バッジは1行3列グリッド (`grid-cols-3`) に配置。i18nキー: `revenue.adPaymentStatus`。 |
-| 41 | `lblAdPayCompleted` | 広告完了バッジ | バッジ (`success`) | Integer | — | 読み込み中はスケルトン。 | カウント + ラベル。 | 広告支払い集計 | `bg-green-100 text-green-800`。i18nキー: `revenue.adPaymentCompleted`。 |
-| 42 | `lblAdPayPending` | 広告保留中バッジ | バッジ (`warning`) | Integer | — | 読み込み中はスケルトン。 | カウント + ラベル。 | 広告支払い集計 | `bg-amber-100 text-amber-800`。i18nキー: `revenue.adPaymentPending`。 |
-| 43 | `lblAdPayRefunded` | 広告返金バッジ | バッジ (`secondary`) | Integer | — | 読み込み中はスケルトン。 | カウント + ラベル。 | 広告支払い集計 | ニュートラルスタイリング。i18nキー: `revenue.adPaymentRefunded`。 |
-
-#### セクション [L]: 広告料金サマリーカード — タブ2
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 44 | `lblAdFeeSummary` | 広告料金サマリーカード | カード | — | いいえ | 読み込み中はスケルトン。 | — | 広告料金サマリー集計 | アクティブ広告、回収総額、保留中支払いを表示。i18nキー: `revenue.adFeeSummary`。 |
-
-#### セクション [M]: 出金テーブル — タブ2
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 45 | `tblPayout` | 出金テーブル | テーブル | — | 必須 | 読み込み中はスケルトン。 | — | 出金レコード | 列: 出品者、合計、手数料、純額、ステータス、日付、アクション。 |
-| 46 | `tblPayoutMerchant` | 出品者列 | 列 | String(255) | — | — | — | `merchants.shop_name` via `payouts.merchant_id` | 出品者表示名。 |
-| 47 | `tblPayoutTotal` | 合計金額列 | 列 | Decimal(12,2) | — | — | 通貨文字列。 | `payouts.total_amount` | 控除前の総出金額。 |
-| 48 | `tblPayoutCommission` | 手数料列 | 列 | Decimal(12,2) | — | — | 通貨文字列。 | `payouts.commission_amount` | プラットフォーム手数料控除額。 |
-| 49 | `tblPayoutNet` | 純額列 | 列 | Decimal(12,2) | — | — | 通貨文字列。 | 計算: `total_amount - commission_amount` (BR-ADFE-004に従い広告料金を除外) | 出品者への純出金。 |
-| 50 | `tblPayoutStatus` | ステータス列 | 列 (バッジ) | Enum | — | — | `pending` / `processing` / `completed` / `failed`。 | 出金ステータス | ステータス別バッジ色。 |
-| 51 | `tblPayoutDate` | 日付列 | 列 | Timestamp | — | — | ロケール対応日付フォーマット。 | `payouts.created_at` | — |
-| 52 | `btnProcessPayout` | 処理ボタン | ボタン (`primary`) | — | いいえ | `pending` 行のみ表示。その他は無効。テキスト: "Process" | — | — | 出金確認ダイアログ (レイアウト3) を開く。i18nキー: `revenue.process`。 |
-| 53 | `pgPayout` | ページネーション | ページネーション | — | いいえ | 最初のページ。 | デフォルトページサイズ 20。 | クエリパラメータ `page`, `limit` | 出金テーブルのページ制御。 |
-| 54 | `btnExportPayout` | 出金エクスポートボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Export" | — | — | エクスポートモーダル (レイアウト5) をレポートタイプ「出金」に事前設定して開く。i18nキー: `revenue.exportPayout`。 |
-
-#### セクション [N]: フッターコントロール
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 55 | `btnLanguageToggle` | 言語切替 | 切替グループ | Enum | — | デフォルト: ブラウザ言語または "en" | オプション: EN, JA, MY | — | 全i18nキーを切替。localStorageに永続化。 |
-| 56 | `btnThemeToggle` | テーマ切替 | アイコンボタン | Enum | — | デフォルト: システム設定 | オプション: light, dark, system | — | light → dark → system を循環。`next-themes` を使用。 |
-
-#### セクション [O]: エクスポートボタン — タブ2 (収益)
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 57 | `btnExportRevenue` | 収益エクスポートボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Export" | — | — | エクスポートモーダル (レイアウト5) をレポートタイプ「収益」に事前設定して開く。i18nキー: `revenue.export`。 |
-| 58 | `btnExportPayoutRevenue` | 出金エクスポートボタン (収益タブ) | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Export Payout History" | — | — | エクスポートモーダル (レイアウト5) をレポートタイプ「出金」に事前設定して開く。i18nキー: `revenue.exportPayout`。 |
+以下の各レイアウトは独立したラベル（[A]～）を使用。
 
 ---
 
-### 4.2 レイアウト2: 手数料率編集ダイアログ
+### 4.1 Layout 1: Commission & Revenue Page
 
-#### セクション [A]: ダイアログコンテナ
+#### Section [A]: Page Header (ページヘッダー)
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 56 | `dlgEditRate` | 手数料率編集ダイアログ | ダイアログ (モーダル) | — | — | デフォルトで閉じている。 | — | — | レイアウト1 `btnEditRate` で開く。保存/キャンセル/バックドロップで閉じる。 |
-| 57 | `lblRateTitle` | ダイアログタイトル | スタティックラベル | String | — | テキスト: "Edit Commission Rate" | — | ハードコードされたUIテキスト | i18nキー: `commission.editRateTitle`。 |
+| 1 | `lblPageTitle` | Page Title | Text (`h1`) | String | — | 表示。テキスト: "Commission & Revenue" | — | ハードコードUIテキスト | i18nキー: `admin.commission.title`。このページに管理者ユーザーメニューはない（管理レイアウトのヘッダーに存在）。 |
 
-#### セクション [B]: 手数料率入力
+#### Section [C]: Tab Group (タブグループ)
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 58 | `txtRateInput` | 手数料率入力 | 入力 (`number`) | Decimal(5,2) | 必須 | 現在の手数料率に事前設定。 | 正規表現 `/^\d+(\.\d{1,2})?$/`、0 < 値 <= 100。 | `commission_settings.commission_rate` | 文字列としてレンダリング/送信。AutoFocus: true。i18nキー: `commission.ratePlaceholder`。 |
+| 2 | `tabGroup` | Tab Group | Tabs (shadcn) | Enum | Yes | デフォルト: タブ1（Commission） | オプション: `commission`, `revenue` | — | 非アクティブなタブの内容はアンマウントされる（収益データはマウント時に取得）。i18nキー: `admin.commission.tabs.*`。 |
 
-#### セクション [C]: インラインフィールドエラー
+#### Section [D]: Commission Rate Card (手数料率カード) — タブ1
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 59 | `errRateInput` | インラインフィールドエラー | テキスト (条件付き) | String | 条件付き | 非表示。バリデーション失敗時に表示。 | — | — | エラーコード: VAL-COMM-001、VAL-COMM-002、VAL-COMM-003。 |
+| 3 | `lblCurrentRate` | Current Rate Label | Static Label | String | — | テキスト: "Commission Rate" | — | ハードコードUIテキスト | i18nキー: `admin.commission.rate.title`。 |
+| 4 | `txtCurrentRate` | Current Rate Value | Text | String | Mandatory | 未設定時 `—` を表示。 | 形式: `Number(rate)%`（末尾のゼロ除去、例 "12%"）。 | `GET /admin/commission` → `commission_settings.commission_rate` | 文字列から描画し精度を保持。 |
+| 5 | `btnEditRate` | Edit Rate Button | Button (`outline`) | — | Mandatory | 表示。テキスト: "Edit Rate" | — | — | 編集ダイアログ（レイアウト2）を開く。i18nキー: `admin.commission.rate.edit`。 |
 
-#### セクション [D]: キャンセルボタン
+#### Section [E]: Report Filter Panel (レポートフィルターパネル) — タブ1
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 60 | `btnRateCancel` | キャンセルボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Cancel" | — | — | 保存せずにダイアログを閉じる。i18nキー: `commission.cancel`。 |
+| 6 | `tglGroupBy` | Group By Toggle | Toggle Buttons | Enum | No | デフォルト: `merchant` | オプション: `merchant`（By Merchant）、`day`（By Day）、`order`（By Order） | クエリパラメータ `groupBy` | ボタン変更は現在の日付ですぐに適用。i18nキー: `admin.commission.groupBy.byMerchant/byDay/byOrder`。 |
+| 7 | `txtFromDate` | From Date Picker | Input (`date`) | DATE | No | 空（全期間）。 | 有効な日付。`from <= to`。 | クエリパラメータ `from` | レポートクエリに適用（`createdAt >= from`）。 |
+| 8 | `txtToDate` | To Date Picker | Input (`date`) | DATE | No | 空（全期間）。 | 有効な日付。`to >= from`。 | クエリパラメータ `to` | 終了日 <= 23:59:59.999Z まで含む。 |
+| 9 | `btnApplyFilter` | Apply Button | Button (`primary`) | — | No | 表示。テキスト: "Apply" | — | — | フィルタ済みレポートを取得。ページは1にリセット。i18nキー: `admin.commission.filters.apply`。 |
+| 10 | `btnResetFilter` | Reset Button | Button (`outline`) | — | No | 表示。テキスト: "Reset" | — | — | 日付をクリアし groupBy を `merchant` にリセット、ページ1。i18nキー: `admin.commission.filters.reset`。 |
+| 11 | `errDateRange` | Date Range Error | Text (conditional) | String | Conditional | 非表示。両方の日付が設定され `from > to` のとき表示。 | — | — | i18nキー: `admin.commission.filters.invalidDateRange`。 |
 
-#### セクション [E]: 保存ボタン
+#### Section [F]: Commission Report Table (手数料レポートテーブル) — タブ1
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 61 | `btnRateSave` | 保存ボタン | ボタン (`primary`) | — | 必須 | 表示。テキスト: "Save" | — | — | 手数料率更新を検証および送信。ローディング: スピナー + 無効化。i18nキー: `commission.save`。 |
+| 12 | `tblReport` | Commission Report Table | Table | — | Mandatory | 取得中は `opacity-50`（ポインターイベント無効）。 | 列はgroupByに応じて変化: day は `Date` 追加、order は `Order Number` + `Date` 追加し `Orders` を省略。 | `GET /admin/commission/reports` | スティッキーヘッダー、ホバーハイライト、空状態テキスト。列ソートなし。 |
+| 13 | `tblReportMerchant` | Merchant Column | Column | String | — | — | — | `merchants.shop_name` | 出品者名。注文が複数の手数料期間にまたがる場合は同一出品者が複数行に現れる。 |
+| 14 | `tblReportRate` | Commission Rate Column | Column | String | — | — | `formatRate`（例 "12%"） | グループ化された注文の有効レート | 各注文作成時点の有効レート（rate-history 参照）。 |
+| 15 | `tblReportOrders` | Orders Column | Column | Integer | — | — | — | 完了注文のカウント | `order` グループ化では省略。 |
+| 16 | `tblReportRevenue` | Revenue Column | Column | Decimal(12,2) | — | — | `formatCurrency(...) Ks` | 完了注文の `orders.total_amount` 合計 | 完了注文のみ。 |
+| 17 | `tblReportCommission` | Commission Column | Column | Decimal(12,2) | — | — | `formatCurrency(...) Ks`（primary色） | アプリケーションレベルの集計 | 完了注文総額 × 注文作成時点のレート。過去の取引には現在の設定を適用しない。 |
+| 18 | `pgReport` | Pagination | PaginationControls | — | No | 最初のページ。 | デフォルトページサイズ10（10/20/50/100）。 | クエリパラメータ `page`、`limit` | 共有 `@/components/PaginationControls`。 |
+| 19 | `btnExportCommission` | Export Commission Button | Button (`secondary`) | — | No | レポート行がなければ無効。テキスト: "Export" | — | — | レポートタイプ "Commission" でエクスポートモーダルを開く。日付 + groupBy をプリフィル。i18nキー: `admin.commission.actions.export`。 |
+
+#### Section [G]: KPI Cards (収益KPIカード) — タブ2
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 20 | `lblTotalRevenue` | Total Revenue Card | Card | String | Mandatory | 取得中はパルススケルトン。 | `formatCurrency(...) Ks` | 完了注文の `orders.total_amount` 合計 | i18nキー: `admin.commission.kpi.totalRevenue`（フォールバック: "Total Revenue"）。期間サフィックスラベルを付記（§9の既知のギャップ参照）。 |
+| 21 | `lblTotalCommission` | Total Commission Card | Card | String | Mandatory | スケルトン。 | `Ks` | 完了注文のコミッション集計 | i18nキー: `admin.commission.kpi.totalCommission`。 |
+| 22 | `lblAdFeeRevenue` | Ad Fee Revenue Card | Card | String | Mandatory | スケルトン。 | `Ks` | 完了済み `ad_payments.amount` 合計 | i18nキー: `admin.commission.kpi.adFeeRevenue`。 |
+| 23 | `lblTotalIncome` | Total Income Card | Card | String | Mandatory | スケルトン。 | `Ks` | コミッション + 広告料金収益 | 説明テキスト付き。i18nキー: `admin.commission.kpi.totalIncome`。 |
+| 24 | `lblAvgOrderValue` | Avg Order Value Card | Card | String | Mandatory | スケルトン。 | `Ks` | 完了注文総額 / 完了注文数 | i18nキー: `admin.commission.kpi.avgOrderValue`。 |
+| 25 | `lblNetRevenue` | Net Revenue Card | Card | String | Mandatory | スケルトン。 | `Ks` | `totalRevenue − totalCommission` | 返金は控除しない。i18nキー: `admin.commission.kpi.netRevenue`。 |
+
+#### Section [H]: Trend Chart & Range Toggle (トレンドチャート・期間切替) — タブ2
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 26 | `chtTrend` | Trend Chart | Inline SVG（チャートライブラリなし） | — | Mandatory | データがない場合は空状態テキスト。 | 600×300 viewBox、幅レスポンシブ。 | `GET /admin/revenue/trends` | 系列: Revenue (#3b82f6)、Commission (#8b5cf6)、Ad Fee (#f59e0b)。 |
+| 27 | `serForecast` | Forecast Series | SVG polyline（破線） | — | No | 予測ポイントが存在する場合のみ描画。 | 破線のグレー（#94a3b8）、ドットマーカー、最後の実績点からの接続線。 | `GET /admin/revenue/forecast` | 収益のみのOLS外挿。コミッション = 収益 × 現在の手数料率。非確定の推定値。 |
+| 28 | `lblForecastLegend` | Forecast Legend | Legend Item | String | No | 予測ポイントが存在するとき表示。テキスト: "AI Forecast" | — | ハードコードUIテキスト | i18nキー: `admin.commission.trend.aiForecast`。 |
+| 29 | `txtForecastNote` | Forecast Note | SVG text（チャート下部） | String | No | 予測が `note` を返したとき表示。 | — | 予測レスポンスの `note` | "Not enough historical data to generate a forecast"（populated バケット7件未満。HTTP 200、エラーではない）。 |
+| 30 | `tglRange` | Range Toggle | Toggle Buttons | Enum | No | デフォルト: `30d` | オプション: `7d`、`30d`、`90d`、`1y` | クエリパラメータ `range` | 変更時にトレンド + 予測を再取得。i18nキー: `admin.commission.range.*`（フォールバック: "7d"/"30d"/"90d"/"1y"）。 |
+
+#### Section [I]: Revenue Target Progress Card (収益目標進捗カード) — タブ2
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 31 | `lblTargetProgress` | Target Progress Card | Card | — | No | 取得中はスケルトン。 | — | `GET /admin/revenue/target` | 期間トグル、目標金額、プログレスバー、編集ボタンを含む。 |
+| 32 | `tglTargetPeriod` | Target Period Toggle | Toggle Buttons | Enum | No | デフォルト: `monthly` | オプション: `monthly`、`quarterly` | クエリパラメータ `period` | 変更時に目標を再取得。i18nキー: `admin.commission.period.monthly/quarterly`（フォールバック: "Monthly"/"Quarterly"）。 |
+| 33 | `lblTargetAmount` | Target Amount Display | Text | String | No | 目標未設定時は非表示。 | `formatCurrency(...) Ks` | `revenue_targets.target_amount` | i18nキー: `admin.commission.target.amount`。 |
+| 34 | `lblActualRevenue` | Actual Revenue Display | Text | String | No | 目標がないとき "0.00"。 | `formatCurrency(...) Ks` | 期間開始時点からの完了注文売上集計 | i18nキー: `admin.commission.target.actualRevenue`。 |
+| 35 | `gaugeTargetProgress` | Gauge Bar | Div（role=`progressbar`） | Integer | No | 目標設定まで 0% 表示。 | クライアント側で0–100%にクランプ、エメラルド填充。 | バックエンドの `progressPercent`（クランプなし） | 超過値はバーをクランプしたまま >100% の数値を表示。i18nキー: `admin.commission.target.progressLabel`。 |
+| 36 | `lblProgressPercentage` | Progress Percentage | Text | String | No | バー横に整数パーセント。 | 例 "64%" | バックエンド計算 | `clamped.toFixed(0)%`。 |
+| 37 | `btnEditTarget` | Edit Target Button | Button (`secondary`) | — | No | テキスト: "Edit Target" / 目標がないとき "Set Target" | — | — | 編集ダイアログ（レイアウト4）を開く。i18nキー: `admin.commission.target.edit` / `admin.commission.target.set`。 |
+
+#### Section [J]: Payout Status Panel (ペイアウトステータスパネル) — タブ2
+
+**ペイアウト**ステータス件数（Completed / Processing / Pending）を、ペイアウトリストレスポンスの `statusCounts`（現在のページではなくフィルタリングされた全件）から表示。パネルタイトルは "Payout Status"。各統計は大きな件数の下に色付きステータスピルを描画。取得中はパルススケルトン。このパネルは `payments/status` エンドポイントのデータは使用しない。
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 38 | `pnlPayoutStatus` | Payout Status Panel | Card + Stat group | — | No | 取得中はスケルトン。 | 3列グリッド（`grid-cols-3`） | `payoutsQuery.data.statusCounts` | i18nキー: `admin.commission.payoutStatus`。 |
+| 39 | `statPayoutCompleted` | Completed Stat | Stat（件数 + Badge） | Integer | — | 件数 + "Completed" ピル | `bg-green-100 text-green-800` | `statusCounts.completed` | i18nキー: `admin.commission.status.completed`。 |
+| 40 | `statPayoutProcessing` | Processing Stat | Stat（件数 + Badge） | Integer | — | 件数 + "Processing" ピル | `bg-purple-100 text-purple-800` | `statusCounts.processing` | i18nキー: `admin.commission.status.processing`。 |
+| 41 | `statPayoutPending` | Pending Stat | Stat（件数 + Badge） | Integer | — | 件数 + "Pending" ピル | `bg-amber-100 text-amber-800` | `statusCounts.pending` | i18nキー: `admin.commission.status.pending`。 |
+
+#### Section [K]: Ad Payment Status Panel (広告決済ステータスパネル) — タブ2
+
+広告料金支払いステータス（Completed / Pending / Refunded）を広告料金エンドポイントから表示。3統計を1行3列グリッドで配置。
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 42 | `pnlAdPaymentStatus` | Ad Payment Status Panel | Card + Stat group | — | No | 取得中はスケルトン。 | 3列グリッド | `GET /admin/revenue/ad-fee` → `adFeePaymentStatus` | i18nキー: `admin.commission.adPaymentStatus`。 |
+| 43 | `statAdPayCompleted` | Ad Completed Stat | Stat（件数 + Badge） | Integer | — | 件数 + "Completed" ピル | `bg-green-100 text-green-800` | `adFeePaymentStatus.completed` | i18nキー: `admin.commission.status.completed`。 |
+| 44 | `statAdPayPending` | Ad Pending Stat | Stat（件数 + Badge） | Integer | — | 件数 + "Pending" ピル | `bg-amber-100 text-amber-800` | `adFeePaymentStatus.pending` | i18nキー: `admin.commission.status.pending`。 |
+| 45 | `statAdPayRefunded` | Ad Refunded Stat | Stat（件数 + Badge） | Integer | — | 件数 + "Refunded" ピル | `bg-gray-100 text-gray-800`（neutral） | `adFeePaymentStatus.refunded` | i18nキー: `admin.commission.status.refunded`。 |
+
+#### Section [L]: Ad Fee Summary Card (広告料金サマリーカード) — タブ2
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 46 | `lblAdFeeSummary` | Ad Fee Summary Card | Card | — | No | 取得中はスケルトン。 | 3列グリッド | `GET /admin/revenue/ad-fee` → `adFeeKpis` | アクティブ広告、回収総額、保留中件数を表示。i18nキー: `admin.commission.adFees.title`。 |
+| 47 | `lblActiveAds` | Active Ads | Text | Integer | — | 件数（通貨なし） | — | `adFeeKpis.activeAds` | i18nキー: `admin.commission.adFees.activeAds`。 |
+| 48 | `lblTotalCollected` | Total Collected | Text | String | — | 例 `$0.00` | **既知の問題:** 他の場所では `Ks` であるにもかかわらず、ハードコードされた `$ プレフィックス。 | `adFeeKpis.totalAdFees` | i18nキー: `admin.commission.adFees.totalCollected`。 |
+| 49 | `lblAdPending` | Pending Payments | Text | Integer | — | 件数（通貨なし） | — | `adFeeKpis.pendingPayments` | i18nキー: `admin.commission.status.pending`。 |
+
+#### Section [M]: Payout Section (出金セクション) — タブ2
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 50 | `lblPayoutTitle` | Section Title | Text (`h3`) | String | — | "Merchant Payouts" | — | ハードコードUIテキスト | i18nキー: `admin.commission.payouts.title`。 |
+| 51 | `btnExportPayout` | Export Payout Button | Button (`secondary`) | — | No | 表示。テキスト: "Export Payout" | — | — | レポートタイプ "Payout" でエクスポートモーダルを開く。出品者リスト + 日付範囲をプリフィル。i18nキー: `admin.commission.export.payout`。 |
+| 52 | `selPayoutStatus` | Status Filter | Select | Enum | No | デフォルト: All | オプション: `pending`、`processing`、`completed` | クエリパラメータ `status` | i18nキー: `admin.commission.status.*`、`common.filters.all`。 |
+| 53 | `selPayoutMerchant` | Merchant Filter | Select | UUID | No | デフォルト: All | オプションは `GET /admin/revenue/payouts/merchants` から | クエリパラメータ `merchantId` | i18nキー: `admin.commission.payout.merchant`。 |
+| 54 | `selPayoutPeriod` | Period Filter | Select | String | No | デフォルト: All periods | オプション: サーバーの `periods`（なければ6ヶ月のフォールバック、`MMM yyyy` ラベル） | クエリパラメータ `period`（`YYYY-MM`） | i18nキー: `admin.commission.payout.allPeriods`。 |
+| 55 | `txtPayoutSearch` | Search Input | Input + Icon Button | String | No | 空。 | 自由テキスト。Enter/クリックで適用 | クエリパラメータ `search` | 出品者名/メール（部分一致）または期間パターン（`YYYY`、`YYYY-MM`、月名）に一致。i18nキー: `admin.commission.payout.searchPlaceholder`。 |
+| 56 | `btnPayoutReset` | Reset Filters Button | Button (`outline`) | — | No | 表示。テキスト: "Reset" | — | — | 全フィルタをリセット + ページ1。i18nキー: `admin.commission.filters.reset`。 |
+| 57 | `btnDeletePayouts` | Delete Selected Button | Button（赤スタイル） | — | No | 選択なしまたは処理中は無効。アイコン + `sr-only` ラベル | — | — | 削除確認ダイアログを開く。i18nキー: `admin.commission.payout.deleteSelected`。 |
+| 58 | `tblPayout` | Payout Table | Table (shadcn) | — | Mandatory | がない場合は空状態テキスト。 | スティッキーヘッダー、ホバーハイライト、`overflow-x-auto` | `GET /admin/revenue/payouts` | 列は以下。 |
+| 59 | `chkPayout` | Row Checkbox | Checkbox | Boolean | — | 未チェック。 | 行ごとのチェックボックス + ページ全体を選択するヘッダーのチェックボックス | — | 削除の複数選択を駆動。 |
+| 60 | `tblPayoutMerchant` | Merchant Column | Column | String | — | — | — | `merchants.shop_name`（`payouts.merchant_id` 経由） | — |
+| 61 | `tblPayoutPeriod` | Period Column | Column | String | — | — | `MMM yyyy`（en-USロケール） | `payouts.period`（導出された `YYYY-MM`） | — |
+| 62 | `tblPayoutTotalOrders` | Total Orders Column | Column（pill） | Integer | — | — | `completedCount + pendingCount` | ペイアウト項目の集計 | 小さな primary 色ピルで描画。 |
+| 63 | `tblPayoutTotal` | Total Amount Column | Column | String | — | — | `formatCurrency(...) Ks` | `payouts.total_amount` | — |
+| 64 | `tblPayoutCommission` | Commission Column | Column | String | — | — | `-formatCurrency(...) Ks`（destructive色） | `payouts.commission_amount` | — |
+| 65 | `tblPayoutNet` | Net Payout Column | Column | String | — | — | `formatCurrency(...) Ks`（semibold） | `totalAmount − commissionAmount` | 広告料金は控除しない（`adFeeAmount` は常に "0.00"）。 |
+| 66 | `tblPayoutStatus` | Status Column | Column（Badge） | Enum | — | — | `pending` / `processing` / `completed`（`failed` はレガシーのみ） | `payouts.status` | バッジ色は §11 のデザイントークン参照。 |
+| 67 | `tblPayoutCompletedDate` | Completed Date Column | Column | String | — | 完了していないとき `—` | `MMM d, yyyy`（en-US） | `payouts.processed_at` | — |
+| 68 | `btnViewPayout` | View Details Button | Button（icon、sky） | — | No | 表示。Eye アイコン + aria-label | — | — | ペイアウト詳細ダイアログを開く。保留中の場合はレビューを実行。i18nキー: `admin.commission.payout.viewDetails`。 |
+| 69 | `btnProcessPayout` | Process Button | Button（icon、green） | — | No | `completed` のとき無効。Dollar アイコン + aria-label | — | — | 確認ダイアログ（レイアウト3）を開く。i18nキー: `admin.commission.payout.process`。 |
+| 70 | `pgPayout` | Pagination | PaginationControls | — | No | 最初のページ。 | デフォルトページサイズ10（10/20/50/100）。 | クエリパラメータ `page`、`limit` | 共有コンポーネント。 |
+
+#### Section [O]: Export Revenue Button (収益エクスポートボタン) — タブ2
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 71 | `btnExportRevenue` | Export Revenue Button | Button (`secondary`) | — | No | 表示、収益タブの右上。テキスト: "Export Revenue" | — | — | レポートタイプ "Revenue" でエクスポートモーダルを開く。i18nキー: `admin.commission.export.revenue`。 |
 
 ---
 
-### 4.3 レイアウト3: 出金確認ダイアログ
+### 4.2 Layout 2: Edit Rate Dialog
 
-#### セクション [A]: ダイアログコンテナ
+#### Section [A]: Dialog Container + Title
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 62 | `dlgPayoutConfirm` | 確認ダイアログ | ダイアログ (モーダル) | — | — | デフォルトで閉じている。 | — | — | レイアウト1 `btnProcessPayout` で開く。確認/キャンセル/バックドロップで閉じる。 |
-| 63 | `lblPayoutConfirmMsg` | 確認メッセージ | スタティックラベル | String | — | テキスト: "Process payout for {merchant}?" | — | ハードコードされたUIテキスト | i18nキー: `revenue.confirmMessage`。 |
+| 72 | `dlgEditRate` | Edit Rate Dialog | Dialog (Modal) | — | — | デフォルトでは閉じる。 | — | — | `btnEditRate` でオープン。`sm:max-w-sm`。 |
+| 73 | `lblRateTitle` | Dialog Title | Static Label | String | — | テキスト: "Edit Commission Rate" | — | ハードコードUIテキスト | i18nキー: `admin.commission.rate.dialogTitle`。 |
 
-#### セクション [B]: 出金金額
+#### Section [B]: Rate Input
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 64 | `txtPayoutAmount` | 出金金額 | スタティックラベル | Decimal(12,2) | — | 純出金金額を表示。 | 通貨文字列。 | `payouts.total_amount - payouts.commission_amount` (BR-ADFE-004に従い広告料金を除外) | 出品者への支払額の読み取り専用サマリー。 |
+| 74 | `txtRateInput` | Rate Input | Input (`number`) | String | Mandatory | 現在の手数料率をプリフィル（フォールバック "10.00"）。 | `min=0`、`max=100`、`step=0.1`、サフィックス "%"。Save を有効にするには下書きが解析可能で > 0 である必要がある。 | `commission_settings.commission_rate` | 文字列として送信（`String(rate)`）。i18nキー: `admin.commission.rate.inputLabel`。 |
 
-#### セクション [C]: キャンセルボタン
+#### Section [C]: Inline Field Error
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 65 | `btnPayoutCancel` | キャンセルボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Cancel" | — | — | 処理せずにダイアログを閉じる。i18nキー: `revenue.cancel`。 |
+| 75 | `errRateInput` | Inline Field Error | Text (conditional) | String | Conditional | 非表示。下書きがNaNまたは ≤ 0 のとき表示。 | — | — | 手動バリデーションメッセージ: "Commission rate must be between 0 and 100"。i18nキー: `admin.commission.rate.validation`。バックエンドが ≤ 100 を強制（違反時400）。 |
 
-#### セクション [D]: 確認ボタン
+#### Section [D]: Cancel Button
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 66 | `btnPayoutConfirm` | 確認ボタン | ボタン (`primary`) | — | 必須 | 表示。テキスト: "Confirm" | — | — | 出金処理を送信。ローディング: スピナー + 無効化。i18nキー: `revenue.confirm`。 |
+| 76 | `btnRateCancel` | Cancel Button | Button (`outline`) | — | No | 表示。テキスト: "Cancel" | — | — | 保存せずダイアログを閉じる。下書きをリセット。i18nキー: `common.cancel`。 |
+
+#### Section [E]: Save Button
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 77 | `btnRateSave` | Save Button | Button (`primary`) | — | Mandatory | 下書きが有効になるまで無効。テキスト: "Save" | — | — | `PATCH /admin/commission` を送信。成功 → トースト、失敗 → 破壊的トースト。i18nキー: `common.save`。 |
 
 ---
 
-### 4.4 レイアウト4: 目標編集ダイアログ
+### 4.3 Layout 3: Payout Confirmation Dialog
 
-#### セクション [A]: ダイアログコンテナ
+#### Section [A]: Dialog Container + Title
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 67 | `dlgEditTarget` | 目標編集ダイアログ | ダイアログ (モーダル) | — | — | デフォルトで閉じている。 | — | — | レイアウト1 `btnEditTarget` で開く。保存/キャンセル/バックドロップで閉じる。 |
-| 68 | `lblTargetTitle` | ダイアログタイトル | スタティックラベル | String | — | テキスト: "Edit Revenue Target" | — | ハードコードされたUIテキスト | i18nキー: `revenue.editTarget`。 |
+| 78 | `dlgPayoutConfirm` | Confirmation Dialog | Dialog (Modal) | — | — | デフォルトでは閉じる。 | — | — | `btnProcessPayout` でオープン。`sm:max-w-md`。 |
+| 79 | `lblPayoutConfirmTitle` | Confirmation Title | Static Label | String | — | テキスト: "Process payout for {merchant}?" | — | 行データ | i18nキー: `admin.commission.payout.confirmTitle`。 |
+| 80 | `lblPayoutConfirmDesc` | Confirmation Description | Static Label | String | — | 純額 = total − commission、広告料金は除外すること言及。 | — | — | i18nキー: `admin.commission.payout.confirmDescription`。 |
 
-#### セクション [B]: 目標金額入力
+#### Section [B]: Amount Summary
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 69 | `txtTargetAmount` | 目標金額入力 | 入力 (`number`) | Decimal(12,2) | 必須 | 現在の目標金額に事前設定 (ある場合)。 | 正規表現 `/^\d+(\.\d{1,2})?$/`、値 > 0。 | `revenue_targets.target_amount` | 文字列としてレンダリング/送信。AutoFocus: true。i18nキー: `revenue.targetPlaceholder`。 |
+| 81 | `txtPayoutTotal` | Total Amount | Static Label | String | — | `formatCurrency(...) Ks` | — | `payouts.total_amount` | i18nキー: `admin.commission.payout.totalAmount`。 |
+| 82 | `txtPayoutCommission` | Commission Fee | Static Label | String | — | `-formatCurrency(...) Ks` | — | `payouts.commission_amount` | i18nキー: `admin.commission.payout.commissionFee`。 |
+| 83 | `txtPayoutNet` | Net Payout | Static Label | String | — | `formatCurrency(...) Ks`（bold） | — | `totalAmount − commissionAmount` | i18nキー: `admin.commission.payout.netPayout`。 |
+| 84 | `lblPayoutBreakdown` | Breakdown Rows | Static Labels | String | No | 基になる注文が1件超の場合のみ表示。 | 完了（緑）/ 保留中（アンバー）の行に件数 + 金額。 | `completedCount/Total/Commission`、`pendingCount/Total/Commission` | i18nキー: `admin.commission.payout.breakdown`、`payout.completedOrders_one/_other`、`payout.pendingOrders_one/_other`。 |
 
-#### セクション [C]: インラインフィールドエラー
+#### Section [C]: Cancel Button
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 70 | `errTargetAmount` | インラインフィールドエラー | テキスト (条件付き) | String | 条件付き | 非表示。バリデーション失敗時に表示。 | — | — | エラーコード: VAL-COMM-007、VAL-COMM-008。 |
+| 85 | `btnPayoutCancel` | Cancel Button | Button (`outline`) | — | No | 表示。テキスト: "Cancel" | — | — | ダイアログを閉じる。**ペイアウトが保留中のとき `POST /admin/revenue/payouts/:id/review` を実行**（pending → processing）。i18nキー: `common.cancel`。 |
 
-#### セクション [D]: 目標期間選択
+#### Section [D]: Confirm Button
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 71 | `selTargetPeriod` | 目標期間選択 | セレクト | Enum | 必須 | デフォルト: 現在の目標期間または `monthly`。 | オプション: `monthly`, `quarterly`。 | `revenue_targets.period` | i18nキー: `revenue.targetPeriodLabel`。 |
-
-#### セクション [E]: キャンセルボタン
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 72 | `btnTargetCancel` | 目標キャンセルボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Cancel" | — | — | 保存せずにダイアログを閉じる。i18nキー: `revenue.cancelTarget`。 |
-
-#### セクション [F]: 保存ボタン
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 73 | `btnTargetSave` | 目標保存ボタン | ボタン (`primary`) | — | 必須 | 表示。テキスト: "Save" | — | — | 目標を検証および送信 (同じ期間の既存の目標を上書き、BR-REV-009)。ローディング: スピナー + 無効化。i18nキー: `revenue.saveTarget`。 |
+| 86 | `btnPayoutConfirm` | Confirm Button | Button (`primary`) | — | Mandatory | 処理中は無効。テキスト: "Confirm" / "Processing..." | — | — | すべての基になるペイアウトIDを `Promise.allSettled` で処理。i18nキー: `common.confirm`、`admin.commission.payout.processing`。 |
 
 ---
 
-### 4.5 レイアウト5: エクスポートモーダル
+### 4.4 Layout 4: Edit Target Dialog
 
-#### セクション [A]: モーダルコンテナ
+#### Section [A]: Dialog Container + Title
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 74 | `dlgExport` | エクスポートモーダル | ダイアログ (モーダル) | — | — | デフォルトで閉じている。 | — | — | レイアウト1 `btnExportCommission`、`btnExportPayout`、`btnExportRevenue`、`btnExportPayoutRevenue` で開く。キャンセル/バックドロップ/成功で閉じる。 |
+| 87 | `dlgEditTarget` | Edit Target Dialog | Dialog (Modal) | — | — | デフォルトでは閉じる。 | — | — | `btnEditTarget` でオープン。`sm:max-w-md`。 |
+| 88 | `lblTargetTitle` | Dialog Title | Static Label | String | — | "Edit Revenue Target" / "Set Revenue Target" | — | — | i18nキー: `admin.commission.target.editTitle` / `admin.commission.target.setTitle`。 |
 
-#### セクション [B]: モーダルタイトル
+#### Section [B]: Target Amount Input
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 75 | `lblExportTitle` | モーダルタイトル | 見出し (`h3`) | String | — | テキスト: "Export Report" | — | ハードコードされたUIテキスト | i18nキー: `export.title`。 |
+| 89 | `txtTargetAmount` | Target Amount Input | Input (`number`) | String | Mandatory | 現在の目標金額をプリフィル（ある場合）。 | `min=0`、`step=0.01`、プレースホルダー "0.00"。手動バリデーション: `/^\d+(\.\d{1,2})?$/` かつ値 > 0。 | `revenue_targets.target_amount` | i18nキー: `admin.commission.target.amount`、`admin.commission.target.amountPlaceholder`。 |
 
-#### セクション [C]: レポートタイプ表示
+#### Section [C]: Inline Field Error
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 76 | `lblExportReportType` | レポートタイプ表示 | テキスト | String | 必須 | レポートタイプを表示: "Commission"、"Revenue"、"Payout" | — | トリガーボタンにより設定 | エクスポートタイプの読み取り専用表示。i18nキー: `export.reportType`。 |
+| 90 | `errTargetAmount` | Inline Field Error | Text (conditional) | String | Conditional | 非表示。バリデーション失敗時に表示。 | — | — | "Target amount must be a positive number with up to 2 decimal places."。i18nキー: `admin.commission.target.validation`。 |
 
-#### セクション [D]: 日付範囲ピッカー
+#### Section [D]: Target Period Toggle
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 77 | `drpExportDateRange` | 日付範囲ピッカー | 日付範囲ピッカー | — | 必須 | 空 (管理者が選択必須)。 | 有効なISO日付。`dateFrom <= dateTo`。最大365日。 | — | エクスポート生成に必須。i18nキー: `export.dateRange`。 |
+| 91 | `tglTargetPeriod` | Target Period Toggle | Toggle Buttons | Enum | Mandatory | デフォルト: 現在のカードの期間または `monthly` | オプション: `monthly`、`quarterly` | `revenue_targets.period` | 親に通知すると期間が切り替わり目標を再取得。i18nキー: `admin.commission.period.monthly/quarterly`。 |
 
-#### セクション [E]: 日付範囲エラー
+#### Section [E]: Cancel Button
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 78 | `errExportDateRange` | 日付範囲エラー | テキスト (条件付き) | String | 条件付き | 非表示。バリデーション失敗時に表示。 | — | — | エラーコード: VAL-EXP-001、VAL-EXP-002、VAL-EXP-003。 |
+| 92 | `btnTargetCancel` | Cancel Target Button | Button (`outline`) | — | No | 表示。保存中は無効。テキスト: "Cancel" | — | — | i18nキー: `common.cancel`。 |
 
-#### セクション [F]: 形式ラジオグループ
+#### Section [F]: Save Button
 
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 79 | `rgExportFormat` | 形式ラジオグループ | ラジオグループ | Enum | 必須 | デフォルト: `csv` | オプション: `csv`, `xlsx` | — | エクスポートファイル形式を選択。PDF対応なし。i18nキー: `export.format`。 |
-
-#### セクション [G]: 推定行数テキスト
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 80 | `lblEstimatedRows` | 推定行数テキスト | テキスト (条件付き) | String | 条件付き | 日付範囲が適用されるまで非表示。テキスト: "Estimated {n} rows" | — | バックエンド行数クエリ | 日付範囲設定後に表示。i18nキー: `export.estimatedRows`。 |
-
-#### セクション [H]: 生成ボタン
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 81 | `btnExportGenerate` | 生成ボタン | ボタン (`primary`) | — | 必須 | 表示。テキスト: "Generate Report" | — | — | 入力を検証し、エクスポート生成をトリガー。ローディング: スピナー + 無効化。i18nキー: `export.generate`。 |
-
-#### セクション [I]: キャンセルボタン
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 82 | `btnExportCancel` | キャンセルボタン | ボタン (`secondary`) | — | いいえ | 表示。テキスト: "Cancel" | — | — | 生成せずにエクスポートモーダルを閉じる。i18nキー: `export.cancel`。 |
-
-#### セクション [J]: 最近のエクスポート見出し
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 83 | `lblRecentExports` | 最近のエクスポート見出し | 見出し (`h3`) | String | — | テキスト: "Recent Exports" | — | ハードコードされたUIテキスト | モーダルの下の手数料/収益ページに表示。i18nキー: `export.recentExports`。 |
-
-#### セクション [K]: 最近のエクスポートテーブル
-
-| No. | 項目ID | 項目名 (論理) | コンポーネント型 | データ型・最大長 | 必須 | 初期状態・デフォルト値 | 入力制約・フォーマット | データソース/DBマッピング | 備考/ビジネスルール |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 84 | `tblRecentExports` | 最近のエクスポートテーブル | テーブル | — | いいえ | 読み込み中は空。 | — | 監査ログクエリ | 列: レポートタイプ、形式、日付範囲、生成日時。 |
+| 93 | `btnTargetSave` | Save Target Button | Button (`primary`) | — | Mandatory | 保存中は無効。テキスト: "Save Target" / "Saving..." | — | — | `PUT /admin/revenue/targets` を送信。i18nキー: `admin.commission.target.save`、`admin.commission.target.saving`。 |
 
 ---
 
-## 5. 各項目における挙動・イベント仕様
+### 4.5 Layout 5: Export Modal
 
-### 5.1 手数料・収益ダッシュボード読み込み (ページマウント)
-- **トリガー:** `/admin/commission-revenue` ルートマウント時。
-- **RBAC検証:** `ProtectedRoute` は要件定義書 §2.5 および開発ルール §2.7 に従って管理者ロールを検証。ユーザーに管理者ロールがない場合は `403 Forbidden` エラーコード `COMM_002` を返す。
-- **処理ロジック:**
-  1. `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` でJWT認証と管理者ロールを検証。
-  2. 手数料設定とレポート行を並行して取得 (`GET /api/v1/admin/commission`、`GET /api/v1/admin/commission/reports`)。
-  3. 手数料率カード (`txtCurrentRate`) とレポートテーブル (`tblReport`) をレンダリング。
-  4. 失敗時はエラーアラートを `alertError` に表示。
-- **例外処理:**
-  - `403 COMM_002`: 管理者ロール検証失敗。`/unauthorized` にリダイレクト。
-  - `500 SYS_001`: サーバーエラー。リトライオプション付きアラートバナー。
+#### Section [A]: Modal Container + Title
 
-### 5.2 手数料率編集 (`btnEditRate` onClick → `btnRateSave` onClick)
-- **トリガー:** ユーザーが手数料率カードの「Edit Rate」をクリックし、ダイアログの「Save」をクリック。
-- **処理ロジック:**
-  1. 編集ダイアログ (`dlgEditRate`) を開き、`txtRateInput` に現在の手数料率を事前設定 (データベース設計書に従って文字列として送信)。
-  2. **クライアント側事前チェック:** 手数料率必須、`/^\d+(\.\d{1,2})?$/` に一致、0 < 値 < 100 を検証。
-  3. **バックエンド送信:** `PATCH /api/v1/admin/commission` を `{ rate: "10.50" }` で送信 (精度を保持するため文字列形式、開発ルール §1.2 に従う)。
-  4. **実行後UI:** 成功時はダイアログを閉じ、手数料率表示を更新、成功トーストを表示。`COMMISSION_RATE_UPDATED` をログ。
-- **例外処理:**
-  - `400 COMM_001`: 無効な手数料率検証失敗。`txtRateInput` にインラインフィールドエラー。
-  - `NET_ERR`: ネットワーク接続問題。アラートバナー。
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 94 | `dlgExport` | Export Modal | Dialog (Modal) | — | — | デフォルトでは閉じる。 | — | — | 3つのエクスポートボタンでオープン。レポートタイプごとにキーリマウント。`sm:max-w-md`。 |
+| 95 | `lblExportTitle` | Modal Title | Heading | String | — | テキスト: "Export Report" | — | ハードコードUIテキスト | i18nキー: `admin.commission.export.title`。 |
+| 96 | `lblExportDesc` | Modal Description | Text | String | — | レポートタイプに言及。 | — | — | i18nキー: `admin.commission.export.description`。 |
 
-### 5.3 レポートフィルタ (`btnApplyFilter` onClick)
-- **トリガー:** ユーザーがレポートフィルタパネルの「Apply」をクリック。
-- **処理ロジック:**
-  1. **クライアント側事前チェック:** `from`/`to` が有効なISO日付で `from <= to` を検証。
-  2. **バックエンド送信:** `GET /api/v1/admin/commission/reports` をクエリパラメータ `from`、`to`、`page`、`limit` で送信。
-  3. **実行後UI:** フィルタリングされたレポート行を表示し、ページネーションを1ページ目にリセット。
-- **例外処理:**
-  - `400`: 日付ピッカーにインラインフィールドエラー。
-  - `500` (`SYS_001`): リトライオプション付きアラートバナー。
+#### Section [C]: Report Type Display
 
-### 5.4 レポートフィルタリセット (`btnResetFilter` onClick)
-- **トリガー:** ユーザーが「Reset」をクリック。
-- **処理ロジック:**
-  1. `txtFromDate` と `txtToDate` をクリア。
-  2. デフォルトクエリ (日付範囲なし) でレポートを再取得。
-  3. ページネーションを最初のページにリセット。
-- **例外処理:** 該当なし。
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 97 | `lblExportReportType` | Report Type Display | Text | String | Mandatory | オープナーに応じた "Commission" / "Revenue" / "Payout" | — | トリガーボタンから設定 | 読み取り専用。i18nキー: `admin.commission.reportTypes.*`（フォールバック: 生のタイプ値）。 |
+| 98 | `lblExportGroupBy` | Group By Display | Text | String | No | Commission のみ。現在のグループ化（merchant/day/order） | — | `initialValues.groupBy` | 読み取り専用。i18nキー: `admin.commission.groupBy.*`。 |
+| 99 | `selExportMerchant` | Merchant Select | Select | UUID | No | Payout のみ、出品者リストが存在する場合。デフォルト: All Merchants | オプションは `GET /admin/revenue/payouts/merchants` から | `initialValues`/ペイアウトフィルタ | i18nキー: `admin.commission.export.allMerchants`、`admin.commission.payout.merchant`。 |
 
-### 5.5 収益タブ読み込み (タブ2選択)
-- **トリガー:** `/admin/commission-revenue` ルートマウント時またはタブ2 (収益) 選択時。
-- **RBAC検証:** `ProtectedRoute` は要件定義書 §2.5 および開発ルール §2.7 に従って管理者ロールを検証。ユーザーに管理者ロールがない場合は `403 Forbidden` エラーコード `COMM_002` を返す。
-- **処理ロジック:**
-  1. `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` でJWT認証と管理者ロールを検証。
-  2. KPI、トレンド，目標，予測，支払い，出金，広告料金データを並行して取得。
-  3. KPIカード，トレンドチャート，目標ゲージバー，予測点線，支払いステータスパネル，広告支払いステータスパネル，広告料金サマリーカード，出金テーブルにデータを投入。
-  4. 失敗時はアラートを表示し、利用可能な場合は最後の既知データを保持。
-- **例外処理:**
-  - `403 COMM_002`: 管理者ロール検証失敗。`/unauthorized` にリダイレクト。
-  - `500 SYS_001`: サーバーエラー。リトライオプション付きアラートバナー。
+#### Section [F]: Date Inputs
 
-### 5.6 広告料金収益読み込み (ページマウント)
-- **トリガー:** `/admin/commission-revenue` ルートマウント時またはタブ2 (収益) 選択時。
-- **RBAC検証:** `ProtectedRoute` は要件定義書 §2.5 および開発ルール §2.7 に従って管理者ロールを検証。
-- **処理ロジック:**
-  1. JWT認証と管理者ロールを検証。
-  2. 広告料金KPIデータ，広告料金トレンド系列，広告料金支払いステータス内訳を並行して取得。
-  3. 広告料金KPIカード，総収入カード，広告料金トレンド系列，広告支払いステータスパネル，広告料金サマリーカードにデータを投入。
-  4. 失敗時はアラートを表示し、広告料金カードを0としてレンダリング。
-- **例外処理:**
-  - `403 COMM_002`: 管理者ロール検証失敗。`/unauthorized` にリダイレクト。
-  - `500 SYS_001`: サーバーエラー。リトライオプション付きアラートバナー。
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 100 | `txtExportStart` | Start Date Input | Input (`date`) | DATE | Mandatory | 該当する場合、レポートフィルタ（commission）または期間範囲（payout）からプリフィル。 | `dateFrom <= dateTo`、範囲 ≤ 365日 | — | i18nキー: `admin.commission.export.startDate`。 |
+| 101 | `txtExportEnd` | End Date Input | Input (`date`) | DATE | Mandatory | 同じプリフィル動作。 | 同上 | — | i18nキー: `admin.commission.export.endDate`。 |
 
-### 5.8 トレンド期間切替 (`tglRange` onChange)
-- **トリガー:** ユーザーが期間切替で `7d` / `30d` / `90d` / `1y` を選択。
-- **処理ロジック:**
-  1. **クライアント側事前チェック:** 期間値が `7d`、`30d`、`90d`、`1y` のいずれかであることを検証。
-  2. **バックエンド送信:** `GET /api/v1/admin/revenue/trends` をクエリパラメータ `range` で送信。
-  3. 選択した期間の予測系列を取得 (セクション5.12)。
-  4. **実行後UI:** チャート、予測点線、ツールチップロベルを更新。
-  5. 失敗時は以前のチャート状態を維持し、アラートを表示。
-- **例外処理:**
-  - `400`: アラートバナー「無効な期間」。
-  - `500` (`SYS_001`): リトライオプション付きアラートバナー。
+#### Section [G]: Format Toggle
 
-### 5.9 出金処理 (`btnProcessPayout` onClick → `btnPayoutConfirm` onClick)
-- **トリガー:** ユーザーが保留中出金の「Process」をクリックし、ダイアログの「Confirm」をクリック。
-- **処理ロジック:**
-  1. 確認ダイアログ (`dlgPayoutConfirm`) を開き、出品者と金額を表示。
-  2. **クライアント側事前チェック:** 出金行のステータスが `pending` であることを確認。
-  3. **バックエンド送信:** `POST /api/v1/admin/revenue/payouts/:id/process`。
-  4. **実行後UI:** 成功時はダイアログを閉じ、出金リストとKPIメトリクスを更新、成功トーストを表示。`PAYOUT_PROCESSED` をログ。
-- **例外処理:**
-  - `404` (`COMM_003`): アラートバナー + リスト更新。
-  - `409` (`COMM_004`): アラートバナー + アクション無効化 (冪等性ガード)。
-  - `500` (`SYS_001`): リトライオプション付きアラートバナー。
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 102 | `tglExportFormat` | Format Toggle | Toggle Buttons（`aria-pressed`） | Enum | Mandatory | デフォルト: `csv` | オプション: `csv`（CSV）、`xlsx`（Excel） | — | PDFなし。ラベルはハードコード。 |
 
-### 5.10 収益目標読み込み (ページマウント / `tglTargetPeriod` onChange)
-- **トリガー:** `/admin/commission-revenue` ルートマウント時またはタブ2 (収益) 選択時、または目標期間切替変更時。
-- **処理ロジック:**
-  1. 有効な収益目標と現在の期間実際の収益を取得 (`GET /api/v1/admin/revenue/targets`)。
-  2. 進捗パーセンテージを計算 = (実際の収益 / 目標金額) × 100 (BR-REV-008)。
-  3. `lblTargetAmount`、`gaugeTargetProgress`、`lblProgressPercentage` をレンダリング。ゲージは0–100%にクランプ。100%超は「目標超過」として別途表示。
-  4. 失敗時はエラーアラートを表示し、ゲージを0%としてレンダリング。
-- **例外処理:**
-  - `400`: アラートバナー「無効な目標期間」。
-  - `500` (`SYS_001`): リトライオプション付きアラートバナー。
+#### Section [H]: Inline Error
 
-### 5.11 収益目標保存 (`btnEditTarget` onClick → `btnTargetSave` onClick)
-- **トリガー:** ユーザーが目標カードの「Edit Target」をクリックし、ダイアログの「Save」をクリック。
-- **処理ロジック:**
-  1. 編集ダイアログ (`dlgEditTarget`) を開き、`txtTargetAmount` と `selTargetPeriod` に現在の値を事前設定 (ある場合、データベース設計書に従って金額は文字列)。
-  2. **クライアント側事前チェック:** 金額必須、`/^\d+(\.\d{1,2})?$/` に一致、値 > 0 を検証。期間は `monthly` または `quarterly`。
-  3. **バックエンド送信:** `PUT /api/v1/admin/revenue/targets` を `{ targetAmount: "100000.00", targetPeriod: "monthly" }` で送信 (アップサート — 同じ期間の既存の目標を上書き、BR-REV-009)。
-  4. **実行後UI:** 成功時はダイアログを閉じ、目標カードとゲージバーを更新、成功トーストを表示。`TARGET_UPDATED` をログ。
-- **例外処理:**
-  - `400 COMM_005`: 無効な目標金額または期間。`txtTargetAmount` / `selTargetPeriod` にインラインフィールドエラー。
-  - `NET_ERR`: ネットワーク接続問題。アラートバナー。
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 103 | `errExport` | Export Validation Error | Text (conditional) | String | Conditional | 非表示。バリデーション失敗時に表示。 | — | — | メッセージ: 必須 / 順序 / 365日上限（§6.1.1参照）。 |
 
-### 5.12 収益予測読み込み (ページマウント / `tglRange` onChange)
-- **トリガー:** `/admin/commission-revenue` ルートマウント時またはタブ2 (収益) 選択時、またはトレンド期間切替変更時。
-- **処理ロジック:**
-  1. 選択した期間の履歴収益とプラットフォーム手数料系列を取得 (`GET /api/v1/admin/revenue/forecast`)。
-  2. 予測期間のトレンド外挿を計算 (BR-REV-011)。
-  3. データが十分な場合、`serForecast` をトレンドラインに続く点線としてレンダリングし、`lblForecastLegend` を表示。
-  4. データが不十分な場合、点線を非表示にし、`lblForecastNote` を表示 (情報ノート、BR-REV-014)。
-- **例外処理:**
-  - `422` (`COMM_006`): 点線を非表示にし、情報ノートを表示 (予測が生成できない)。
-  - `500` (`SYS_001`): リトライオプション付きアラートバナー。
+#### Section [I]: Generate Button
 
-### 5.13 言語切替 (`btnLanguageToggle` onClick)
-- **トリガー:** ユーザーが言語切替ボタンをクリック。
-- **処理ロジック:**
-  1. 言語を循環: EN → JA → MY → EN。
-  2. `i18n.changeLanguage()` で `i18next` 言語を更新。
-  3. 設定を `localStorage` に永続化。
-  4. すべての翻訳済みラベルとロケール対応通貨/日付フォーマットを再レンダリング。
-- **例外処理:** 該当なし。
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 104 | `btnExportGenerate` | Generate Button | Button (`primary`) | — | Mandatory | 生成中は無効。テキスト: "Generate" / "Generating..." | — | — | 検証後、ファイルをダウンロード（blob → サニタイズされたファイル名）。i18nキー: `admin.commission.export.generate`、`admin.commission.export.generating`。 |
 
-### 5.14 テーマ切替 (`btnThemeToggle` onClick)
-- **トリガー:** ユーザーがテーマ切替ボタンをクリック。
-- **処理ロジック:**
-  1. テーマを循環: light → dark → system。
-  2. `setTheme()` で `next-themes` テーマを更新。
-  3. 設定を `localStorage` に永続化。
-- **例外処理:** 該当なし。
+#### Section [J]: Cancel Button
 
-### 5.15 広告料金トレンド期間切替 (`tglRange` onChange)
-- **トリガー:** ユーザーが期間切替で `7d` / `30d` / `90d` / `1y` を選択。
-- **処理ロジック:**
-  1. **クライアント側事前チェック:** 期間値が `7d`、`30d`、`90d`、`1y` のいずれかであることを検証。
-  2. **バックエンド送信:** `GET /api/v1/admin/revenue/ad-fees` をクエリパラメータ `range` で送信。
-  3. **実行後UI:** トレンドチャート上の広告料金系列を更新。
-  4. 失敗時は以前のチャート状態を維持し、アラートを表示。
-- **例外処理:**
-  - `400`: アラートバナー「無効な期間」。
-  - `500` (`SYS_001`): リトライオプション付きアラートバナー。
-
-### 5.16 エクスポートボタンクリック — エクスポートモーダルを開く (`btnExportCommission` / `btnExportRevenue` / `btnExportPayout` / `btnExportPayoutRevenue` onClick)
-- **トリガー:** ユーザーが手数料タブ (`btnExportCommission`)、収益タブ (`btnExportRevenue`)、出金テーブル (`btnExportPayout`、`btnExportPayoutRevenue`) のいずれかのエクスポートボタンをクリック。
-- **処理ロジック:**
-  1. エクスポートモーダル (`dlgExport`) を開く。
-  2. `lblExportReportType` を対応するレポートタイプに設定: クリックされたボタンに基づいて「Commission」、「Revenue」、または「Payout」。
-  3. モーダル状態をリセット: 日付範囲をクリア (`drpExportDateRange`)、形式をデフォルトCSVに設定 (`rgExportFormat`)、推定行数を非表示 (`lblEstimatedRows`)。
-- **例外処理:**
-  - `500` (`SYS_001`): リトライオプション付きアラートバナー。
-
-### 5.17 エクスポート生成 (`btnExportGenerate` onClick)
-- **トリガー:** ユーザーが日付範囲と形式を選択後、エクスポートモーダルの「Generate」をクリック。
-- **処理ロジック:**
-  1. **クライアント側事前チェック:** `dateFrom` と `dateTo` が有効なISO日付、`dateFrom <= dateTo`、日付範囲 ≤ 365日、形式が `csv` または `xlsx` を検証。
-  2. **バックエンド送信:** レポートタイプに応じて `POST /api/v1/admin/commission/export`、`POST /api/v1/admin/revenue/export`、または `POST /api/v1/admin/revenue/payouts/export` を送信。リクエストボディ: `{ dateFrom, dateTo, format }`。
-  3. バックエンドがファイルを同期的に生成し、クライアントにストリーミング。
-  4. `EXPORT_GENERATED` イベントを audit_logs にログ (BR-EXP-003)。
-- **実行後UI:** 成功時はモーダルを閉じ、成功トーストを表示。
-- **例外処理:**
-  - `400 EXP_001`: dateFrom または dateTo が欠落。日付範囲ピッカーにインラインエラー。
-  - `400 EXP_002`: dateTo が dateFrom より前。日付範囲ピッカーにインラインエラー。
-  - `400 EXP_003`: 日付範囲が365日を超過。日付範囲ピッカーにインラインエラー。
-  - `400 EXP_004`: 無効な形式。アラートバナー。
-  - `500 EXP_005`: エクスポート生成失敗。リトライオプション付きアラートバナー。
-  - `NET_ERR`: ネットワーク接続問題。アラートバナー。
-
-### 5.18 エクスポートクローズ
-- **トリガー:** エクスポートモーダルがキャンセルボタンまたは成功したダウンロードにより閉じられる。
-- **処理ロジック:**
-  1. モーダルダイアログを閉じる。
-  2. モーダル状態をリセット。
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 105 | `btnExportCancel` | Cancel Button | Button (`outline`) | — | No | 生成中は無効。テキスト: "Cancel" | — | — | i18nキー: `common.cancel`。 |
 
 ---
 
-## 6. バリデーション及びエラーメッセージマッピング
+## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
 
-**注記:** すべての手数料および収益エンドポイントは要件定義書 §2.5 に従って**管理者のみ**。管理者以外のユーザーは `403 Forbidden` とエラーコード `COMM_002` を受信。バックエンドは開発ルール §2.7 に従って `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` で強制する必要がある。
+### 5.1 Commission Tab Load (page mount)
+- **Trigger:** `/admin/commission-revenue` ルートのマウント。
+- **RBAC Validation:** ルート保護が `admin`/`super_admin` ロールを検証。非管理者はリダイレクト（403 `RES_004`）。
+- **Processing Logic:**
+  1. 手数料設定とレポート行を並行して取得（`GET /api/v1/admin/commission`、`GET /api/v1/admin/commission/reports`）。
+  2. 手数料カード（`txtCurrentRate`）とレポートテーブル（`tblReport`）を描画。
+  3. 失敗時、クエリはエラーを公開。ミューテーションはトーストを表示。
+- **Exception Handling:**
+  - `403 RES_004`: ロール検証失敗。`/unauthorized` へリダイレクト。
+  - `500 SYS_001`: サーバーエラー。トースト。
 
-### 6.1 手数料率バリデーションエラー
+### 5.2 Commission Rate Edit (`btnEditRate` onClick → `btnRateSave` onClick)
+- **Trigger:** 手数料カードの "Edit Rate" をクリックし、ダイアログの "Save" をクリック。
+- **Processing Logic:**
+  1. 編集ダイアログ（`dlgEditRate`）を開き、現在の手数料率で `txtRateInput` をプリフィル。
+  2. **Client-Side Pre-Check:** 下書きは数値として解析可能で > 0（バックエンドが ≤ 100 を強制）。
+  3. **Backend Dispatch:** `PATCH /api/v1/admin/commission` に `{ rate: "10.5" }`（精度を保持する文字列）。
+  4. **Post-Execution UI:** 成功時、ダイアログを閉じ、settings + reports クエリを無効化し、成功トースト（"Commission rate updated"）を表示。`COMMISSION_RATE_UPDATED` を記録。
+- **Exception Handling:**
+  - `400 VAL_001`: DTOバリデーション失敗。破壊的トースト。
+  - `400` サービスメッセージ: 手数料率 ≤ 0 または > 100。サーバーメッセージ付きの破壊的トースト。
 
-| エラーコード | 対象フィールド | 条件/評価ロジック | UI/UX表示スタイル | デフォルトエラーメッセージ (EN) | デフォルトエラーメッセージ (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-COMM-001** | `txtRateInput` | 手数料率が空 | 赤枠。フィールド下にテキスト。 | "Commission rate is required" | "手数料率は必須です" |
-| **VAL-COMM-002** | `txtRateInput` | 手数料率が小数第2位までの有効な数値でない | 赤枠。フィールド下にテキスト。 | "Commission rate must be a number with up to 2 decimal places" | "手数料率は小数第2位までの数値で入力してください" |
-| **VAL-COMM-003** | `txtRateInput` | 手数料率が範囲外 (< 0 または > 100) | 赤枠。フィールド下にテキスト。 | "Commission rate must be between 0 and 100" | "手数料率は0から100の範囲で入力してください" |
-| **VAL-COMM-004** | `txtFromDate` / `txtToDate` | 日付が無効または `from > to` | 赤枠。フィールド下にテキスト。 | "From date must be earlier than or equal to To date" | "開始日は終了日以前である必要があります" |
-| **VAL-COMM-005** | `tglRange` | 期間値が `7d`/`30d`/`90d`/`1y` 以外 | アラートバナー | "Invalid range" | "無効な期間です" |
-| **VAL-COMM-006** | 出金フィルタ | ステータス値が `pending`/`completed`/`failed` 以外 | アラートバナー | "Invalid status" | "無効なステータスです" |
-| **VAL-COMM-007** | `txtTargetAmount` | 目標金額が空 | 赤枠。フィールド下にテキスト。 | "Target amount is required" | "目標金額は必須です" |
-| **VAL-COMM-008** | `txtTargetAmount` | 目標金額が無効な小数または ≤ 0 | 赤枠。フィールド下にテキスト。 | "Target amount must be a positive number with up to 2 decimal places" | "目標金額は0より大きい小数第2位までの数値で入力してください" |
-| **VAL-COMM-009** | `selTargetPeriod` / `tglTargetPeriod` | 期間が `monthly`/`quarterly` 以外 | 赤枠。フィールド下にテキスト。 | "Invalid target period" | "無効な目標期間です" |
+### 5.3 Report Filter (`btnApplyFilter` onClick)
+- **Trigger:** レポートフィルタパネルの "Apply" をクリック。
+- **Processing Logic:**
+  1. **Client-Side Pre-Check:** 両方の日付が設定されている場合、`from <= to`。
+  2. **Backend Dispatch:** `GET /api/v1/admin/commission/reports` に `from`、`to`、`page`、`limit`、`groupBy`。
+  3. **Post-Execution UI:** フィルタ済み行を表示しページを1にリセット。groupBy ボタンは即座に適用。
+- **Exception Handling:**
+  - `400`: フィルタパネルにインラインエラー。
+  - `500`（`SYS_001`）: トースト。
 
-### 6.1.1 エクスポートバリデーションエラー
+### 5.4 Report Filter Reset (`btnResetFilter` onClick)
+- **Trigger:** "Reset" をクリック。
+- **Processing Logic:**
+  1. `txtFromDate` と `txtToDate` をクリア。groupBy を `merchant` にリセット。
+  2. デフォルトクエリ（日付範囲なし）でレポートを再取得。
+  3. ページを1にリセット。
+- **Exception Handling:** 該当なし。
 
-| エラーコード | 対象フィールド | 条件/評価ロジック | UI/UX表示スタイル | デフォルトエラーメッセージ (EN) | デフォルトエラーメッセージ (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-EXP-001** | `drpExportDateRange` | `dateFrom` または `dateTo` が空 | 赤枠。フィールド下にテキスト。 | "Start date and end date are required" | "開始日と終了日は必須です" |
-| **VAL-EXP-002** | `drpExportDateRange` | `dateTo` が `dateFrom` より前 | 赤枠。フィールド下にテキスト。 | "End date must be after start date" | "終了日は開始日以降である必要があります" |
-| **VAL-EXP-003** | `drpExportDateRange` | 日付範囲が365日を超過 | 赤枠。フィールド下にテキスト。 | "Date range cannot exceed 365 days" | "日付範囲は365日を超えることはできません" |
-| **VAL-EXP-004** | `rgExportFormat` | 形式が `csv` または `xlsx` 以外 | アラートバナー | "Invalid export format. Use CSV or Excel." | "無効なエクスポート形式です。CSVまたはExcelを使用してください" |
+### 5.5 Revenue Tab Load (Tab 2 selected)
+- **Trigger:** Revenue タブのマウント（非アクティブなタブの内容はアンマウント）。
+- **Processing Logic:**
+  1. KPI、トレンド、目標、予測、支払いステータス、ペイアウト、広告料金のデータを並列で取得（`GET /api/v1/admin/revenue/kpis`、`/trends`、`/target`、`/forecast`、`/payments/status`、`/payouts`、`/ad-fee`）。
+  2. KPIカード（6）、トレンドチャート、目標ゲージバー、ペイアウトステータスパネル、広告支払いステータスパネル、広告料金サマリーカード、ペイアウトテーブルを設定。
+  3. 失敗時、既知のデータを保持。ミューテーションはトーストを表示。
+- **Exception Handling:**
+  - `403 RES_004`: ロール検証失敗。`/unauthorized` へリダイレクト。
+  - `500 SYS_001`: サーバーエラー。トースト。
 
-### 6.2 APIエラーハンドリング
+### 5.6 Ad Fee Revenue Load (Revenue tab mount)
+- **Trigger:** Revenue タブ選択時。
+- **Processing Logic:**
+  1. 広告料金KPIデータ、広告料金トレンド系列（共有期間）、広告料金支払いステータス内訳を取得（`GET /api/v1/admin/revenue/ad-fee`）。
+  2. 広告料金KPIカード（`lblAdFeeRevenue`）、合計収入カード（`lblTotalIncome`）、チャート上の広告料金トレンド系列、広告支払いステータスパネル、広告料金サマリーカードを設定。
+  3. 失敗時、広告料金カードを0で描画。エラー時にトースト。
 
-| エラーコード | 対象フィールド | 条件/評価ロジック | UI/UX表示スタイル | デフォルトエラーメッセージ (EN) | デフォルトエラーメッセージ (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **COMM_001** | `txtRateInput` | 無効な手数料率 (400レスポンス) | 赤枠 + インテキスト | "Invalid commission rate" | "無効な手数料率です" |
-| **COMM_002** | `alertError` | 管理者ルートへの未承認アクセス (403レスポンス) | アラートバナー (destructive) | "You do not have permission to access this page" | "このページへのアクセス権限がありません" |
-| **COMM_003** | `alertError` | 出金が見つからない (404レスポンス) | アラートバナー (destructive) | "Payout not found" | "出金が見つかりません" |
-| **COMM_004** | `alertError` | 出金は既に処理済み (409レスポンス) | アラートバナー (destructive) | "Payout has already been processed" | "この出金は既に処理されています" |
-| **COMM_005** | `txtTargetAmount` / `selTargetPeriod` | 無効な目標金額または期間 (400レスポンス) | 赤枠 + インテキスト | "Invalid target amount or period" | "無効な目標金額または目標期間です" |
-| **COMM_006** | `lblForecastNote` | 予測のための履歴データが不十分 (422レスポンス) | チャート横の情報ノート | "Not enough historical data to generate a forecast" | "予測を生成するのに十分な履歴データがありません" |
-| **SYS_001** | `alertError` | サーバーエラー (500レスポンス) | アラートバナー (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
-| **NET_ERR** | `alertError` | ネットワークエラー | アラートバナー (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
-| **EXP_001** | `errExportDateRange` | dateFrom または dateTo が欠落 (400レスポンス) | 日付範囲ピッカーにインラインエラー | "Start date and end date are required" | "開始日と終了日は必須です" |
-| **EXP_002** | `errExportDateRange` | dateTo が dateFrom より前 (400レスポンス) | 日付範囲ピッカーにインラインエラー | "End date must be after start date" | "終了日は開始日以降である必要があります" |
-| **EXP_003** | `errExportDateRange` | 日付範囲が365日を超過 (400レスポンス) | 日付範囲ピッカーにインラインエラー | "Date range cannot exceed 365 days" | "日付範囲は365日を超えることはできません" |
-| **EXP_004** | `rgExportFormat` | 無効な形式 (400レスポンス) | アラートバナー | "Invalid export format. Use CSV or Excel." | "無効なエクスポート形式です。CSVまたはExcelを使用してください" |
-| **EXP_005** | `alertError` | エクスポート生成失敗 (500レスポンス) | アラートバナー (destructive) | "Report generation failed. Please try again." | "レポートの生成に失敗しました。もう一度お試しください。" |
+### 5.7 Trend Range Change (`tglRange` onChange)
+- **Trigger:** 期間トグルで `7d` / `30d` / `90d` / `1y` を選択。
+- **Processing Logic:**
+  1. 選択した期間のトレンド系列を取得（`GET /api/v1/admin/revenue/trends?range=`）。
+  2. 選択した期間の予測系列を取得（`GET /api/v1/admin/revenue/forecast?range=`）。
+  3. **Post-Execution UI:** チャート、予測の点線、軸ラベルを更新。
+  4. 失敗時、前のチャート状態を維持しエラートーストを表示。
+
+### 5.8 Payout Processing (`btnProcessPayout` onClick → `btnPayoutConfirm` onClick)
+- **Trigger:** 完了していないペイアウトの "Process" をクリックし、ダイアログの "Confirm" をクリック。
+- **Processing Logic:**
+  1. 確認ダイアログ（`dlgPayoutConfirm`）を開き、出品者、金額、内訳を表示。
+  2. **Client-Side Pre-Check:** 行が `completed` でない（それ以外はボタン無効）。
+  3. **Backend Dispatch:** すべての基になるペイアウトIDについて `POST /api/v1/admin/revenue/payouts/:id/process`（`Promise.allSettled`）。
+  4. **Post-Execution UI:** 成功時、ダイアログを閉じ、ペイアウト + KPIs を無効化し、成功トースト（一括処理時の部分失敗/全失敗バリアント付き）を表示。ペイアウトごとに `PAYOUT_PROCESSED` を記録。
+- **Exception Handling:**
+  - `404 RES_001`: トースト + 一覧更新。
+  - `409 RES_003`: 破壊的トースト "Payout already processed"。
+  - `500 SYS_001`: トースト。
+
+### 5.9 Payout Review (View details / dialog cancel)
+- **Trigger:** **保留中**のペイアウトの詳細表示を開く、または処理ダイアログをキャンセル。
+- **Processing Logic:** `POST /api/v1/admin/revenue/payouts/:id/review` → ステータスが `processing` に。ペイアウトクエリを無効化。すでに `processing`/`completed` の場合、API は HTTP 200 で変更なしのステータスを返す（エラーなし、監査なし）。
+
+### 5.10 Payout Deletion (`btnDeletePayouts` onClick → confirm)
+- **Trigger:** ペイアウト行のチェックボックスを選択し、赤い "Delete selected" をクリックし、ダイアログで確認。
+- **Processing Logic:**
+  1. 確認ダイアログは完了済みかつ3ヶ月以上経過したペイアウトのみ削除可能であることを説明。
+  2. **Backend Dispatch:** `DELETE /api/v1/admin/revenue/payouts` に基になる `payoutIds` の和集合。
+  3. **Post-Execution UI:** 成功 → トースト "Payouts deleted"、選択をクリア。ペイアウトごとに `PAYOUT_DELETED` 監査。失敗 → サーバーメッセージを表示する AlertDialog。
+- **Exception Handling:**
+  - `404 RES_001`（`Payout not found: <ids>`）: AlertDialog。
+  - `409 RES_003`（`These payouts cannot be deleted: ...`）: タイトル "Payout cannot be deleted" の AlertDialog。
+
+### 5.11 Revenue Target Load (Revenue tab mount / `tglTargetPeriod` onChange)
+- **Trigger:** Revenue タブ選択時、または期間トグル変更時。
+- **Processing Logic:**
+  1. アクティブな収益目標と当期の実績収益を取得（`GET /api/v1/admin/revenue/target?period=`）。
+  2. 進捗率 = （実績収益 / 目標金額）× 100（バックエンドはクランプなしで返却）。
+  3. `lblTargetAmount`、`lblActualRevenue`、`gaugeTargetProgress`、`lblProgressPercentage` を描画。ゲージは0–100%にクランプ。
+  4. 失敗時、ゲージを0%で描画。
+
+### 5.12 Revenue Target Save (`btnEditTarget` onClick → `btnTargetSave` onClick)
+- **Trigger:** 目標カードの "Edit Target"/"Set Target" をクリックし、ダイアログの "Save" をクリック。
+- **Processing Logic:**
+  1. 編集ダイアログ（`dlgEditTarget`）を開き、現在の値で `txtTargetAmount` と期間トグルをプリフィル（ある場合）。
+  2. **Client-Side Pre-Check:** 金額は `/^\d+(\.\d{1,2})?$/` に一致し > 0。
+  3. **Backend Dispatch:** `PUT /api/v1/admin/revenue/targets` に `{ targetAmount, targetPeriod }`（同じ期間のアクティブ目標を上書き）。
+  4. **Post-Execution UI:** 成功時、ダイアログを閉じ、target + KPIs を無効化し、成功トーストを表示。`TARGET_UPDATED` を記録。
+- **Exception Handling:**
+  - `400`（金額 ≤ 0）: ダイアログにインラインエラー。
+  - `500 SYS_001`: トースト。
+
+### 5.13 Revenue Forecast Load (Revenue tab mount / `tglRange` onChange)
+- **Trigger:** Revenue タブ選択時、または期間変更時。
+- **Processing Logic:**
+  1. 選択した期間の予測系列を取得（`GET /api/v1/admin/revenue/forecast`）。
+  2. populated バケットが7件以上の場合、トレンド線に続く点線として `serForecast` を描画し "AI Forecast" 凡例を表示。
+  3. 7件未満の場合、API は HTTP 200 で `{ forecastPoints: [], note }` を返す。点線は非表示にし、チャート下部にノートを描画。
+- **Exception Handling:**
+  - `500 SYS_001`: トースト。
+
+### 5.14 Export Button Click — Open Export Modal (`btnExportCommission` / `btnExportRevenue` / `btnExportPayout` onClick)
+- **Trigger:** いずれかのエクスポートボタンをクリック。
+- **Processing Logic:**
+  1. エクスポートモーダル（`dlgExport`）を開く。
+  2. オープナーに応じて `lblExportReportType` を設定: "Commission"（日付 + groupBy をレポートフィルタからプリフィル）、"Revenue"、"Payout"（出品者リスト + 利用可能な期間から導出した日付範囲をプリフィル）。
+  3. モーダルはレポートタイプごとにキーリマウント。
+
+### 5.15 Export Generation (`btnExportGenerate` onClick)
+- **Trigger:** 日付と形式を選択したままエクスポートモーダルの "Generate" をクリック。
+- **Processing Logic:**
+  1. **Client-Side Pre-Check:** 両方の日付必須、`dateFrom <= dateTo`、範囲 ≤ 365日。
+  2. **Backend Dispatch:** `POST /api/v1/admin/commission/export`、`POST /api/v1/admin/revenue/export`、`POST /api/v1/admin/revenue/payouts/export` のいずれかに `{ dateFrom, dateTo, format, groupBy?, merchantId? }`。
+  3. レスポンスは blob。ファイル名は `Content-Disposition` から取得（同じ形式でローカル構築のフォールバックあり）、ダウンロード前にサニタイズ。
+  4. `EXPORT_GENERATED` イベントを audit_logs に記録（BR-EXP-003）。
+- **Post-Execution UI:** 成功時、モーダルを閉じ成功トースト（"Export generated"）を表示。
+- **Exception Handling:**
+  - `400`: ダイアログにインラインエラーテキスト（必須 / 順序 / 365日上限）。
+  - `500 SYS_001`: 破壊的トースト "Export failed"。
+
+### 5.16 Export Close
+- **Trigger:** キャンセルボタン、バックドロップ、またはダウンロード成功後にモーダルを閉じる。
+- **Processing Logic:** ダイアログを閉じる。次回オープン時に状態はリセット（キーリマウント）。
+
+### 5.17 Language & Theme Toggles
+- **Note:** これらのコントロールは**管理レイアウトのヘッダー/サイドバー**に存在し、このページにはない。EN → JA → MY（`localStorage` に永続化）および light → dark → system を循環し、`admin.commission.*` キーを含む全ての翻訳ラベルを再描画する。
 
 ---
 
-## 7. データベースフィールドマッピング
+## 6. Validation & Error Message Mapping (バリデーション及びエラーメッセージマッピング)
 
-### 7.1 手数料率 → データベース
+**Note:** 全ての Commission / Revenue エンドポイントは **管理者のみ**。非管理者には `403 Forbidden`（`errorCode: RES_004`）を返す。バックエンドは `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` で強制。フロントエンドのルート保護は `roles={['admin', 'super_admin']}`。
 
-| フォームフィールド | APIフィールド | データベース列 | テーブル | データ型 |
+### 6.1 Field Validation (frontend、手動)
+
+| Target Field | Condition / Evaluation Logic | UI/UX Display | Message Text (EN) | Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- |
-| `txtRateInput` | `rate` | `commission_rate` | `commission_settings` | Decimal(5,2) |
+| `txtRateInput` | 下書きがNaNまたは ≤ 0 | フィールド下にインラインテキスト、Save無効 | "Commission rate must be between 0 and 100" | "手数料率は0から100の間である必要があります" |
+| `txtFromDate` / `txtToDate` | 両方が設定され `from > to` | パネル下にインラインテキスト | "From date must be earlier than or equal to To date." | "開始日は終了日以前である必要があります。" |
+| `txtTargetAmount` | 空、`/^\d+(\.\d{1,2})?$/` に不一致、または ≤ 0 | フィールド下にインラインテキスト、Saveブロック | "Target amount must be a positive number with up to 2 decimal places." | "目標金額は小数第2位までの正の数値である必要があります。" |
+| `txtExportStart` / `txtExportEnd` | いずれか空 | ダイアログにインラインエラー | "Please select a start and end date." | "開始日と終了日を選択してください。" |
+| `txtExportStart` / `txtExportEnd` | `dateFrom > dateTo` | ダイアログにインラインエラー | "End date must be after start date." | "終了日は開始日以降である必要があります。" |
+| `txtExportStart` / `txtExportEnd` | 範囲 > 365日 | ダイアログにインラインエラー | "Date range cannot exceed 365 days." | "日付範囲は365日を超えることはできません。" |
 
-### 7.2 手数料レポート → データベース
+### 6.1.1 Export Validation Messages
 
-| テーブル列 | データベース列 | テーブル | データ型 |
+| Target Field | Condition | Message Text (EN) | Message Text (JA) |
 | :--- | :--- | :--- | :--- |
-| 出品者 | `merchant_id` | `orders` → `merchants` | UUID FK |
-| 売上 | `total_amount` | `orders` (where `payment_status = 'completed'`) | Decimal(10,2) |
-| 手数料 | アプリケーションレベル集計 | — | 完了注文金額 × トランザクション作成時に有効だった率。データベース設計書 v2.2 は永続化された注文ごとの手数料金額または率スナップショットを定義していない。 |
+| `txtExportStart` / `txtExportEnd` | `dateFrom` または `dateTo` が空 | "Please select a start and end date." | "開始日と終了日を選択してください。" |
+| `txtExportStart` / `txtExportEnd` | `dateTo` が `dateFrom` より前 | "End date must be after start date." | "終了日は開始日以降である必要があります。" |
+| `txtExportStart` / `txtExportEnd` | 日付範囲が365日を超える | "Date range cannot exceed 365 days." | "日付範囲は365日を超えることはできません。" |
+| `tglExportFormat` | `csv`/`xlsx` 以外（DTO） | "Invalid export format. Use CSV or Excel." | "無効なエクスポート形式です。CSVまたはExcelを使用してください。" |
 
-### 7.3 収益ダッシュボード → データベース
+### 6.2 API Error Handling (global envelope)
 
-| KPI | データベース列 | テーブル | データ型 |
-| :--- | :--- | :--- | :--- |
-| 総売上 | `total_amount` | `orders` (where `payment_status = 'completed'`) | Decimal(10,2) |
-| 総手数料 | アプリケーションレベル集計 | — | 完了注文金額 × トランザクション時点の手数料率。上記の手数料スナップショートノートを参照。 |
-| 平均注文金額 | `total_amount` | `orders` (where `payment_status = 'completed'`) | Decimal(10,2) |
-| 純収益 | `total_amount` | 完了注文、返金を除く | Decimal(10,2) (返金を除く) |
-| 広告料金収益 | `amount` | `ad_payments` (where `payment_status = 'completed'`) | Decimal(10,2) |
-| 総収入 | 計算 | — | `total commission + ad fee revenue` |
+全てのエラーはグローバルな `AllExceptionsFilter` から `{statusCode, error, errorCode, message (string|string[]), timestamp, path, details?}` を返す。
 
-### 7.7 エクスポート → 監査ログ
+| Error Code | Target | Condition | UI/UX Display | Message Text (EN) | Message Text (JA) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `VAL_001` | form fields | DTOバリデーション失敗（400） | 該当箇所にインライン、それ以外はトースト | サーバーメッセージ | サーバーからのメッセージ |
+| `AUTH_001` | — | トークン欠落/無効（401） | ログインへリダイレクト | "Unauthorized" | "認証が必要です" |
+| `RES_004` | — | 管理者以外のロール（403） | `/unauthorized` へリダイレクト | "Forbidden" | "アクセス権限がありません" |
+| `RES_001` | payout actions | ペイアウト未検出（404） | エラートースト + 一覧更新 | "Payout not found" | "出金が見つかりません" |
+| `RES_003` | payout process | 処理済み（409） | 破壊的トースト | "Payout has already been processed" | "この出金は既に処理されています" |
+| `RES_003` | payout delete | 削除不可（409） | サーバーメッセージ付き AlertDialog | "Payout cannot be deleted" | "出金を削除できません" |
+| `RATE_001` | — | レート制限（429。グローバルリミッターは実質rejectしない） | トースト | "Too many requests" | "リクエストが多すぎます" |
+| `SYS_001` | — | サーバーエラー（500） | 破壊的トースト | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
+| `NET_ERR` | — | ネットワーク障害 | エラートースト | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
 
-| フォームフィールド | APIフィールド | 監査ログ列 | データ型 |
-| :--- | :--- | :--- | :--- |
-| レポートタイプ | `reportType` | `report_type` | VARCHAR(50) (`'commission'`, `'revenue'`, `'payout'`) |
-| エクスポート形式 | `format` | `format` | VARCHAR(10) (`'csv'`, `'xlsx'`) |
-| 開始日 | `dateFrom` | `date_from` | DATE |
-| 終了日 | `dateTo` | `date_to` | DATE |
+---
 
-### 7.4 出金 → データベース
+## 7. Database Fields Mapping (データベースフィールドマッピング)
 
-| フォームフィールド | APIフィールド | データベース列 | テーブル | データ型 |
+### 7.1 Commission Rate → Database
+
+| Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| 出金出品者 | `merchantId` | `merchant_id` | `payouts` | UUID FK (references `merchants.id`) |
-| 合計金額 | `totalAmount` | `total_amount` | `payouts` | Decimal(12,2) |
-| 手数料金額 | `commissionAmount` | `commission_amount` | `payouts` | Decimal(12,2) |
-| 広告料金金額 | `adFeeAmount` | `ad_fee_amount` | `payouts` | Decimal(12,2) |
-| 出金ステータス | `status` | `status` | `payouts` | VARCHAR(20) (`'pending'`, `'processing'`, `'completed'`, `'failed'`) |
-| 失敗理由 | `failureReason` | `failure_reason` | `payouts` | TEXT (nullable) |
-| 冪等性キー | `idempotencyKey` | `idempotency_key` | `payouts` | VARCHAR(255) (nullable, unique) |
-| 処理者 | `processedBy` | `processed_by` | `payouts` | UUID FK (references `users.id`, nullable) |
-| 処理日時 | `processedAt` | `processed_at` | `payouts` | TIMESTAMPTZ (nullable) |
+| `txtRateInput` | `rate` | `commission_rate` | `commission_settings` | Decimal(5,2)（デフォルト 12.00） |
+| — （履歴） | — | `commission_rate`、`effective_from`、`created_by` | `commission_rate_history` | Decimal(5,2)、TIMESTAMPTZ、UUID FK |
 
-### 7.5 収益目標 → データベース
+### 7.2 Commission Report → Database
 
-| フォームフィールド | APIフィールド | データベース列 | テーブル | データ型 |
+| Table Column | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- |
+| Merchant | `merchant_id` | `orders` → `merchants` | UUID FK |
+| Revenue | `total_amount` | `orders` where `payment_status = 'completed'` | Decimal(12,2) |
+| Commission | Application-level aggregation | — | 完了注文総額 × 注文作成時点の有効レート（rate-history 参照）。永続化された注文ごとのコミッション金額は存在しない。 |
+
+### 7.3 Revenue Dashboard → Database
+
+| KPI | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- |
+| Total Revenue | `total_amount` | `orders` where `payment_status = 'completed'` | Decimal(12,2) |
+| Total Commission | Application-level aggregation | — | 完了注文総額 × 注文作成時点のコミッション率 |
+| Avg Order Value | `total_amount` | `orders` where `payment_status = 'completed'` | Decimal(12,2) |
+| Net Revenue | Calculated | — | `totalRevenue − totalCommission`（返金は控除しない） |
+| Ad Fee Revenue | `amount` | `ad_payments`（with `payment_status = 'completed'`） | Decimal(10,2) |
+| Total Income | Calculated | — | `total commission + ad fee revenue` |
+
+### 7.4 Payout → Database
+
+| Form Field | API Field | Database Column | Table | Data Type |
+| :--- | :--- | :--- | :--- | :--- |
+| Payout Merchant | `merchantId` | `merchant_id` | `payouts` | UUID FK（references `merchants.id`） |
+| Total Amount | `totalAmount` | `total_amount` | `payouts` | Decimal(12,2) |
+| Commission Amount | `commissionAmount` | `commission_amount` | `payouts` | Decimal(12,2) |
+| Net Payout | `netAmount` | `net_payout`（列は存在する。レスポンスは live 計算） | `payouts` | `total_amount − commission_amount` |
+| Ad Fee Amount | `adFeeAmount` | — （列なし。常に `"0.00"`） | — | Constant |
+| Payout Status | `status` | `status` | `payouts` | VARCHAR(20)（`'pending'`、`'processing'`、`'completed'`） |
+| Idempotency Key | `idempotencyKey` | `idempotency_key` | `payouts` | VARCHAR(255)（unique。`payout-<id>`） |
+| Processed By | `processedBy` | `processed_by` | `payouts` | UUID FK（references `users.id`、nullable） |
+| Processed At | `processedAt` | `processed_at` | `payouts` | TIMESTAMPTZ（nullable） |
+| Completed Date | — | `period_start`、`period_end` | `payouts` | TIMESTAMP(3)。`period` は `YYYY-MM` として導出 |
+
+### 7.5 Revenue Target → Database
+
+| Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
 | `txtTargetAmount` | `targetAmount` | `target_amount` | `revenue_targets` | Decimal(12,2) |
-| `selTargetPeriod` | `targetPeriod` | `period` | `revenue_targets` | VARCHAR(20) (`'monthly'`, `'quarterly'`) |
+| `tglTargetPeriod` | `targetPeriod` | `period` | `revenue_targets` | VARCHAR(20)（`'monthly'`、`'quarterly'`）。期間ごとにアクティブ1件 |
 
-### 7.6 広告料金収益 → データベース
+### 7.6 Ad Fee Revenue → Database
 
-| KPI | データベース列 | テーブル | データ型 |
+| KPI | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- |
-| 総広告料金 | `amount` | `ad_payments` (where `payment_status = 'completed'`) | Decimal(10,2) |
-| アクティブ広告 | COUNT | `advertisements` (where `status = 'active'`) | Integer |
-| 保留中支払い | COUNT | `ad_payments` (where `payment_status = 'pending'`) | Integer |
-| 完了支払い | COUNT | `ad_payments` (where `payment_status = 'completed'`) | Integer |
+| Total Ad Fees | `amount` | `ad_payments`（with `payment_status = 'completed'`） | Decimal(10,2) |
+| Active Ads | COUNT | `advertisements`（active + approved + 未期限切れ） | Integer |
+| Pending Payments | COUNT | `ad_payments`（with `payment_status = 'pending'`） | Integer |
+| Completed Payments | COUNT | `ad_payments`（with `payment_status = 'completed'`） | Integer |
+
+### 7.7 Export → Audit Logs
+
+エクスポートイベントは `audit_logs` に `action = 'EXPORT_GENERATED'` で保存。ペイロード（`reportType`、`format`、`dateFrom`、`dateTo`、`rowCount`）は `newValue` JSON カラムに格納される。専用カラム（`report_type`/`format`/`date_from`/`date_to`）は存在しない。保持期間：1年。
 
 ---
 
-## 8. APIレスポンスマッピング
+## 8. API Response Mapping (APIレスポンスマッピング)
 
-### 8.1 手数料率取得成功レスポンス
-
-```json
-{
-  "data": {
-    "rate": "10.00"
-  }
-}
-```
-
-### 8.2 手数料率更新成功レスポンス
+### 8.1 Commission Rate Fetch Success Response
 
 ```json
 {
   "data": {
-    "rate": "12.50"
+    "rate": "12"
   }
 }
 ```
 
-### 8.3 手数料率更新エラーレスポンス
+### 8.2 Commission Rate Update Success Response
+
+```json
+{
+  "data": {
+    "rate": "10.5"
+  }
+}
+```
+
+### 8.3 Commission Rate Update Error Response
 
 ```json
 {
   "statusCode": 400,
   "error": "BAD_REQUEST",
-  "errorCode": "COMM_001",
-  "message": "Commission rate must be between 0 and 100",
+  "errorCode": "VAL_001",
+  "message": ["commissionRate must be a number with up to 2 decimal places"],
   "timestamp": "2026-08-10T12:00:00.000Z",
-  "path": "/api/v1/admin/commission"
+  "path": "/api/v1/admin/commission",
+  "details": { "validationErrors": [] }
 }
 ```
 
-### 8.4 収益ダッシュボード成功レスポンス
+### 8.4 Revenue Dashboard Success Response
 
 ```json
 {
   "data": {
     "kpis": {
-      "totalRevenue": "125000.00",
-      "totalCommission": "12500.00",
-      "avgOrderValue": "8200.00",
-      "netRevenue": "112500.00",
-      "adFeeRevenue": "35000.00",
-      "totalIncome": "47500.00"
+      "totalRevenue": "125000",
+      "totalCommission": "12500",
+      "avgOrderValue": "8200",
+      "netRevenue": "112500",
+      "adFeeRevenue": "35000",
+      "totalIncome": "47500"
     },
     "trendPoints": [
-      { "date": "2026-08-09", "revenue": "4200.00", "commission": "420.00", "adFee": "1200.00", "totalIncome": "1620.00" }
+      { "date": "2026-08-09", "revenue": "4200", "commission": "420", "adFee": "1200", "totalIncome": "1620" }
     ],
-    "payments": {
-      "completed": 120,
+    "statusCounts": {
+      "completed": 12,
+      "processing": 3,
       "pending": 8
     }
   }
 }
 ```
 
-### 8.5 出金処理成功レスポンス
+### 8.5 Payout Process Success Response
 
 ```json
 {
   "data": {
     "payoutId": "clx1234567890",
     "merchantId": "clx0987654321",
-    "totalAmount": "8000.00",
-    "commissionAmount": "800.00",
-    "adFeeAmount": "200.00",
+    "totalAmount": "8000",
+    "commissionAmount": "800",
+    "adFeeAmount": "0.00",
+    "netAmount": "7200",
     "status": "completed",
     "processedAt": "2026-08-10T12:00:00.000Z",
-    "idempotencyKey": "payout-2026-08-10-clx0987654321"
+    "idempotencyKey": "payout-clx1234567890"
   }
 }
 ```
 
-### 8.6 出金処理エラーレスポンス (冪等性競合)
+### 8.6 Payout Process Error Response (Idempotency Conflict)
 
 ```json
 {
   "statusCode": 409,
   "error": "CONFLICT",
-  "errorCode": "COMM_004",
+  "errorCode": "RES_003",
   "message": "Payout has already been processed",
   "timestamp": "2026-08-10T12:00:00.000Z",
   "path": "/api/v1/admin/revenue/payouts/clx1234567890/process"
 }
 ```
 
-### 8.7 収益目標取得成功レスポンス
+### 8.7 Revenue Target Fetch Success Response
 
 ```json
 {
   "data": {
     "target": {
-      "targetAmount": "100000.00",
+      "targetAmount": "100000",
       "period": "monthly",
-      "actualRevenue": "64350.00",
+      "actualRevenue": "64350",
       "progressPercent": "64.35"
     }
   }
 }
 ```
 
-### 8.8 収益目標保存成功レスポンス
+### 8.8 Revenue Target Fetch — No Target
 
 ```json
 {
   "data": {
-    "targetAmount": "150000.00",
-    "targetPeriod": "monthly",
-    "actualRevenue": "64350.00",
-    "progressPercent": "42.90"
+    "target": null
   }
 }
 ```
 
-### 8.9 収益予測成功レスポンス
+### 8.9 Revenue Target Save Success Response
+
+```json
+{
+  "data": {
+    "targetAmount": "150000",
+    "targetPeriod": "monthly",
+    "actualRevenue": "64350",
+    "progressPercent": "42.9"
+  }
+}
+```
+
+### 8.10 Revenue Forecast Success Response
 
 ```json
 {
   "data": {
     "forecastPoints": [
-      { "date": "2026-08-10", "forecastRevenue": "4400.00", "forecastCommission": "440.00", "forecastAdFee": "1300.00" }
+      { "date": "2026-08-10", "forecastRevenue": "4400", "forecastCommission": "440", "forecastAdFee": "1300" }
     ]
   }
 }
 ```
 
-### 8.10 収益予測空レスポンス (データ不十分)
+### 8.11 Revenue Forecast Empty Response (Insufficient Data)
 
 ```json
 {
@@ -1016,89 +927,61 @@
 }
 ```
 
-### 8.11 収益目標保存エラーレスポンス
+### 8.12 Revenue Target Save Error Response
 
 ```json
 {
   "statusCode": 400,
   "error": "BAD_REQUEST",
-  "errorCode": "COMM_005",
-  "message": "Target amount must be a positive number with up to 2 decimal places",
+  "errorCode": "VAL_001",
+  "message": "Target amount must be greater than 0",
   "timestamp": "2026-08-11T12:00:00.000Z",
   "path": "/api/v1/admin/revenue/targets"
 }
 ```
 
-### 8.12 管理者認証エラーレスポンス (全エンドポイント)
+### 8.13 Admin Authorization Error Response (All Endpoints)
 
 ```json
 {
   "statusCode": 403,
   "error": "FORBIDDEN",
-  "errorCode": "COMM_002",
-  "message": "You do not have permission to access this page",
+  "errorCode": "RES_004",
+  "message": "Forbidden",
   "timestamp": "2026-08-10T12:00:00.000Z",
   "path": "/api/v1/admin/commission"
 }
 ```
 
-**注記:** 要件定義書 §2.5 および開発ルール §2.7 に従い、すべての手数料および収益エンドポイントは管理者のみ。バックエンドは `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` で強制する必要がある。管理者以外のユーザー (購入者、出品者) はこのエラーを受信。
+**Note:** 全ての Commission / Revenue エンドポイントは管理者のみ。バックエンドは `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` で強制。フロントエンドのルートは `admin` と `super_admin` を許可。非管理者（buyer、merchant）はこのエラーを受け取る。
 
-### 8.15 手数料/収益/出金エクスポート — 成功レスポンス
+### 8.14 Export — Success Response
 
 ```json
 {
   "statusCode": 200,
   "headers": {
-    "Content-Type": "text/csv",
-    "Content-Disposition": "attachment; filename=\"commission-report.csv\""
+    "Content-Type": "text/csv | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "Content-Disposition": "attachment; filename=\"commission report(by merchant) report 20260801-20260831(20260831).csv\""
   }
 }
 ```
 
-### 8.16 最近のエクスポートリストレスポンス
+> ペイアウトエクスポートのファイル名に形式サフィックスはない: `payout report(for all)20260801-20260831(20260831)`。CSVはUTF-8 BOM付きで書き込まれる。XLSXは `Report` という単一シート。10,000行を超えるレスポンスは警告行を追加して切り詰められる。
 
-```json
-{
-  "data": {
-    "exports": [
-      {
-        "reportType": "commission",
-        "format": "csv",
-        "dateRange": { "from": "2026-01-01", "to": "2026-08-25" },
-        "generatedAt": "2026-08-25T10:00:00.000Z"
-      }
-    ]
-  }
-}
-```
-
-### 8.17 エクスポート生成失敗エラーレスポンス
-
-```json
-{
-  "statusCode": 500,
-  "error": "INTERNAL_SERVER_ERROR",
-  "errorCode": "EXP_005",
-  "message": "Report generation failed. Please try again.",
-  "timestamp": "2026-08-25T10:00:00.000Z",
-  "path": "/api/v1/admin/commission/export"
-}
-```
-
-### 8.13 広告料金収益成功レスポンス
+### 8.15 Ad Fee Revenue Success Response
 
 ```json
 {
   "data": {
     "adFeeKpis": {
-      "totalAdFees": "35000.00",
+      "totalAdFees": "35000",
       "activeAds": 12,
       "pendingPayments": 3,
       "completedPayments": 45
     },
     "adFeeTrendPoints": [
-      { "date": "2026-08-09", "adFee": "1200.00" }
+      { "date": "2026-08-09", "adFee": "1200" }
     ],
     "adFeePaymentStatus": {
       "completed": 45,
@@ -1109,13 +992,13 @@
 }
 ```
 
-### 8.14 広告料金収益空レスポンス
+### 8.16 Ad Fee Revenue Empty Response
 
 ```json
 {
   "data": {
     "adFeeKpis": {
-      "totalAdFees": "0.00",
+      "totalAdFees": "0",
       "activeAds": 0,
       "pendingPayments": 0,
       "completedPayments": 0
@@ -1132,383 +1015,198 @@
 
 ---
 
-## 9. i18nキーリファレンス
+## 9. i18n Keys Reference (i18nキーリファレンス)
 
-### 9.1 英語 (en) — 手数料
+全てのキーは `frontend/public/locales/{en,ja,my}/translation.json` の `admin.commission` 名前空間に存在（139キー、ロケール間で同期）。コンポーネントは `t(key, 'Fallback')` を呼ぶ。キーが存在しない場合、i18next はインラインのフォールバックを返す（フォールバック指定がない場合は生のキー）。
 
-| キー | 値 |
+### 9.1 実際に使用される主なキー（EN値）
+
+| Key | Value |
 | :--- | :--- |
-| `commission.title` | "Commission" |
-| `commission.rate` | "Commission Rate" |
-| `commission.editRate` | "Edit Rate" |
-| `commission.editRateTitle` | "Edit Commission Rate" |
-| `commission.ratePlaceholder` | "Enter commission rate" |
-| `commission.from` | "From" |
-| `commission.to` | "To" |
-| `commission.apply` | "Apply" |
-| `commission.reset` | "Reset" |
-| `commission.save` | "Save" |
-| `commission.cancel` | "Cancel" |
-| `commission.reportMerchant` | "Merchant" |
-| `commission.reportOrders` | "Orders" |
-| `commission.reportRevenue` | "Revenue" |
-| `commission.reportCommission` | "Commission" |
-| `commission.saveSuccess` | "Commission rate updated successfully" |
+| `admin.commission.title` | "Commission & Revenue" |
+| `admin.commission.tabs.commission` / `.revenue` | "Commission" / "Revenue" |
+| `admin.commission.rate.title` / `.edit` / `.validation` | "Commission Rate" / "Edit Rate" / "Commission rate must be between 0 and 100" |
+| `admin.commission.groupBy.byMerchant` / `.byDay` / `.byOrder` | "By Merchant" / "By Day" / "By Order" |
+| `admin.commission.filters.apply` / `.reset` / `.invalidDateRange` | "Apply" / "Reset" / 範囲エラーテキスト |
+| `admin.commission.table.*` | レポート/ペイアウトテーブルのヘッダー（merchant、orders、revenue、commission、status、date、action…） |
+| `admin.commission.kpi.*` | KPIカードラベル（totalRevenue、totalCommission、adFeeRevenue、totalIncome、avgOrderValue、netRevenue） |
+| `admin.commission.trend.*` | チャートタイトル、凡例（revenue、commission、adFee、aiForecast）、空状態、説明 |
+| `admin.commission.range.*` | 期間トグルラベル（7d/30d/90d/1y）— **不存在。コードのフォールバック使用** |
+| `admin.commission.target.*` | 目標カードラベル + バリデーション |
+| `admin.commission.payout.*` | ペイアウトテーブル/ダイアログ/フィルトラベル |
+| `admin.commission.payoutStatus` | "Payout Status" |
+| `admin.commission.status.*` | ステータスピルラベル（pending/processing/completed/failed/refunded） |
+| `admin.commission.adPaymentStatus` / `adFees.*` | 広告パネルラベル |
+| `admin.commission.export.*` | エクスポートダイアログラベル + バリデーションメッセージ |
+| `admin.commission.toast.*` | トーストメッセージ（rateUpdated、targetUpdated、payoutProcessed、payoutPartial、payoutAlreadyProcessed、payoutCannotDelete、payoutDeleteFailed、payoutsDeleted_one/_other、export 成功/失敗） |
+| `common.*` | 共有ラベル（cancel、save、confirm、close、ok、filters.all、filters.search） |
 
-### 9.1.1 英語 (en) — 手数料エクスポート
+### 9.2 既知の i18n ギャップ
 
-| キー | 値 |
+| Key | Status |
 | :--- | :--- |
-| `commission.export` | "Export" |
-
-### 9.2 英語 (en) — 収益
-
-| キー | 値 |
-| :--- | :--- |
-| `revenue.title` | "Revenue" |
-| `revenue.totalRevenue` | "Total Revenue" |
-| `revenue.totalCommission` | "Total Commission" |
-| `revenue.avgOrderValue` | "Avg Order Value" |
-| `revenue.netRevenue` | "Net Revenue" |
-| `revenue.range` | "Range" |
-| `revenue.range7d` | "7d" |
-| `revenue.range30d` | "30d" |
-| `revenue.range90d` | "90d" |
-| `revenue.range1y` | "1y" |
-| `revenue.payCompleted` | "Completed" |
-| `revenue.payPending` | "Pending" |
-| `revenue.process` | "Process" |
-| `revenue.confirmMessage` | "Process payout for {merchant}?" |
-| `revenue.confirm` | "Confirm" |
-| `revenue.cancel` | "Cancel" |
-| `revenue.payoutSuccess` | "Payout processed successfully" |
-| `revenue.loading` | "Loading..." |
-| `revenue.targetProgress` | "Revenue Target" |
-| `revenue.targetPeriod` | "Period" |
-| `revenue.targetAmount` | "Target Amount" |
-| `revenue.progress` | "Progress" |
-| `revenue.progressLabel` | "64.5% of target" |
-| `revenue.editTarget` | "Edit Target" |
-| `revenue.targetPlaceholder` | "Enter target amount" |
-| `revenue.targetPeriodLabel` | "Target Period" |
-| `revenue.saveTarget` | "Save" |
-| `revenue.cancelTarget` | "Cancel" |
-| `revenue.targetSaveSuccess` | "Revenue target updated successfully" |
-| `revenue.forecast` | "AI Forecast" |
-| `revenue.forecastUnavailable` | "Not enough historical data to generate a forecast" |
-| `revenue.adFeeRevenue` | "Ad Fee Revenue" |
-| `revenue.totalIncome` | "Total Income" |
-| `revenue.adPaymentCompleted` | "Ad Completed" |
-| `revenue.adPaymentPending` | "Ad Pending" |
-| `revenue.adPaymentRefunded` | "Ad Refunded" |
-| `revenue.adFeeSummary` | "Ad Fee Summary" |
-| `revenue.activeAds` | "Active Ads" |
-| `revenue.totalCollected` | "Total Collected" |
-| `revenue.pendingPayments` | "Pending Payments" |
-| `revenue.adPaymentStatus` | "Ad Payment Status" |
-| `errors.unauthorized` | "You do not have permission to access this page" |
-| `errors.serverError` | "Something went wrong. Please try again" |
-| `errors.networkError` | "Network error. Please check your connection" |
-
-### 9.2.1 英語 (en) — エクスポート
-
-| キー | 値 |
-| :--- | :--- |
-| `export.title` | "Export Report" |
-| `export.reportType` | "Report Type" |
-| `export.dateRange` | "Date Range" |
-| `export.format` | "Export Format" |
-| `export.estimatedRows` | "Estimated {n} rows" |
-| `export.generate` | "Generate Report" |
-| `export.cancel` | "Cancel" |
-| `export.download` | "Download" |
-| `export.recentExports` | "Recent Exports" |
-| `export.processing` | "Processing" |
-| `export.ready` | "Ready" |
-| `export.expired` | "Expired" |
-| `export.success` | "Export generated successfully" |
-| `revenue.export` | "Export" |
-| `revenue.exportPayout` | "Export Payout History" |
-
-### 9.3 日本語 (ja) — 手数料
-
-| キー | 値 |
-| :--- | :--- |
-| `commission.title` | "手数料" |
-| `commission.rate` | "手数料率" |
-| `commission.editRate` | "手数料率を編集" |
-| `commission.editRateTitle` | "手数料率の編集" |
-| `commission.ratePlaceholder` | "手数料率を入力" |
-| `commission.from` | "開始日" |
-| `commission.to` | "終了日" |
-| `commission.apply` | "適用" |
-| `commission.reset` | "リセット" |
-| `commission.save` | "保存" |
-| `commission.cancel` | "キャンセル" |
-| `commission.reportMerchant` | "出品者" |
-| `commission.reportOrders` | "注文数" |
-| `commission.reportRevenue` | "売上" |
-| `commission.reportCommission` | "手数料" |
-| `commission.saveSuccess` | "手数料率が正常に更新されました" |
-
-### 9.3.1 日本語 (ja) — 手数料エクスポート
-
-| キー | 値 |
-| :--- | :--- |
-| `commission.export` | "エクスポート" |
-
-### 9.4 日本語 (ja) — 収益
-
-| キー | 値 |
-| :--- | :--- |
-| `revenue.title` | "収益" |
-| `revenue.totalRevenue` | "総売上" |
-| `revenue.totalCommission` | "総手数料" |
-| `revenue.avgOrderValue` | "平均注文金額" |
-| `revenue.netRevenue` | "純収益" |
-| `revenue.range` | "期間" |
-| `revenue.range7d` | "7日" |
-| `revenue.range30d` | "30日" |
-| `revenue.range90d` | "90日" |
-| `revenue.range1y` | "1年" |
-| `revenue.payCompleted` | "完了" |
-| `revenue.payPending` | "保留中" |
-| `revenue.process` | "処理" |
-| `revenue.confirmMessage` | "{merchant} の出金を処理しますか？" |
-| `revenue.confirm` | "確認" |
-| `revenue.cancel` | "キャンセル" |
-| `revenue.payoutSuccess` | "出金が正常に処理されました" |
-| `revenue.loading` | "読み込み中..." |
-| `revenue.targetProgress` | "収益目標" |
-| `revenue.targetPeriod` | "目標期間" |
-| `revenue.targetAmount` | "目標金額" |
-| `revenue.progress` | "進捗" |
-| `revenue.progressLabel` | "目標の64.5%" |
-| `revenue.editTarget` | "目標を編集" |
-| `revenue.targetPlaceholder` | "目標金額を入力" |
-| `revenue.targetPeriodLabel` | "目標期間" |
-| `revenue.saveTarget` | "保存" |
-| `revenue.cancelTarget` | "キャンセル" |
-| `revenue.targetSaveSuccess` | "収益目標が正常に更新されました" |
-| `revenue.forecast` | "AI予測" |
-| `revenue.forecastUnavailable` | "予測を生成するのに十分な履歴データがありません" |
-| `revenue.adFeeRevenue` | "広告料金収益" |
-| `revenue.totalIncome` | "総収入" |
-| `revenue.adPaymentCompleted` | "広告完了" |
-| `revenue.adPaymentPending` | "広告保留中" |
-| `revenue.adPaymentRefunded` | "広告返金" |
-| `revenue.adFeeSummary` | "広告料金サマリー" |
-| `revenue.activeAds` | "アクティブ広告" |
-| `revenue.totalCollected` | "回収総額" |
-| `revenue.pendingPayments` | "保留中の支払い" |
-| `revenue.adPaymentStatus` | "広告決済ステータス" |
-| `errors.unauthorized` | "このページへのアクセス権限がありません" |
-| `errors.serverError` | "問題が発生しました。もう一度お試しください" |
-| `errors.networkError` | "ネットワークエラー。接続を確認してください" |
-
-### 9.4.1 日本語 (ja) — エクスポート
-
-| キー | 値 |
-| :--- | :--- |
-| `export.title` | "レポートをエクスポート" |
-| `export.reportType` | "レポートタイプ" |
-| `export.dateRange` | "日付範囲" |
-| `export.format` | "エクスポート形式" |
-| `export.estimatedRows` | "推定{n}行" |
-| `export.generate` | "レポートを生成" |
-| `export.cancel` | "キャンセル" |
-| `export.download` | "ダウンロード" |
-| `export.recentExports` | "最近のエクスポート" |
-| `export.processing` | "処理中" |
-| `export.ready` | "完了" |
-| `expired` | "期限切れ" |
-| `export.success` | "エクスポートが正常に生成されました" |
-| `revenue.export` | "エクスポート" |
-| `revenue.exportPayout` | "出金履歴をエクスポート" |
+| `admin.commission.period.{weekly,monthly,quarterly,yearly}` | **不存在** — KPIカードはここでフォールバックを渡さないため、生のキーが描画される（目に見えるバグ） |
+| `admin.commission.range.*` | 不存在 — トグルは `7d`/`30d`/`90d`/`1y` にフォールバック（許容範囲） |
+| `admin.commission.reportTypes.*` | 不存在 — ダイアログは生の `commission`/`revenue`/`payout` を表示 |
+| `admin.commission.kpi.*`（ラベル） | 不存在 — カードは英語リテラルにフォールバック |
+| `payout.completedOrders` / `pendingOrders`（完全一致） | ただし `_one`/`_other` 複数形が存在し、i18next の複数形解決で使用される |
+| `toast.payoutsDeleted`（完全一致） | `_one`/`_other` 複数形が存在する |
 
 ---
 
-## 10. 共有コンポーネント
+## 10. Shared Components (共有コンポーネント)
 
-### 10.1 DashboardLayoutコンポーネント
+### 10.1 Admin Layout
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/layout/DashboardLayout.tsx` |
-| **目的** | すべての管理者ダッシュボードページの共有レイアウトラッパー |
+| **Note** | このページは `DashboardLayout` を内部で使用せず、スタンドアロンのコンテナを描画。言語/テーマトグルと管理者ユーザーメニューは、ルートをホストする管理レイアウトから提供される。 |
 
-**レイアウト構造:**
-```text
-┌─────────────────────────────────────────────┐
-│  [サイドバー]  │  [ヘッダー]                     │
-│             │  {children}                   │
-│             │                               │
-│             │  [言語] [テーマ]                 │
-└─────────────────────────────────────────────┘
-```
+### 10.2 Toast Component
 
-### 10.2 Alertコンポーネント
-
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/alert.tsx` |
-| **バリアント** | `default`, `destructive`, `success` |
-| **用途** | ページ上部のエラー/成功バナー |
+| **Location** | `frontend/src/components/ui/toast.tsx` |
+| **Variants** | `default`, `destructive` |
+| **Usage** | このページの全てのAPI成功/失敗通知（アラートバナーはなし） |
 
-### 10.3 Dialogコンポーネント
+### 10.3 Dialog Component
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/dialog.tsx` |
-| **用途** | 手数料率編集ダイアログおよび出金確認ダイアログ |
+| **Location** | `frontend/src/components/ui/dialog.tsx` |
+| **Usage** | 手数料編集ダイアログ、ペイアウト確認ダイアログ、ペイアウト詳細ダイアログ、目標編集ダイアログ、エクスポートモーダル、削除確認 |
 
-### 10.4 Cardコンポーネント
+### 10.4 AlertDialog Component
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/card.tsx` |
-| **用途** | 手数料率カードおよび収益KPIカード |
+| **Location** | `frontend/src/components/ui/alert-dialog.tsx` |
+| **Usage** | ペイアウト削除エラー表示 |
 
-### 10.5 Badgeコンポーネント
+### 10.5 Card Component
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/badge.tsx` |
-| **用途** | 支払いステータスバッジおよび出金ステータスバッジ |
+| **Location** | `frontend/src/components/ui/card.tsx` |
+| **Usage** | 手数料カード、KPIカード、目標カード、ステータスパネル、広告料金サマリー |
 
-### 10.6 Tableコンポーネント
+### 10.6 Badge Component
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/table.tsx` |
-| **用途** | 手数料レポートテーブル、出金テーブル、最近のエクスポートテーブル |
+| **Location** | `frontend/src/components/ui/badge.tsx`（`badges.tsx` レジストリ経由） |
+| **Usage** | ペイアウトステータスバッジ、支払いステータスピル |
 
-### 10.7 RadioGroupコンポーネント
+### 10.7 Table Component
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/radio-group.tsx` |
-| **用途** | エクスポートモーダルでのエクスポート形式選択 (CSV / Excel) |
+| **Location** | `frontend/src/components/ui/table.tsx`（ペイアウトテーブル）、レポートテーブルは手書きの `<table>` |
+| **Usage** | ペイアウトテーブル、手数料レポートテーブル |
 
-### 10.8 DateRangePickerコンポーネント
+### 10.8 Date Input Component
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/date-range-picker.tsx` |
-| **用途** | エクスポートモーダルでのエクスポート日付範囲選択 |
+| **Location** | ネイティブの `<input type="date">`（レポートフィルタ、エクスポートダイアログ、編集ダイアログ） |
+| **Usage** | このページの全ての日付入力 |
 
-### 10.9 Progressコンポーネント
+### 10.9 Progress Bar
 
-| プロパティ | 値 |
+| Property | Value |
 | :--- | :--- |
-| **場所** | `frontend/src/components/ui/progress.tsx` |
-| **用途** | 収益目標ゲージバー |
+| **Location** | 手書きの div + `role="progressbar"`（shadcn の Progress コンポーネントは不使用） |
+| **Usage** | 収益目標ゲージ |
 
 ---
 
-## 11. 特記事項・UI仕様
+## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
 
-- **デザインシステム:** 高級コスメテーマ — プライマリ `#7C3AED` (パープル)、アクセント `#EC4899` (ピンク)、セカンダリ `#F3E8FF` (ラベンダー)。
-- **通貨精度:** すべての金銭的価値は、小数点以下を保持するために文字列として送信およびレンダリング (開発ルール §1.2 の10進数処理に従う)。浮動小数点としてレンダリングしない。データベース設計書に従って `Decimal(10,2)` または `Decimal(12,2)` を使用。
-- **レスポンシブビューポートデザイン:** KPIグリッドはモバイルで積み重なり、テーブルは768px未満で水平スクロール可能 (開発ルール §9 のレスポンシブデザインに従う)。
-- **ローディング状態:** APIレスポンスが到着するまで、カード、チャート、テーブルにスケルトンローダーを表示。ボタンは操作中にスピナーを表示。
-- **アクセシビリティ:** すべてのコントロールはキーボードで操作可能でなければならない。ARIAラベルが必須。エラーメッセージは `role="alert"` でアナウンスされなければならない。ダイアログのフォーカストラップを強制。
-- **RBAC実装:** 手数料・収益ページは要件定義書 §2.5 に従って**管理者のみ**。バックエンドはすべてのエンドポイントで `@UseGuards(JwtAuthGuard, RolesGuard)` と `@Roles('admin')` を強制しなければならない。フロントエンドは `<ProtectedRoute roles={['admin']} />` でロールを検証しなければならない。未承認アクセス (管理者以外のユーザー) は `403 Forbidden` とエラーコード `COMM_002` を返す。
-- **デザインテークンス:** ステータスバッジは標準カラーマッピングを使用 (開発ルール §9) — 成功: `bg-green-100 text-green-800`、エラー: `bg-red-100 text-red-800`、警告: `bg-amber-100 text-amber-800`。
-- **命名規則:** テーブル/列名はデータベース設計書 v2.2 に従う (DBではsnake_case、API/JSONではcamelCase)。UUIDはデータベース設計書 §1.4 に従って主キーおよび外部キーとして使用。
-- **監査証跡:** 手数料率更新、収益目標更新、出金処理は管理者IDとともにログに記録され、監査ポリシーに従って保持 (開発ルールに従って90日 / 30日)。
-- **収益目標ゲージ:** 100%を超える進捗はゲージ表示用にクランプされ、「目標超過」として別途表示 (BR-REV-008)。期間タイプごとに1つの有効な目標のみが保存される。同じ期間に保存すると上書きされる (BR-REV-009)。
-- **AI予測:** 予測値は非確定的な見積もり — 財務記録やKPI/集計計算には決して使用されない (BR-REV-015)。履歴データが不十分な場合、点線は非表示になり、情報ノートが表示される (BR-REV-014)。
-- **広告料金収益:** 広告料金収益は別のKPIカードとして表示され、総プラットフォーム収入に含まれる。広告料金トレンド系列は収益チャートに別のラインとして重ねて表示。広告料金支払いステータス (完了、保留中、返金) は専用パネルで注文支払いステータスと並んで集計される。
-- **エクスポート機能:** エクスポートボタンは手数料タブ (レポートテーブルの下) と収益タブ (出金テーブルの下) の両方で利用可能。エクスポートモーダル (レイアウト5) はCSVおよびExcel形式のみ対応 (PDFなし)。日付範囲は必須で最大365日。すべてのエクスポートは同期的に生成される。すべてのエクスポートアクションは audit_logs にログされる (BR-EXP-003)。
-- **支払イステータスパネル:** 注文支払いパネルは1行2列グリッドに完了および保留中バッジのみをレンダリング。広告支払いパネルは1行3列グリッドに完了、保留中、返金バッジをレンダリング。「失敗」/「返金」注文バッジおよび「広告失敗」バッジは意図的に省略 — グリッド列と間隔が再調整され、両パネルがすべてのブレイクポイントで視覚的に整列されるようにした。
-
----
-
-## 12. テストチェックリスト
-
-### 12.1 手数料ページテスト
-
-- [ ] ページが手数料率カードとレポートテーブルを読み込む
-- [ ] APIレスポンスが到着するまでスケルトンローディング状態が表示される
-- [ ] 現在の手数料率がパーセンテージフォーマットで表示される
-- [ ] 手数料率編集ボタンが編集ダイアログを開く
-- [ ] 手数料率ダイアログに現在の手数料率が事前設定される
-- [ ] 空の手数料率がエラーで拒否される (VAL-COMM-001)
-- [ ] 小数でない手数料率がエラーで拒否される (VAL-COMM-002)
-- [ ] 範囲外の手数料率がエラーで拒否される (VAL-COMM-003)
-- [ ] 有効な手数料率更新が成功トーストを表示し、表示を更新する
-- [ ] キャンセルボタンが保存せずにダイアログを閉じる
-- [ ] レポートフィルタ日付検証が機能する (from <= to)
-- [ ] 適用ボタンがフィルタリングされたレポートを再取得する
-- [ ] リセットボタンがフィルタをクリアし、デフォルトレポートを再読み込みする
-- [ ] レポートテーブルがソートをサポートする
-- [ ] ページネーションがレポートテーブルで機能する
-- [ ] 未承認アクセス (購入者/出品者) がリダイレクトまたはブロックされる
-
-### 12.2 収益ページテスト
-
-- [ ] ページがKPIカード、トレンドチャート (予測付き)、目標進捗カード、支払いステータスパネル、出金テーブルを読み込む
-- [ ] 4つのKPIカードすべてが正しい値を通貨フォーマットで表示する
-- [ ] トレンドチャートが売上と手数料系列をレンダリングする
-- [ ] 期間切替がデフォルトで `30d` に設定される
-- [ ] 期間を `7d` / `90d` / `1y` に変更すると、チャートが再取得および更新される
-- [ ] 支払いステータスパネルが正しいカウントと色で完了および保留中バッジのみを表示する (失敗/返金バッジなし)
-- [ ] 支払イステータスパネルと広告支払いパネルバッジがモバイル/タブレット/デスクトップブレイクポイントでグリッドに整列する
-- [ ] 出金テーブルが出品者、金額、ステータス、日付を表示する
-- [ ] 処理ボタンが保留中出金のみに表示される
-- [ ] 処理ボタンが非保留中出金では無効化される
-- [ ] 確認ダイアログが出品者と金額を表示して開く
-- [ ] 確認が出金を処理し、成功トーストを表示する
-- [ ] キャンセルが処理せずにダイアログを閉じる
-- [ ] 出金が見つからない場合、アラートが表示される (COMM_003)
-- [ ] 出金が既に処理済みの場合、競合アラートが表示される (COMM_004)
-- [ ] KPIメトリクスが出金処理後に更新される
-- [ ] 目標進捗カードが期間切替、目標金額、ゲージバー、進捗%を表示する
-- [ ] 目標期間がデフォルトで `monthly` に設定される
-- [ ] 目標進捗ゲージが目標設定まで0%を表示する
-- [ ] 目標編集ボタンが編集ダイアログを開く
-- [ ] 空の目標金額がエラーで拒否される (VAL-COMM-007)
-- [ ] 目標金額 ≤ 0 または無効な小数がエラーで拒否される (VAL-COMM-008)
-- [ ] 無効な目標期間がエラーで拒否される (VAL-COMM-009)
-- [ ] 有効な目標保存が成功トーストを表示し、ゲージバーを更新する
-- [ ] 同じ期間に目標を保存すると、以前の目標が上書きされる
-- [ ] ゲージが0–100%にクランプされ、100%超は「目標超過」として表示される
-- [ ] AI予測点線が7日/30日/90日/1年のトレンドに沿ってレンダリングされる
-- [ ] データが不十分な場合、予測が情報ノートと共に非表示になる (COMM_006)
-- [ ] 予測値がKPIまたは集計合計に影響しない
-- [ ] 広告料金KPIカードが正しい値を通貨フォーマットで表示する
-- [ ] 広告料金トレンド系列がチャート上に手数料系列と並んでレンダリングされる
-- [ ] 広告支払いステータスパネルが正しいカウントと色で完了、保留中、返金バッジのみを表示する (広告失敗バッジなし)
-- [ ] 広告料金サマリーカードがアクティブ広告、回収総額、保留中支払いを正しく表示する
-- [ ] 総収入カードが手数料 + 広告料金の結合額を表示する
-- [ ] 期間を変更すると広告料金トレンドデータが再取得される
-
-### 12.3 エクスポートテスト
-
-- [ ] 手数料エクスポートボタンがレポートタイプ「手数料」でエクスポートモーダルを開く
-- [ ] 収益エクスポートボタンがレポートタイプ「収益」でエクスポートモーダルを開く
-- [ ] 出金エクスポートボタンがレポートタイプ「出金」でエクスポートモーダルを開く
-- [ ] エクスポートモーダルが開いたときに空の日付範囲とデフォルトCSV形式を表示する
-- [ ] 空の日付範囲がエラーで拒否される (VAL-EXP-001)
-- [ ] dateTo が dateFrom より前の場合、エラーで拒否される (VAL-EXP-002)
-- [ ] 日付範囲が365日を超過する場合、エラーで拒否される (VAL-EXP-003)
-- [ ] 無効な形式がエラーで拒否される (VAL-EXP-004)
-- [ ] 日付範囲適用後に推定行数が表示される
-- [ ] 生成ボタンが生成中に無効化される (スピナー)
-- [ ] エクスポートが同期的にファイルを生成し、ダウンロードをトリガーする
-- [ ] エクスポートアクションが audit_logs にログされる
-- [ ] 未承認エクスポートアクセスがブロックされる (403 COMM_002)
-
-### 12.4 グローバルテスト
-
-- [ ] 言語切替がすべてのラベルを切替える (EN/JA/MY)
-- [ ] ロケール対応通貨フォーマットが言語とともに更新される
-- [ ] テーマ切替がlight/dark/systemを循環する
-- [ ] レスポンシブレイアウトがモバイル、タブレット、デスクトップブレイクポイントで機能する
-- [ ] キーボードナビゲーションがダイアログおよび切替グループで機能する
-- [ ] すべてのi18nキーが正しくレンダリングされる
+- **Design System:** Luxury Cosmetics Theme — Primary `#7C3AED` (Purple), Accent `#EC4899` (Pink), Secondary `#F3E8FF` (Lavender).
+- **Currency Precision:** 全ての金額は精度を保持するため文字列として送受信・描画。フロントエンドの `formatCurrency` は en-US ロケールで丸めてグループ化（例 `12,000 Ks`）、`formatRate` は末尾のゼロを除去（`10%`、`10.5%`）。
+- **Responsive Viewport Design:** KPIグリッドはモバイルでスタック、テーブルは横スクロール、ペイアウトフィルタは小画面で縦積み。
+- **Loading States:** カード/パネルはパルススケルトン、テーブルは取得中 `opacity-50`、アイコンボタンはミューテーション中に無効化。
+- **Accessibility:** 全てのコントロールはキーボード操作可能。ARA ラベル必須。ペイアウト行は行ごとの `aria-label`、チェックボックスはラベル付き、ゲージは `role="progressbar"`。
+- **RBAC Implementation:** バックエンドは全エンドポイントで `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('admin')` を強制。フロントエンドのルートは `roles={['admin', 'super_admin']}`。未授權アクセスは `403` + `errorCode: RES_004`。
+- **Design Tokens:** ステータスバッジは中央の `badges.tsx` レジストリを使用 — success: `bg-green-100 text-green-800`、pending: `bg-amber-100 text-amber-800`、processing: `bg-purple-100 text-purple-800`、neutral/refunded: `bg-gray-100 text-gray-800`、danger: `bg-red-100 text-red-800`。
+- **Naming Conventions:** DB は snake_case、API/JSON は camelCase。主キー・外部キーに UUID。
+- **Audit Trail:** 手数料率の更新、目標の更新、ペイアウトのレビュー/処理/削除、エクスポートは管理者ID付きで記録。保持期間：2年（管理者アクション）/ 1年（エクスポート）。
+- **Revenue Target Gauge:** 100%超過はゲージ表示ではクランプされるが、数値ラベルは実際の値を表示。期間ごとにアクティブ目標は1件、保存で上書き。
+- **AI Forecast:** 非確定の推定値 — 書き戻しや集計に使用しない。データが不十分な場合はノート付きで非表示。
+- **Ad Fee Revenue:** 個別KPIカード、合計収入に含む、チャート上の個別ライン、支払いステータス（completed/pending/refunded）を専用パネルに集計。`AdFeeSummaryCard` の Total Collected はハードコードされた `$` プレフィックスを描画（既知の問題。他の場所では `Ks`）。
+- **Payout Statuses:** ペイアウトパネルはペイアウトリスト由来のペイアウトステータス（pending/processing/completed）を表示 — 注文支払いステータスではない。`failed` はレガシーのバッジ定義とフロントエンドの union 型にのみ存在する。
+- **Export Functionality:** エクスポートボタンは Commission タブ、Revenue タブ（右上）、Payout セクション。CSV/Excel のみ。日付範囲必須、365日上限。ダウンロードは即時（blob → サニタイズされたファイル名）。エクスポート履歴UIはなし。
+- **Charts:** トレンドチャートは手書きのインラインSVG（600×300）で、カードヘッダーに `RangeToggle` を配置。チャートライブラリは不使用。
 
 ---
 
-*画面項目設計書 完 (手数料・収益ページ)*
+## 12. Testing Checklist (テストチェックリスト)
+
+### 12.1 Commission Tab Tests
+
+- [ ] ページが手数料カードとレポートテーブルを読み込む
+- [ ] パルススケルトンの読み込み状態がAPIレスポンスまで表示される
+- [ ] 現在の手数料率がパーセント形式で表示される
+- [ ] Edit Rate ボタンが編集ダイアログを開く
+- [ ] ダイアログが現在の手数料率をプリフィルする
+- [ ] 無効な手数料率（NaN または ≤ 0）がインラインエラーを表示し Save をブロックする
+- [ ] 有効な手数料率の更新が成功トーストを表示し表示を更新する
+- [ ] Cancel ボタンが保存せずダイアログを閉じる
+- [ ] Group By ボタン（Merchant/Day/Order）がテーブル列を変更する
+- [ ] レポートフィルタの日付バリデーションが機能する（`from <= to`）
+- [ ] Apply ボタンがフィルタ済みレポートを再取得する
+- [ ] Reset ボタンがフィルタをクリアしデフォルトレポートを再読み込みする
+- [ ] ページネーションが機能する（ページ + ページサイズ）
+- [ ] Export ボタンがあるとタイプ "Commission" のモーダルが開く
+
+### 12.2 Revenue Tab Tests
+
+- [ ] ページが6つのKPIカード、トレンドチャート（予測付き）、目標カード、ペイアウトステータスパネル、広告支払いパネル、広告料金サマリー、ペイアウトテーブルを読み込む
+- [ ] 6つのKPIカード全てが `Ks` 形式で正しい値を表示する
+- [ ] Net Revenue カードが収益 − コミッションを表示する（収入 − 返金ではない）
+- [ ] トレンドチャートが収益、コミッション、広告料金の系列を描画する
+- [ ] 期間トグルが `30d` をデフォルトにする
+- [ ] 期間変更がトレンド + 予測を再取得する
+- [ ] ペイアウトステータスパネルが Completed/Processing/Pending の件数を表示する（ペイアウトステータス）
+- [ ] 広告支払いパネルが Completed/Pending/Refunded を表示する
+- [ ] ペイアウトフィルタ（status/merchant/period/search）が機能し、Reset でクリアされる
+- [ ] ペイアウト検索がEnterで適用され、出品者名/メールまたは期間に一致する
+- [ ] ペイアウトテーブルが出品者、期間、合計注文数ピル、合計、コミッション（赤）、純額、ステータスバッジ、完了日を表示する
+- [ ] Process ボタンが完了行で無効、View ボタンが詳細ダイアログを開く
+- [ ] 保留中ペイアウトの詳細表示がレビューを実行する（ステータスが processing になる）
+- [ ] 確認ダイアログが金額 + 内訳を表示。Confirm が処理、Cancel が保留中にレビューを実行する
+- [ ] 複数選択 + Delete selected: 対象行が削除、対象外は AlertDialog を表示する
+- [ ] 目標カードが期間トグル、目標金額、実績収益、ゲージバー、進捗%を表示する
+- [ ] 目標期間が `monthly` をデフォルトにし、目標設定までゲージが 0% を表示する
+- [ ] Edit Target ダイアログが金額（正規表現 + > 0）をインラインエラーで検証する
+- [ ] 有効な目標保存が成功トーストを表示しゲージを更新する
+- [ ] 同じ期間の目標保存が前のものを上書きする
+- [ ] AI予測の点線がデータ十分時に描画され、不十分時にノート付きで非表示になる
+- [ ] 広告料金KPIカードが正しい値を表示し、広告料金トレンド系列がチャートに描画される
+- [ ] 合計収入カードがコミッション + 広告料金の合計を表示する
+
+### 12.3 Export Tests
+
+- [ ] Export Commission ボタンが日付 + groupBy をプリフィルしたタイプ "Commission" のモーダルを開く
+- [ ] Export Revenue ボタンがタイプ "Revenue" のモーダルを開く
+- [ ] Export Payout ボタンが出品者セレクト + 期間由来日付をプリフィルしたタイプ "Payout" のモーダルを開く
+- [ ] 空の日付範囲がインラインエラーを表示する
+- [ ] `dateTo` が `dateFrom` より前の場合にインラインエラーを表示する
+- [ ] 日付範囲が365日を超える場合にインラインエラーを表示する
+- [ ] 形式がCSVをデフォルトにし、Excelトグルが機能する
+- [ ] Generate がファイルをダウンロードする（blob → Content-Disposition からのサニタイズ済みファイル名）
+- [ ] 成功トーストが表示され、モーダルが閉じる
+- [ ] エクスポートアクションが audit_logs に記録される（`EXPORT_GENERATED`）
+
+### 12.4 Global Tests
+
+- [ ] 言語トグル（管理レイアウト）が全てのラベルを切り替える（EN/JA/MY）
+- [ ] テーマトグル（管理レイアウト）が light/dark/system を循環する
+- [ ] レスポンシブレイアウトがモバイル、タブレット、デスクトップで機能する
+- [ ] ダイアログとトグルグループのキーボードナビゲーションが機能する
+- [ ] 全ての i18n キーが正しく描画される（または文書化されたフォールバック）
+
+---
+
+*End of Screen Items Specification (Commission & Revenue)*
