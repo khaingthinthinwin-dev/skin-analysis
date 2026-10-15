@@ -300,5 +300,100 @@
     "low": "LOW",
     "moderate": "MODERATE",
     "high": "HIGH"
+  },
+  "matchingPage": {
+    "title": "Recommended For You",
+    "aiAnalysis": "AI Analysis",
+    "generalPicks": "General Picks",
+    "aiDescription": "Personalized picks based on your {{skinType}} skin analysis — {{count}} products",
+    "genericDescription": "Popular products for every skin type",
+    "filters": "Filters",
+    "refreshing": "Refreshing...",
+    "allTypes": "All Skin Types",
+    "skinType": "Skin Type",
+    "category": "Category",
+    "priceRange": "Price Range",
+    "min": "Min",
+    "max": "Max",
+    "rating": "Rating",
+    "resetFilters": "Reset Filters",
+    "clearAll": "Clear All",
+    "showProducts": "Show {{count}} Products",
+    "sale": "Sale",
+    "outOfStock": "Out of Stock",
+    "matchPercent": "{{percent}}% Match",
+    "addToCart": "Add to Cart",
+    "addToWishlist": "Add to Wishlist",
+    "removeFromWishlist": "Remove from Wishlist",
+    "soldBy": "Sold by {{brand}}",
+    "unknown": "Unknown",
+    "noHistory": "No recommendations yet",
+    "noHistoryDescription": "Take a skin analysis to get personalized product recommendations.",
+    "previouslyRecommended": "Previously Recommended",
+    "historyTitle": "Recommended on {{date}} · {{skinType}}",
+    "productsRecommended": "{{count}} products recommended",
+    "seeMoreHistory": "See {{count}} more",
+    "showLess": "Show less",
+    "loadingAllHistory": "Loading...",
+    "emptyState": "No products match your filters.",
+    "error": "Something went wrong. Please try again.",
+    "removeFilter": "Remove filter",
+    "minPriceChip": "Min {{price}}",
+    "maxPriceChip": "Max {{price}}",
+    "ratingOption": "{{rating}} Stars & Up",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "login": "Log In",
+    "badges": {
+      "topRated": "Top Rated",
+      "bestSeller": "Best Seller"
+    },
+    "skinTypes": {
+      "oily": "Oily",
+      "dry": "Dry",
+      "combination": "Combination",
+      "sensitive": "Sensitive",
+      "normal": "Normal"
+    },
+    "priceErrors": {
+      "invalid": "Enter a valid price",
+      "negative": "Price cannot be negative",
+      "minGreaterThanMax": "Minimum price cannot exceed maximum price"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "previous": "Previous",
+      "next": "Next",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "goToPage": "Go to page {{page}}"
+    },
+    "toasts": {
+      "buyerOnly": "Only buyer accounts can do this",
+      "addedToWishlist": "Added to wishlist",
+      "removedFromWishlist": "Removed from wishlist",
+      "alreadyInWishlist": "Already in your wishlist",
+      "addedToCart": "Added to cart",
+      "error": "Something went wrong"
+    },
+    "cartDialog": {
+      "title": "Already in your cart",
+      "description": "This product is already in your cart."
+    },
+    "loginDialog": {
+      "title": "Login required",
+      "wishlistDescription": "Please log in to save items to your wishlist.",
+      "cartDescription": "Please log in to add items to your cart."
+    },
+    "profilePrompt": {
+      "title": "Get recommendations made for your skin",
+      "description": "Take a quick AI skin analysis to see products matched to your skin type.",
+      "start": "Start Analysis"
+    },
+    "freshResults": {
+      "title": "Your analysis looks outdated",
+      "description": "Retake your skin analysis to refresh these recommendations.",
+      "retake": "Retake Analysis"
+    }
   }
 }

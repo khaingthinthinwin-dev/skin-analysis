@@ -300,5 +300,100 @@
     "low": "低",
     "moderate": "中",
     "high": "高"
+  },
+  "matchingPage": {
+    "title": "あなたへのおすすめ",
+    "aiAnalysis": "AI分析",
+    "generalPicks": "一般のおすすめ",
+    "aiDescription": "{{skinType}}肌の分析に基づくパーソナライズ提案 — {{count}}件",
+    "genericDescription": "あらゆる肌タイプにおすすめの人気商品",
+    "filters": "絞り込み",
+    "refreshing": "更新中...",
+    "allTypes": "すべての肌タイプ",
+    "skinType": "肌タイプ",
+    "category": "カテゴリー",
+    "priceRange": "価格帯",
+    "min": "最小",
+    "max": "最大",
+    "rating": "評価",
+    "resetFilters": "絞り込みをリセット",
+    "clearAll": "すべてクリア",
+    "showProducts": "{{count}}件の商品を表示",
+    "sale": "セール",
+    "outOfStock": "在庫切れ",
+    "matchPercent": "一致度 {{percent}}%",
+    "addToCart": "カートに追加",
+    "addToWishlist": "お気に入りに追加",
+    "removeFromWishlist": "お気に入りから削除",
+    "soldBy": "{{brand}} が販売",
+    "unknown": "不明",
+    "noHistory": "おすすめはまだありません",
+    "noHistoryDescription": "肌分析を行うと、あなたに合う商品のおすすめが表示されます。",
+    "previouslyRecommended": "過去のおすすめ",
+    "historyTitle": "{{date}} におすすめ · {{skinType}}",
+    "productsRecommended": "{{count}}件のおすすめ商品",
+    "seeMoreHistory": "さらに{{count}}件見る",
+    "showLess": "折りたたむ",
+    "loadingAllHistory": "読み込み中...",
+    "emptyState": "条件に合う商品が見つかりませんでした。",
+    "error": "エラーが発生しました。もう一度お試しください。",
+    "removeFilter": "絞り込みを削除",
+    "minPriceChip": "最低 {{price}}",
+    "maxPriceChip": "最高 {{price}}",
+    "ratingOption": "{{rating}}つ星以上",
+    "ok": "OK",
+    "cancel": "キャンセル",
+    "login": "ログイン",
+    "badges": {
+      "topRated": "高評価",
+      "bestSeller": "ベストセラー"
+    },
+    "skinTypes": {
+      "oily": "脂性肌",
+      "dry": "乾燥肌",
+      "combination": "混合肌",
+      "sensitive": "敏感肌",
+      "normal": "普通肌"
+    },
+    "priceErrors": {
+      "invalid": "有効な価格を入力してください",
+      "negative": "価格は負の値にできません",
+      "minGreaterThanMax": "最低価格は最高価格を超えることはできません"
+    },
+    "pagination": {
+      "label": "ページネーション",
+      "previous": "前へ",
+      "next": "次へ",
+      "previousPage": "前のページ",
+      "nextPage": "次のページ",
+      "goToPage": "{{page}}ページ目へ"
+    },
+    "toasts": {
+      "buyerOnly": "この操作は購入者アカウントのみ利用できます",
+      "addedToWishlist": "お気に入りに追加しました",
+      "removedFromWishlist": "お気に入りから削除しました",
+      "alreadyInWishlist": "すでにお気に入りにあります",
+      "addedToCart": "カートに追加しました",
+      "error": "エラーが発生しました"
+    },
+    "cartDialog": {
+      "title": "すでにカートにあります",
+      "description": "この商品はすでにカートに入っています。"
+    },
+    "loginDialog": {
+      "title": "ログインが必要です",
+      "wishlistDescription": "お気に入りに保存するにはログインしてください。",
+      "cartDescription": "カートに追加するにはログインしてください。"
+    },
+    "profilePrompt": {
+      "title": "あなたの肌に合うおすすめを",
+      "description": "肌タイプに合った商品を見るために、AI肌分析を始めましょう。",
+      "start": "分析を始める"
+    },
+    "freshResults": {
+      "title": "分析結果が古くなっています",
+      "description": "最新のおすすめを見るには、肌分析をやり直してください。",
+      "retake": "やり直す"
+    }
   }
 }
