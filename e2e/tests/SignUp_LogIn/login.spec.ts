@@ -3,6 +3,7 @@ import { LoginPage } from '../../pages/SignUp_LogIn/LoginPage';
 import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import { captureScreenshot } from '../../utils/screenshot';
 import { person } from '../../utils/identity';
+import { chooseAuthLanguage } from '../../utils/auth-language';
 
 let loginPage: LoginPage;
 let testEmail: string;
@@ -76,6 +77,24 @@ test.describe('Login Page', () => {
       const toast = page.locator('[data-sonner-toaster] li');
       await expect(toast.first()).toBeVisible({ timeout: 5000 });
     });
+
+    test('N-25: should login successfully in Myanmar language', async ({ page }) => {
+      await loginPage.goto();
+      await chooseAuthLanguage(page, 'my');
+
+      await expect(page.getByRole('heading', { name: 'အကောင့်ဝင်ရန်' })).toBeVisible();
+      await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
+      await expect(page.getByText('စကားဝှက်', { exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'စကားဝှက်မေ့နေပါသလား?' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'ဖန်တီးရန်' })).toBeVisible();
+
+      await page.locator('input[autocomplete="email"]').fill(testEmail);
+      await page.locator('input[autocomplete="current-password"]').fill(testPassword);
+      await page.getByRole('button', { name: 'ဝင်ရန်', exact: true }).click();
+
+      await expect(page).toHaveURL(/\/buyer/, { timeout: 15_000 });
+      await expect(page.getByText('အကောင့်ဝင်ခြင်း အောင်မြင်ပါသည်')).toBeVisible();
+    });
   });
 
   test.describe('Validation Errors', () => {
@@ -124,6 +143,59 @@ test.describe('Login Page', () => {
 
       const passwordError = await loginPage.getPasswordError();
       expect(passwordError).toBeTruthy();
+    });
+
+    test('A-22: should show invalid credentials error in Myanmar language', async ({ page }) => {
+      await loginPage.goto();
+      await chooseAuthLanguage(page, 'my');
+      await page.locator('input[autocomplete="email"]').fill(`missing-${Date.now()}@example.com`);
+      await page.locator('input[autocomplete="current-password"]').fill('WrongPass123!');
+      await page.getByRole('button', { name: 'ဝင်ရန်', exact: true }).click();
+
+      const error = page.getByRole('alert');
+      await expect(error).toBeVisible();
+      await expect(error).toHaveText('Request failed with status code 401');
+      await expect(page).toHaveURL(/\/login/);
+    });
+
+    test('A-25: should show invalid credentials error in Japanese', async ({ page }) => {
+      await loginPage.goto();
+      await chooseAuthLanguage(page, 'ja');
+      await page.locator('input[autocomplete="email"]').fill(`missing-${Date.now()}@example.com`);
+      await page.locator('input[autocomplete="current-password"]').fill('WrongPass123!');
+      await page.getByRole('button', { name: 'ログイン', exact: true }).click();
+
+      const error = page.getByRole('alert');
+      await expect(error).toBeVisible();
+      await expect(error).toHaveText('Request failed with status code 401');
+      await expect(page).toHaveURL(/\/login/);
+    });
+  });
+
+  test.describe('N-19: Login language switching', () => {
+    test('should switch language on login page', async ({ page }) => {
+      await loginPage.goto();
+
+      await chooseAuthLanguage(page, 'ja');
+      await expect(page.getByRole('heading', { name: 'ログイン' })).toBeVisible();
+      await expect(page.getByText('メールアドレス', { exact: true })).toBeVisible();
+      await expect(page.getByText('パスワード', { exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'パスワードをお忘れですか？' })).toBeVisible();
+      await expect(page.getByRole('link', { name: '作成する' })).toBeVisible();
+
+      await chooseAuthLanguage(page, 'my');
+      await expect(page.getByRole('heading', { name: 'အကောင့်ဝင်ရန်' })).toBeVisible();
+      await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
+      await expect(page.getByText('စကားဝှက်', { exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'စကားဝှက်မေ့နေပါသလား?' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'ဖန်တီးရန်' })).toBeVisible();
+
+      await chooseAuthLanguage(page, 'en');
+      await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
+      await expect(page.getByText('Email', { exact: true })).toBeVisible();
+      await expect(page.getByText('Password', { exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Forgot password?' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Create one' })).toBeVisible();
     });
   });
 

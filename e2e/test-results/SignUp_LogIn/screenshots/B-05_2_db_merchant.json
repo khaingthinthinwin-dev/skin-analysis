@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-14T08:17:02.778Z",
+  "capturedAt": "2026-10-15T03:10:54.944Z",
   "description": "DB users + merchants — License.PDF accepted (license_status)",
   "results": [
     {
@@ -7,14 +7,14 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "795a83ce-0859-420d-8749-11c7df175dfd",
-          "email": "nina.castillo.mv7u6k2428@gmail.com",
+          "id": "8474d939-271f-48b8-9aae-e4010ae78d9d",
+          "email": "nina.castillo.mv8yoo7436@gmail.com",
           "name": "Nina Castillo",
           "role_code": "merchant",
           "shop_name": "Nina Castillo",
-          "business_license_url": "/uploads/licenses/license_nina_castillo_mv7u6k2428_gmail_com_1791965822528.pdf",
+          "business_license_url": "/uploads/licenses/license_nina_castillo_mv8yoo7436_gmail_com_1792033854602.pdf",
           "license_status": "pending",
-          "merchant_created_at": "2026-10-14T01:47:02.531Z"
+          "merchant_created_at": "2026-10-14T20:40:54.607Z"
         }
       ]
     }

@@ -1,65 +1,59 @@
 {
   "module": "SignUp_LogIn",
-  "timestamp": "2026-10-14T08:17:06.314Z",
-  "total": 84,
-  "passed": 84,
+  "timestamp": "2026-10-15T03:11:31.586Z",
+  "total": 101,
+  "passed": 101,
   "failed": 0,
   "skipped": 0,
-  "durationMs": 322768,
+  "durationMs": 540278,
   "tests": [
     {
       "title": "should return 201 with user data for valid buyer registration",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 1677
+      "duration": 2656
     },
     {
       "title": "should return 409 when registering with existing email",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 1088
+      "duration": 924
     },
     {
       "title": "should return accessToken for valid credentials",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 810
+      "duration": 778
     },
     {
       "title": "should return 401 for wrong password",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 44
+      "duration": 19
     },
     {
       "title": "should return new accessToken on valid refresh",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 882
-    },
-    {
-      "title": "should display login form with all fields",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 3595
+      "duration": 963
     },
     {
       "title": "should return error for invalid refresh token",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 20
+      "duration": 19
     },
     {
       "title": "should return success on successful logout",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 547
+      "duration": 567
     },
     {
       "title": "should return user data for valid token",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 578
+      "duration": 493
     },
     {
       "title": "should return 401 for invalid/expired token",
@@ -68,82 +62,58 @@
       "duration": 12
     },
     {
+      "title": "should display login form with all fields",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 7657
+    },
+    {
       "title": "should register as merchant with license file upload",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 5614
-    },
-    {
-      "title": "should have correct page title",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 2429
+      "duration": 8092
     },
     {
       "title": "should log in as merchant and navigate to merchant dashboard",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 2829
+      "duration": 4385
     },
     {
-      "title": "should submit forgot password form and show success message",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
-      "status": "passed",
-      "duration": 10034
-    },
-    {
-      "title": "should login as buyer and redirect to buyer dashboard",
+      "title": "should have correct page title",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 4240
-    },
-    {
-      "title": "should show generic error for wrong credentials without leaking account existence",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 2593
-    },
-    {
-      "title": "should have back to login link on forgot password page",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
-      "status": "passed",
-      "duration": 2375
+      "duration": 5337
     },
     {
       "title": "should return success message for valid email",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 8823
+      "duration": 8462
     },
     {
       "title": "should return error or same message for non-existent email",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 75
+      "duration": 23
     },
     {
       "title": "should return response for reset password request",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 64
+      "duration": 26
     },
     {
       "title": "should return 400 for invalid reset token",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 22
-    },
-    {
-      "title": "should show toast notification on successful login",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 4327
+      "duration": 19
     },
     {
       "title": "should return 400 for weak password",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 18
+      "duration": 27
     },
     {
       "title": "should return error with statusCode, message, error",
@@ -152,364 +122,496 @@
       "duration": 25
     },
     {
-      "title": "should toggle password visibility on login page",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 4637
-    },
-    {
-      "title": "should show validation error for invalid email format",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
-      "status": "passed",
-      "duration": 3368
-    },
-    {
       "title": "should return merchant data for merchant registration",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 2229
+      "duration": 807
+    },
+    {
+      "title": "should submit forgot password form and show success message",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "status": "passed",
+      "duration": 15545
     },
     {
       "title": "should return tokens for buyer registration",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
       "status": "passed",
-      "duration": 1156
+      "duration": 462
+    },
+    {
+      "title": "should return Myanmar error messages when Accept-Language is my",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\api-auth.spec.ts",
+      "status": "passed",
+      "duration": 27
+    },
+    {
+      "title": "should show generic error for wrong credentials without leaking account existence",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 5236
+    },
+    {
+      "title": "should have back to login link on forgot password page",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "status": "passed",
+      "duration": 5865
     },
     {
       "title": "should display register form with all fields",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2414
+      "duration": 4739
     },
     {
-      "title": "should redirect to forgot password when reset page opened without code",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 2942
-    },
-    {
-      "title": "should show error with invalid email",
+      "title": "should login as buyer and redirect to buyer dashboard",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 4715
+      "duration": 10491
+    },
+    {
+      "title": "should toggle password visibility on login page",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 6782
     },
     {
       "title": "should have buyer selected by default",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2365
+      "duration": 5415
     },
     {
-      "title": "should redirect to login when accessing protected route without authentication",
+      "title": "should show validation error for invalid email format",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "status": "passed",
+      "duration": 7159
+    },
+    {
+      "title": "should redirect to forgot password when reset page opened without code",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 3089
+      "duration": 5294
+    },
+    {
+      "title": "should show toast notification on successful login",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 7368
     },
     {
       "title": "should hide license upload for buyer role",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3365
+      "duration": 4745
     },
     {
-      "title": "should redirect to login when accessing buyer dashboard without authentication",
+      "title": "should switch language on forgot password page",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "status": "passed",
+      "duration": 5478
+    },
+    {
+      "title": "should redirect to login when accessing protected route without authentication",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 2460
-    },
-    {
-      "title": "should show error with invalid password",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 5353
-    },
-    {
-      "title": "should show validation error for empty fields",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
-      "status": "passed",
-      "duration": 3573
+      "duration": 4760
     },
     {
       "title": "should register as buyer successfully",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 6115
+      "duration": 7327
     },
     {
-      "title": "should show validation error for invalid email format",
+      "title": "N-25: should login successfully in Myanmar language",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 6875
+      "duration": 8402
     },
     {
-      "title": "should log out buyer and clear session",
+      "title": "should redirect to login when accessing buyer dashboard without authentication",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 12218
+      "duration": 4891
     },
     {
       "title": "should show success message after registration",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 7954
+      "duration": 5206
     },
     {
-      "title": "should reset password with valid verification code and login with new password",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 22260
-    },
-    {
-      "title": "should show validation error for short password",
+      "title": "should show error with invalid email",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 5522
+      "duration": 6487
+    },
+    {
+      "title": "should submit forgot password in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "status": "passed",
+      "duration": 12858
     },
     {
       "title": "should show errors for empty form submission",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3955
+      "duration": 4719
     },
     {
-      "title": "should navigate back to login page from reset password",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 3345
-    },
-    {
-      "title": "should switch language on auth pages",
+      "title": "should log out buyer and clear session",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 7372
+      "duration": 11607
+    },
+    {
+      "title": "should show invalid email error in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\forgot-password.spec.ts",
+      "status": "passed",
+      "duration": 4804
     },
     {
       "title": "should show error for invalid email format",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3903
+      "duration": 4492
     },
     {
-      "title": "should navigate to register page when clicking Create Account",
+      "title": "should show error with invalid password",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 8088
+      "duration": 8443
     },
     {
-      "title": "should show error for password mismatch on reset form",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 5192
-    },
-    {
-      "title": "should toggle light and dark theme on auth pages",
+      "title": "should switch language on auth pages",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 7489
-    },
-    {
-      "title": "should show error for weak password on reset form",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 2955
+      "duration": 6638
     },
     {
       "title": "should show error for short password",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 6936
+      "duration": 4872
     },
     {
-      "title": "should navigate to forgot password page",
+      "title": "should show validation error for empty fields",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 5519
+      "duration": 6020
     },
     {
-      "title": "should display login correctly on desktop viewport",
+      "title": "should toggle light and dark theme on auth pages",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 3501
-    },
-    {
-      "title": "should show error for invalid reset token",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
-      "status": "passed",
-      "duration": 4553
-    },
-    {
-      "title": "should display register correctly on desktop viewport",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 2618
+      "duration": 4546
     },
     {
       "title": "should show error for password missing uppercase",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4748
+      "duration": 4565
     },
     {
-      "title": "should display login correctly on mobile viewport",
-      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
-      "status": "passed",
-      "duration": 2778
-    },
-    {
-      "title": "should redirect to dashboard if already logged in",
+      "title": "should show validation error for invalid email format",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
       "status": "passed",
-      "duration": 6391
+      "duration": 5906
+    },
+    {
+      "title": "should display login correctly on desktop viewport",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 4003
     },
     {
       "title": "should show error for password missing lowercase",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3441
+      "duration": 4105
     },
     {
-      "title": "should display register correctly on mobile viewport",
+      "title": "should reset password with valid verification code and login with new password",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 19254
+    },
+    {
+      "title": "should display register correctly on desktop viewport",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 2435
+      "duration": 5179
     },
     {
       "title": "should show error for password missing number",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3005
+      "duration": 5134
     },
     {
-      "title": "should have no horizontal overflow at 320px width",
+      "title": "should show validation error for short password",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 7495
+    },
+    {
+      "title": "should navigate back to login page from reset password",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 4090
+    },
+    {
+      "title": "should display login correctly on mobile viewport",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
       "status": "passed",
-      "duration": 2872
+      "duration": 4226
     },
     {
       "title": "should show error for password missing special character",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2620
+      "duration": 4197
+    },
+    {
+      "title": "should show error for password mismatch on reset form",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 4589
+    },
+    {
+      "title": "should display register correctly on mobile viewport",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 4075
     },
     {
       "title": "should show error for password mismatch",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2783
+      "duration": 4495
+    },
+    {
+      "title": "A-22: should show invalid credentials error in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 7457
+    },
+    {
+      "title": "should show error for weak password on reset form",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 3888
+    },
+    {
+      "title": "should have no horizontal overflow at 320px width",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\auth.spec.ts",
+      "status": "passed",
+      "duration": 4280
     },
     {
       "title": "should show error when terms not checked",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 1827
+      "duration": 4223
+    },
+    {
+      "title": "A-25: should show invalid credentials error in Japanese",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 6462
+    },
+    {
+      "title": "should show error for invalid reset token",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 4449
     },
     {
       "title": "should show error for duplicate email",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3153
+      "duration": 5568
+    },
+    {
+      "title": "should switch language on login page",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 5473
     },
     {
       "title": "should show license upload when merchant role selected",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 1785
+      "duration": 4494
+    },
+    {
+      "title": "should navigate to register page when clicking Create Account",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 4934
     },
     {
       "title": "should show error for merchant without license",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2560
+      "duration": 5457
+    },
+    {
+      "title": "should switch language on reset password page",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 14168
+    },
+    {
+      "title": "should navigate to forgot password page",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 5973
+    },
+    {
+      "title": "should redirect to dashboard if already logged in",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\login.spec.ts",
+      "status": "passed",
+      "duration": 6454
     },
     {
       "title": "should show error for merchant without shop name",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 11967
+      "duration": 13811
+    },
+    {
+      "title": "N-27: should reset password in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 14341
     },
     {
       "title": "should show error for non-PDF license file",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2673
+      "duration": 5248
     },
     {
       "title": "should show error for license file exceeding 10MB",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 4454
+      "duration": 6280
+    },
+    {
+      "title": "A-24: should show password mismatch error in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\reset-password.spec.ts",
+      "status": "passed",
+      "duration": 11726
     },
     {
       "title": "should show error for incorrectly named license file",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2668
+      "duration": 4769
     },
     {
       "title": "should navigate to login page when clicking Already have an account",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3667
+      "duration": 4830
     },
     {
       "title": "should show weak indicator for short password",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 1834
+      "duration": 4008
     },
     {
       "title": "should show strong indicator for complex password",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 1902
+      "duration": 4498
     },
     {
       "title": "should toggle password visibility",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2016
+      "duration": 4817
     },
     {
       "title": "should toggle confirm password visibility",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 1987
+      "duration": 4887
     },
     {
       "title": "should accept name at minimum length (2 chars)",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2996
+      "duration": 5917
     },
     {
       "title": "should accept name at reasonable length (50 chars)",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 11103
+      "duration": 6089
     },
     {
       "title": "should accept password at minimum length (8 chars)",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 5274
+      "duration": 5322
     },
     {
       "title": "should accept password at maximum length (128 chars)",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2942
+      "duration": 5809
     },
     {
       "title": "should accept license file named License.PDF (uppercase)",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 3216
+      "duration": 5602
+    },
+    {
+      "title": "should switch language on register page",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 4222
+    },
+    {
+      "title": "N-23: should register as buyer successfully in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 4257
+    },
+    {
+      "title": "N-24: should register as merchant in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 4441
+    },
+    {
+      "title": "A-20: should show empty field errors in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 4366
+    },
+    {
+      "title": "A-21: should show duplicate email error in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 5377
+    },
+    {
+      "title": "should validate name boundaries in Myanmar language",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
+      "status": "passed",
+      "duration": 7116
     },
     {
       "title": "should redirect to dashboard if already logged in",
       "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\SignUp_LogIn\\register.spec.ts",
       "status": "passed",
-      "duration": 2914
+      "duration": 5983
     }
   ]
 }

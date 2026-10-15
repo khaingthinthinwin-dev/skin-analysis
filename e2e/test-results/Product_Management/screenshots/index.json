@@ -1,0 +1,14 @@
+{
+  "product_management_page_loaded.png": {
+    "test": "Product_Management.spec.ts::B-06: should display empty state when merchant has no products"
+  },
+  "stock_updated_25.png": {
+    "test": "Product_Management.spec.ts::N-07: should update stock quantity inline"
+  },
+  "success_toast_visible.png": {
+    "test": "Product_Management.spec.ts::N-07: should update stock quantity inline"
+  },
+  "product_list_state.png": {
+    "test": "Product_Management.spec.ts::B-06: should display empty state when merchant has no products"
+  }
+}

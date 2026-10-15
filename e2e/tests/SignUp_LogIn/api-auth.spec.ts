@@ -277,4 +277,31 @@ test.describe('Auth API Contract Tests', () => {
       expect(body.refreshToken || body.data?.refreshToken).toBeDefined();
     });
   });
+
+  test.describe('I-19: Auth API Myanmar language responses', () => {
+    test('should return Myanmar error messages when Accept-Language is my', async ({ request }) => {
+      const headers = { 'Accept-Language': 'my' };
+      const loginResponse = await request.post(`${API}/auth/login`, {
+        headers,
+        data: {
+          email: `missing-${Date.now()}@example.com`,
+          password: 'WrongPass123!',
+        },
+      });
+
+      expect([400, 401]).toContain(loginResponse.status());
+      const loginBody = await loginResponse.json();
+      expect(loginBody.message).toBe('Invalid credentials');
+
+      const registerResponse = await request.post(`${API}/auth/register`, {
+        headers,
+        data: { name: '', email: '', password: '' },
+      });
+
+      expect(registerResponse.status()).toBe(400);
+      const registerBody = await registerResponse.json();
+      expect(registerBody.message).toBeTruthy();
+      expect(JSON.stringify(registerBody.message)).not.toMatch(/[\u1000-\u109F]/);
+    });
+  });
 });

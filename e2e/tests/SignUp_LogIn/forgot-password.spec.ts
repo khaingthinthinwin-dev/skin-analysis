@@ -2,6 +2,7 @@ import { test, expect } from '../../fixtures/auth.fixture';
 import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import { captureScreenshot } from '../../utils/screenshot';
 import { person } from '../../utils/identity';
+import { chooseAuthLanguage } from '../../utils/auth-language';
 
 test.describe('Forgot Password Page', () => {
   test.describe('N-12: Submit forgot password form successfully', () => {
@@ -71,6 +72,70 @@ test.describe('Forgot Password Page', () => {
       const emailError = page.locator('p.text-destructive, [role="alert"]').first();
       await expect(emailError).toBeVisible({ timeout: 5000 });
       await captureScreenshot(page, 'A-15_2_invalid_email_error');
+    });
+  });
+
+  test.describe('N-21: Forgot password language switching', () => {
+    test('should switch language on forgot password page', async ({ page }) => {
+      await page.goto(ROUTES.FORGOT_PASSWORD);
+
+      await chooseAuthLanguage(page, 'ja');
+      await expect(page.getByRole('heading', { name: 'パスワードをお忘れですか？' })).toBeVisible();
+      await expect(page.getByText('メールアドレス', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: '認証コードを送信', exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'ログインに戻る' })).toBeVisible();
+
+      await chooseAuthLanguage(page, 'my');
+      await expect(page.getByRole('heading', { name: 'စကားဝှက်မေ့နေပါသလား?' })).toBeVisible();
+      await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'အတည်ပြုကုဒ် ပို့ရန်', exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'အကောင့်ဝင်ရန် ပြန်သွားရန်' })).toBeVisible();
+
+      await chooseAuthLanguage(page, 'en');
+      await expect(page.getByRole('heading', { name: 'Forgot Password?' })).toBeVisible();
+      await expect(page.getByText('Email', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Send Verification Code', exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Back to Login' })).toBeVisible();
+    });
+  });
+
+  test.describe('N-26: Forgot password in Myanmar', () => {
+    test('should submit forgot password in Myanmar language', async ({ page }) => {
+      const user = person('Farah', 'Khan');
+      const registration = await page.request.post(`${API_BASE_URL}/auth/register`, {
+        form: {
+          name: user.name,
+          email: user.email,
+          password: 'TestPass123!',
+          role: 'buyer',
+        },
+      });
+      expect(registration.status()).toBe(201);
+
+      await page.goto(ROUTES.FORGOT_PASSWORD);
+      await chooseAuthLanguage(page, 'my');
+      await expect(page.getByRole('heading', { name: 'စကားဝှက်မေ့နေပါသလား?' })).toBeVisible();
+      await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'အတည်ပြုကုဒ် ပို့ရန်', exact: true })).toBeVisible();
+      await page.locator('input[type="email"]').fill(user.email);
+      await page.getByRole('button', { name: 'အတည်ပြုကုဒ် ပို့ရန်', exact: true }).click();
+
+      await expect(page).toHaveURL(/\/verify-code/, { timeout: 15_000 });
+      await expect(page.getByRole('heading', { name: 'အတည်ပြုကုဒ် ထည့်ပါ' })).toBeVisible();
+    });
+  });
+
+  test.describe('A-23: Invalid forgot-password email in Myanmar', () => {
+    test('should show invalid email error in Myanmar language', async ({ page }) => {
+      await page.goto(ROUTES.FORGOT_PASSWORD);
+      await chooseAuthLanguage(page, 'my');
+      await page.locator('input[type="email"]').fill('not-an-email');
+      await page.getByRole('button', { name: 'အတည်ပြုကုဒ် ပို့ရန်', exact: true }).click();
+
+      const emailError = page.locator('p.text-destructive').first();
+      await expect(emailError).toBeVisible();
+      await expect(emailError).toContainText('မှန်ကန်သော အီးမေးလ်လိပ်စာကို ထည့်သွင်းပါ');
+      await expect(page).toHaveURL(/\/forgot-password/);
     });
   });
 });

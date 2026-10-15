@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-14T08:16:56.593Z",
+  "capturedAt": "2026-10-15T03:10:43.435Z",
   "description": "DB users row — 8-char password accepted",
   "results": [
     {
@@ -7,13 +7,13 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "3e5a0ca6-c973-41c3-a2e0-fdf4a98514bc",
-          "email": "ruby.cartwright.mv7u6dnq26@gmail.com",
+          "id": "66e0cd39-59ba-4957-883f-cc36917c418e",
+          "email": "ruby.cartwright.mv8yofny34@gmail.com",
           "name": "Ruby Cartwright",
           "role_code": "buyer",
           "is_active": true,
           "email_verified": false,
-          "created_at": "2026-10-14T01:46:56.333Z"
+          "created_at": "2026-10-14T20:40:43.072Z"
         }
       ]
     }

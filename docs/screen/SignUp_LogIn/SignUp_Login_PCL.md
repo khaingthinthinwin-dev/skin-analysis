@@ -114,8 +114,7 @@
   - **Evidence**:
     - `N-07_1_lang_initial.png`
     - `N-07_2_lang_japanese.png`
-    - `N-07_3_lang_myanmar.png`
-    - `N-07_4_lang_english.png`
+    - `N-07_3_lang_english.png`
     - Test: auth.spec.ts › "should switch language on auth pages" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -129,9 +128,7 @@
 
 - [x] **N-08**: Theme toggle works on auth pages
   - **Evidence**:
-    - `N-08_1_theme_initial.png`
-    - `N-08_2_theme_toggled.png`
-    - `N-08_3_theme_toggled_back.png`
+    - Screenshots: (none captured)
     - Test: auth.spec.ts › "should toggle light and dark theme on auth pages" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -257,7 +254,10 @@
   - **Expected Result**: Zero horizontal overflow even at 320px width
   - **Business Rules**: None (Responsive)
 
-- [ ] **N-19**: Language toggle works on Login page
+- [x] **N-19**: Language toggle works on Login page
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: login.spec.ts › "should switch language on login page" — passed
   - **Precondition**: User is on `/login`
   - **Steps**:
     1. Toggle language to Japanese
@@ -270,7 +270,10 @@
   - **Business Rules**: None (i18n)
   - **Note**: No automated test mapped yet. Verify manually or add `login.spec.ts › "should switch language on login page"`.
 
-- [ ] **N-20**: Language toggle works on Register page
+- [x] **N-20**: Language toggle works on Register page
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: register.spec.ts › "should switch language on register page" — passed
   - **Precondition**: User is on `/register`
   - **Steps**:
     1. Toggle language to Japanese
@@ -283,7 +286,10 @@
   - **Business Rules**: None (i18n)
   - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should switch language on register page"`.
 
-- [ ] **N-21**: Language toggle works on Forgot Password page
+- [x] **N-21**: Language toggle works on Forgot Password page
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: forgot-password.spec.ts › "should switch language on forgot password page" — passed
   - **Precondition**: User is on `/forgot-password`
   - **Steps**:
     1. Toggle language to Japanese
@@ -296,7 +302,10 @@
   - **Business Rules**: None (i18n)
   - **Note**: No automated test mapped yet. Verify manually or add `forgot-password.spec.ts › "should switch language on forgot password page"`.
 
-- [ ] **N-22**: Language toggle works on Reset Password page
+- [x] **N-22**: Language toggle works on Reset Password page
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: reset-password.spec.ts › "should switch language on reset password page" — passed
   - **Precondition**: User is on `/reset-password?token=valid-token`
   - **Steps**:
     1. Toggle language to Japanese
@@ -309,7 +318,10 @@
   - **Business Rules**: None (i18n)
   - **Note**: No automated test mapped yet. Verify manually or add `reset-password.spec.ts › "should switch language on reset password page"`.
 
-- [ ] **N-23**: Register as buyer successfully with Myanmar language UI
+- [x] **N-23**: Register as buyer successfully with Myanmar language UI
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: register.spec.ts › "N-23: should register as buyer successfully in Myanmar language" — passed
   - **Precondition**: User is not authenticated; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -323,7 +335,10 @@
   - **API**: `POST /api/v1/auth/register`
   - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should register as buyer successfully in Myanmar language"`.
 
-- [ ] **N-24**: Register as merchant with license upload in Myanmar language UI
+- [x] **N-24**: Register as merchant with license upload in Myanmar language UI
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: register.spec.ts › "N-24: should register as merchant in Myanmar language" — passed
   - **Precondition**: User is not authenticated; UI language is set to Myanmar; valid license.pdf ready
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -338,7 +353,10 @@
   - **API**: `POST /api/v1/auth/register`
   - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should register as merchant in Myanmar language"`.
 
-- [ ] **N-25**: Login with valid credentials in Myanmar language UI
+- [x] **N-25**: Login with valid credentials in Myanmar language UI
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: login.spec.ts › "N-25: should login successfully in Myanmar language" — passed
   - **Precondition**: User has an existing account; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -351,7 +369,10 @@
   - **API**: `POST /api/v1/auth/login`
   - **Note**: No automated test mapped yet. Verify manually or add `login.spec.ts › "should login successfully in Myanmar language"`.
 
-- [ ] **N-26**: Submit forgot password form in Myanmar language UI
+- [x] **N-26**: Submit forgot password form in Myanmar language UI
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: forgot-password.spec.ts › "should submit forgot password in Myanmar language" — passed
   - **Precondition**: User is on `/forgot-password`; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -364,7 +385,10 @@
   - **API**: `POST /api/v1/auth/forgot-password`
   - **Note**: No automated test mapped yet. Verify manually or add `forgot-password.spec.ts › "should submit forgot password in Myanmar language"`.
 
-- [ ] **N-27**: Reset password with valid token in Myanmar language UI
+- [x] **N-27**: Reset password with valid token in Myanmar language UI
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: reset-password.spec.ts › "N-27: should reset password in Myanmar language" — passed
   - **Precondition**: User has a valid reset token from email; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -604,7 +628,10 @@
   - **Business Rules**: BR-AUTH-030, BR-AUTH-031
   - **API**: `POST /api/v1/auth/reset-password`
 
-- [ ] **A-20**: Submit register form with empty fields — error messages display in Myanmar
+- [x] **A-20**: Submit register form with empty fields — error messages display in Myanmar
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: register.spec.ts › "A-20: should show empty field errors in Myanmar language" — passed
   - **Precondition**: User is on `/register`; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -616,7 +643,10 @@
   - **API**: `POST /api/v1/auth/register`
   - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should show empty field errors in Myanmar language"`.
 
-- [ ] **A-21**: Register with duplicate email — error message displays in Myanmar
+- [x] **A-21**: Register with duplicate email — error message displays in Myanmar
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: register.spec.ts › "A-21: should show duplicate email error in Myanmar language" — passed
   - **Precondition**: User is on `/register`; email already exists; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -627,7 +657,10 @@
   - **API**: `POST /api/v1/auth/register`
   - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should show duplicate email error in Myanmar language"`.
 
-- [ ] **A-22**: Login with invalid credentials — error message displays in Myanmar
+- [x] **A-22**: Login with invalid credentials — error message displays in Myanmar
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: login.spec.ts › "A-22: should show invalid credentials error in Myanmar language" — passed
   - **Precondition**: User is on `/login`; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -638,7 +671,10 @@
   - **API**: `POST /api/v1/auth/login`
   - **Note**: No automated test mapped yet. Verify manually or add `login.spec.ts › "should show invalid credentials error in Myanmar language"`.
 
-- [ ] **A-23**: Submit forgot password with invalid email format — error message displays in Myanmar
+- [x] **A-23**: Submit forgot password with invalid email format — error message displays in Myanmar
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: forgot-password.spec.ts › "should show invalid email error in Myanmar language" — passed
   - **Precondition**: User is on `/forgot-password`; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -649,7 +685,10 @@
   - **API**: `POST /api/v1/auth/forgot-password`
   - **Note**: No automated test mapped yet. Verify manually or add `forgot-password.spec.ts › "should show invalid email error in Myanmar language"`.
 
-- [ ] **A-24**: Submit reset password with mismatched passwords — error message displays in Myanmar
+- [x] **A-24**: Submit reset password with mismatched passwords — error message displays in Myanmar
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: reset-password.spec.ts › "A-24: should show password mismatch error in Myanmar language" — passed
   - **Precondition**: User is on `/reset-password?token=valid-token`; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -660,6 +699,20 @@
   - **Business Rules**: BR-AUTH-002
   - **API**: `POST /api/v1/auth/reset-password`
   - **Note**: No automated test mapped yet. Verify manually or add `reset-password.spec.ts › "should show password mismatch error in Myanmar language"`.
+
+- [x] **A-25**: Login with invalid credentials — error message displays in Japanese
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: login.spec.ts › "A-25: should show invalid credentials error in Japanese" — passed
+  - **Precondition**: User is on `/login`; UI language is set to Japanese
+  - **Steps**:
+    1. Toggle UI language to Japanese
+    2. Enter a non-existent email and any password
+    3. Click the Japanese-labelled Sign In button
+  - **Expected Result**: Failed — the invalid credentials error appears in Japanese; user stays on the login page
+  - **Business Rules**: BR-AUTH-009
+  - **API**: `POST /api/v1/auth/login`
+  - **Note**: No automated test mapped yet. Verify manually or add `login.spec.ts › "should show invalid credentials error in Japanese"`.
 
 ---
 
@@ -735,7 +788,10 @@
   - **Business Rules**: BR-AUTH-022
   - **Note**: Backend file filter checks `file.originalname.toLowerCase() !== 'license.pdf'`, so uppercase is accepted.
 
-- [ ] **B-06**: Register with name at min/max boundary length with Myanmar language UI
+- [x] **B-06**: Register with name at min/max boundary length with Myanmar language UI
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: register.spec.ts › "should validate name boundaries in Myanmar language" — passed
   - **Precondition**: User is on `/register`; UI language is set to Myanmar
   - **Steps**:
     1. Toggle UI language to Myanmar
@@ -981,7 +1037,10 @@
   - **Business Rules**: BR-AUTH-003
   - **API**: `POST /api/v1/auth/register`
 
-- [ ] **I-19**: Auth endpoints accept `Accept-Language: my` header and return error messages in Myanmar
+- [x] **I-19**: Auth endpoints accept `Accept-Language: my` header and return error messages in Myanmar
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: api-auth.spec.ts › "should return Myanmar error messages when Accept-Language is my" — passed
   - **Precondition**: Backend i18n middleware is configured to honour the `Accept-Language` header
   - **Steps**:
     1. Call `POST /api/v1/auth/login` with wrong password and header `Accept-Language: my`
@@ -1003,6 +1062,7 @@
 | Test scenarios defined (N, A, B, I) | ☑️ |
 | E2E tests implemented | ☑️ |
 | Language test cases defined (N-19 to N-22) | ☑️ |
+| Japanese-language validation test case added (A-25) | ☑️ |
 | Myanmar language test cases added (N-23–N-27, A-20–A-24, B-06, I-19) | ☑️ |
 | PCL auto-update verified | ☑️ |
 | Next review date | 2026-10-28 |

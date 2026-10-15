@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-14T08:15:13.901Z",
+  "capturedAt": "2026-10-15T03:08:30.577Z",
   "description": "DB users row after successful buyer registration",
   "results": [
     {
@@ -7,13 +7,13 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "24bf047c-2fd4-405e-b2ef-ce3ea0bded15",
-          "email": "alison.bennett.mv7u46li6@gmail.com",
+          "id": "fd70aa22-2d34-4384-9974-de670a35aa50",
+          "email": "alison.bennett.mv8ylk0z14@gmail.com",
           "name": "Alison Bennett",
           "role_code": "buyer",
           "is_active": true,
           "email_verified": false,
-          "created_at": "2026-10-14T01:45:12.118Z"
+          "created_at": "2026-10-14T20:38:29.378Z"
         }
       ]
     }

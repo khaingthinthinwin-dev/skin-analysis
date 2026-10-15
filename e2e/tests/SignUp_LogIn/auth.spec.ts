@@ -5,6 +5,7 @@ import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import { captureScreenshot } from '../../utils/screenshot';
 import { captureUserWithMerchantDbEvidence } from '../../utils/db-evidence';
 import { person } from '../../utils/identity';
+import { chooseAuthLanguage } from '../../utils/auth-language';
 
 let loginPage: LoginPage;
 let registerPage: RegisterPage;
@@ -209,28 +210,21 @@ test.describe('N-07: Multi-language Toggle', () => {
     await settlePaint(page);
     await loginPage.capture('N-07_1_lang_initial');
 
-    const langToggle = page.getByRole('button', {
-      name: /change language|言語を変更|ဘာသာစကား ပြောင်းရန်/i,
-    });
-    if (await langToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await langToggle.click();
-      const jaOption = page.getByRole('menuitem', { name: /ja|japanese|日本語/i });
-      if (await jaOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await jaOption.click();
-        await page.waitForTimeout(500);
-        await settlePaint(page);
-        await loginPage.capture('N-07_2_lang_japanese');
-      }
+    await chooseAuthLanguage(page, 'ja');
+    await expect(page.getByRole('heading', { name: 'ログイン' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'ログイン', exact: true })).toBeVisible();
+    await settlePaint(page);
+    await loginPage.capture('N-07_2_lang_japanese');
 
-      await langToggle.click();
-      const enOption = page.getByRole('menuitem', { name: /en|english/i });
-      if (await enOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await enOption.click();
-        await page.waitForTimeout(500);
-        await settlePaint(page);
-        await loginPage.capture('N-07_3_lang_english');
-      }
-    }
+    await chooseAuthLanguage(page, 'my');
+    await expect(page.getByRole('heading', { name: 'အကောင့်ဝင်ရန်' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'ဝင်ရန်', exact: true })).toBeVisible();
+
+    await chooseAuthLanguage(page, 'en');
+    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign In', exact: true })).toBeVisible();
+    await settlePaint(page);
+    await loginPage.capture('N-07_3_lang_english');
   });
 });
 
@@ -240,23 +234,26 @@ test.describe('N-07: Multi-language Toggle', () => {
 test.describe('N-08: Theme Switching', () => {
   test('should toggle light and dark theme on auth pages', async ({ page }) => {
     await loginPage.goto();
-    await loginPage.fillEmail('eem@gmail.com');
-    await loginPage.fillPassword('Cosmetics@123');
-    await settlePaint(page);
-    await loginPage.capture('N-08_1_theme_initial');
-
+    const html = page.locator('html');
+    const initialDarkMode = await html.evaluate((element) =>
+      element.classList.contains('dark')
+    );
     const themeToggle = page.getByRole('button', { name: /toggle theme/i });
-    if (await themeToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await themeToggle.click();
-      await page.waitForTimeout(500);
-      await settlePaint(page);
-      await loginPage.capture('N-08_2_theme_toggled');
+    await expect(themeToggle).toBeVisible();
 
-      await themeToggle.click();
-      await page.waitForTimeout(500);
-      await settlePaint(page);
-      await loginPage.capture('N-08_3_theme_toggled_back');
-    }
+    await themeToggle.click();
+    await expect
+      .poll(() =>
+        html.evaluate((element) => element.classList.contains('dark'))
+      )
+      .toBe(!initialDarkMode);
+
+    await themeToggle.click();
+    await expect
+      .poll(() =>
+        html.evaluate((element) => element.classList.contains('dark'))
+      )
+      .toBe(initialDarkMode);
   });
 });
 

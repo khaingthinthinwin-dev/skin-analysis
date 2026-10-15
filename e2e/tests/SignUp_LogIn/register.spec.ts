@@ -8,6 +8,7 @@ import {
   captureUserWithMerchantDbEvidence,
 } from '../../utils/db-evidence';
 import { person, uniqueEmail } from '../../utils/identity';
+import { chooseAuthLanguage } from '../../utils/auth-language';
 
 let registerPage: RegisterPage;
 
@@ -551,6 +552,160 @@ test.describe('Register Page', () => {
         user.email,
         'DB users + merchants — License.PDF accepted (license_status)'
       );
+    });
+  });
+
+  test.describe('N-20: Register language switching', () => {
+    test('should switch language on register page', async ({ page }) => {
+      await registerPage.goto();
+
+      await chooseAuthLanguage(page, 'ja');
+      await expect(page.getByRole('heading', { name: 'アカウント作成' })).toBeVisible();
+      await expect(page.getByText('氏名', { exact: true })).toBeVisible();
+      await expect(page.getByText('メールアドレス', { exact: true })).toBeVisible();
+      await expect(page.getByText('パスワード確認', { exact: true })).toBeVisible();
+      await expect(page.getByText(/購入者/)).toBeVisible();
+      await expect(page.getByText(/出品者/)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'アカウント作成', exact: true })).toBeVisible();
+
+      await chooseAuthLanguage(page, 'my');
+      await expect(page.getByRole('heading', { name: 'အကောင့်ဖန်တီးရန်' })).toBeVisible();
+      await expect(page.getByText('အမည်', { exact: true })).toBeVisible();
+      await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
+      await expect(page.getByText('စကားဝှက်အတည်ပြုရန်', { exact: true })).toBeVisible();
+      await expect(page.getByText(/ဝယ်ယူသူ/)).toBeVisible();
+      await expect(page.getByText(/ရောင်းချသူ/)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true })).toBeVisible();
+
+      await chooseAuthLanguage(page, 'en');
+      await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible();
+      await expect(page.getByText('Full Name', { exact: true })).toBeVisible();
+      await expect(page.getByText('Email', { exact: true })).toBeVisible();
+      await expect(page.getByText('Confirm Password', { exact: true })).toBeVisible();
+      await expect(page.getByText(/Buyer/)).toBeVisible();
+      await expect(page.getByText(/Merchant/)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Create Account', exact: true })).toBeVisible();
+    });
+  });
+
+  test.describe('N-23 and N-24: Myanmar registration', () => {
+    test('N-23: should register as buyer successfully in Myanmar language', async ({ page }) => {
+      const user = person('Aye', 'Moe');
+      await registerPage.goto();
+      await chooseAuthLanguage(page, 'my');
+
+      await expect(page.getByRole('heading', { name: 'အကောင့်ဖန်တီးရန်' })).toBeVisible();
+      await expect(page.getByText('အမည်', { exact: true })).toBeVisible();
+      await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
+      await expect(page.getByText('စကားဝှက်အတည်ပြုရန်', { exact: true })).toBeVisible();
+      await expect(page.getByText(/ဝယ်ယူသူ/)).toBeVisible();
+
+      await page.locator('input[autocomplete="name"]').fill(user.name);
+      await page.locator('input[autocomplete="email"]').fill(user.email);
+      await page.locator('input[autocomplete="new-password"]').nth(0).fill('TestPass123!');
+      await page.locator('input[autocomplete="new-password"]').nth(1).fill('TestPass123!');
+      await registerPage.checkTerms();
+      await page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true }).click();
+
+      await expect(page.getByText('အကောင့်ဖန်တီးခြင်း အောင်မြင်ပါသည်')).toBeVisible();
+      await expect(page).toHaveURL(/\/login$/, { timeout: 15_000 });
+    });
+
+    test('N-24: should register as merchant in Myanmar language', async ({ page }) => {
+      const user = person('Mya', 'Win');
+      await registerPage.goto();
+      await chooseAuthLanguage(page, 'my');
+
+      await expect(page.getByRole('heading', { name: 'အကောင့်ဖန်တီးရန်' })).toBeVisible();
+      await page.getByRole('radio').nth(1).click();
+      await expect(page.getByText('ဆိုင်အမည်', { exact: true })).toBeVisible();
+      await expect(page.getByText(/ရောင်းချသူ/)).toBeVisible();
+      await page.locator('input[autocomplete="name"]').fill(user.name);
+      await page.locator('input[autocomplete="email"]').fill(user.email);
+      await page.locator('input[autocomplete="new-password"]').nth(0).fill('TestPass123!');
+      await page.locator('input[autocomplete="new-password"]').nth(1).fill('TestPass123!');
+      await registerPage.licenseFileInput.setInputFiles({
+        name: 'license.pdf',
+        mimeType: 'application/pdf',
+        buffer: Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF'),
+      });
+      await registerPage.checkTerms();
+      await page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true }).click();
+
+      await expect(page.getByText('အကောင့်ဖန်တီးခြင်း အောင်မြင်ပါသည်')).toBeVisible();
+      await expect(page).toHaveURL(/\/login$/, { timeout: 15_000 });
+    });
+  });
+
+  test.describe('Myanmar validation', () => {
+    test('A-20: should show empty field errors in Myanmar language', async ({ page }) => {
+      await registerPage.goto();
+      await chooseAuthLanguage(page, 'my');
+      await page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true }).click();
+
+      const errors = page.locator('p.text-destructive');
+      await expect(errors.first()).toBeVisible();
+      const errorTexts = await errors.allTextContents();
+      expect(errorTexts).toContain('အီးမေးလ်ကို ထည့်သွင်းပါ');
+      expect(errorTexts).toContain('အမည်ကို အနည်းဆုံး ၂ လုံး ထည့်သွင်းပါ');
+      expect(errorTexts).toContain('စကားဝှက်ကို ထည့်သွင်းပါ');
+      expect(errorTexts).toContain('စကားဝှက်ကို အတည်ပြုရန် ပြန်ထည့်ပါ');
+      expect(errorTexts).toContain('ဝန်ဆောင်မှု စည်းမျဉ်းများကို သဘောတူရပါမည်');
+    });
+
+    test('A-21: should show duplicate email error in Myanmar language', async ({ page }) => {
+      const user = person('Existing', 'Buyer');
+      const registration = await page.request.post(`${API_BASE_URL}/auth/register`, {
+        form: {
+          name: user.name,
+          email: user.email,
+          password: 'TestPass123!',
+          role: 'buyer',
+        },
+      });
+      expect(registration.status()).toBe(201);
+
+      await registerPage.goto();
+      await chooseAuthLanguage(page, 'my');
+      await page.locator('input[autocomplete="name"]').fill(user.name);
+      await page.locator('input[autocomplete="email"]').fill(user.email);
+      await page.locator('input[autocomplete="new-password"]').nth(0).fill('TestPass123!');
+      await page.locator('input[autocomplete="new-password"]').nth(1).fill('TestPass123!');
+      await registerPage.checkTerms();
+      await page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true }).click();
+
+      const error = page.getByRole('alert');
+      await expect(error).toBeVisible();
+      await expect(error).toHaveText('Request failed with status code 409');
+      await expect(page).toHaveURL(/\/register/);
+    });
+  });
+
+  test.describe('B-06: Myanmar name boundaries', () => {
+    test('should validate name boundaries in Myanmar language', async ({ page }) => {
+      const registerWithName = async (name: string, email: string) => {
+        await page.goto(ROUTES.REGISTER);
+        await page.locator('input[autocomplete="name"]').fill(name);
+        await page.locator('input[autocomplete="email"]').fill(email);
+        await page.locator('input[autocomplete="new-password"]').nth(0).fill('TestPass123!');
+        await page.locator('input[autocomplete="new-password"]').nth(1).fill('TestPass123!');
+        await registerPage.checkTerms();
+        await page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true }).click();
+      };
+
+      await registerPage.goto();
+      await chooseAuthLanguage(page, 'my');
+
+      await registerWithName('Aa', uniqueEmail('my.name-min'));
+      await expect(page).toHaveURL(/\/login$/, { timeout: 15_000 });
+
+      await registerWithName('A'.repeat(50), uniqueEmail('my.name-max'));
+      await expect(page).toHaveURL(/\/login$/, { timeout: 15_000 });
+
+      await registerWithName('A', uniqueEmail('my.name-short'));
+      const nameError = page.locator('p.text-destructive').first();
+      await expect(nameError).toBeVisible();
+      await expect(nameError).toContainText('အမည်ကို အနည်းဆုံး ၂ လုံး ထည့်သွင်းပါ');
     });
   });
 

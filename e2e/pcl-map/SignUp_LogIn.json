@@ -45,6 +45,15 @@
       { "file": "auth.spec.ts", "title": "should display register correctly on mobile viewport" }
     ],
     "N-18": [{ "file": "auth.spec.ts", "title": "should have no horizontal overflow at 320px width" }],
+    "N-19": [{ "file": "login.spec.ts", "title": "should switch language on login page" }],
+    "N-20": [{ "file": "register.spec.ts", "title": "should switch language on register page" }],
+    "N-21": [{ "file": "forgot-password.spec.ts", "title": "should switch language on forgot password page" }],
+    "N-22": [{ "file": "reset-password.spec.ts", "title": "should switch language on reset password page" }],
+    "N-23": [{ "file": "register.spec.ts", "title": "N-23: should register as buyer successfully in Myanmar language" }],
+    "N-24": [{ "file": "register.spec.ts", "title": "N-24: should register as merchant in Myanmar language" }],
+    "N-25": [{ "file": "login.spec.ts", "title": "N-25: should login successfully in Myanmar language" }],
+    "N-26": [{ "file": "forgot-password.spec.ts", "title": "should submit forgot password in Myanmar language" }],
+    "N-27": [{ "file": "reset-password.spec.ts", "title": "N-27: should reset password in Myanmar language" }],
     "A-01": [{ "file": "register.spec.ts", "title": "should show errors for empty form submission" }],
     "A-02": [{ "file": "register.spec.ts", "title": "should show error for duplicate email" }],
     "A-03": [{ "file": "register.spec.ts", "title": "should show error for password missing uppercase" }],
@@ -75,11 +84,18 @@
     "A-17": [{ "file": "reset-password.spec.ts", "title": "should show error for password mismatch on reset form" }],
     "A-18": [{ "file": "reset-password.spec.ts", "title": "should show error for weak password on reset form" }],
     "A-19": [{ "file": "reset-password.spec.ts", "title": "should show error for invalid reset token" }],
+    "A-20": [{ "file": "register.spec.ts", "title": "A-20: should show empty field errors in Myanmar language" }],
+    "A-21": [{ "file": "register.spec.ts", "title": "A-21: should show duplicate email error in Myanmar language" }],
+    "A-22": [{ "file": "login.spec.ts", "title": "A-22: should show invalid credentials error in Myanmar language" }],
+    "A-23": [{ "file": "forgot-password.spec.ts", "title": "should show invalid email error in Myanmar language" }],
+    "A-24": [{ "file": "reset-password.spec.ts", "title": "A-24: should show password mismatch error in Myanmar language" }],
+    "A-25": [{ "file": "login.spec.ts", "title": "A-25: should show invalid credentials error in Japanese" }],
     "B-01": [{ "file": "register.spec.ts", "title": "should accept name at minimum length (2 chars)" }],
     "B-02": [{ "file": "register.spec.ts", "title": "should accept name at reasonable length (50 chars)" }],
     "B-03": [{ "file": "register.spec.ts", "title": "should accept password at minimum length (8 chars)" }],
     "B-04": [{ "file": "register.spec.ts", "title": "should accept password at maximum length (128 chars)" }],
     "B-05": [{ "file": "register.spec.ts", "title": "should accept license file named License.PDF (uppercase)" }],
+    "B-06": [{ "file": "register.spec.ts", "title": "should validate name boundaries in Myanmar language" }],
     "I-01": [{ "file": "api-auth.spec.ts", "title": "should return 201 with user data for valid buyer registration" }],
     "I-02": [{ "file": "api-auth.spec.ts", "title": "should return 409 when registering with existing email" }],
     "I-03": [{ "file": "api-auth.spec.ts", "title": "should return accessToken for valid credentials" }],
@@ -97,6 +113,7 @@
     "I-15": [{ "file": "api-auth.spec.ts", "title": "should return error with statusCode, message, error" }],
     "I-16": [],
     "I-17": [{ "file": "api-auth.spec.ts", "title": "should return merchant data for merchant registration" }],
-    "I-18": [{ "file": "api-auth.spec.ts", "title": "should return tokens for buyer registration" }]
+    "I-18": [{ "file": "api-auth.spec.ts", "title": "should return tokens for buyer registration" }],
+    "I-19": [{ "file": "api-auth.spec.ts", "title": "should return Myanmar error messages when Accept-Language is my" }]
   }
 }
