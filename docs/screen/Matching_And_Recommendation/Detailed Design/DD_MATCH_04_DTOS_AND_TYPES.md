@@ -1,7 +1,9 @@
-# DD_MATCH_04 — DTOs and Types
+﻿# DD_MATCH_04 — DTOs and Types
 
-> **Doc ID:** SKM-DD-MATCH-04 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-09-01
+> **Doc ID:** SKM-DD-MATCH-04 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-10-15 (code reconciliation)
+
+> **Source update (2026-10-15):** DTO source is `backend/src/modules/buyer/matching/dto/`. `MatchQueryDto` includes `rating` (1–5), `categoryId`, and `category` alias; sort values are `matchScore`, `price`, `rating`, and `createdAt`. Service fallback limit is 20; frontend Zod default is 12. Ingredient query remains supported by API, without a page control.
 
 ---
 
@@ -9,7 +11,7 @@
 
 This document specifies the Data Transfer Objects (DTOs) used by the Matching & Recommendation module's API endpoints. These DTOs utilize `class-validator` for request validation and `class-transformer` for data transformation.
 
-- **Location:** `src/modules/recommendations/dto/` and `src/modules/ads/dto/`
+- **Location:** `backend/src/modules/buyer/matching/dto/`; ad DTOs belong to the separate ads module.
 
 ---
 
@@ -48,8 +50,23 @@ export class MatchQueryDto {
   maxPrice?: number;
 
   @IsOptional()
-  @IsIn(['matchScore', 'price', 'createdAt'])
-  sort?: 'matchScore' | 'price' | 'createdAt' = 'matchScore';
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string; // alias for categoryId
+
+  @IsOptional()
+  @IsIn(['matchScore', 'price', 'rating', 'createdAt'])
+  sort?: 'matchScore' | 'price' | 'rating' | 'createdAt';
 
   @IsOptional()
   @IsIn(['asc', 'desc'])
@@ -59,14 +76,14 @@ export class MatchQueryDto {
   @IsNumber()
   @Min(1)
   @Type(() => Number)
-  page?: number = 1;
+  page?: number; // service fallback 1
 
   @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(50)
   @Type(() => Number)
-  limit?: number = 20;
+  limit?: number; // service fallback 20; frontend schema default is 12
 }
 ```
 
@@ -112,58 +129,17 @@ export class HistoryQueryDto {
 }
 ```
 
-### 2.4 AdPanelQueryDto
+### 2.4 AdPanelQueryDto — NOT IMPLEMENTED
 
-Used for `GET /ads/panel` to fetch eligible ads.
+`GET /ads/panel` accepts raw `@Query('placement')` / `@Query('sessionId')` strings in `backend/src/modules/shared/ads/ads.controller.ts` (no DTO class, no validation; placement defaults to `recommendation_page_banner`, sessionId optional for round-robin).
 
-```typescript
-import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+### 2.5 AdImpressionDto — NOT IMPLEMENTED
 
-export class AdPanelQueryDto {
-  @IsString()
-  @IsNotEmpty()
-  placement: string; // e.g., "category_banner"
+`POST /ads/track/impression` takes a raw `@Body() body: { adIds: string[] }` — no class-validator DTO, no UUID checks, no `ArrayMaxSize`.
 
-  @IsOptional()
-  @IsString()
-  sessionId?: string; // For round-robin rotation tracking
-}
-```
+### 2.6 AdClickDto — NOT IMPLEMENTED
 
-### 2.5 AdImpressionDto
-
-Used for `POST /ads/track/impression` to record impressions.
-
-```typescript
-import { IsArray, IsUUID, ArrayMaxSize } from 'class-validator';
-
-export class AdImpressionDto {
-  @IsArray()
-  @IsUUID('4', { each: true })
-  @ArrayMaxSize(5)
-  adIds: string[];
-}
-```
-
-### 2.6 AdClickDto
-
-Used for `POST /ads/track/click` to record clicks.
-
-```typescript
-import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
-
-export class AdClickDto {
-  @IsString()
-  @IsNotEmpty()
-  @IsUUID()
-  adId: string;
-
-  @IsOptional()
-  @IsString()
-  @IsUUID()
-  contextId?: string;
-}
-```
+`POST /ads/track/click` takes a raw `@Body() body: { adId: string; placement?: string }` — there is no `contextId` field anywhere in the implementation.
 
 ---
 
@@ -178,15 +154,18 @@ export class RecommendationResultDto {
   id: string;
   name: string;
   slug: string;
+  brandName: string;        // merchant shopName ('' when missing)
+  shortDescription: string | null;
   price: string;           // Decimal serialized as string (BR-MATCH-028)
-  compare_at_price: string | null;
+  compareAtPrice: string | null; // camelCase in the API (not compare_at_price)
   images: string[];
   skinTypes: string[];
   avgRating: string;       // Decimal serialized as string (BR-MATCH-028)
   reviewCount: number;
   isFeatured: boolean;
   isInStock: boolean;
-  matchScore: number | null; // null for generic source
+  matchScore: number | null; // null for generic source and similar products
+  categoryBadge: 'featured' | 'topRated' | 'bestSeller' | 'new' | null;
 }
 ```
 
@@ -199,6 +178,8 @@ export class RecommendationResponseDto {
   data: RecommendationResultDto[];
   meta: PaginationMetaDto;
   source: 'ai' | 'generic';
+  analysisAge: number | null; // hours since latest completed analysis; null on generic
+  skinTypes: string[];        // analysis-derived skin types (empty on generic)
 }
 ```
 
@@ -266,20 +247,26 @@ export class HistoryResponseDto {
 }
 ```
 
-### 3.8 AdSlideDto
+### 3.8 AdSlide (inline type — not a DTO class)
 
-Individual ad slide in the panel.
+Individual ad slide, mapped inline in `backend/src/modules/shared/ads/ads.service.ts` (no `AdSlideDto` class exists):
 
 ```typescript
-export class AdSlideDto {
+{
   adId: string;
   title: string;
   description: string | null;
+  announcementMessage?: string | null;
   imageUrl: string;
-  linkUrl: string | null;
+  sku: string | null;        // stamped from the merchant's product — used for navigation
   ctaText: string;
   priorityAmount: string | null; // For priority only, not displayed
   shopName: string;
+  placement: string | null;
+  startsAt: string | null;   // ISO
+  expiresAt: string | null;  // ISO
+  productId?: string | null; // resolved target product
+  productSlug?: string | null;
 }
 ```
 
@@ -397,6 +384,8 @@ export interface ErrorResponse {
 ```
 
 ### 5.2 Common Error Codes
+
+**Not implemented in code** — no `MatchErrorCode` enum exists in the backend; errors surface as standard NestJS HTTP exceptions (`BadRequestException`, `UnauthorizedException`, `ForbiddenException`, `InternalServerErrorException`) from the global exception filter. Kept here as the original design target:
 
 ```typescript
 export enum MatchErrorCode {

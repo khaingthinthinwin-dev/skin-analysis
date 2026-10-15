@@ -1,7 +1,9 @@
-# DD_MATCH_06 — Test Specification
+﻿# DD_MATCH_06 — Test Specification
 
-> **Doc ID:** SKM-DD-MATCH-06 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-09-01
+> **Doc ID:** SKM-DD-MATCH-06 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-10-15 (code reconciliation)
+
+> **Source update (2026-10-15):** Current test locations are `backend/src/modules/buyer/matching/`, `frontend/src/features/buyer/matching/`, and `e2e/tests/Matching_And_Recommendation/matching.spec.ts`. Existing tests cover matching service/controller/DTO, URL filter state, service query serialization, sort/skin-type utilities, and a small E2E set. The older component/ad test matrix below is a proposed specification, not evidence that those tests exist; page-level language-toggle, mobile Load More, and ad-footer scenarios are not implemented.
 
 ---
 
@@ -11,11 +13,11 @@ This document defines the testing strategy for the Matching & Recommendation mod
 
 ---
 
-## 2. Backend Unit Tests (`src/modules/recommendations/tests/`)
+## 2. Backend Unit Tests (`backend/src/modules/buyer/matching/`)
 
-### 2.1 `matching.service.spec.ts`
+### 2.1 `matching.service.spec.ts` (implemented — ~1,450 lines)
 
-Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
+Mock dependencies: `PrismaService`, `RedisService` (no `ConfigService` — the service does not inject one).
 
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
@@ -34,8 +36,8 @@ Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
 | **getPersonalized** | Non-buyer role | Throws `ForbiddenException` (403) |
 | **getSimilar** | Valid product ID with matches | Returns similar products from same category |
 | **getSimilar** | Valid product ID, no matches | Returns empty data array |
-| **getSimilar** | Invalid product ID (not UUID) | Throws `BadRequestException` (400) |
-| **getSimilar** | Product not found | Throws `NotFoundException` (404) |
+| **getSimilar** | Invalid product ID (not UUID) | *Design target only* — no `ParseUUIDPipe`/UUID validation; a non-UUID string simply matches nothing and returns an empty 200 |
+| **getSimilar** | Product not found | Returns `200 OK` with empty `data` and zeroed `meta` (never throws 404) |
 | **getSimilar** | Excludes source product | Source product ID not in results |
 | **getHistory** | User with past sessions | Returns sessions grouped by date |
 | **getHistory** | User with no sessions | Returns empty data array |
@@ -56,9 +58,11 @@ Mock dependencies: `MatchingService`.
 | **GET /recommendations/history** | Valid JWT | Calls `service.getHistory`, returns 200 |
 | **GET /recommendations/history** | Missing JWT | Returns 401 Unauthorized |
 
-### 2.3 `ad.service.spec.ts`
+### 2.3 `ad.service.spec.ts` — NOT IMPLEMENTED
 
-Mock dependencies: `PrismaService`, `RedisService`.
+No `ad.service.spec.ts` (or `ad.controller.spec.ts`) exists in `backend/src/modules/shared/ads/`. The table below is the original design target:
+
+Mock dependencies (design target): `PrismaService`, `RedisService`.
 
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
@@ -74,9 +78,9 @@ Mock dependencies: `PrismaService`, `RedisService`.
 | **trackClick** | Invalid ad ID | Returns 400 Bad Request |
 | **trackClick** | With context ID | Records click with context |
 
-### 2.4 `ad.controller.spec.ts`
+### 2.4 `ad.controller.spec.ts` — NOT IMPLEMENTED (see §2.3)
 
-Mock dependencies: `AdService`.
+Mock dependencies (design target): `AdService`.
 
 | Test Suite | Scenario | Expected Outcome |
 |------------|----------|------------------|
@@ -93,7 +97,9 @@ Mock dependencies: `AdService`.
 
 Using Vitest + React Testing Library.
 
-### 3.1 `Recommendations.test.tsx`
+**Implemented today:** `features/buyer/matching/hooks/useMatchFilters.test.tsx`, `features/buyer/matching/services/matching.service.test.ts`, and `components/shared/AdBannerSlider.test.tsx` (covers the ad carousel used by this page). The per-component suites below are design targets — `MatchingRecommendations.tsx` has no dedicated test file yet.
+
+### 3.1 `Recommendations.test.tsx` — NOT IMPLEMENTED (design target)
 
 | Scenario | Expected Outcome |
 |----------|------------------|
@@ -137,7 +143,7 @@ Using Vitest + React Testing Library.
 | Compare-at price | Shows strikethrough price |
 | Skin type tags | Shows compatible skin types |
 
-### 3.4 `AdSlidePanel.test.tsx`
+### 3.4 Ad carousel tests — IMPLEMENTED as `components/shared/AdBannerSlider.test.tsx` (`AdSlidePanel.tsx` exists but is unused by the page)
 
 | Scenario | Expected Outcome |
 |----------|------------------|
@@ -164,7 +170,9 @@ Using Vitest + React Testing Library.
 | History visible for AI source | Shows when completed sessions exist |
 | History visible for generic source | Shows when completed sessions exist |
 
-### 3.6 `useMatchFilters.test.ts`
+### 3.6 `useMatchFilters.test.tsx` — IMPLEMENTED
+
+Covers: clean-URL defaults (`page=1, limit=12, sort=createdAt desc`), page preservation when `keepPage` is set, page reset on filter changes, and clearing params.
 
 | Scenario | Expected Outcome |
 |----------|------------------|
@@ -178,6 +186,8 @@ Using Vitest + React Testing Library.
 ---
 
 ## 4. End-to-End (E2E) Scenarios (Playwright)
+
+**Implementation status (2026-10-15):** `e2e/tests/Matching_And_Recommendation/matching.spec.ts` contains five smoke tests mapped by `e2e/pcl-map/Matching_And_Recommendation.json` to E2E-MATCH-01…05. They are skeletal: four capture screenshots with TODO assertions, and the page object navigates to `/buyer/matching`, which is **not a route** (correct: `/buyer/recommendations`). Locators expect `[data-testid="recommendations"|"similar-products"|"ad-panel"]` / `.product-grid`-style classes that the page does not render. The table below remains the design target.
 
 | Scenario ID | Flow Description |
 |-------------|------------------|
@@ -199,7 +209,7 @@ Using Vitest + React Testing Library.
 | **E2E-MATCH-16** | **Error Handling**<br>1. Simulate network error on recommendations API.<br>2. Verify error banner with retry button.<br>3. Click Retry.<br>4. Verify refetch succeeds. |
 | **E2E-MATCH-17** | **Empty Results**<br>1. Apply filters that return no results.<br>2. Verify "No matching products" empty state.<br>3. Verify "Reset Filters" button visible.<br>4. Click "Reset Filters".<br>5. Verify results restored. |
 | **E2E-MATCH-18** | **Language Toggle**<br>1. Navigate to /buyer/recommendations.<br>2. Toggle language to Japanese.<br>3. Verify all labels change to Japanese.<br>4. Toggle language to Myanmar.<br>5. Verify all labels change to Myanmar.<br>6. Toggle back to English. |
-| **E2E-MATCH-19** | **Responsive Layout**<br>1. Navigate to /buyer/recommendations on desktop (1024px+).<br>2. Verify sidebar filters + 4-column grid.<br>3. Resize to tablet (768px).<br>4. Verify narrower sidebar + 2-column grid.<br>5. Resize to mobile (< 768px).<br>6. Verify drawer filters + 1-column grid. |
+| **E2E-MATCH-19** | **Responsive Layout (proposed case; not currently in the E2E file)**<br>Source layout: sidebar at `lg`, sheet below `lg`; product grid 1 column by default, 2 at `sm`, 3 at `lg`. |
 | **E2E-MATCH-20** | **Unauthorized Access**<br>1. Navigate to /buyer/recommendations without login.<br>2. Verify redirect to `/login`. |
 
 ---

@@ -1,4 +1,4 @@
-# Program Checklist (PCL) — Matching & Recommendation
+﻿# Program Checklist (PCL) — Matching & Recommendation
 
 ---
 
@@ -124,11 +124,11 @@
   - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [ ] **N-11**: Follow a sponsored ad call to action
-  - **Precondition**: Ad panel contains an eligible ad with a link URL. Actual behavior resolves only `ad.linkUrl` → internal `navigate()` (no `target=_blank`, no `rel`); there is no `productSlug`/`productId`/`sku` resolution path in `AdBannerSlider` — the `productPath` code exists only in the unused `AdSlidePanel.tsx`.
+  - **Precondition**: Ad panel contains an eligible ad. `AdBannerSlider` resolves SKU product, fallback product, target/link URL, then catalog fallback; HTTP(S) destinations use `window.location.assign`, app paths use router navigation.
   - **Steps**:
     1. Click the ad call to action
     2. Inspect navigation and the click tracking request
-  - **Expected Result**: Click is tracked (`matchingService.trackClick`) and app navigates internally to the ad `linkUrl`
+  - **Expected Result**: Click is tracked (`matchingService.trackClick`) and the resolved internal or external destination opens.
   - **Business Rules**: BR-MATCH-037
   - **API**: `POST /api/v1/ads/track/click`
   - **Note**: Unchecked because no matching Playwright evidence has been recorded.
@@ -144,17 +144,17 @@
   - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [ ] **N-13**: Render recommendation layout at desktop, tablet, and mobile widths
-  - **Precondition**: Recommendations are available. Actual code grid: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` (product grid) / `grid-cols-2 md:grid-cols-3 lg:grid-cols-4` (`SkeletonGrid`); drawer filters (`Sheet`) below `lg`.
+  - **Precondition**: Recommendations are available. Product grid uses `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`; filter sheet (`Sheet`) is available below `lg`.
   - **Steps**:
     1. Set viewport to desktop width (1024px or wider)
     2. Set viewport to tablet width (768px)
     3. Set viewport below 768px
-  - **Expected Result**: Desktop uses sidebar filters and a 4-column grid; tablet uses a 3-column grid; mobile uses drawer filters and a 2-column grid
+  - **Expected Result**: Desktop uses sidebar filters and a 3-column grid at `lg`; below `lg`, filters use a sheet. Product grid uses 2 columns at `sm` and 1 column below `sm`.
   - **Business Rules**: None (responsive layout)
   - **Note**: Unchecked because no matching Playwright evidence has been recorded.
 
 - [ ] **N-14**: Append results with Load More on mobile
-  - **Precondition**: Not implemented — code search finds no `Load More`/`loadMore` string, button, or handler in `MatchingRecommendations.tsx` or any imported component; pagination is the only paging control in this screen's code. The design specs (DD_MATCH_02 §4.8/§5.7, EL-23) describe it, but it is not built. Keep as a gap item until implemented.
+  - **Precondition**: Not implemented — numbered pagination is the only paging control in this screen. Earlier design text described Load More; the current source does not implement it.
   - **Steps**:
     1. Set viewport to mobile width (below 768px)
     2. Navigate to `/buyer/recommendations`
@@ -201,7 +201,7 @@
     1. Select a category via `CategorySelect`
     2. Select a minimum rating (e.g. `4.5+ Stars`)
     3. Enter an invalid price (negative or non-numeric) and blur
-  - **Expected Result**: Category and rating filters narrow results and reset to page 1; negative/non-numeric price shows an inline `role="alert"` error. No min>max cross-check exists in code (`commitPrice` commits whatever is typed) — the only guards are `Number.isNaN` and `< 0`.
+  - **Expected Result**: Category and rating filters narrow results and reset to page 1; negative/non-numeric price shows an inline `role="alert"` error; min greater than max also shows an inline error (the range is committed, so the API can return no results).
   - **Business Rules**: BR-MATCH-006
   - **API**: `GET /api/v1/recommendations/personalized`
   - **Note**: Unchecked because no matching Playwright evidence has been recorded.
@@ -326,7 +326,7 @@
   - **Steps**:
     1. Enter a negative price and blur
     2. Enter a non-numeric price and blur
-  - **Expected Result**: `Price cannot be negative.` and `Please enter a valid price.` block the commit; errors use `role="alert"`. A min>max entry is committed as-is (no code guard).
+  - **Expected Result**: Negative and non-numeric values block the commit with `role="alert"` errors. A min>max range shows an inline error and is committed as-is.
   - **Business Rules**: None (client-side validation)
   - **API**: `GET /api/v1/recommendations/personalized`
   - **Note**: Unchecked because no matching Playwright evidence has been recorded.

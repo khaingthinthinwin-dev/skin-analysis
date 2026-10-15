@@ -1,19 +1,19 @@
-# DD_MATCH_03 — API Endpoints
+﻿# DD_MATCH_03 — API Endpoints
 
-> **Doc ID:** SKM-DD-MATCH-03 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-09-01
+> **Doc ID:** SKM-DD-MATCH-03 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-10-15 (code reconciliation)
+
+> **Source update (2026-10-15):** Controller lives at `backend/src/modules/buyer/matching/matching.controller.ts`. Personalized query also accepts `rating`, `categoryId` and `category` alias; sort allowlist is `matchScore`, `price`, `rating`, `createdAt`. Similar lookup returns an empty result when the source product is missing (not a 404 from this service). Ad panel is owned by the ads module; matching page uses placement `recommendation_page_banner`.
 
 ---
 
 ## 1. Controller Setup
 
-- **File:** `src/modules/recommendations/recommendation.controller.ts`
+- **File:** `backend/src/modules/buyer/matching/matching.controller.ts`
 - **Base Route:** `/api/v1/recommendations`
 - **Guards:** `JwtAuthGuard` + `RolesGuard` (for protected endpoints)
 
-- **File:** `src/modules/ads/ad.controller.ts`
-- **Base Route:** `/api/v1/ads`
-- **Guards:** Public (no auth required)
+- Ads controller and base route are owned by the separate ads module.
 
 ---
 
@@ -23,17 +23,19 @@
 
 Get personalized or generic product recommendations.
 
-- **Auth Required:** Yes (JwtAuthGuard, `buyer` role or higher)
+- **Auth Required:** Yes (JwtAuthGuard and `buyer` role)
 - **Headers:** `Authorization: Bearer <accessToken>`
 - **Query Params:** `MatchQueryDto`
   - `skinTypes` (string, optional) — comma-separated skin type filter
   - `ingredients` (string, optional) — comma-separated ingredient filter
   - `minPrice` (number, optional, ≥ 0) — lower price bound
   - `maxPrice` (number, optional, ≥ 0) — upper price bound
-  - `sort` (enum, optional) — `matchScore` | `price` | `createdAt`, default: `matchScore`
+  - `rating` (number, optional, 1–5) — minimum average rating
+  - `categoryId` or `category` (string, optional) — category filter; alias supported
+  - `sort` (enum, optional) — `matchScore` | `price` | `rating` | `createdAt`
   - `order` (enum, optional) — `asc` | `desc`, default: `desc`
-  - `page` (number, optional, ≥ 1) — default: 1
-  - `limit` (number, optional, 1–50) — default: 20
+  - `page` (number, optional, ≥ 1) — service fallback: 1
+  - `limit` (number, optional, 1–50) — service fallback: 20; frontend sends 12 by default
 - **Response:** `200 OK`
   ```json
   {
@@ -42,15 +44,18 @@ Get personalized or generic product recommendations.
         "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
         "name": "Vitamin C Brightening Serum",
         "slug": "vitamin-c-brightening-serum",
+        "brandName": "GlowLab",
+        "shortDescription": "Brightening serum with vitamin C",
         "price": "4980",
-        "compare_at_price": "6980",
+        "compareAtPrice": "6980",
         "images": ["https://cdn.example.com/products/vitamin-c-1.webp"],
         "skinTypes": ["oily", "combination"],
         "avgRating": "4.70",
         "reviewCount": 128,
         "isFeatured": true,
         "isInStock": true,
-        "matchScore": 92
+        "matchScore": 92,
+        "categoryBadge": "topRated"
       }
     ],
     "meta": {
@@ -59,17 +64,18 @@ Get personalized or generic product recommendations.
       "total": 156,
       "totalPages": 8
     },
-    "source": "ai"
+    "source": "ai",
+    "analysisAge": 2.5,
+    "skinTypes": ["oily", "combination"]
   }
   ```
 - **Error Responses:**
   - `400 BAD_REQUEST` — Validation failures (invalid params)
   - `401 UNAUTHORIZED` — Missing/invalid token
   - `403 FORBIDDEN` — Non-buyer role
-  - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
   - `500 INTERNAL_SERVER_ERROR` — Server error
 - **Logic:** Calls `matchingService.getPersonalized(userId, query)`
-- **Caching:** Redis cache-aside pattern (TTL 5min). Cache key: `cache:recommendations:user:{userId}:{hashOfQuery}`
+- **Caching:** Redis cache-aside pattern (TTL 5 min). Cache key: `cache:recommendations:user:{userId}:{sha256(normalizedFilters)}` where the SHA-256 digest covers sorted `skinTypes`, `ingredients`, `minPrice`, `maxPrice`, `rating`, `categoryId`, `sort`, `order`, `page`, `limit` (full digest — never truncated, so pages cannot collide).
 
 ### 2.2 GET /recommendations/similar/:productId
 
@@ -88,15 +94,18 @@ Get similar products for a given product.
         "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
         "name": "Hyaluronic Acid Serum",
         "slug": "hyaluronic-acid-serum",
+        "brandName": "GlowLab",
+        "shortDescription": null,
         "price": "3200",
-        "compare_at_price": null,
+        "compareAtPrice": null,
         "images": ["https://cdn.example.com/products/ha-serum-1.webp"],
         "skinTypes": ["oily", "dry"],
         "avgRating": "4.50",
         "reviewCount": 89,
         "isFeatured": false,
         "isInStock": true,
-        "matchScore": null
+        "matchScore": null,
+        "categoryBadge": null
       }
     ],
     "meta": {
@@ -108,12 +117,9 @@ Get similar products for a given product.
     "source": null
   }
   ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid productId format
-  - `404 NOT_FOUND` — Product not found
-  - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
-- **Logic:** Calls `matchingService.getSimilar(productId, limit)`
-- **Rate Limit:** 30 requests per IP per minute
+- **Unknown source product:** Returns `200 OK` with empty `data` and zero totals.
+- **Logic:** Calls `matchingService.getSimilar(productId, limit)` — same category + overlapping skin types + active + approved merchant, source excluded, `createdAt desc`; `matchScore` is always `null` and `source` is `null`.
+- **Rate Limit:** Not implemented (no throttler).
 
 ### 2.3 GET /recommendations/history
 
@@ -162,9 +168,7 @@ Get recommendation history from past AI analysis sessions.
 Get eligible ads for the Slide-Down Panel carousel.
 
 - **Auth Required:** No (Public)
-- **Query Params:**
-  - `placement` (string, required) — e.g., `category_banner` (recommendation panel uses existing category-banner placement)
-  - `sessionId` (string, optional) — session ID for round-robin rotation tracking
+- **Query Params:** The recommendations page requests its shared ad placement, `recommendation_page_banner`; query and ad response contracts are defined by the shared ads module.
 - **Response:** `200 OK`
   ```json
   {
@@ -174,23 +178,26 @@ Get eligible ads for the Slide-Down Panel carousel.
         "title": "Vitamin C Brightening Serum",
         "description": "Dermatologist-recommended for dull skin",
         "imageUrl": "https://cdn.example.com/ads/vitamin-c-banner.webp",
-        "linkUrl": "/buyer/products/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "sku": "SKU-VC-001",
         "ctaText": "Shop Now",
         "priorityAmount": "8.00",
-        "shopName": "GlowLab"
+        "shopName": "GlowLab",
+        "placement": "recommendation_page_banner",
+        "startsAt": "2026-10-01T00:00:00.000Z",
+        "expiresAt": "2026-10-31T23:59:59.000Z",
+        "productId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "productSlug": "vitamin-c-brightening-serum"
       }
     ],
-    "placement": "category_banner",
+    "placement": "recommendation_page_banner",
     "meta": {
       "total": 5,
       "maxAds": 5
     }
   }
   ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid placement parameter
-  - `429 TOO_MANY_REQUESTS` — Rate limit exceeded
-- **Logic:** Calls `adService.getPanel(placement, sessionId)`
+- **Error Responses:** None — `ads.service.ts` catches failures and returns `200 OK` with empty `data` and zeroed `meta`.
+- **Logic:** Calls `adsService.getAdsByPlacement(placement, sessionId)` — eligibility `isActive && approvalStatus:'approved' && paymentStatus:'completed' && startsAt <= now < expiresAt` (+ `feeSetting.placement` match for `*_banner` placements), ordered `paymentAmount desc, createdAt desc`, top 5; round-robin rotation only when `sessionId` is supplied and Redis is available. The page's `useSponsoredAds` hook actually calls `GET /ads?placement=`, then filters placement/approval/dates client-side.
 - **Note:** If fewer than 5 eligible ads exist, returns only available ads (no placeholders).
 
 ### 2.5 POST /ads/track/impression
@@ -212,9 +219,8 @@ Record ad impressions when the panel becomes visible.
     }
   }
   ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid adIds
-- **Logic:** Calls `adService.trackImpression(adIds)`
+- **Error Responses:** None — no DTO validation exists; the service logs and returns `{ "data": { "recorded": <adIds.length> } }`.
+- **Logic:** Calls `adsService.trackImpression(adIds)` (log-only analytics — nothing persisted)
 
 ### 2.6 POST /ads/track/click
 
@@ -225,9 +231,10 @@ Record ad click when CTA is clicked.
   ```json
   {
     "adId": "adv_abc456",
-    "contextId": "optional-context-uuid"
+    "placement": "recommendation_page_banner"
   }
   ```
+  (`placement` is optional — there is no `contextId` field in the implementation.)
 - **Response:** `200 OK`
   ```json
   {
@@ -236,9 +243,8 @@ Record ad click when CTA is clicked.
     }
   }
   ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` — Invalid adId
-- **Logic:** Calls `adService.trackClick(adId, contextId)`
+- **Error Responses:** None — no DTO validation; log-only.
+- **Logic:** Calls `adsService.trackClick(adId, placement)`
 
 ---
 
@@ -247,7 +253,7 @@ Record ad click when CTA is clicked.
 ```typescript
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('recommendations')
-export class RecommendationController { ... }
+export class MatchingController { ... }
 ```
 
 | Guard | Purpose | Behavior |
@@ -259,7 +265,9 @@ export class RecommendationController { ... }
 
 ## 4. Rate Limiting Configuration
 
-| Endpoint | Limit | Window | Key |
+**Not implemented.** The table below is the original design target only — a repo-wide search finds no `ThrottlerModule` / `@Throttle()` usage, so none of these limits are active:
+
+| Endpoint | Design target | Window | Key |
 |----------|-------|--------|-----|
 | `GET /recommendations/personalized` | 30 requests | 1 minute | User ID |
 | `GET /recommendations/similar/:productId` | 30 requests | 1 minute | IP address |
@@ -267,8 +275,6 @@ export class RecommendationController { ... }
 | `GET /ads/panel` | 60 requests | 1 minute | IP address |
 | `POST /ads/track/impression` | 30 requests | 1 minute | IP address |
 | `POST /ads/track/click` | 30 requests | 1 minute | IP address |
-
-**Redis Key Pattern:** `rate:match:{endpoint}:{identifier}`
 
 ---
 

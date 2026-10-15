@@ -1,7 +1,9 @@
-# DD_MATCH_05 — Business Logic
+﻿# DD_MATCH_05 — Business Logic
 
-> **Doc ID:** SKM-DD-MATCH-05 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-09-01
+> **Doc ID:** SKM-DD-MATCH-05 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-10-15 (code reconciliation)
+
+> **Source update (2026-10-15):** Current service is `backend/src/modules/buyer/matching/matching.service.ts`. It uses SHA-256 (not MD5) for cache keys, adds rating/category to cache inputs, supports `rating` sorting, and globally sorts scored results before pagination. User-facing default is Newest; generic `matchScore` falls back to Newest. The page uses shared `AdBannerSlider`; the ad rotation algorithm below is not part of this service.
 
 ---
 
@@ -9,7 +11,7 @@
 
 This document specifies the core business logic for the Matching & Recommendation module, including the matching algorithm, source determination, caching strategy, recommendation history management, and ad rotation.
 
-- **Location:** `src/modules/recommendations/matching.service.ts` and `src/modules/ads/ad.service.ts`
+- **Location:** `backend/src/modules/buyer/matching/matching.service.ts`; sponsored-ad behavior belongs to the shared ads feature.
 
 ---
 
@@ -21,32 +23,33 @@ This document specifies the core business logic for the Matching & Recommendatio
    - If analysis exists (regardless of age) → `source = "ai"` (stale analysis > 24h still uses AI scores; UI shows subtle prompt banner)
    - If no analysis exists → `source = "generic"`
 2. **Build Context:** Extract `skinTypes` and `skinConcerns` from analysis (or empty for generic).
-3. **Resolve Effective Skin Types:** If user explicitly sets `skinTypes` filter, override analysis-derived types (BR-MATCH-006).
-4. **Redis Lookup:** Check cache key `cache:recommendations:user:{userId}:{hashOfQuery}`.
-   - HIT → return cached result (≤200ms)
+3. **Resolve Effective Skin Types (custom dual rule):** The `skinTypes=all` sentinel means "no selection" and is stripped. An explicit `skinTypes` filter **overrides** the analysis-derived types for the `hasSome` clause (BR-MATCH-006); on the `ai` source an additional `AND` clause requires products to remain compatible with at least one analysed type, and products tagged `all` satisfy either condition via `{ skinTypes: { has: 'all' } }`.
+4. **Additional filters:** `rating` (1–5) → `avgRating gte`; `categoryId`/`category` → `getCategoryDescendants()` (self + all nested children) → `categoryId in [...]`; `ingredients` CSV → display-name mapping (`INGREDIENT_KEY_MAP`) → `hasSome`.
+5. **Redis Lookup:** Check cache key `cache:recommendations:user:{userId}:{sha256(normalizedFilters)}` (sorted skinTypes, ingredients, min/max/rating, categoryId, sort, order, page, limit).
+   - HIT → return cached response
    - MISS → continue
-5. **Build Prisma WHERE:** Active products + approved shop + skin types (`hasSome`) + filters.
-6. **Fetch Candidates:** `prisma.product.findMany({ where, skip, take, orderBy })`.
-7. **Compute Match Scores:** For each candidate, compute score (only when `source = "ai"`).
-8. **Sort:** By `matchScore desc` (ai), or `is_featured desc, avg_rating desc` (generic).
-9. **Count Total:** `prisma.product.count({ where })` ignoring pagination.
-10. **Seed Redis:** Cache result with TTL 5 minutes.
-11. **Return:** `{ data, meta, source }`.
+6. **Build Prisma WHERE:** `isActive` + approved merchant chain + skin-type conditions + filters above.
+7. **Effective sort:** `sort` absent → `matchScore` for `ai`, DB default (`isFeatured desc, avgRating desc`) for `generic`; a stale `matchScore` on `generic` is coerced to `createdAt desc`.
+8. **Fetch & order:** DB `orderBy` for `price`/`rating`/`createdAt`; for `matchScore` the full match set is fetched (no `skip`/`take`), scored in memory, sorted globally, then sliced to the requested page.
+9. **Compute Match Scores:** Only when `source = "ai"`; generic products get `matchScore: null`.
+10. **Count Total:** `prisma.product.count({ where })` ignoring pagination; `totalPages = ceil(total / limit)`.
+11. **Seed Redis:** `redis.set(key, json, 300)`.
+12. **Return:** `{ data, meta, source, analysisAge, skinTypes }`.
 
 ### 2.2 getSimilar(productId, limit)
 
-1. **Validate Product:** Check product exists and is active.
-2. **Get Source Product:** Fetch product with `category_id` and `skin_types`.
-3. **Build WHERE:** Same category + at least one overlapping skin type + active + approved shop + exclude source product.
-4. **Fetch:** `prisma.product.findMany({ where, take: limit, orderBy: { createdAt: 'desc' } })`.
-5. **Return:** `{ data, meta, source: null }`.
+1. **Lookup Source Product:** `findUnique` including `merchant.shopName`. If it does not exist → return `{ data: [], meta: { page: 1, limit, total: 0, totalPages: 0 }, source: null }` (HTTP 200 — this service never throws 404).
+2. **Build WHERE:** `isActive` + approved merchant + same `categoryId` + `id not productId` + (when the source declares skin types) `skinTypes hasSome source.skinTypes`.
+3. **Fetch:** `findMany({ where, take: limit, orderBy: { createdAt: 'desc' } })` plus `count({ where })` in parallel.
+4. **Map:** `RecommendationResultDto` with `brandName` from the merchant and `matchScore: null`.
+5. **Return:** `{ data, meta: { page: 1, limit, total, totalPages }, source: null }`.
 
 ### 2.3 getHistory(userId, page, limit)
 
-1. **Query:** `prisma.skinAnalysis.findMany({ where: { userId }, include: { recommendations: true }, orderBy: { completedAt: 'desc' }, skip, take })`.
-2. **Group:** By analysis session (each `skin_analyses` row is a session).
-3. **Count Total:** `prisma.skinAnalysis.count({ where: { userId } })`.
-4. **Return:** `{ data, meta }`.
+1. **Query:** `prisma.skinAnalysis.findMany({ where: { userId, analysisStatus: 'completed', completedAt: { not: null } }, include: { conditions: true, recommendations: { include: { product: { include: { merchant: { include: { user: { include: { shop: true } } } } } } }, orderBy: { displayOrder: 'asc' } } }, orderBy: { completedAt: 'desc' }, skip, take })` with `count` in parallel.
+2. **Map sessions:** `sessionId = analysis.id`, `sessionDate = completedAt.toISOString()`, `skinTypesUsed = [analysis.skinType]` (raw string, not comma-split).
+3. **Filter products:** Keep only `product.isActive && merchant.user.shop.isApproved`; recompute `matchScore` with the same `computeMatchScore` formula (first analysed skin type + condition names), sort descending.
+4. **Return:** `{ data, meta: { page, limit, total, totalPages } }`.
 
 ---
 
@@ -63,11 +66,13 @@ function computeMatchScore(
   userConcerns: string[]
 ): ScoreComponents {
   // BR-MATCH-009: Skin Type Compatibility (0–50)
+  // `userSkinType` is the scoring type: the first explicitly requested filter
+  // type, falling back to the analysis's first type (see getPersonalized).
   let skinTypeScore = 0;
-  if (product.skinTypes.includes(userSkinType)) {
+  if (userSkinType && product.skinTypes.includes(userSkinType)) {
     skinTypeScore = 50; // Primary match
-  } else if (product.skinTypes.some(st => st !== userSkinType)) {
-    skinTypeScore = 30; // Secondary match (different type exists)
+  } else if (product.skinTypes.length > 0) {
+    skinTypeScore = 30; // Secondary match (product declares any skin types)
   }
 
   // BR-MATCH-010: Concern Matching (0–20)
@@ -98,7 +103,8 @@ function computeMatchScore(
 
 - Score range: 0–100 (integer)
 - All components non-negative
-- Score only computed when `source = "ai"`; generic results return `matchScore: null`
+- Score only computed when `source = "ai"`; generic results and similar products return `matchScore: null`
+- `getHistory` reuses the same formula (first analysed skin type + condition names) so history percentages match the recommendations page
 
 ---
 
@@ -107,21 +113,22 @@ function computeMatchScore(
 ### 4.1 Cache-Aside Pattern
 
 ```typescript
-// Redis key format
-const cacheKey = `cache:recommendations:user:${userId}:${hashOfQuery}`;
+// Redis key format — full SHA-256 of the normalized filter JSON (see §4.3)
+const cacheKey = `cache:recommendations:user:${userId}:${sha256(paramsJson)}`;
 
 // TTL: 5 minutes (BR-MATCH-029)
 const CACHE_TTL = 5 * 60; // seconds
 
 // Lookup
-async function getCachedRecommendations(key: string): Promise<CachedRecommendation | null> {
+async function getCachedRecommendations(key: string): Promise<RecommendationResponseDto | null> {
   const cached = await redis.get(key);
-  return cached ? JSON.parse(cached) : null;
+  if (!cached) return null;
+  try { return JSON.parse(cached); } catch { return null; }
 }
 
 // Seed
-async function seedCache(key: string, data: CachedRecommendation): Promise<void> {
-  await redis.setex(key, CACHE_TTL, JSON.stringify(data));
+async function seedCache(key: string, data: RecommendationResponseDto): Promise<void> {
+  await redis.set(key, JSON.stringify(data), CACHE_TTL);
 }
 ```
 
@@ -134,10 +141,10 @@ async function seedCache(key: string, data: CachedRecommendation): Promise<void>
 ### 4.3 Cache Key Design
 
 ```
-cache:recommendations:user:{userId}:{md5hashOfQueryParams}
+cache:recommendations:user:{userId}:{sha256(paramsJson)}
 ```
 
-The hash ensures different filter combinations produce different cache keys while keeping key length manageable.
+The JSON covers **every** input that changes the result set: sorted `skinTypes` CSV (so `oily,dry` ≡ `dry,oily`, and the `all` sentinel is normalized away), `ingredients`, `minPrice`, `maxPrice`, `rating`, `categoryId`, `sort`, `order`, `page`, `limit`. The digest is a **full SHA-256 — never truncated** — so long filter JSON cannot drop the trailing `page`/`limit` fields and make every page collide on one key. The `user:` prefix also enables pattern-based invalidation (`invalidateUserCache(userId)` → `redis.keys` + `del`).
 
 ---
 
@@ -148,35 +155,24 @@ The hash ensures different filter combinations produce different cache keys whil
 ```typescript
 async function determineSource(userId: string): Promise<PersonalizationContext> {
   const latestAnalysis = await prisma.skinAnalysis.findFirst({
-    where: { userId, completedAt: { not: null } },
+    where: { userId, analysisStatus: 'completed', completedAt: { not: null } },
     orderBy: { completedAt: 'desc' },
+    include: { conditions: true },
   });
 
   if (!latestAnalysis) {
-    return { source: 'generic', skinTypes: [], skinConcerns: [], ... };
+    return { source: 'generic', analysisId: null, skinTypes: [], skinConcerns: [], analysisAge: null };
   }
 
   const analysisAge = (Date.now() - latestAnalysis.completedAt.getTime()) / (1000 * 60 * 60);
 
-  if (analysisAge <= 24) {
-    // Fresh analysis → source = "ai" with match scores (BR-MATCH-001)
-    return {
-      source: 'ai',
-      skinTypes: [latestAnalysis.skinType],
-      skinConcerns: latestAnalysis.conditions || [],
-      analysisId: latestAnalysis.id,
-      analysisAge,
-    };
-  }
-
-  // Stale analysis (> 24h) → source = "ai" with match scores (BR-MATCH-001)
-  // Stale analysis still uses AI-based recommendations with match scores.
-  // UI shows subtle "Want Fresh Results?" prompt banner (BR-MATCH-004).
+  // Any age → source = 'ai' with match scores (BR-MATCH-001). The 24h threshold
+  // is purely a UI concern (subtle "Want Fresh Results?" banner, BR-MATCH-004).
   return {
     source: 'ai',
-    skinTypes: [latestAnalysis.skinType],
-    skinConcerns: latestAnalysis.conditions || [],
     analysisId: latestAnalysis.id,
+    skinTypes: latestAnalysis.skinType.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+    skinConcerns: latestAnalysis.conditions.map(c => c.conditionName),
     analysisAge,
   };
 }
@@ -197,21 +193,27 @@ async function determineSource(userId: string): Promise<PersonalizationContext> 
 ### 6.1 Eligible Advertisement Filter
 
 ```typescript
-// BR-MATCH-037
-const eligibleAds = await prisma.advertisement.findMany({
+// BR-MATCH-037 — camelCase Prisma fields; selection (rotation/slice) happens after
+const found = await prisma.advertisement.findMany({
   where: {
-    is_active: true,
-    approval_status: 'approved',
-    payment_status: 'completed',
-    starts_at: { lte: new Date() },
-    expires_at: { gt: new Date() },
+    isActive: true,
+    approvalStatus: 'approved',
+    paymentStatus: 'completed',
+    startsAt: { lte: now },
+    expiresAt: { gt: now },
+    // For placements ending in `_banner` (e.g. recommendation_page_banner):
+    ...(isBannerPlacement ? { feeSetting: { placement, isActive: true } } : {}),
+  },
+  include: {
+    feeSetting: { select: { placement: true, tier: true, isActive: true } },
+    shop: { select: { id: true, name: true, userId: true } },
   },
   orderBy: [
-    { payment_amount: 'desc' },    // BR-MATCH-051
-    { created_at: 'desc' },
+    { paymentAmount: 'desc' }, // BR-MATCH-051
+    { createdAt: 'desc' },
   ],
-  take: 5, // BR-MATCH-049
 });
+// then: sessionId + Redis → rotateAds(); else found.slice(0, 5) — BR-MATCH-049
 ```
 
 ### 6.2 Round-Robin Rotation
@@ -249,7 +251,9 @@ async function rotateAds(
 
 ### 6.3 Fallback
 
-- If Redis unavailable → `ORDER BY created_at ASC` (deterministic but non-rotating)
+- Rotation only runs when a `sessionId` is supplied and Redis is available; otherwise the first 5 of the payment-ordered list are returned (deterministic, non-rotating)
+- If Redis errors mid-rotation, the service logs a warning and falls back to the same deterministic top-5 slice
+- Any failure in `getAdsByPlacement` is caught and yields `200 OK` with empty `data` and zeroed `meta`
 
 ---
 
@@ -331,7 +335,7 @@ where: {
 
 ### 10.2 Enforcement Layers
 
-1. **Frontend:** Zod schema (`matchingSearchParamsSchema`)
+1. **Frontend:** Zod schema (`matchQuerySchema` in `frontend/src/schemas/matching.schema.ts`)
 2. **Backend:** NestJS ValidationPipe + class-validator DTOs
 3. **Database:** Prisma indexes and CHECK constraints
 
