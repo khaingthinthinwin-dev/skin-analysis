@@ -9,22 +9,22 @@
 | **Document ID** | SKM-PCL-SEARCH-001-B |
 | **Target Screen** | Search & Filter — Buyer |
 | **Subsystem** | Product Discovery |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | 2026-10-15 |
 | **Last Updated** | 2026-10-15 |
 | **Status** | Active |
 
 **Related design:** `docs/screen/SearchAndFilter/Detailed Design/DD_Search_And_Filter_01..06`
 **Spec:** `e2e/tests/SearchAndFilter/search-filter.spec.ts` · **POM:** `e2e/pages/SearchAndFilter/SearchPage.ts`
-**Sibling document:** `docs/screen/SearchAndFilter/SearchAndFilter_Guest_PCL.md` (shared/guest browsing, filters, sorting, pagination, i18n, guest auth guards).
-
-**Scope & numbering:** This document covers the authenticated **buyer** actions available from the Search & Filter screen (route `/products`, page `frontend/src/pages/buyer/Products.tsx`): wishlist add/remove, cart add, the buyer-specific product-list state indicators, the duplicate wishlist/cart guards (including 409 handling), and the wishlist/cart endpoint contracts. Shared rendering (SALE badge, shop/rating/skin-type badges, prices, out-of-stock, layout, i18n) lives in the Guest PCL. Scenario IDs are stable and shared across both documents; IDs omitted here are intentionally defined in the Guest PCL (this document only defines N-28…N-30, N-52…N-54, A-12…A-14, A-18…A-19, B-20…B-22, I-16…I-21).
 
 ---
 
 ## 1. Normal Scenarios (N) — Happy Path
 
-- [ ] **N-28**: Authenticated buyer adds a product to the wishlist
+- [ ] **N-01**: Authenticated buyer adds a product to the wishlist
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; product not already in wishlist
   - **Steps**:
     1. Click the heart (Add to wishlist) button on a product card
@@ -32,7 +32,10 @@
   - **Business Rules**: None (Buyer action)
   - **API**: `POST /api/v1/wishlist/:productId`
 
-- [ ] **N-29**: Authenticated buyer removes a product from the wishlist
+- [ ] **N-02**: Authenticated buyer removes a product from the wishlist
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; product already in wishlist (`isInWishlist = true`)
   - **Steps**:
     1. Click the heart (Remove from wishlist) button on the product card
@@ -40,7 +43,10 @@
   - **Business Rules**: None (Buyer action)
   - **API**: `DELETE /api/v1/wishlist/:productId`
 
-- [ ] **N-30**: Authenticated buyer adds a product to the cart
+- [ ] **N-03**: Authenticated buyer adds a product to the cart
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; product in stock and not already in cart
   - **Steps**:
     1. Click the Add (cart) button on a product card
@@ -48,7 +54,10 @@
   - **Business Rules**: BR-SEARCH-014
   - **API**: `POST /api/v1/cart/items`
 
-- [ ] **N-52**: Wishlist heart reflects the saved state for a logged-in buyer
+- [ ] **N-04**: Wishlist heart reflects the saved state for a logged-in buyer
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; the wishlist query (`useWishlist`) has loaded and contains the product
   - **Steps**:
     1. Navigate to `/products`
@@ -58,7 +67,10 @@
   - **API**: `GET /api/v1/wishlist`
   - **Note**: `isInWishlist` derives from `wishlistItems` (a `Set` of `productId`) in `Products.tsx`; `ProductCard` applies the filled style and swaps the `aria-label` accordingly.
 
-- [ ] **N-53**: Wishlist/cart buttons show a spinner and are disabled while pending
+- [ ] **N-05**: Wishlist/cart buttons show a spinner and are disabled while pending
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`
   - **Steps**:
     1. Click the heart button, then click the Add-to-cart button
@@ -67,14 +79,17 @@
   - **API**: `POST/DELETE /api/v1/wishlist/:productId`, `POST /api/v1/cart/items`
   - **Note**: Loading is tracked per product id (`wishlistLoadingId`/`cartLoadingId`), so only the affected card is busy.
 
-- [ ] **N-54**: Products already in the cart are flagged in the list (duplicate guard indicator)
+- [ ] **N-06**: Products already in the cart are flagged in the list (duplicate guard indicator)
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; the product id is present in the loaded cart (`useCart`)
   - **Steps**:
     1. Navigate to `/products` with an item already in the cart
     2. Click the Add-to-cart button for that product
   - **Expected Result**: The product remains listed (it is not filtered out); clicking Add opens the "Already in Cart" dialog instead of sending a request (`cartProductIds.has(product.id)` guard)
   - **Business Rules**: None (Buyer indicator / duplicate guard)
-  - **API**: None (client-side guard; see A-12)
+  - **API**: None (client-side guard; see A-01)
   - **Note**: `cartProductIds` is a `Set` of `productId` built from `cartItems`; it only gates the Add action and does not alter the search results.
 
 ---
@@ -83,7 +98,10 @@
 
 > The guest (unauthenticated) auth guard is covered by **A-06** in the Guest PCL; the merchant/admin role restriction (403) is covered by **A-07** there as well. Both run before the buyer handlers below are reached.
 
-- [ ] **A-12**: Adding an already-in-cart product opens the "Already in Cart" dialog
+- [ ] **A-01**: Adding an already-in-cart product opens the "Already in Cart" dialog
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; the product id is already present in the loaded cart
   - **Steps**:
     1. Click the Add (cart) button on a product already in the cart
@@ -92,7 +110,10 @@
   - **API**: None (client-side guard)
   - **Note**: Implemented in `Products.tsx` via `cartProductIds` + `DuplicateCartAlertDialog` (`buyer.products.cart.alreadyInCartTitle` / `alreadyInCartDescription`, buttons `common.cancel` / `buyer.products.actions.ok`).
 
-- [ ] **A-13**: Server 409 on add-to-cart opens the "Already in Cart" dialog
+- [ ] **A-02**: Server 409 on add-to-cart opens the "Already in Cart" dialog
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Product not in local cart state, but `POST /cart/items` returns 409
   - **Steps**:
     1. Click the Add (cart) button
@@ -100,7 +121,10 @@
   - **Business Rules**: None (duplicate guard)
   - **API**: `POST /api/v1/cart/items`
 
-- [ ] **A-14**: Wishlist add returning 409 shows "Already in your wishlist" info toast
+- [ ] **A-03**: Wishlist add returning 409 shows "Already in your wishlist" info toast
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; `POST /wishlist/:productId` returns 409
   - **Steps**:
     1. Click the heart (Add to wishlist) button
@@ -108,7 +132,10 @@
   - **Business Rules**: None (duplicate guard)
   - **API**: `POST /api/v1/wishlist/:productId`
 
-- [ ] **A-18**: Add-to-cart failure (non-409) shows a generic error toast
+- [ ] **A-04**: Add-to-cart failure (non-409) shows a generic error toast
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; `POST /cart/items` returns a non-409 error (e.g. 500)
   - **Steps**:
     1. Click the Add (cart) button on a product card
@@ -116,7 +143,10 @@
   - **Business Rules**: None (error handling)
   - **API**: `POST /api/v1/cart/items`
 
-- [ ] **A-19**: Wishlist failure (non-409) shows a generic error toast
+- [ ] **A-05**: Wishlist failure (non-409) shows a generic error toast
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; wishlist add/remove returns a non-409 error
   - **Steps**:
     1. Click the heart button on a product card
@@ -128,7 +158,10 @@
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
-- [ ] **B-20**: Cart query is disabled for guests (no cart request)
+- [ ] **B-01**: Cart query is disabled for guests (no cart request)
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: User is not authenticated
   - **Steps**:
     1. Load `/products` while logged out and inspect the network
@@ -136,7 +169,10 @@
   - **Business Rules**: None (auth-gated query)
   - **API**: None (query disabled)
 
-- [ ] **B-21**: Adding the first item to an empty cart
+- [ ] **B-02**: Adding the first item to an empty cart
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; cart is empty
   - **Steps**:
     1. Click the Add (cart) button on any in-stock product
@@ -145,7 +181,10 @@
   - **Business Rules**: BR-SEARCH-014
   - **API**: `POST /api/v1/cart/items`
 
-- [ ] **B-22**: Rapid repeated clicks are serialized per item
+- [ ] **B-03**: Rapid repeated clicks are serialized per item
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`
   - **Steps**:
     1. Double-click the heart (or Add-to-cart) button quickly
@@ -159,7 +198,10 @@
 
 > API contract tests — no screenshots by design. Evidence lines reference the test title and status only.
 
-- [ ] **I-16**: `GET /api/v1/cart` — returns the authenticated buyer's cart
+- [ ] **I-01**: `GET /api/v1/cart` — returns the authenticated buyer's cart
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; at least one cart item exists
   - **Steps**:
     1. Log in and load `/products`; observe `cartService.getCart()`
@@ -167,7 +209,10 @@
   - **Business Rules**: None (buyer cart)
   - **API**: `GET /api/v1/cart`
 
-- [ ] **I-17**: `POST /api/v1/cart/items` — adds a product to the cart
+- [ ] **I-02**: `POST /api/v1/cart/items` — adds a product to the cart
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; product in stock
   - **Steps**:
     1. Click the Add (cart) button and capture the request
@@ -175,7 +220,10 @@
   - **Business Rules**: BR-SEARCH-014
   - **API**: `POST /api/v1/cart/items`
 
-- [ ] **I-18**: `GET /api/v1/wishlist` — returns the buyer's saved items
+- [ ] **I-03**: `GET /api/v1/wishlist` — returns the buyer's saved items
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer` (or token holder); saved items exist
   - **Steps**:
     1. Load `/products` and observe `useWishlist`
@@ -183,15 +231,21 @@
   - **Business Rules**: None (buyer wishlist)
   - **API**: `GET /api/v1/wishlist`
 
-- [ ] **I-19**: `POST /api/v1/wishlist/:productId` — adds a product to the wishlist
+- [ ] **I-04**: `POST /api/v1/wishlist/:productId` — adds a product to the wishlist
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; product not already saved
   - **Steps**:
     1. Click the heart (Add to wishlist) button and capture the request
-  - **Expected Response**: Path param is the product id; 2xx succeeds; `wishlistKeys.all` (`['wishlist']`) is invalidated on settle; a 409 yields the info toast "Already in your wishlist" (A-14); other errors yield `buyer.search.toastError`
+  - **Expected Response**: Path param is the product id; 2xx succeeds; `wishlistKeys.all` (`['wishlist']`) is invalidated on settle; a 409 yields the info toast "Already in your wishlist" (A-03); other errors yield `buyer.search.toastError`
   - **Business Rules**: None (buyer wishlist)
   - **API**: `POST /api/v1/wishlist/:productId`
 
-- [ ] **I-20**: `DELETE /api/v1/wishlist/:productId` — removes a product from the wishlist
+- [ ] **I-05**: `DELETE /api/v1/wishlist/:productId` — removes a product from the wishlist
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Logged-in `buyer`; product already saved
   - **Steps**:
     1. Click the heart (Remove from wishlist) button and capture the request
@@ -199,7 +253,10 @@
   - **Business Rules**: None (buyer wishlist)
   - **API**: `DELETE /api/v1/wishlist/:productId`
 
-- [ ] **I-21**: Wishlist/cart endpoints not exercised by the Search screen
+- [ ] **I-06**: Wishlist/cart endpoints not exercised by the Search screen
+  - **Evidence**:
+    - No automated evidence captured yet; task is pending implementation in `e2e/tests/SearchAndFilter/search-filter.spec.ts`
+    - Test: pending implementation
   - **Precondition**: Review of the buyer services used from `/products`
   - **Steps**:
     1. Compare the wishlist/cart services with the calls made by `Products.tsx`
