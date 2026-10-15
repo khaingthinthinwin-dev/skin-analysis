@@ -75,7 +75,7 @@ export function SampleAdBanner() {
         )}
 
         <div className="px-9 pb-3 pt-3 sm:px-12 sm:py-4">
-          <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-[#7c3aed]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#7c3aed] dark:text-violet-400 sm:mb-3 sm:px-2.5 sm:py-1 sm:text-[11px]">
+          <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-[#7c3aed]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#7c3aed] dark:text-violet-400 sm:mb-3 sm:px-3 sm:text-xs">
             Sponsored
           </span>
 
@@ -91,18 +91,18 @@ export function SampleAdBanner() {
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold leading-snug text-gray-900 sm:text-sm">{ad.title}</p>
+              <p className="text-sm font-bold leading-snug text-gray-900 sm:text-base">{ad.title}</p>
               {ad.desc && (
-                <p className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground sm:mt-1 sm:text-xs">{ad.desc}</p>
+                <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:mt-1 sm:text-sm">{ad.desc}</p>
               )}
               {ad.link && (
                 <a
                   href={ad.link}
                   target="_blank"
                   rel="noopener noreferrer nofollow sponsored"
-                  className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-[#7c3aed] dark:text-violet-400 hover:underline sm:mt-2 sm:text-xs"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[#7c3aed] dark:text-violet-400 hover:underline sm:mt-2 sm:text-sm"
                 >
-                  Learn more <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                  Learn more <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>
