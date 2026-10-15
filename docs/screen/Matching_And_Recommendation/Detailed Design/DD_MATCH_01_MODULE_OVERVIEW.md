@@ -1,7 +1,9 @@
-# DD_MATCH_01 — Module Overview
+﻿# DD_MATCH_01 — Module Overview
 
-> **Doc ID:** SKM-DD-MATCH-01 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-09-01
+> **Doc ID:** SKM-DD-MATCH-01 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-10-15 (code reconciliation)
+
+> **Source update (2026-10-15):** Current UI is `MatchingRecommendations.tsx`. The page provides category, skin type, price, and minimum-rating filters; ingredients are API-only. The UI uses 12 items per page, Newest (`createdAt desc`) by default, numbered pagination, and grid/list modes. Similar lookup is public. Sponsored placement is `recommendation_page_banner` and uses the shared `AdBannerSlider`; legacy Slide-Down/rotation details below are superseded by the shared component.
 
 ---
 
@@ -22,6 +24,8 @@ This module bridges the AI Skin Analysis subsystem and the Product Catalog. It c
 | UC-MATCH-003 | Filter by Skin Type | Narrow recommendation results to products compatible with selected skin types using `hasSome` semantics on `products.skin_types` array. |
 | UC-MATCH-004 | Filter by Ingredients | Narrow recommendation results to products containing any selected ingredient using `hasSome` semantics on `products.ingredients` array. |
 | UC-MATCH-005 | Filter by Price Range | Narrow recommendation results to products within `minPrice`/`maxPrice` bounds. |
+| UC-MATCH-006 | Filter by Category | Narrow results to a category and all of its descendants (`categoryId`, alias `category`). UI: `CategorySelect` + chip. |
+| UC-MATCH-007 | Filter by Minimum Rating | Narrow results to products with `avgRating >= rating` (1–5). UI: rating radios 3.0–4.5+. |
 | UC-MATCH-008 | View Recommendation History | View past recommendations from the buyer's completed AI skin analysis sessions, grouped by analysis date. |
 | UC-MATCH-009 | View Sponsored Recommendations | Display sponsored ads from approved merchants in the Cross-Screen Slide-Down Panel (D0) with transparent disclosure. |
 | UC-MATCH-010 | Track Ad Interactions | Record impressions (when panel visible ≥ 50%) and clicks (on CTA) for sponsored ad analytics. |
@@ -69,10 +73,10 @@ stateDiagram-v2
 
 ## 4. Security & Permissions
 
-1. **JWT Authentication**: Personalized endpoints require a valid JWT Bearer Token with `buyer` role or higher.
-2. **Public Endpoints**: Similar products and ad panel endpoints are public — no JWT required.
-3. **Role-Based Access**: Visitor (guest) cannot access personalized features; `buyer` has full access; `merchant` and `admin` have read access.
-4. **Rate Limiting**: Public similar products endpoint rate-limited to prevent abuse.
+1. **JWT Authentication**: Personalized and history endpoints require JWT and `buyer` role.
+2. **Public Endpoint**: Similar products route declares no JWT/role guard. Ads panel access is owned by the ads module.
+3. **Role-Based Access**: Matching controller has no merchant/admin read access; protected routes are buyer-only.
+4. **Rate Limiting**: No matching-controller rate-limit decorator is declared.
 5. **Data Isolation**: Buyers only see their own recommendation history.
 6. **Input Sanitization**: All filter parameters validated via Zod (frontend) and class-validator (backend).
 7. **Prisma Parameterized Queries**: All database queries use parameterized statements — no raw SQL.
@@ -86,15 +90,15 @@ stateDiagram-v2
 
 | Layer | Files |
 |-------|-------|
-| **Frontend Pages** | `Recommendations.tsx`, `ProductDetail.tsx` (similar products section) |
-| **Frontend Components** | `RecommendationCard.tsx`, `AdSlidePanel.tsx`, `FiltersPanel.tsx`, `SkeletonRecommendationGrid.tsx`, `HistoryAccordion.tsx`, `EmptyState.tsx` |
-| **Frontend Hooks** | `useRecommendations.ts`, `useSimilarProducts.ts`, `useRecommendationHistory.ts`, `useAdPanel.ts`, `useMatchFilters.ts` |
-| **Frontend Services** | `recommendation.service.ts`, `ad.service.ts` |
-| **Frontend Schemas** | `matchingSearchParams.schema.ts` |
+| **Frontend Pages** | `frontend/src/pages/buyer/MatchingRecommendations.tsx`; product detail integration is separate |
+| **Frontend Components** | Matching feature components plus shared `frontend/src/components/shared/AdBannerSlider.tsx` |
+| **Frontend Hooks** | `useMatching.ts`, `useMatchFilters.ts`; shared `features/search/hooks/useSponsoredAds.ts` supplies the ad data actually rendered |
+| **Frontend Services** | `frontend/src/features/buyer/matching/services/matching.service.ts` |
+| **Frontend Schemas** | `frontend/src/schemas/matching.schema.ts` |
 | **Frontend Providers** | — |
-| **Backend API** | `recommendation.controller.ts`, `ad.controller.ts` |
-| **Backend Service** | `matching.service.ts`, `ad.service.ts` |
-| **Backend DTOs** | `match-query.dto.ts`, `recommendation-result.dto.ts`, `similar-query.dto.ts`, `history-query.dto.ts`, `ad-panel-query.dto.ts`, `ad-impression.dto.ts` |
+| **Backend API** | `backend/src/modules/buyer/matching/matching.controller.ts`; ads controller is `backend/src/modules/shared/ads/ads.controller.ts` |
+| **Backend Service** | `backend/src/modules/buyer/matching/matching.service.ts` |
+| **Backend DTOs** | `backend/src/modules/buyer/matching/dto/` |
 | **Backend Guards** | `jwt-auth.guard.ts`, `roles.guard.ts` |
 | **Backend Strategies** | `jwt-access.strategy.ts` |
 | **Shared Services** | `prisma.service.ts` (products, skin_analyses, skin_analysis_recommendations, advertisements, shops), `redis.service.ts` (caching, ad rotation) |
@@ -108,9 +112,9 @@ stateDiagram-v2
 | `GET` | `/api/v1/recommendations/personalized` | Get personalized or generic recommendations | Yes (buyer) |
 | `GET` | `/api/v1/recommendations/similar/:productId` | Get similar products for a given product | No |
 | `GET` | `/api/v1/recommendations/history` | Get recommendation history from past analysis sessions | Yes (buyer) |
-| `GET` | `/api/v1/ads/panel` | Get eligible ads for the Slide-Down Panel | No |
-| `POST` | `/api/v1/ads/track/impression` | Record ad impressions when panel visible | No |
-| `POST` | `/api/v1/ads/track/click` | Record ad click on CTA | No |
+| — | Ads panel and tracking routes | Shared ads module; matching page uses `recommendation_page_banner`. `GET /api/v1/ads?placement=` is the endpoint the page's `useSponsoredAds` hook calls | Separate module |
+
+> **Note (2026-10-15):** No rate limiting is implemented on any matching/ads endpoint (no `ThrottlerModule` in the backend).
 
 ---
 
@@ -122,7 +126,7 @@ stateDiagram-v2
 | `categories` | Product categories (used for similar product matching) | SELECT (JOIN with products) |
 | `shops` | Merchant shop info, is_approved flag | SELECT (JOIN to filter approved shops only) |
 | `skin_analyses` | Buyer's AI skin analysis results, skin_type, completed_at | SELECT (source determination, history) |
-| `skin_analysis_recommendations` | Recommended products per analysis session | SELECT (history), INSERT (on analysis complete) |
+| `skin_analysis_recommendations` | Recommended products per analysis session (read via the `skinAnalysis.recommendations` include in `getHistory`) | SELECT only — INSERTs are owned by the AI Skin Analysis module |
 | `advertisements` | Sponsored ad data, is_active, approval_status, payment_amount | SELECT (ad panel) |
 
 ---
@@ -131,7 +135,7 @@ stateDiagram-v2
 
 | Dependency | Purpose | Configuration |
 |------------|---------|---------------|
-| Redis | Personalized recommendation caching (TTL 5min), ad rotation session index (TTL 24h) | `REDIS_URL` |
+| Redis | Personalized recommendation response cache (TTL 5min) | `REDIS_URL` |
 | Prisma ORM | Database queries with type-safe WHERE clauses | `DATABASE_URL` |
 | TanStack Query | Frontend data fetching, caching, and invalidation | — |
 | Zod | Frontend query parameter validation and coercion | — |

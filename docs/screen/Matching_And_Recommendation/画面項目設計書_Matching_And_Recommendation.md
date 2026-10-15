@@ -1,15 +1,17 @@
-# Screen Items Specification (画面項目設計書) — Matching & Recommendation
+﻿# Screen Items Specification (画面項目設計書) — Matching & Recommendation
 
 **Document ID:** SKM-SIS-MATCH-001  
 **Target Screen:** Recommendations Page (おすすめ商品ページ)  
 **Subsystem:** Buyer Module — Smart Product Matching & Personalized Recommendation  
 **Function ID:** FN-MATCH-001  
-**Version:** 1.1  
+**Version:** 1.2  
 **Created:** 2026-09-01  
-**Last Updated:** 2026-09-02  
+**Last Updated:** 2026-10-15  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
+
+> **Current source alignment (2026-10-15):** The original screen-item table and numbering are retained. Current differences: no ingredient selector or mobile Load More; filters include category and minimum rating; default page size is 12 and sort is Newest (`createdAt desc`); grid/list, cart and wishlist actions are present. Grid is 1 column by default, 2 at `sm`, and 3 at `lg`. The shared ad placement is `recommendation_page_banner`, with an announcement badge instead of a separate disclosure footer.
 
 ---
 
@@ -21,6 +23,7 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-09-01 | Senior System Engineer | Initial release. Screen items specification for Recommendations page covering personalized recommendations, matching filters, recommendation history, and cross-screen ad panel. |
 | 1.1 | 2026-09-02 | Senior System Engineer | Added missing DB field mappings to §7.1: `slug`, `compare_at_price`, `avgRating`, `reviewCount`. |
+| 1.2 | 2026-10-15 | Code reconciliation | Corrected against implementation: no ingredient selector and no mobile Load More; added category + rating filters; grid 1/2/3 columns; default sort Newest and page size 12; response uses camelCase `compareAtPrice` plus `brandName`, `shortDescription`, `categoryBadge`, `analysisAge`, `skinTypes`; §9 i18n keys are not wired (page hardcodes English). |
 
 ### 1.2 Related Documents
 
@@ -43,19 +46,19 @@ The Recommendations page is the personalized product discovery entry point in th
 | Attribute | Value |
 | :--- | :--- |
 | **Primary Actors** | Authenticated Buyers (with or without AI analysis results) |
-| **Required Authentication** | JWT Bearer Token (`buyer` role or higher) for `/buyer/recommendations` page |
+| **Required Authentication** | Buyer route; personalized/history APIs require JWT and `buyer` role; similar-products API is public |
 | **Data Scope** | Own latest AI analysis result (when available); global active product catalog for generic results |
 | **Access Control** | Protected route — Auth Route Guard; guests redirected to `/login` |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
 1. **Personalized Recommendations** — Ranked product list based on AI skin analysis (skin type + concerns).
 2. **Matching Score Display** — 0–100 match score badge on each recommendation card.
-3. **Multi-Dimensional Filters** — Skin type, ingredients, and price range.
+3. **Filters** — Category, skin type, price range, and minimum rating; ingredients are supported by the API but do not have a page control.
 4. **Analysis-Result Conditional Display** — AI-based recommendations when analysis exists; generic with prompt when not.
 5. **Recommendation History** — Past recommendation sessions from AI analysis results.
-6. **Cross-Screen Ad Panel** — Reusable Slide-Down Panel (D0) carousel with sponsored ads.
-7. **Responsive Design** — 4-column grid (desktop) / 2-column (tablet) / 1-column (mobile) with filter sidebar/drawer.
-8. **Internationalization** — Full i18n support for EN, JA, MY (3 languages).
+6. **Sponsored Banner** — Shared `AdBannerSlider` at `recommendation_page_banner` with click/impression callbacks.
+7. **Shopping Actions and View Modes** — Wishlist, in-stock add-to-cart, and grid/list presentation.
+8. **Responsive Design** — 1-column grid by default, 2 columns at `sm`, 3 columns at `lg`; sidebar at `lg`, filter sheet below.
 
 ---
 
@@ -85,7 +88,7 @@ The Recommendations page is the personalized product discovery entry point in th
 │  ┌──────────────┐  ┌──────────────────────────────────────────┐  │
 │  │              │  │                                          │  │
 │  │  [B] FILTERS │  │  [C] RECOMMENDATION GRID                 │  │
-│  │  PANEL       │  │  4 columns desktop / 2 tablet / 1 mobile │  │
+│  │  PANEL       │  │  3 columns desktop / 2 small / 1 mobile │  │
 │  │              │  │                                          │  │
 │  │  [B1] Skin   │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐   │  │
 │  │  Type (pre-  │  │  │Card 1│ │Card 2│ │Card 3│ │Card 4│   │  │
@@ -182,7 +185,7 @@ The Recommendations page is the personalized product discovery entry point in th
 │                                                                  │
 │  ┌──────────────┐  ┌──────────────────────────────────────────┐  │
 │  │  [B] FILTERS │  │  [C] RECOMMENDATION GRID                 │  │
-│  │  PANEL       │  │  4 columns desktop / 2 tablet / 1 mobile │  │
+│  │  PANEL       │  │  3 columns desktop / 2 small / 1 mobile │  │
 │  │              │  │                                          │  │
 │  │  [B1] Skin   │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐   │  │
 │  │  Type (pre-  │  │  │Card 1│ │Card 2│ │Card 3│ │Card 4│   │  │
@@ -202,9 +205,9 @@ The Recommendations page is the personalized product discovery entry point in th
 
 | Breakpoint | Min Width | Layout Behavior |
 | :--- | :--- | :--- |
-| Mobile (default) | 0px | Filters as drawer (hamburger trigger), stacked grid (1 column), Load More button |
-| Tablet (`md:`) | 768px | Filters sidebar (narrower), grid (2 columns) |
-| Desktop (`lg:`) | 1024px | Filters sidebar + results grid (4 columns), pagination controls |
+| Mobile (default) | 0px | Filters in sheet, grid (1 column); numbered pagination |
+| Small (`sm:`) | 640px | Grid (2 columns) |
+| Desktop (`lg:`) | 1024px | Filters sidebar + results grid (3 columns), numbered pagination |
 | Wide (`xl:`) | 1280px | Same as desktop with enhanced spacing |
 
 ---
@@ -228,10 +231,10 @@ The Recommendations page is the personalized product discovery entry point in th
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 8 | `lblFiltersTitle` | Filters Title | Heading (`<h3>`) | String | — | Visible. Text: "Filters" / "フィルター". | — | Hardcoded UI text | i18n key: `matching.filtersTitle`. |
-| 9 | `chkSkinType` | Skin Type Filter | Checkbox Group | Array of Enum | — | If `source = "ai"`: pre-selected from analysis result. If `source = "generic"`: all unchecked. | Valid enum values: `oily`, `dry`, `combination`, `normal`, `sensitive` | `skin_analysis.skin_type` (ai) / URL query param `skinTypes` | Uses `hasSome` semantics on `products.skin_types` array (BR-MATCH-016). i18n key: `matching.filters.skinType`. |
+| 9 | `chkSkinType` | Skin Type Filter | Checkbox Group | Array of Enum | — | Analysis-compatible results when no explicit selection; current checkbox selection comes from URL state. | Values supplied by `SKIN_TYPES` constant | Analysis response / URL query param `skinTypes` | Matching applies compatibility rules and `all` product tags. |
 | 10 | `txtMinPrice` | Minimum Price Input | Input (`number`) | Number | — | Empty. Placeholder: "Min" | ≥ 0. Decimal precision: 2. | URL query param `minPrice` | `price >= minPrice` (BR-MATCH-018). i18n key: `matching.filters.minPrice`. |
 | 11 | `txtMaxPrice` | Maximum Price Input | Input (`number`) | Number | — | Empty. Placeholder: "Max" | ≥ 0. Must be ≥ `txtMinPrice` if both set. Decimal precision: 2. | URL query param `maxPrice` | `price <= maxPrice` (BR-MATCH-018). i18n key: `matching.filters.maxPrice`. |
-| 13 | `chkIngredients` | Ingredients Filter | Checkbox Group | Array of String | — | All unchecked. | Valid ingredient strings | URL query param `ingredients` | Uses `hasSome` semantics on `products.ingredients` array (BR-MATCH-017). i18n key: `matching.filters.ingredients`. |
+| 13 | `ingredients` | Ingredients Filter | API query only | String | — | Not rendered in current page filter panel. | Comma-separated value | URL/API query param `ingredients` | API applies any-match semantics on product ingredients. |
 | 14 | `selSortField` | Sort Field Select | Select / Dropdown | Enum | — | Default: `matchScore` for `source = "ai"`; no user-selected sort for `source = "generic"`. | Options: `matchScore`, `price`, `createdAt`; generic results use the backend default `is_featured desc`, then `avg_rating desc`. | URL query param `sort` | Sort allowlist follows BR-MATCH-025. i18n key: `matching.sort.field`. |
 | 15 | `selSortOrder` | Sort Direction Select | Select / Dropdown | Enum | — | Default: `desc`. | Options: `asc`, `desc`. | URL query param `order` | Sort direction allowlist follows BR-MATCH-025. i18n key: `matching.sort.order`. |
 | 16 | `btnResetFilters` | Reset Filters Button | Button (`button`, `outline`) | — | — | Visible. Text: "Reset Filters" / "フィルターをリセット" | — | — | Resets all filter params to defaults, resets `page` to 1 (BR-MATCH-020). i18n key: `matching.filters.reset`. |
@@ -241,15 +244,15 @@ The Recommendations page is the personalized product discovery entry point in th
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 18 | `grdRecommendations` | Recommendation Grid | Grid / Responsive Container | — | — | Skeleton shimmer during loading. Populated on success. | 4 columns (desktop ≥1024px), 2 columns (tablet), 1 column (mobile) | `response.data` | Renders `RecommendationCard` components. i18n key: N/A (layout container). |
-| 19 | `cardRecommendation` | Recommendation Card | Card (`<Card>`) | — | — | Each card contains: product image, name, price, skin type tags, match score/category badge. | — | `response.data[i]` | Click navigates to `/buyer/products/:id`. i18n key: N/A (composite component). Sponsored products are not inserted into this grid. |
+| 18 | `grdRecommendations` | Recommendation Grid | Grid / Responsive Container | — | — | Skeleton shimmer during initial loading; previous results remain during refetch. | 1 column default, 2 at `sm`, 3 at `lg` | `response.data` | Grid/list presentation. |
+| 19 | `cardRecommendation` | Recommendation Card | Card (`<Card>`) | — | — | Image, seller, name, rating/reviews, skin tags, prices, badges, optional match score. | — | `response.data[i]` | Product links navigate to `/buyer/products/:slug`. |
 | 20 | `lblMatchScore` | Match Score Badge | Badge / Pill | Integer (0–100) | Conditional | Shown only when `source = "ai"`. Text: "92% match". Green→teal gradient. | 0–100 integer | `data[i].matchScore` | i18n key: `matching.card.matchScore` (interpolated: `{score}% match`). |
-| 21 | `lblCategoryBadge` | Category Status Badge | Badge / Pill | Enum | Conditional | Shown only when `source = "generic"`. Values: "⭐ Featured" (amber), "🏆 Top Rated" (teal), "🔥 Best Seller" (orange), "✨ New" (purple). | Based on product flags: `is_featured`, `avg_rating`, `review_count`, `createdAt` | `data[i].is_featured`, `data[i].avg_rating` | i18n key: `matching.card.category.{type}`. |
+| 21 | `lblCategoryBadge` | Category Status Badge | Badge / Pill | Enum | Conditional | Backend badge may display independently of source. Precedence: featured, top rated, best seller, new. | `categoryBadge` enum or null | `data[i].categoryBadge` | Returned badge is `featured`, `topRated`, `bestSeller`, `new`, or null. |
 | 22 | `imgProduct` | Product Image | Image (`<img>`) | URL | — | Product primary image. Aspect ratio 1:1. | — | `data[i].images[0]` | Lazy loading. Alt text: `{productName}`. |
 | 23 | `lblProductName` | Product Name | Text (`<span>`) | String(255) | — | Product display name. Truncated to 2 lines. | — | `data[i].name` | i18n key: N/A (dynamic data). |
 | 24 | `lblProductSlug` | Product Slug | Text (hidden) | String(255) | — | URL slug for navigation. Used as href on card click. | — | `data[i].slug` | N/A (internal; navigates to `/buyer/products/:slug`). |
-| 25 | `lblProductPrice` | Product Price | Text (`<span>`) | Decimal String | — | Formatted price string. | Serialized as string (BR-MATCH-028). | `data[i].price` | Display: `¥{price}` or `${price}` based on locale. |
-| 26 | `lblCompareAtPrice` | Compare-At Price | Text (`<span>`) | Decimal String | Conditional | Shown when `compare_at_price` is set. Strikethrough styling. | Serialized as string (BR-MATCH-028). | `data[i].compare_at_price` | Display: `¥{price}` or `${price}` with `line-through` styling. |
+| 25 | `lblProductPrice` | Product Price | Text (`<span>`) | Decimal String | — | Formatted price string. | Serialized as string (BR-MATCH-028). | `data[i].price` | Display: `Number(price).toLocaleString()` + `Ks`. |
+| 26 | `lblCompareAtPrice` | Compare-At Price | Text (`<span>`) | Decimal String | Conditional | Shown when `compareAtPrice` is set. Strikethrough styling. | Serialized as string (BR-MATCH-028). | `data[i].compareAtPrice` | Display: `Number(price).toLocaleString()` + `Ks` with `line-through` styling. |
 | 27 | `lblAvgRating` | Average Rating | Text (`<span>`) | Decimal String | — | Star rating display (e.g., "★ 4.70"). | DECIMAL(3,2) | `data[i].avgRating` | Used for category badge logic (Featured/Top Rated). |
 | 28 | `lblReviewCount` | Review Count | Text (`<span>`) | Integer | — | Number of reviews (e.g., "(128)"). | INTEGER | `data[i].reviewCount` | Used for category badge logic (Best Seller threshold). |
 | 29 | `lblSkinTypeTags` | Skin Type Tags | Tag Group | Array of Enum | — | Compatible skin types displayed as small tags below product name. | — | `data[i].skinTypes` | Functional specification mapping: `EL-20`. i18n key: `matching.card.skinType.{type}`. |
@@ -259,15 +262,15 @@ The Recommendations page is the personalized product discovery entry point in th
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 31 | `pagPagination` | Pagination Controls | Pagination | — | Conditional | Desktop only. Previous/next arrows + page numbers. | Page ≥ 1. Max page from `response.meta.totalPages`. | `response.meta` | i18n key: `matching.pagination`. |
-| 32 | `btnLoadMore` | Load More Button | Button (`button`, `outline`) | — | Conditional | Mobile only. Infinite-scroll trigger. Rose-gold ghost button. Text: "Load More" / "もっと見る" | — | — | i18n key: `matching.loadMore`. |
+| 31 | `pagPagination` | Pagination Controls | Pagination | — | Conditional | Previous/next arrows and page numbers on all screen sizes when multiple pages exist. | Page ≥ 1. Max page from `response.meta.totalPages`. | `response.meta` | Page size defaults to 12 in frontend. |
+| 32 | `btnLoadMore` | Load More Button | Button (`button`, `outline`) | — | Not implemented | Not rendered; page uses numbered pagination on mobile and desktop. | — | — | Retained as a design gap only. |
 
 ### 4.5 Section [E]: Recommendation History (おすすめ履歴)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 33 | `lblHistoryTitle` | History Section Heading | Heading (`<h2>`) | String | Conditional | Visible when the buyer has past completed analysis sessions, regardless of `source`. Text: "📋 Previously Recommended" | — | Hardcoded UI text | History is independent of the current recommendation source. i18n key: `matching.historyTitle`. |
-| 34 | `accHistorySessions` | History Session Accordion | Accordion Group | — | Conditional | Rows grouped by analysis date (e.g. "Aug 20, 2026 — Oily Skin Analysis"). | — | `response.data` from `GET /api/v1/recommendations/history` | Expanded row shows mini-cards. Collapsed row shows date header + chevron. i18n key: N/A (dynamic data). |
+| 34 | `accHistorySessions` | History Session Accordion | Accordion Group | — | Conditional | Newest analysis sessions first; initially fetches five. | — | `response.data` from `GET /api/v1/recommendations/history` | See more fetches up to 50; row shows date, type and eligible product count. |
 | 35 | `cardHistoryProduct` | History Product Mini-Card | Card (compact) | — | Conditional | Shows: product image + name + match score + price. | — | `history.products[i]` | Click navigates to `/buyer/products/:id`. i18n key: N/A (composite). |
 | 36 | `emptyHistory` | History Empty State | EmptyState | — | Conditional | Text: "No recommendation history yet". Shown when the buyer has no completed analysis sessions, regardless of the current `source`. | — | — | i18n key: `matching.historyEmpty`. |
 
@@ -275,7 +278,7 @@ The Recommendations page is the personalized product discovery entry point in th
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 37 | `pnlAdSlideDown` | Ad Slide-Down Panel | Carousel | — | Conditional | Horizontal glass-morphism carousel. Up to 5 ad slides. Shown for both `source = "ai"` and `source = "generic"`. | — | `GET /api/v1/ads/panel?placement=category_banner` (recommendation panel uses the existing category-banner placement) | i18n key: N/A (composite). |
+| 37 | `pnlAdSlideDown` | Sponsored Banner | Shared `AdBannerSlider` | — | Conditional | Shared banner shown independently of recommendation source when eligible ads exist. | — | Sponsored ads hook; placement `recommendation_page_banner` | Shared ads feature owns query and serving. |
 | 38 | `imgAdBanner` | Ad Slide Image | Image (`<img>`) | URL | — | Left side of each slide. Aspect ratio 16:9. | — | `ads[i].imageUrl` | Lazy loading. |
 | 39 | `lblAdTitle` | Ad Slide Title | Text (`<h4>`) | String | — | Center of each slide. | — | `ads[i].title` | i18n key: N/A (dynamic data). |
 | 40 | `lblAdDescription` | Ad Slide Description | Text (`<p>`) | String | — | Center of each slide, below title. May be null. | — | `ads[i].description` | i18n key: N/A (dynamic data). |
@@ -283,7 +286,7 @@ The Recommendations page is the personalized product discovery entry point in th
 | 42 | `btnAdPrev` | Ad Previous Arrow | Icon Button | — | — | Left arrow. Overrides auto-slide. | — | — | i18n key: N/A. |
 | 43 | `btnAdNext` | Ad Next Arrow | Icon Button | — | — | Right arrow. Overrides auto-slide. | — | — | i18n key: N/A. |
 | 44 | `dotAdIndicators` | Ad Dot Indicators | Dot Group | Integer | — | Current position indicator. Filled dot = active slide. | — | — | i18n key: N/A. |
-| 45 | `lblAdDisclosure` | Ad Disclosure Footer | Text (`<p>`) | String | — | Always visible below panel. Italic. Text: "Sponsored products are paid placements from merchants" / "スポンサー商品はマーチャントによる有料掲載です" | — | Static disclosure text | BR-MATCH-053. i18n key: `matching.adPanel.disclosure`. |
+| 45 | `lblAdDisclosure` | Ad Disclosure Footer | Text (`<p>`) | String | Not implemented | No separate disclosure footer; banner announcement badge is shown (default `SPONSORED`). | — | Shared banner data | Disclosure text is not rendered by this component. |
 
 ### 4.7 Section [F]: Error & Empty States (エラー・空状態)
 
@@ -293,6 +296,9 @@ The Recommendations page is the personalized product discovery entry point in th
 | 47 | `btnRetry` | Retry Button | Button (`button`, `outline`) | — | Conditional | Inside `alertError`. Text: "Retry" / "再試行" | — | — | Refetches last failed query. i18n key: `matching.errors.retry`. |
 | 48 | `emptyResults` | Empty Results State | EmptyState | — | Conditional | Shown when query returns `total = 0`. Text: "No matching products" + Reset Filters button. | — | `response.meta.total = 0` | i18n key: `matching.empty`. |
 | 49 | `btnResetFiltersEmpty` | Reset Filters (Empty State) | Button (`button`, `outline`) | — | Conditional | Inside `emptyResults`. Text: "Reset Filters" | — | — | Resets all filters to defaults. i18n key: `matching.empty.resetFilters`. |
+| 50 | `viewToggle` | Grid/List View Toggle | Toggle | Enum | Yes | Grid by default; list mode shows stacked cards. | `grid` or `list` | Local page state | Does not change API query. |
+| 51 | `btnWishlist` | Wishlist Toggle | Button | Boolean | Yes | Heart reflects buyer's wishlist state; add/remove action. | Auth required for action | Wishlist hooks | Guest sees login prompt; duplicate response receives specific feedback. |
+| 52 | `btnAddToCart` | Add to Cart | Button | — | Conditional | Shown only when product is in stock; adds quantity 1. | Auth required for action | Cart hooks | Guest sees login prompt; duplicate cart item opens dialog. |
 
 ---
 
@@ -302,10 +308,10 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Trigger:** Buyer navigates to `/buyer/recommendations`.
 - **Processing Logic:**
   1. **Auth Check:** Verify JWT token and `buyer` role. If invalid → redirect to `/login`.
-  2. **Analysis Check:** Call backend to determine whether the latest completed AI analysis is no more than 24 hours old.
+  2. **Analysis Check:** Backend selects the latest completed analysis with a non-null completion time; age does not determine eligibility.
   3. **Source Assignment:** `source = "ai"` when the latest analysis exists (including stale analyses > 24h old); `source = "generic"` only when no analysis is available.
   4. **API Call:** `GET /api/v1/recommendations/personalized` with default params.
-  5. **Cache Check:** Backend checks Redis cache. HIT → return cached (≤200ms). MISS → query DB, compute scores, seed Redis.
+  5. **Cache Check:** Backend checks per-user Redis cache (TTL 5 minutes). HIT returns cached data; MISS queries DB, computes scores, and seeds cache.
   6. **Render:** Display recommendation cards based on source, show the profile prompt for generic results, and show history independently when completed sessions exist.
 - **Exception Handling:**
   - `401` (UNAUTHORIZED): Redirect to `/login`.
@@ -333,22 +339,16 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Exception Handling:**
   - `VAL-MATCH-003` / `VAL-MATCH-004`: Inline error "Minimum/Maximum price must be 0 or more".
 
-### 5.4 Filter Change — Ingredients (`chkIngredients` onChange)
-- **Trigger:** Buyer checks/unchecks an ingredient checkbox.
-- **Processing Logic:**
-  1. Update URL query param `ingredients` (comma-separated).
-  2. Reset `page` to 1.
-  3. Trigger refetch.
-  4. Backend applies `hasSome` on `products.ingredients` (BR-MATCH-017).
-- **Exception Handling:**
-  - `VAL-MATCH-002`: "Invalid ingredients".
+### 5.4 Ingredient Query Support (API Only)
+- **Trigger:** Direct API/query-string request containing `ingredients`; the current page has no ingredient control.
+- **Processing Logic:** The backend maps known ingredient keys to catalog labels and filters products that have any requested ingredient.
 
 ### 5.5 Reset Filters (`btnResetFilters` onClick / `btnResetFiltersEmpty` onClick)
 - **Trigger:** Buyer clicks "Reset Filters" button.
 - **Processing Logic:**
   1. Clear all filter URL params (`skinTypes`, `ingredients`, `minPrice`, `maxPrice`).
   2. Reset `page` to 1.
-  3. Reset sort to default (`matchScore desc` for ai; `is_featured desc`, then `avg_rating desc` for generic).
+  3. Sort returns to the page default, `createdAt desc` (Newest).
   4. Trigger refetch with default params.
 - **Exception Handling:** None applicable.
 
@@ -358,7 +358,7 @@ The Recommendations page is the personalized product discovery entry point in th
   1. Update URL query params `sort` and `order`.
   2. Reset `page` to 1.
   3. Trigger refetch.
-  4. Backend sorts by selected field (BR-MATCH-025).
+  4. Backend supports `matchScore`, `price`, `rating`, and `createdAt`. UI default is Newest; Match Score is offered only for AI results.
 - **Exception Handling:**
   - `VAL-MATCH-006`: "Invalid sort field".
 
@@ -367,21 +367,16 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Processing Logic:**
   1. Update URL query param `page`.
   2. Trigger refetch with `keepPreviousData` (TanStack Query).
-  3. Scroll to top of grid.
+  3. Keep previous results visible during fetch; page does not scroll on pagination change.
 - **Exception Handling:** None applicable.
 
-### 5.8 Load More — Mobile (`btnLoadMore` onClick)
-- **Trigger:** Buyer clicks "Load More" button on mobile.
-- **Processing Logic:**
-  1. Increment `page` by 1.
-  2. Trigger refetch with `keepPreviousData`.
-  3. Append new results to existing grid.
-- **Exception Handling:** None applicable.
+### 5.8 Load More — Not Implemented
+- The page uses numbered pagination on mobile and desktop; no Load More button or append-results handler exists.
 
 ### 5.9 Recommendation Card Click (`cardRecommendation` onClick)
 - **Trigger:** Buyer clicks a recommendation card (image or name).
 - **Processing Logic:**
-  1. Navigate to `/buyer/products/:id`.
+  1. Navigate to `/buyer/products/:slug`.
 - **Exception Handling:** None applicable (navigation only).
 
 ### 5.10 History Session Expand/Collapse (`accHistorySessions` onToggle)
@@ -396,9 +391,8 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Trigger:** Page load (panel visible).
 - **Processing Logic:**
   1. Start 5-second auto-slide timer (BR-MATCH-048).
-  2. Auto-slide pauses on hover (desktop) or touch (mobile).
-  3. Manual left/right arrows override auto-slide.
-  4. Dot indicators update on slide change.
+  2. Auto-slide pauses on hover, keyboard focus, or reduced-motion preference.
+  3. Banner and CTA clicks initiate ad navigation.
 - **Exception Handling:** None applicable.
 
 ### 5.12 Ad Panel — Impression Tracking
@@ -412,7 +406,7 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Trigger:** Buyer clicks "Shop Now" / "View Product" CTA on ad slide.
 - **Processing Logic:**
   1. Fire-and-forget `POST /api/v1/ads/track/click` with `adId`.
-  2. Navigate to `ad.linkUrl`.
+  2. Resolve SKU product, fallback product, configured target/link URL, or product catalog fallback; HTTP(S) destinations use full-page navigation.
 - **Exception Handling:** None applicable.
 
 ### 5.14 Start Skin Analysis CTA (`lnkStartAnalysis` onClick)
@@ -420,6 +414,10 @@ The Recommendations page is the personalized product discovery entry point in th
 - **Processing Logic:**
   1. Navigate to `/buyer/skin-analysis`.
 - **Exception Handling:** None applicable.
+
+### 5.15 Wishlist and Cart Actions
+- Wishlist control toggles add/remove and shows success or conflict feedback. Guests receive a login dialog with a return URL; non-buyer users receive a toast.
+- Add-to-cart is available only for in-stock products and submits quantity 1. Guests receive a login prompt; duplicates open the duplicate-item dialog; other failures show an error toast.
 
 ---
 
@@ -566,7 +564,7 @@ The Recommendations page is the personalized product discovery entry point in th
       "shopName": "GlowLab"
     }
   ],
-  "placement": "category_banner",
+  "placement": "recommendation_page_banner",
   "meta": {
     "total": 5,
     "maxAds": 5
@@ -619,6 +617,8 @@ The Recommendations page is the personalized product discovery entry point in th
 ---
 
 ## 9. i18n Keys Reference (i18nキーリファレンス)
+
+> **Code status (2026-10-15):** these keys are **not wired** — `MatchingRecommendations.tsx` and its feature components render hardcoded English strings (no `useTranslation`); only the shared `AdBannerSlider` translates labels. `matching.filters.ingredients` and `matching.loadMore` describe UI that does not exist (ingredients is API-only; paging is numbered pagination). Treat the tables below as the target for a future i18n pass.
 
 ### 9.1 English (en) — Recommendations Page
 
@@ -754,7 +754,7 @@ The Recommendations page is the personalized product discovery entry point in th
 
 | Property | Value |
 | :--- | :--- |
-| **Location** | `frontend/src/features/recommendations/components/RecommendationCard.tsx` |
+| **Location** | Card is rendered inline in `frontend/src/pages/buyer/MatchingRecommendations.tsx` (`features/buyer/matching/components/RecommendationCard.tsx` exists but is not imported by the page) |
 | **Purpose** | Individual product card in the recommendation grid |
 
 **Props Interface:**
@@ -774,19 +774,20 @@ interface RecommendationCardProps {
 }
 ```
 
-### 10.2 AdSlidePanel Component
+### 10.2 Ad Panel — shared `AdBannerSlider`
 
 | Property | Value |
 | :--- | :--- |
-| **Location** | `frontend/src/components/AdSlidePanel.tsx` |
+| **Location** | `frontend/src/components/shared/AdBannerSlider.tsx` (design path `frontend/src/components/AdSlidePanel.tsx` does not exist) |
 | **Purpose** | Reusable cross-screen sponsored ad carousel |
 
 **Props Interface:**
 ```typescript
-interface AdSlidePanelProps {
-  placement: string;
-  maxSlides?: number; // default 5
-  autoSlideMs?: number; // default 5000
+interface AdBannerSliderProps {
+  placement: AdBannerPlacement; // 'recommendation_page_banner' on this page
+  fallbackProductId?: string;
+  onImpression?: (adIds: string[]) => void;
+  onAdClick?: (adId: string) => void;
 }
 ```
 
@@ -794,14 +795,14 @@ interface AdSlidePanelProps {
 
 | Property | Value |
 | :--- | :--- |
-| **Location** | `frontend/src/features/recommendations/components/FiltersPanel.tsx` |
-| **Purpose** | Desktop sidebar / mobile drawer filter controls |
+| **Location** | `frontend/src/features/buyer/matching/components/FiltersPanel.tsx` |
+| **Purpose** | Desktop sidebar / mobile `Sheet` filter controls (category, skin type, price, rating — no ingredients) |
 
-### 10.4 SkeletonRecommendationGrid Component
+### 10.4 SkeletonGrid Component
 
 | Property | Value |
 | :--- | :--- |
-| **Location** | `frontend/src/features/recommendations/components/SkeletonRecommendationGrid.tsx` |
+| **Location** | `frontend/src/features/buyer/matching/components/SkeletonGrid.tsx` (replaces the design name `SkeletonRecommendationGrid.tsx`) |
 | **Purpose** | Loading skeleton shimmer for recommendation grid |
 
 ---
@@ -809,10 +810,10 @@ interface AdSlidePanelProps {
 ## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
 
 - **Design System:** Luxury Cosmetics Theme — Primary `#7C3AED` (Purple), Accent `#EC4899` (Pink), Secondary `#F3E8FF` (Lavender). Rose-gold CTA buttons.
-- **Responsive Grid:** 4 columns (desktop ≥1024px) → 2 columns (tablet) → 1 column (mobile <768px).
-- **Filters:** Desktop = sidebar (always visible). Mobile = drawer (hamburger trigger, slide-in from left).
+- **Responsive Grid:** 1 column by default → 2 columns at `sm` → 3 columns at `lg`.
+- **Filters:** Desktop (`lg`) = sidebar. Below `lg` = filter sheet.
 - **Accessibility:** Every control must be keyboard navigable. ARIA labels required. Error messages must be announced via `role="alert"`. Ad panel must have `aria-roledescription="carousel"`.
-- **Performance:** Skeleton shimmer grid during fetch (shadcn `Skeleton`). Match score computation ≤50ms. Cache hit response ≤200ms. Page load ≤2 seconds (NFR-001).
+- **Loading:** Skeleton on initial load; existing results remain visible during refetch/page changes with a refresh indicator. No source-code timing guarantee is specified.
 - **Security:** All user input sanitized (XSS). Prisma parameterized queries only. JWT required for personalized endpoints. No `console.log` in production.
 - **Design Tokens:** Match score badge uses gradient `bg-gradient-to-r from-emerald-500 to-teal-500`. Category badges: Featured `bg-amber-100 text-amber-800`, Top Rated `bg-teal-100 text-teal-800`, Best Seller `bg-orange-100 text-orange-800`, New `bg-purple-100 text-purple-800`.
 - **Caching:** Personalized results cached in Redis (TTL 5min). Cache key: `cache:recommendations:user:{userId}:{hashOfQuery}`. Invalidation on new AI analysis.
@@ -839,37 +840,36 @@ interface AdSlidePanelProps {
 - [ ] Min price input validates ≥ 0
 - [ ] Max price input validates ≥ 0
 - [ ] Min price > max price shows inline error
-- [ ] Rating dropdown options: Any, 1+, 2+, 3+, 4+, 4.5+
-- [ ] Ingredients filter triggers refetch with correct `hasSome` query
-- [ ] Sort field options: Match Score, Price, Rating, Created At
-- [ ] Sort direction options: Ascending, Descending
+- [ ] Rating options: 3.0+, 3.5+, 4.0+, 4.5+
+- [ ] Ingredient filter is API-only (not rendered in current page)
+- [ ] Sort options: Newest, Price low/high, Highest Rated; AI results also offer Match Score
 - [ ] Reset Filters clears all params and resets page to 1
 - [ ] Any filter or sort change resets `page` to 1
 
 ### 12.3 Recommendation Grid
 
-- [ ] 4-column grid on desktop (≥1024px)
-- [ ] 2-column grid on tablet (768px–1023px)
-- [ ] 1-column grid on mobile (<768px)
+- [ ] 3-column grid on desktop (`lg` ≥1024px)
+- [ ] 2-column grid at `sm` (640px+)
+- [ ] 1-column grid below `sm` (640px)
 - [ ] Match score badge shown only for `source = "ai"`
-- [ ] Category badge shown only for `source = "generic"`
+- [ ] Category badge shown when `categoryBadge` is non-null, regardless of source
 - [ ] Product name truncated to 2 lines
 - [ ] Price displayed as formatted string
 - [ ] Out of stock indicator shown when applicable
-- [ ] Card click navigates to `/buyer/products/:id`
+- [ ] Card click navigates to `/buyer/products/:slug`
 
 ### 12.4 Pagination & Load More
 
 - [ ] Desktop: pagination controls visible with page numbers
-- [ ] Mobile: "Load More" button visible
+- [ ] Mobile: numbered pagination visible when multiple pages exist
 - [ ] Page change triggers refetch
-- [ ] Load More appends results to existing grid
+- [ ] Page change loads selected page; it does not append results
 - [ ] Skeleton shown during page change
 
 ### 12.5 Recommendation History
 
 - [ ] History section visible for either source when completed analysis history exists
-- [ ] Stale analysis remains available in recommendation history while current source is `generic`
+- [ ] History is sourced from completed analysis sessions and remains independent of current recommendation source
 - [ ] Sessions grouped by analysis date
 - [ ] Accordion expand/collapse works
 - [ ] Expanded row shows mini-cards with image + name + score + price
@@ -880,12 +880,9 @@ interface AdSlidePanelProps {
 - [ ] Panel visible for both `source = "ai"` and `source = "generic"`
 - [ ] Maximum 5 ad slides displayed
 - [ ] Auto-slide every 5 seconds
-- [ ] Auto-slide pauses on hover (desktop)
-- [ ] Auto-slide pauses on touch (mobile)
-- [ ] Manual left/right arrows work
-- [ ] Dot indicators update correctly
-- [ ] Disclosure footer always visible
-- [ ] CTA button navigates to product page
+- [ ] Auto-slide pauses on hover, keyboard focus, and reduced-motion preference
+- [ ] Banner and CTA click resolve component destination behavior
+- [ ] Announcement badge is displayed; no separate disclosure footer exists
 - [ ] Impression tracking fires when panel visible (≥50%)
 - [ ] Click tracking fires on CTA click
 
@@ -894,27 +891,22 @@ interface AdSlidePanelProps {
 - [ ] 400 error → inline validation hint + top banner
 - [ ] 401 error → redirect to `/login`
 - [ ] 403 error → redirect to `/unauthorized`
-- [ ] 404 error → empty state
-- [ ] 429 error → "Too many requests" + retry countdown
+- [ ] Unknown similar product ID → empty similar result response
 - [ ] 500 error → error banner with retry button
 - [ ] Network error → "Network error" banner
 - [ ] Retry button refetches last failed query
 
 ### 12.8 Responsive Design
 
-- [ ] Desktop (≥1024px): sidebar filters + 4-column grid
-- [ ] Tablet (768px–1023px): narrower sidebar + 2–3 column grid
-- [ ] Mobile (<768px): drawer filters + 1–2 column grid
+- [ ] Desktop (≥1024px): sidebar filters + 3-column grid
+- [ ] Small (`sm`, 640px+): 2-column grid; filter sheet until `lg`
+- [ ] Mobile (<640px): filter sheet + 1-column grid
 - [ ] All controls keyboard navigable
 - [ ] ARIA labels present on interactive elements
 
 ### 12.9 i18n
 
-- [ ] All EN keys render correctly
-- [ ] All JA keys render correctly
-- [ ] All MY keys render correctly
-- [ ] Language toggle switches all labels (EN → JA → MY → EN)
-- [ ] Dynamic interpolation (score, skinType, count) works in all 3 languages
+- [ ] App-shell language toggle does not currently translate this page's hardcoded English labels
 
 ---
 
