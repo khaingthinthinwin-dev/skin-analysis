@@ -143,7 +143,8 @@
       "noAccount": "Don't have an account?",
       "createAccount": "Create one",
       "showPassword": "Show password",
-      "hidePassword": "Hide password"
+      "hidePassword": "Hide password",
+      "errorFallback": "Login failed"
     },
     "register": {
       "title": "Create Account",
@@ -167,12 +168,21 @@
       "merchant": "Merchant - Sell skincare products",
       "showPassword": "Show password",
       "hidePassword": "Hide password",
+      "errorFallback": "Registration failed",
       "passwordRequirement": {
         "length": "At least 8 characters",
         "uppercase": "One uppercase letter (A-Z)",
         "lowercase": "One lowercase letter (a-z)",
         "number": "One number (0-9)",
         "special": "One special character (@$!%*?&)"
+      },
+      "passwordStrength": {
+        "label": "Password strength:",
+        "weak": "Weak",
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong",
+        "veryStrong": "Very Strong"
       },
       "license": "Business License (PDF)",
       "licensePlaceholder": "Drag & drop or click to upload",
@@ -185,7 +195,8 @@
         "required": "Business license is required for merchant registration"
       },
       "agreeToTerms": "I agree to the",
-      "termsOfService": "Terms of Service"
+      "termsOfService": "Terms of Service",
+      "termsAgreement": "I agree to the <termsLink>Terms of Service</termsLink>"
     },
     "forgotPassword": {
       "title": "Forgot Password?",
@@ -194,7 +205,8 @@
       "emailPlaceholder": "user@example.com",
       "submit": "Send Verification Code",
       "submitting": "Sending...",
-      "backToLogin": "Back to Login"
+      "backToLogin": "Back to Login",
+      "errorFallback": "Failed to send verification code"
     },
     "verifyCode": {
       "title": "Enter Verification Code",
@@ -221,7 +233,30 @@
       "successTitle": "Password reset successful",
       "successMessage": "Your password has been reset successfully. You can now sign in with your new password.",
       "backToLogin": "Back to Login",
-      "invalidToken": "Invalid or expired verification code. Please request a new one."
+      "invalidToken": "Invalid or expired verification code. Please request a new one.",
+      "errorFallback": "Failed to reset password"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "nameMinLength": "Name must be at least 2 characters",
+      "nameMaxLength": "Name must not exceed 200 characters",
+      "emailMaxLength": "Email must not exceed 255 characters",
+      "passwordMaxLength": "Password must not exceed 128 characters",
+      "passwordUppercase": "Password must contain at least one uppercase letter",
+      "passwordLowercase": "Password must contain at least one lowercase letter",
+      "passwordNumber": "Password must contain at least one number",
+      "passwordSpecial": "Password must contain at least one special character (@$!%*?&)",
+      "confirmPasswordRequired": "Please confirm your password",
+      "roleRequired": "Please select a role",
+      "termsRequired": "You must agree to the Terms of Service",
+      "passwordMismatch": "Passwords do not match",
+      "licenseRequired": "Business license is required for merchant registration",
+      "licenseType": "File type not supported. Only PDF files are accepted.",
+      "licenseSize": "File exceeds maximum size of 10 MB",
+      "licenseName": "File must be named license.pdf"
     },
     "createAdmin": {
       "title": "Create Admin Account",

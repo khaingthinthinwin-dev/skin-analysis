@@ -9,9 +9,9 @@
 | **Document ID** | SKM-PCL-SIGNUP-001 |
 | **Target Screen** | Sign-up / Login / Password Reset |
 | **Subsystem** | Authentication |
-| **Version** | 2.2 |
+| **Version** | 2.4 |
 | **Created** | 2026-09-16 |
-| **Last Updated** | 2026-10-14 |
+| **Last Updated** | 2026-10-15 |
 | **Status** | Active |
 
 ---
@@ -114,7 +114,8 @@
   - **Evidence**:
     - `N-07_1_lang_initial.png`
     - `N-07_2_lang_japanese.png`
-    - `N-07_3_lang_english.png`
+    - `N-07_3_lang_myanmar.png`
+    - `N-07_4_lang_english.png`
     - Test: auth.spec.ts › "should switch language on auth pages" — passed
   - **Precondition**: User is on any auth page
   - **Steps**:
@@ -255,6 +256,127 @@
     3. Check `document.documentElement.scrollWidth <= clientWidth`
   - **Expected Result**: Zero horizontal overflow even at 320px width
   - **Business Rules**: None (Responsive)
+
+- [ ] **N-19**: Language toggle works on Login page
+  - **Precondition**: User is on `/login`
+  - **Steps**:
+    1. Toggle language to Japanese
+    2. Verify all UI labels on the Login page update to Japanese (e.g., "Sign In" button, "Email", "Password" field labels, "Forgot password?" link, "Create one" link)
+    3. Toggle language to Myanmar
+    4. Verify all UI labels on the Login page update to Myanmar
+    5. Toggle back to English
+    6. Verify all UI labels restore to English
+  - **Expected Result**: All labels on the Login page switch correctly to the selected language (Japanese / Myanmar / English)
+  - **Business Rules**: None (i18n)
+  - **Note**: No automated test mapped yet. Verify manually or add `login.spec.ts › "should switch language on login page"`.
+
+- [ ] **N-20**: Language toggle works on Register page
+  - **Precondition**: User is on `/register`
+  - **Steps**:
+    1. Toggle language to Japanese
+    2. Verify all UI labels on the Register page update to Japanese (e.g., "Create Account" button, "Full Name", "Email", "Password", "Confirm Password" field labels, role selector labels)
+    3. Toggle language to Myanmar
+    4. Verify all UI labels on the Register page update to Myanmar
+    5. Toggle back to English
+    6. Verify all UI labels restore to English
+  - **Expected Result**: All labels on the Register page switch correctly to the selected language (Japanese / Myanmar / English)
+  - **Business Rules**: None (i18n)
+  - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should switch language on register page"`.
+
+- [ ] **N-21**: Language toggle works on Forgot Password page
+  - **Precondition**: User is on `/forgot-password`
+  - **Steps**:
+    1. Toggle language to Japanese
+    2. Verify all UI labels on the Forgot Password page update to Japanese (e.g., "Send Reset Link" button, "Email" field label, "Back to Login" link, page heading)
+    3. Toggle language to Myanmar
+    4. Verify all UI labels on the Forgot Password page update to Myanmar
+    5. Toggle back to English
+    6. Verify all UI labels restore to English
+  - **Expected Result**: All labels on the Forgot Password page switch correctly to the selected language (Japanese / Myanmar / English)
+  - **Business Rules**: None (i18n)
+  - **Note**: No automated test mapped yet. Verify manually or add `forgot-password.spec.ts › "should switch language on forgot password page"`.
+
+- [ ] **N-22**: Language toggle works on Reset Password page
+  - **Precondition**: User is on `/reset-password?token=valid-token`
+  - **Steps**:
+    1. Toggle language to Japanese
+    2. Verify all UI labels on the Reset Password page update to Japanese (e.g., "Reset Password" button, "New Password", "Confirm Password" field labels, "Back to Login" link, page heading)
+    3. Toggle language to Myanmar
+    4. Verify all UI labels on the Reset Password page update to Myanmar
+    5. Toggle back to English
+    6. Verify all UI labels restore to English
+  - **Expected Result**: All labels on the Reset Password page switch correctly to the selected language (Japanese / Myanmar / English)
+  - **Business Rules**: None (i18n)
+  - **Note**: No automated test mapped yet. Verify manually or add `reset-password.spec.ts › "should switch language on reset password page"`.
+
+- [ ] **N-23**: Register as buyer successfully with Myanmar language UI
+  - **Precondition**: User is not authenticated; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Navigate to `/register`
+    3. Verify page heading, all field labels, role selector, and "Create Account" button are displayed in Myanmar
+    4. Fill Full Name, Email, Password, Confirm Password with valid values
+    5. Select Buyer role (default)
+    6. Click the Myanmar-labelled "Create Account" button
+  - **Expected Result**: Success — account created, success message appears in Myanmar, redirect to `/login`; all labels were in Myanmar throughout
+  - **Business Rules**: BR-AUTH-001, BR-AUTH-002, BR-AUTH-003, BR-AUTH-004
+  - **API**: `POST /api/v1/auth/register`
+  - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should register as buyer successfully in Myanmar language"`.
+
+- [ ] **N-24**: Register as merchant with license upload in Myanmar language UI
+  - **Precondition**: User is not authenticated; UI language is set to Myanmar; valid license.pdf ready
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Navigate to `/register`
+    3. Verify all labels are in Myanmar
+    4. Fill Full Name, Email, Password, Confirm Password
+    5. Select Merchant role (Myanmar label)
+    6. Upload license.pdf
+    7. Click the Myanmar-labelled "Create Account" button
+  - **Expected Result**: Success — merchant account created, success message in Myanmar, redirect to `/login`; Myanmar role label was visible throughout
+  - **Business Rules**: BR-AUTH-020, BR-AUTH-021, BR-AUTH-022, BR-AUTH-023, BR-AUTH-024, BR-AUTH-026
+  - **API**: `POST /api/v1/auth/register`
+  - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should register as merchant in Myanmar language"`.
+
+- [ ] **N-25**: Login with valid credentials in Myanmar language UI
+  - **Precondition**: User has an existing account; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Navigate to `/login`
+    3. Verify page heading, field labels, "Sign In" button, "Forgot password?" and "Create one" links are displayed in Myanmar
+    4. Enter valid email and password
+    5. Click the Myanmar-labelled "Sign In" button
+  - **Expected Result**: Success — logged in, success toast appears in Myanmar, redirect to home / buyer dashboard
+  - **Business Rules**: BR-AUTH-006, BR-AUTH-007
+  - **API**: `POST /api/v1/auth/login`
+  - **Note**: No automated test mapped yet. Verify manually or add `login.spec.ts › "should login successfully in Myanmar language"`.
+
+- [ ] **N-26**: Submit forgot password form in Myanmar language UI
+  - **Precondition**: User is on `/forgot-password`; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Navigate to `/forgot-password`
+    3. Verify page heading, email field label, and "Send Reset Link" button are in Myanmar
+    4. Enter valid email
+    5. Click the Myanmar-labelled "Send Reset Link" button
+  - **Expected Result**: Success — request accepted, success/instruction message shown in Myanmar, redirect to `/verify-code`
+  - **Business Rules**: BR-AUTH-034
+  - **API**: `POST /api/v1/auth/forgot-password`
+  - **Note**: No automated test mapped yet. Verify manually or add `forgot-password.spec.ts › "should submit forgot password in Myanmar language"`.
+
+- [ ] **N-27**: Reset password with valid token in Myanmar language UI
+  - **Precondition**: User has a valid reset token from email; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Navigate to `/reset-password?token=valid-token`
+    3. Verify page heading, "New Password", "Confirm Password" field labels, and "Reset Password" button are in Myanmar
+    4. Enter new password meeting all requirements
+    5. Enter matching confirm password
+    6. Click the Myanmar-labelled "Reset Password" button
+  - **Expected Result**: Success — password updated, success message shown in Myanmar, user can log in with new password
+  - **Business Rules**: BR-AUTH-030, BR-AUTH-031, BR-AUTH-035
+  - **API**: `POST /api/v1/auth/reset-password`
+  - **Note**: No automated test mapped yet. Verify manually or add `reset-password.spec.ts › "should reset password in Myanmar language"`.
 
 ---
 
@@ -482,6 +604,63 @@
   - **Business Rules**: BR-AUTH-030, BR-AUTH-031
   - **API**: `POST /api/v1/auth/reset-password`
 
+- [ ] **A-20**: Submit register form with empty fields — error messages display in Myanmar
+  - **Precondition**: User is on `/register`; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Navigate to `/register`
+    3. Leave all required fields empty
+    4. Click the Myanmar-labelled "Create Account" button
+  - **Expected Result**: Failed — inline validation error messages appear in Myanmar under each empty required field; account not created
+  - **Business Rules**: BR-AUTH-001, BR-AUTH-002
+  - **API**: `POST /api/v1/auth/register`
+  - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should show empty field errors in Myanmar language"`.
+
+- [ ] **A-21**: Register with duplicate email — error message displays in Myanmar
+  - **Precondition**: User is on `/register`; email already exists; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Fill form with an existing email
+    3. Click the Myanmar-labelled "Create Account" button
+  - **Expected Result**: Failed — "Email already registered" error appears in Myanmar under the email field; account not created
+  - **Business Rules**: BR-AUTH-001
+  - **API**: `POST /api/v1/auth/register`
+  - **Note**: No automated test mapped yet. Verify manually or add `register.spec.ts › "should show duplicate email error in Myanmar language"`.
+
+- [ ] **A-22**: Login with invalid credentials — error message displays in Myanmar
+  - **Precondition**: User is on `/login`; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Enter non-existent email and any password
+    3. Click the Myanmar-labelled "Sign In" button
+  - **Expected Result**: Failed — "Invalid email or password" error message appears in Myanmar; user stays on login page
+  - **Business Rules**: BR-AUTH-009
+  - **API**: `POST /api/v1/auth/login`
+  - **Note**: No automated test mapped yet. Verify manually or add `login.spec.ts › "should show invalid credentials error in Myanmar language"`.
+
+- [ ] **A-23**: Submit forgot password with invalid email format — error message displays in Myanmar
+  - **Precondition**: User is on `/forgot-password`; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Enter invalid email format (e.g., `not-an-email`)
+    3. Click the Myanmar-labelled "Send Reset Link" button
+  - **Expected Result**: Failed — "Invalid email address" error message appears in Myanmar under the email field; reset link not sent
+  - **Business Rules**: BR-AUTH-034
+  - **API**: `POST /api/v1/auth/forgot-password`
+  - **Note**: No automated test mapped yet. Verify manually or add `forgot-password.spec.ts › "should show invalid email error in Myanmar language"`.
+
+- [ ] **A-24**: Submit reset password with mismatched passwords — error message displays in Myanmar
+  - **Precondition**: User is on `/reset-password?token=valid-token`; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Enter valid new password
+    3. Enter different confirm password
+    4. Click the Myanmar-labelled "Reset Password" button
+  - **Expected Result**: Failed — "Passwords do not match" error message appears in Myanmar; password not changed
+  - **Business Rules**: BR-AUTH-002
+  - **API**: `POST /api/v1/auth/reset-password`
+  - **Note**: No automated test mapped yet. Verify manually or add `reset-password.spec.ts › "should show password mismatch error in Myanmar language"`.
+
 ---
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
@@ -555,6 +734,18 @@
   - **Expected Result**: Success — License.PDF accepted (name check is case-insensitive); merchant form can submit
   - **Business Rules**: BR-AUTH-022
   - **Note**: Backend file filter checks `file.originalname.toLowerCase() !== 'license.pdf'`, so uppercase is accepted.
+
+- [ ] **B-06**: Register with name at min/max boundary length with Myanmar language UI
+  - **Precondition**: User is on `/register`; UI language is set to Myanmar
+  - **Steps**:
+    1. Toggle UI language to Myanmar
+    2. Navigate to `/register`
+    3. Enter name with exactly 2 characters; fill other valid fields; click Myanmar-labelled "Create Account" — verify accepted
+    4. Repeat with name of exactly 50 characters — verify accepted
+    5. Attempt with name of 1 character — verify Myanmar-language validation error appears
+  - **Expected Result**: 2-char and 50-char names are accepted; 1-char name shows the "Name too short" validation message in Myanmar; account created only for valid lengths
+  - **Business Rules**: BR-AUTH-001
+  - **Note**: No automated test mapped yet. Ensures boundary validation messages are correctly translated to Myanmar. Verify manually or add `register.spec.ts › "should validate name boundaries in Myanmar language"`.
 
 ---
 
@@ -790,6 +981,19 @@
   - **Business Rules**: BR-AUTH-003
   - **API**: `POST /api/v1/auth/register`
 
+- [ ] **I-19**: Auth endpoints accept `Accept-Language: my` header and return error messages in Myanmar
+  - **Precondition**: Backend i18n middleware is configured to honour the `Accept-Language` header
+  - **Steps**:
+    1. Call `POST /api/v1/auth/login` with wrong password and header `Accept-Language: my`
+    2. Verify response status is 400 or 401
+    3. Verify the `message` field in the JSON body is the Myanmar translation of "Invalid email or password"
+    4. Call `POST /api/v1/auth/register` with missing fields and header `Accept-Language: my`
+    5. Verify the `message` field contains Myanmar-language validation text
+  - **Expected Response**: Error message bodies are returned in Myanmar when `Accept-Language: my` is sent; status codes remain unchanged (400/401/409)
+  - **Business Rules**: None (i18n API contract)
+  - **API**: `POST /api/v1/auth/login`, `POST /api/v1/auth/register`
+  - **Note**: No automated test mapped yet. Requires backend i18n middleware support for `Accept-Language`. Verify with raw HTTP inspection or add `api-auth.spec.ts › "should return error messages in Myanmar when Accept-Language is my"`.
+
 ---
 
 ## Sign-Off
@@ -798,5 +1002,7 @@
 |------|--------|
 | Test scenarios defined (N, A, B, I) | ☑️ |
 | E2E tests implemented | ☑️ |
+| Language test cases defined (N-19 to N-22) | ☑️ |
+| Myanmar language test cases added (N-23–N-27, A-20–A-24, B-06, I-19) | ☑️ |
 | PCL auto-update verified | ☑️ |
 | Next review date | 2026-10-28 |

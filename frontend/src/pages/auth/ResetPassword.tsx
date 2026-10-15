@@ -74,7 +74,7 @@ export default function ResetPassword() {
     } catch (err) {
       const errorMessage =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        (err instanceof Error ? err.message : 'Failed to reset password')
+        (err instanceof Error ? err.message : t('auth.resetPassword.errorFallback', 'Failed to reset password'))
       setError(errorMessage)
     } finally {
       setIsLoading(false)

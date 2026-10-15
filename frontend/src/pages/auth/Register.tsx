@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -109,7 +109,7 @@ export default function Register() {
       toast.success(t('auth.register.success'))
       navigate(ROUTES.LOGIN)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed'
+      const errorMessage = err instanceof Error ? err.message : t('auth.register.errorFallback', 'Registration failed')
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -385,10 +385,13 @@ export default function Register() {
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>
-                      {t('auth.register.agreeToTerms')}{' '}
-                      <Link to="/terms" className="text-primary hover:underline">
-                        {t('auth.register.termsOfService')}
-                      </Link>
+                      <Trans
+                        i18nKey="auth.register.termsAgreement"
+                        defaults="I agree to the <termsLink>Terms of Service</termsLink>"
+                        components={{
+                          termsLink: <Link to="/terms" className="text-primary hover:underline" />,
+                        }}
+                      />
                     </FormLabel>
                     <FormMessage />
                   </div>

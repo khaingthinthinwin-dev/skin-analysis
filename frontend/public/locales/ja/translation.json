@@ -143,7 +143,8 @@
       "noAccount": "アカウントをお持ちでないですか？",
       "createAccount": "作成する",
       "showPassword": "パスワードを表示",
-      "hidePassword": "パスワードを非表示"
+      "hidePassword": "パスワードを非表示",
+      "errorFallback": "ログインに失敗しました"
     },
     "register": {
       "title": "アカウント作成",
@@ -167,12 +168,21 @@
       "merchant": "出品者 - スキンケア商品を販売する",
       "showPassword": "パスワードを表示",
       "hidePassword": "パスワードを非表示",
+      "errorFallback": "アカウントの作成に失敗しました",
       "passwordRequirement": {
         "length": "8文字以上",
         "uppercase": "大文字1つ (A-Z)",
         "lowercase": "小文字1つ (a-z)",
         "number": "数字1つ (0-9)",
         "special": "特殊文字1つ (@$!%*?&)"
+      },
+      "passwordStrength": {
+        "label": "パスワードの強度:",
+        "weak": "弱い",
+        "fair": "普通",
+        "good": "良好",
+        "strong": "強い",
+        "veryStrong": "非常に強い"
       },
       "license": "事業許可書 (PDF)",
       "licensePlaceholder": "ドラッグ＆ドロップまたはクリックしてアップロード",
@@ -185,7 +195,8 @@
         "required": "出品者登録には事業許可書が必要です"
       },
       "agreeToTerms": "利用規約に同意します",
-      "termsOfService": "利用規約"
+      "termsOfService": "利用規約",
+      "termsAgreement": "私は<termsLink>利用規約</termsLink>に同意します"
     },
     "forgotPassword": {
       "title": "パスワードをお忘れですか？",
@@ -194,7 +205,8 @@
       "emailPlaceholder": "user@example.com",
       "submit": "認証コードを送信",
       "submitting": "送信中...",
-      "backToLogin": "ログインに戻る"
+      "backToLogin": "ログインに戻る",
+      "errorFallback": "認証コードの送信に失敗しました"
     },
     "verifyCode": {
       "title": "認証コードを入力",
@@ -221,7 +233,30 @@
       "successTitle": "パスワードリセット成功",
       "successMessage": "パスワードが正常にリセットされました。新しいパスワードでログインできます。",
       "backToLogin": "ログインに戻る",
-      "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。"
+      "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。",
+      "errorFallback": "パスワードの再設定に失敗しました"
+    },
+    "validation": {
+      "emailRequired": "メールアドレスを入力してください",
+      "emailInvalid": "有効なメールアドレスを入力してください",
+      "passwordRequired": "パスワードを入力してください",
+      "passwordMinLength": "パスワードは8文字以上で入力してください",
+      "nameMinLength": "名前は2文字以上で入力してください",
+      "nameMaxLength": "名前は200文字以内で入力してください",
+      "emailMaxLength": "メールアドレスは255文字以内で入力してください",
+      "passwordMaxLength": "パスワードは128文字以内で入力してください",
+      "passwordUppercase": "パスワードには英大文字を1文字以上含めてください",
+      "passwordLowercase": "パスワードには英小文字を1文字以上含めてください",
+      "passwordNumber": "パスワードには数字を1つ以上含めてください",
+      "passwordSpecial": "パスワードには特殊文字を1つ以上含めてください (@$!%*?&)",
+      "confirmPasswordRequired": "パスワードを再入力してください",
+      "roleRequired": "ロールを選択してください",
+      "termsRequired": "利用規約に同意してください",
+      "passwordMismatch": "パスワードが一致しません",
+      "licenseRequired": "出品者登録には事業許可書が必要です",
+      "licenseType": "サポートされていないファイル形式です。PDFファイルのみ対応しています。",
+      "licenseSize": "ファイルサイズが10MBを超えています",
+      "licenseName": "ファイル名はlicense.pdfである必要があります"
     },
     "createAdmin": {
       "title": "管理者アカウント作成",

@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 interface PasswordRequirement {
   met: boolean
@@ -10,17 +11,17 @@ interface PasswordStrengthIndicatorProps {
   password: string
 }
 
-function getStrengthLevel(requirements: PasswordRequirement[]): {
+function getStrengthLevel(requirements: PasswordRequirement[], t: TFunction): {
   label: string
   color: string
   width: string
 } {
   const metCount = requirements.filter((r) => r.met).length
-  if (metCount <= 1) return { label: 'Weak', color: 'bg-red-500', width: 'w-1/5' }
-  if (metCount === 2) return { label: 'Fair', color: 'bg-orange-500', width: 'w-2/5' }
-  if (metCount === 3) return { label: 'Good', color: 'bg-yellow-500', width: 'w-3/5' }
-  if (metCount === 4) return { label: 'Strong', color: 'bg-lime-500', width: 'w-4/5' }
-  return { label: 'Very Strong', color: 'bg-green-500', width: 'w-full' }
+  if (metCount <= 1) return { label: t('auth.register.passwordStrength.weak', 'Weak'), color: 'bg-red-500', width: 'w-1/5' }
+  if (metCount === 2) return { label: t('auth.register.passwordStrength.fair', 'Fair'), color: 'bg-orange-500', width: 'w-2/5' }
+  if (metCount === 3) return { label: t('auth.register.passwordStrength.good', 'Good'), color: 'bg-yellow-500', width: 'w-3/5' }
+  if (metCount === 4) return { label: t('auth.register.passwordStrength.strong', 'Strong'), color: 'bg-lime-500', width: 'w-4/5' }
+  return { label: t('auth.register.passwordStrength.veryStrong', 'Very Strong'), color: 'bg-green-500', width: 'w-full' }
 }
 
 export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
@@ -34,7 +35,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
     { met: /[@$!%*?&]/.test(password), label: t('auth.register.passwordRequirement.special') },
   ]
 
-  const strength = getStrengthLevel(requirements)
+  const strength = getStrengthLevel(requirements, t)
 
   if (!password) return null
 
@@ -43,7 +44,9 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
       {/* Strength Bar */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Password strength:</span>
+          <span className="text-xs text-muted-foreground">
+            {t('auth.register.passwordStrength.label', 'Password strength:')}
+          </span>
           <span className="text-xs font-medium">{strength.label}</span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-muted">
