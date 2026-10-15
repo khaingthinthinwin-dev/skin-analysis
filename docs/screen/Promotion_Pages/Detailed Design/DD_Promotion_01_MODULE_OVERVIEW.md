@@ -1,148 +1,160 @@
 # DD_PROMO_01 — Module Overview
 
-> **Doc ID:** SKM-DD-PROMO-01 | **Version:** 1.0 | **Status:** Draft  
-> **Last Updated:** 2026-08-25
+> **Doc ID:** SKM-DD-PROMO-01 | **Version:** 2.0 | **Status:** Updated  
+> **Last Updated:** 2026-10-15
 
 ---
 
 ## 1. Module Overview
 
-The **Promotion Management Module** (プロモーション管理モジュール) manages the complete lifecycle of promotional discount codes (coupons) within the Cosmetics Finder marketplace. It provides merchants with full CRUD capabilities for promotions (create, list, edit, hard delete, and active-status toggle) and enables buyers to validate and apply coupon codes at checkout. The module enforces merchant license-status guards, ownership restrictions, global code uniqueness, strict input validation (three layers), decimal-safe MMK currency handling, and a Redis cache invalidation strategy. It is central to the platform's sales strategy, allowing merchants to design targeted discount campaigns to increase conversion rates.
+The promotion module in this repository is implemented as a merchant-focused management flow with a buyer-side validation workflow.
 
-- **Module Path:** `frontend/src/features/promotions`, `backend/src/modules/promotions`
-- **Primary Routes:** `/merchant/promotions`, `/merchant/promotions/new`, `/merchant/promotions/:id/edit`
-- **Primary Actors:** Authenticated merchants (own promotions), admins (all promotions), buyers (coupon validation at checkout)
-- **Restricted Actor:** Pending/rejected merchants (read-only list, no mutations)
-- **Source Specifications:** `SKM-FDS-PROMO-001` (v1.6) and `SKM-SIS-SCR-PROMO-001` (v1.3)
+The merchant UI is centered on these live pages:
+
+- `frontend/src/pages/merchant/Promotions.tsx` — promotion list
+- `frontend/src/pages/merchant/PromotionCreate.tsx` — create form
+- `frontend/src/pages/merchant/PromotionEdit.tsx` — edit form
+
+The backend module lives under:
+
+- `backend/src/modules/merchant/promotions/`
+
+and is exposed through the controller and service classes that manage coupon codes, usage checks, and merchant access restrictions.
+
+### Primary actors
+
+- Approved merchant user
+- Merchant account in `pending` or `rejected` state (UI read-only mode)
+- Buyer validation flow during checkout or coupon verification
+
+### Primary routes
+
+- `/merchant/promotions`
+- `/merchant/promotions/new`
+- `/merchant/promotions/:id/edit`
+
+### Implementation map
+
+- Frontend state and mutations: `frontend/src/hooks/usePromotions.ts`
+- Frontend HTTP client: `frontend/src/services/promotion.service.ts`
+- Frontend types: `frontend/src/types/promotion.types.ts`
+- Backend controller: `backend/src/modules/merchant/promotions/promotions.controller.ts`
+- Backend service: `backend/src/modules/merchant/promotions/promotions.service.ts`
+- Backend DTOs: `backend/src/modules/merchant/promotions/dto/`
 
 ---
 
 ## 2. Supported Use Cases
 
-| ID | Use Case | Description |
-|---|----------|-------------|
-| UC-PROMO-001 | Create New Promotion | Merchant (license `approved`) creates a promotion with code, description, discount type (percentage/fixed), discount value, minimum order amount, max uses, and validity period. New promotion defaults to `is_active = true`, `used_count = 0`. |
-| UC-PROMO-002 | View Merchant Promotion List | Merchant views their own promotions in a paginated list with search/filter. Pending/rejected merchants receive a read-only list with a status banner; mutation controls are hidden. |
-| UC-PROMO-003 | Edit Existing Promotion | Merchant edits a promotion that belongs to them, is not used (`used_count = 0`), and whose license status is `approved`. The `code` field is read-only after creation. |
-| UC-PROMO-004 | Delete Promotion (Hard) | Merchant permanently deletes a promotion that belongs to them, is not used (`used_count = 0`), and whose license status is `approved`. Confirmation dialog is required in the UI. |
-| UC-PROMO-005 | Validate Coupon Code | Buyer validates a coupon code at checkout, checking active status, validity window (`starts_at` → `expires_at`), max uses, minimum order amount, and the one-coupon-per-order rule. Discount is calculated but usage is not incremented here. |
-| UC-PROMO-006 | View Promotion Statistics | Merchant views usage counts (`used_count` / `max_uses`) and last usage/expiry information on the promotion list. |
+| ID | Use case | Actual implementation |
+|---|---|---|
+| UC-PROMO-001 | View merchant list | `findAll(userId, query)` returns merchant-owned promotions with search, status filter, sort, page, and limit |
+| UC-PROMO-002 | Create promotion | `create(userId, dto)` validates values and persists a new promotion |
+| UC-PROMO-003 | Edit promotion | `update(userId, id, dto)` updates fields while preventing edits if the promotion has been used |
+| UC-PROMO-004 | Delete promotion | `remove(userId, id)` hard deletes a promotion when it is unused |
+| UC-PROMO-005 | Toggle active state | `toggleActive(userId, id)` flips `isActive` and invalidates cache keys |
+| UC-PROMO-006 | Validate coupon | `validateCoupon(userId, couponCode, subtotal)` checks eligibility and calculates the discount |
+| UC-PROMO-007 | Read-only restriction | Pending/rejected merchants see banners and restricted action controls |
 
 ---
 
-## 3. Promotion State Machine
+## 3. Current Business Rules in the Codebase
 
-The module manages the promotion lifecycle from creation (`ACTIVE`) through deactivation, expiration, and max-usage exhaustion.
+These are the rules implemented in the live repo:
 
-```mermaid
-stateDiagram-v2
-    [*] --> SCHEDULED : Create (starts_at in future, is_active=true)
-    SCHEDULED --> ACTIVE : Time reaches starts_at
-    SCHEDULED --> INACTIVE : Toggle is_active=false
-    SCHEDULED --> DELETED : Hard delete (used_count = 0)
-
-    ACTIVE --> INACTIVE : Toggle is_active=false
-    INACTIVE --> ACTIVE : Toggle is_active=true
-
-    ACTIVE --> EXPIRED : Time passes expires_at
-    ACTIVE --> MAX_USES_REACHED : used_count >= max_uses
-    ACTIVE --> DELETED : Hard delete (used_count = 0)
-    INACTIVE --> DELETED : Hard delete (used_count = 0)
-    EXPIRED --> DELETED : Hard delete (used_count = 0)
-    MAX_USES_REACHED --> [*] : Terminal state (no delete/edit)
-
-    DELETED --> [*]
-```
-
-**Promotion States:**
-
-| State | Description | Can Edit | Can Delete | Can Validate |
-|-------|-------------|:--------:|:----------:|:------------:|
-| `SCHEDULED` | `is_active = true` and `starts_at` in the future | ✓ (if `used_count = 0`) | ✓ (if `used_count = 0`) | ✗ |
-| `ACTIVE` | `is_active = true` and within validity period | ✓ (if `used_count = 0`) | ✓ (if `used_count = 0`) | ✓ |
-| `INACTIVE` | `is_active = false` | ✓ | ✓ (if `used_count = 0`) | ✗ |
-| `EXPIRED` | Current time is at/after `expires_at` | ✓ | ✓ (if `used_count = 0`) | ✗ |
-| `MAX_USES_REACHED` | `max_uses` set and `used_count >= max_uses` | ✗ | ✗ | ✗ |
+1. Merchant operations are scoped to `merchant.userId` via `getMerchantId(userId)`.
+2. `RequireApprovedMerchantGuard` blocks pending or rejected merchants from create/edit/delete/toggle/validate actions.
+3. `discountTypeCode` is validated against `discountType` relation records.
+4. Percentage promotions reject values above `99`.
+5. Fixed promotions reject values greater than or equal to `minOrderAmount`.
+6. `expiresAt` must be strictly later than `startsAt`.
+7. A promotion is blocked from edit/delete if `usedCount` is greater than zero; the service calculates usage from actual order records using the promotion code.
+8. Coupon validation does not mutate the usage count; it only checks usage against `maxUses` and computes a final discount.
 
 ---
 
-## 4. Security & Permissions
+## 4. Frontend Architecture
 
-1. **Authentication**: All promotion endpoints require a JWT Bearer token via `Authorization` header.
-2. **Role-Based Access Control (RBAC):** `merchant` manages own promotions; `admin` manages all; `buyer` may only validate coupons. Guards: `JwtAuthGuard` + `RolesGuard`.
-3. **License Status Guard:** Merchants with `license_status = 'pending'` or `'rejected'` may view a read-only list, but every mutation (create/edit/delete/toggle) returns `403` with `MERCHANT_NOT_APPROVED` / `MERCHANT_REJECTED`.
-4. **Ownership Enforcement:** A merchant may only manage promotions where `promotion.merchant_id === user.merchant_id`; otherwise `403 FORBIDDEN`.
-5. **Usage Restriction:** Promotions with `used_count > 0` cannot be edited or deleted (`409` with `PROMO_EDIT_RESTRICTED` / `PROMO_DELETE_RESTRICTED`).
-6. **Global Code Uniqueness:** `code` is globally unique via DB constraint `uq_promotions_code`.
-7. **Decimal-Safe Currency:** All MMK monetary values are `DECIMAL(10,2)`; discounts are computed with integer MMK math (`Math.floor` on divisions) to avoid floating-point drift; values are serialized as strings.
-8. **UTC Timestamps:** All `starts_at` / `expires_at` are stored and transmitted as ISO 8601 UTC.
-9. **Data Isolation:** Merchants can only see their own promotions; admins see all.
+### 4.1 Component map
+
+| Area | File(s) | Role |
+|---|---|---|
+| Merchant list page | `frontend/src/pages/merchant/Promotions.tsx` | list, filters, actions, banners |
+| Create page | `frontend/src/pages/merchant/PromotionCreate.tsx` | coupon creation form |
+| Edit page | `frontend/src/pages/merchant/PromotionEdit.tsx` | coupon edit form |
+| Query hooks | `frontend/src/hooks/usePromotions.ts` | CRUD and list queries |
+| API service | `frontend/src/services/promotion.service.ts` | HTTP wrapper for `/promotions` |
+| Frontend types | `frontend/src/types/promotion.types.ts` | request and response models |
+| Merchant guard | `frontend/src/features/merchant/products/guards/merchantProducts.guard.ts` | license-state gating for UI actions |
+
+### 4.2 Actual UI behavior
+
+- Search and filtering are done by query params instead of a dedicated `usePromotionList` abstraction.
+- Status filter supports: `active`, `inactive`, `expired`.
+- Sort supports: `newest`, `oldest`, `code`.
+- Pagination uses `page` and `limit`.
+- Delete uses a confirmation dialog pattern via `AlertDialog`.
+- Toggle is implemented through `PATCH /promotions/:id/toggle-active`.
+- Copy-to-clipboard is available on the table for coupon codes.
+- Deactivated, pending, and rejected banners are rendered before the list table.
 
 ---
 
-## 5. Architectural Components Involved
+## 5. Backend Architecture
+
+### 5.1 Backend module layout
 
 | Layer | Files |
-|-------|-------|
-| **Frontend Pages** | `PromotionListPage.tsx`, `PromotionCreatePage.tsx`, `PromotionEditPage.tsx` |
-| **Frontend Components** | `PromotionTable.tsx`, `PromotionForm.tsx`, `SearchInput.tsx`, `StatusFilter.tsx`, `PendingBanner.tsx`, `DeleteConfirmDialog.tsx`, `StatusBadge.tsx`, `DiscountTypeBadge.tsx` |
-| **Frontend Hooks** | `usePromotionList.ts`, `usePromotionForm.ts` |
-| **Frontend Services** | `promotions.service.ts` |
-| **Frontend Schemas** | `promotion.schema.ts` |
-| **Frontend Providers** | `DashboardLayout.tsx` (shared layout with sidebar/header) |
-| **Backend API** | `promotions.controller.ts` |
-| **Backend Service** | `promotions.service.ts`, `promotions.validation.service.ts` |
-| **Backend DTOs** | `create-promotion.dto.ts`, `update-promotion.dto.ts`, `validate-coupon.dto.ts`, `promotion-response.dto.ts` |
-| **Backend Guards** | `jwt-auth.guard.ts`, `roles.guard.ts` |
-| **Backend Config** | `promotion.constants.ts` |
-| **Shared Services** | `prisma.service.ts` (`promotions`, `merchants`), `redis.service.ts` (detail/list caches, rate limiting), `logger.service.ts` (audit events) |
+|---|---|
+| Controller | `backend/src/modules/merchant/promotions/promotions.controller.ts` |
+| Service | `backend/src/modules/merchant/promotions/promotions.service.ts` |
+| DTOs | `backend/src/modules/merchant/promotions/dto/*.dto.ts` |
+| Query DTO | `backend/src/modules/merchant/promotions/dto/promotion-query.dto.ts` |
+| Module | `backend/src/modules/merchant/promotions/promotions.module.ts` |
+
+### 5.2 Security and guard flow
+
+The controller applies:
+
+- `JwtAuthGuard`
+- `RolesGuard`
+- class-level `@Roles('merchant')`
+
+Mutation routes also use:
+
+- `RequireApprovedMerchantGuard`
+
+This guard rejects merchants with `pending` or `rejected` licenses before create/update/delete/toggle/validation calls proceed.
 
 ---
 
-## 6. API Endpoints
+## 6. Data Model Notes
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|:-------------:|
-| `POST` | `/api/v1/promotions` | Create new promotion | Yes (merchant/admin) |
-| `GET` | `/api/v1/promotions` | List merchant promotions (paginated, search/filter) | Yes (merchant/admin) |
-| `PATCH` | `/api/v1/promotions/:id` | Update promotion or toggle active status | Yes (merchant/admin) |
-| `DELETE` | `/api/v1/promotions/:id` | Hard-delete promotion | Yes (merchant/admin) |
-| `POST` | `/api/v1/promotions/validate` | Validate a coupon code at checkout | Yes (buyer) |
+The current implementation uses a Prisma `promotion` model with a relation to `discountType` and merchant ownership via `merchantId`.
 
----
+Important implementation details:
 
-## 7. Database Tables Involved
+- `discountTypeCode` is used instead of a generic `discountType`
+- `minOrderAmount` and `maxUses` are optional numbers
+- `usedCount` is derived at runtime from `order` records by `couponCode`
+- `startsAt` and `expiresAt` are ISO strings in the frontend and Date values in the backend service
 
-| Table | Purpose | Operations |
-|-------|---------|------------|
-| `promotions` | Store promotion metadata, discount settings, validity window, usage counters | INSERT (create), SELECT (list/detail/validate), UPDATE (edit/toggle), DELETE (hard delete) |
-| `merchants` | Store merchant business info and license status | SELECT (license guard, ownership check) |
-| `users` | Store user credentials and role | SELECT (authentication identity) |
+This differs from some earlier abstract design drafts that modeled a more elaborate promotion state machine. In the live code, state is mostly derived from `isActive`, `expiresAt`, and usage from orders.
 
 ---
 
-## 8. External Dependencies
+## 7. Cross-References
 
-| Dependency | Purpose | Configuration |
-|------------|---------|---------------|
-| Redis | `promo:detail:{code}`, `promo:list:{merchantId}` caches and rate limiting | `REDIS_URL`, `PROMO_CACHE_TTL_SECONDS`, `PROMO_LIST_CACHE_TTL_SECONDS` |
-| Prisma ORM | Data access for `promotions` and `merchants` tables | `DATABASE_URL` |
-| class-validator / class-transformer | Request DTO validation and transformation | — |
-| decimal.js (or MMK integer helpers) | Decimal-safe money arithmetic | — |
-| Zod + React Hook Form | Frontend form validation | — |
+| Related document | Purpose |
+|---|---|
+| [DD_Promotion_02_FRONTEND_Page](./DD_Promotion_02_FRONTEND_Page.md) | Frontend page design and live UI states |
+| [DD_Promotion_03_API_ENDPOINTS](./DD_Promotion_03_API_ENDPOINTS.md) | Current controller routes and payloads |
+| [DD_Promotion_04_DTOS_AND_TYPES](./DD_Promotion_04_DTOS_AND_TYPES.md) | Backend DTOs and frontend types |
+| [DD_Promotion_05_BUSINESS_LOGIC](./DD_Promotion_05_BUSINESS_LOGIC.md) | Service logic and validation rules |
+| [DD_Promotion_06_TEST](./DD_Promotion_06_TEST.md) | Testing strategy for the current implementation |
 
 ---
 
-## 9. Cross-References
+## 8. Implementation Note
 
-| Related Document | Purpose |
-|------------------|---------|
-| [DD_PROMO_02](./DD_Promotion_02_FRONTEND_Page.md) | Frontend page design |
-| [DD_PROMO_03](./DD_Promotion_03_API_ENDPOINTS.md) | API endpoint contracts, guards, and rate limits |
-| [DD_PROMO_04](./DD_Promotion_04_DTOS_AND_TYPES.md) | DTO and type definitions |
-| [DD_PROMO_05](./DD_Promotion_05_BUSINESS_LOGIC.md) | Business logic, caching, and security rules |
-| [DD_PROMO_06](./DD_Promotion_06_TEST.md) | Test specification and coverage requirements |
-| [プロモーション管理画面_機能設計書](../プロモーション管理画面_機能設計書.md) | Full functional specification (v1.6) |
-| [プロモーション管理画面_画面項目設計書](../プロモーション管理画面_画面項目設計書.md) | Screen-item definitions, UI behavior, and i18n keys (v1.3) |
-| [データベース設計書_DATABASE_SPEC](../../../core-work/データベース設計書_DATABASE_SPEC.md) | Table constraints and UUID data model (v2.4) |
-| [開発ルール_DEVELOPMENT_RULES](../../../core-work/開発ルール_DEVELOPMENT_RULES.md) | Security, accessibility, API, and quality rules (v2.1) |
+This document reflects the current repository implementation rather than a theoretical future-state specification. The project is working with direct component state, service-layer mutations, and route-scoped access checks that match the live code today.
