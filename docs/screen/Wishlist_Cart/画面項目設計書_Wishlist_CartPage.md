@@ -6,7 +6,7 @@
 **Function ID:** FN-WISH-001, FN-CART-001  
 **Version:** 2.2
 **Created:** 2026-08-08  
-**Last Updated:** 2026-08-21
+**Last Updated:** 2026-10-15
 **Author:** Senior System Engineer   
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -23,6 +23,7 @@
 | 2.0 | 2026-08-14 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v2.10 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, corrected DB mapping types to UUID, and restricted screen access to Buyer role only. |
 | 2.1 | 2026-08-20 | Senior System Engineer | Reconciled the screen contract with REQUIREMENT_SPEC v2.10, DATABASE_SPEC v2.4, DEVELOPMENT_RULES v2.1, the functional specification v2.1, and the current Prisma schema; removed the unsupported Clear All endpoint contract. |
 | 2.2 | 2026-08-21 | Senior System Engineer | Aligned wishlist table name with DATABASE_SPEC v2.4 (`wishlist` not `wishlists`); added `cart_items` table reference in database mapping; updated API response examples to match functional specification v2.1 contracts. |
+| 2.3 | 2026-10-15 | Senior System Engineer | Reconciled the screen contract with the current frontend pages (`pages/buyer/Wishlist.tsx`, `pages/buyer/Cart.tsx`), feature hooks/services, and functional specification v2.2: corrected route paths to `/buyer/...`, documented the Clear All buttons + confirmation dialogs, duplicate-cart conflict handling, deactivated-account checkout guard, `shippingEstimate`/`total` summary fields, `category` field, loading/error/retry states, and shared `GuestLoginModal` behavior. |
 
 ### 1.2 Related Documents
 
@@ -32,6 +33,7 @@
 | 2 | SKM-DBS-001 | Database Design Specification | `docs/core-work/データベース設計書_DATABASE_SPEC.md` | Table structures, constraints, and data types. |
 | 3 | SKM-DEV-001 | Development Rules | `docs/core-work/開発ルール_DEVELOPMENT_RULES.md` | Security rules, design tokens, error responses. |
 | 4 | SKM-FDS-WISH-CART-001 | Functional Specification — Wishlist & Cart | `docs/screen/Wishlist_Cart/機能設計書_Wishlist_CartPage.md` | Use cases, state transitions, validation rules, error handling. |
+| 5 | SKM-PCL-WISH-CART-001 | Program Checklist — Wishlist & Cart | `docs/screen/Wishlist_Cart/Wishlist_Cart_PCL.md` | Scenarios and API payloads checked against the current implementation. |
 
 ---
 
@@ -47,8 +49,8 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | **Primary Actors** | Authenticated Buyer |
 | **Required Authentication** | JWT Bearer Token |
 | **Data Scope** | Own wishlist items, Own cart items |
-| **Access Control** | Protected routes — `JwtAuthGuard` and `RolesGuard` with `@Roles('buyer')`. Merchants and Admins are denied access with 403 Forbidden. |
-| **Guest Behavior** | Cart not persisted; wishlist unavailable. Guest users triggering "Add to Cart" or "Add to Wishlist" see an alert modal. |
+| **Access Control** | Protected routes — `ProtectedRoute roles={['buyer']}` on `/buyer/wishlist` and `/buyer/cart`; direct guest navigation redirects to `/login`. Merchants and Admins are denied access with 403 Forbidden. |
+| **Guest Behavior** | Guests cannot access protected routes directly. When a guest triggers a wishlist/cart action from a page or header, the shared `GuestLoginModal` appears with either "Please log in to add items to your wishlist." or "Please log in to add items to your cart."; clicking [Log In] navigates to `/login?redirect=<encoded targetPath>`. |
 
 ### 2.3 Core Functions & Basic Design Principles (主要機能・基本設計方針)
 1. **Wishlist Management** — Add/remove products from saved wishlist, view saved products with details, move items to cart.
@@ -72,7 +74,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 │                                                         │
 │              ┌─────────────────────────────┐            │
 │              │   [A] PAGE HEADER           │            │
-│              │   Title + Item Count        │            │
+│              │   Title + Item Count + Clear All        │
 │              └─────────────────────────────┘            │
 │                                                         │
 │              ┌─────────────────────────────┐            │
@@ -93,13 +95,10 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 │              │   [D] EMPTY STATE (cond.)   │            │
 │              └─────────────────────────────┘            │
 │                                                         │
-│              ┌─────────────────────────────┐            │
-│              │   [E] FOOTER CONTROLS       │            │
-│              │   [Continue Shopping]       │            │
-│              └─────────────────────────────┘            │
-│                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
+
+The empty-state component itself provides the "Continue Shopping" link; it is not a separate page footer.
 
 ### 3.2 Overall Page Structure — Cart Page (全体画面構成 — カートページ)
 
@@ -110,14 +109,14 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 │                                                         │
 │              ┌─────────────────────────────┐            │
 │              │   [F] PAGE HEADER           │            │
-│              │   Title + Item Count        │            │
+│              │   Title + Subtitle + Clear All          │
 │              └─────────────────────────────┘            │
 │                                                         │
 │  ┌──────────────────────────┐  ┌────────────────────┐   │
 │  │   [G] CART ITEMS LIST    │  │  [H] SUMMARY PANEL │   │
 │  │                          │  │                    │   │
-│  │   ┌──────────────────┐   │  │  Subtotal: ¥X,XXX  │   │
-│  │   │ [I] Cart Item 1  │   │  │  Items: N          │   │
+│  │   ┌──────────────────┐   │  │  Subtotal: Ks X,XXX│   │
+│  │   │ [I] Cart Item 1  │   │  │  Shipping Estimate: Free│   │
 │  │   │ Image/Name/Price │   │  │                    │   │
 │  │   │ Qty Controls     │   │  │  ┌──────────────┐  │   │
 │  │   │ Subtotal/Remove  │   │  │  │ [J] Checkout │  │   │
@@ -132,23 +131,19 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 │              ┌─────────────────────────────┐            │
 │              │   [L] EMPTY STATE (cond.)   │            │
 │              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │   [M] GUEST LOGIN ALERT     │            │
-│              │       MODAL (cond.)         │            │
-│              └─────────────────────────────┘            │
-│                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
+
+The cart summary stacks below the item list below `lg`; the guest-login modal belongs to shared header/action surfaces and is not rendered by either page component.
 
 ### 3.3 Responsive Layout Breakpoints (レスポンシブ対応)
 
 | Breakpoint | Min Width | Wishlist Layout | Cart Layout |
 | :--- | :--- | :--- | :--- |
-| Mobile (default) | 0px | 1-column list | Stacked items + bottom summary |
-| Tablet (`md:`) | 768px | 2-column grid | Items list + bottom summary |
-| Desktop (`lg:`) | 1024px | 4-column grid | Items list + right sidebar summary |
-| Wide (`xl:`) | 1280px | 4-column grid | Items list + right sidebar summary |
+| Mobile (default) | 0px | 2-column grid | Each row stacks image/details over quantity/subtotal; summary below the list. |
+| Small (`sm:`) | 640px | 2-column grid | Wishlist card controls become horizontal; cart rows become horizontal. |
+| Tablet (`md:`) | 768px | 3-column grid | Cart summary remains below the list. |
+| Desktop (`lg:`) | 1024px | 4-column grid | Cart uses a 2:1 item-list/summary layout; summary is sticky. |
 
 ---
 
@@ -158,241 +153,204 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 1 | `lblWishlistTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "My Wishlist" / "お気に入り" | — | i18n resource | i18n key: `wishlist.title`. Tailwind: `text-2xl font-bold`. |
-| 2 | `lblWishlistItemCount` | Item Count | Text (`<p>`) | String | — | Visible. Text: "{count} items saved" | — | Derived from API `totalCount` | i18n key: `wishlist.itemCount`. Pluralization support. |
+| 1 | `lblWishlistTitle` | Page Title | Heading (`<h1>`) | String | Yes | Visible. EN resource text: "My Wishlist" (code fallback: "My Saved Wishlist") with a heart icon. | — | i18n resource | i18n key: `wishlist.title`. Tailwind: `text-xl sm:text-2xl md:text-3xl font-black tracking-tight`. |
+| 2 | `lblWishlistItemCount` | Item Count | Text (`<p>`) | String | Yes | Visible. Text: "1 item saved for future purchase" / "{n} items saved for future purchase". | — | Derived from `totalCount` or `items.length` | Composed in the page; not sourced directly from a single translation key. |
+| 3 | `btnWishlistClearAll` | Clear All Button | Button (`outline`) | — | Conditional | Visible only when `items.length > 0`; disabled while clearing. | — | — | i18n keys: `wishlist.clearAll`, `wishlist.clearing`. Opens `ConfirmDialog` and calls `clearAllWishlist()`. |
 
 ### 4.2 Section [B]: Wishlist Grid (お気に入りグリッド)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 3 | `grdWishlist` | Wishlist Grid Container | Grid Container (`<div>`) | — | Yes | Responsive grid layout. 4 cols desktop, 2 tablet, 1 mobile. | CSS Grid: `grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4` | — | Contains `crdWishlistItem` instances. |
+| 4 | `grdWishlist` | Wishlist Grid Container | Grid Container (`<div>`) | — | Yes | Responsive grid: 2 columns on mobile, 3 on `md`, 4 on `lg`. | CSS Grid | — | Contains `WishlistItemCard` instances. |
+| 5 | `dlgWishlistClearConfirm` | Clear Wishlist Confirmation | Dialog (`ConfirmDialog`) | — | Conditional | Hidden by default. Opened when clear-all is triggered. | Requires confirm/cancel actions. | — | i18n keys: `wishlist.clearAllTitle`, `wishlist.clearAllConfirm`, `wishlist.clearAllConfirmButton`, `wishlist.clearAllCancelButton`. |
 
 ### 4.3 Section [C]: Wishlist Item Card (お気に入り商品カード)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 4 | `crdWishlistItem` | Wishlist Item Card | Card | — | Yes | Visible for each wishlist item. | — | `wishlist` + `products` join | Tailwind: `rounded-lg border bg-card shadow-sm`. |
-| 5 | `imgWishlistProduct` | Product Image | Image (`<img>`) | URL String | Yes | Visible. Shows first image from `products.images[0]`. | Alt text: product name | `products.images[0]` | Clickable, navigates to `/products/:slug`. Tailwind: `aspect-square object-cover rounded-t-lg`. |
-| 6 | `lnkWishlistProductName` | Product Name (Link) | Link (`<a>`) | String(255) | Yes | Visible. Truncated to 2 lines. | — | `products.name` | Navigates to `/products/:slug`. Tailwind: `font-medium line-clamp-2 hover:underline`. |
-| 7 | `lblWishlistProductPrice` | Product Price | Text | String | Yes | Visible. Current price with locale currency format. | — | `products.price` | i18n-aware currency formatting. |
-| 8 | `lblWishlistComparePrice` | Compare Price | Text (strikethrough) | String | Conditional | Visible only when `products.compare_at_price` is set and greater than price. | — | `products.compare_at_price` | Tailwind: `line-through text-muted-foreground`. |
-| 9 | `badgeWishlistStockStatus` | Stock Status Badge | Badge | Enum | Yes | Dynamic based on `products.stock_quantity`. | "In Stock" / "Low Stock" / "Out of Stock" | `products.stock_quantity` | Colors: success/warning/danger. |
-| 10 | `btnWishlistMoveToCart` | Move to Cart Button | Button (`primary`) | — | Yes | Visible. Text: "Add to Cart" / "カートに追加" | — | — | Disabled when `stock_quantity = 0`. Loading: Spinner. i18n: `wishlist.moveToCart`. |
-| 11 | `btnWishlistRemove` | Remove Button | Button (`ghost` / icon) | — | Yes | Visible. Trash/X icon. | — | — | Optimistic UI: immediately removes card on click. i18n: `wishlist.remove`. |
-| 12 | `lblWishlistCardHelper` | Helper Text (Out of Stock) | Text | String | Conditional | Visible only when product is out of stock. Text: "This product is currently unavailable." | — | — | i18n: `wishlist.unavailable`. Tailwind: `text-xs text-destructive`. |
+| 6 | `crdWishlistItem` | Wishlist Item Card | Card | — | Yes | Visible for each wishlist item. | — | `wishlist` join to `products` | Card shows product image, category, product name, price and actions. |
+| 7 | `imgWishlistProduct` | Product Image | Image / placeholder | URL String | Yes | Visible. Uses `productImage`; falls back to placeholder icon when missing or failed to load. | Alt text: product name | `productImage` | Clickable; authenticated target is `/buyer/wishlist/products/{productSlug}`; guest fallback target is `/products/{productSlug}`. |
+| 8 | `lblWishlistCategory` | Product Category | Text | String | Yes | Visible. Uppercase category label. | — | `category` field from wishlist payload | Defaults to `Uncategorized` when null. |
+| 9 | `lnkWishlistProductName` | Product Name (Link) | Link (`<a>`) | String(255) | Yes | Visible. | — | `productName` | Uses the same authenticated/guest targets as the product image. |
+| 10 | `lblWishlistProductPrice` | Product Price | Text | String | Yes | Visible. Current price formatted as `{rounded}Ks`. | — | `productPrice` | `Number.parseFloat` + `toLocaleString('en-US')`. |
+| 11 | `lblWishlistComparePrice` | Compare Price | Text (strikethrough) | String | Conditional | Visible only when `compareAtPrice > productPrice`. | — | `compareAtPrice` | Struck-through original price. |
+| 12 | `btnWishlistMoveToCart` | Move to Cart Button | Button (`primary`) | — | Yes | Visible. Text: "Add". Disabled when `!item.isInStock` or while moving. | — | — | Calls `moveToCart(productId)`. Loading spinner when in progress. |
+| 13 | `btnWishlistRemove` | Remove Button | Button (`ghost` / icon) | — | Yes | Visible as a trash icon in the top-right corner. | — | — | Calls `removeFromWishlist(productId)` with loading state. |
 
 ### 4.4 Section [D]: Wishlist Empty State (お気に入り空状態)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 13 | `emptyWishlist` | Empty State Container | EmptyState | — | Conditional | Visible when wishlist has 0 items. | — | — | — |
-| 14 | `lblEmptyWishlistTitle` | Empty State Title | Text (`<h2>`) | String | Conditional | Text: "No items saved yet" / "まだお気に入りに追加された商品がありません" | — | — | i18n: `wishlist.emptyTitle`. Tailwind: `text-lg font-semibold`. |
-| 15 | `lblEmptyWishlistMessage` | Empty State Message | Text (`<p>`) | String | Conditional | Text: "Browse products to add favorites." / "商品を閲覧してお気に入りを追加しましょう。" | — | — | i18n: `wishlist.emptyMessage`. Tailwind: `text-muted-foreground`. |
-| 16 | `lnkWishlistContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | Conditional | Text: "Continue Shopping" / "買い物を続ける" | — | — | Navigates to `/products`. i18n: `wishlist.continueShopping`. |
+| 14 | `emptyWishlist` | Empty State Container | EmptyState | — | Conditional | Visible when wishlist has 0 items. | — | — | `EmptyState variant="wishlist"`. |
+| 15 | `lblEmptyWishlistTitle` | Empty State Title | Text (`<h2>`) | String | Conditional | Text: "No items saved yet" / "まだお気に入りに追加された商品がありません" | — | — | i18n: `wishlist.emptyTitle`. |
+| 16 | `lblEmptyWishlistMessage` | Empty State Message | Text (`<p>`) | String | Conditional | Text: "Browse products to add favorites." / "商品を閲覧してお気に入りを追加しましょう。" | — | — | i18n: `wishlist.emptyMessage`. |
+| 17 | `lnkWishlistContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | Conditional | Text: "Continue Shopping" / "買い物を続ける" | — | — | Navigates to `/buyer/search`. |
 
-### 4.5 Section [E]: Wishlist Footer Controls (お気に入りフッターコントロール)
+### 4.5 Section [E]: Wishlist Error / Retry State (お気に入り読み込み失敗状態)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 17 | `skeletonWishlist` | Loading Skeleton | Skeleton | — | Conditional | Visible during initial data fetch. Shows 4 card placeholders. | — | — | Tailwind: `animate-pulse`. |
+| 18 | `pnlWishlistError` | Error State Panel | Container (`<div>`) | — | Conditional | Visible when the wishlist fetch fails. | — | — | Shows alert icon, title, error message, and `refetch()` button. |
+| 19 | `lblWishlistErrorTitle` | Error Title | Text (`<h2>`) | String | Conditional | Text: "Failed to load wishlist" | — | — | i18n: `wishlist.errorTitle`. |
+| 20 | `lblWishlistErrorMessage` | Error Message | Text (`<p>`) | String | Conditional | Text from `error.message` or fallback message. | — | API error | i18n: `wishlist.errorMessage`. |
+| 21 | `btnWishlistRetry` | Retry Button | Button (`outline`) | — | Conditional | Text: "Try again" | — | — | Calls `refetch()`. |
 
 ### 4.6 Section [F]: Cart Page Header (カートページヘッダー)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 18 | `lblCartTitle` | Page Title | Heading (`<h1>`) | String | — | Visible. Text: "Shopping Cart" / "カート" | — | i18n resource | i18n key: `cart.title`. Tailwind: `text-2xl font-bold`. |
-| 19 | `lblCartItemCount` | Item Count | Text (`<p>`) | String | — | Visible. Text: "{count} items in cart" | — | Derived from API `summary.totalItems` | i18n key: `cart.itemCount`. Pluralization support. |
+| 22 | `lblCartTitle` | Page Title | Heading (`<h1>`) | String | Yes | Visible. Text: "Shopping Cart" with cart icon. | — | i18n resource | i18n key: `cart.title`. |
+| 23 | `lblCartSubtitle` | Subtitle | Text (`<p>`) | String | Yes | Visible. Text: "Review items in your cart before checkout" | — | i18n resource | i18n key: `cart.subtitle`. |
+| 24 | `btnCartClearAll` | Clear All Button | Button (`outline`) | — | Conditional | Visible only when `items.length > 0`; disabled while clearing. | — | — | i18n keys: `cart.clearAll`, `cart.clearing`. Opens `ConfirmDialog` and calls `clearAllCart()`. |
 
 ### 4.7 Section [G]: Cart Items List (カート商品リスト)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 20 | `lstCartItems` | Cart Items Container | Container (`<div>`) | — | Yes | List layout with vertical stacking. | — | — | Contains `rowCartItem` instances. |
+| 25 | `lstCartItems` | Cart Items Container | Grid / list container (`<div>`) | — | Yes | Vertical list in a two-column layout with summary panel. | — | `items` array from cart API | Contains `CartItemRow` instances. |
+| 26 | `dlgCartClearConfirm` | Clear Cart Confirmation | Dialog (`ConfirmDialog`) | — | Conditional | Hidden by default. Opened when clear-all is triggered. | Requires confirm/cancel actions. | — | i18n keys: `cart.clearAllTitle`, `cart.clearAllConfirm`, `cart.clearAllConfirmButton`, `cart.clearAllCancelButton`. |
 
 ### 4.8 Section [I]: Cart Item Row (カート商品行)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 21 | `rowCartItem` | Cart Item Row | Row / Card | — | Yes | Visible for each cart item. | — | `cart_items` + `products` join | Tailwind: `flex items-center gap-4 p-4 border-b`. |
-| 22 | `imgCartProduct` | Product Image | Image (`<img>`) | URL String | Yes | Visible. Shows first image from `products.images[0]`. | Alt text: product name | `products.images[0]` | Clickable, navigates to `/products/:slug`. Tailwind: `h-20 w-20 rounded-md object-cover`. |
-| 23 | `lnkCartProductName` | Product Name (Link) | Link (`<a>`) | String(255) | Yes | Visible. | — | `products.name` | Navigates to `/products/:slug`. Tailwind: `font-medium hover:underline`. |
-| 24 | `lblCartUnitPrice` | Unit Price | Text | String | Yes | Visible. Price per unit with locale currency format. | — | `products.price` | i18n-aware currency formatting. |
-| 25 | `stepperCartQuantity` | Quantity Stepper | Stepper (Group) | — | Yes | Visible. Contains minus button, input, plus button. | — | — | Tailwind: `flex items-center border rounded-md`. |
-| 26 | `btnCartMinus` | Minus Button | Button (`icon`) | — | Yes | Visible. Minus icon. | — | — | Disabled when `quantity = 1`. Decreases quantity by 1. i18n: `cart.decreaseQuantity`. |
-| 27 | `txtCartQuantity` | Quantity Input | Input (`number`) | Integer | Yes | Visible. Current quantity value. | Min: 1. Max: 99. | `cart_items.quantity` | Auto-sizes to content width. On change: validates and calls update API. |
-| 28 | `btnCartPlus` | Plus Button | Button (`icon`) | — | Yes | Visible. Plus icon. | — | — | Disabled when `quantity >= min(stock_quantity, 99)`. Increases quantity by 1. i18n: `cart.increaseQuantity`. |
-| 29 | `lblCartItemSubtotal` | Item Subtotal | Text | String | Yes | Visible. Computed: unit_price × quantity. | — | Computed field | i18n-aware currency formatting. Tailwind: `font-medium`. |
-| 30 | `badgeCartStockWarning` | Stock Warning Badge | Badge/Alert | String | Conditional | Visible when `stock_quantity ≤ low_stock_threshold`. Text: "Only {n} left in stock" / "残り{n}個" | — | `products.stock_quantity` | i18n: `cart.lowStock`. Semantic warning token: `bg-warning text-warning-foreground`. |
-| 31 | `badgeCartOutOfStock` | Out of Stock Badge | Badge/Alert | String | Conditional | Visible when `stock_quantity = 0`. Text: "Out of Stock" / "在庫切れ" | — | `products.stock_quantity` | i18n: `cart.outOfStock`. Semantic destructive token: `bg-destructive text-destructive-foreground`. Disables checkout. |
-| 32 | `btnCartItemRemove` | Remove Button | Button (`ghost` / icon) | — | Yes | Visible. Trash/X icon. | — | — | Optimistic UI: immediately removes row on click. i18n: `cart.remove`. |
+| 27 | `rowCartItem` | Cart Item Row | Row / Card | — | Yes | Visible for each cart item. | — | `cart.items[]` | Responsive layout with image, name, stock badge, quantity stepper, subtotal, remove action. |
+| 28 | `imgCartProduct` | Product Image | Image / placeholder | URL String | Yes | Visible. Shows `productImage`; if absent, a blank muted block is rendered. | Alt text: product name when image exists | `productImage` | Clickable; authenticated target is `/buyer/products/{productSlug}`; guest fallback target is `/products/{productSlug}`. |
+| 29 | `lnkCartProductName` | Product Name (Link) | Link (`<a>`) | String(255) | Yes | Visible. | — | `productName` | Uses the same authenticated/guest targets as the product image. |
+| 30 | `lblCartUnitPrice` | Unit Price | Text | String | Yes | Visible. Text: "{price} each" | — | `unitPrice` | `formatPrice` helper uses `Math.round(num).toLocaleString('en-US') + 'Ks'`. |
+| 31 | `badgeCartStockStatus` | Stock Status Badge | Badge (`StockBadge`) | `IN_STOCK \| LOW_STOCK \| OUT_OF_STOCK` | Yes | Visible. Displayed as "In Stock", "Only {stockQuantity} left" (low stock), or "Out of Stock". | — | `stockStatus`, `stockQuantity` | Controlled by `StockBadge`; `LOW_STOCK` includes the current `stockQuantity`. |
+| 32 | `stepperCartQuantity` | Quantity Stepper | Stepper (`QuantityStepper`) | Integer | Yes | Visible. Contains minus button, number input, plus button. | Min: 1; max: `min(99, stockQuantity)`; only parsed integer values within range are accepted. | `quantity` | Both buttons and input are disabled when updating or `!item.isAvailable`; minus is also disabled at 1 and plus at max. Invalid typed values are ignored; no inline error is shown. |
+| 33 | `lblCartItemSubtotal` | Item Subtotal | Text | String | Yes | Visible. Displays the API-provided `subtotal` for the item. | — | `subtotal` | Formatted as `Ks` and right-aligned; calculation is server-provided. |
+| 34 | `btnCartItemRemove` | Remove Button | Button (`ghost` / icon) | — | Yes | Visible in mobile top-right and desktop action area. | — | — | Calls `removeFromCart(item.id)`. |
 
 ### 4.9 Section [H]: Cart Summary Panel (カートサマリーパネル)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 33 | `pnlCartSummary` | Summary Panel | Card/Sidebar | — | Yes | Visible. Positioned right side (desktop) or below items (mobile). | — | — | Tailwind: `rounded-lg border bg-card p-6`. Sticky on desktop. |
-| 34 | `lblCartSubtotalLabel` | Subtotal Label | Text | String | — | Text: "Subtotal" / "小計" | — | — | i18n: `cart.subtotal`. |
-| 35 | `lblCartSubtotalValue` | Subtotal Value | Text | String | Yes | Visible. Sum of all item subtotals. | — | Computed: sum of (unit_price × quantity) | i18n-aware currency formatting. Tailwind: `text-lg font-bold`. |
-| 36 | `lblCartTotalItemsLabel` | Total Items Label | Text | String | — | Text: "Total Items" / "合計点数" | — | — | i18n: `cart.totalItems`. |
-| 37 | `lblCartTotalItemsValue` | Total Items Value | Text | Integer | Yes | Visible. Sum of all quantities. | — | Computed: sum of quantities | — |
-| 38 | `btnCartCheckout` | Checkout Button | Button (`primary`) | — | Yes | Visible. Text: "Proceed to Checkout" / "購入手続きへ" | — | — | Full width. Disabled when `canCheckout = false` or cart is empty. Loading: Spinner. Navigates to `/checkout`. i18n: `cart.checkout`. |
-| 39 | `lnkCartContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | — | Text: "Continue Shopping" / "買い物を続ける" | — | — | Navigates to `/products`. i18n: `cart.continueShopping`. |
+| 35 | `pnlCartSummary` | Summary Panel | Card/Sidebar | — | Yes | Visible. Positioned on the right on desktop; below the list on mobile. | — | `summary` object | Sticky top on bigger screens. |
+| 36 | `lblCartSubtotalLabel` | Subtotal Label | Text | String | Yes | Text: "Subtotal" | — | — | i18n key: `cart.subtotalLabel`. |
+| 37 | `lblCartSubtotalValue` | Subtotal Value | Text | String | Yes | Visible. Sum of all item subtotals. | — | `summary.subtotal` | `summary.subtotal` is the total before shipping. |
+| 38 | `lblCartShippingEstimateLabel` | Shipping Estimate Label | Text | String | Yes | Text: "Shipping Estimate" | — | — | i18n key: `cart.shippingEstimate`. |
+| 39 | `lblCartShippingEstimateValue` | Shipping Estimate Value | Text | String | Yes | Visible. If 0 -> "Free"; else formatted as `{rounded}Ks` | — | `summary.shippingEstimate` | `summary.shippingEstimate` is serialized as a string, e.g. "0.00". |
+| 40 | `lblCartOutOfStockNotice` | Out-of-stock Notice | Text (`<p>`) | String | Conditional | Visible when `summary.hasOutOfStock === true`. | — | `summary.hasOutOfStock` | Text: "Some items are out of stock". |
+| 41 | `lblCartTotalLabel` | Total Label | Text | String | Yes | Text: "Total" | — | — | i18n key: `cart.total`. |
+| 42 | `lblCartTotalValue` | Total Value | Text | String | Yes | Visible. Displays `summary.total`. | — | `summary.total` | Highlighted in purple; formatted as `Ks`; the page does not calculate the total itself. |
+| 43 | `btnCartCheckout` | Checkout Button | Button (`primary`) | — | Yes | Visible when the cart has items; text "Proceed to Checkout". | — | — | Not disabled based on `summary.canCheckout` or out-of-stock state. Click navigates to `/buyer/checkout`; if the account is deactivated, opens `AccountDeactivatedDialog` instead. |
+| 44 | `lnkCartContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | Yes | Text: "Continue Shopping" | — | — | Navigates to `/buyer/search`. |
+
 ### 4.10 Section [L]: Cart Empty State (カート空状態)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 40 | `emptyCart` | Empty State Container | EmptyState | — | Conditional | Visible when cart has 0 items. | — | — | — |
-| 41 | `lblEmptyCartTitle` | Empty State Title | Text (`<h2>`) | String | Conditional | Text: "Your cart is empty" / "カートは空です" | — | — | i18n: `cart.emptyTitle`. Tailwind: `text-lg font-semibold`. |
-| 42 | `lblEmptyCartMessage` | Empty State Message | Text (`<p>`) | String | Conditional | Text: "Start shopping!" / "お買い物を始めましょう！" | — | — | i18n: `cart.emptyMessage`. Tailwind: `text-muted-foreground`. |
-| 43 | `lnkEmptyCartContinueShopping` | Continue Shopping Link | Link (`<Link>`) | String | Conditional | Text: "Browse Products" / "商品を見る" | — | — | Navigates to `/products`. i18n: `cart.browseProducts`. |
+| 45 | `emptyCart` | Empty State Container | `EmptyState` | — | Conditional | Visible when the loaded cart has no items. | — | `items.length === 0` | `EmptyState variant="cart"`. |
+| 46 | `lblEmptyCartTitle` | Empty State Title | Text (`<h2>`) | String | Conditional | Localized cart-empty title. | — | `cart.emptyTitle` | |
+| 47 | `lblEmptyCartMessage` | Empty State Message | Text (`<p>`) | String | Conditional | Localized cart-empty message. | — | `cart.emptyMessage` | |
+| 48 | `lnkCartBrowseProducts` | Browse Products Link | Link (`<Link>`) | String | Conditional | Localized continue-shopping label. | — | `cart.continueShopping` | Navigates to `/buyer/search`. |
 
-### 4.11 Section [M]: Guest Login Alert Modal (ゲストログインアラートモーダル)
-
-| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
-| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 44 | `dlgGuestLoginAlert` | Guest Login Alert Modal | Dialog/Modal | — | Conditional | Hidden by default. Shown when unauthenticated user clicks "Add to Cart", "Move to Cart", or a wishlist action. | Closes on ESC key or clicking outside. | — | i18n: `cart.guestLoginAlert.title`. |
-| 45 | `lblGuestAlertTitle` | Alert Title | Text (`<h2>`) | String | Conditional | Text: "Log In Required" / "ログインが必要です" | — | — | i18n: `cart.guestLoginAlert.title`. Tailwind: `text-lg font-semibold`. |
-| 46 | `lblGuestAlertMessage` | Alert Message | Text (`<p>`) | String | Conditional | Text: "Please log in to add items to your cart." / "カートに商品を追加するにはログインしてください。" | — | — | i18n: `cart.guestLoginAlert.message`. |
-| 47 | `btnGuestAlertLogin` | Log In Button | Button (`primary`) | — | Conditional | Text: "Log In" / "ログイン" | — | — | Navigates to `/login?redirect={currentPath}`. `currentPath` is the page where the modal was triggered. i18n: `cart.guestLoginAlert.loginButton`. Full width. |
-| 48 | `btnGuestAlertClose` | Close Button | Button (`ghost`) | — | Conditional | Text: "Cancel" / "キャンセル" | — | — | Closes modal. i18n: `cart.guestLoginAlert.closeButton`. |
-
-### 4.12 Shared: Loading Skeleton (共有: ローディングスケルトン)
+### 4.11 Section [J]: Cart Error / Retry State (カート読み込み失敗状態)
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 49 | `skeletonWishlistCard` | Wishlist Card Skeleton | Skeleton | — | Conditional | Visible during wishlist data fetch. Card-shaped placeholder. | — | — | Tailwind: `animate-pulse rounded-lg border h-64`. |
-| 50 | `skeletonCartItem` | Cart Item Skeleton | Skeleton | — | Conditional | Visible during cart data fetch. Row-shaped placeholder. | — | — | Tailwind: `animate-pulse h-20 border-b`. |
+| 49 | `pnlCartError` | Error State Panel | Container (`<div>`) | — | Conditional | Visible when the cart fetch fails. | — | — | Shows alert icon, title, error message, and `refetch()` button. |
+| 50 | `lblCartErrorTitle` | Error Title | Text (`<h2>`) | String | Conditional | Text: "Failed to load cart" (fallback). | — | — | i18n: `cart.errorTitle`. |
+| 51 | `lblCartErrorMessage` | Error Message | Text (`<p>`) | String | Conditional | Text from `error.message` or fallback message. | — | API error | i18n: `cart.errorMessage`. |
+| 52 | `btnCartRetry` | Retry Button | Button (`outline`) | — | Conditional | Text: "Try again" | — | — | Calls `refetch()`. |
+
+### 4.12 Section [K]: Account Deactivated Dialog (アカウント停止ダイアログ)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 53 | `dlgAccountDeactivated` | Account Deactivated Dialog | Dialog/Modal | — | Conditional | Hidden by default. On blocked checkout, shows "Account Deactivated", support guidance, optional reason, and a Close button. | — | `user.deactivationReason` | `AccountDeactivatedDialog` is rendered in the cart page; it is not the same as a guest login modal. |
+
+### 4.13 Section [M]: Guest Login Alert Modal (ゲストログインアラートモーダル)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 54 | `dlgGuestLoginAlert` | Shared Guest Login Modal | Dialog/Modal (`GuestLoginModal`) | — | Not rendered by these pages | Wishlist and cart routes are protected; guests navigating directly are redirected to `/login`. The shared modal is used by header/product/list action entry points, not rendered by `Wishlist.tsx` or `Cart.tsx`. | — | — | Header icon flow selects wishlist/cart message and return URL. |
+| 55 | `btnGuestAlertLogin` | Log In Button | Button (`primary`) | — | Not rendered by these pages | Text: "Log In" in the shared modal. | — | — | Shared modal navigates to login with its configured return URL. |
+| 56 | `btnGuestAlertClose` | Close Button | Button (`outline`) | — | Not rendered by these pages | Text: "Cancel" in the shared modal. | — | — | Closes the shared modal. |
+
+### 4.14 Shared: Loading Skeleton (共有: ローディングスケルトン)
+
+| No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
+| 57 | `skeletonWishlistCard` | Wishlist Card Skeleton | Skeleton / placeholder `<div>` | — | Conditional | Header skeleton plus four card-shaped placeholders during wishlist loading. | — | — | Grid: 2 columns by default, 3 at `md`, 4 at `lg`; card placeholder `h-80`. |
+| 58 | `skeletonCartItem` | Cart Item Skeleton | Skeleton / placeholder `<div>` | — | Conditional | Header skeleton, three row placeholders, and one summary placeholder during cart loading. | — | — | Row placeholder `h-24`; summary placeholder `h-48`. |
 
 ---
 
 ## 5. Item Behaviors & Event Specifications (各項目における挙動・イベント仕様)
 
-### 5.1 Wishlist: Toggle Heart / Add to Wishlist (`btnWishlistAdd` / heart icon onClick)
-- **Trigger:** User clicks heart icon on product card/detail.
+### 5.1 Wishlist: Add to Wishlist (actions on product pages/lists; not rendered on Wishlist page)
+- **Trigger:** Buyer clicks the wishlist action in a product/list surface.
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** Verify user is authenticated. If not, trigger `dlgGuestLoginAlert`.
-  2. **Optimistic UI:** Toggle heart icon immediately (outline → filled or filled → outline).
-  3. **Backend Dispatch:**
-     - If not in wishlist: `POST /api/v1/wishlist/:productId`.
-     - If already in wishlist: `DELETE /api/v1/wishlist/:productId`.
-  4. **Backend Execution:** Validate JWT and the `buyer` role. Verify product exists and is active. Create/delete the wishlist record.
-  5. **Post-Execution UI:** Confirm toggle state. Show success toast on add. Show success toast on remove.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Revert toggle. Redirect to login.
-  - `403 FORBIDDEN`: Revert toggle. Show "Shopping features are only available to buyers".
-  - `404 NOT_FOUND`: Revert toggle. Toast: "Product not found".
-  - `409 CONFLICT`: Revert toggle. Toast: "Already in your wishlist".
-  - `500 INTERNAL_SERVER_ERROR`: Revert toggle. Toast: "Something went wrong".
+  1. The source surface handles guest authentication behavior; the wishlist page itself has no add/toggle-heart action.
+  2. Send `POST /api/v1/wishlist/:productId`.
+  3. On settlement, invalidate the `['wishlist']` query. The hook does not apply an optimistic cache update.
+- **Exception Handling:** The source surface handles API errors. Duplicate-item behavior is defined by the API contract; no toast or dialog for this operation is rendered by `Wishlist.tsx`.
 
 ### 5.2 Wishlist: Remove from Wishlist (`btnWishlistRemove` onClick)
-- **Trigger:** User clicks trash/X icon on wishlist item card.
+- **Trigger:** User clicks the trash button over a product image.
 - **Processing Logic:**
-  1. **Optimistic UI:** Immediately remove card from grid with fade-out animation.
-  2. **Backend Dispatch:** `DELETE /api/v1/wishlist/:productId`.
-  3. **Backend Execution:** Validate JWT and the `buyer` role. Find and delete the user's wishlist record. The API returns 204 No Content.
-  4. **Post-Execution UI:** Update item count. Show empty state if no items remain.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Revert removal. Redirect to login.
-  - `403 FORBIDDEN`: Revert removal. Show "Shopping features are only available to buyers".
-  - `404 NOT_FOUND`: Item already removed. Update UI.
-  - `500 INTERNAL_SERVER_ERROR`: Revert removal. Toast: "Failed to remove item".
+  1. Disable the remove button and show a spinner while the remove mutation is pending.
+  2. Send `DELETE /api/v1/wishlist/:productId`.
+  3. On settlement, invalidate `['wishlist']`; the query then refreshes the cards and `totalCount`. No optimistic removal is performed.
+  4. Show "Removed from wishlist" on success or "Failed to remove from wishlist" on failure.
+- **Accessibility:** Button label is `Remove {productName} from wishlist`.
 
 ### 5.3 Wishlist: Move to Cart (`btnWishlistMoveToCart` onClick)
-- **Trigger:** User clicks "Add to Cart" button on wishlist item.
+- **Trigger:** User clicks the `Add` button on a wishlist item card.
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** Verify user is authenticated. If not, trigger `dlgGuestLoginAlert`.
-  2. **Client-Side Pre-Check:** Verify product is in stock. If out of stock, show toast error.
-  3. **Backend Dispatch:** `POST /api/v1/wishlist/:productId/move-to-cart`.
-  4. **Backend Execution:** Validate JWT and the `buyer` role. Verify the product is active and stock > 0. Create/update the user's cart item and remove the wishlist item atomically in a Prisma transaction.
-  5. **Post-Execution UI:** Remove item from wishlist grid. Update item count. Show empty state if applicable. Show success toast.
+  1. Disable the button and show a spinner while the mutation is pending; the button is disabled for out-of-stock items.
+  2. Send `POST /api/v1/wishlist/:productId/move-to-cart`.
+  3. On settlement, invalidate both `['wishlist']` and `['cart']`; the mutation does not optimistically remove the card.
+  4. Show "Moved to cart" on success.
+- **Exception Handling:** A response message exactly equal to "This product is already in cart." opens `DuplicateCartAlertDialog` and leaves the wishlist item intact; other failures show "Failed to move to cart".
+
+### 5.4 Cart: Update Quantity (`stepperCartQuantity`)
+- **Trigger:** User uses the minus/plus buttons or edits the number input.
+- **Processing Logic:**
+  1. The minimum is 1; the maximum is `min(99, stockQuantity)`. Minus/plus controls are disabled at their respective limits. All controls are disabled while an update is pending or when `!item.isAvailable`.
+  2. The input handler uses `parseInt(value, 10)` and calls the change handler only when the parsed value is between min and max. Empty/non-numeric and out-of-range values do not dispatch an update; decimal text with an in-range integer part is truncated by `parseInt` and that integer is submitted. No inline error is rendered.
+  3. Send `PATCH /api/v1/cart/items/:id` with `{ "quantity": n }`.
+  4. On settlement, invalidate `['cart']`; the hook relies on the refetched cart for quantity, subtotal, and summary values (no optimistic update).
+  5. Show "Quantity updated" on success or "Failed to update quantity" on failure.
+
+### 5.5 Cart: Remove Item (`btnCartItemRemove` onClick)
+- **Trigger:** User clicks the trash icon. One button is shown at the top-right on mobile and in the action area on `sm` and wider.
+- **Processing Logic:**
+  1. Disable the remove button while the mutation is pending.
+  2. Send `DELETE /api/v1/cart/items/:id`.
+  3. On settlement, invalidate `['cart']`; no optimistic row removal is performed.
+  4. Show "Item removed from cart" on success or "Failed to remove from cart" on failure.
+
+### 5.6 Cart: Proceed to Checkout (`btnCartCheckout` onClick)
+- **Trigger:** User clicks "Proceed to Checkout" in the summary panel (rendered only when cart items exist).
+- **Processing Logic:**
+  1. If `isAccountDeactivated(user)` is true, open `AccountDeactivatedDialog` with the user's deactivation reason; do not navigate.
+  2. Otherwise navigate to `/buyer/checkout`.
+  3. The button is not disabled based on `summary.canCheckout` or `summary.hasOutOfStock`; out-of-stock is indicated by a notice in the summary.
+- **Additional Action:** "Continue Shopping" links to `/buyer/search`.
+
+### 5.7 Guest Login Alert (`dlgGuestLoginAlert` / `GuestLoginModal`)
+- **Trigger:** Unauthenticated user clicks a wishlist/cart action or a header action that requires authentication.
+- **Processing Logic:**
+  1. The shared header/action surface supplies the wishlist/cart message and return URL.
+  2. **Display Modal:** The shared `GuestLoginModal` appears with the matching title and message.
+  3. **Log In Action:** Clicking the login button navigates to `/login?redirect=<encoded targetPath>`.
+  4. **Close Action:** Clicking cancel, pressing ESC, or closing the dialog calls `onClose()` without navigation.
+- **Exception Handling:** None applicable. Direct protected-route access is handled by `ProtectedRoute roles={['buyer']}` through a redirect to `/login` instead of a local modal.
+
+### 5.8 Clear All Actions (`btnWishlistClearAll` / `btnCartClearAll`)
+- **Trigger:** User clicks the top-right "All Data Clear" action on the wishlist or cart page.
+- **Processing Logic:**
+  1. Open the page-specific `ConfirmDialog` with a final confirmation message.
+  2. On confirm, call `clearAllWishlist()` or `clearAllCart()`.
+  3. The services send `DELETE /api/v1/wishlist` or `DELETE /api/v1/cart/items`; the hooks invalidate the corresponding query on settlement.
+  4. On success, close the dialog and show a success toast.
 - **Exception Handling:**
-  - `401 UNAUTHORIZED`: Revert state. Redirect to login.
-  - `403 FORBIDDEN`: Revert state. Show "Shopping features are only available to buyers".
-  - `400 BAD_REQUEST` (out of stock): Toast: "Product is out of stock".
-  - `500 INTERNAL_SERVER_ERROR`: Toast: "Failed to move item to cart".
-
-### 5.4 Cart: Update Quantity — Minus Button (`btnCartMinus` onClick)
-- **Trigger:** User clicks minus button on cart item.
-- **Processing Logic:**
-  1. **Client-Side Pre-Check:** Verify `currentQuantity > 1`. If `currentQuantity = 1`, button is disabled.
-  2. **Optimistic UI:** Decrement displayed quantity by 1. Update item subtotal immediately.
-  3. **Backend Dispatch:** `PATCH /api/v1/cart/items/:id` with `{ quantity: currentQuantity - 1 }`.
-  4. **Backend Execution:** Validate JWT and the `buyer` role. Resolve the item through the authenticated user's cart, validate quantity ≥ 1 and ≤ 99, verify stock, and update the cart item.
-  5. **Post-Execution UI:** Confirm new quantity and subtotal. Update summary panel totals.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Revert quantity. Redirect to login.
-  - `403 FORBIDDEN`: Revert quantity. Show "Shopping features are only available to buyers".
-  - `400 BAD_REQUEST` (quantity < 1): Revert quantity.
-  - `400 BAD_REQUEST` (exceeds stock): Revert quantity. Toast: "Only {n} available in stock".
-  - `500 INTERNAL_SERVER_ERROR`: Revert quantity. Toast: "Failed to update quantity".
-
-### 5.5 Cart: Update Quantity — Plus Button (`btnCartPlus` onClick)
-- **Trigger:** User clicks plus button on cart item.
-- **Processing Logic:**
-  1. **Client-Side Pre-Check:** Verify `currentQuantity < stock_quantity`. If at max, button is disabled.
-  2. **Optimistic UI:** Increment displayed quantity by 1. Update item subtotal immediately.
-  3. **Backend Dispatch:** `PATCH /api/v1/cart/items/:id` with `{ quantity: currentQuantity + 1 }`.
-  4. **Backend Execution:** Validate JWT and the `buyer` role. Resolve the item through the authenticated user's cart, validate quantity ≤ stock, and update the cart item.
-  5. **Post-Execution UI:** Confirm new quantity and subtotal. Update summary panel totals.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Revert quantity. Redirect to login.
-  - `403 FORBIDDEN`: Revert quantity. Show "Shopping features are only available to buyers".
-  - `400 BAD_REQUEST` (exceeds stock): Revert quantity. Toast: "Only {n} available in stock".
-  - `500 INTERNAL_SERVER_ERROR`: Revert quantity. Toast: "Failed to update quantity".
-
-### 5.6 Cart: Update Quantity — Direct Input (`txtCartQuantity` onChange / onBlur)
-- **Trigger:** User types a new quantity value and blurs the input or presses Enter.
-- **Processing Logic:**
-  1. **Client-Side Pre-Check:** Validate value is integer ≥ 1 and ≤ 99. If invalid, revert to previous value.
-  2. **Optimistic UI:** Update displayed quantity. Update item subtotal.
-  3. **Backend Dispatch:** `PATCH /api/v1/cart/items/:id` with `{ quantity: newValue }`.
-  4. **Backend Execution:** Validate JWT and the `buyer` role. Resolve the item through the authenticated user's cart, validate quantity, verify stock, and update the cart item.
-  5. **Post-Execution UI:** Confirm quantity and subtotal. Update summary panel.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Revert quantity. Redirect to login.
-  - `403 FORBIDDEN`: Revert quantity. Show "Shopping features are only available to buyers".
-  - `400 BAD_REQUEST` (invalid quantity): Revert to previous value. Inline error.
-  - `400 BAD_REQUEST` (exceeds stock): Revert to previous value. Toast: "Only {n} available in stock".
-  - `500 INTERNAL_SERVER_ERROR`: Revert quantity.
-
-### 5.7 Cart: Remove Item (`btnCartItemRemove` onClick)
-- **Trigger:** User clicks trash/X icon on cart item row.
-- **Processing Logic:**
-  1. **Optimistic UI:** Immediately remove row from list with fade-out animation.
-  2. **Backend Dispatch:** `DELETE /api/v1/cart/items/:id`.
-  3. **Backend Execution:** Validate JWT and the `buyer` role. Resolve and delete the item through the authenticated user's cart. The API returns 204 No Content.
-  4. **Post-Execution UI:** Update item count. Update summary panel totals. Show empty state if no items remain. Update cart badge.
-- **Exception Handling:**
-  - `401 UNAUTHORIZED`: Revert removal. Redirect to login.
-  - `403 FORBIDDEN`: Revert removal. Show "Shopping features are only available to buyers".
-  - `404 NOT_FOUND`: Item already removed. Update UI.
-  - `500 INTERNAL_SERVER_ERROR`: Revert removal. Toast: "Failed to remove item".
-
-### 5.8 Cart: Proceed to Checkout (`btnCartCheckout` onClick)
-- **Trigger:** User clicks "Proceed to Checkout" button.
-- **Processing Logic:**
-  1. **Client-Side Pre-Check:** Verify `canCheckout = true` and the cart is not empty. This requires every item to be active and available (`stock_quantity >= quantity`).
-  2. **Navigation:** Navigate to `/checkout` via React Router.
-- **Exception Handling:**
-  - If any item is out of stock: Button is disabled. Tooltip or toast: "Remove out-of-stock items before checkout".
-
-### 5.9 Guest Login Alert (`dlgGuestLoginAlert`)
-- **Trigger:** Unauthenticated user clicks any wishlist action, "Add to Cart", or "Move to Cart" action.
-- **Processing Logic:**
-  1. **Capture Current Path:** Store `window.location.pathname` as `returnUrl` (e.g., `/cart`, `/products/vitamin-c-serum`).
-  2. **Display Modal:** `dlgGuestLoginAlert` appears with title, message, and [Log In] button.
-  3. **Log In Action:** Clicking `btnGuestAlertLogin` navigates to `/login?redirect={encodeURIComponent(returnUrl)}`. After successful login, the authentication flow reads the `redirect` query parameter and navigates the user back to the original page.
-  4. **Close Action:** Clicking `btnGuestAlertClose` or pressing ESC closes the modal.
-- **Exception Handling:** None applicable.
-
-### 5.10 Language Toggle (`btnLanguageToggle` onClick)
-- **Trigger:** User clicks language toggle button.
-- **Processing Logic:**
-  1. Cycle through languages: EN → JA → MY → EN.
-  2. Update `i18next` language via `i18n.changeLanguage()`.
-  3. Persist preference to `localStorage`.
-  4. Re-render all translated labels and currency formats.
-- **Exception Handling:** None applicable.
+  - API failure: keep the dialog open and show a failure toast; do not clear the page state locally.
+  - Clearing while already pending: disable the button via `isClearing`.
 
 ---
 
@@ -400,32 +358,29 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 
 ### 6.1 Wishlist Validation Errors
 
-| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-WISH-001** | `imgWishlistProduct` / `lnkWishlistProductName` | Product not found or inactive | Toast (destructive) | "Product not found or unavailable" | "商品が見つからないか利用できません" |
-| **VAL-WISH-002** | `crdWishlistItem` | Product already in wishlist | Toast (warning) | "Product already in your wishlist" | "商品は既にお気に入りに追加されています" |
-| **VAL-WISH-003** | `btnWishlistMoveToCart` | Product out of stock when moving to cart | Toast (destructive) | "Product is out of stock" | "商品は在庫切れです" |
-| **VAL-WISH-004** | `wishlist` | Authenticated user is not a buyer | Toast (destructive) | "Shopping features are only available to buyers" | "ショッピング機能は購入者のみ利用できます" |
-| **WISH_001** | `dlgGuestLoginAlert` | Unauthenticated user attempts wishlist action | Modal dialog | "Please log in to add items to your cart." | "カートに商品を追加するにはログインしてください。" |
-| **WISH_002** | `emptyWishlist` | Server error (500 response) | Toast (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
-| **WISH_NET** | `dlgGuestLoginAlert` | Network error | Toast (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+| Condition | UI/UX Display | User-facing result |
+| :--- | :--- | :--- |
+| Wishlist fetch fails | Full-page error state with alert icon, the API error message or fallback, and a retry button. | `wishlist.errorTitle`, `wishlist.errorMessage`, `wishlist.retry` (with English fallbacks). |
+| Remove request fails | Error toast; item remains unless the refetched server data changes. | "Failed to remove from wishlist". |
+| Move-to-cart request fails with message "This product is already in cart." | `DuplicateCartAlertDialog`; no success toast and wishlist data is retained. | "Already in Cart" / "This product is already in cart." |
+| Other move-to-cart request failure | Error toast. | "Failed to move to cart". |
+| Clear-all request fails | Error toast; confirmation remains open. | "Failed to clear wishlist". |
+| Product has `isInStock = false` | `Add` button is disabled; no stock badge is rendered on the wishlist card. | No inline validation message. |
 
 ### 6.2 Cart Validation Errors
 
-| Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **VAL-CART-001** | `txtCartQuantity` | Quantity is empty or < 1 | Red border. Inline text below input. | "Quantity must be at least 1" | "数量は1以上である必要があります" |
-| **VAL-CART-002** | `txtCartQuantity` | Quantity exceeds 99 | Red border. Inline text below input. | "Quantity cannot exceed 99" | "数量は99を超えることはできません" |
-| **VAL-CART-003** | `txtCartQuantity` | Quantity is not an integer | Red border. Inline text below input. | "Quantity must be a whole number" | "数量は整数である必要があります" |
-| **VAL-CART-004** | `txtCartQuantity` | Requested quantity > stock_quantity | Revert to previous value. Toast (destructive). | "Only {n} available in stock" | "在庫が{n}個しかありません" |
-| **VAL-CART-005** | `btnCartCheckout` | Any item has stock = 0 | Checkout button disabled. Tooltip. | "Remove out-of-stock items before checkout" | "在庫切れの商品を削除してからチェックアウトしてください" |
-| **VAL-CART-006** | `cart` | Authenticated user is not a buyer | Toast (destructive) | "Shopping features are only available to buyers" | "ショッピング機能は購入者のみ利用できます" |
-| **VAL-CART-007** | `btnCartAdd` | Product already exists in cart | Send PATCH request to update quantity, then show Toast (Success)| "Product quantity updated in your cart." | "カート内の商品数量を更新しました。" |
-| **CART_001** | `dlgGuestLoginAlert` | Unauthenticated user attempts cart action | Modal dialog | "Please log in to add items to your cart." | "カートに商品を追加するにはログインしてください" |
-| **CART_002** | `rowCartItem` | Product not found | Toast (destructive) | "Product not found" | "商品が見つかりません" |
-| **CART_003** | `rowCartItem` | Cart item not found (already removed) | Toast (warning) | "Item not found in cart" | "カートにアイテムが見つかりません" |
-| **CART_004** | `pnlCartSummary` | Server error (500 response) | Toast (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
-| **CART_NET** | `dlgGuestLoginAlert` | Network error | Toast (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+| Condition | UI/UX Display | User-facing result |
+| :--- | :--- | :--- |
+| Cart fetch fails | Full-page error state with alert icon, the API error message or fallback, and a retry button. | `cart.errorTitle`, `cart.errorMessage`, `cart.retry` (with English fallbacks). |
+| Typed quantity is empty, non-numeric, or parses outside 1..`min(99, stockQuantity)` | Input handler ignores the value; no API request and no inline error message. | Previous controlled quantity remains displayed. |
+| Typed quantity contains a decimal with an in-range integer part (for example, `2.5`) | `parseInt` truncates the fractional part and dispatches the parsed integer (`2`). | The input is not validated as an exact integer string. |
+| Quantity update request fails | Error toast; query is invalidated and refreshed. | "Failed to update quantity". |
+| Item remove request fails | Error toast; query is invalidated and refreshed. | "Failed to remove from cart". |
+| Cart has out-of-stock items | Summary displays "Some items are out of stock"; checkout button is not disabled by this flag. | No tooltip or checkout-specific inline error. |
+| Buyer account is deactivated and checkout is clicked | Open `AccountDeactivatedDialog`; do not navigate. | Dialog may display `user.deactivationReason`. |
+| Clear-all request fails | Error toast; confirmation remains open. | "Failed to clear cart". |
+
+> API error responses use the shared generic status-derived codes listed in `Wishlist_Cart_PCL.md`; the frontend mutation handlers do not map those codes to field-level validation messages.
 
 ---
 
@@ -439,7 +394,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | `lnkWishlistProductName` | `productName` | `name` | `products` | VARCHAR(255) |
 | `lblWishlistProductPrice` | `productPrice` | `price` | `products` | Decimal serialized as string |
 | `lblWishlistComparePrice` | `compareAtPrice` | `compare_at_price` | `products` | Decimal serialized as string or null |
-| `badgeWishlistStockStatus` | `stockStatus` | `stock_quantity` | `products` | INTEGER |
+| `lblWishlistCategory` | `category` | Category relation/value | `products` / category data | Nullable String |
 | `btnWishlistMoveToCart` | `isInStock` | `stock_quantity > 0` | `products` | BOOLEAN (derived) |
 
 ### 7.2 Cart → Database
@@ -450,7 +405,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | `lnkCartProductName` | `productName` | `name` | `products` | VARCHAR(255) |
 | `lblCartUnitPrice` | `unitPrice` | `price` | `products` | Decimal serialized as string |
 | `txtCartQuantity` | `quantity` | `quantity` | `cart_items` | INTEGER |
-| `lblCartItemSubtotal` | `subtotal` | Computed: `unitPrice × quantity` | — | Decimal serialized as string (derived) |
+| `lblCartItemSubtotal` | `subtotal` | Server-calculated from unit price and quantity | — | Decimal serialized as string |
 | `badgeCartStockWarning` | `stockQuantity` | `stock_quantity` | `products` | INTEGER |
 
 **Note:** Cart data spans two tables: `carts` (one per user, linked via `user_id`) and `cart_items` (individual items, linked via `cart_id`). The `cart_items` table has a unique constraint on `(cart_id, product_id)` preventing duplicate products in the same cart.
@@ -471,9 +426,10 @@ The Wishlist page allows authenticated users to view and manage their saved prod
         "productName": "Vitamin C Serum",
         "productSlug": "vitamin-c-serum",
         "productImage": "/uploads/products/vitamin-c-serum.webp",
+        "category": "Serums",
         "productPrice": "39.99",
         "compareAtPrice": "49.99",
-        "stockStatus": "In Stock",
+        "stockStatus": "IN_STOCK",
         "isInStock": true,
         "createdAt": "2026-08-05T12:00:00.000Z"
       }
@@ -499,13 +455,15 @@ The Wishlist page allows authenticated users to view and manage their saved prod
         "quantity": 2,
         "subtotal": "79.98",
         "stockQuantity": 15,
-        "stockStatus": "In Stock",
+        "stockStatus": "IN_STOCK",
         "isAvailable": true
       }
     ],
     "summary": {
       "totalItems": 2,
       "subtotal": "79.98",
+      "shippingEstimate": "0.00",
+      "total": "79.98",
       "hasOutOfStock": false,
       "canCheckout": true
     }
@@ -523,9 +481,10 @@ The Wishlist page allows authenticated users to view and manage their saved prod
     "productName": "Vitamin C Serum",
     "productSlug": "vitamin-c-serum",
     "productImage": "/uploads/products/vitamin-c-serum.webp",
+    "category": "Serums",
     "productPrice": "39.99",
     "compareAtPrice": "49.99",
-    "stockStatus": "In Stock",
+    "stockStatus": "IN_STOCK",
     "isInStock": true,
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
@@ -547,7 +506,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
       "unitPrice": "39.99",
       "subtotal": "39.99",
       "stockQuantity": 15,
-      "stockStatus": "In Stock",
+      "stockStatus": "IN_STOCK",
       "isAvailable": true
     },
     "wishlistRemoved": true
@@ -569,7 +528,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
     "unitPrice": "39.99",
     "subtotal": "39.99",
     "stockQuantity": 15,
-    "stockStatus": "In Stock",
+    "stockStatus": "IN_STOCK",
     "isAvailable": true
   }
 }
@@ -589,19 +548,19 @@ The Wishlist page allows authenticated users to view and manage their saved prod
     "unitPrice": "39.99",
     "subtotal": "119.97",
     "stockQuantity": 15,
-    "stockStatus": "In Stock",
+    "stockStatus": "IN_STOCK",
     "isAvailable": true
   }
 }
 ```
 
-### 8.7 Error Response — Out of Stock
+### 8.7 Error Response — Insufficient Stock on Cart Quantity Update
 
 ```json
 {
   "statusCode": 400,
   "error": "BAD_REQUEST",
-  "errorCode": "VAL-CART-004",
+  "errorCode": "VAL_001",
   "message": "Only 2 available in stock",
   "timestamp": "2026-08-08T12:00:00.000Z",
   "path": "/api/v1/cart/items/3a52c3c9-c1b7-4c4f-9e67-d8687cfc1d9f"
@@ -614,7 +573,7 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 {
   "statusCode": 409,
   "error": "CONFLICT",
-  "errorCode": "VAL-WISH-002",
+  "errorCode": "RES_003",
   "message": "Product already in wishlist",
   "timestamp": "2026-08-08T12:00:00.000Z",
   "path": "/api/v1/wishlist/6b72a6b2-60cc-483a-867c-1b77df7f7dc8"
@@ -625,85 +584,21 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 
 ## 9. i18n Keys Reference (i18nキーリファレンス)
 
-### 9.1 English (en) — Wishlist
+### 9.1 Keys Used by the Pages
 
-| Key | Value |
-| :--- | :--- |
-| `wishlist.title` | "My Wishlist" |
-| `wishlist.itemCount` | "{count} items saved" |
-| `wishlist.moveToCart` | "Add to Cart" |
-| `wishlist.remove` | "Remove" |
-| `wishlist.emptyTitle` | "No items saved yet" |
-| `wishlist.emptyMessage` | "Browse products to add favorites." |
-| `wishlist.continueShopping` | "Continue Shopping" |
-| `wishlist.unavailable` | "This product is currently unavailable." |
-| `wishlist.inStock` | "In Stock" |
-| `wishlist.lowStock` | "Low Stock" |
-| `wishlist.outOfStock` | "Out of Stock" |
+| Screen | Key(s) used in code | English source / fallback |
+| :--- | :--- | :--- |
+| Wishlist title | `wishlist.title` | EN resource: "My Wishlist"; code fallback: "My Saved Wishlist". |
+| Wishlist actions and notifications | `wishlist.clearAll`, `wishlist.clearing`, `wishlist.clearAllTitle`, `wishlist.clearAllConfirm`, `wishlist.clearAllConfirmButton`, `wishlist.clearAllCancelButton`, `wishlist.cleared`, `wishlist.failedToClear`, `wishlist.removedFromWishlist`, `wishlist.failedToRemove`, `wishlist.movedToCart`, `wishlist.failedToMove` | EN resources are in `frontend/public/locales/en/wishlist.json`. |
+| Wishlist error state | `wishlist.errorTitle`, `wishlist.errorMessage`, `wishlist.retry` | English fallback strings are supplied in `Wishlist.tsx`. |
+| Wishlist empty state | `wishlist.emptyTitle`, `wishlist.emptyMessage`, `wishlist.continueShopping` | EN resources are in `frontend/public/locales/en/wishlist.json`. |
+| Cart title, subtitle, and actions | `cart.title`, `cart.subtitle`, `cart.clearAll`, `cart.clearing`, `cart.clearAllTitle`, `cart.clearAllConfirm`, `cart.clearAllConfirmButton`, `cart.clearAllCancelButton`, `cart.cleared`, `cart.failedToClear` | EN resource title is "Shopping Cart"; subtitle has an English code fallback. Other keys are in `frontend/public/locales/en/cart.json`. |
+| Cart summary | `cart.summary`, `cart.subtotalLabel`, `cart.shippingEstimate`, `cart.total`, `cart.checkout`, `cart.continueShopping` | These keys are called by `CartSummaryPanel`; several summary-label keys are present in the JA resource but not in `frontend/public/locales/en/cart.json`. |
+| Cart errors and mutations | `cart.errorTitle`, `cart.errorMessage`, `cart.retry`, `cart.quantityUpdated`, `cart.failedToUpdate`, `cart.removedFromCart`, `cart.failedToRemove` | Error headings/messages have English code fallbacks; mutation messages are in `frontend/public/locales/en/cart.json`. |
+| Shared empty state | `${variant}.emptyTitle`, `${variant}.emptyMessage`, `${variant}.continueShopping` | `variant` is `wishlist` or `cart`; resources are in locale files. |
+| Shared guest login modal | `${messageKey}.guestLoginAlert.title`, `.message`, `.loginButton`, `.closeButton` | Used by shared entry points, not rendered inside the wishlist/cart pages. |
 
-### 9.2 English (en) — Cart
-
-| Key | Value |
-| :--- | :--- |
-| `cart.title` | "Shopping Cart" |
-| `cart.itemCount` | "{count} items in cart" |
-| `cart.subtotal` | "Subtotal" |
-| `cart.totalItems` | "Total Items" |
-| `cart.checkout` | "Proceed to Checkout" |
-| `cart.continueShopping` | "Continue Shopping" |
-| `cart.browseProducts` | "Browse Products" |
-| `cart.remove` | "Remove" |
-| `cart.emptyTitle` | "Your cart is empty" |
-| `cart.emptyMessage` | "Start shopping!" |
-| `cart.inStock` | "In Stock" |
-| `cart.lowStock` | "Only {n} left in stock" |
-| `cart.outOfStock` | "Out of Stock" |
-| `cart.decreaseQuantity` | "Decrease quantity" |
-| `cart.increaseQuantity` | "Increase quantity" |
-| `cart.guestLoginAlert.title` | "Log In Required" |
-| `cart.guestLoginAlert.message` | "Please log in to add items to your cart." |
-| `cart.guestLoginAlert.loginButton` | "Log In" |
-| `cart.guestLoginAlert.closeButton` | "Cancel" |
-
-### 9.3 Japanese (ja) — Wishlist
-
-| Key | Value |
-| :--- | :--- |
-| `wishlist.title` | "お気に入り" |
-| `wishlist.itemCount` | "{count}件の商品が保存されています" |
-| `wishlist.moveToCart` | "カートに追加" |
-| `wishlist.remove` | "削除" |
-| `wishlist.emptyTitle` | "まだお気に入りに追加された商品がありません" |
-| `wishlist.emptyMessage` | "商品を閲覧してお気に入りを追加しましょう。" |
-| `wishlist.continueShopping` | "買い物を続ける" |
-| `wishlist.unavailable` | "この商品は現在在庫切れです。" |
-| `wishlist.inStock` | "在庫あり" |
-| `wishlist.lowStock` | "残りわずか" |
-| `wishlist.outOfStock` | "在庫切れ" |
-
-### 9.4 Japanese (ja) — Cart
-
-| Key | Value |
-| :--- | :--- |
-| `cart.title` | "カート" |
-| `cart.itemCount` | "{count}件の商品がカートに入っています" |
-| `cart.subtotal` | "小計" |
-| `cart.totalItems` | "合計点数" |
-| `cart.checkout` | "購入手続きへ" |
-| `cart.continueShopping` | "買い物を続ける" |
-| `cart.browseProducts` | "商品を見る" |
-| `cart.remove` | "削除" |
-| `cart.emptyTitle` | "カートは空です" |
-| `cart.emptyMessage` | "お買い物を始めましょう！" |
-| `cart.inStock` | "在庫あり" |
-| `cart.lowStock` | "残り{n}個" |
-| `cart.outOfStock` | "在庫切れ" |
-| `cart.decreaseQuantity` | "数量を減らす" |
-| `cart.increaseQuantity` | "数量を増やす" |
-| `cart.guestLoginAlert.title` | "ログインが必要です" |
-| `cart.guestLoginAlert.message` | "カートに商品を追加するにはログインしてください。" |
-| `cart.guestLoginAlert.loginButton` | "ログイン" |
-| `cart.guestLoginAlert.closeButton` | "キャンセル" |
+The wishlist item-count line and the card's "Add" label, category fallback, and stock badge labels are hard-coded in the components rather than translated through these keys. Japanese wishlist/cart resource values are defined in `frontend/public/locales/ja/translation.json`; the pages do not provide a separate item-count translation for the count line.
 
 ---
 
@@ -715,24 +610,22 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 | :--- | :--- |
 | **Location** | `frontend/src/components/common/EmptyState.tsx` |
 | **Variants** | `wishlist`, `cart` |
-| **Props** | `title`, `message`, `actionLabel`, `actionHref` |
-| **Usage** | Displayed when wishlist or cart has 0 items |
+| **Props** | `variant` |
+| **Usage** | Displays locale-driven title/message and links to `/buyer/search` when a wishlist or cart has 0 items. |
 
 ### 10.2 Skeleton Component
 
 | Property | Value |
 | :--- | :--- |
 | **Location** | `frontend/src/components/ui/skeleton.tsx` |
-| **Variants** | `card` (wishlist), `row` (cart) |
-| **Usage** | Loading placeholders during data fetch |
+| **Usage** | Used for page-header loading placeholders. The card/row/summary placeholders are animated `<div>` elements in the page components, not Skeleton variants. |
 
 ### 10.3 Badge Component
 
 | Property | Value |
 | :--- | :--- |
 | **Location** | `frontend/src/components/ui/badge.tsx` |
-| **Variants** | `default`, `success`, `warning`, `destructive` |
-| **Usage** | Stock status indicators (In Stock, Low Stock, Out of Stock) |
+| **Usage** | Wrapped by `StockBadge` on cart rows; wishlist cards do not display a stock badge. `StockBadge` maps `IN_STOCK`, `LOW_STOCK`, and `OUT_OF_STOCK` to labels and styles. |
 
 ### 10.4 Button Component
 
@@ -746,127 +639,81 @@ The Wishlist page allows authenticated users to view and manage their saved prod
 
 | Property | Value |
 | :--- | :--- |
-| **Location** | `frontend/src/components/ui/dialog.tsx` |
-| **Usage** | Guest login alert modal (`dlgGuestLoginAlert`) |
+| **Components** | `ConfirmDialog`, `DuplicateCartAlertDialog`, `AccountDeactivatedDialog` |
+| **Usage** | Clear-all confirmation on both pages; duplicate-cart conflict on Wishlist; deactivated-account block on Cart. Guest login dialog is shared outside these pages. |
 
 ### 10.6 Toast Component
 
 | Property | Value |
 | :--- | :--- |
-| **Location** | `frontend/src/components/ui/toast.tsx` |
-| **Variants** | `default`, `success`, `destructive` |
-| **Usage** | Success/error notifications for all operations |
+| **Library** | `sonner` (`toast.success`, `toast.error`) |
+| **Usage** | Success/error notifications for remove, move, quantity update, and clear-all operations. |
 
 ---
 
 ## 11. Special UI Notes & Styling Constraints (特記事項・UI仕様)
 
-- **Design System:** Luxury Cosmetics Theme — use the semantic `primary`, `accent`, and `secondary` tokens defined by the global design system; do not hardcode color values.
-- **Responsive Design:** Mobile-first approach. Wishlist grid collapses from 4 → 2 → 1 columns. Cart summary panel moves from sidebar to below on mobile.
-- **Accessibility:** Every control must be keyboard navigable. ARIA labels required. Error messages must be announced via `role="alert"`. Quantity input must have `aria-label` with current value.
-- **Performance:** Skeleton loaders shown during initial data fetch. Optimistic UI updates for toggle/remove operations. Buttons display spinner during async operations.
-- **Security:** All user input sanitized to prevent XSS. Ownership validation enforced server-side (userId from JWT). Price and stock values fetched from DB, never from client.
-- **Optimistic Updates:** Heart icon toggles and cart item removals update the UI immediately before API confirmation. On API failure, UI reverts to previous state.
-- **Cart Badge:** Header cart icon badge updates in real-time as items are added/removed. Badge shows total quantity (sum of all item quantities).
-- **Stock Indicators:** Real-time stock validation. When stock drops to 0, the checkout button is disabled immediately.
-- **Design Tokens:** Status badges use semantic success, warning, and destructive variants. Do not use raw color utilities.
+- **Responsive Layout:** Wishlist uses `grid-cols-2`, then `md:grid-cols-3`, then `lg:grid-cols-4`. Cart switches to a two-column item/summary layout at `lg`; the summary is sticky at larger widths.
+- **Mutation State:** React Query mutations invalidate the relevant query on settlement; Wishlist/Cart page mutations do not implement optimistic updates. Pending operations disable relevant buttons/inputs and show spinners where implemented.
+- **Price Display:** Wishlist and Cart row prices are rounded to whole numbers, localized with `toLocaleString('en-US')`, and suffixed with `Ks`. Wishlist compare-at price appears only when greater than current price.
+- **Cart Stock:** The cart item stepper max is `min(99, stockQuantity)` and is disabled when `!item.isAvailable`; `hasOutOfStock` controls a notice only. It does not disable the checkout button.
+- **Account State:** Checkout is blocked in the client when `isAccountDeactivated(user)` is true; the page opens `AccountDeactivatedDialog`.
+- **Keyboard/ARIA:** The quantity input has `aria-label="Quantity"`; cart remove buttons have `aria-label="Remove item"`; wishlist remove names the product in its accessible label. Do not infer an `aria-live`/`role="alert"` contract from the current code.
+- **Styling:** Components use the existing Tailwind semantic tokens and also explicit color utilities (for example purple, pink, and stock badge colors); this describes the current UI rather than requiring every color to use semantic tokens.
 
 ---
 
 ## 12. Testing Checklist (テストチェックリスト)
 
+> The current E2E spec has route assertions for both pages; its data/action assertions are TODO stubs. Corresponding PCL scenarios remain unchecked until executable tests exist.
+
 ### 12.1 Wishlist Page Tests
 
-- [ ] Wishlist page loads with correct title and item count
-- [ ] Wishlist items display product image, name, price, and stock status
-- [ ] Product image click navigates to product detail page
-- [ ] Product name click navigates to product detail page
-- [ ] Compare price displays strikethrough when product has discount
-- [ ] "Add to Cart" button adds item to cart successfully
-- [ ] "Add to Cart" button is disabled when product is out of stock
-- [ ] Remove button removes item from wishlist with optimistic UI
-- [ ] Empty state displays when wishlist has no items
-- [ ] Empty state "Continue Shopping" link navigates to /products
-- [ ] Loading skeleton displays during data fetch
-- [ ] Item count updates correctly after add/remove operations
-- [ ] Language toggle switches all labels (EN/JA/MY)
-- [ ] Keyboard navigation works (Tab, Enter, Escape)
+- [ ] Render translated page title, count from `totalCount` (falling back to `items.length`), Clear All control only when non-empty, and no stock badge on wishlist cards.
+- [ ] Render placeholder image for missing or failed image; show category fallback and compare-at price only when it exceeds current price.
+- [ ] Verify image/name links and the `Add` / remove actions.
+- [ ] Disable `Add` for out-of-stock items and show pending indicators/disabled controls during mutations.
+- [ ] Verify empty state and its `/buyer/search` link.
+- [ ] Verify loading placeholders and the fetch error/retry state.
+- [ ] Verify remove and clear-all success/failure toasts, confirmation dialog lifecycle, and query refresh.
 
 ### 12.2 Wishlist Move to Cart Tests
 
-- [ ] "Add to Cart" on wishlist item adds to cart and removes from wishlist
-- [ ] "Add to Cart" on out-of-stock item shows error toast
-- [ ] "Add to Cart" on in-stock item shows success toast
-- [ ] Optimistic UI removes item from wishlist grid immediately
-- [ ] API failure reverts UI to previous state
+- [ ] Successful move shows a success toast and refreshes both Wishlist and Cart queries.
+- [ ] Already-in-cart response opens `DuplicateCartAlertDialog`; the wishlist item remains.
+- [ ] Other failure shows an error toast; no optimistic removal occurs.
 
 ### 12.3 Cart Page Tests
 
-- [ ] Cart page loads with correct title and item count
-- [ ] Cart items display product image, name, unit price, quantity, and subtotal
-- [ ] Product image click navigates to product detail page
-- [ ] Product name click navigates to product detail page
-- [ ] Quantity minus button decreases quantity by 1
-- [ ] Quantity minus button is disabled when quantity = 1
-- [ ] Quantity plus button increases quantity by 1
-- [ ] Quantity plus button is disabled when quantity = stock_quantity
-- [ ] Direct quantity input updates item subtotal correctly
-- [ ] Direct quantity input rejects values < 1 with inline error
-- [ ] Direct quantity input rejects values > 99 with inline error
-- [ ] Item subtotal updates correctly (unit_price × quantity)
-- [ ] Remove button removes item from cart with optimistic UI
-- [ ] Summary panel displays correct subtotal (sum of all subtotals)
-- [ ] Summary panel displays correct total items (sum of quantities)
-- [ ] Checkout button navigates to /checkout
-- [ ] Checkout button is disabled when any item is out of stock
-- [ ] Checkout button is disabled when cart is empty
-- [ ] "Continue Shopping" link navigates to /products
-- [ ] Empty state displays when cart has no items
-- [ ] Empty state "Browse Products" link navigates to /products
-- [ ] Loading skeleton displays during data fetch
-- [ ] Language toggle switches all labels and currency formats
-- [ ] Keyboard navigation works
+- [ ] Render title/subtitle, non-empty-only Clear All action, product details, stock badge, quantity stepper, subtotal, and summary amounts.
+- [ ] Verify quantity min/max, pending/unavailable disabled state, `parseInt` handling (including decimal truncation), and that empty/out-of-range input causes no request or inline error.
+- [ ] Verify item removal and quantity updates refresh the cart query and show success/error toasts.
+- [ ] Verify summary shows `Free` when shipping estimate is zero and shows the out-of-stock notice when `hasOutOfStock` is true.
+- [ ] Verify checkout navigates to `/buyer/checkout` for an active buyer; a deactivated buyer sees `AccountDeactivatedDialog`.
+- [ ] Verify empty state and `/buyer/search` link, loading placeholders, and fetch error/retry state.
 
 ### 12.4 Cart Stock Validation Tests
 
-- [ ] Low stock warning badge displays when stock ≤ low_stock_threshold
-- [ ] Out of stock badge displays when stock = 0
-- [ ] Out of stock badge disables checkout button
-- [ ] Plus button disabled when quantity reaches stock limit
-- [ ] Quantity update exceeding stock shows error toast and reverts
-- [ ] Real-time stock validation on page load
+- [ ] `StockBadge` displays the label matching `stockStatus`; low-stock label includes `stockQuantity`.
+- [ ] Quantity controls use max `min(99, stockQuantity)` and disable when `!item.isAvailable`.
+- [ ] Out-of-stock notice does not disable the checkout button.
 
 ### 12.5 Guest User Tests
 
-- [ ] Guest user clicking "Add to Cart" on product detail shows login alert modal
-- [ ] Guest user clicking "Move to Cart" on wishlist shows login alert modal
-- [ ] Login alert modal displays correct title and message
-- [ ] [Log In] button in modal navigates to `/login?redirect={currentPath}`
-- [ ] Redirect parameter contains the correct page path (e.g., `/cart`, `/products/:slug`)
-- [ ] After login, user is redirected back to the original page via `redirect` query parameter
-- [ ] [Cancel] button in modal closes the modal
-- [ ] Pressing ESC closes the modal
-- [ ] Clicking outside the modal closes it
+- [ ] Direct guest access to protected Wishlist/Cart routes redirects to login.
+- [ ] Shared header/action guest modal is verified separately; it is not rendered by these page components.
 
 ### 12.6 Responsive Design Tests
 
-- [ ] Wishlist grid displays 4 columns on desktop (≥ 1024px)
-- [ ] Wishlist grid displays 2 columns on tablet (768px – 1023px)
-- [ ] Wishlist grid displays 1 column on mobile (< 768px)
-- [ ] Cart summary panel displays as right sidebar on desktop
-- [ ] Cart summary panel displays below items on mobile/tablet
-- [ ] All buttons and controls are touch-friendly on mobile
-- [ ] Quantity stepper is usable on touch devices
+- [ ] Wishlist grid has 2 columns by default, 3 at `md`, and 4 at `lg`.
+- [ ] Cart summary stacks below items below `lg` and appears in the right column at `lg` and wider.
+- [ ] Cart rows stack vertically below `sm` and align horizontally at `sm` and wider.
 
 ### 12.7 Error Handling Tests
 
-- [ ] 401 Unauthorized redirects to login page
-- [ ] 404 Not Found shows appropriate toast message
-- [ ] 409 Conflict shows appropriate toast message
-- [ ] 500 Internal Server Error shows generic error toast
-- [ ] Network error shows connection error toast
-- [ ] API failure reverts optimistic UI updates
-- [ ] Error alerts are announced to screen readers (`role="alert"`)
+- [ ] Wishlist/Cart query failures display the server error message or fallback and allow retry.
+- [ ] Mutation failures show the page-specific error toast and refetch through query invalidation; no optimistic rollback behavior is expected.
+- [ ] Duplicate-cart conflict from Wishlist displays the dedicated alert dialog.
 
 ---
 
