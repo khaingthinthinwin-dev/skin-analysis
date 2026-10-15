@@ -1,0 +1,66 @@
+{
+  "title": "マイプロフィール",
+  "description": "アカウント設定と preferences を管理する",
+  "tabs": {
+    "info": "プロフィール情報",
+    "edit": "プロフィール編集",
+    "password": "パスワード変更"
+  },
+  "info": {
+    "title": "プロフィール情報",
+    "description": "アカウントの詳細と情報",
+    "contactInfo": "連絡先情報",
+    "email": "メールアドレス",
+    "phone": "電話番号",
+    "notProvided": "未設定",
+    "accountDetails": "アカウント詳細",
+    "memberSince": "登録日",
+    "emailVerification": "メール認証",
+    "verified": "認証済み",
+    "notVerified": "未認証",
+    "licenseStatus": "ライセンス状態",
+    "licenseApproved": "承認済み",
+    "licenseRejected": "却下",
+    "licensePending": "保留中",
+    "status": {
+      "active": "有効",
+      "inactive": "無効"
+    }
+  },
+  "form": {
+    "title": "プロフィール編集",
+    "description": "個人情報を更新する",
+    "name": "氏名",
+    "namePlaceholder": "名前を入力",
+    "nameDescription": "アカウントに表示される名前",
+    "phone": "電話番号",
+    "phonePlaceholder": "+1 234 567 890",
+    "phoneDescription": "任意 - アカウント回復用",
+    "avatarUrl": "アバターURL",
+    "avatarUrlPlaceholder": "https://example.com/avatar.jpg",
+    "avatarUrlDescription": "プロフィール画像のURL",
+    "save": "変更を保存",
+    "saving": "保存中...",
+    "success": "プロフィールが正常に更新されました",
+    "error": "プロフィールの更新に失敗しました"
+  },
+  "password": {
+    "title": "パスワード変更",
+    "description": "アカウントを安全に保つため、パスワードを更新する",
+    "current": "現在のパスワード",
+    "currentPlaceholder": "現在のパスワードを入力",
+    "new": "新しいパスワード",
+    "newPlaceholder": "新しいパスワードを作成",
+    "newDescription": "8文字以上で、大文字・小文字・数字・特殊文字を含む必要があります",
+    "confirm": "新しいパスワード（確認）",
+    "confirmPlaceholder": "新しいパスワードを再入力",
+    "save": "パスワードを変更",
+    "saving": "変更中...",
+    "success": "パスワードが正常に変更されました",
+    "error": "パスワードの変更に失敗しました"
+  },
+  "error": {
+    "title": "エラー",
+    "loadFailed": "プロフィール情報の読み込みに失敗しました。もう一度お試しください。"
+  }
+}

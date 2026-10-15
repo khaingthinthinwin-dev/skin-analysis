@@ -41,8 +41,9 @@
       "previous": "Prev",
       "nextPageLabel": "Next page",
       "next": "Next",
-      "showingOrders": "Showing {{start}}–{{end}} of {{total}} orders"
-
+      "showingOrders": "Showing {{start}}–{{end}} of {{total}} orders",
+      "ariaLabel": "Pagination",
+      "goToPage": "Go to page {{page}}"
     },
     "payment": {
       "pending": "Pending",
@@ -2636,5 +2637,107 @@
     "themeDesc": "Select your preferred theme",
     "languageLabel": "Language",
     "languageDesc": "Choose your preferred language"
+  },
+  "order": {
+    "notFound": "Order not found",
+    "notFoundDescription": "We couldn't retrieve the details for this order. It may have been moved or the link might be incorrect.",
+    "viewOrderHistory": "View Order History",
+    "placedSuccessfully": "Order Placed Successfully!",
+    "orderLabel": "Order",
+    "at": "at",
+    "item": "item",
+    "items": "items",
+    "reservedFormulations": "Reserved Formulations",
+    "subtotal": "Subtotal",
+    "voucher": "Voucher {{code}}",
+    "discount": "Discount",
+    "standardCourier": "Standard Complimentary Courier",
+    "free": "Free",
+    "totalDue": "Total Due",
+    "taxIncluded": "Tax included",
+    "paid": "Paid",
+    "pendingPayment": "Pending Payment",
+    "pendingPaymentOnDelivery": "Pending Payment on Delivery",
+    "shippingAddress": "Shipping Address",
+    "paymentMethod": "Payment Method",
+    "viewOrder": "View Order",
+    "continueShopping": "Continue Shopping",
+    "paymentMethods": {
+      "cod": "Cash on Delivery",
+      "bank_transfer": "Bank Transfer",
+      "card": "Credit / Debit Card"
+    },
+    "defaults": {
+      "brand": "Premium",
+      "variant": "Standard Size"
+    }
+  },
+  "search": {
+    "featuredProducts": "Featured Products",
+    "discoverProducts": "Discover products selected for you",
+    "filters": "Filters",
+    "priceRange": "Price Range",
+    "clear": "Clear",
+    "loading": "Loading featured products...",
+    "loadError": "Unable to load featured products.",
+    "empty": "No featured products available.",
+    "add": "Add",
+    "outOfStock": "Out of stock",
+    "defaultCategory": "Skincare",
+    "aria": {
+      "removeFromWishlist": "Remove from wishlist",
+      "addToWishlist": "Add to wishlist"
+    },
+    "toasts": {
+      "buyerOnly": "Shopping features are only available to buyers.",
+      "removedFromWishlist": "Removed from wishlist",
+      "addedToWishlist": "Added to wishlist",
+      "alreadyInWishlist": "Already in your wishlist",
+      "error": "Something went wrong. Please try again.",
+      "addedToCart": "Added to cart"
+    },
+    "dialogs": {
+      "alreadyInCart": "Already in Cart",
+      "alreadyInCartDescription": "This product is already in cart.",
+      "ok": "OK",
+      "loginRequired": "Log In Required",
+      "loginRequiredWishlist": "Please log in to add items to your wishlist.",
+      "loginRequiredCart": "Please log in to add items to your cart.",
+      "cancel": "Cancel",
+      "login": "Log In"
+    }
+  },
+  "recommendation": {
+    "title": "Skin Analysis & Recommendation History",
+    "description": "Log of all past AI scans and profile assessments",
+    "hydrationScore": "Hydration Score:",
+    "oilBalance": "Oil Balance:",
+    "topRecommendation": "Top Recommendation:",
+    "history": [
+      { "date": "Aug 26, 2026", "skinType": "Combination Skin", "hydration": "78%", "oilBalance": "62%", "topMatch": "Centella Soothing Cream" },
+      { "date": "Jul 14, 2026", "skinType": "Dry & Sensitive", "hydration": "54%", "oilBalance": "40%", "topMatch": "Barrier Repair Balm" },
+      { "date": "Jun 02, 2026", "skinType": "Normal Skin", "hydration": "82%", "oilBalance": "50%", "topMatch": "Hydrating Essence Toner" }
+    ]
+  },
+  "skinAnalysis": {
+    "title": "AI Skin Analysis Console",
+    "description": "Upload or capture a photo to detect skin metrics and concern patterns",
+    "facialScan": "Facial Skin Scan",
+    "positionFace": "Position your face in good lighting for high accuracy",
+    "dragDrop": "Drag & drop photo or click to browse",
+    "supportsFormats": "Supports JPG, PNG, WebP (Max 10MB)",
+    "analyzing": "Analyzing Skin Metrics...",
+    "runScan": "Run AI Analysis Scan",
+    "latestResults": "Latest Scan Results",
+    "analyzedOn": "Analyzed on August 26, 2026",
+    "detectedSkinType": "Detected Skin Type",
+    "combinationSkin": "Combination Skin",
+    "hydrationLevel": "Hydration Level",
+    "hydrationGood": "78% (Good)",
+    "oilBalance": "Oil Balance",
+    "oilModerate": "62% (Moderate T-Zone)",
+    "recommendedAction": "Recommended Action Routine",
+    "recommendedRoutine": "Use gentle foaming cleanser morning & night, followed by niacinamide serum to control T-zone shine.",
+    "noScan": "No scan performed yet. Click scan to analyze your skin."
   }
 }

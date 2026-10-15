@@ -41,8 +41,9 @@
       "previous": "前へ",
       "nextPageLabel": "次のページ",
       "next": "次へ",
-      "showingOrders": "注文 {{start}}–{{end}} 件 / 全 {{total}} 件中"
-
+      "showingOrders": "注文 {{start}}–{{end}} 件 / 全 {{total}} 件中",
+      "ariaLabel": "ページネーション",
+      "goToPage": "{{page}}ページへ移動"
     },
     "payment": {
       "pending": "保留中",

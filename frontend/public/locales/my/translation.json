@@ -40,7 +40,9 @@
       "previousPageLabel": "ယခင်စာမျက်နှာ",
       "previous": "ယခင်",
       "nextPageLabel": "နောက်စာမျက်နှာ",
-      "next": "နောက်"
+      "next": "နောက်",
+      "ariaLabel": "စာမျက်နှာများ",
+      "goToPage": "စာမျက်နှာ {{page}} သို့သွားရန်"
     },
     "payment": {
       "pending": "စောင့်ဆိုင်းဆဲ",
