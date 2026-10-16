@@ -10,9 +10,9 @@
 | **Target Screen** | Advertisement Management (広告管理) |
 | **Subsystem** | Advertisement — Shop Advertisement Management |
 | **Function ID** | FN-AD-001 |
-| **Version** | 2.6 |
+| **Version** | 2.7 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-26 |
+| **Last Updated** | 2026-10-16 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -30,6 +30,7 @@
 | 2.1 | 2026-08-18 | Software Architect | Aligned with DATABASE_SPEC v2.2 & REQUIREMENT_SPEC v1.7: corrected `payment_status` enum to `pending/completed/refunded/failed` (DB canonical); added ad duration limits (7–30 days, M-AD-013/014), per-merchant max 2 active ads (M-AD-012), ad states flow (M-AD-010), auto-refund on rejection (M-AD-011); updated traceability matrix. |
 | 2.2 | 2026-08-25 | Software Architect | Aligned advertisement process with REQ v2.11 §4.4: restored merchant ad creation flow as 6-step process — **Select Package → Upload Content (image + content) → Pay Fee → Admin Review → Approved → Displayed**. Package selection now creates a draft ad (no payment yet); merchant uploads ad content (`title`, `content`, `image_url`, `link_url`, `announcement_message`) in a separate step; payment is a separate step that moves the ad to `PENDING_APPROVAL`. Restored merchant CRUD on own advertisements (edit content, toggle active/inactive, delete/soft-deactivate). Restored ad resubmission after rejection (edit + resubmit). State machine updated with `DRAFT` and `CONTENT_UPLOADED` states; approval flow supports resubmission cycle. Updated all use cases, business rules, screen specifications, functional operations, input/output specs, validation rules, error handling, permissions, notifications, and traceability accordingly. |
 | 2.6 | 2026-08-26 | Software Architect | Aligned with DATABASE_SPEC v2.5 & DEVELOPMENT_RULES v2.1: corrected `payment_status` enum to `pending/completed/refunded` (removed `failed` — not in DB check constraint); corrected `approvalStatus` filter/validation to `pending/approved/rejected` only (removed application-level `draft`/`content_uploaded` from DB query layer); fixed backend module path from `review-management` to `advertisement-management` per DEVELOPMENT_RULES §2.1. |
+| 2.7 | 2026-10-16 | Engineering | Revised to match current implementation: placement values updated to case-sensitive 4 values (search_page_banner, recommendation_page_banner, checkout_page_banner, productDetail_page_banner); image selection is from merchant's own product images (no file upload/multipart); content max 100 chars; startsAt ≥ 3 days from today; linkUrl removed; merchant endpoints updated to actual paths/behavior; admin endpoints updated to /admin/ad-fees (PUT for update), fee history bulk delete, revenue analytics and CSV exports; weekly limit not enforced on approval; fee history current-month deletion protected. |
 
 ---
 
@@ -59,7 +60,7 @@
 
 This subsystem manages the complete lifecycle of shop advertisements within the Cosmetics Finder marketplace. The advertisement process follows a 6-step flow: **1 · Select Package → 2 · Upload Content (image + content) → 3 · Pay Fee → 4 · Admin Review → 5 · Approved → 6 · Displayed**. Merchants browse Admin-created advertisement packages, select a package to create a draft advertisement, upload their own ad content (title, content, image, announcement message), pay the advertising fee, and submit the ad for Admin review. Admins approve or reject advertisements with a reason (auto-refund on rejection), and only paid, approved, in-schedule advertisements are exposed to the storefront for platform-wide display (banner/image + announcement message). Rejected ads can be edited and resubmitted by the merchant.
 
-The Advertisement Management subsystem connects merchant promotional intent with buyer visibility through an Admin-controlled package model. Advertisement packages are defined in `ad_fee_settings` by Admin, where each package defines the placement, tier, daily rate, and display duration (`duration_days`); the fee is calculated as `daily_rate × duration_days`. When a merchant selects a package, a draft advertisement record is created with `approval_status = pending` and `payment_status = pending`. The merchant then uploads ad content (image + text), and upon payment the ad enters `PENDING_APPROVAL` for admin review. Active, in-schedule, approved advertisements are served to the public storefront through a cacheable endpoint, ensuring consistent banner rendering. A weekly limit of 5 active advertisements is enforced platform-wide. The storefront slider displays at most 5 advertisements per rotation, ordered by tier priority (Premium > Standard > Basic) with round-robin rotation within the same tier and automatic rotation every 5 seconds.
+The Advertisement Management subsystem connects merchant promotional intent with buyer visibility through an Admin-controlled package model. Advertisement packages are defined in `ad_fee_settings` by Admin, where each package defines the placement, tier, daily rate, and display duration (`duration_days`); the fee is calculated as `daily_rate × duration_days`. When a merchant selects a package, a draft advertisement record is created with `approval_status = pending` and `payment_status = pending`. The merchant then provides ad content (image selected from their own product images + text), and upon payment the ad enters `PENDING_APPROVAL` for admin review. Active, in-schedule, approved advertisements are served to the public storefront through a cacheable endpoint, ensuring consistent banner rendering. The storefront slider displays advertisements per placement, ordered by tier priority (Premium > Standard > Basic) with round-robin rotation within the same tier and automatic rotation every 5 seconds.
 
 ### 1.2 Functional Responsibilities
 
@@ -337,7 +338,7 @@ This subsystem is responsible for the following core functional areas:
 | 7 | Transaction recorded in `ad_payments` (amount, reference) | — | Ledger Entry Created | System |
 | 8 | Ad enters approval queue automatically | `payment_status = completed` | `approval_status = pending` | System |
 | 9 | Admin reviews pending ad | `approval_status = pending` | — | Admin |
-| 10a | Admin approves ad (weekly limit validated ≤ 5) | `approval_status = pending` | `approval_status = approved`, `approved_by`/`approved_at` set | Admin |
+| 10a | Admin approves ad | `approval_status = pending` | `approval_status = approved`, `approved_by`/`approved_at` set | Admin |
 | 10b | Admin rejects ad with reason | `approval_status = pending` | `approval_status = rejected`, `payment_status = refunded` (auto-refund) | Admin |
 | 11 | Ad appears in merchant list with approval badge | — | — | System |
 | 12 | Active ads cache invalidated | — | Cache Cleared | System |
@@ -454,7 +455,7 @@ This subsystem is responsible for the following core functional areas:
 | BR-AD-003 | Date Range | `expiresAt` must be strictly after `startsAt`. | Backend (DB constraint `chk_advertisements_dates`) |
 | BR-AD-004 | Shop Approval | Merchant must have an approved shop (`is_approved = true`) before selecting a package. | Backend (service check) |
 | BR-AD-005 | Default Status | Ads auto-created by package selection default to `is_active = true`, `approval_status = pending`, `payment_status = pending`. | Backend (service logic + DB defaults) |
-| BR-AD-006 | Image Optional | Ads can be text-only or with image. Image max 5MB, allowed types: JPG, PNG, WebP. | Backend (file upload validation) |
+| BR-AD-006 | Image Required for Upload | Banner image is required when uploading content and must be selected from the merchant's own product images (no file upload). | Backend (product image validation) |
 | BR-AD-007 | Link Optional | Click-through link URL is optional. | Backend (DTO validation) |
 | BR-AD-024 | Announcement Message Required | `announcement_message` is required and displayed on the banner. Max 500 chars. | Backend (DTO validation) + DB (NOT NULL on advertisements) |
 
@@ -465,7 +466,7 @@ This subsystem is responsible for the following core functional areas:
 | BR-AD-008 | Schedule Required | Both `startsAt` and `expiresAt` are required before payment. `startsAt` set by merchant; `expiresAt` derived as `starts_at + package duration_days`. | Backend (service logic) |
 | BR-AD-009 | Schedule Validity | `expires_at` > `starts_at` enforced by DB check constraint. | Backend (DB constraint `chk_advertisements_dates`) |
 | BR-AD-010 | Active Window | An ad is active when `is_active = true` AND `approval_status = approved` AND `payment_status = completed` AND `starts_at <= now` AND `expires_at >= now`. | Backend (query filter) |
-| BR-AD-025 | Week Number | `week_number` (ISO week) is derived from `starts_at` and stored for weekly limit tracking. | Backend (service logic) |
+| BR-AD-025 | Week Number | `week_number` (ISO week) is derived from `starts_at` and stored. | Backend (service logic) |
 
 ### 4.3 Advertisement Status Rules
 
@@ -482,7 +483,7 @@ This subsystem is responsible for the following core functional areas:
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-AD-015 | File Size | Maximum 5MB per ad image. | Backend (file upload validation) |
+| BR-AD-015 | File Size | N/A (image not uploaded by ad module; selected from existing product images). | — |
 | BR-AD-016 | File Types | Allowed: JPG, PNG, WebP. | Backend (MIME type validation) |
 | BR-AD-017 | File Naming | UUID-based filenames `{uuid}.{ext}`. | Backend (upload service) |
 | BR-AD-018 | Storage | Stored outside webroot, served via signed URLs or API endpoint. | Backend (upload service) |
@@ -510,7 +511,7 @@ This subsystem is responsible for the following core functional areas:
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-AD-033 | Payment After Content | The advertising fee is charged after content upload (UC-AD-009), not at selection. An ad must have content before payment. | Backend (service logic) |
-| BR-AD-034 | Package-Based Fee Calculation | Advertising fee = `daily_rate × duration_days`, resolved from the selected Admin-created package (`placement` × `tier`) in `ad_fee_settings`. Seeded placements: `homepage_slider` (7 days), `product_sidebar` (15 days), `category_banner` (30 days), `search_top` (7 days); tiers: `basic`, `standard`, `premium`. | Backend (ad_fee_settings query) |
+| BR-AD-034 | Package-Based Fee Calculation | Advertising fee = `daily_rate × duration_days`, resolved from the selected Admin-created package (`placement` × `tier`) in `ad_fee_settings`. Placements: `search_page_banner`, `recommendation_page_banner`, `checkout_page_banner`, `productDetail_page_banner` (case-sensitive); tiers: `basic`, `standard`, `premium`. Durations are package-defined (1+ days; seeded as 7/15/30). | Backend (ad_fee_settings query) |
 | BR-AD-035 | Payment Record & Ledger | Payment details recorded in `ad_payments` ledger table with `ad_id`, `merchant_id` (referencing `merchants.id`), `amount`, `payment_method`, `payment_status`, and `transaction_id`. | Backend (payment service) |
 | BR-AD-036 | Payment Verification | Payment must be verified (`payment_status = completed`) before the ad is queued for approval. | Backend (service logic) |
 | BR-AD-037 | Fee Modification Audit | Rate changes by admins apply only to packages selected after the change and are logged in `ad_fee_history`. | Backend (audit logic) |
@@ -632,8 +633,8 @@ This subsystem is responsible for the following core functional areas:
 | EL-22b | Tier Display | Text (read-only) | `merchant.ads.tier` | Yes | Selected package tier |
 | EL-23 | Title Input | Input (text) | `merchant.ads.title` | Yes | Advertisement title (1–200 chars) |
 | EL-24 | Content Input | Textarea | `merchant.ads.content` | No | Advertisement content/description |
-| EL-25 | Image Upload | File Upload | `merchant.ads.image` | No | Banner image upload (JPG/PNG/WebP, max 5MB); preview shown after upload |
-| EL-26 | Link URL Input | Input (url) | `merchant.ads.linkUrl` | No | Click-through link URL |
+| EL-25 | Image Selection | Dropdown/Select | `merchant.ads.imageUrl` | Yes | Select banner image from merchant's own product images; SKU is snapshotted. |
+| EL-26 | (removed) | — | — | — | No link URL field; navigation uses product SKU. |
 | EL-27 | Announcement Message Input | Textarea | `merchant.ads.announcement` | Yes | Banner announcement message (max 500 chars) |
 | EL-28 | Start Date Input | Date Picker | `merchant.ads.startDate` | Yes | Ad start date; `expires_at` auto-calculated as start + package duration |
 | EL-29 | End Date Display | Text (read-only) | `merchant.ads.endDate` | Yes | Auto-calculated: Start Date + package `duration_days`; not editable |
@@ -689,8 +690,8 @@ This subsystem is responsible for the following core functional areas:
 | EL-50 | Dialog Title | Heading (h5) | `merchant.ads.editTitle` | Yes | "Edit Advertisement Content" |
 | EL-51 | Title Input | Input (text) | `merchant.ads.title` | Yes | Advertisement title (1–200 chars) |
 | EL-52 | Content Input | Textarea | `merchant.ads.content` | No | Advertisement content/description |
-| EL-53 | Image Upload | File Upload | `merchant.ads.image` | No | Banner image upload (JPG/PNG/WebP, max 5MB) |
-| EL-54 | Link URL Input | Input (url) | `merchant.ads.linkUrl` | No | Click-through link URL |
+| EL-53 | Image Selection | Dropdown/Select | `merchant.ads.imageUrl` | No | Select image from merchant's own product images; omit to keep current |
+| EL-54 | (removed) | — | — | — | No link URL field |
 | EL-55 | Announcement Message Input | Textarea | `merchant.ads.announcement` | Yes | Banner announcement message (max 500 chars) |
 | EL-56 | Save Button | Button (primary) | `merchant.ads.save` | Yes | Saves content changes |
 | EL-57 | Save & Pay Button | Button (primary) | `merchant.ads.savePay` | Conditional | For rejected ads: saves changes and opens payment dialog for resubmission |
@@ -723,16 +724,16 @@ This subsystem is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-70 | Fee Settings Table | Table | `admin.ads.feeSettings` | Yes | All packages from `ad_fee_settings`: placement, tier, daily rate, duration days, max ads, active flag; loaded via `GET /admin/ad-fee-settings` |
+| EL-70 | Fee Settings Table | Table | `admin.ads.feeSettings` | Yes | All packages from `ad_fee_settings`: placement, tier, daily rate, duration days, max ads, active flag; loaded via `GET /admin/ad-fees` |
 | EL-71 | Daily Rate Input | Input (number) | `admin.ads.dailyRate` | No | Inline editable daily rate per package (≥ 0) |
-| EL-72 | Save Rate Button | Button (primary) | `admin.ads.saveRate` | No | Persists rate via `PATCH /admin/ad-fee-settings/:id`; change logged to `ad_fee_history` |
+| EL-72 | Save Rate Button | Button (primary) | `admin.ads.saveRate` | No | Persists rate/duration/maxAds via `PUT /admin/ad-fees/:id`; change logged to `ad_fee_history` |
 | EL-73 | Fee History View | Dialog/Table | `admin.ads.feeHistory` | No | Rate change audit trail from `ad_fee_history`: old/new rate, changed by, changed at |
-| EL-74 | New Package Button | Button (primary) | `admin.ads.newPackage` | Yes | Open Create Package dialog; persists via `POST /admin/ad-fee-settings` |
-| EL-74a | Placement Select | Select | `admin.ads.placement` | Yes | Package placement (`homepage_slider`, `product_sidebar`, `category_banner`, `search_top`); must be unique per tier combination |
+| EL-74 | New Package Button | Button (primary) | `admin.ads.newPackage` | Yes | Open Create Package dialog; persists via `POST /admin/ad-fees` |
+| EL-74a | Placement Select | Select | `admin.ads.placement` | Yes | Package placement (`search_page_banner`, `recommendation_page_banner`, `checkout_page_banner`, `productDetail_page_banner`); must be unique per tier combination |
 | EL-74b | Tier Select | Select | `admin.ads.tier` | Yes | Pricing tier (`basic`, `standard`, `premium`) |
 | EL-74c | Duration Days Input | Input (number) | `admin.ads.durationDays` | Yes | Display duration in days (7–30 catalog bounds) |
 | EL-74d | Max Ads Input | Input (number) | `admin.ads.maxAds` | Yes | Slot capacity for the placement |
-| EL-75 | Deactivate Package Button | Button (destructive) | `admin.ads.deactivate` | No | Removes the package from the merchant catalog via `DELETE /admin/ad-fee-settings/:id` (soft deactivation; existing paid ads unaffected) |
+| EL-75 | Deactivate Package Button | Button (destructive) | `admin.ads.deactivate` | No | Deactivates package via `PATCH /admin/ad-fees/:id/deactivate` (soft deactivation; existing paid ads unaffected) |
 
 **Default State:**
 - Fee settings table sorted by placement then tier
@@ -792,7 +793,7 @@ This subsystem is responsible for the following core functional areas:
 | **API Endpoint** | `PATCH /api/v1/admin/ads/:id/approve` |
 | **Request Content-Type** | None |
 | **Pre-Submission Validation** | Admin role; ad in `approval_status = pending` |
-| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Validate weekly limit: count approved active ads with same `week_number`; if ≥ 5 return 409 Conflict. 5. Set `approval_status = approved`, `approved_by` (admin id), `approved_at` (now). 6. Invalidate active ads cache. 7. Log `AD_APPROVED` audit event. 8. Notify merchant of approval. 9. Return updated advertisement DTO. |
+| **Processing Steps** | 1. Validate `:id` as UUID format. 2. Validate JWT token and admin role. 3. Find advertisement; verify `approval_status = pending`. 4. Set `approval_status = approved`, `approved_by` (admin id), `approved_at` (now). 5. Invalidate active ads cache. 6. Log `AD_APPROVED` audit event. 7. Notify merchant of approval. 8. Return updated advertisement DTO. |
 | **Success Response** | 200 OK with updated advertisement data |
 | **Post-Action** | Ad is eligible for storefront display within its schedule |
 
