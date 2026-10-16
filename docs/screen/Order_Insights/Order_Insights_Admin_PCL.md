@@ -106,6 +106,25 @@
   - **API**: `GET /api/v1/orders` (client fetches matching pages)
   - **Note**: Current admin E2E export scenario does not verify the downloaded file.
 
+- [ ] **N-10**: Admin order list and detail support English, Japanese, and Myanmar
+  - **Precondition**: Authenticated admin or super_admin can access /admin/orders and an existing /admin/orders/:id.
+  - **Steps**:
+    1. Select English (en) and inspect the order list and detail.
+    2. Select Japanese (ja) and inspect the same pages.
+    3. Select Myanmar (my) and inspect the same pages.
+  - **Expected Result**: Admin headings, filters, table labels, KPI labels, detail labels, actions, empty/error states, and print feedback update to the selected language; no raw translation keys or unintended mixed-language UI appear.
+  - **Business Rules**: None (i18n presentation).
+  - **Note**: Not yet verified; the current admin E2E scenarios do not test language switching.
+
+- [ ] **N-11**: Admin language choice remains active between order list and detail
+  - **Precondition**: Admin or super_admin has selected Japanese or Myanmar on /admin/orders.
+  - **Steps**:
+    1. Open an order detail.
+    2. Return to the order list and reload the page.
+  - **Expected Result**: The selected language remains active on the list and detail routes and after reload.
+  - **Business Rules**: None (i18n preference persistence).
+  - **Note**: Not yet verified in admin E2E coverage.
+
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
 - [ ] **A-01**: Non-admin or unauthenticated user cannot access admin order data

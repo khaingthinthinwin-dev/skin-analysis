@@ -75,6 +75,25 @@
   - **Business Rules**: BR-OI-007.
   - **Note**: Not yet verified by buyer E2E coverage.
 
+- [ ] **N-07**: Buyer order history and detail support English, Japanese, and Myanmar
+  - **Precondition**: Authenticated buyer can view /orders and an existing /orders/:id.
+  - **Steps**:
+    1. Select English (en) and inspect the order list and detail.
+    2. Select Japanese (ja) and inspect the same pages.
+    3. Select Myanmar (my) and inspect the same pages.
+  - **Expected Result**: Buyer Order Insights headings, actions, filters, table labels, status/payment labels, empty/error messages, and detail content labels update to the selected language; no raw translation keys or unintended mixed-language UI appear.
+  - **Business Rules**: None (i18n presentation).
+  - **Note**: Not yet verified; current Order Insights E2E coverage does not test language switching.
+
+- [ ] **N-08**: Buyer language choice remains active between order list and detail
+  - **Precondition**: Buyer has selected Japanese or Myanmar on /orders.
+  - **Steps**:
+    1. Open an order detail.
+    2. Return to the order list and reload the page.
+  - **Expected Result**: The selected language remains active on the list and detail routes and after reload.
+  - **Business Rules**: None (i18n preference persistence).
+  - **Note**: Not yet verified in buyer E2E coverage.
+
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
 - [ ] **A-01**: Buyer cannot view another buyer's order detail

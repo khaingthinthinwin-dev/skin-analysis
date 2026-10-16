@@ -89,6 +89,25 @@
   - **Business Rules**: None (i18n and UI).
   - **Note**: Not yet verified by the Order Insights E2E suite.
 
+- [ ] **N-08**: Merchant Order Insights supports English, Japanese, and Myanmar
+  - **Precondition**: Approved merchant can access /merchant/order-insights and /merchant/orders/:id.
+  - **Steps**:
+    1. Select English (en) and inspect the insights list and merchant order detail.
+    2. Select Japanese (ja) and inspect the same pages.
+    3. Select Myanmar (my) and inspect the same pages.
+  - **Expected Result**: Merchant page headings, sales/revenue labels, period controls, filters, table labels, dialogs, errors, and detail labels update to the selected language; no raw translation keys or unintended mixed-language UI appear.
+  - **Business Rules**: None (i18n presentation).
+  - **Note**: Not yet verified; the Order Insights E2E suite does not test language switching.
+
+- [ ] **N-09**: Merchant language choice remains active across insights and order detail
+  - **Precondition**: Approved merchant has selected Japanese or Myanmar on /merchant/order-insights.
+  - **Steps**:
+    1. Open a merchant order detail.
+    2. Return to Order Insights and reload the page.
+  - **Expected Result**: The selected language remains active on both routes and after reload.
+  - **Business Rules**: None (i18n preference persistence).
+  - **Note**: Not yet verified by merchant E2E coverage.
+
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
 - [ ] **A-01**: Unapproved merchant is denied access to merchant summaries
