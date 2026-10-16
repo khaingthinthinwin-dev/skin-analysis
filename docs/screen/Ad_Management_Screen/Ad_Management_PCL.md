@@ -11,7 +11,7 @@
 | **Subsystem** | Advertisement Management |
 | **Version** | 1.2 |
 | **Created** | 2026-10-14 |
-| **Last Updated** | 2026-10-15 |
+| **Last Updated** | 2026-10-16 |
 | **Status** | Active |
 
 ---
@@ -244,6 +244,35 @@
   - **Expected Result**: The existing advertisement continues to show its original locked rate, duration, total fee, and paid amount; the fee history captures the old and new values and effective date, and the update is available for future package selections.
   - **Business Rules**: BR-ADM-022, BR-ADM-031
   - **API**: `PUT /api/v1/admin/ad-fees/:id`, `GET /api/v1/admin/ads/:id`
+
+- [ ] **N-25**: Select and undo all eligible ads on the current table page
+  - **Precondition**: The current page contains pending, approved, and rejected ads.
+  - **Steps**:
+    1. Select the table header checkbox.
+    2. Confirm the selected rows and the batch action bar.
+    3. Clear the header checkbox.
+  - **Expected Result**: Only pending ads on the current page are selected; approved and rejected ads remain unselected. Clearing the header checkbox deselects the rows and hides the batch action bar.
+  - **Business Rules**: BR-ADM-010, BR-ADM-011
+
+- [ ] **N-26**: Navigate to and highlight an ad from a later page opened by notification
+  - **Precondition**: Admin has an `AD_SUBMITTED` notification for an ad that appears on page 2 or later of `/admin/ads`.
+  - **Steps**:
+    1. Open the notification.
+    2. Confirm navigation to the page containing the target ad.
+    3. Observe the target ad row.
+  - **Expected Result**: The ad list automatically opens the target page, scrolls the target row into view, and visibly highlights it for three seconds before removing the highlight; the list remains usable.
+  - **Business Rules**: None (Notification navigation)
+
+- [ ] **N-27**: Apply multiple placement and tier filters to revenue analytics
+  - **Precondition**: Approved ad records exist for at least two placements and two tiers within the selected date range, with records across multiple placement/tier combinations.
+  - **Steps**:
+    1. Navigate to `/admin/ads/analytics`.
+    2. Select a date range.
+    3. Select two or more placements and two or more tiers at the same time.
+    4. Inspect the analytics request, aggregate cards, and every chart.
+  - **Expected Result**: The `GET /api/v1/admin/ads/analytics/revenue` request includes both multi-selected filters together. Results include only records matching a selected placement and a selected tier within the date range, with each record counted once. Aggregate cards and all charts reflect the correctly summed matching records and their placement/tier breakdowns.
+  - **Business Rules**: BR-ADM-030, BR-ADM-031
+  - **API**: `GET /api/v1/admin/ads/analytics/revenue`
 
 ---
 
