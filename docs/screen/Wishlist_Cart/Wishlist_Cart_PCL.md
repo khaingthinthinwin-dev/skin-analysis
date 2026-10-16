@@ -208,6 +208,108 @@
   - **API**: `DELETE /api/v1/cart/items`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
+- [ ] **N-19**: Language toggle updates all wishlist labels (Japanese)
+  - **Precondition**: Buyer is authenticated; wishlist contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/wishlist`.
+    2. Toggle language to Japanese.
+    3. Verify all UI text (title, item count, buttons, labels).
+  - **Expected Result**: Title, item count text, product category labels, price labels, "Add" button, "Remove" button, "All Data Clear" button, and empty state text are translated to Japanese.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-20**: Language toggle updates all cart labels (Japanese)
+  - **Precondition**: Buyer is authenticated; cart contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/cart`.
+    2. Toggle language to Japanese.
+    3. Verify all UI text (title, summary labels, buttons, stock badges).
+  - **Expected Result**: Title, "Subtotal", "Shipping Estimate", "Free", "Total", "Proceed to Checkout", "All Data Clear", quantity labels, remove button text, stock badge text ("Only X left", "Out of Stock"), out-of-stock notice, and empty state text are translated to Japanese.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-21**: Language toggle updates all wishlist labels (Myanmar)
+  - **Precondition**: Buyer is authenticated; wishlist contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/wishlist`.
+    2. Toggle language to Myanmar (မြန်မာ).
+    3. Verify all UI text.
+  - **Expected Result**: All wishlist UI labels, buttons, item count text, and empty state text are translated to Myanmar.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-22**: Language toggle updates all cart labels (Myanmar)
+  - **Precondition**: Buyer is authenticated; cart contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/cart`.
+    2. Toggle language to Myanmar (မြန်မာ).
+    3. Verify all UI text.
+  - **Expected Result**: All cart UI labels, summary text, buttons, stock badge text, out-of-stock notice, and empty state text are translated to Myanmar.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-23**: Toast and dialog messages respect selected language
+  - **Precondition**: Buyer is authenticated; on wishlist or cart page.
+  - **Steps**:
+    1. Set language to Japanese.
+    2. Perform actions: add to wishlist (from PDP), remove from wishlist, move to cart, update cart quantity, remove from cart, clear wishlist, clear cart.
+    3. Repeat with Myanmar and English.
+  - **Expected Result**: All toast messages ("Added to wishlist", "Removed from wishlist", "Moved to cart", "Quantity updated", "Item removed from cart", "Wishlist cleared", "Cart cleared") and dialog titles/messages ("Clear Wishlist", "Clear Cart", "Already in Wishlist", "Already in Cart") appear in the selected locale.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-24**: Item count and pluralization in selected language
+  - **Precondition**: Buyer is authenticated.
+  - **Steps**:
+    1. With 1 item in wishlist, toggle languages (EN/JA/MY) and verify count text.
+    2. With multiple items (e.g., 3), toggle languages and verify count text.
+    3. With 0 items, verify empty state text in each language.
+  - **Expected Result**: The "{n} items saved for future purchase" text (and equivalent in JA/MY) is correctly pluralized/formatted for singular and plural cases in each locale.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-25**: Currency and number formatting reflect locale
+  - **Precondition**: Buyer is authenticated; wishlist/cart contain items with prices and quantities.
+  - **Steps**:
+    1. Toggle language to English and verify currency/number formatting.
+    2. Toggle language to Japanese and verify formatting.
+    3. Toggle language to Myanmar and verify formatting.
+  - **Expected Result**: Prices (unit price, compare-at price, subtotals, totals), quantities, and stock counts are formatted according to the selected locale conventions (currency symbol/placement, thousand separators, decimal formatting as applicable).
+  - **Business Rules**: BR-DISP-001 (currency formatting)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-26**: Language preference persists across page reload and navigation
+  - **Precondition**: Buyer is authenticated; on `/buyer/wishlist`.
+  - **Steps**:
+    1. Toggle language to Japanese.
+    2. Navigate to `/buyer/cart` — verify language persists.
+    3. Reload the page (`/buyer/cart`) — verify language persists.
+    4. Navigate to `/buyer/products/:id` and back to `/buyer/wishlist` — verify language persists.
+    5. Toggle to Myanmar and repeat steps 2-4.
+  - **Expected Result**: Selected language preference is preserved across navigation, page reloads, and route changes for wishlist and cart pages.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **N-27**: Language fallback to English when translation key is missing
+  - **Precondition**: Buyer is authenticated; a known translation key is temporarily missing or invalid in JA/MY locale files.
+  - **Steps**:
+    1. Simulate missing translation key for a specific label (e.g., "Proceed to Checkout").
+    2. Set language to Japanese.
+    3. Observe the fallback behavior on `/buyer/cart`.
+    4. Repeat with Myanmar.
+  - **Expected Result**: When a translation key is missing, the UI falls back to English text for that label without breaking layout or throwing errors.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
 ---
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
@@ -345,6 +447,16 @@
   - **API**: `POST /api/v1/wishlist/:productId`, `POST /api/v1/wishlist/:productId/move-to-cart`, `POST /api/v1/cart/items`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
+- [ ] **A-15**: Language switch does not corrupt error state or cause layout shift
+  - **Precondition**: Buyer is authenticated; an error dialog is displayed (e.g., "Already in Wishlist").
+  - **Steps**:
+    1. Trigger an error condition (e.g., add duplicate to wishlist).
+    2. While the error dialog is open, toggle language from English to Japanese to Myanmar and back.
+  - **Expected Result**: Dialog title and message update to the selected language without closing unexpectedly; dialog layout remains stable with no overflow or shift.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
 ---
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
@@ -431,6 +543,17 @@
     3. Check `document.documentElement.scrollWidth <= clientWidth`.
   - **Expected Result**: Zero horizontal overflow; no clipped controls.
   - **Business Rules**: None (Responsive)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [ ] **B-10**: RTL/LTR and locale-specific text do not cause overflow in all supported languages
+  - **Precondition**: Viewport widths 320px, 375px, 768px, 1024px, 1280px.
+  - **Steps**:
+    1. Set language to Japanese and verify wishlist/cart layouts at each width.
+    2. Set language to Myanmar and verify wishlist/cart layouts at each width.
+    3. Set language to English and verify layouts at each width.
+  - **Expected Result**: No text wrapping issues causing horizontal overflow, buttons remain accessible, and long translated strings are handled gracefully (truncated or wrapped appropriately) without breaking layout.
+  - **Business Rules**: None (i18n/Responsive)
   - **API**: None
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
@@ -630,13 +753,23 @@
   - **API**: `DELETE /api/v1/wishlist/:productId`, `POST /api/v1/wishlist/:productId/move-to-cart`, `DELETE /api/v1/cart/items/:id`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-22**: Error responses follow the standard API error format
+  - [ ] **I-22**: Error responses follow the standard API error format
   - **Precondition**: Any error scenario.
   - **Steps**:
     1. Trigger an error (e.g., quantity exceeds stock).
     2. Inspect the response body.
   - **Expected Response**: JSON contains `{ statusCode, error, errorCode, message, timestamp, path }`.
   - **Business Rules**: None (error format)
+  - **API**: Any wishlist/cart endpoint
+  - **Note**: No API test yet. Left unchecked until a real test exists.
+
+  - [ ] **I-23**: API error messages are returned in English (backend standard)
+  - **Precondition**: Any error scenario.
+  - **Steps**:
+    1. Trigger an error (e.g., quantity exceeds stock, duplicate in wishlist) with different frontend locales (EN/JA/MY).
+    2. Inspect the raw API response body.
+  - **Expected Response**: Backend error messages remain in English regardless of the frontend's selected language (i18n is handled client-side). The `message` field contains English text as per backend implementation.
+  - **Business Rules**: None (i18n)
   - **API**: Any wishlist/cart endpoint
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
