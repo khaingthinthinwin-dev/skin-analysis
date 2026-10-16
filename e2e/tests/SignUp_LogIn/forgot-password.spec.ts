@@ -7,6 +7,9 @@ import { chooseAuthLanguage } from '../../utils/auth-language';
 test.describe('Forgot Password Page', () => {
   test.describe('N-12: Submit forgot password form successfully', () => {
     test('should submit forgot password form and show success message', async ({ page }) => {
+      // POST /auth/forgot-password latency can be spiky (external SMTP)
+      test.setTimeout(120_000);
+
       const user = person('Priya', 'Sharma');
 
       await page.request.post(`${API_BASE_URL}/auth/register`, {
@@ -31,7 +34,7 @@ test.describe('Forgot Password Page', () => {
       const submitBtn = page.locator('button[type="submit"]');
       await submitBtn.click();
 
-      await page.waitForURL(/\/verify-code/, { timeout: 15_000 });
+      await page.waitForURL(/\/verify-code/, { timeout: 60_000 });
       await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL(/\/verify-code$/);
       await expect(
@@ -84,23 +87,41 @@ test.describe('Forgot Password Page', () => {
       await expect(page.getByText('メールアドレス', { exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: '認証コードを送信', exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'ログインに戻る' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-21_1_forgot_japanese',
+        'Forgot Password page rendered in Japanese'
+      );
 
       await chooseAuthLanguage(page, 'my');
       await expect(page.getByRole('heading', { name: 'စကားဝှက်မေ့နေပါသလား?' })).toBeVisible();
       await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: 'အတည်ပြုကုဒ် ပို့ရန်', exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'အကောင့်ဝင်ရန် ပြန်သွားရန်' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-21_2_forgot_myanmar',
+        'Forgot Password page rendered in Myanmar'
+      );
 
       await chooseAuthLanguage(page, 'en');
       await expect(page.getByRole('heading', { name: 'Forgot Password?' })).toBeVisible();
       await expect(page.getByText('Email', { exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Send Verification Code', exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Back to Login' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-21_3_forgot_english_restored',
+        'Forgot Password page restored to English after the language cycle'
+      );
     });
   });
 
   test.describe('N-26: Forgot password in Myanmar', () => {
     test('should submit forgot password in Myanmar language', async ({ page }) => {
+      // POST /auth/forgot-password latency can be spiky (external SMTP)
+      test.setTimeout(120_000);
+
       const user = person('Farah', 'Khan');
       const registration = await page.request.post(`${API_BASE_URL}/auth/register`, {
         form: {
@@ -118,10 +139,20 @@ test.describe('Forgot Password Page', () => {
       await expect(page.getByText('အီးမေးလ်', { exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: 'အတည်ပြုကုဒ် ပို့ရန်', exact: true })).toBeVisible();
       await page.locator('input[type="email"]').fill(user.email);
+      await captureScreenshot(
+        page,
+        'N-26_1_myanmar_forgot_form_filled',
+        'Myanmar-language Forgot Password form filled before submitting'
+      );
       await page.getByRole('button', { name: 'အတည်ပြုကုဒ် ပို့ရန်', exact: true }).click();
 
-      await expect(page).toHaveURL(/\/verify-code/, { timeout: 15_000 });
+      await expect(page).toHaveURL(/\/verify-code/, { timeout: 60_000 });
       await expect(page.getByRole('heading', { name: 'အတည်ပြုကုဒ် ထည့်ပါ' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-26_2_myanmar_forgot_verify_code',
+        'Verification Code page opened in Myanmar after submitting the Myanmar-language forgot form'
+      );
     });
   });
 
@@ -136,6 +167,11 @@ test.describe('Forgot Password Page', () => {
       await expect(emailError).toBeVisible();
       await expect(emailError).toContainText('မှန်ကန်သော အီးမေးလ်လိပ်စာကို ထည့်သွင်းပါ');
       await expect(page).toHaveURL(/\/forgot-password/);
+      await captureScreenshot(
+        page,
+        'A-23_1_myanmar_invalid_email_error',
+        'Myanmar validation error for an invalid email on the Forgot Password page'
+      );
     });
   });
 });
