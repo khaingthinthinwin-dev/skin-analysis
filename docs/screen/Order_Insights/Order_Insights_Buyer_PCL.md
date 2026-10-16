@@ -94,6 +94,16 @@
   - **Business Rules**: None (i18n preference persistence).
   - **Note**: Not yet verified in buyer E2E coverage.
 
+- [ ] **N-09**: Buyer receives and opens order status notifications
+  - **Precondition**: Buyer owns an order and the merchant has advanced it to confirmed or a later supported status.
+  - **Steps**:
+    1. Open the buyer Notifications Center at /buyer/notifications.
+    2. Find the notification for the order status change.
+    3. Open the notification.
+  - **Expected Result**: Buyer sees the order confirmation/status update; opening it marks it as read and navigates to that order's detail page.
+  - **Business Rules**: Fulfillment creates buyer notifications for confirmed and subsequent supported status updates; order detail access remains buyer-scoped.
+  - **Note**: Not yet verified in Order Insights E2E coverage.
+
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
 - [ ] **A-01**: Buyer cannot view another buyer's order detail

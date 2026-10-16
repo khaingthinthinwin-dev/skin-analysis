@@ -108,6 +108,16 @@
   - **Business Rules**: None (i18n preference persistence).
   - **Note**: Not yet verified by merchant E2E coverage.
 
+- [ ] **N-10**: Merchant receives and opens a new-order notification
+  - **Precondition**: A buyer completes checkout for an item belonging to the approved merchant's shop.
+  - **Steps**:
+    1. Open the merchant Notifications Center at /merchant/notifications.
+    2. Find the new order notification.
+    3. Open the notification.
+  - **Expected Result**: Merchant sees the new-order notification; opening it marks it as read and navigates to the corresponding merchant order detail.
+  - **Business Rules**: Order placement creates an ORDER_PLACED notification for the owning merchant; viewing order information remains read-only.
+  - **Note**: Not yet verified in Order Insights E2E coverage.
+
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
 - [ ] **A-01**: Unapproved merchant is denied access to merchant summaries

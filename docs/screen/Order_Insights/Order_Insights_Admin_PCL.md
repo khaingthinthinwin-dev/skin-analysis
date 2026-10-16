@@ -125,6 +125,16 @@
   - **Business Rules**: None (i18n preference persistence).
   - **Note**: Not yet verified in admin E2E coverage.
 
+- [ ] **A-05**: Admin does not receive buyer/merchant order lifecycle notifications
+  - **Precondition**: Controlled test data can create an order and advance its status; admin Notifications Center is available.
+  - **Steps**:
+    1. Record the admin's unread notification list.
+    2. Place an order and advance its status through the merchant fulfillment flow.
+    3. Refresh the admin Notifications Center and compare the unread list.
+  - **Expected Result**: Order placement/status notifications are addressed to the merchant/buyer as implemented and are not displayed as admin notifications; admin order list/detail viewing does not create a notification or change order status.
+  - **Business Rules**: Order Insights viewing is read-only (BR-OI-007); current order notification recipients are merchant for order placement and buyer for fulfillment status updates.
+  - **Note**: Current implementation does not define admin-targeted order lifecycle notifications. If admins are expected to receive them, that behavior needs a separate requirement before changing this expected result.
+
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
 - [ ] **A-01**: Non-admin or unauthenticated user cannot access admin order data
