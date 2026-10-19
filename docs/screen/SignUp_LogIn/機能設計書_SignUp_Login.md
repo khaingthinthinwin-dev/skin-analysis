@@ -300,7 +300,7 @@ Password recovery uses separate routes: Forgot Password sends the email to `/ver
 | BR-AUTH-002 | Password Strength | Frontend registration form requires 8–128 characters, uppercase, lowercase, digit, and one of `@$!%*?&`. Registration DTO requires a minimum of 8 characters only. | Frontend (Zod) + Backend (DTO; weaker rule) |
 | BR-AUTH-003 | Role Restriction | Only 'buyer' or 'merchant' roles allowed during registration. | Backend (DTO validation) |
 | BR-AUTH-004 | Default Role | If role not specified, defaults to 'buyer'. | Backend (service logic) |
-| BR-AUTH-005 | Email Verification | New users have `emailVerified = false`. | Backend (user creation) |
+| BR-AUTH-005 | Email Verification | New users are created with `emailVerified = true` (accounts are treated as verified at registration). | Backend (user creation) |
 | BR-AUTH-020 | Merchant License Required | When role = 'merchant', license file upload is mandatory. | Backend (DTO validation) + Frontend (conditional validation) |
 | BR-AUTH-021 | License File Type | License file must be PDF format only. | Backend (file validation) + Frontend (accept attribute) |
 | BR-AUTH-022 | License File Name | License file must be named 'license.pdf' (case-insensitive). | Backend (file validation) + Frontend (file name check) |
@@ -512,8 +512,8 @@ If email is missing from router location state, the page redirects to `/forgot-p
 |-----------|---------------|
 | **Trigger** | Register page form submission |
 | **API Endpoint** | `POST /api/v1/auth/register` |
-| **Request Content-Type** | `multipart/form-data`; `authService.register()` appends `email`, `name`, `password`, optional `role`, and optional `license` file. |
-| **Pre-Submission Validation** | Zod validates name (2–200), email (valid, max 255), password (8–128 and complexity), confirmation match, buyer/merchant role, terms agreement, and conditional merchant license requirements. |
+| **Request Content-Type** | `multipart/form-data`; `authService.register()` appends `email`, `name`, `password`, optional `role`, optional `address`, optional `phone`, and optional `license` file. |
+| **Pre-Submission Validation** | Zod validates name (2–200), email (valid, max 255), password (8–128 and complexity), confirmation match, buyer/merchant role, terms agreement, conditional merchant license requirements, and (merchant only) address (required, max 255) and phone (required, `^\+?[0-9()\-\s]{7,20}$`). |
 | **Processing Steps** | The UI sends one `name` value. For merchants its label changes to “Shop Name”; no separate `shopName` field or request property exists. `confirmPassword` and `agreeToTerms` remain client-only. |
 | **Success Response** | Service returns user and token data within the API data envelope. |
 | **Post-Action** | Show a success toast and navigate to `/login`; the Register page does not establish the returned tokens in AuthProvider. |

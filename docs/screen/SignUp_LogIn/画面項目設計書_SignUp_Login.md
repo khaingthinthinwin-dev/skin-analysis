@@ -446,7 +446,7 @@ Successful verification navigates to `/reset-password` with `{ email, code }` in
 - **Trigger:** User clicks "Create Account" button.
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** Validate the single `name` value, email, password/confirmation, role, terms agreement, and conditional merchant license. The name input is relabeled “Shop Name” for merchants.
-  2. **Backend Dispatch:** `POST /api/v1/auth/register` as multipart form data with `name`, `email`, `password`, optional `role`, and optional `license` file. Confirmation and terms are not sent.
+  2. **Backend Dispatch:** `POST /api/v1/auth/register` as multipart form data with `name`, `email`, `password`, optional `role`, optional `address` and `phone` (merchant only, both required), and optional `license` file. Confirmation and terms are not sent.
   3. **Backend Execution:** Create the user; for merchants the service reuses `name` as the merchant shop name and stores the license.
   4. **Post-Execution UI:** Show success toast. Navigate to `/login`.
 - **Exception Handling:**
@@ -686,7 +686,7 @@ Successful verification navigates to `/reset-password` with `{ email, code }` in
     "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "licenseStatus": "pending",
     "licenseUrl": "/uploads/licenses/f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b.pdf",
-    "emailVerified": false,
+    "emailVerified": true,
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
 }

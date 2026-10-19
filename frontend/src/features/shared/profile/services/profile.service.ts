@@ -17,6 +17,7 @@ interface ProfileResponseData {
   avatar?: string
   avatarUrl?: string
   phone?: string
+  address?: string | null
   emailVerified?: boolean
   licenseUrl?: string | null
   licenseStatus?: LicenseStatus

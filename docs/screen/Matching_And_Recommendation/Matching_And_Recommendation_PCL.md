@@ -9,9 +9,9 @@
 | **Document ID** | SKM-PCL-MATCH-001 |
 | **Target Screen** | Matching & Recommendation |
 | **Subsystem** | Product Discovery |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | 2026-10-14 |
-| **Last Updated** | 2026-10-14 |
+| **Last Updated** | 2026-10-19 |
 | **Status** | Active |
 | **Source Specs** | DD_MATCH_01–06; 機能設計書 / 画面項目設計書 (Matching_And_Recommendation) |
 
@@ -248,6 +248,40 @@
   - **Business Rules**: BR-MATCH-006
   - **API**: `GET /api/v1/recommendations/personalized`
   - **Note**: Unchecked because no matching Playwright evidence has been recorded.
+
+- [ ] **N-23**: Select multiple skin types simultaneously
+  - **Precondition**: Recommendations page is open (`FiltersPanel` renders one skin-type option per `SKIN_TYPES` entry — a `Checkbox` in the desktop sidebar, a toggle button in the mobile sheet; both call `toggleSkinType`). Each toggle calls `toggleSkinType` → `onUpdate({ skinTypes })` immediately — there is no Apply button (the mobile sheet's `Show {N} Products` button only closes the sheet); values are comma-joined into the `skinTypes` URL param (`'all'` sentinel when cleared, which the schema drops from the API request). Products matching both selected skin types exist.
+  - **Steps**:
+    1. Check the `Dry` checkbox, then check the `Oily` checkbox in the Skin Type filter
+    2. Inspect the network request and the displayed product cards
+    3. Uncheck the `Oily` checkbox
+    4. Inspect the network request and displayed results again without reloading the page
+  - **Expected Result**: Request query carries `skinTypes=dry,oily` on `GET /api/v1/recommendations/personalized`; displayed products are narrowed to those matching the selection (client-side `filterProductsBySkinType` runs on top of the API result for cache consistency); unchecking `Oily` updates the request to `skinTypes=dry` and refetches automatically via the URL-driven query key (no Apply button, no page reload); the remaining `Dry` filter stays applied and results update to match
+  - **Business Rules**: BR-MATCH-006
+  - **API**: `GET /api/v1/recommendations/personalized`
+  - **Note**: Unchecked because no matching Playwright evidence has been recorded. Selection order determines the comma-joined order (`dry,oily` if Dry was checked first).
+
+- [ ] **N-24**: Show the Match Score sort option only for the AI source
+  - **Precondition**: Recommendations page is open. The sort bar passes `getMatchingSortOptions(source)` to `SortSelect`; `source` is read from the personalized response (`recData?.source ?? 'generic'`). `COMMON_SORT_OPTIONS` = Newest, Price: Low to High, Price: High to Low, Highest Rated; `MATCH_SCORE_OPTION` = Match Score (`matchScore:desc`) is spliced in only for AI.
+  - **Steps**:
+    1. Load recommendations as a buyer with a completed AI analysis (`source: 'ai'`) and open the sort select
+    2. Load recommendations as a buyer with no completed analysis (`source: 'generic'`) and open the sort select
+    3. Compare the option lists in both cases
+  - **Expected Result**: With `source: 'ai'`, the sort select shows five options in order: `Newest`, `Match Score`, `Price: Low to High`, `Price: High to Low`, `Highest Rated`. With `source: 'generic'`, the select shows only the four common options (`Newest`, `Price: Low to High`, `Price: High to Low`, `Highest Rated`) — `Match Score` is absent because generic results carry no scores
+  - **Business Rules**: BR-MATCH-024, BR-MATCH-025
+  - **API**: `GET /api/v1/recommendations/personalized`
+  - **Note**: Unchecked because no matching Playwright evidence has been recorded. While the response is loading, `source` defaults to `'generic'`, so `Match Score` may appear only after AI data arrives.
+
+- [ ] **N-25**: Hide the "Want Fresh Results?" banner when the AI analysis is 24 hours old or newer
+  - **Precondition**: Authenticated buyer has a completed AI analysis. `ProfilePromptBanner` receives `source` and `analysisAge` (hours) from the personalized response; the component computes `age = analysisAge ?? 0` and decides freshness inline (`source === 'ai' && age <= 24` → hidden; `source === 'ai' && age > 24` → stale banner). N-03 covers the stale (> 24h) display case; this case covers the fresh (≤ 24h) hidden case.
+  - **Steps**:
+    1. Load recommendations with `analysisAge` well below 24 hours (e.g. 0) and inspect the area above the product grid
+    2. Load recommendations with `analysisAge` at exactly 24 hours and inspect the same area
+    3. Optionally load with `analysisAge` above 24 hours to contrast against N-03
+  - **Expected Result**: When `source === 'ai'` and `analysisAge <= 24`, no banner is rendered at all — neither the stale "Want Fresh Results?" prompt nor the generic "Get Personalized Recommendations" prompt. Exactly 24 hours counts as fresh (boundary uses `<= 24`, not `< 24`). Above 24 hours the amber stale banner with the `Retake Analysis` CTA appears, as verified in N-03
+  - **Business Rules**: BR-MATCH-001, BR-MATCH-004
+  - **API**: `GET /api/v1/recommendations/personalized`
+  - **Note**: Unchecked because no matching Playwright evidence has been recorded. `analysisAge` is computed server-side as hours (float) since `completedAt`; the server still returns `source: 'ai'` when stale — staleness is purely a UI concern in `ProfilePromptBanner.tsx`.
 
 ---
 

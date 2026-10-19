@@ -12,6 +12,7 @@ export const loginSchema = z.object({
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_MIME_TYPES = ['application/pdf']
+const PHONE_REGEX = /^\+?[0-9()\-\s]{7,20}$/
 
 export const registerSchema = z
   .object({
@@ -33,6 +34,14 @@ export const registerSchema = z
       .regex(/[@$!%*?&]/, { error: () => i18n.t('auth.validation.passwordSpecial', { defaultValue: 'Password must contain at least one special character (@$!%*?&)' }) }),
     confirmPassword: z.string().min(1, { error: () => i18n.t('auth.validation.confirmPasswordRequired', { defaultValue: 'Please confirm your password' }) }),
     role: z.enum(['buyer', 'merchant'], { error: () => i18n.t('auth.validation.roleRequired', { defaultValue: 'Please select a role' }) }),
+    address: z.string()
+      .trim()
+      .max(255, { error: () => i18n.t('auth.validation.addressMaxLength', { defaultValue: 'Address must not exceed 255 characters' }) })
+      .optional(),
+    phone: z.string()
+      .trim()
+      .max(20, { error: () => i18n.t('auth.validation.phoneMaxLength', { defaultValue: 'Phone number must not exceed 20 characters' }) })
+      .optional(),
     licenseFile: z.any().optional().nullable(),
     agreeToTerms: z.boolean().refine((val) => val === true, {
       error: () => i18n.t('auth.validation.termsRequired', { defaultValue: 'You must agree to the Terms of Service' }),
@@ -42,6 +51,30 @@ export const registerSchema = z
     error: () => i18n.t('auth.validation.passwordMismatch', { defaultValue: 'Passwords do not match' }),
     path: ['confirmPassword'],
   })
+  .refine(
+    (data) => data.role !== 'merchant' || !!data.address?.trim(),
+    {
+      error: () => i18n.t('auth.validation.addressRequired', { defaultValue: 'Shop address is required for merchant registration' }),
+      path: ['address'],
+    }
+  )
+  .refine(
+    (data) => data.role !== 'merchant' || !!data.phone?.trim(),
+    {
+      error: () => i18n.t('auth.validation.phoneRequired', { defaultValue: 'Phone number is required for merchant registration' }),
+      path: ['phone'],
+    }
+  )
+  .refine(
+    (data) =>
+      data.role !== 'merchant' ||
+      !data.phone?.trim() ||
+      PHONE_REGEX.test(data.phone.trim()),
+    {
+      error: () => i18n.t('auth.validation.phoneInvalid', { defaultValue: 'Please enter a valid phone number' }),
+      path: ['phone'],
+    }
+  )
   .refine(
     (data) => {
       if (data.role === 'merchant' && !data.licenseFile) {
