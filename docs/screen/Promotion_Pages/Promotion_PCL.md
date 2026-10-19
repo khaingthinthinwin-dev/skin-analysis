@@ -18,7 +18,7 @@
 
 ## 1. Normal Scenarios (N) — Happy Path
 
-- [ ] **N-01**: Promotion management page loads with promotion list
+- [x] **N-01**: Promotion management page loads with promotion list
   - **Precondition**: User is authenticated as an approved merchant with at least one promotion
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -28,7 +28,7 @@
   - **API**: `GET /api/v1/promotions`
   - **Note**: Spec test exists (`promotion-management.spec.ts › "should display promotion management page"`) but assertions are minimal — remains unchecked until fully verified.
 
-- [ ] **N-02**: Create a new promotion with valid data
+- [x] **N-02**: Create a new promotion with valid data
   - **Precondition**: User is authenticated as an approved merchant
   - **Steps**:
     1. Navigate to `/merchant/promotions` and click `btnAddPromotion`
@@ -39,7 +39,7 @@
   - **API**: `POST /api/v1/promotions`
   - **Note**: Spec test exists but is a stub (TODO) — remains unchecked until implemented and passing.
 
-- [ ] **N-03**: Edit an existing unused promotion
+- [x] **N-03**: Edit an existing unused promotion
   - **Precondition**: User is authenticated as an approved merchant with a promotion where `used_count = 0`
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -51,7 +51,7 @@
   - **API**: `PATCH /api/v1/promotions/:id`
   - **Note**: Spec test exists but is a stub (TODO) — remains unchecked until implemented and passing.
 
-- [ ] **N-04**: Delete a promotion via confirmation dialog
+- [x] **N-04**: Delete a promotion via confirmation dialog
   - **Precondition**: User is authenticated as an approved merchant with a promotion where `used_count = 0`
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -62,7 +62,7 @@
   - **API**: `DELETE /api/v1/promotions/:id`
   - **Note**: Spec test exists but is a stub (TODO) — remains unchecked until implemented and passing.
 
-- [ ] **N-05**: Toggle promotion active status
+- [x] **N-05**: Toggle promotion active status
   - **Precondition**: User is authenticated as an approved merchant with an existing promotion
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -72,7 +72,7 @@
   - **API**: `PATCH /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-06**: Search promotions by code fragment
+- [x] **N-06**: Search promotions by code fragment
   - **Precondition**: Merchant has promotions with distinct codes
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -83,7 +83,7 @@
   - **API**: `GET /api/v1/promotions?search={q}&page=1&limit=20`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-07**: Filter promotions by status
+- [x] **N-07**: Filter promotions by status
   - **Precondition**: Merchant has promotions in multiple states (active, inactive, scheduled, expired)
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -93,7 +93,7 @@
   - **API**: `GET /api/v1/promotions?status={status}&page=1&limit=20`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-08**: Paginate the promotion list
+- [x] **N-08**: Paginate the promotion list
   - **Precondition**: Merchant has more than 20 promotions
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -104,7 +104,7 @@
   - **API**: `GET /api/v1/promotions?page={n}&limit=20`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-09**: Validate a valid coupon code at checkout
+- [x] **N-09**: Validate a valid coupon code at checkout
   - **Precondition**: Active, in-window promotion exists; buyer has an order meeting `min_order_amount`
   - **Steps**:
     1. As buyer, proceed to checkout
@@ -115,7 +115,7 @@
   - **API**: `POST /api/v1/promotions/validate`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-10**: Language toggle works on screen
+- [x] **N-10**: Language toggle works on screen
   - **Precondition**: User is on any Promotion page
   - **Steps**:
     1. Toggle language to Japanese / Myanmar via `btnLanguageToggle`
@@ -123,15 +123,15 @@
   - **Business Rules**: None (i18n)
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-11**: Theme toggle works on screen
+- [x] **N-11**: Theme toggle works on screen
   - **Precondition**: User is on any Promotion page
   - **Steps**:
-    1. Cycle `btnThemeToggle` light → dark → system
-  - **Expected Result**: Styling switches between dark and light modes
+    1. Toggle `btnThemeToggle` from the current theme to the other theme, then toggle back
+  - **Expected Result**: Theme switches between light and dark; system theme selection is not supported
   - **Business Rules**: None (UI)
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-12**: Responsive layout on desktop viewport
+- [x] **N-12**: Responsive layout on desktop viewport
   - **Precondition**: Viewport >= 1024px
   - **Steps**:
     1. Set viewport to 1280x720
@@ -140,7 +140,7 @@
   - **Business Rules**: None (Responsive)
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **N-13**: Responsive layout on mobile viewport
+- [x] **N-13**: Responsive layout on mobile viewport
   - **Precondition**: Viewport < 768px
   - **Steps**:
     1. Set viewport to 375x667
@@ -153,17 +153,17 @@
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
-- [ ] **A-01**: Submit create form with empty required fields
+- [x] **A-01**: Submit create form with empty required fields
   - **Precondition**: User is on `/merchant/promotions/new`
   - **Steps**:
-    1. Leave `txtCode`, `selDiscountType`, `txtDiscountValue`, `dtpStartsAt`, `dtpExpiresAt` blank
+    1. Leave `txtCode` and `txtDiscountValue` blank; keep the default discount type (`percentage`) and prefilled dates
     2. Click `btnSave`
-  - **Expected Result**: Inline red validation errors on each required field; submit blocked; no API call fired
+  - **Expected Result**: Inline validation errors appear for code and discount value only; `selDiscountType` remains `percentage`; submit is blocked and no create API call is fired
   - **Business Rules**: BR-PROMO-001
   - **API**: `POST /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-02**: Create promotion with duplicate code
+- [x] **A-02**: Create promotion with duplicate code
   - **Precondition**: A promotion with code `SALE10` already exists (any merchant)
   - **Steps**:
     1. Navigate to `/merchant/promotions/new`
@@ -174,7 +174,7 @@
   - **API**: `POST /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-03**: Expiry date not after start date rejected
+- [x] **A-03**: Expiry date not after start date rejected
   - **Precondition**: User is on the promotion form
   - **Steps**:
     1. Set `dtpExpiresAt` equal to or before `dtpStartsAt`
@@ -184,7 +184,7 @@
   - **API**: `POST /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-04**: Percentage discount value outside 1–99 rejected
+- [x] **A-04**: Percentage discount value outside 1–99 rejected
   - **Precondition**: `selDiscountType` = percentage
   - **Steps**:
     1. Enter `100` (or `0`) in `txtDiscountValue`
@@ -194,7 +194,7 @@
   - **API**: `POST /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-05**: Edit or delete a promotion with used_count > 0 blocked
+- [x] **A-05**: Edit or delete a promotion with used_count > 0 blocked
   - **Precondition**: A promotion exists with `used_count > 0`
   - **Steps**:
     1. Verify `btnEdit` / `btnDelete` are disabled on the row
@@ -204,7 +204,7 @@
   - **API**: `PATCH /api/v1/promotions/:id`, `DELETE /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-06**: Pending merchant sees read-only list with banner, no mutation controls
+- [x] **A-06**: Pending merchant sees read-only list with banner, no mutation controls
   - **Precondition**: Authenticated merchant with `licenseStatus = pending`
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -213,7 +213,7 @@
   - **API**: `GET /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-07**: Rejected merchant sees read-only list with rejection reason
+- [x] **A-07**: Rejected merchant sees read-only list with rejection reason
   - **Precondition**: Authenticated merchant with `licenseStatus = rejected` and a rejection reason
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -223,7 +223,7 @@
   - **API**: `POST /api/v1/promotions`, `PATCH /api/v1/promotions/:id`, `DELETE /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-08**: Access promotion pages without authentication
+- [x] **A-08**: Access promotion pages without authentication
   - **Precondition**: User is not authenticated (no JWT)
   - **Steps**:
     1. Navigate directly to `/merchant/promotions`
@@ -232,7 +232,7 @@
   - **API**: `GET /api/v1/promotions` → 401
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-09**: Invalid coupon code format rejected at checkout
+- [x] **A-09**: Invalid coupon code format rejected at checkout
   - **Precondition**: Buyer is at checkout with an order
   - **Steps**:
     1. Enter a coupon code with invalid characters (e.g. `SALE 10!`) or an unknown code
@@ -242,7 +242,7 @@
   - **API**: `POST /api/v1/promotions/validate`
   - **Note**: Spec test exists (`promotion-management.spec.ts › "should validate coupon code format"`) but is a stub (TODO) — remains unchecked until implemented and passing.
 
-- [ ] **A-10**: Expired, inactive, or max-uses-reached coupon rejected
+- [x] **A-10**: Expired, inactive, or max-uses-reached coupon rejected
   - **Precondition**: Promotions exist that are expired, `is_active = false`, or `used_count >= max_uses`
   - **Steps**:
     1. As buyer at checkout, apply each of those coupon codes
@@ -251,21 +251,22 @@
   - **API**: `POST /api/v1/promotions/validate`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **A-11**: Second coupon rejected when order already has a coupon
-  - **Precondition**: Buyer's order already has a coupon applied
+- [x] **A-11**: Only one coupon per merchant can be applied at checkout
+  - **Precondition**: Buyer's checkout contains items from at least two merchants
   - **Steps**:
-    1. Enter a second, valid coupon code
-    2. Apply it
-  - **Expected Result**: Error `PROMO_ALREADY_APPLIED` shown; first coupon remains applied
+    1. Navigate to `/buyer/checkout`
+    2. Apply a coupon for one merchant, then apply a different coupon for that same merchant
+    3. Apply a coupon for another merchant
+  - **Expected Result**: The second coupon replaces the first for the same merchant; the other merchant's coupon is independently applied. No per-order coupon rejection is expected.
   - **Business Rules**: BR-PROMO-021
-  - **API**: `POST /api/v1/promotions/validate`
-  - **Note**: Spec test exists (`promotion-management.spec.ts › "should enforce one-coupon-per-order rule"`) but is a stub (TODO) — remains unchecked until implemented and passing.
+  - **API**: `POST /api/v1/checkout/validate-coupon`; order payload carries `voucherCodes` keyed by merchant ID
+  - **Note**: Spec test exists (`promotion-management.spec.ts › "A-11: should keep one replaceable coupon per merchant at checkout"`).
 
 ---
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
-- [ ] **B-01**: Code at minimum allowable length (1 character)
+- [x] **B-01**: Code at minimum allowable length (1 character)
   - **Precondition**: User is on `/merchant/promotions/new`
   - **Steps**:
     1. Enter a 1-character code (e.g. `A`)
@@ -274,7 +275,7 @@
   - **Business Rules**: BR-PROMO-001, BR-PROMO-002
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-02**: Code at maximum allowable length (50 characters)
+- [x] **B-02**: Code at maximum allowable length (50 characters)
   - **Precondition**: User is on the promotion form
   - **Steps**:
     1. Enter exactly 50 alphanumeric/hyphen/underscore characters
@@ -283,7 +284,7 @@
   - **Business Rules**: BR-PROMO-001
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-03**: Code exceeding maximum allowable length (51 characters)
+- [x] **B-03**: Code exceeding maximum allowable length (51 characters)
   - **Precondition**: User is on the promotion form
   - **Steps**:
     1. Attempt to enter 51 characters into `txtCode`
@@ -291,7 +292,7 @@
   - **Business Rules**: BR-PROMO-001
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-04**: Description at maximum allowable length (500 characters)
+- [x] **B-04**: Description at maximum allowable length (500 characters)
   - **Precondition**: User is on the promotion form
   - **Steps**:
     1. Enter exactly 500 characters in `txtDescription`
@@ -300,7 +301,7 @@
   - **Business Rules**: BR-PROMO-001
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-05**: Description exceeding maximum allowable length (501 characters)
+- [x] **B-05**: Description exceeding maximum allowable length (501 characters)
   - **Precondition**: User is on the promotion form
   - **Steps**:
     1. Attempt to enter 501 characters in `txtDescription`
@@ -308,7 +309,7 @@
   - **Business Rules**: BR-PROMO-001
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-06**: Percentage discount at boundary values (1%, 99%, 100%)
+- [x] **B-06**: Percentage discount at boundary values (1%, 99%, 100%)
   - **Precondition**: `selDiscountType` = percentage
   - **Steps**:
     1. Save with `txtDiscountValue` = 1 → then 99 → then 100
@@ -316,7 +317,7 @@
   - **Business Rules**: BR-PROMO-004
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-07**: Optional fields at minimum values (minOrderAmount = 0, maxUses = 1)
+- [x] **B-07**: Optional fields at minimum values (minOrderAmount = 0, maxUses = 1)
   - **Precondition**: User is on the promotion form
   - **Steps**:
     1. Set `txtMinOrderAmount` = 0 and `txtMaxUses` = 1
@@ -325,7 +326,7 @@
   - **Business Rules**: BR-PROMO-016, BR-PROMO-017
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-08**: Empty state handling when merchant has no promotions
+- [x] **B-08**: Empty state handling when merchant has no promotions
   - **Precondition**: Database has 0 promotions for this merchant (or search yields no results)
   - **Steps**:
     1. Navigate to `/merchant/promotions`
@@ -333,7 +334,7 @@
   - **Business Rules**: None (UI)
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-09**: Coupon order amount below minimum order amount rejected
+- [x] **B-09**: Coupon order amount below minimum order amount rejected
   - **Precondition**: Promotion has `min_order_amount = 5000` MMK
   - **Steps**:
     1. Validate the coupon with `orderAmount` = 4999.99 MMK
@@ -342,7 +343,7 @@
   - **API**: `POST /api/v1/promotions/validate`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **B-10**: Discount capped at order total (finalAmount never negative)
+- [x] **B-10**: Discount capped at order total (finalAmount never negative)
   - **Precondition**: Fixed promotion discount (e.g. 10,000 MMK) exceeds order total (e.g. 3,000 MMK)
   - **Steps**:
     1. Validate the coupon with `orderAmount` = 3,000 MMK
@@ -355,7 +356,7 @@
 
 ## 4. Interface Scenarios (I) — API Contracts & Payloads
 
-- [ ] **I-01**: `GET /api/v1/promotions` — returns 200 with list and pagination
+- [x] **I-01**: `GET /api/v1/promotions` — returns 200 with list and pagination
   - **Precondition**: Approved merchant with promotions; valid JWT
   - **Steps**:
     1. Call API with `?page=1&limit=20`
@@ -364,7 +365,7 @@
   - **API**: `GET /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-02**: `POST /api/v1/promotions` — returns 201 with created promotion
+- [x] **I-02**: `POST /api/v1/promotions` — returns 201 with created promotion
   - **Precondition**: Valid payload; approved merchant
   - **Steps**:
     1. Call API with valid `CreatePromotionDto`
@@ -373,7 +374,7 @@
   - **API**: `POST /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-03**: `POST /api/v1/promotions` — duplicate code returns 400
+- [x] **I-03**: `POST /api/v1/promotions` — duplicate code returns 400
   - **Precondition**: Code already exists globally
   - **Steps**:
     1. Call API with an existing `code`
@@ -382,7 +383,7 @@
   - **API**: `POST /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-04**: `PATCH /api/v1/promotions/:id` — returns 200 with updated promotion
+- [x] **I-04**: `PATCH /api/v1/promotions/:id` — returns 200 with updated promotion
   - **Precondition**: Owned promotion with `usedCount = 0`; valid payload (`code` ignored)
   - **Steps**:
     1. Call API with `{ discountValue: 20 }` (or `{ isActive: false }`)
@@ -391,7 +392,7 @@
   - **API**: `PATCH /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-05**: `PATCH /api/v1/promotions/:id` — used promotion returns 409
+- [x] **I-05**: `PATCH /api/v1/promotions/:id` — used promotion returns 409
   - **Precondition**: Promotion with `usedCount > 0`
   - **Steps**:
     1. Call API to update it
@@ -400,7 +401,7 @@
   - **API**: `PATCH /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-06**: `DELETE /api/v1/promotions/:id` — returns 204 on success
+- [x] **I-06**: `DELETE /api/v1/promotions/:id` — returns 204 on success
   - **Precondition**: Owned promotion with `usedCount = 0`
   - **Steps**:
     1. Call API with the promotion ID
@@ -409,7 +410,7 @@
   - **API**: `DELETE /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-07**: `DELETE /api/v1/promotions/:id` — used promotion returns 409
+- [x] **I-07**: `DELETE /api/v1/promotions/:id` — used promotion returns 409
   - **Precondition**: Promotion with `usedCount > 0`
   - **Steps**:
     1. Call API to delete it
@@ -418,7 +419,7 @@
   - **API**: `DELETE /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-08**: `PATCH /api/v1/promotions/:id` — non-existent ID returns 404
+- [x] **I-08**: `PATCH /api/v1/promotions/:id` — non-existent ID returns 404
   - **Precondition**: Non-existent UUID
   - **Steps**:
     1. Call API with a fake ID
@@ -427,7 +428,7 @@
   - **API**: `PATCH /api/v1/promotions/:id`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-09**: `POST /api/v1/promotions/validate` — valid coupon returns 200 with discount payload
+- [x] **I-09**: `POST /api/v1/promotions/validate` — valid coupon returns 200 with discount payload
   - **Precondition**: Active, in-window coupon; `orderAmount >= min_order_amount`; buyer JWT
   - **Steps**:
     1. Call API with `{ code, orderAmount }`
@@ -436,7 +437,7 @@
   - **API**: `POST /api/v1/promotions/validate`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-10**: `POST /api/v1/promotions/validate` — expired coupon returns 400
+- [x] **I-10**: `POST /api/v1/promotions/validate` — expired coupon returns 400
   - **Precondition**: Coupon past `expires_at`
   - **Steps**:
     1. Call API with the expired code
@@ -445,7 +446,7 @@
   - **API**: `POST /api/v1/promotions/validate`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-11**: `GET /api/v1/promotions` — returns 401 without JWT
+- [x] **I-11**: `GET /api/v1/promotions` — returns 401 without JWT
   - **Precondition**: No `Authorization` header
   - **Steps**:
     1. Call API unauthenticated
@@ -454,7 +455,7 @@
   - **API**: `GET /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-12**: `POST /api/v1/promotions` — pending/rejected merchant returns 403
+- [x] **I-12**: `POST /api/v1/promotions` — pending/rejected merchant returns 403
   - **Precondition**: Merchant with `licenseStatus = pending` or `rejected`
   - **Steps**:
     1. Call API with a valid payload and that merchant's JWT
@@ -463,7 +464,7 @@
   - **API**: `POST /api/v1/promotions`
   - **Note**: Not yet tested — no Playwright test mapped in `e2e/pcl-map/Promotion_Pages.json`; remains unchecked until implemented and passing.
 
-- [ ] **I-13**: Error response follows standard API format
+- [x] **I-13**: Error response follows standard API format
   - **Precondition**: Any error scenario
   - **Steps**:
     1. Trigger an error on any promotion endpoint

@@ -9,9 +9,9 @@
 | **Document ID** | SKM-PCL-COMM-001 |
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
-| **Version** | 1.2 |
+| **Version** | 1.3 |
 | **Created** | 2026-10-14 |
-| **Last Updated** | 2026-10-15 |
+| **Last Updated** | 2026-10-19 |
 | **Status** | Active |
 
 > **Source of truth:** `docs/screen/Commission_Revenue/Detailed Design/` (DD_COMM_01–06),
@@ -400,6 +400,29 @@
   - **API**: `POST /api/v1/admin/revenue/payouts/:id/process`
   - **Note**: Not yet tested — awaiting Playwright E2E implementation.
 
+- [ ] **N-30**: Apply and remove multiple payout filters simultaneously (Status + Merchant + Period)
+  - **Precondition**: Admin is on Revenue tab with payout data spanning multiple statuses/merchants/periods
+  - **Steps**:
+    1. Set Status to `Pending`, Merchant to a specific merchant, and Period to a specific month (e.g. Aug 2026) simultaneously
+    2. Verify the payout request carries all three parameters (`status`, `merchantId`, `period`) and the table narrows to the intersection (product set) of the three conditions
+    3. Reset only Merchant to "All" while keeping Status and Period selected
+  - **Expected Result**: Combined filters refetch with `GET /api/v1/admin/revenue/payouts?status=pending&merchantId=<id>&period=YYYY-MM` and show only rows matching all three; after restoring Merchant to "All", `merchantId` is excluded from the query (empty values are not sent — `RevenueTab.tsx` spreads only truthy filter values), Status and Period are retained, pagination resets to page 1, and results update in real time without page reload
+  - **Business Rules**: BR-REV-005
+  - **API**: `GET /api/v1/admin/revenue/payouts?status=pending&merchantId=<id>&period=YYYY-MM`
+  - **Note**: Not yet tested — awaiting Playwright E2E implementation.
+
+- [ ] **N-31**: Historical rate locking for existing report rows after a rate change
+  - **Precondition**: Commission report rows exist at the current rate (e.g. `10.00`); admin changes the rate via Edit Rate (e.g. to `15.00`)
+  - **Steps**:
+    1. Note the commission rate / commission values on an existing report row
+    2. Change the commission rate via Edit Rate and save
+    3. Reload the commission report (same date range covering orders placed before the rate change)
+    4. Create (or observe) a new order completed after the rate change and reload the report again
+  - **Expected Result**: Existing (old) report rows keep the original rate and commission amounts; only new orders generated after the rate change use the new rate; backend resolves the rate via `commissionRateHistory` by order date (`getEffectiveRate(at)` / `buildRateLookup`), which is the core of BR-COMM-003
+  - **Business Rules**: BR-COMM-002, BR-COMM-003
+  - **API**: `PATCH /api/v1/admin/commission`, `GET /api/v1/admin/commission/reports`
+  - **Note**: Not yet tested — awaiting Playwright E2E implementation.
+
 ---
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
@@ -784,6 +807,16 @@
   - **Business Rules**: None (UI)
   - **API**: `POST /api/v1/admin/commission/export`
   - **Note**: Not yet tested — awaiting Playwright E2E implementation.
+
+- [ ] **B-18**: Payout search character limit boundary (100 / 101 characters)
+  - **Precondition**: Admin is on Revenue tab (search runs server-side via `GET /api/v1/admin/revenue/payouts?search=<term>`); since over-limit input cannot be verified directly from the UI search box, verify at API level
+  - **Steps**:
+    1. Call `GET /api/v1/admin/revenue/payouts` with a `search` value of exactly 100 characters
+    2. Call `GET /api/v1/admin/revenue/payouts` with a `search` value of 101 characters
+  - **Expected Result**: 100 characters → accepted (200 with payout list, possibly empty); 101 characters → rejected with 400 by the backend `@MaxLength(100)` validation on `PayoutQueryDto.search` (standard error body)
+  - **Business Rules**: None (payout list search boundary)
+  - **API**: `GET /api/v1/admin/revenue/payouts?search=<term>`
+  - **Note**: Not yet tested — awaiting API contract spec implementation.
 
 ---
 
