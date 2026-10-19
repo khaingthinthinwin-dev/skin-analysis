@@ -1,19 +1,57 @@
 import { z } from 'zod'
 
-export const updateProfileSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must not exceed 100 characters'),
-  phone: z
-    .string()
-    .optional()
-    .or(z.literal('')),
-  avatarUrl: z
-    .string()
-    .optional()
-    .or(z.literal('')),
-})
+/** Same pattern as registration: optional +, digits, spaces, dashes, parentheses */
+export const PHONE_REGEX = /^\+?[0-9()\-\s]{7,20}$/
+
+export const updateProfileSchema = z
+  .object({
+    name: z
+      .string()
+      .min(2, 'Name must be at least 2 characters')
+      .max(100, 'Name must not exceed 100 characters'),
+    /** Internal only — mirrors registerSchema, never sent to the API */
+    role: z.string().optional(),
+    phone: z.string().optional().or(z.literal('')),
+    address: z.string().optional().or(z.literal('')),
+    avatarUrl: z
+      .string()
+      .optional()
+      .or(z.literal('')),
+  })
+  .superRefine((data, ctx) => {
+    // Values are compared trimmed, so " " counts as empty
+    const phone = data.phone?.trim() ?? ''
+    const address = data.address?.trim() ?? ''
+    const isMerchant = data.role === 'merchant'
+
+    if (isMerchant && !phone) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['phone'],
+        message: 'Phone number is required for merchant accounts',
+      })
+    } else if (phone && !PHONE_REGEX.test(phone)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['phone'],
+        message: 'Please enter a valid phone number',
+      })
+    }
+
+    if (isMerchant && !address) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['address'],
+        message: 'Shop address is required for merchant accounts',
+      })
+    } else if (address.length > 255) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['address'],
+        message: 'Address must not exceed 255 characters',
+      })
+    }
+  })
 
 export const changePasswordSchema = z
   .object({

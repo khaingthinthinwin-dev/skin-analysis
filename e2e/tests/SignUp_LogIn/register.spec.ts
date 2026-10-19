@@ -586,6 +586,8 @@ test.describe('Register Page', () => {
         mimeType: 'application/pdf',
         buffer: pdfBuffer,
       });
+      await registerPage.fillAddress('123 Test Street, Yangon');
+      await registerPage.fillPhone('+95912345678');
       await registerPage.checkTerms();
       await captureScreenshot(page, 'B-05_1_license_case');
       await registerPage.clickSubmit();
@@ -694,6 +696,8 @@ test.describe('Register Page', () => {
       await page.locator('input[autocomplete="email"]').fill(user.email);
       await page.locator('input[autocomplete="new-password"]').nth(0).fill('TestPass123!');
       await page.locator('input[autocomplete="new-password"]').nth(1).fill('TestPass123!');
+      await registerPage.fillAddress('123 Test Street, Yangon');
+      await registerPage.fillPhone('+95912345678');
       await registerPage.licenseFileInput.setInputFiles({
         name: 'license.pdf',
         mimeType: 'application/pdf',

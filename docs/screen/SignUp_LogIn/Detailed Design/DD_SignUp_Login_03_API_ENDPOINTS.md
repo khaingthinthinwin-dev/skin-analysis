@@ -24,11 +24,12 @@ POST status codes use NestJS defaults unless an endpoint explicitly overrides th
 Creates a buyer or merchant account.
 
 - **Request content type:** `multipart/form-data`
-- **Fields:** `email`, `name`, `password`, optional `role` (`buyer` or `merchant`, default `buyer`), and optional file field `license`.
+- **Fields:** `email`, `name`, `password`, optional `role` (`buyer` or `merchant`, default `buyer`), optional `address`, optional `phone`, and optional file field `license`.
 - `name` is the merchant shop name as well as the account name for a merchant; there is no separate `shopName` request field.
 - A merchant must include a license file. A buyer must not include one.
 - The controller accepts only a PDF named `license.pdf` (case-insensitive) with a maximum size of 10 MB.
-- Backend DTO constraints: valid email; name length 2–100; password minimum 8; role restricted to buyer or merchant.
+- `address` and `phone` describe the shop and are stored on `shops` together with the `merchants` record created for a merchant. The register form requires both when Merchant is selected, but the backend DTO accepts them as optional (API callers may omit them) and ignores them for buyers.
+- Backend DTO constraints: valid email; name length 2–100; password minimum 8; role restricted to buyer or merchant; address max 255 characters; phone max 20 characters matching `^\+?[0-9()\-\s]{7,20}$`.
 - The frontend additionally requires password complexity, confirmation matching, and acceptance of the Terms of Service. Those client-only fields are not sent as backend DTO fields.
 - **Success body from service:** user data plus `accessToken` and `refreshToken`.
 - The Register page shows a success toast and navigates to `/login`; it does not set the returned tokens through `AuthProvider.register()`.
