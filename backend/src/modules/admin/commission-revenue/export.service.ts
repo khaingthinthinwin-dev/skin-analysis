@@ -168,7 +168,7 @@ export class ExportService {
         createdAt: true,
         merchant: { select: { shopName: true } },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       take: MAX_EXPORT_ROWS,
     });
 
@@ -246,7 +246,7 @@ export class ExportService {
       rows = Array.from(grouped.values())
         .sort(
           (a, b) =>
-            a.date.localeCompare(b.date) || a.name.localeCompare(b.name),
+            b.date.localeCompare(a.date) || a.name.localeCompare(b.name),
         )
         .map((g) => [
           g.date,
@@ -273,6 +273,7 @@ export class ExportService {
           orders: number;
           revenue: number;
           commission: number;
+          latestDate: Date;
         }
       >();
       for (const o of orders) {
@@ -284,20 +285,31 @@ export class ExportService {
           orders: 0,
           revenue: 0,
           commission: 0,
+          latestDate: o.createdAt,
         };
+        if (o.createdAt > g.latestDate) {
+          g.latestDate = o.createdAt;
+        }
         const amount = toNumber(o.totalAmount);
         g.orders += 1;
         g.revenue += amount;
         g.commission += (amount * rate) / 100;
         grouped.set(key, g);
       }
-      rows = Array.from(grouped.values()).map((g) => [
-        g.name,
-        `${fmtDecimal(g.rate)}%`,
-        g.orders,
-        fmtExportCurrency(g.revenue),
-        fmtExportCurrency(g.commission),
-      ]);
+      rows = Array.from(grouped.values())
+        .sort(
+          (a, b) =>
+            b.latestDate.getTime() - a.latestDate.getTime() ||
+            b.revenue - a.revenue ||
+            a.name.localeCompare(b.name),
+        )
+        .map((g) => [
+          g.name,
+          `${fmtDecimal(g.rate)}%`,
+          g.orders,
+          fmtExportCurrency(g.revenue),
+          fmtExportCurrency(g.commission),
+        ]);
     }
 
     if (truncated) {
@@ -464,7 +476,10 @@ export class ExportService {
             select: { orderNumber: true, totalAmount: true },
           },
         },
-        orderBy: [{ payout: { periodStart: 'asc' } }],
+        orderBy: [
+          { payout: { periodStart: 'desc' } },
+          { order: { createdAt: 'desc' } },
+        ],
         take: MAX_EXPORT_ROWS,
       });
 
@@ -565,9 +580,9 @@ export class ExportService {
         },
       },
       orderBy: [
-        { payout: { periodStart: 'asc' } },
+        { payout: { periodStart: 'desc' } },
+        { order: { createdAt: 'desc' } },
         { payout: { merchant: { shopName: 'asc' } } },
-        { order: { createdAt: 'asc' } },
       ],
       take: MAX_EXPORT_ROWS,
     });

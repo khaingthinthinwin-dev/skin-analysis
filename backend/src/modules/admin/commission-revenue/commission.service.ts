@@ -185,7 +185,7 @@ export class CommissionService {
         createdAt: true,
         merchant: { select: { id: true, shopName: true } },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (groupBy === 'order') {
@@ -267,7 +267,7 @@ export class CommissionService {
 
       allReports.sort(
         (a, b) =>
-          a.date.localeCompare(b.date) ||
+          b.date.localeCompare(a.date) ||
           a.merchantName.localeCompare(b.merchantName),
       );
 
@@ -292,6 +292,7 @@ export class CommissionService {
         orders: number;
         revenue: number;
         commission: number;
+        latestDate: Date;
       }
     >();
     const getRate = await this.buildRateLookup();
@@ -305,7 +306,11 @@ export class CommissionService {
         orders: 0,
         revenue: 0,
         commission: 0,
+        latestDate: order.createdAt,
       };
+      if (order.createdAt > entry.latestDate) {
+        entry.latestDate = order.createdAt;
+      }
       const orderAmount = toNumber(order.totalAmount);
       entry.orders += 1;
       entry.revenue += orderAmount;
@@ -322,7 +327,19 @@ export class CommissionService {
       commission: fmtDecimal(g.commission),
     }));
 
-    allReports.sort((a, b) => a.merchantName.localeCompare(b.merchantName));
+    // Sort by latest order date descending so merchants with the most recent transactions appear first
+    const entryMap = grouped;
+    allReports.sort((a, b) => {
+      const keyA = `${a.merchantId}_${a.commissionRate}`;
+      const keyB = `${b.merchantId}_${b.commissionRate}`;
+      const dateA = entryMap.get(keyA)?.latestDate?.getTime() ?? 0;
+      const dateB = entryMap.get(keyB)?.latestDate?.getTime() ?? 0;
+      return (
+        dateB - dateA ||
+        parseFloat(b.revenue) - parseFloat(a.revenue) ||
+        a.merchantName.localeCompare(b.merchantName)
+      );
+    });
 
     const total = allReports.length;
     const totalPages = Math.ceil(total / limit);
