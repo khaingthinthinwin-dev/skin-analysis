@@ -141,16 +141,9 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: promotion.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
     return {
       ...promotion,
-      usedCount: realUsedCount,
+      usedCount: promotion.usedCount,
       discountType: promotion.discountType.typeCode,
       discountValue: promotion.discountValue.toString(),
       minOrderAmount: promotion.minOrderAmount?.toString() ?? null,
@@ -236,17 +229,11 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: existing.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
-    if (realUsedCount > 0) {
-      throw new ConflictException(
-        'Cannot edit a promotion that has already been used',
-      );
+    if (existing.usedCount > 0) {
+      throw new ConflictException({
+        error: 'PROMO_EDIT_RESTRICTED',
+        message: 'Cannot edit a promotion that has already been used',
+      });
     }
 
     if (dto.discountTypeCode) {
@@ -336,17 +323,11 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: existing.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
-    if (realUsedCount > 0) {
-      throw new ConflictException(
-        'Cannot delete a promotion that has already been used',
-      );
+    if (existing.usedCount > 0) {
+      throw new ConflictException({
+        error: 'PROMO_DELETE_RESTRICTED',
+        message: 'Cannot delete a promotion that has already been used',
+      });
     }
 
     await this.prisma.promotion.delete({ where: { id } });
@@ -372,18 +353,11 @@ export class PromotionsService {
       include: { discountType: true },
     });
 
-    const usageResult = await this.prisma.order.groupBy({
-      by: ['couponCode'],
-      where: { couponCode: promotion.code },
-      _count: { id: true },
-    });
-    const realUsedCount = usageResult[0]?._count.id ?? 0;
-
     await this.invalidateCache(merchantId, promotion.code);
 
     return {
       ...promotion,
-      usedCount: realUsedCount,
+      usedCount: promotion.usedCount,
       discountType: promotion.discountType.typeCode,
       discountValue: promotion.discountValue.toString(),
       minOrderAmount: promotion.minOrderAmount?.toString() ?? null,

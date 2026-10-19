@@ -86,7 +86,7 @@ The project already has a starter suite in `e2e/tests/Promotion_Pages/promotion-
 - should edit an existing promotion
 - should delete a promotion
 - should validate coupon code
-- should enforce one-coupon-per-order rule
+- should keep one replaceable coupon per merchant at checkout
 
 These should be treated as the baseline E2E coverage to complete and stabilize. The current implementation uses service-layer and page-layer flows, so the automation should assert UI behavior and network contract instead of only taking screenshots.
 
