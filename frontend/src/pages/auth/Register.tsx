@@ -50,6 +50,8 @@ export default function Register() {
       password: '',
       confirmPassword: '',
       role: 'buyer',
+      address: '',
+      phone: '',
       licenseFile: null,
       agreeToTerms: false,
     },
@@ -301,6 +303,62 @@ export default function Register() {
                 </FormItem>
               )}
             />
+
+            {/* Address & Phone Number - Conditional (merchant only) */}
+            {role === 'merchant' && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {t('auth.register.address', 'Shop Address')}
+                        <span className="text-destructive ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t(
+                            'auth.register.addressPlaceholder',
+                            '123 Yangon Street, Yangon',
+                          )}
+                          autoComplete="street-address"
+                          maxLength={255}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {t('auth.register.phone', 'Phone Number')}
+                        <span className="text-destructive ml-1">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder={t(
+                            'auth.register.phonePlaceholder',
+                            '+95 9 123 456 789',
+                          )}
+                          autoComplete="tel"
+                          inputMode="tel"
+                          maxLength={20}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
 
             {/* License Upload - Conditional */}
             {role === 'merchant' && (

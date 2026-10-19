@@ -5,6 +5,7 @@ import {
   MinLength,
   MaxLength,
   IsIn,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,4 +30,9 @@ export class CreateUserDto {
   @IsString()
   @IsIn(['buyer', 'merchant', 'admin'])
   roleCode?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  emailVerified?: boolean;
 }

@@ -31,6 +31,8 @@ export interface RegisterData {
   password: string
   role?: 'buyer' | 'merchant' | 'admin' | 'super_admin'
   licenseFile?: File | null
+  address?: string
+  phone?: string
 }
 
 export interface AuthResponse {

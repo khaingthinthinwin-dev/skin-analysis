@@ -1,3 +1,5 @@
+// Thin wrapper around the auth REST endpoints. `register` always builds
+// multipart/form-data because a merchant may attach a business license file.
 import apiClient from '@/lib/api-client'
 import type {
   LoginCredentials,
@@ -24,6 +26,12 @@ export const authService = {
     formData.append('password', data.password)
     if (data.role) {
       formData.append('role', data.role)
+    }
+    if (data.address) {
+      formData.append('address', data.address)
+    }
+    if (data.phone) {
+      formData.append('phone', data.phone)
     }
     if (data.licenseFile) {
       formData.append('license', data.licenseFile)

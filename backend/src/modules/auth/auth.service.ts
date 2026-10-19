@@ -14,6 +14,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { StringValue } from 'ms';
+import { Prisma } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -25,6 +26,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { RedisService } from '../../shared/redis/redis.service';
 import { SkinCheckReminderService } from '../shared/notifications/skin-check-reminder.service';
+import { generateSlug } from '../../common/utils/slug.util';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +43,8 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto, license?: Express.Multer.File) {
-    const { email, password, name, role = 'buyer' } = registerDto;
+    const { email, password, name, role = 'buyer', address, phone } =
+      registerDto;
 
     // Check if user exists
     const existingUser = await this.usersService.findByEmail(email);
@@ -52,27 +55,45 @@ export class AuthService {
     // Hash password
     const passwordHash = await argon2.hash(password);
 
-    // Create user
+    // Create user (accounts are considered email-verified on registration)
     const user = await this.usersService.create({
       email,
       name,
       passwordHash,
       roleCode: role,
+      emailVerified: true,
     });
 
-    // If merchant, create a Merchant record with license info
+    // If merchant, create a Merchant record with license info and the
+    // matching Shop row (kept unapproved until the license is reviewed)
     if (role === 'merchant') {
       const licenseUrl = license
         ? this.saveLicenseFile(license, email)
         : 'pending_upload';
-      const merchant = await this.prisma.merchant.create({
-        data: {
-          userId: user.id,
-          shopName: name,
-          businessLicenseUrl: licenseUrl,
-          licenseStatus: 'pending',
+      const merchant = await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          const created = await tx.merchant.create({
+            data: {
+              userId: user.id,
+              shopName: name,
+              businessLicenseUrl: licenseUrl,
+              licenseStatus: 'pending',
+            },
+          });
+          await tx.shop.create({
+            data: {
+              userId: user.id,
+              name,
+              slug: await this.ensureShopSlugUnique(tx, name, user.id),
+              email,
+              address: address ?? null,
+              phone: phone ?? null,
+              isApproved: false,
+            },
+          });
+          return created;
         },
-      });
+      );
       await this.notifyAdminsOfNewMerchant(merchant.id, name, email);
     }
 
@@ -104,6 +125,7 @@ export class AuthService {
       isActive: user.isActive,
       is_active: user.isActive,
       status: user.isActive ? 'active' : 'deactivated',
+      emailVerified: user.emailVerified,
       createdAt: user.createdAt,
     };
 
@@ -127,6 +149,33 @@ export class AuthService {
       user: userData,
       ...tokens,
     };
+  }
+
+  /**
+   * `Shop.slug` is unique, so a shop name that collides with an existing shop
+   * (or one that produces an empty slug, e.g. non-latin names) gets a suffix.
+   */
+  private async ensureShopSlugUnique(
+    tx: Prisma.TransactionClient,
+    name: string,
+    userId: string,
+  ): Promise<string> {
+    const base =
+      generateSlug(name) || `shop-${userId.slice(0, 8)}`.toLowerCase();
+    let candidate = base;
+    let counter = 1;
+
+    while (
+      await tx.shop.findFirst({
+        where: { slug: candidate },
+        select: { id: true },
+      })
+    ) {
+      candidate = `${base}-${counter}`;
+      counter += 1;
+    }
+
+    return candidate;
   }
 
   async resubmitLicense(userId: string, license: Express.Multer.File) {

@@ -47,6 +47,8 @@ test.describe('N-02: Merchant Registration', () => {
       mimeType: 'application/pdf',
       buffer: pdfBuffer,
     });
+    await registerPage.fillAddress('123 Test Street, Yangon');
+    await registerPage.fillPhone('+95912345678');
     await captureScreenshot(page, 'N-02_2_license_uploaded');
 
     await registerPage.checkTerms();
