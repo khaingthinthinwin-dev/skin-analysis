@@ -186,6 +186,9 @@ Examples from the current code:
 - `Coupon has reached maximum usage`
 - `Cannot edit a promotion that has already been used`
 
+Used-promotion mutation conflicts return HTTP 409 with the `error` field set to
+`PROMO_EDIT_RESTRICTED` for PATCH and `PROMO_DELETE_RESTRICTED` for DELETE.
+
 ---
 
 ## 6. Cross-References
