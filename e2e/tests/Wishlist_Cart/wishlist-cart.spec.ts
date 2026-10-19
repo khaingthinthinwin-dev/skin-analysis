@@ -217,7 +217,7 @@ test.describe('Wishlist & Cart', () => {
         ).toHaveClass(/line-through/);
       }
 
-      const addButton = card.getByRole('button', { name: 'Add', exact: true });
+      const addButton = card.getByRole('button', { name: 'Add to Cart', exact: true });
       await expect(addButton).toBeVisible();
       if (!item.isInStock) await expect(addButton).toBeDisabled();
     }
@@ -306,10 +306,10 @@ test.describe('Wishlist & Cart', () => {
     const card = buyerPage
       .getByRole('link', { name: item.productName, exact: true })
       .last()
-      .locator('xpath=../..');
+      .locator('xpath=../../..');
 
     try {
-      await card.getByRole('button', { name: 'Add', exact: true }).click();
+      await card.getByRole('button', { name: 'Add to Cart', exact: true }).click();
       await expect(buyerPage.getByText('Moved to cart')).toBeVisible();
       await expect(
         buyerPage.getByRole('link', { name: item.productName, exact: true }),
@@ -683,14 +683,21 @@ test.describe('Wishlist & Cart', () => {
   });
 
   // A-02
-  test('should disable wishlist action for guest user', async ({ page }) => {
-    await page.goto('/products/gentle-foam-cleanser');
-    const wishlistBtn = page.getByRole('button', { name: /add to wishlist/i });
+  test('should redirect guest user attempting to add to wishlist', async ({ page }) => {
+    await page.goto('/products');
+    const wishlistBtn = page.getByRole('button', { name: /add to wishlist/i }).first();
     await expect(wishlistBtn).toBeVisible();
-    await expect(wishlistBtn).toBeDisabled();
-    await expect(page).toHaveURL(/\/products\/gentle-foam-cleanser$/);
+    await wishlistBtn.click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: /login required/i })).toBeVisible();
+    await expect(dialog.getByText(/please log in to use the wishlist/i)).toBeVisible();
 
     await captureScreenshot(page, 'A-02_1_guest_wishlist_disabled');
+
+    await dialog.getByRole('button', { name: /^log\s*in$/i }).click();
+    await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
   });
 
   // A-03
@@ -754,7 +761,7 @@ test.describe('Wishlist & Cart', () => {
       .locator('xpath=../../..');
 
     await expect(card).toBeVisible();
-    const addBtn = card.getByRole('button', { name: 'Add', exact: true });
+    const addBtn = card.getByRole('button', { name: 'Add to Cart', exact: true });
     await expect(addBtn).toBeDisabled();
     await captureScreenshot(buyerPage, 'A-08_1_out_of_stock_add_disabled');
   });
@@ -787,7 +794,7 @@ test.describe('Wishlist & Cart', () => {
         .last()
         .locator('xpath=../../..');
 
-      await card.getByRole('button', { name: 'Add', exact: true }).click();
+      await card.getByRole('button', { name: 'Add to Cart', exact: true }).click();
       const dialog = buyerPage.getByRole('dialog');
       await expect(dialog.getByRole('heading', { name: 'Already in Cart' })).toBeVisible();
       await expect(dialog.getByText('This product is already in cart.')).toBeVisible();

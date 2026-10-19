@@ -291,7 +291,7 @@ Cart page:
 | BR-WISH-004 | Product Existence | Product must exist in the system to be added. | Backend (FK constraint) |
 | BR-WISH-005 | Owner-Only Access | Users can only view/modify their own wishlist items. | Backend (service filter) |
 | BR-WISH-006 | Move to Cart Validation | Moving to cart requires the product to exist, be active, and be in stock (stock_quantity > 0). If the product is already in the cart, the move is rejected with `409 Conflict` and the duplicate-cart alert is shown; quantities are never merged. | Backend (stock + duplicate check) |
-| BR-WISH-007 | Guest User Restriction | Direct access to `/buyer/wishlist` redirects to login. The header icon and listing/search/recommendation card actions open login dialogs; the product-detail Add to Wishlist button is disabled for guests and non-buyers. | Frontend (`ProtectedRoute`, header and page handlers) |
+| BR-WISH-007 | Guest User Restriction | Direct access to `/buyer/wishlist` redirects to login. The header icon and listing/search/recommendation card actions open login dialogs; the product-detail Add to Wishlist button handler navigates directly to /login?redirect=/buyer/products. |
 | BR-WISH-008 | Wishlist Limit | A user's wishlist may contain at most 100 items. Exceeding the limit fails with `400 Bad Request` ("Wishlist limit reached (100 items)"). | Backend (service check, hardcoded 100) |
 | BR-WISH-009 | Clear All Wishlist | Users may delete all of their wishlist items at once. The operation is scoped to the authenticated user's records and returns `{ success, deletedCount }`. | Backend (`deleteMany` by `user_id`) |
 

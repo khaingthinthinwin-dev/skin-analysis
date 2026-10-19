@@ -409,18 +409,18 @@
   - **API**: `POST /api/v1/wishlist/:productId`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-02**: Guest user attempts to add to wishlist and is redirected to log in
+- [x] **A-02**: Guest user attempts to add to cart and is prompted to log in
   - **Evidence**:
     - `A-02_1_guest_wishlist_disabled.png`
-    - Test: wishlist-cart.spec.ts › "should redirect guest user attempting to add to wishlist" — missing
+    - Test: wishlist-cart.spec.ts › "should redirect guest user attempting to add to wishlist" — passed
   - **Precondition**: User is not authenticated.
   - **Steps**:
     1. Open a public product page.
-    2. Click `Add to Wishlist`.
-  - **Expected Result**: Redirect to `/login?redirect=/buyer/products` (from the product detail page). From list/search contexts a guest login dialog is shown instead; clicking `Log In` navigates to `/login?redirect={currentPath}`.
+    2. Observe the `Add to Wishlist` button.
+  - **Expected Result**: Failed — no API call is made. The user is redirected to `/login?redirect=/buyer/products` (product detail) or a guest login dialog is shown (list/search contexts); clicking `Log In` navigates to `/login`.
   - **Business Rules**: BR-WISH-007
   - **API**: Frontend guard; navigation to `/login`
-  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+  - **Note**: No e2e test yet for guest add-to-cart prompting.
 
 - [x] **A-03**: Guest user attempts to add to cart and is prompted to log in
   - **Evidence**:

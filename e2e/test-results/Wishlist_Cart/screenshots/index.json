@@ -69,7 +69,7 @@
     "test": "wishlist-cart.spec.ts::should reject adding duplicate product to wishlist"
   },
   "A-02_1_guest_wishlist_disabled.png": {
-    "test": "wishlist-cart.spec.ts::should disable wishlist action for guest user"
+    "test": "wishlist-cart.spec.ts::should redirect guest user attempting to add to wishlist"
   },
   "A-03_1_guest_cart_redirect.png": {
     "test": "wishlist-cart.spec.ts::should redirect guest user attempting to add to cart"
