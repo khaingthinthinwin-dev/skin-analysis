@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdFeePaymentStatus } from '../services/commission.service';
 import { PaymentStatusStat } from './badges';
@@ -15,10 +16,11 @@ export const AdPaymentStatusPanel: React.FC<AdPaymentStatusPanelProps> = ({
   status,
   loading,
 }) => {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Ad Payment Status</CardTitle>
+        <CardTitle className="text-sm font-medium">{t('admin.commission.adPaymentStatus', 'Ad Payment Status')}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (

@@ -1,259 +1,113 @@
-# DD_AUTH_03 — API Endpoints
+# DD SignUp/Login 03 — API Endpoints
 
-> **Doc ID:** SKM-DD-AUTH-03 | **Version:** 2.1 | **Status:** Released  
-> **Last Updated:** 2026-08-21
-
----
-
-## 1. Controller Setup
-
-- **File:** `src/modules/auth/auth.controller.ts`
-- **Base Route:** `/api/v1/auth`
-- **Guards:** Varies per endpoint (Public, JwtAuthGuard, CookieGuard)
+> **Doc ID:** SKM-DD-AUTH-03 | **Version:** 2.2 | **Status:** Aligned to current implementation
+> **Last Updated:** 2026-10-15
 
 ---
 
-## 2. API Endpoints Contract
+## 1. Controller and Base URL
 
-### 2.1 POST /register
+- **Controller:** `backend/src/modules/auth/auth.controller.ts`
+- **Controller prefix:** `/auth`
+- **Frontend API base URL:** `VITE_API_BASE_URL`, defaulting to `http://localhost:8080/api/v1`
+- Public endpoints are marked `@Public()`. Protected endpoints use `JwtAuthGuard`; administrative and merchant endpoints additionally use role guards.
+- Frontend service methods unwrap the API response from `response.data.data`.
 
-Register a new user account.
-
-- **Auth Required:** No (Public)
-- **Body:** `RegisterDto`
-  - `name` (string, required, max 200 chars)
-  - `email` (string, required, valid email format, max 255 chars)
-  - `password` (string, required, min 8 chars, strong password)
-  - `role` (enum: 'buyer' | 'merchant', optional, default: 'buyer')
-  - `shopName` (string, optional, required if role = 'merchant', max 255 chars)
-- **File Upload:** `license` (File, optional, PDF only, max 10MB, required if role = 'merchant')
-- **Response:** `201 Created`
-  ```json
-  {
-    "data": {
-      "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "buyer",
-      "merchantId": null,
-      "licenseStatus": null,
-      "emailVerified": false,
-      "licenseUrl": null,
-      "createdAt": "2026-08-10T12:00:00.000Z"
-    }
-  }
-  ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` - Validation failed
-  - `409 CONFLICT` - Email already registered
-  - `413 PAYLOAD_TOO_LARGE` - License file exceeds 10MB
-  - `415 UNSUPPORTED_MEDIA_TYPE` - License file not PDF
-  - `429 TOO_MANY_REQUESTS` - Rate limit exceeded
-- **Logic:** Calls `service.register(dto, licenseFile)`
-- **Rate Limit:** 3 attempts per IP per hour
-
-### 2.2 POST /login
-
-Authenticate user and issue tokens.
-
-- **Auth Required:** No (Public)
-- **Body:** `LoginDto`
-  - `email` (string, required, valid email format)
-  - `password` (string, required, min 8 chars)
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-      "user": {
-        "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
-        "email": "user@example.com",
-        "name": "John Doe",
-        "role": "buyer",
-        "merchantId": null,
-        "licenseStatus": null,
-        "avatarUrl": null,
-        "emailVerified": false
-      }
-    }
-  }
-  ```
-- **Cookies Set:**
-  - `refresh_token` (httpOnly, secure, sameSite=strict, path=/api/v1/auth/refresh, maxAge=7d)
-- **Error Responses:**
-  - `400 BAD_REQUEST` - Validation failed
-  - `401 UNAUTHORIZED` - Invalid email or password
-  - `403 FORBIDDEN` - Account deactivated
-  - `429 TOO_MANY_REQUESTS` - Rate limit exceeded
-- **Logic:** Calls `service.login(dto)`
-- **Rate Limit:** 5 attempts per IP per 300 seconds
-
-### 2.3 POST /refresh
-
-Refresh access token using refresh token cookie.
-
-- **Auth Required:** Cookie-based (httpOnly refresh_token cookie)
-- **Body:** None (reads from cookie)
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIs..."
-    }
-  }
-  ```
-- **Cookies Set:**
-  - New `refresh_token` (rotated, httpOnly, secure, sameSite=strict)
-- **Error Responses:**
-  - `401 UNAUTHORIZED` - Missing refresh token
-  - `401 UNAUTHORIZED` - Refresh token expired
-  - `401 UNAUTHORIZED` - Refresh token revoked
-  - `401 UNAUTHORIZED` - Token reuse detected (security violation)
-  - `401 UNAUTHORIZED` - Absolute limit reached (90 days)
-- **Logic:** Calls `service.refreshToken(refreshToken)`
-
-### 2.4 POST /logout
-
-Terminate user session.
-
-- **Auth Required:** Yes (JwtAuthGuard)
-- **Headers:** `Authorization: Bearer <accessToken>`
-- **Body:** None
-- **Response:** `204 No Content`
-- **Side Effects:**
-  - Access token `jti` added to Redis blacklist (TTL = remaining token expiry)
-  - Refresh token marked `is_revoked = true` in database
-  - `refresh_token` cookie cleared
-- **Error Responses:**
-  - `401 UNAUTHORIZED` - Invalid or expired access token
-- **Logic:** Calls `service.logout(userId, jti, tokenPayload)`
-
-### 2.5 GET /verify
-
-Validate access token and return user profile.
-
-- **Auth Required:** Yes (JwtAuthGuard)
-- **Headers:** `Authorization: Bearer <accessToken>`
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "id": "f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "buyer",
-      "merchantId": null,
-      "licenseStatus": null,
-      "avatarUrl": null,
-      "emailVerified": false,
-      "isActive": true,
-      "createdAt": "2026-08-10T12:00:00.000Z"
-    }
-  }
-  ```
-- **Error Responses:**
-  - `401 UNAUTHORIZED` - Invalid or expired access token
-  - `401 UNAUTHORIZED` - Token blacklisted (logged out)
-  - `403 FORBIDDEN` - Account deactivated
-- **Logic:** Calls `service.verifyToken(userId)`
-
-### 2.6 POST /forgot-password
-
-Request a password reset link via email.
-
-- **Auth Required:** No (Public)
-- **Body:** `ForgotPasswordDto`
-  - `email` (string, required, valid email format)
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "message": "If an account exists with that email, you'll receive a password reset link shortly."
-    }
-  }
-  ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` - Validation failed (invalid email format)
-  - `429 TOO_MANY_REQUESTS` - Rate limit exceeded (3 requests per email per hour)
-- **Logic:** Calls `service.forgotPassword(dto)`
-- **Rate Limit:** 3 attempts per email per hour
-- **Note:** Always returns same response regardless of whether email exists (prevents email enumeration)
-
-### 2.7 POST /reset-password
-
-Reset user password using a valid reset token.
-
-- **Auth Required:** No (Public — token in body)
-- **Body:** `ResetPasswordDto`
-  - `token` (string, required)
-  - `password` (string, required, min 8 chars, strong password)
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "message": "Your password has been reset successfully."
-    }
-  }
-  ```
-- **Error Responses:**
-  - `400 BAD_REQUEST` - Validation failed (weak password)
-  - `400 BAD_REQUEST` - Invalid or expired reset token
-  - `429 TOO_MANY_REQUESTS` - Rate limit exceeded
-- **Logic:** Calls `service.resetPassword(dto)`
+POST status codes use NestJS defaults unless an endpoint explicitly overrides them; no explicit status override is present on the auth controller POST handlers described below.
 
 ---
 
-## 3. Protected Endpoint Guards
+## 2. Public Authentication Endpoints
 
-All protected endpoints execute guards sequentially:
+### 2.1 `POST /auth/register`
 
-```typescript
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('auth')
-export class AuthController { ... }
-```
+Creates a buyer or merchant account.
 
-| Guard | Purpose | Behavior |
-|-------|---------|----------|
-| `JwtAuthGuard` | Validates JWT signature | Checks `Authorization: Bearer <token>` header. Verifies signature, expiry, and Redis blacklist. |
-| `RolesGuard` | Enforces role-based access | Checks `@Roles()` decorator against user's `role` claim in JWT payload. |
+- **Request content type:** `multipart/form-data`
+- **Fields:** `email`, `name`, `password`, optional `role` (`buyer` or `merchant`, default `buyer`), and optional file field `license`.
+- `name` is the merchant shop name as well as the account name for a merchant; there is no separate `shopName` request field.
+- A merchant must include a license file. A buyer must not include one.
+- The controller accepts only a PDF named `license.pdf` (case-insensitive) with a maximum size of 10 MB.
+- Backend DTO constraints: valid email; name length 2–100; password minimum 8; role restricted to buyer or merchant.
+- The frontend additionally requires password complexity, confirmation matching, and acceptance of the Terms of Service. Those client-only fields are not sent as backend DTO fields.
+- **Success body from service:** user data plus `accessToken` and `refreshToken`.
+- The Register page shows a success toast and navigates to `/login`; it does not set the returned tokens through `AuthProvider.register()`.
+- **Errors visible in controller/service:** validation and invalid upload errors (400), duplicate email (409); upload size limit is 10 MB.
+
+### 2.2 `POST /auth/login`
+
+- **Request:** JSON `{ "email": "user@example.com", "password": "..." }`.
+- **Validation:** valid email and password of at least 8 characters.
+- **Success body from service:** `{ "user": ..., "accessToken": "...", "refreshToken": "..." }`.
+- **Failure:** invalid email or password returns 401 with `Invalid credentials`.
+- On success, the frontend auth provider stores both returned tokens in local storage and sets the current user.
+- No refresh-token cookie is set by the auth controller implementation.
+
+### 2.3 `POST /auth/refresh`
+
+- **Request:** JSON `{ "refreshToken": "..." }`; the controller reads the token from the request DTO, not a cookie.
+- **Success:** returns the newly generated access and refresh tokens.
+- **Failure:** invalid or expired refresh-token validation is reported as 401.
+- The frontend attempts this endpoint after a 401 only when a refresh token is available in local storage.
+
+### 2.4 `POST /auth/logout`
+
+- **Authentication:** `JwtAuthGuard`; bearer access token required.
+- **Request body:** none.
+- **Behavior:** backend blacklists the supplied access token when it can read a valid expiry and marks the user's refresh-token records revoked.
+- **Response:** `{ "message": "Logged out successfully" }`.
+- The current frontend `AuthProvider.logout()` clears local client state but does not call this endpoint.
+
+### 2.5 `GET /auth/verify`
+
+- **Authentication:** `JwtAuthGuard`; bearer access token required.
+- **Success:** returns the current user's profile fields, including role, merchant/license fields when present, active-state fields, and creation time.
+- **Failure:** invalid authentication is rejected by the guard; a missing user in the service returns 401.
+- The frontend uses this endpoint during auth-provider initialization.
+
+### 2.6 `POST /auth/forgot-password`
+
+- **Request:** JSON `{ "email": "user@example.com" }`.
+- **Success for an existing account:** creates a six-digit code, stores its hash with a 10-minute expiry, attempts to email it, and returns a message indicating a verification code will be received.
+- **Unknown email:** the current service throws 404 `No account found with this email address`; it does not return the same successful response for unknown and known emails.
+- **Email delivery failure:** logged by the service; the service still returns its success message.
+- The frontend navigates to `/verify-code` with the entered email in router location state after an API success response.
+
+### 2.7 `POST /auth/verify-code`
+
+- **Request:** JSON `{ "email": "user@example.com", "code": "123456" }`.
+- **Validation:** email and exactly six characters for the code.
+- **Success:** `{ "message": "Verification code is valid." }`.
+- **Failure:** 400 `Invalid or expired verification code`.
+- Verification does not mark the code as used; the code is checked again by Reset Password.
+
+### 2.8 `POST /auth/reset-password`
+
+- **Request:** JSON `{ "email": "user@example.com", "code": "123456", "password": "..." }`.
+- **Validation:** email; exactly six-character code; password minimum 8 with uppercase, lowercase, digit, and one of `@$!%*?&`.
+- **Success:** `{ "message": "Your password has been reset successfully." }`.
+- **Failure:** 400 `Invalid or expired verification code` when the email/code pair has no valid, unused, unexpired code.
+- **Behavior:** updates the password, marks that code used, and marks the user's other unused password-reset records used.
 
 ---
 
-## 4. Rate Limiting Configuration
+## 3. Other Auth Controller Endpoints
 
-| Endpoint | Limit | Window | Key |
-|----------|-------|--------|-----|
-| `POST /register` | 3 attempts | 1 hour | IP address |
-| `POST /login` | 5 attempts | 5 minutes | IP address |
-| `POST /refresh` | 10 attempts | 1 minute | User ID |
-| `POST /logout` | 10 attempts | 1 minute | User ID |
-| `POST /forgot-password` | 3 attempts | 1 hour | Email address |
-| `POST /reset-password` | 5 attempts | 1 hour | Token hash |
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `PATCH` | `/auth/resubmit-license` | Merchant | Resubmit a rejected merchant's license PDF. |
+| `POST` | `/auth/create-admin` | Admin or super-admin | Create an administrative account. |
+| `PATCH` | `/auth/change-password` | Authenticated user | Change the authenticated user's password. |
 
-**Redis Key Pattern:** `rate:auth:{endpoint}:{identifier}`
+These routes are not part of the five public auth page flows documented in DD02.
 
 ---
 
-## 5. WebSocket Events (Post-Login)
+## 4. Cross-References
 
-After successful login, the frontend establishes a WebSocket connection:
-
-| Event | Direction | Payload | Description |
-|-------|-----------|---------|-------------|
-| `connect` | Client -> Server | JWT token | Authenticate WebSocket connection |
-| `join:user` | Client -> Server | `{ userId }` | Join user-specific room for notifications |
-| `statusUpdate` | Server -> Client | `{ type, data }` | Order/status change notifications |
-| `disconnect` | Client -> Server | — | Handle disconnection |
-
----
-
-## 6. Cross-References
-
-| Related Document | Purpose |
-|-----------------|---------|
-| [DD_AUTH_01](./DD_SignUp_Login_01_MODULE_OVERVIEW.md) | Module overview and architecture |
-| [DD_AUTH_02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend page design |
-| [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | Full DTO definitions |
-| [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Backend business rules |
-| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Full functional specification |
+| Related document | Purpose |
+|---|---|
+| [DD SignUp/Login 01](./DD_SignUp_Login_01_MODULE_OVERVIEW.md) | Module overview |
+| [DD SignUp/Login 02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend interactions |
+| [DD SignUp/Login 04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | Request and response shapes |
+| [DD SignUp/Login 05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Endpoint processing |

@@ -6,6 +6,7 @@
     "e2e/tests/SignUp_LogIn/auth.spec.ts",
     "e2e/tests/SignUp_LogIn/forgot-password.spec.ts",
     "e2e/tests/SignUp_LogIn/reset-password.spec.ts",
+    "e2e/tests/SignUp_LogIn/verify-code.spec.ts",
     "e2e/tests/SignUp_LogIn/api-auth.spec.ts"
   ],
   "format": "pcl-id-keyed",
@@ -45,6 +46,54 @@
       { "file": "auth.spec.ts", "title": "should display register correctly on mobile viewport" }
     ],
     "N-18": [{ "file": "auth.spec.ts", "title": "should have no horizontal overflow at 320px width" }],
+    "N-19": [{ "file": "login.spec.ts", "title": "should switch language on login page" }],
+    "N-20": [{ "file": "register.spec.ts", "title": "should switch language on register page" }],
+    "N-21": [{ "file": "forgot-password.spec.ts", "title": "should switch language on forgot password page" }],
+    "N-22": [{ "file": "reset-password.spec.ts", "title": "should switch language on reset password page" }],
+    "N-23": [{ "file": "register.spec.ts", "title": "N-23: should register as buyer successfully in Myanmar language" }],
+    "N-24": [{ "file": "register.spec.ts", "title": "N-24: should register as merchant in Myanmar language" }],
+    "N-25": [{ "file": "login.spec.ts", "title": "N-25: should login successfully in Myanmar language" }],
+    "N-26": [{ "file": "forgot-password.spec.ts", "title": "should submit forgot password in Myanmar language" }],
+    "N-27": [{ "file": "reset-password.spec.ts", "title": "N-27: should reset password in Myanmar language" }],
+    "N-28": [
+      { "file": "login.spec.ts", "title": "should display login form with all fields" },
+      { "file": "login.spec.ts", "title": "should have correct page title" }
+    ],
+    "N-29": [{ "file": "login.spec.ts", "title": "should show toast notification on successful login" }],
+    "N-30": [
+      { "file": "auth.spec.ts", "title": "should log in as merchant and navigate to merchant dashboard" }
+    ],
+    "N-31": [{ "file": "register.spec.ts", "title": "should display register form with all fields" }],
+    "N-32": [
+      { "file": "register.spec.ts", "title": "should have buyer selected by default" },
+      { "file": "register.spec.ts", "title": "should hide license upload for buyer role" }
+    ],
+    "N-33": [
+      { "file": "register.spec.ts", "title": "should show license upload when merchant role selected" }
+    ],
+    "N-34": [
+      { "file": "register.spec.ts", "title": "should show weak indicator for short password" },
+      { "file": "register.spec.ts", "title": "should show strong indicator for complex password" }
+    ],
+    "N-35": [
+      { "file": "login.spec.ts", "title": "should redirect to dashboard if already logged in" },
+      { "file": "register.spec.ts", "title": "should redirect to dashboard if already logged in" }
+    ],
+    "N-36": [
+      { "file": "verify-code.spec.ts", "title": "should navigate to reset password page with valid 6-digit code" }
+    ],
+    "N-37": [
+      { "file": "verify-code.spec.ts", "title": "should mask the recipient email address in the description" }
+    ],
+    "N-38": [
+      { "file": "verify-code.spec.ts", "title": "should resend code and start 60-second cooldown" }
+    ],
+    "N-39": [
+      { "file": "verify-code.spec.ts", "title": "should return to forgot password via Back to Email link" }
+    ],
+    "N-40": [
+      { "file": "verify-code.spec.ts", "title": "should switch language on verify code page" }
+    ],
     "A-01": [{ "file": "register.spec.ts", "title": "should show errors for empty form submission" }],
     "A-02": [{ "file": "register.spec.ts", "title": "should show error for duplicate email" }],
     "A-03": [{ "file": "register.spec.ts", "title": "should show error for password missing uppercase" }],
@@ -74,12 +123,61 @@
     ],
     "A-17": [{ "file": "reset-password.spec.ts", "title": "should show error for password mismatch on reset form" }],
     "A-18": [{ "file": "reset-password.spec.ts", "title": "should show error for weak password on reset form" }],
-    "A-19": [{ "file": "reset-password.spec.ts", "title": "should show error for invalid reset token" }],
+    "A-19": [
+      {
+        "file": "reset-password.spec.ts",
+        "title": "should show error for invalid reset token"
+      },
+      {
+        "file": "auth.spec.ts",
+        "title": "should redirect to forgot password when reset page opened without code"
+      }
+    ],
+    "A-20": [{ "file": "register.spec.ts", "title": "A-20: should show empty field errors in Myanmar language" }],
+    "A-21": [{ "file": "register.spec.ts", "title": "A-21: should show duplicate email error in Myanmar language" }],
+    "A-22": [{ "file": "login.spec.ts", "title": "A-22: should show invalid credentials error in Myanmar language" }],
+    "A-23": [{ "file": "forgot-password.spec.ts", "title": "should show invalid email error in Myanmar language" }],
+    "A-24": [{ "file": "reset-password.spec.ts", "title": "A-24: should show password mismatch error in Myanmar language" }],
+    "A-25": [{ "file": "login.spec.ts", "title": "A-25: should show invalid credentials error in Japanese" }],
+    "A-26": [{ "file": "register.spec.ts", "title": "should show error when terms not checked" }],
+    "A-27": [{ "file": "register.spec.ts", "title": "should show error for invalid email format" }],
+    "A-28": [{ "file": "register.spec.ts", "title": "should show error for short password" }],
+    "A-29": [{ "file": "register.spec.ts", "title": "should show error for merchant without shop name" }],
+    "A-30": [
+      { "file": "login.spec.ts", "title": "should show validation error for invalid email format" }
+    ],
+    "A-31": [{ "file": "login.spec.ts", "title": "should show validation error for short password" }],
+    "A-32": [
+      {
+        "file": "auth.spec.ts",
+        "title": "should show generic error for wrong credentials without leaking account existence"
+      }
+    ],
+    "A-33": [
+      { "file": "verify-code.spec.ts", "title": "should show required error when verification code is empty" }
+    ],
+    "A-34": [
+      { "file": "verify-code.spec.ts", "title": "should show length error for code shorter than 6 digits" }
+    ],
+    "A-35": [
+      { "file": "verify-code.spec.ts", "title": "should show invalid code alert for unissued code" }
+    ],
+    "A-36": [
+      { "file": "verify-code.spec.ts", "title": "should redirect to forgot password when opened directly without email state" }
+    ],
     "B-01": [{ "file": "register.spec.ts", "title": "should accept name at minimum length (2 chars)" }],
     "B-02": [{ "file": "register.spec.ts", "title": "should accept name at reasonable length (50 chars)" }],
     "B-03": [{ "file": "register.spec.ts", "title": "should accept password at minimum length (8 chars)" }],
     "B-04": [{ "file": "register.spec.ts", "title": "should accept password at maximum length (128 chars)" }],
     "B-05": [{ "file": "register.spec.ts", "title": "should accept license file named License.PDF (uppercase)" }],
+    "B-06": [{ "file": "register.spec.ts", "title": "should validate name boundaries in Myanmar language" }],
+    "B-07": [{ "file": "register.spec.ts", "title": "should block name longer than 200 characters" }],
+    "B-08": [
+      { "file": "verify-code.spec.ts", "title": "should enforce exactly 6 digits as the accepted boundary" }
+    ],
+    "B-09": [
+      { "file": "verify-code.spec.ts", "title": "should enable resend button exactly when cooldown reaches zero" }
+    ],
     "I-01": [{ "file": "api-auth.spec.ts", "title": "should return 201 with user data for valid buyer registration" }],
     "I-02": [{ "file": "api-auth.spec.ts", "title": "should return 409 when registering with existing email" }],
     "I-03": [{ "file": "api-auth.spec.ts", "title": "should return accessToken for valid credentials" }],
@@ -95,8 +193,13 @@
     "I-13": [{ "file": "api-auth.spec.ts", "title": "should return 400 for invalid reset token" }],
     "I-14": [{ "file": "api-auth.spec.ts", "title": "should return 400 for weak password" }],
     "I-15": [{ "file": "api-auth.spec.ts", "title": "should return error with statusCode, message, error" }],
-    "I-16": [],
+    "I-16": [{ "file": "api-auth.spec.ts", "title": "should not set refresh_token cookie on login" }],
     "I-17": [{ "file": "api-auth.spec.ts", "title": "should return merchant data for merchant registration" }],
-    "I-18": [{ "file": "api-auth.spec.ts", "title": "should return tokens for buyer registration" }]
+    "I-18": [{ "file": "api-auth.spec.ts", "title": "should return tokens for buyer registration" }],
+    "I-19": [{ "file": "api-auth.spec.ts", "title": "should return Myanmar error messages when Accept-Language is my" }],
+    "I-20": [
+      { "file": "api-auth.spec.ts", "title": "should return 201 for valid verification code" },
+      { "file": "api-auth.spec.ts", "title": "should return 400 for invalid verification code" }
+    ]
   }
 }

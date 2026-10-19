@@ -49,7 +49,7 @@ export default function ForgotPassword() {
     } catch (err) {
       const errorMessage =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        (err instanceof Error ? err.message : 'Failed to send verification code')
+        (err instanceof Error ? err.message : t('auth.forgotPassword.errorFallback', 'Failed to send verification code'))
       setError(errorMessage)
     } finally {
       setIsLoading(false)

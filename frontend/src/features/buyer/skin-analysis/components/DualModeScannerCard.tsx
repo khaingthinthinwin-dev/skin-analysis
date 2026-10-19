@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getApiErrorMessage } from '../utils/api-error'
+import { validateHumanFace } from '../utils/face-detection.util'
 
 interface DualModeScannerCardProps {
   onAnalyze: (file: File, consent: boolean) => Promise<unknown>
@@ -46,6 +47,7 @@ export function DualModeScannerCard({
   const [stagedPreview, setStagedPreview] = useState<string | null>(null)
   const [consent, setConsent] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isValidatingFace, setIsValidatingFace] = useState(false)
 
   // Camera stream state
   const [isStreaming, setIsStreaming] = useState(false)
@@ -57,7 +59,7 @@ export function DualModeScannerCard({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
-  const busy = isUploading || isAnalyzing
+  const busy = isUploading || isAnalyzing || isValidatingFace
 
   // Stop camera stream helper
   const stopCameraStream = useCallback(() => {
@@ -136,9 +138,24 @@ export function DualModeScannerCard({
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     canvas.toBlob(
-      (blob) => {
+      async (blob) => {
         if (!blob) return
         const file = new File([blob], `selfie-scan-${Date.now()}.jpg`, { type: 'image/jpeg' })
+
+        setIsValidatingFace(true)
+        try {
+          const result = await validateHumanFace(file)
+          if (!result.isHumanFace) {
+            setError(t('upload.error.notHumanFace'))
+            return
+          }
+        } catch {
+          setError(t('upload.error.faceValidationFailed'))
+          return
+        } finally {
+          setIsValidatingFace(false)
+        }
+
         setStagedFile(file)
         setStagedPreview(URL.createObjectURL(file))
         stopCameraStream()
@@ -146,7 +163,7 @@ export function DualModeScannerCard({
       'image/jpeg',
       0.95,
     )
-  }, [stopCameraStream])
+  }, [stopCameraStream, t])
 
   // Toggle front/back camera
   const handleToggleFacingMode = useCallback(() => {
@@ -170,7 +187,7 @@ export function DualModeScannerCard({
 
   // Handle uploaded file
   const handleProcessFile = useCallback(
-    (file: File) => {
+    async (file: File) => {
       setError(null)
       if (!ACCEPTED_TYPES.includes(file.type)) {
         setError(t('upload.error.invalidFormat', { types: 'JPG, PNG, WebP' }))
@@ -179,6 +196,20 @@ export function DualModeScannerCard({
       if (file.size > MAX_SIZE) {
         setError(t('upload.error.fileTooLarge', { maxSize: '10MB' }))
         return
+      }
+
+      setIsValidatingFace(true)
+      try {
+        const result = await validateHumanFace(file)
+        if (!result.isHumanFace) {
+          setError(t('upload.error.notHumanFace'))
+          return
+        }
+      } catch {
+        setError(t('upload.error.faceValidationFailed'))
+        return
+      } finally {
+        setIsValidatingFace(false)
       }
 
       setStagedFile(file)

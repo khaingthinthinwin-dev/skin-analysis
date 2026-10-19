@@ -21,6 +21,7 @@ import {
   Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
@@ -76,16 +77,16 @@ function displayState(ad: Advertisement): DisplayState {
   return ad.title || ad.imageUrl ? 'content_uploaded' : 'draft'
 }
 
-const tierLabels: Record<string, string> = {
-  basic: 'Basic',
-  standard: 'Standard',
-  premium: 'Premium',
+function tierLabel(tier: string, t: (key: string) => string) {
+  const key = `merchant.advertisements.tier.${tier}`
+  const label = t(key)
+  return label === key ? tier : label
 }
 
-const paymentLabels: Record<string, string> = {
-  pending: 'Pending',
-  completed: 'Completed',
-  refunded: 'Refunded',
+function paymentLabel(status: string, t: (key: string) => string) {
+  const key = `merchant.advertisements.payment.${status}`
+  const label = t(key)
+  return label === key ? status : label
 }
 
 // Badge colors per 画面項目設計書 §4.7: pending = amber, approved = green, rejected = red.
@@ -103,11 +104,13 @@ const paymentBadgeClass: Record<string, string> = {
 }
 
 // EL-12a: approval badge shows Draft / Content Uploaded / Pending / Approved / Rejected.
-function approvalBadgeText(ad: Advertisement) {
-  if (ad.approvalStatus === 'rejected') return 'Rejected'
-  if (ad.approvalStatus === 'approved') return 'Approved'
-  if (ad.paymentStatus === 'completed') return 'Pending'
-  return ad.title || ad.imageUrl ? 'Content Uploaded' : 'Draft'
+function approvalBadgeText(ad: Advertisement, t: (key: string) => string) {
+  if (ad.approvalStatus === 'rejected') return t('merchant.advertisements.approval.rejected')
+  if (ad.approvalStatus === 'approved') return t('merchant.advertisements.approval.approved')
+  if (ad.paymentStatus === 'completed') return t('merchant.advertisements.approval.pending')
+  return ad.title || ad.imageUrl
+    ? t('merchant.advertisements.approval.contentUploaded')
+    : t('merchant.advertisements.approval.draft')
 }
 
 function formatDate(value: string | Date | null) {
@@ -167,6 +170,7 @@ function toContentPayload(values: ContentForm, includeSchedule: boolean): AdCont
 }
 
 export default function Advertisements() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPage] = useState(1)
@@ -335,7 +339,7 @@ export default function Advertisements() {
 
   const statCards = [
     {
-      label: 'Active Ads',
+      label: t('merchant.advertisements.stats.active'),
       value: stats.active,
       icon: Megaphone,
       cardClass: 'bg-secondary/50',
@@ -350,7 +354,7 @@ export default function Advertisements() {
       },
     },
     {
-      label: 'Pending Approval',
+      label: t('merchant.advertisements.stats.pending'),
       value: stats.pending,
       icon: Hourglass,
       cardClass: 'bg-secondary/50',
@@ -365,7 +369,7 @@ export default function Advertisements() {
       },
     },
     {
-      label: 'Expired',
+      label: t('merchant.advertisements.stats.expired'),
       value: stats.expired,
       icon: History,
       cardClass: 'bg-secondary/50',
@@ -388,9 +392,9 @@ export default function Advertisements() {
       setSelectedPackage(null)
       setConfirmingSelection(false)
       setContentTarget(ad)
-      toast.success('Advertisement draft created')
+      toast.success(t('merchant.advertisements.toast.draftCreated'))
     } catch {
-      toast.error('Selected advertising package is unavailable')
+      toast.error(t('merchant.advertisements.toast.packageUnavailable'))
     }
   }
 
@@ -404,7 +408,7 @@ export default function Advertisements() {
         const updatedAd = await uploadContent.mutateAsync({ id: target.id, payload: toContentPayload(values, true) })
         setContentTarget(null)
         setEditTarget(null)
-        toast.success('Advertisement content saved')
+        toast.success(t('merchant.advertisements.toast.contentSaved'))
         setPayTarget(updatedAd)
       } else {
         // Content-uploaded ads that have not been paid yet may re-pick their
@@ -413,10 +417,10 @@ export default function Advertisements() {
         const includeSchedule = target.approvalStatus === 'rejected' || target.paymentStatus === 'pending'
         await updateContent.mutateAsync({ id: target.id, payload: toContentPayload(values, includeSchedule) })
         setEditTarget(null)
-        toast.success('Advertisement content saved')
+        toast.success(t('merchant.advertisements.toast.contentSaved'))
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save advertisement content'
+      const message = error instanceof Error ? error.message : t('merchant.advertisements.toast.contentSaveFailed')
       toast.error(message)
     }
   }
@@ -430,10 +434,10 @@ export default function Advertisements() {
         payload: toContentPayload(values, target.approvalStatus === 'rejected'),
       })
       setEditTarget(null)
-      toast.success('Advertisement saved. Payment required to resubmit.')
+      toast.success(t('merchant.advertisements.toast.savedPaymentRequired'))
       setPayTarget(updatedAd)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save advertisement content'
+      const message = error instanceof Error ? error.message : t('merchant.advertisements.toast.contentSaveFailed')
       toast.error(message)
     }
   }
@@ -454,9 +458,9 @@ export default function Advertisements() {
     try {
       await pay.mutateAsync({ id: payTarget.id, paymentReference })
       closePayDialog()
-      toast.success('Advertisement submitted for approval')
+      toast.success(t('merchant.advertisements.toast.submitted'))
     } catch {
-      toast.error('Payment failed. Please try again.')
+      toast.error(t('merchant.advertisements.toast.paymentFailed'))
     }
   }
 
@@ -464,10 +468,10 @@ export default function Advertisements() {
     if (!deleteTarget) return
     try {
       await remove.mutateAsync(deleteTarget.id)
-      toast.success('Advertisement deleted')
+      toast.success(t('merchant.advertisements.toast.deleted'))
       setDeleteTarget(null)
     } catch {
-      toast.error('Unable to delete advertisement')
+      toast.error(t('merchant.advertisements.toast.deleteFailed'))
     }
   }
 
@@ -485,16 +489,16 @@ export default function Advertisements() {
   const paymentReferenceResult = paymentSchema.shape.paymentReference.safeParse(paymentReference)
   const paymentReferenceError = paymentReferenceResult.success
     ? null
-    : paymentReferenceResult.error.issues[0]?.message ?? 'Invalid payment reference'
+    : paymentReferenceResult.error.issues[0]?.message ?? t('merchant.advertisements.invalidPaymentReference')
 
   return (
     <div className="space-y-6">
       {/* Page Header (EL-01 / EL-02) */}
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          <Megaphone className="h-6 w-6 text-primary sm:h-7 sm:w-7" /> Advertisements
+          <Megaphone className="h-6 w-6 text-primary sm:h-7 sm:w-7" /> {t('merchant.advertisements.title')}
         </h1>
-        <p className="text-muted-foreground">Select an advertising package, upload your content, and manage your advertisements.</p>
+        <p className="text-muted-foreground">{t('merchant.advertisements.subtitle')}</p>
       </div>
 
       {/* Deactivated Banner */}
@@ -504,10 +508,9 @@ export default function Advertisements() {
       {!isDeactivated && isPendingMerchant && (
         <Alert variant="warning">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Account Pending</AlertTitle>
+          <AlertTitle>{t('merchant.products.banner.pendingTitle')}</AlertTitle>
           <AlertDescription>
-            Your merchant account is currently pending admin approval. Some features are restricted until your license is
-            approved.
+            {t('merchant.products.banner.pendingDescription')}
           </AlertDescription>
         </Alert>
       )}
@@ -516,12 +519,11 @@ export default function Advertisements() {
       {!isDeactivated && isRejectedMerchant && (
         <Alert className="border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20">
           <ShieldAlert className="h-4 w-4 text-destructive" />
-          <AlertTitle>Account Rejected</AlertTitle>
+          <AlertTitle>{t('merchant.products.banner.rejectedTitle')}</AlertTitle>
           <AlertDescription>
-            Your merchant account has been rejected. Product management features are restricted. You can resubmit your
-            license from your Profile page.{' '}
+            {t('merchant.products.banner.rejectedDescription')}{' '}
             <Link to="/merchant/profile" className="underline font-semibold">
-              Go to Profile
+              {t('merchant.products.banner.goToProfile')}
             </Link>
           </AlertDescription>
         </Alert>
@@ -557,8 +559,8 @@ export default function Advertisements() {
       {/* Package Catalog (§4.5) */}
       <section id="available-packages" className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold">Available Packages</h2>
-          <p className="text-sm text-muted-foreground">Admin-created packages with fixed campaign durations.</p>
+          <h2 className="text-xl font-semibold">{t('merchant.advertisements.availablePackages')}</h2>
+          <p className="text-sm text-muted-foreground">{t('merchant.advertisements.packageDescription')}</p>
         </div>
         {packagesQuery.isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -569,7 +571,7 @@ export default function Advertisements() {
         ) : packages.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              No advertisement packages are available right now. Please check back later.
+              {t('merchant.advertisements.noPackages')}
             </CardContent>
           </Card>
         ) : (
@@ -590,28 +592,28 @@ export default function Advertisements() {
                       <CardTitle className="text-base">{packageLabel(pkg.placement)}</CardTitle>
                       <div className="flex items-center gap-1">
                         {highlightedPackageId === pkg.id && (
-                          <Badge className="bg-purple-600 text-white">Updated</Badge>
+                          <Badge className="bg-purple-600 text-white">{t('merchant.advertisements.updated')}</Badge>
                         )}
                         <Badge variant="secondary" className="capitalize">
-                          {tierLabels[pkg.tier] ?? pkg.tier}
+                          {tierLabel(pkg.tier, t)}
                         </Badge>
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap items-baseline gap-1">
                       <span className="text-2xl font-bold text-primary sm:text-3xl">{formatFee(pkg.dailyRate)} KS</span>
-                      <span className="text-sm text-muted-foreground">/day</span>
+                      <span className="text-sm text-muted-foreground">{t('merchant.advertisements.perDay')}</span>
                     </div>
                   </CardHeader>
                   <CardContent className="flex flex-1 flex-col gap-4">
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> {pkg.durationDays}-day campaign
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> {t('merchant.advertisements.durationDays', { count: pkg.durationDays })}
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> Up to {pkg.maxAds} ads
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> {t('merchant.advertisements.upToAds', { count: pkg.maxAds })}
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> Total fee:{' '}
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" /> {t('merchant.advertisements.totalFee')}:{' '}
                         <span className="font-semibold text-foreground">{formatFee(pkg.totalFee)} KS</span>
                       </li>
                     </ul>
@@ -623,7 +625,7 @@ export default function Advertisements() {
                         setConfirmingSelection(true)
                       }}
                     >
-                      Select Package
+                      {t('merchant.advertisements.selectPackage')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -639,15 +641,15 @@ export default function Advertisements() {
       {/* Your Advertisements (§4.6 Toolbar + §4.7 Ad Cards + §4.8 Pagination) */}
       <section id="merchant-advertisements" className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <h2 className="text-xl font-semibold">Your Advertisements</h2>
+          <h2 className="text-xl font-semibold">{t('merchant.advertisements.yourAds')}</h2>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                aria-label="Search ads"
+                aria-label={t('merchant.advertisements.searchLabel')}
                 className="pl-9 sm:w-64"
                 maxLength={100}
-                placeholder="Search ads..."
+                placeholder={t('merchant.advertisements.searchPlaceholder')}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -659,14 +661,14 @@ export default function Advertisements() {
                 setPage(1)
               }}
             >
-              <SelectTrigger className="sm:w-[150px]" aria-label="Status filter">
-                <SelectValue placeholder="Status" />
+              <SelectTrigger className="sm:w-[150px]" aria-label={t('merchant.advertisements.statusFilter')}>
+                <SelectValue placeholder={t('merchant.advertisements.status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Status: All</SelectItem>
-                <SelectItem value="active">Status: Active</SelectItem>
-                <SelectItem value="inactive">Status: Inactive</SelectItem>
-                <SelectItem value="expired">Status: Expired</SelectItem>
+                <SelectItem value="all">{t('merchant.advertisements.statusAll')}</SelectItem>
+                <SelectItem value="active">{t('merchant.advertisements.statusActive')}</SelectItem>
+                <SelectItem value="inactive">{t('merchant.advertisements.statusInactive')}</SelectItem>
+                <SelectItem value="expired">{t('merchant.advertisements.statusExpired')}</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -676,19 +678,19 @@ export default function Advertisements() {
                 setPage(1)
               }}
             >
-              <SelectTrigger className="sm:w-[170px]" aria-label="Approval status filter">
-                <SelectValue placeholder="Approval" />
+              <SelectTrigger className="sm:w-[170px]" aria-label={t('merchant.advertisements.approvalFilter')}>
+                <SelectValue placeholder={t('merchant.advertisements.approvalLabel')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Approval: All</SelectItem>
-                <SelectItem value="pending">Approval: Pending</SelectItem>
-                <SelectItem value="approved">Approval: Approved</SelectItem>
-                <SelectItem value="rejected">Approval: Rejected</SelectItem>
+                <SelectItem value="all">{t('merchant.advertisements.approvalAll')}</SelectItem>
+                <SelectItem value="pending">{t('merchant.advertisements.approvalPending')}</SelectItem>
+                <SelectItem value="approved">{t('merchant.advertisements.approvalApproved')}</SelectItem>
+                <SelectItem value="rejected">{t('merchant.advertisements.approvalRejected')}</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={adsQuery.isFetching}>
               <RefreshCw className={`mr-1.5 h-4 w-4 ${adsQuery.isFetching ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('merchant.advertisements.refresh')}
             </Button>
           </div>
         </div>
@@ -703,8 +705,8 @@ export default function Advertisements() {
           <Card>
             <CardContent className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
               <Megaphone className="h-10 w-10" />
-              <p>No advertisements found.</p>
-              <p className="text-sm">Select a package above to create your first advertisement.</p>
+              <p>{t('merchant.advertisements.empty')}</p>
+              <p className="text-sm">{t('merchant.advertisements.emptyHint')}</p>
             </CardContent>
           </Card>
         ) : (
@@ -726,7 +728,7 @@ export default function Advertisements() {
                     {
                       onSuccess: () =>
                         toast.success(
-                          next ? 'Advertisement activated' : 'Advertisement deactivated',
+                          next ? t('merchant.advertisements.toast.activated') : t('merchant.advertisements.toast.deactivated'),
                         ),
                       onError: (error) => {
                         const axiosError = error as {
@@ -736,7 +738,7 @@ export default function Advertisements() {
                           axiosError.response?.data?.message ||
                             (error instanceof Error
                               ? error.message
-                              : 'Unable to update advertisement status'),
+                              : t('merchant.advertisements.toast.statusUpdateFailed')),
                         )
                       },
                     },
@@ -755,16 +757,16 @@ export default function Advertisements() {
       <Dialog open={confirmingSelection} onOpenChange={setConfirmingSelection}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Select Advertising Package</DialogTitle>
+            <DialogTitle>{t('merchant.advertisements.selectPackageTitle')}</DialogTitle>
           </DialogHeader>
           {selectedPackage && (
             <div className="space-y-2 text-sm">
               {(
                 [
-                  ['Placement', packageLabel(selectedPackage.placement)],
-                  ['Tier', tierLabels[selectedPackage.tier] ?? selectedPackage.tier],
-                  ['Daily Rate', `${formatFee(selectedPackage.dailyRate)} KS/day`],
-                  ['Duration', `${selectedPackage.durationDays} days`],
+                  [t('merchant.advertisements.placement'), packageLabel(selectedPackage.placement)],
+                  [t('merchant.advertisements.tierLabel'), tierLabel(selectedPackage.tier, t)],
+                  [t('merchant.advertisements.dailyRate'), `${formatFee(selectedPackage.dailyRate)} KS${t('merchant.advertisements.perDay')}`],
+                  [t('merchant.advertisements.duration'), t('merchant.advertisements.durationDays', { count: selectedPackage.durationDays })],
                 ] as const
               ).map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4">
@@ -773,17 +775,17 @@ export default function Advertisements() {
                 </div>
               ))}
               <div className="flex justify-between gap-4 border-t pt-2">
-                <span className="text-muted-foreground">Total Fee</span>
+                <span className="text-muted-foreground">{t('merchant.advertisements.totalFee')}</span>
                 <span className="shrink-0 font-bold text-primary">{formatFee(selectedPackage.totalFee)} KS</span>
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmingSelection(false)} disabled={selectPackage.isPending}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSelect} disabled={selectPackage.isPending}>
-              {selectPackage.isPending ? 'Selecting...' : 'Confirm Selection'}
+              {selectPackage.isPending ? t('merchant.advertisements.selecting') : t('merchant.advertisements.confirmSelection')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -808,10 +810,10 @@ export default function Advertisements() {
       <Dialog open={Boolean(payTarget)} onOpenChange={(open) => !open && closePayDialog()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Pay Advertising Fee</DialogTitle>
+            <DialogTitle>{t('merchant.advertisements.payFeeTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-            <p className="font-semibold text-primary">Advertising Fee: {payFeeTotal !== null && payFeeTotal !== undefined ? `${formatFee(payFeeTotal)} KS` : 'Calculated at payment'}</p>
+            <p className="font-semibold text-primary">{t('merchant.advertisements.advertisingFee')}: {payFeeTotal !== null && payFeeTotal !== undefined ? `${formatFee(payFeeTotal)} KS` : t('merchant.advertisements.calculatedAtPayment')}</p>
             {payPackage && (
               <p className="text-muted-foreground">
                 {payPackage.durationDays} days × {formatFee(payPackage.dailyRate)} KS/day
@@ -819,12 +821,12 @@ export default function Advertisements() {
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="payment-reference">Payment reference</Label>
+            <Label htmlFor="payment-reference">{t('merchant.advertisements.paymentReference')}</Label>
             <Input
               id="payment-reference"
               inputMode="numeric"
               maxLength={100}
-              placeholder="Payment transaction reference"
+              placeholder={t('merchant.advertisements.paymentReferencePlaceholder')}
               value={paymentReference}
               onChange={(event) => {
                 setPaymentReference(event.target.value.replace(/\D/g, ''))
@@ -836,16 +838,16 @@ export default function Advertisements() {
                 {paymentReferenceError}
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground">Enter at least 8 digits.</p>
+              <p className="text-xs text-muted-foreground">{t('merchant.advertisements.paymentReferenceHint')}</p>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closePayDialog} disabled={pay.isPending}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handlePay} disabled={pay.isPending || paymentReferenceError !== null}>
               <CreditCard className="mr-2 h-4 w-4" />
-              {pay.isPending ? 'Processing payment...' : 'Pay & Submit'}
+              {pay.isPending ? t('merchant.advertisements.processingPayment') : t('merchant.advertisements.paySubmit')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -859,19 +861,19 @@ export default function Advertisements() {
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={confirmDelete}
-        title="Delete Advertisement"
+        title={t('merchant.advertisements.deleteTitle')}
         description={
           deleteTarget?.paymentStatus === 'pending'
             ? deleteTarget.title
-              ? `Are you sure you want to delete "${deleteTarget.title}"? It has not been paid and will be permanently deleted from the system.`
-              : 'Are you sure you want to delete this draft? It has not been paid and will be permanently deleted from the system.'
+              ? t('merchant.advertisements.deleteUnpaidNamed', { title: deleteTarget.title })
+              : t('merchant.advertisements.deleteUnpaidDraft')
             : deleteTarget && displayState(deleteTarget) === 'expired'
               ? deleteTarget.title
-                ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement has expired and will be permanently deleted from the system.`
-                : 'Are you sure you want to delete this advertisement? It has expired and will be permanently deleted from the system.'
+                ? t('merchant.advertisements.deleteExpiredNamed', { title: deleteTarget.title })
+                : t('merchant.advertisements.deleteExpired')
               : deleteTarget?.title
-                ? `Are you sure you want to delete "${deleteTarget.title}"? The advertisement will be deactivated and kept for history.`
-                : 'Are you sure you want to delete this advertisement? It will be deactivated and kept for history.'
+                ? t('merchant.advertisements.deleteKeepHistoryNamed', { title: deleteTarget.title })
+                : t('merchant.advertisements.deleteKeepHistory')
         }
         isLoading={remove.isPending}
       />
@@ -886,15 +888,16 @@ interface PaginationProps {
 }
 
 function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
+  const { t } = useTranslation()
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1)
   return (
     <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
       <span className="text-sm text-muted-foreground">
-        Page {page} of {totalPages}
+        {t('merchant.advertisements.pageInfo', { page, totalPages })}
       </span>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(Math.max(1, page - 1))}>
-          <ChevronLeft className="mr-1 h-4 w-4" /> Prev
+          <ChevronLeft className="mr-1 h-4 w-4" /> {t('common.actions.previous')}
         </Button>
         {pages.map((pageNumber) => (
           <Button
@@ -907,7 +910,7 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
           </Button>
         ))}
         <Button size="sm" disabled={page >= totalPages} onClick={() => onPageChange(Math.min(totalPages, page + 1))}>
-          Next <ChevronRight className="ml-1 h-4 w-4" />
+          {t('common.actions.next')} <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
     </div>
@@ -926,6 +929,7 @@ interface AdCardProps {
 }
 
 function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onToggle, onView }: AdCardProps) {
+  const { t } = useTranslation()
   const state = displayState(ad)
   const isRejected = ad.approvalStatus === 'rejected'
   const canEdit = state === 'draft' || state === 'content_uploaded'
@@ -973,28 +977,28 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
       {/* Ad Thumbnail (EL-10) with approval status badge (EL-12a) */}
       <div className="relative aspect-video w-full overflow-hidden bg-muted">
         {ad.imageUrl ? (
-          <img src={getImageUrl(ad.imageUrl)} alt={ad.title || 'Advertisement'} className="h-full w-full object-cover" />
+          <img src={getImageUrl(ad.imageUrl)} alt={ad.title || t('merchant.advertisements.title')} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <ImagePlus className="h-10 w-10 text-muted-foreground" />
           </div>
         )}
         <div className="absolute right-2 top-2">
-          <Badge className={approvalBadgeClass[ad.approvalStatus] ?? ''}>{approvalBadgeText(ad)}</Badge>
+          <Badge className={approvalBadgeClass[ad.approvalStatus] ?? ''}>{approvalBadgeText(ad, t)}</Badge>
         </div>
       </div>
 
       <CardContent className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="break-words text-base font-semibold">{ad.title || 'Draft advertisement'}</h3>
+        <h3 className="break-words text-base font-semibold">{ad.title || t('merchant.advertisements.draftAd')}</h3>
         {packageInfo && (
-          <p className="text-sm text-muted-foreground">Placement: {packageLabel(packageInfo.placement)}</p>
+          <p className="text-sm text-muted-foreground">{t('merchant.advertisements.placement')}: {packageLabel(packageInfo.placement)}</p>
         )}
         {packageInfo && (
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm text-muted-foreground">
-              {tierLabels[packageInfo.tier] ?? packageInfo.tier} Package • {formatFee(packageInfo.dailyRate)} KS/day
+              {tierLabel(packageInfo.tier, t)} {t('merchant.advertisements.package')} • {formatFee(packageInfo.dailyRate)} KS{t('merchant.advertisements.perDay')}
             </p>
-            <Badge className={paymentBadgeClass[ad.paymentStatus] ?? ''}>{paymentLabels[ad.paymentStatus] ?? ad.paymentStatus}</Badge>
+            <Badge className={paymentBadgeClass[ad.paymentStatus] ?? ''}>{paymentLabel(ad.paymentStatus, t)}</Badge>
           </div>
         )}
         {ad.content && (
@@ -1011,12 +1015,12 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
           <div className="space-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4" />
-              <span>Start date:</span>
+              <span>{t('merchant.advertisements.startDate')}:</span>
               <span className="font-medium text-foreground">{ad.startsAt.slice(0, 10)}</span>
             </span>
             <span className="flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4" />
-              <span>End date:</span>
+              <span>{t('merchant.advertisements.endDate')}:</span>
               <span className="font-medium text-foreground">{ad.expiresAt.slice(0, 10)}</span>
             </span>
           </div>
@@ -1025,7 +1029,7 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
           <div className="rounded-md border-2 border-amber-500 bg-amber-100 p-3 text-sm font-medium text-amber-800 dark:border-amber-500 dark:bg-amber-900/60 dark:text-amber-200">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Your Advertisement will expire tomorrow.</span>
+              <span>{t('merchant.advertisements.expiresTomorrow')}</span>
             </div>
           </div>
         )}
@@ -1033,7 +1037,7 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
           <div className="rounded-md border-2 border-amber-500 bg-amber-100 p-3 text-sm font-medium text-amber-800 dark:border-amber-500 dark:bg-amber-900/60 dark:text-amber-200">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Your Advertisement will expire today.</span>
+              <span>{t('merchant.advertisements.expiresToday')}</span>
             </div>
           </div>
         )}
@@ -1041,7 +1045,7 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
           <div className="rounded-md border-2 border-red-500 bg-red-100 p-3 text-sm font-medium text-red-800 dark:border-red-500 dark:bg-red-950/60 dark:text-red-300">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Your advertisement has expired.</span>
+              <span>{t('merchant.advertisements.expired')}</span>
             </div>
           </div>
         )}
@@ -1057,7 +1061,7 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
                 className="mt-2 font-semibold underline underline-offset-2 hover:opacity-80"
                 onClick={() => onEdit(ad)}
               >
-                Edit &amp; Resubmit
+                {t('merchant.advertisements.editResubmit')}
               </button>
             )}
           </div>
@@ -1065,19 +1069,19 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
 
         {state === 'draft' ? (
           <div className="mt-auto space-y-2 border-t pt-3">
-            <span className="block text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
+            <span className="block text-xs text-muted-foreground">{t('merchant.advertisements.createdAt', { date: formatDate(ad.createdAt) })}</span>
             <div className="flex flex-wrap justify-end gap-2">
               {canEdit && !isRejected && (
-                <Button size="sm" variant="outline" className="w-9 px-0" aria-label="Edit advertisement" title="Edit" onClick={() => onEdit(ad)}>
+                <Button size="sm" variant="outline" className="w-9 px-0" aria-label={t('merchant.advertisements.editAd')} title={t('merchant.advertisements.edit')} onClick={() => onEdit(ad)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
               )}
               {canDelete && (
-                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label="Delete advertisement" title="Delete" onClick={() => onDelete(ad)}>
+                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label={t('merchant.advertisements.deleteAd')} title={t('merchant.advertisements.delete')} onClick={() => onDelete(ad)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="w-9 px-0" aria-label="View advertisement" title="View" onClick={() => onView(ad)}>
+              <Button size="sm" variant="outline" className="w-9 px-0" aria-label={t('merchant.advertisements.viewAd')} title={t('merchant.advertisements.view')} onClick={() => onView(ad)}>
                   <Eye className="h-4 w-4" />
                 </Button>
             </div>
@@ -1087,37 +1091,37 @@ function AdCard({ ad, isDeactivated, highlightAdId, onEdit, onPay, onDelete, onT
             <div>
               {canToggle && !isScheduled ? (
                 <div className="flex items-center gap-2">
-                  <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label="Toggle active" />
-                  <span className="text-sm">{ad.isActive ? 'Active' : 'Inactive'}</span>
+                  <Switch checked={ad.isActive} onCheckedChange={(isActive) => onToggle(ad, isActive)} aria-label={t('merchant.advertisements.toggleActive')} />
+                  <span className="text-sm">{ad.isActive ? t('merchant.advertisements.statusActive') : t('merchant.advertisements.statusInactive')}</span>
                 </div>
               ) : isScheduled || state === 'expired' || state === 'pending_approval' ? (
-                <span className="text-sm text-muted-foreground">Inactive</span>
+                <span className="text-sm text-muted-foreground">{t('merchant.advertisements.statusInactive')}</span>
               ) : (
-                <span className="text-xs text-muted-foreground">Created {formatDate(ad.createdAt)}</span>
+                <span className="text-xs text-muted-foreground">{t('merchant.advertisements.createdAt', { date: formatDate(ad.createdAt) })}</span>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
               {state === 'content_uploaded' && (
-                <Button size="sm" className="w-9 px-0" aria-label="Pay fee" title="Pay Fee" onClick={() => onPay(ad)}>
+                <Button size="sm" className="w-9 px-0" aria-label={t('merchant.advertisements.payFee')} title={t('merchant.advertisements.payFee')} onClick={() => onPay(ad)}>
                   <CreditCard className="h-4 w-4" />
                 </Button>
               )}
               {isRejected && (
-                <Button size="sm" className="w-9 px-0" aria-label="Edit and resubmit" title="Edit & Resubmit" onClick={() => onEdit(ad)}>
+                <Button size="sm" className="w-9 px-0" aria-label={t('merchant.advertisements.editResubmit')} title={t('merchant.advertisements.editResubmit')} onClick={() => onEdit(ad)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
               )}
               {canEdit && !isRejected && (
-                <Button size="sm" variant="outline" className="w-9 px-0" aria-label="Edit advertisement" title="Edit" onClick={() => onEdit(ad)}>
+                <Button size="sm" variant="outline" className="w-9 px-0" aria-label={t('merchant.advertisements.editAd')} title={t('merchant.advertisements.edit')} onClick={() => onEdit(ad)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
               )}
               {canDelete && (
-                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label="Delete advertisement" title="Delete" onClick={() => onDelete(ad)}>
+                <Button size="sm" variant="ghost" className="w-9 px-0 text-destructive hover:text-destructive" aria-label={t('merchant.advertisements.deleteAd')} title={t('merchant.advertisements.delete')} onClick={() => onDelete(ad)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="w-9 px-0" aria-label="View advertisement" title="View" onClick={() => onView(ad)}>
+              <Button size="sm" variant="outline" className="w-9 px-0" aria-label={t('merchant.advertisements.viewAd')} title={t('merchant.advertisements.view')} onClick={() => onView(ad)}>
                   <Eye className="h-4 w-4" />
                 </Button>
             </div>
@@ -1135,43 +1139,44 @@ interface AdViewDialogProps {
 
 // Read-only detail dialog (mirrors the admin btnViewAd read-only modal pattern).
 function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
+  const { t } = useTranslation()
   if (!ad) return null
   const state = displayState(ad)
   const packageInfo = ad.package
   const rows: Array<[string, string | null]> = [
     ['Placement', packageInfo ? packageLabel(packageInfo.placement) : null],
-    ['Tier', packageInfo ? (tierLabels[packageInfo.tier] ?? packageInfo.tier) : null],
-    ['Status', stateLabels[state]],
-    ['Approval', approvalBadgeText(ad)],
-    ['Payment', paymentLabels[ad.paymentStatus] ?? ad.paymentStatus],
-    ['Start date', formatDate(ad.startsAt)],
-    ['End date', formatDate(ad.expiresAt)],
-    ['Created', formatDate(ad.createdAt)],
+    [t('merchant.advertisements.tierLabel'), packageInfo ? tierLabel(packageInfo.tier, t) : null],
+    [t('merchant.advertisements.status'), t(`merchant.advertisements.state.${state}`)],
+    [t('merchant.advertisements.approvalLabel'), approvalBadgeText(ad, t)],
+    [t('merchant.advertisements.paymentLabel'), paymentLabel(ad.paymentStatus, t)],
+    [t('merchant.advertisements.startDate'), formatDate(ad.startsAt)],
+    [t('merchant.advertisements.endDate'), formatDate(ad.expiresAt)],
+    [t('merchant.advertisements.created'), formatDate(ad.createdAt)],
   ]
   return (
     <Dialog open={Boolean(ad)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Advertisement Detail</DialogTitle>
+          <DialogTitle>{t('merchant.advertisements.detailTitle')}</DialogTitle>
         </DialogHeader>
 
         {ad.imageUrl && (
           <img
             src={getImageUrl(ad.imageUrl)}
-            alt={ad.title || 'Advertisement'}
+            alt={ad.title || t('merchant.advertisements.title')}
             className="aspect-video w-full rounded-lg object-cover"
           />
         )}
 
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">{ad.title || 'Draft advertisement'}</h3>
+          <h3 className="text-lg font-semibold">{ad.title || t('merchant.advertisements.draftAd')}</h3>
           {ad.content && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{ad.content}</p>}
           {ad.announcementMessage && (
             <p className="whitespace-pre-wrap text-sm font-medium">{ad.announcementMessage}</p>
           )}
           {ad.sku && (
             <p className="text-sm">
-              <span className="text-muted-foreground">SKU: </span>
+              <span className="text-muted-foreground">{t('merchant.products.table.sku')}: </span>
               <span className="font-medium">{ad.sku}</span>
             </p>
           )}
@@ -1188,7 +1193,7 @@ function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
             ))}
           {packageInfo && (
             <div className="flex justify-between gap-4 border-t pt-2">
-              <span className="text-muted-foreground">Daily Rate</span>
+              <span className="text-muted-foreground">{t('merchant.advertisements.dailyRate')}</span>
               <span className="font-medium text-primary">{formatFee(packageInfo.dailyRate)} KS/day</span>
             </div>
           )}
@@ -1205,7 +1210,7 @@ function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Close
+            {t('common.close')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1215,17 +1220,6 @@ function AdViewDialog({ ad, onClose }: AdViewDialogProps) {
 
 function isRejectedReasonVisible(ad: Advertisement) {
   return ad.approvalStatus === 'rejected' && Boolean(ad.rejectionReason)
-}
-
-const stateLabels: Record<DisplayState, string> = {
-  active: 'Active',
-  scheduled: 'Scheduled',
-  pending_approval: 'Pending Approval',
-  expired: 'Expired',
-  inactive: 'Inactive',
-  rejected: 'Rejected',
-  content_uploaded: 'Content Uploaded',
-  draft: 'Draft',
 }
 
 const DRAFT_CACHE_PREFIX = 'ad-draft-cache:'
@@ -1277,6 +1271,7 @@ function ContentDialog({
   showSaveAndPay,
   isPending,
 }: ContentDialogProps) {
+  const { t } = useTranslation()
   // Earliest selectable start date for new uploads and resubmission: today +
   // 3 days (UTC day granularity, the same convention the backend getSchedule
   // uses). Today, tomorrow, and the day after tomorrow cannot be selected.
@@ -1331,7 +1326,7 @@ function ContentDialog({
   const endDate = startsAt ? new Date(`${startsAt}T00:00:00.000Z`) : null
   if (endDate) endDate.setUTCDate(endDate.getUTCDate() + durationDays)
   const feeSummary = adPackage
-    ? `Advertising Fee: ${formatFee(Number(adPackage.dailyRate) * durationDays)} KS · ${durationDays} days × ${formatFee(adPackage.dailyRate)} KS/day`
+    ? `${t('merchant.advertisements.advertisingFee')}: ${formatFee(Number(adPackage.dailyRate) * durationDays)} KS · ${t('merchant.advertisements.durationDays', { count: durationDays })} × ${formatFee(adPackage.dailyRate)} KS${t('merchant.advertisements.perDay')}`
     : null
   const currentPreview = imageUrl ? getImageUrl(imageUrl) : null
 
@@ -1339,16 +1334,16 @@ function ContentDialog({
     <Dialog open={open} onOpenChange={(value) => !value && handleClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isNewUpload ? 'Upload Advertisement Content' : 'Edit Advertisement Content'}</DialogTitle>
+          <DialogTitle>{isNewUpload ? t('merchant.advertisements.uploadContentTitle') : t('merchant.advertisements.editContentTitle')}</DialogTitle>
         </DialogHeader>
 
         {/* Read-only placement / tier display (EL-22a / EL-22b) */}
         {adPackage && (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
-            <span className="text-muted-foreground">Placement:</span>
+            <span className="text-muted-foreground">{t('merchant.advertisements.placement')}:</span>
             <span className="font-medium">{packageLabel(adPackage.placement)}</span>
             <Badge variant="secondary" className="capitalize">
-              {tierLabels[adPackage.tier] ?? adPackage.tier}
+              {tierLabel(adPackage.tier, t)}
             </Badge>
           </div>
         )}
@@ -1362,8 +1357,8 @@ function ContentDialog({
           })}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="ad-title">Title</Label>
-            <Input id="ad-title" maxLength={200} placeholder="Enter advertisement title" {...form.register('title')} />
+            <Label htmlFor="ad-title">{t('merchant.advertisements.form.title')}</Label>
+            <Input id="ad-title" maxLength={200} placeholder={t('merchant.advertisements.form.titlePlaceholder')} {...form.register('title')} />
             {form.formState.errors.title && (
               <p role="alert" className="text-sm text-destructive">
                 {form.formState.errors.title.message}
@@ -1372,13 +1367,13 @@ function ContentDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ad-content">Content</Label>
+            <Label htmlFor="ad-content">{t('merchant.advertisements.form.content')}</Label>
             <div className="relative">
               <Textarea
                 id="ad-content"
                 className={content.length > AD_CONTENT_MAX ? 'border-destructive pb-6' : 'pb-6'}
                 maxLength={AD_CONTENT_MAX}
-                placeholder="Enter advertisement content"
+                placeholder={t('merchant.advertisements.form.contentPlaceholder')}
                 {...form.register('content')}
               />
               <span className="pointer-events-none absolute bottom-2 right-3 text-xs text-muted-foreground">
@@ -1393,9 +1388,9 @@ function ContentDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Advertisement image{isNewUpload && ' (Required)'}</Label>
+            <Label>{t('merchant.advertisements.form.image')}{isNewUpload ? ` (${t('merchant.advertisements.form.required')})` : ''}</Label>
             <p className="text-xs text-muted-foreground">
-              Choose an image from one of your products. Custom image uploads are not accepted.
+              {t('merchant.advertisements.form.imageHelper')}
             </p>
             <ProductImagePicker
               value={imageUrl}
@@ -1406,16 +1401,16 @@ function ContentDialog({
               error={form.formState.errors.imageUrl?.message as string | undefined}
             />
             {currentPreview && (
-              <img src={currentPreview} alt="Advertisement preview" className="mt-2 aspect-video w-full rounded-lg object-cover" />
+              <img src={currentPreview} alt={t('merchant.advertisements.form.imagePreview')} className="mt-2 aspect-video w-full rounded-lg object-cover" />
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ad-announcement">Announcement message</Label>
+            <Label htmlFor="ad-announcement">{t('merchant.advertisements.form.announcement')}</Label>
             <Textarea
               id="ad-announcement"
               maxLength={500}
-              placeholder="Enter banner announcement message"
+              placeholder={t('merchant.advertisements.form.announcementPlaceholder')}
               {...form.register('announcementMessage')}
             />
             {form.formState.errors.announcementMessage && (
@@ -1427,7 +1422,7 @@ function ContentDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="ad-start">Start date</Label>
+              <Label htmlFor="ad-start">{t('merchant.advertisements.startDate')}</Label>
               <Input
                 id="ad-start"
                 type="date"
@@ -1438,8 +1433,8 @@ function ContentDialog({
               {canSetSchedule && (
                 <p className="text-xs text-muted-foreground">
                   {isResubmit
-                    ? `Select a start date from ${minToday} (3 days from today) onward. The end date is recalculated automatically.`
-                    : `Select a date from ${minStartsAt} (3 days from today) onward.`}
+                    ? t('merchant.advertisements.form.resubmitScheduleHint', { date: minToday })
+                    : t('merchant.advertisements.form.scheduleHint', { date: minStartsAt })}
                 </p>
               )}
               {form.formState.errors.startsAt && (
@@ -1449,7 +1444,7 @@ function ContentDialog({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ad-end">End date (auto-calculated)</Label>
+              <Label htmlFor="ad-end">{t('merchant.advertisements.form.endDateAuto')}</Label>
               <Input
                 id="ad-end"
                 type="date"
@@ -1465,7 +1460,7 @@ function ContentDialog({
 
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={handleClose} disabled={isPending}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             {showSaveAndPay && onSaveAndPay && (
               <Button
@@ -1479,11 +1474,11 @@ function ContentDialog({
                   })()
                 }
               >
-                {isPending ? 'Saving...' : 'Save & Pay'}
+                {isPending ? t('merchant.advertisements.saving') : t('merchant.advertisements.savePay')}
               </Button>
             )}
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving...' : isNewUpload ? 'Save & Continue' : 'Save'}
+              {isPending ? t('merchant.advertisements.saving') : isNewUpload ? t('merchant.advertisements.saveContinue') : t('common.save')}
             </Button>
           </DialogFooter>
         </form>

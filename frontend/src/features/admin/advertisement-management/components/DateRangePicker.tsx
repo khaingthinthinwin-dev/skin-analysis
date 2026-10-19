@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useTranslation } from 'react-i18next'
 
 export interface DateRange {
   from?: string
@@ -19,10 +20,13 @@ interface DateRangePickerProps {
 export function DateRangePicker({
   value,
   onChange,
-  fromLabel = 'From',
-  toLabel = 'To',
+  fromLabel,
+  toLabel,
   hideLabels = false,
 }: DateRangePickerProps) {
+  const { t } = useTranslation()
+  const resolvedFromLabel = fromLabel ?? t('admin.ads.dateRange.from', 'From')
+  const resolvedToLabel = toLabel ?? t('admin.ads.dateRange.to', 'To')
   const handleFrom = (v: string) => {
     if (value.to && v && v > value.to) {
       onChange({ from: v, to: v })
@@ -42,24 +46,24 @@ export function DateRangePicker({
   return (
     <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center">
       <div className="flex min-w-0 items-center gap-2">
-        <label className={hideLabels ? 'sr-only' : 'shrink-0 text-sm text-muted-foreground'}>{fromLabel}</label>
+        <label className={hideLabels ? 'sr-only' : 'shrink-0 text-sm text-muted-foreground'}>{resolvedFromLabel}</label>
         <Input
           type="date"
           value={value.from ?? ''}
           onChange={(e) => handleFrom(e.target.value)}
           className="h-9 min-w-0 flex-1 md:w-44 md:flex-none"
-          aria-label={fromLabel}
+          aria-label={resolvedFromLabel}
         />
       </div>
       <div className="flex min-w-0 items-center gap-2">
-        <label className={hideLabels ? 'sr-only' : 'shrink-0 text-sm text-muted-foreground'}>{toLabel}</label>
+        <label className={hideLabels ? 'sr-only' : 'shrink-0 text-sm text-muted-foreground'}>{resolvedToLabel}</label>
         <Input
           type="date"
           min={value.from}
           value={value.to ?? ''}
           onChange={(e) => handleTo(e.target.value)}
           className="h-9 min-w-0 flex-1 md:w-44 md:flex-none"
-          aria-label={toLabel}
+          aria-label={resolvedToLabel}
         />
         {(value.from || value.to) && (
           <Button
@@ -67,7 +71,7 @@ export function DateRangePicker({
             variant="ghost"
             size="sm"
             onClick={() => onChange({})}
-            aria-label="Clear date range"
+            aria-label={t('admin.ads.dateRange.clear', 'Clear date range')}
           >
             <X className="h-4 w-4" />
           </Button>

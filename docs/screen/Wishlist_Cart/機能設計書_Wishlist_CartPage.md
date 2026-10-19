@@ -10,9 +10,9 @@
 | **Target Screen** | Wishlist & Cart Page (お気に入り & カートページ) |
 | **Subsystem** | Buyer Module — Wishlist Management & Shopping Cart |
 | **Function ID** | FN-WISH-001, FN-CART-001 |
-| **Version** | 2.1 |
+| **Version** | 2.2 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-20 |
+| **Last Updated** | 2026-10-15 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -28,6 +28,7 @@
 | 1.2 | 2026-08-07 | Software Architect | Added guest user behavior: alert modal "Please log in to add items to your cart." with [Log in] button navigating to /login. Added UC-CART-005, BR-CART-0010, EL-36, and updated cart workflow diagram. |
 | 2.0 | 2026-08-14 | Software Architect | Aligned with REQUIREMENT_SPEC v2.10 and DATABASE_SPEC v2.0: updated ID format from CUID to UUID, restricted wishlist and cart access to Buyer role only (Merchants and Admins get 403 Forbidden). |
 | 2.1 | 2026-08-20 | Software Architect | Reconciled the document with REQUIREMENT_SPEC v2.10, DATABASE_SPEC v2.4, DEVELOPMENT_RULES v2.1, and the current Prisma schema: corrected table mappings, UUID validation, response contracts, RBAC, and delete semantics. |
+| 2.2 | 2026-10-15 | Software Architect | Reconciled with the current Frontend (`pages/buyer/Wishlist.tsx`, `pages/buyer/Cart.tsx`, feature hooks/services) and Backend (`modules/buyer/wishlist`, `modules/buyer/cart`) implementation: corrected route paths (`/buyer/...`), documented Clear-All operations, the duplicate-cart conflict on Move-to-Cart, the account-deactivated checkout guard, `shippingEstimate`/`total` summary fields, `category` wishlist field, guest `GuestLoginModal` behavior, and error/retry states. Removed the inaccurate claim that Move-to-Cart increments quantity. |
 
 ---
 
@@ -63,13 +64,14 @@ These subsystems are critical components of the e-commerce workflow, bridging pr
 
 This screen is responsible for the following core functional areas:
 
-1. **Wishlist Management** — Enabling authenticated users to add/remove products from their saved wishlist, view saved products with details, and move items to cart.
-2. **Shopping Cart Management** — Enabling authenticated users to add products to cart, update quantities, remove items, and view real-time subtotals.
-3. **Stock Validation** — Ensuring products are in stock before adding to cart and validating stock during quantity updates.
-4. **Price Calculation** — Computing item subtotals based on unit price × quantity for each cart item. Discounts and coupons are **not** applied on the cart page; coupon entry and discount calculation occur on the checkout page.
-5. **Wishlist-to-Cart Transfer** — Allowing users to move saved wishlist items directly into the shopping cart.
+1. **Wishlist Management** — Enabling authenticated users to add/remove products from their saved wishlist, view saved products with details, clear the entire wishlist, and move items to cart.
+2. **Shopping Cart Management** — Enabling authenticated users to add products to cart, update quantities, remove items, clear the entire cart, and view real-time subtotals.
+3. **Stock Validation** — Add-to-cart requires positive stock; quantity updates must not exceed stock. The add endpoint does not validate the initial requested quantity against stock, so `isAvailable` may be false for an item it accepts.
+4. **Price Calculation** — Computing item subtotals based on unit price × quantity for each cart item, plus a summary subtotal, shipping estimate, and total. Discounts and coupons are **not** applied on the cart page; coupon entry and discount calculation occur on the checkout page.
+5. **Wishlist-to-Cart Transfer** — Allowing users to move saved wishlist items directly into the shopping cart. If the product is already in the cart, the move is rejected with a duplicate-cart alert instead of merging quantities.
 6. **Cart Persistence** — Maintaining cart contents across sessions for logged-in users via database storage.
-7. **Product Display** — Showing product images, names, prices, and availability status in both wishlist and cart views.
+7. **Product Display** — Showing product images, names, category, and prices on wishlist cards; wishlist availability is returned by the API and controls the Add button, while cart rows also show a stock badge.
+8. **Guest Gating** — Handling guest access per entry point: header icons use `GuestLoginModal`; listing/search/recommendation actions use page-level login dialogs; product-detail cart actions navigate to login and its wishlist action is disabled; protected buyer routes redirect guests to login.
 
 ### 1.3 Target Users
 
@@ -78,7 +80,7 @@ This screen is responsible for the following core functional areas:
 | **Primary Actor** | Authenticated Buyer |
 | **Required Authentication** | JWT Bearer Token |
 | **Data Scope** | Own wishlist items, Own cart items |
-| **Guest Behavior** | Cart not persisted; wishlist unavailable. When a guest user clicks a cart action, an alert modal displays "Please log in to add items to your cart." When a guest user clicks a wishlist action, an alert modal displays "Please log in to add items to your wishlist." Clicking [Log in] in either modal navigates to `/login`. |
+| **Guest Behavior** | Cart not persisted; wishlist unavailable. The `/buyer/wishlist` and `/buyer/cart` routes are protected by `ProtectedRoute roles={['buyer']}`, so direct navigation by a guest redirects to `/login`. Header icons and listing/search/recommendation actions open login dialogs. Header and search/recommendation dialogs preserve a redirect target; the buyer product-list dialog navigates to `/login` without one. On the product detail page, Add to Cart navigates directly to `/login?redirect=/buyer/products`; Add to Wishlist is disabled for guests and non-buyers. |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
 
@@ -117,10 +119,11 @@ This screen is responsible for the following core functional areas:
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
-| `wishlistItems` | Wishlist DTO Array | List of saved products with details |
+| `wishlistItems` | Wishlist DTO Array | List of saved products with details (including `category`) |
 | `cartItems` | Cart DTO Array | List of cart items with quantities and subtotals |
-| `cartSummary` | Cart Summary DTO | Subtotal, item count, stock status |
+| `cartSummary` | Cart Summary DTO | `totalItems`, `subtotal`, `shippingEstimate`, `total`, `hasOutOfStock`, `canCheckout` |
 | `operationResult` | Standard API Response | Success response or HTTP error according to the API standards |
+| `clearResult` | Standard API Response | Clear-All returns `{ success, deletedCount }` |
 
 ### 1.6 Related Documents
 
@@ -139,137 +142,59 @@ This screen is responsible for the following core functional areas:
 | UC-ID | Use Case Name | Precondition | Postcondition | Triggering Actor |
 |-------|---------------|--------------|---------------|------------------|
 | UC-WISH-001 | Add Product to Wishlist | User is authenticated. Product exists and is active. | Wishlist record created. Heart icon toggled to filled state. | Authenticated Buyer |
-| UC-WISH-002 | Remove Product from Wishlist | User is authenticated. Product is in user's wishlist. | Wishlist record deleted. Heart icon toggled to outline state. | Authenticated Buyer |
-| UC-WISH-003 | View Wishlist | User is authenticated. User has saved items. | Wishlist page displays all saved products with images, prices, and availability. | Authenticated Buyer |
-| UC-WISH-004 | Move Wishlist Item to Cart | User is authenticated. Wishlist item exists. Product is in stock. | Cart item created/updated. Wishlist item optionally removed. | Authenticated Buyer |
-| UC-WISH-005 | Guest User Wishlist Action Attempt | User is not authenticated (guest). | Wishlist guest-login alert modal displayed: "Please log in to add items to your wishlist." Clicking [Log in] navigates to `/login`. | Guest User |
-| UC-CART-001 | Add Product to Cart | User is authenticated. Product exists, is active, and has stock > 0. | Cart item created with quantity 1. Cart badge updated. | Authenticated Buyer |
+| UC-WISH-002 | Remove Product from Wishlist | User is authenticated. Product is in user's wishlist. | Wishlist record deleted from the wishlist page or by the toggle action on listing/search/recommendation cards. Product-detail Add to Wishlist does not remove an existing item; it reports a duplicate instead. | Authenticated Buyer |
+| UC-WISH-003 | View Wishlist | User is authenticated. User has saved items. | Wishlist page displays saved products with images, category, and prices. Availability is represented by disabling the Add button when out of stock; no stock badge is rendered on wishlist cards. | Authenticated Buyer |
+| UC-WISH-004 | Move Wishlist Item to Cart | User is authenticated. Wishlist item exists. Product is active and in stock. Product is not already in cart. | Cart item created with quantity 1. Wishlist item removed. | Authenticated Buyer |
+| UC-WISH-005 | Guest User Wishlist Action Attempt | User is not authenticated (guest). | Header wishlist icon and listing/search/recommendation card actions show a login dialog; product-detail Add to Wishlist is disabled. Direct navigation to `/buyer/wishlist` redirects to `/login`. | Guest User |
+| UC-WISH-006 | Clear Wishlist | User is authenticated. Wishlist contains items. | All wishlist records deleted; empty state displayed. | Authenticated Buyer |
+| UC-CART-001 | Add Product to Cart | User is authenticated. Product exists, is active, has stock > 0, and is not already in cart. | Cart item created with the requested quantity (default 1). Cart badge updated. | Authenticated Buyer |
 | UC-CART-002 | Update Cart Item Quantity | User is authenticated. Cart item exists. Requested quantity ≤ available stock. | Cart item quantity updated. Subtotal recalculated. | Authenticated Buyer |
 | UC-CART-003 | Remove Item from Cart | User is authenticated. Cart item exists. | Cart item deleted. Subtotal recalculated. Cart badge updated. | Authenticated Buyer |
-| UC-CART-004 | View Cart | User is authenticated. Cart contains items. | Cart page displays all items with images, names, prices, quantities, subtotals, and stock status. | Authenticated Buyer |
-| UC-CART-005 | Guest User Add to Cart Attempt | User is not authenticated (guest). | Alert modal displayed: "Please log in to add items to your cart." Clicking [Log in] navigates to `/login`. | Guest User |
+| UC-CART-004 | View Cart | User is authenticated. | Cart page displays all items with images, names, prices, quantities, subtotals, and stock status, plus the summary panel. | Authenticated Buyer |
+| UC-CART-005 | Guest User Add to Cart Attempt | User is not authenticated (guest). | Header cart icon and listing/search/recommendation card actions show a login dialog; product-detail Add to Cart navigates directly to `/login?redirect=/buyer/products`. Direct navigation to `/buyer/cart` redirects to `/login`. | Guest User |
+| UC-CART-006 | Clear Cart | User is authenticated. Cart contains items. | All cart items deleted; empty state displayed. | Authenticated Buyer |
+| UC-CART-007 | Proceed to Checkout | User is authenticated with an active account and at least one cart item. | Navigation to `/buyer/checkout`; if the account is deactivated, the `AccountDeactivatedDialog` is shown instead. | Authenticated Buyer |
 
 ### 2.2 Primary Business Workflow — Wishlist
 
 ```
-                    ┌──────────────────┐
-                    │  Product Detail  │
-                    │  or Product Card │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌─────────────────────────────┐
-                    │  Click Heart / "Add to      │
-                    │  Wishlist" Button           │
-                    └──────────┬──────────────────┘
-                               │
-                    ┌──────────┴──────────────────┐
-                    │  Authenticated?             │
-                    └──────────┬──────────────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-        ┌──────────┐    ┌──────────┐    ┌──────────────┐
-        │ YES      │    │ NO       │    │ Already in   │
-        │ (Add/    │    │ (Redirect│    │ Wishlist?    │
-        │  Remove) │    │ to Login)│    │              │
-        └────┬─────┘    └──────────┘    └──────┬───────┘
-             │                                 │
-             │                          ┌──────┴───────┐
-             │                          ▼              ▼
-             │                    ┌──────────┐    ┌──────────┐
-             │                    │ YES      │    │ NO       │
-             │                    │ (Remove) │    │ (Add)    │
-             │                    └────┬─────┘    └────┬─────┘
-             │                         │               │
-             ▼                         ▼               ▼
-     ┌──────────────────────────────────────────────────────┐
-     │              Wishlist API Call                       │
-     │  POST /wishlist/:productId (Add)                     │
-     │  DELETE /wishlist/:productId (Remove)                │
-     └──────────────────┬───────────────────────────────────┘
-                        │
-              ┌─────────┴─────────┐
-              ▼                   ▼
-        ┌──────────┐        ┌──────────┐
-        │ SUCCESS  │        │ FAILURE  │
-        │ (200/201)│        │ (400/404)│
-        └────┬─────┘        └────┬─────┘
-             │                   │
-             ▼                   ▼
-     ┌──────────────┐    ┌─────────────────┐
-     │ Toggle Heart │    │ Display Error   │
-     │ Icon State   │    │ Message         │
-     └──────────────┘    └─────────────────┘
+Buyer product-detail Add to Wishlist:
+  - Guest/non-buyer: button is disabled.
+  - Buyer, not already saved: POST /wishlist/:productId; on success show a toast
+    and refresh wishlist data so the button changes to "Added to Wishlist".
+  - Buyer, already saved: POST returns 409; show the "Already in Wishlist" dialog.
+
+Wishlist page Remove:
+  - Buyer clicks the card's trash button: DELETE /wishlist/:productId.
+  - On success remove the item from the refreshed list and show a toast.
+
+Listing/search/recommendation cards:
+  - Buyer toggles wishlist: POST /wishlist/:productId to add, or
+    DELETE /wishlist/:productId to remove.
+  - A guest action opens the page's login-required dialog. A duplicate add
+    shows an informational message/dialog depending on the page.
 ```
 
 ### 2.3 Primary Business Workflow — Cart
 
 ```
-                    ┌──────────────────┐
-                    │  Product Detail  │
-                    │  or Wishlist     │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌─────────────────────────────┐
-                    │  Click "Add to Cart" Button │
-                    └──────────┬──────────────────┘
-                               │
-                    ┌──────────┴──────────────────┐
-                    │  Authenticated?             │
-                    └──────────┬──────────────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-        ┌──────────┐    ┌──────────┐    ┌──────────────┐
-        │ YES      │    │ NO       │    │ Out of Stock?│
-        │ (Proceed)│    │ (Guest)  │    │              │
-        └────┬─────┘    └────┬─────┘    └──────┬───────┘
-             │               │                 │
-             │               ▼                 │
-             │    ┌─────────────────────┐      │
-             │    │ Show Alert Modal:   │      │
-             │    │ "Please log in to   │      │
-             │    │  add items to your  │      │
-             │    │  cart."             │      │
-             │    │ [Log in]            │      │
-             │    └─────────┬───────────┘      │
-             │              │                  │
-             │              ▼                  │
-             │    ┌──────────────────┐         │
-             │    │ Click [Log in]   │         │
-             │    │ → Navigate to    │         │
-             │    │   /login         │         │
-             │    └──────────────────┘         │
-             │                                 │
-             │                          ┌──────┴───────┐
-             │                          ▼              ▼
-             │                    ┌──────────┐    ┌──────────┐
-             │                    │ YES      │    │ NO       │
-             │                    │ (Error)  │    │ (Proceed)│
-             │                    └──────────┘    └────┬─────┘
-             │                                         │
-             ▼                                         ▼
-     ┌──────────────────────────────────────────────────────┐
-     │              Cart API Call                           │
-     │  POST /cart/items (Add)                              │
-     │  PATCH /cart/items/:id (Update Quantity)             │
-     │  DELETE /cart/items/:id (Remove)                     │
-     └──────────────────┬───────────────────────────────────┘
-                        │
-              ┌─────────┴─────────┐
-              ▼                   ▼
-        ┌──────────┐        ┌──────────┐
-        │ SUCCESS  │        │ FAILURE  │
-        │ (200/201)│        │ (400/404)│
-        └────┬─────┘        └────┬─────┘
-             │                   │
-             ▼                   ▼
-     ┌──────────────┐    ┌─────────────────┐
-     │ Update Cart  │    │ Display Error   │
-     │ Badge & List │    │ Message         │
-     └──────────────┘    └─────────────────┘
+Product-detail Add to Cart:
+  - Guest: navigate directly to /login?redirect=/buyer/products.
+  - Buyer, out of stock: button is disabled.
+  - Buyer, in stock: POST /cart/items; on success refresh cart data and show a
+    toast. A duplicate returns 409 and opens the "Already in Cart" dialog.
+
+Wishlist-to-cart:
+  - Buyer clicks Add on an in-stock wishlist card: POST
+    /wishlist/:productId/move-to-cart; on success remove the wishlist item and
+    refresh both wishlist and cart data. A duplicate returns 409 and leaves the
+    wishlist item in place.
+
+Cart page:
+  - Quantity changes use PATCH /cart/items/:id; removal uses
+    DELETE /cart/items/:id. Clear All uses DELETE /cart/items after confirmation.
+  - Proceed to Checkout navigates to /buyer/checkout unless the account is
+    deactivated, in which case AccountDeactivatedDialog is shown.
 ```
 
 ### 2.4 Workflow Critical Path Summary
@@ -277,13 +202,13 @@ This screen is responsible for the following core functional areas:
 | Step | Action | Status Before | Status After | Assigned To |
 |:----:|--------|---------------|--------------|-------------|
 | 1 | User clicks "Add to Wishlist" on product | Product not saved | Wishlist item created | System |
-| 2 | User clicks heart icon again to remove | Product saved | Wishlist item deleted | System |
-| 3 | User navigates to /wishlist | — | Wishlist page displayed | System |
+| 2 | User removes a saved item with the wishlist card's trash button | Product saved | Wishlist item deleted | System |
+| 3 | User navigates to /buyer/wishlist | — | Wishlist page displayed | System |
 | 4 | User clicks "Move to Cart" from wishlist | Item in wishlist | Cart item created | System |
 | 5 | User clicks "Add to Cart" on product | Product not in cart | Cart item created | System |
 | 6 | User updates quantity in cart | Old quantity | New quantity, subtotal updated | System |
 | 7 | User removes item from cart | Item in cart | Cart item deleted | System |
-| 8 | User navigates to /cart | — | Cart page displayed | System |
+| 8 | User navigates to /buyer/cart | — | Cart page displayed | System |
 
 ### 2.5 Relevant Requirements Covered
 
@@ -302,9 +227,11 @@ This screen is responsible for the following core functional areas:
 | B-CART-006 | Cart persists across sessions (logged-in users) |
 | B-CART-007 | Cart shows product images and names |
 
-**Note on Promotions/Discounts:** The cart page displays only the pre-discount subtotal (unit_price × quantity). Coupon code entry and discount calculation (per Rule 4.5.1 and 4.5.2 in `要件定義書_REQUIREMENT_SPEC.md`) are handled on the checkout page (`/checkout`), not the cart page. This separation ensures the cart remains a simple review step before the full pricing breakdown at checkout.
+**Note on Promotions/Discounts:** The cart page displays only the pre-discount subtotal (unit_price × quantity). Coupon code entry and discount calculation (per Rule 4.5.1 and 4.5.2 in `要件定義書_REQUIREMENT_SPEC.md`) are handled on the checkout page (`/buyer/checkout`), not the cart page. This separation ensures the cart remains a simple review step before the full pricing breakdown at checkout.
 
-**Note on Guest User Behavior:** Unauthenticated (guest) users cannot use cart or wishlist actions. A cart action displays an alert modal with "Please log in to add items to your cart." A wishlist action displays an alert modal with "Please log in to add items to your wishlist." Clicking [Log in] in either modal navigates to `/login`; guests are never redirected directly before seeing the modal.
+**Note on Guest User Behavior:** The shared `GuestLoginModal` is opened by header wishlist/cart icons; listing/search/recommendation actions use their own login-required dialogs with category-specific messages. Header dialogs redirect to the selected wishlist/cart route; SearchFilter and MatchingRecommendations redirect to the encoded current pathname; the buyer product-list dialog navigates to `/login` without a redirect parameter. The product-detail Add to Cart handler instead navigates directly to `/login?redirect=/buyer/products`; Add to Wishlist is disabled for guests and non-buyers. Direct navigation to the protected wishlist/cart pages redirects to `/login`.
+
+**Note on Clear-All Operations:** Both pages expose a "All Data Clear" (Clear All) action that opens a `ConfirmDialog` requiring explicit confirmation. Confirming calls `DELETE /api/v1/wishlist` or `DELETE /api/v1/cart/items`, which returns HTTP 200 with `{ success: true, deletedCount }`. There is no per-item bulk selection; it clears the entire collection.
 
 ---
 
@@ -314,10 +241,10 @@ This screen is responsible for the following core functional areas:
 
 | State | Description | Visible in Wishlist | Can Move to Cart |
 |-------|-------------|:-------------------:|:----------------:|
-| `SAVED` | Product saved in wishlist, in stock | ✓ | ✓ |
-| `OUT_OF_STOCK` | Product saved but currently out of stock | ✓ | ✗ |
-| `INACTIVE` | Product is deactivated and unavailable for purchase | ✓ (with notice) | ✗ |
-| `MOVED_TO_CART` | Item transferred to cart (optional auto-remove) | ✗ (if removed) | — |
+| `SAVED` | Product saved in wishlist; `isInStock` is true | ✓ | ✓ |
+| `OUT_OF_STOCK` | Product saved but currently out of stock; `isInStock` is false | ✓ (Add button disabled; no stock badge) | ✗ |
+| `INACTIVE` | Not exposed as a wishlist item state: the GET response omits `isActive`, and the card has no inactive notice | May still render if the product remains related | Move-to-Cart returns 404 |
+| `MOVED_TO_CART` | Item transferred to cart; the wishlist record is always removed | ✗ | — |
 
 ### 3.2 Cart Item States
 
@@ -325,9 +252,9 @@ This screen is responsible for the following core functional areas:
 |-------|-------------|:---------------:|:------------:|
 | `ACTIVE` | Item in cart with valid stock and requested quantity available | ✓ | ✓ |
 | `LOW_STOCK` | Item in cart, stock below threshold (≤10), with requested quantity available | ✓ (warning) | ✓ |
-| `OUT_OF_STOCK` | Item in cart, stock = 0 | ✓ (error) | ✗ |
-| `QUANTITY_EXCEEDED` | Requested quantity exceeds available stock | ✓ (error) | ✗ |
-| `INACTIVE` | Cart item's product is deactivated | ✓ (with notice) | ✗ |
+| `OUT_OF_STOCK` | Item in cart, stock = 0 | ✓ (out-of-stock badge) | `canCheckout` is false; checkout button is not disabled by this field |
+| `QUANTITY_EXCEEDED` | Requested quantity exceeds available stock | ✓ (availability false; quantity controls disabled) | `canCheckout` is false; checkout button is not disabled by this field |
+| `INACTIVE` | Cart item's product is deactivated (`isAvailable` false); no dedicated inactive notice is rendered | ✓ | `canCheckout` is false; checkout button is not disabled by this field |
 
 ### 3.3 Wishlist State Transitions
 
@@ -363,8 +290,10 @@ This screen is responsible for the following core functional areas:
 | BR-WISH-003 | Active Product Only | Only active products can be added to wishlist. | Backend (service validation) |
 | BR-WISH-004 | Product Existence | Product must exist in the system to be added. | Backend (FK constraint) |
 | BR-WISH-005 | Owner-Only Access | Users can only view/modify their own wishlist items. | Backend (service filter) |
-| BR-WISH-006 | Move to Cart Validation | Moving to cart requires product to be in stock (stock_quantity > 0). | Backend (stock check) |
-| BR-WISH-007 | Guest User Restriction | Unauthenticated users cannot use wishlist actions. Show the Wishlist guest-login alert before navigation; [Log in] navigates to `/login`. | Frontend (UI guard) |
+| BR-WISH-006 | Move to Cart Validation | Moving to cart requires the product to exist, be active, and be in stock (stock_quantity > 0). If the product is already in the cart, the move is rejected with `409 Conflict` and the duplicate-cart alert is shown; quantities are never merged. | Backend (stock + duplicate check) |
+| BR-WISH-007 | Guest User Restriction | Direct access to `/buyer/wishlist` redirects to login. The header icon and listing/search/recommendation card actions open login dialogs; the product-detail Add to Wishlist button is disabled for guests and non-buyers. | Frontend (`ProtectedRoute`, header and page handlers) |
+| BR-WISH-008 | Wishlist Limit | A user's wishlist may contain at most 100 items. Exceeding the limit fails with `400 Bad Request` ("Wishlist limit reached (100 items)"). | Backend (service check, hardcoded 100) |
+| BR-WISH-009 | Clear All Wishlist | Users may delete all of their wishlist items at once. The operation is scoped to the authenticated user's records and returns `{ success, deletedCount }`. | Backend (`deleteMany` by `user_id`) |
 
 ### 4.2 Cart Rules
 
@@ -372,15 +301,17 @@ This screen is responsible for the following core functional areas:
 |---------|-----------|-------------|-------------------|
 | BR-CART-001 | Authentication and Role Required | Only authenticated users with the `buyer` role can manage the cart. | Backend (`JwtAuthGuard`, `RolesGuard`, `@Roles('buyer')`) |
 | BR-CART-002 | Stock Availability | Cannot add product to cart if stock_quantity = 0. | Backend (stock validation) |
-| BR-CART-003 | Quantity Limit | Cart item quantity cannot exceed available stock_quantity. | Backend (stock validation) |
-| BR-CART-004 | Quantity Minimum | Cart item quantity must be ≥ 1. | Backend (DB constraint) |
+| BR-CART-003 | Quantity Limit | Cart quantity is limited to 1–99. Quantity updates are rejected when the requested quantity exceeds stock; add-to-cart validates stock > 0 but does not reject an initial quantity greater than stock. | Backend (DTO and update service); product-detail UI caps to stock but does not cap at 99 |
+| BR-CART-004 | Quantity Minimum | Cart item quantity must be ≥ 1. | Backend (DTO validation and DB constraint) |
 | BR-CART-005 | Active Product Only | Only active products can be added to cart. | Backend (service validation) |
 | BR-CART-006 | Price at Order Time | Price is locked at order creation time, not cart time. | Backend (order service) |
 | BR-CART-007 | Cart Persistence | Cart items are stored in database for logged-in users. | Backend (DB storage) |
 | BR-CART-008 | Subtotal Calculation | Subtotal = unit_price × quantity for each item. Discounts and coupons are **not** applied at this stage; coupon entry and discount calculation occur on the checkout page. | Backend (computed field) |
-| BR-CART-009 | Duplicate Handling | Adding an existing cart item; the client updates quantity through the PATCH endpoint. | Backend (service logic) |
-| BR-CART-010 | Guest User Restriction | Unauthenticated users cannot use cart actions. Show the Cart guest-login alert before navigation; [Log in] navigates to `/login`. | Frontend (UI guard) |
-| BR-CART-011 | Checkout Eligibility | Checkout is enabled only when every cart item is active and the requested quantity is available in stock. It is disabled for `OUT_OF_STOCK`, `QUANTITY_EXCEEDED`, or `INACTIVE` items. | Frontend and backend validation |
+| BR-CART-009 | Duplicate Handling | Adding a product that already exists in the cart fails with `409 Conflict` ("This product is already in cart."). The client does not auto-merge quantities; the `DuplicateCartAlertDialog` is shown. Quantity changes are made explicitly via the PATCH endpoint. | Backend (service logic) |
+| BR-CART-010 | Guest User Restriction | Direct access to `/buyer/cart` redirects to login. The header icon and listing/search/recommendation card actions open login dialogs; the product-detail Add to Cart handler navigates directly to `/login?redirect=/buyer/products`. | Frontend (`ProtectedRoute`, header and page handlers) |
+| BR-CART-011 | Checkout Eligibility | The backend computes `canCheckout = true` only when the cart is non-empty and contains no out-of-stock, quantity-exceeded, or inactive items. The frontend does not display or use this field to disable checkout; checkout is blocked only by the account-deactivated guard on the cart page. | Backend (computed field); not enforced by the Cart UI |
+| BR-CART-012 | Clear All Cart | Users may delete all of their cart items at once. The operation is scoped to the authenticated user's cart and returns `{ success, deletedCount }`. | Backend (`deleteMany` by `cart_id`) |
+| BR-CART-013 | Deactivated Account Guard | If the authenticated user's account is deactivated (`isActive === false` / status `deactivated` or `inactive`), the "Proceed to Checkout" button does not navigate; it opens the `AccountDeactivatedDialog`. | Frontend (UI guard) |
 
 ### 4.3 Stock Validation Rules
 
@@ -395,16 +326,17 @@ This screen is responsible for the following core functional areas:
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-DISP-001 | Product Images | Show first image from product.images array as thumbnail. | Frontend |
-| BR-DISP-002 | Price Display | Display price formatted with locale-appropriate currency. | Frontend (i18n) |
-| BR-DISP-003 | Stock Status | Show "In Stock", "Low Stock (X left)", or "Out of Stock". | Frontend |
-| BR-DISP-004 | Cart Badge | Header cart icon shows total item count (sum of quantities). | Frontend |
+| BR-DISP-001 | Product Images | Show the first image from `product.images` as a thumbnail. Wishlist cards show a placeholder icon when the URL is missing or the image fails to load; cart rows render a blank muted thumbnail when the URL is missing and do not handle image load errors. | Frontend |
+| BR-DISP-002 | Price Display | Display price as `{rounded}Ks` (Myanmar Kyat) using `toLocaleString('en-US')` and `Math.round`. `compareAtPrice` is shown struck-through only when greater than `productPrice`. | Frontend |
+| BR-DISP-003 | Stock Status | Cart rows show "In Stock" (stock > 10), "Only {n} left" (0 < stock ≤ 10), or "Out of Stock" (stock = 0) via `StockBadge`. Wishlist cards show no stock badge; the Add button is disabled when `isInStock` is false. | Frontend |
+| BR-DISP-004 | Cart Badge | Header cart icon shows `summary.totalItems` (sum of quantities) capped at "99+"; header heart icon shows wishlist `totalCount` capped at "99+". Badges hidden when count is 0. | Frontend |
+| BR-DISP-005 | Category Label | Wishlist cards show the product's category name (uppercase), falling back to "Uncategorized" when null. | Frontend |
 
 ---
 
 ## 5. Screen Specifications
 
-### 5.1 Screen: Wishlist Page (`/wishlist`)
+### 5.1 Screen: Wishlist Page (`/buyer/wishlist`)
 
 **Purpose:** Allow authenticated users to view and manage their saved products.
 
@@ -414,29 +346,38 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-01 | Page Title | Heading (h1) | `wishlist.title` | Yes | "My Wishlist" / "お気に入り" |
-| EL-02 | Item Count | Text | `wishlist.itemCount` | Yes | "{count} items saved" |
-| EL-03 | Wishlist Grid | Grid Container | — | Yes | Responsive grid of wishlist items |
-| EL-04 | Wishlist Item Card | Card | — | Yes | Product image, name, price, stock status, actions |
-| EL-05 | Product Image | Image | — | Yes | Clickable thumbnail linking to product detail |
-| EL-06 | Product Name | Text (link) | — | Yes | Clickable product name linking to product detail |
-| EL-07 | Product Price | Text | — | Yes | Current price with currency formatting |
-| EL-08 | Compare Price | Text (strikethrough) | — | No | Original price if discounted |
-| EL-09 | Stock Status | Badge | — | Yes | "In Stock", "Low Stock", "Out of Stock" |
-| EL-10 | Move to Cart Button | Button (primary) | `wishlist.moveToCart` | Yes | Add item to cart |
-| EL-11 | Remove Button | Button (ghost/icon) | `wishlist.remove` | Yes | Remove item from wishlist |
-| EL-12 | Empty State | EmptyState | `wishlist.empty` | Conditional | "No items saved yet. Browse products to add favorites." |
-| EL-13 | Continue Shopping Link | Link | `wishlist.continueShopping` | Conditional | "Continue Shopping" link to /products |
-| EL-14 | Loading Skeleton | Skeleton | — | Conditional | Shown while loading wishlist data |
-| EL-37 | Wishlist Guest Login Alert Modal | Dialog/Modal | `wishlist.guestLoginAlert` | Conditional | Alert modal for unauthenticated wishlist actions: "Please log in to add items to your wishlist." with [Log in] button navigating to `/login` |
+| EL-01 | Page Title | Heading (h1) | `wishlist.title` | Yes | "My Saved Wishlist" with heart icon |
+| EL-02 | Item Count | Text | — | Yes | "1 item saved for future purchase" / "{n} items saved for future purchase"; composed as hard-coded English in the page |
+| EL-03 | Wishlist Grid | Grid Container | — | Yes | Responsive grid (2 cols default, 3 at `md`, 4 at `lg`) |
+| EL-04 | Wishlist Item Card | Card (`WishlistItemCard`) | — | Yes | Product image, category, name, price, compare price, and actions |
+| EL-05 | Product Image | Image | — | Yes | Clickable thumbnail linking to `/buyer/wishlist/products/:slug` (placeholder icon on missing/error image) |
+| EL-06 | Product Name | Text (link) | — | Yes | Clickable product name linking to the same product route |
+| EL-07 | Product Price | Text | — | Yes | Current price formatted as `{rounded}Ks` |
+| EL-08 | Compare Price | Text (strikethrough) | — | No | Original price struck through when `compareAtPrice > productPrice` |
+| EL-10 | Move to Cart Button | Button (primary) | — | Yes | Hard-coded "Add"; disabled when `!item.isInStock` or while moving |
+| EL-11 | Remove Button | Button (ghost/icon, Trash2) | Hard-coded `aria-label` | Yes | Remove item from wishlist |
+| EL-12 | Empty State | `EmptyState` (`variant="wishlist"`) | `wishlist.emptyTitle`, `wishlist.emptyMessage` | Conditional | "No items saved yet" / "Browse products to add favorites." with Continue Shopping button to `/buyer/search` |
+| EL-13 | Continue Shopping Link | Link (inside EmptyState) | `wishlist.continueShopping` | Conditional | "Continue Shopping" link to `/buyer/search` |
+| EL-14 | Loading Skeleton | Skeleton | — | Conditional | 4 pulse cards shown while loading wishlist data |
+| EL-37 | Clear All Button | Button (outline, Trash2) | `wishlist.clearAll` / `wishlist.clearing` | Conditional | "All Data Clear"; shown only when items exist; disabled while clearing |
+| EL-38 | Clear All Confirm Dialog | `ConfirmDialog` | `wishlist.clearAllTitle/Confirm/ConfirmButton/CancelButton` | Conditional | Confirms clearing the whole wishlist before calling Clear-All |
+| EL-39 | Error / Retry State | Empty-state block | `wishlist.errorTitle`, `wishlist.errorMessage`, `wishlist.retry` | Conditional | Shown on load failure with a "Try again" button calling `refetch()` |
+| EL-40 | Duplicate Cart Alert | `DuplicateCartAlertDialog` | `buyer.products.cart.alreadyInCartTitle/Description` | Conditional | Shown when Move-to-Cart returns `409 Conflict` ("This product is already in cart.") |
+
+**Availability:** The wishlist API returns `stockStatus` and `isInStock`, but the card renders no stock badge. The Add button is disabled when `isInStock` is false.
+
+**Localization:** Page headings, clear-all controls, error states, and empty-state text use translation keys. The item count, card category fallback, Add label, and remove-button `aria-label` are hard-coded English.
+
+**Note:** `GuestLoginModal` is rendered by the header icon flow, not on this page. The product-detail Add to Wishlist button is disabled for guests and non-buyers. The page route itself is protected, so guests are redirected to `/login` by `ProtectedRoute`.
 
 **Default State:**
 - Page title and item count displayed at top
-- Wishlist items displayed in responsive grid (4 columns desktop, 2 tablet, 1 mobile)
+- Wishlist items displayed in responsive grid (4 columns desktop, 3 tablet, 2 default/mobile)
 - Loading skeleton shown during initial data fetch
 - Empty state shown when no items exist
+- Error/retry state shown when the initial fetch fails
 
-### 5.2 Screen: Cart Page (`/cart`)
+### 5.2 Screen: Cart Page (`/buyer/cart`)
 
 **Purpose:** Allow authenticated users to review and manage items before checkout.
 
@@ -446,40 +387,46 @@ This screen is responsible for the following core functional areas:
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-15 | Page Title | Heading (h1) | `cart.title` | Yes | "Shopping Cart" / "カート" |
-| EL-16 | Item Count | Text | `cart.itemCount` | Yes | "{count} items in cart" |
-| EL-17 | Cart Items Container | Container | — | Yes | List of cart items |
-| EL-18 | Cart Item Row | Row/Card | — | Yes | Product image, name, price, quantity controls, subtotal, remove |
-| EL-19 | Product Image | Image | — | Yes | Clickable thumbnail linking to product detail |
-| EL-20 | Product Name | Text (link) | — | Yes | Clickable product name linking to product detail |
-| EL-21 | Unit Price | Text | — | Yes | Price per unit |
-| EL-22 | Quantity Controls | Stepper | — | Yes | Minus button, quantity input, plus button |
-| EL-23 | Quantity Input | Input (number) | — | Yes | Direct quantity entry |
-| EL-24 | Minus Button | Button (icon) | — | Yes | Decrease quantity by 1 |
-| EL-25 | Plus Button | Button (icon) | — | Yes | Increase quantity by 1 |
-| EL-26 | Item Subtotal | Text | — | Yes | unit_price × quantity |
-| EL-27 | Stock Warning | Badge/Alert | — | Conditional | "Only X left in stock" warning |
-| EL-28 | Remove Button | Button (ghost/icon) | `cart.remove` | Yes | Remove item from cart |
-| EL-29 | Cart Summary Panel | Card/Sidebar | — | Yes | Order summary with totals |
-| EL-30 | Subtotal | Text | `cart.subtotal` | Yes | Sum of all item subtotals |
-| EL-31 | Item Count Summary | Text | `cart.totalItems` | Yes | Total number of items |
-| EL-32 | Checkout Button | Button (primary) | `cart.checkout` | Yes | Navigate to /checkout only when every cart item is active and the requested quantity is available in stock |
-| EL-33 | Continue Shopping Link | Link | `cart.continueShopping` | Yes | "Continue Shopping" link to /products |
-| EL-34 | Empty State | EmptyState | `cart.empty` | Conditional | "Your cart is empty. Start shopping!" |
-| EL-35 | Loading Skeleton | Skeleton | — | Conditional | Shown while loading cart data |
-| EL-36 | Guest Login Alert Modal | Dialog/Modal | `cart.guestLoginAlert` | Conditional | Alert modal for unauthenticated cart actions: "Please log in to add items to your cart." with [Log in] button navigating to `/login` |
+| EL-15 | Page Title | Heading (h1) | `cart.title` | Yes | "Shopping Cart" with cart icon |
+| EL-16 | Page Subtitle | Text | `cart.subtitle` | Yes | "Review items in your cart before checkout" |
+| EL-17 | Clear All Button | Button (outline, Trash2) | `cart.clearAll` / `cart.clearing` | Conditional | "All Data Clear"; shown only when items exist; disabled while clearing |
+| EL-18 | Cart Items Container | Container (grid, `lg:col-span-2`) | — | Yes | List of `CartItemRow` components |
+| EL-19 | Cart Item Row | Row (`CartItemRow`) | — | Yes | Product image, name, unit price, stock badge, quantity stepper, subtotal, remove |
+| EL-20 | Product Image | Image | — | Yes | Clickable thumbnail linking to `/buyer/products/:slug`; a missing URL renders a blank muted thumbnail, and image-load failures have no fallback handler |
+| EL-21 | Product Name | Text (link) | — | Yes | Clickable product name linking to the same product route |
+| EL-22 | Unit Price | Text | — | Yes | Price per unit shown as "{price} each"; the "each" suffix is hard-coded English |
+| EL-23 | Stock Warning | Badge (`StockBadge`) | — | Yes | Hard-coded "In Stock", "Only {n} left", or "Out of Stock" |
+| EL-24 | Quantity Controls | Stepper (`QuantityStepper`) | Hard-coded aria-labels | Yes | Minus button, quantity input, plus button; accessible labels are English |
+| EL-25 | Item Subtotal | Text | — | Yes | `unit_price × quantity` formatted as `{rounded}Ks` |
+| EL-26 | Remove Button | Button (ghost/icon, Trash2) | Hard-coded `aria-label` | Yes | Remove item from cart (mobile top-right and desktop) |
+| EL-27 | Cart Summary Panel | Card/Sidebar (`CartSummaryPanel`) | `cart.summary` | Yes | Order summary with subtotal, shipping estimate, and total |
+| EL-28 | Subtotal | Text | `cart.subtotalLabel` | Yes | Sum of all item subtotals |
+| EL-29 | Shipping Estimate | Text | `cart.shippingEstimate` | Yes | Label is translated; value shows hard-coded "Free" when the amount is 0, otherwise formatted `{rounded}Ks` |
+| EL-30 | Out-of-Stock Notice | Text (destructive) | — | Conditional | Hard-coded "Some items are out of stock" when `summary.hasOutOfStock` |
+| EL-31 | Total | Text | `cart.total` | Yes | `subtotal + shippingEstimate`, highlighted |
+| EL-32 | Checkout Button | Button (primary) | `cart.checkout` | Yes | Navigate to `/buyer/checkout`; when the account is deactivated it opens the Account Deactivated dialog instead |
+| EL-33 | Continue Shopping Link | Link (ghost) | `cart.continueShopping` | Yes | "Continue Shopping" link to `/buyer/search` |
+| EL-34 | Empty State | `EmptyState` (`variant="cart"`) | `cart.emptyTitle`, `cart.emptyMessage` | Conditional | "Your cart is empty" / "Start shopping!" with Continue Shopping button to `/buyer/search` |
+| EL-35 | Loading Skeleton | Skeleton | — | Conditional | 3 row skeletons plus a summary skeleton while loading |
+| EL-36 | Clear All Confirm Dialog | `ConfirmDialog` | `cart.clearAllTitle/Confirm/ConfirmButton/CancelButton` | Conditional | Confirms clearing the whole cart before calling Clear-All |
+| EL-41 | Error / Retry State | Empty-state block | `cart.errorTitle`, `cart.errorMessage`, `cart.retry` | Conditional | Shown on load failure with a "Try again" button calling `refetch()` |
+| EL-42 | Account Deactivated Dialog | `AccountDeactivatedDialog` | — | Conditional | Shown when a deactivated user clicks "Proceed to Checkout" |
+
+**Localization:** The page title/subtitle, clear-all controls, summary labels, checkout/continue-shopping buttons, empty state, and error state use translations. Stock badges, quantity-control/remove aria labels, the unit-price suffix, "Free", and the out-of-stock notice are hard-coded English.
 
 **Default State:**
 - Cart items displayed as rows with quantity controls
 - Summary panel displayed on right side (desktop) or below items (mobile)
-- Checkout button enabled only when every cart item is active and the requested quantity is available in stock; disabled for `OUT_OF_STOCK`, `QUANTITY_EXCEEDED`, or `INACTIVE` items
+- When the cart has items, the checkout button is rendered regardless of `canCheckout`; that API field is not shown or used by the UI. Navigation is blocked only when the account is deactivated.
 - Loading skeleton shown during initial data fetch
 - Empty state shown when no items exist
+- Error/retry state shown when the initial fetch fails
 
-- **Trigger:** Guest user clicks a cart action or wishlist action that requires authentication.
-- **Behavior:** Cart actions show a modal with "Please log in to add items to your cart." Wishlist actions show a modal with "Please log in to add items to your wishlist."
-- **Actions:** Clicking [Log in] navigates to `/login`. Clicking outside the modal or pressing ESC closes the modal.
-- **i18n Keys:** Cart: `cart.guestLoginAlert.title`, `cart.guestLoginAlert.message`, `cart.guestLoginAlert.loginButton`; Wishlist: `wishlist.guestLoginAlert.title`, `wishlist.guestLoginAlert.message`, `wishlist.guestLoginAlert.loginButton`
+- **Guest Login Modal (shared):** Rendered by the shared `GuestLoginModal` in the header icon flow, not on these pages.
+- **Trigger:** A guest clicks the header cart or wishlist icon. Product-detail Add to Cart instead redirects directly to login; Add to Wishlist is disabled for guests and non-buyers.
+- **Behavior:** The header modal shows "Please log in to add items to your cart." or "Please log in to add items to your wishlist." according to the selected icon.
+- **Actions:** Clicking [Log In] navigates to `/login?redirect=<encoded targetPath>`. Clicking [Cancel], outside the modal, or pressing ESC closes the modal.
+- **i18n Keys:** Cart: `cart.guestLoginAlert.title`, `cart.guestLoginAlert.message`, `cart.guestLoginAlert.loginButton`, `cart.guestLoginAlert.closeButton`; Wishlist: `wishlist.guestLoginAlert.title`, `wishlist.guestLoginAlert.message`, `wishlist.guestLoginAlert.loginButton`, `wishlist.guestLoginAlert.closeButton`
 
 ---
 
@@ -489,38 +436,37 @@ This screen is responsible for the following core functional areas:
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Heart icon click or "Add to Wishlist" button on product card/detail |
+| **Trigger** | "Add to Wishlist" button on product detail |
 | **API Endpoint** | `POST /api/v1/wishlist/:productId` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Guest Behavior** | Before any API call, show `wishlist.guestLoginAlert` with "Please log in to add items to your wishlist."; navigate to `/login` only when [Log in] is clicked. |
+| **Guest Behavior** | The product-detail Add to Wishlist button is disabled for guests and non-buyers. Header and listing/search/recommendation actions open their login dialog. |
 | **Pre-Submission Validation** | User authenticated with the `buyer` role; product exists and is active |
-| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Verify product exists and `isActive = true`. 3. Check if product already in the user's wishlist. 4. If it does not exist, create a wishlist record. 5. Return the standard response envelope. 6. Log `WISHLIST_ITEM_ADDED`. |
+| **Processing Steps** | 1. Validate JWT token, the `buyer` role, and active account. 2. Verify product exists; `404` if missing. 3. If `!isActive`, return `404` ("Product is not available"). 4. Check if product already in the user's wishlist; `409` if present. 5. Check the user's wishlist count (< 100); `400` if at the limit. 6. Create the wishlist record. 7. Return `{ data: <wishlist item DTO> }`. |
 | **Success Response** | 201 Created with wishlist item data |
-| **Post-Action** | Toggle heart icon to filled state |
+| **Post-Action** | Invalidate wishlist data; on success, the button label changes to "Added to Wishlist" and a success toast is shown. Repeated clicks return 409 and show the "Already in Wishlist" dialog. |
 
 ### 6.2 Operation: Remove Product from Wishlist
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Heart icon click (toggle off) or "Remove" button in wishlist |
+| **Trigger** | "Remove" (trash) button on a wishlist card |
 | **API Endpoint** | `DELETE /api/v1/wishlist/:productId` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Guest Behavior** | Before any API call, show `wishlist.guestLoginAlert` with "Please log in to add items to your wishlist."; navigate to `/login` only when [Log in] is clicked. |
 | **Pre-Submission Validation** | User authenticated with the `buyer` role; product is in the user's wishlist |
-| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Find the wishlist record by `userId` + `productId`. 3. If it exists, delete the record. 4. Return 204 with no response body. 5. Log `WISHLIST_ITEM_REMOVED`. |
+| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Find the wishlist record by `userId` + `productId`; `404` if absent. 3. Delete the record. 4. Return 204 with no response body. |
 | **Success Response** | 204 No Content |
-| **Post-Action** | Toggle heart icon to outline state; remove from wishlist view if on wishlist page |
+| **Post-Action** | Remove the item from the wishlist view. The product-detail Add to Wishlist button does not remove an already-saved product; the duplicate response opens the "Already in Wishlist" dialog. |
 
 ### 6.3 Operation: View Wishlist
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Navigation to /wishlist |
+| **Trigger** | Navigation to `/buyer/wishlist` |
 | **API Endpoint** | `GET /api/v1/wishlist` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Guest Behavior** | Show `wishlist.guestLoginAlert` before navigation to `/login`; do not redirect directly from the wishlist action. |
+| **Guest Behavior** | The `/buyer/wishlist` route is protected by `ProtectedRoute roles={['buyer']}`, so guests are redirected to `/login`. The header wishlist icon and listing/search/recommendation actions open login dialogs; the product-detail Add to Wishlist button is disabled for guests and non-buyers. |
 | **Pre-Submission Validation** | User authenticated with the `buyer` role |
-| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Query `wishlists` by `user_id`, ordered by `created_at DESC`. 3. Join with `products` for name, price, images, active status, and stock. 4. Derive stock status for each item. 5. Return `{ data: { items, totalCount } }`. |
+| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Query `wishlists` by `user_id`, ordered by `created_at DESC`. 3. Join with `products` (and `category`) for name, category, slug, price, compareAtPrice, images, active status, and stock. 4. Derive `stockStatus` and `isInStock`. 5. Return `{ data: { items, totalCount } }`. An unknown/empty `userId` returns an empty list. |
 | **Success Response** | 200 OK with wishlist items array |
 | **Post-Action** | Render wishlist grid with product cards |
 
@@ -531,24 +477,24 @@ This screen is responsible for the following core functional areas:
 | **Trigger** | "Add to Cart" button on wishlist item |
 | **API Endpoint** | `POST /api/v1/wishlist/:productId/move-to-cart` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Pre-Submission Validation** | User authenticated with the `buyer` role; product is in the wishlist, active, and in stock |
-| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Find the wishlist record. 3. Verify product is active and `stock_quantity > 0`. 4. Create or update the user's `cart_items` row in a Prisma transaction. 5. Increment quantity if the item already exists and ensure the new quantity does not exceed stock. 6. Delete the wishlist record in the same transaction. 7. Return `{ data: { cartItem, wishlistRemoved } }`. 8. Log `WISHLIST_ITEM_MOVED_TO_CART`. |
+| **Pre-Submission Validation** | User authenticated with the `buyer` role; product is in the wishlist, active, and in stock, and not already in the cart |
+| **Processing Steps** | 1. Validate JWT token, the `buyer` role, and active account. 2. Find the wishlist record; `404` if absent. 3. Verify the product exists and `isActive`; `404` otherwise. 4. If `stock_quantity <= 0`, return `400` ("Product is out of stock"). 5. Upsert the user's `cart` row. 6. If a `cart_item` for the product already exists, return `409 Conflict` ("This product is already in cart."). 7. Otherwise create the `cart_item` with `quantity = 1`. 8. Delete the wishlist record. 9. Return `{ data: { cartItem, wishlistRemoved: true } }`. These writes are not wrapped in a Prisma transaction. |
 | **Success Response** | 200 OK with cart item data |
-| **Post-Action** | Remove from wishlist view; show in cart |
+| **Post-Action** | Remove from wishlist view; show in cart. On `409`, display `DuplicateCartAlertDialog` |
 
 ### 6.5 Operation: Add Product to Cart
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | "Add to Cart" button on product detail or product card |
+| **Trigger** | "Add to Cart" button on product detail, listing/search card, or recommendation card |
 | **API Endpoint** | `POST /api/v1/cart/items` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
-| **Guest Behavior** | Before any API call, show `cart.guestLoginAlert` with "Please log in to add items to your cart."; navigate to `/login` only when [Log in] is clicked. |
+| **Guest Behavior** | On the product detail page, an unauthenticated Add to Cart click navigates directly to `/login?redirect=/buyer/products`. Header and listing/search/recommendation actions open a login-required dialog; [Log In] returns to the selected header route, the current pathname on SearchFilter/MatchingRecommendations, or `/login` without a redirect on the buyer product-list page. |
 | **Request Body** | `{ productId: string, quantity?: number }` |
 | **Pre-Submission Validation** | User authenticated with the `buyer` role; product exists, is active, and has stock > 0 |
-| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Validate request body (`productId` is a UUID and `quantity` defaults to 1). 3. Verify product exists, `isActive = true`, and `stock_quantity > 0`. 4. Check whether the product already exists in the user's `cart_items`. 5. If it exists, return `409 Conflict`; quantity changes use PATCH. 6. Otherwise create the cart item. 7. Return the item in the standard response envelope with Decimal monetary fields serialized as strings. 8. Log `CART_ITEM_ADDED`. |
+| **Processing Steps** | 1. Validate JWT token, the `buyer` role, and active account. 2. Validate request body (`productId` must be a UUID v4; `quantity` is an integer from 1 to 99 and defaults to 1). 3. Verify product exists, `isActive = true`, and `stock_quantity > 0`. 4. Check whether the product already exists in the user's cart. 5. If it exists, return `409 Conflict`; quantity changes use PATCH. 6. Otherwise create the cart item. 7. Return the item in the standard response envelope with Decimal monetary fields serialized as strings. |
 | **Success Response** | 201 Created with cart item data |
-| **Post-Action** | Update cart badge count; show success toast |
+| **Post-Action** | Invalidate the cart query. The product-detail flow shows a success toast; duplicate products show the "Already in Cart" dialog. Other failures in that flow currently have no visible error feedback. |
 
 ### 6.6 Operation: Update Cart Item Quantity
 
@@ -559,7 +505,7 @@ This screen is responsible for the following core functional areas:
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
 | **Request Body** | `{ quantity: number }` |
 | **Pre-Submission Validation** | User authenticated with the `buyer` role; cart item belongs to the user's cart |
-| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Resolve the cart item through the authenticated user's `cart.id` (ownership check). 3. Validate quantity ≥ 1 and ≤ 99. 4. Verify `quantity ≤ product.stock_quantity`. 5. Update the cart item quantity. 6. Return the updated item with the new subtotal and Decimal monetary fields serialized as strings. 7. Log `CART_ITEM_UPDATED`. |
+| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Resolve the cart item through the authenticated user's `cart.id` (ownership check). 3. Validate quantity as an integer from 1 to 99. 4. Verify `quantity ≤ product.stock_quantity`. 5. Update the cart item quantity. 6. Return the updated item with the new subtotal and Decimal monetary fields serialized as strings. |
 | **Success Response** | 200 OK with updated cart item data |
 | **Post-Action** | Update subtotal display; update cart badge if quantity changed |
 
@@ -571,7 +517,7 @@ This screen is responsible for the following core functional areas:
 | **API Endpoint** | `DELETE /api/v1/cart/items/:id` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
 | **Pre-Submission Validation** | User authenticated with the `buyer` role; cart item belongs to the user's cart |
-| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Resolve the cart item through the authenticated user's `cart.id` (ownership check). 3. Delete the cart item record. 4. Return 204 with no response body. 5. Log `CART_ITEM_REMOVED`. |
+| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Resolve the cart and confirm the cart item belongs to it. 3. Delete the cart item record. 4. Return 204 with no response body. |
 | **Success Response** | 204 No Content |
 | **Post-Action** | Remove item from cart view; update subtotal and badge |
 
@@ -579,13 +525,37 @@ This screen is responsible for the following core functional areas:
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | Navigation to /cart |
+| **Trigger** | Navigation to `/buyer/cart` |
 | **API Endpoint** | `GET /api/v1/cart` |
 | **Request Headers** | `Authorization: Bearer <accessToken>` |
 | **Pre-Submission Validation** | User authenticated with the `buyer` role |
 | **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Resolve the user's `cart` and query its `cart_items`. 3. Join with `products` for details (name, slug, images, price, active status, stock). 4. Calculate `unitPrice × quantity` for each item and sum the pre-discount subtotal. 5. Derive stock status and availability (`stock_quantity >= quantity`). 6. Set `canCheckout = true` only when every item is active and available; set it to `false` for `OUT_OF_STOCK`, `QUANTITY_EXCEEDED`, or `INACTIVE` items, and for an empty cart. 7. Return `{ data: { items, summary } }`, serializing Decimal values as strings. |
 | **Success Response** | 200 OK with cart items and summary |
 | **Post-Action** | Render cart view with items and summary panel |
+
+### 6.9 Operation: Clear All Wishlist
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | "All Data Clear" button on the wishlist page → confirm in `ConfirmDialog` |
+| **API Endpoint** | `DELETE /api/v1/wishlist` |
+| **Request Headers** | `Authorization: Bearer <accessToken>` |
+| **Pre-Submission Validation** | User authenticated with the `buyer` role |
+| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. `deleteMany` all `wishlists` rows where `user_id = userId`. 3. Return `{ data: { success: true, deletedCount } }`. |
+| **Success Response** | 200 OK with `{ success, deletedCount }` |
+| **Post-Action** | Show empty state; update wishlist badge |
+
+### 6.10 Operation: Clear All Cart
+
+| Attribute | Specification |
+|-----------|---------------|
+| **Trigger** | "All Data Clear" button on the cart page → confirm in `ConfirmDialog` |
+| **API Endpoint** | `DELETE /api/v1/cart/items` |
+| **Request Headers** | `Authorization: Bearer <accessToken>` |
+| **Pre-Submission Validation** | User authenticated with the `buyer` role |
+| **Processing Steps** | 1. Validate JWT token and the `buyer` role. 2. Resolve the user's `cart`; if none exists return `{ success: true, deletedCount: 0 }`. 3. `deleteMany` all `cart_items` where `cart_id = cart.id`. 4. Return `{ data: { success: true, deletedCount } }`. |
+| **Success Response** | 200 OK with `{ success, deletedCount }` |
+| **Post-Action** | Show empty state; update cart badge |
 
 ---
 
@@ -595,14 +565,14 @@ This screen is responsible for the following core functional areas:
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
-| `productId` | Product ID | 商品ID | UUID | Yes | `@IsUUID()`, `@IsNotEmpty()`, UUID format |
+| `productId` | Product ID | 商品ID | UUID v4 | Yes | `@IsUUID('4')`, `@IsNotEmpty()`, UUID v4 format |
 
 ### 7.2 Input Specification — Add to Cart (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|------------|
-| `productId` | Product ID | 商品ID | UUID | Yes | `@IsUUID()`, `@IsNotEmpty()`, UUID format |
-| `quantity` | Quantity | 数量 | INTEGER | No (default: 1) | `@IsInt()`, `@Min(1)`, `@Max(99)` |
+| `productId` | Product ID | 商品ID | UUID v4 | Yes | `@IsUUID('4')`, `@IsNotEmpty()`, UUID v4 format |
+| `quantity` | Quantity | 数量 | INTEGER | No (default: 1) | `@IsInt()`, `@Min(1)`, `@Max(99)`; server cap is 99 |
 
 ### 7.3 Input Specification — Update Cart Quantity (入力定義)
 
@@ -617,11 +587,12 @@ This screen is responsible for the following core functional areas:
 | `id` | `wishlists.id` | UUID string |
 | `productId` | `wishlists.product_id` | UUID string |
 | `productName` | `products.name` | String |
+| `category` | `products.category.name` | GET wishlist response only; String, falls back to "Uncategorized". The add response does not include this field. |
 | `productSlug` | `products.slug` | URL-friendly string |
-| `productImage` | `products.images[0]` | URL string |
-| `productPrice` | `products.price` | Decimal serialized as a string; format for display in the frontend |
+| `productImage` | `products.images[0]` | URL string or null |
+| `productPrice` | `products.price` | Decimal serialized as a string; rendered as `{rounded}Ks` |
 | `compareAtPrice` | `products.compare_at_price` | Decimal serialized as a string or null |
-| `stockStatus` | `products.stock_quantity` | "In Stock" / "Low Stock" / "Out of Stock" |
+| `stockStatus` | `products.stock_quantity` | `"IN_STOCK"` / `"LOW_STOCK"` / `"OUT_OF_STOCK"` |
 | `isInStock` | `products.stock_quantity > 0` | Boolean |
 | `createdAt` | `wishlists.created_at` | ISO 8601 timestamp |
 
@@ -633,13 +604,13 @@ This screen is responsible for the following core functional areas:
 | `productId` | Product reference | UUID string |
 | `productName` | `products.name` | String |
 | `productSlug` | `products.slug` | URL-friendly string |
-| `productImage` | `products.images[0]` | URL string |
+| `productImage` | `products.images[0]` | URL string or null |
 | `unitPrice` | `products.price` | Decimal serialized as a string; format for display in the frontend |
 | `quantity` | Cart item quantity | Integer |
-| `subtotal` | `unitPrice × quantity` | Decimal serialized as a string; discounts are excluded |
+| `subtotal` | `unitPrice × quantity` | Decimal serialized as a 2-decimal string; discounts are excluded |
 | `stockQuantity` | `products.stock_quantity` | Integer |
-| `stockStatus` | Derived from stock_quantity | "In Stock" / "Low Stock" / "Out of Stock" |
-| `isAvailable` | `stock_quantity >= quantity` | Boolean |
+| `stockStatus` | Derived from stock_quantity | `"IN_STOCK"` / `"LOW_STOCK"` / `"OUT_OF_STOCK"` |
+| `isAvailable` | `isActive && stock_quantity >= quantity` (GET); `stock_quantity >= quantity` (add/update) | Boolean |
 
 ### 7.6 Output Specification — Cart Summary (出力定義)
 
@@ -647,9 +618,11 @@ This screen is responsible for the following core functional areas:
 |-------|-------------|----------------|
 | `items` | Cart items array | Array of Cart Item DTOs |
 | `totalItems` | Sum of quantities | Integer |
-| `subtotal` | Sum of all subtotals (unit_price × quantity per item, **before** discounts) | Decimal serialized as a string |
-| `hasOutOfStock` | Any item with stock = 0 | Boolean |
-| `canCheckout` | `true` only when every item is active and `stock_quantity >= quantity`; otherwise `false` | Boolean |
+| `subtotal` | Sum of all subtotals (unit_price × quantity per item, **before** discounts) | Decimal serialized as a 2-decimal string |
+| `shippingEstimate` | Fixed `"0.00"` (shipping is not computed on the cart page) | Decimal serialized as a string |
+| `total` | `subtotal + shippingEstimate` | Decimal serialized as a 2-decimal string |
+| `hasOutOfStock` | Any item with `stockQuantity <= 0` | Boolean |
+| `canCheckout` | `true` only when the cart is non-empty and contains no out-of-stock, quantity-exceeded, or inactive items; otherwise `false`. The Cart UI does not use this field to disable checkout. | Boolean |
 
 ---
 
@@ -663,6 +636,8 @@ This screen is responsible for the following core functional areas:
 | — | Product must exist and be active | "Product not found or unavailable" | "商品が見つからないか利用できません" |
 | — | Product must not already be in wishlist | "Product already in wishlist" | "商品は既にお気に入りに追加されています" |
 
+**Implementation note:** `productId` is a raw route parameter in the current controller; the declared wishlist path DTO is not wired to this route, so UUID format is not validated by a DTO before the service call.
+
 ### 8.2 Add to Cart Validation
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
@@ -670,7 +645,8 @@ This screen is responsible for the following core functional areas:
 | `productId` | Required, valid UUID format | "Product ID is required" / "Invalid product ID" | "商品IDは必須です" / "無効な商品IDです" |
 | `quantity` | Optional, integer ≥ 1, ≤ 99 | "Quantity must be at least 1" / "Quantity cannot exceed 99" | "数量は1以上である必要があります" / "数量は99を超えることはできません" |
 | — | Product must exist, be active, and have stock > 0 | "Product is out of stock" | "商品は在庫切れです" |
-| — | If product already in cart, new quantity ≤ stock | "Insufficient stock" | "在庫が不足しています" |
+| — | Initial quantity must not exceed stock | Not checked by the add service; the returned item can have `isAvailable: false` | — |
+| — | Product must not already be in the cart | "This product is already in cart." (`409 Conflict`) | "この商品はすでにカートに入っています" |
 
 ### 8.3 Update Cart Quantity Validation
 
@@ -681,9 +657,9 @@ This screen is responsible for the following core functional areas:
 
 ### 8.4 Validation Enforcement Layers
 
-1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback before API calls.
-2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
-3. **Database (DB)**: Prisma constraints (unique, check, FK) as final safety net.
+1. **Frontend (Client)**: Cart-row `QuantityStepper` limits values to `min(99, stockQuantity)`; product-detail `QuantityStepper` uses `stockQuantity` as its maximum without a 99 cap, so a stock value above 99 can expose a quantity that the server rejects. Input uses `parseInt`, so a decimal such as `2.5` is truncated to `2`. No inline quantity validation message is rendered. The 100-item wishlist limit is enforced on the server; the frontend does not disable Add to Wishlist at the limit. Forms use component-level constraints rather than React Hook Form + Zod on these pages.
+2. **Backend (Server)**: NestJS `ValidationPipe` + class-validator DTOs (`AddToCartDto`, `UpdateCartQuantityDto`). **Note:** the wishlist and cart-item path parameters (`:productId`, `:id`) are declared with DTO classes (`AddToWishlistDto`, `WishlistPathDto`, `CartItemPathDto`) that are currently **not** wired into the controllers, so path IDs are read as raw strings at runtime. UUID format errors therefore surface as `404`/`409`/`500` from the service rather than `400`.
+3. **Database (DB)**: Prisma constraints (unique `[user_id, product_id]`, FK, quantity ≥ 1) as the final safety net.
 
 ---
 
@@ -694,46 +670,43 @@ This screen is responsible for the following core functional areas:
 ```json
 {
   "statusCode": 400,
-  "message": ["productId must be a valid UUID"],
+  "errorCode": "VAL_001",
+  "message": ["Invalid product ID format"],
   "error": "Bad Request",
   "timestamp": "2026-08-05T12:00:00.000Z",
-  "path": "/api/v1/wishlist/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+  "path": "/api/v1/cart/items"
 }
 ```
 
 ### 9.2 Error Classification Table — Wishlist
 
-| HTTP Status | Error Code | Scenario | User-Facing Behavior |
-|-------------|------------|----------|---------------------|
-| `400` | `BAD_REQUEST` | Validation failures (invalid productId) | Inline field error + toast |
-| `401` | `UNAUTHORIZED` | Missing or invalid JWT token | Redirect to login |
-| `403` | `FORBIDDEN` | Authenticated user is not a buyer | Show "Shopping features are only available to buyers" |
-| `GUEST` | `UNAUTHENTICATED` | Guest user performs a wishlist action | Show Wishlist guest-login alert: "Please log in to add items to your wishlist."; navigate to `/login` only after [Log in] is clicked |
-| `404` | `NOT_FOUND` | Product not found | Toast: "Product not found" |
-| `409` | `CONFLICT` | Product already in wishlist | Toast: "Already in your wishlist" |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | Toast: "Something went wrong. Please try again." |
+| HTTP Status | Error Code | Scenario | Current User-Facing Behavior |
+|-------------|------------|----------|------------------------------|
+| `400` | `VAL_001` | Wishlist limit reached or validation failure | Listing/search/recommendation flows show a generic failure toast; product-detail Add to Wishlist currently has no visible feedback for non-409 failures. |
+| `401` | `AUTH_001` | Missing or invalid JWT token | Buyer routes are protected and direct guest navigation redirects to `/login`; API failure handling depends on the auth layer. |
+| `403` | `RES_004` (role/access denial); `ACCOUNT_DEACTIVATED` (active-user guard) | Authenticated user is not a buyer or the account is deactivated | Product-detail handlers navigate non-buyers to `/unauthorized` and show `AccountDeactivatedDialog` for deactivated buyers. Listing/search/recommendation actions show a generic failure toast for a deactivated account. |
+| `404` | `RES_001` | Product not found, inactive, or wishlist item not found | Wishlist page remove/move and listing/search/recommendation failures show generic failure feedback; product-detail non-409 failures have no visible feedback. |
+| `409` | `RES_003` | Product already in wishlist | Product-detail flow shows the "Already in Wishlist" dialog; listing/search/recommendation flows show an informational "Already in your wishlist" message. |
+| `500` | `SYS_001` | Server error | Wishlist page remove/move and listing/search/recommendation failures show generic failure feedback; product-detail non-409 failures have no visible feedback. |
 
 ### 9.3 Error Classification Table — Cart
 
-| HTTP Status | Error Code | Scenario | User-Facing Behavior |
-|-------------|------------|----------|---------------------|
-| `400` | `BAD_REQUEST` | Validation failures (invalid quantity) | Inline field error + toast |
-| `400` | `BAD_REQUEST` | Out of stock | Toast: "Product is out of stock" |
-| `400` | `BAD_REQUEST` | Quantity exceeds stock | Toast: "Only {n} available in stock" |
-| `401` | `UNAUTHORIZED` | Missing or invalid JWT token | Redirect to login |
-| `403` | `FORBIDDEN` | Authenticated user is not a buyer | Show "Shopping features are only available to buyers" |
-| `GUEST` | `UNAUTHENTICATED` | Guest user performs a cart action | Show Cart guest-login alert: "Please log in to add items to your cart."; navigate to `/login` only after [Log in] is clicked |
-| `404` | `NOT_FOUND` | Cart item not found | Toast: "Item not found in cart" |
-| `404` | `NOT_FOUND` | Product not found | Toast: "Product not found" |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | Toast: "Something went wrong. Please try again." |
+| HTTP Status | Error Code | Scenario | Current User-Facing Behavior |
+|-------------|------------|----------|------------------------------|
+| `400` | `VAL_001` | Invalid quantity, out of stock, or requested quantity exceeds stock | Cart-page quantity updates show the generic "Failed to update quantity" toast. Listing/search/recommendation add flows show a generic failure toast; product-detail Add to Cart currently has no visible feedback for non-409 failures. Out-of-stock controls are disabled. |
+| `401` | `AUTH_001` | Missing or invalid JWT token | Buyer routes are protected and direct guest navigation redirects to `/login`; API failure handling depends on the auth layer. |
+| `403` | `RES_004` (role/access denial); `ACCOUNT_DEACTIVATED` (active-user guard) | Authenticated user is not a buyer or the account is deactivated | Product-detail handlers navigate non-buyers to `/unauthorized` and show `AccountDeactivatedDialog` for deactivated buyers. Listing/search/recommendation add actions show a generic failure toast; cart checkout shows `AccountDeactivatedDialog`. |
+| `404` | `RES_001` | Cart item/product not found or product inactive | Cart-page remove failures and listing/search/recommendation add failures show generic failure feedback; product-detail non-409 failures have no visible feedback. |
+| `409` | `RES_003` | Product already in cart (add or move-to-cart) | Product-detail and listing/search/recommendation Add to Cart, and wishlist Move-to-Cart, show duplicate-cart dialogs. |
+| `500` | `SYS_001` | Server error | Cart-page update/remove/clear failures and listing/search/recommendation add failures show generic failure feedback; product-detail non-409 failures have no visible feedback. |
 
 ### 9.4 Frontend Error Display Behavior
 
-- **Field-Level Validation**: Red border and inline text below invalid input.
-- **Toast Notifications**: Used for API errors and successful actions (add, remove, update).
-- **Optimistic UI Updates**: Heart icon toggles immediately on click; reverts on API failure.
-- **Loading States**: Spinner on buttons during API calls. Skeleton loaders for page content.
-- **Stock Warnings**: Inline badge/alert on cart items with low or zero stock.
+- **Input Validation**: The quantity input accepts only parsed integer values within its HTML min/max range; invalid/empty input is ignored and no inline error is rendered. `parseInt` truncates decimal input.
+- **Toast Notifications**: Wishlist and cart page handlers show success/failure toasts for remove, move, quantity update, and clear-all operations. Product-detail add handlers show success toasts and duplicate dialogs but currently do not surface other API failures.
+- **Query Updates**: Mutations invalidate the relevant TanStack Query key on settlement; no optimistic heart/cart updates are implemented.
+- **Loading States**: Page skeletons appear during loading; page-level loading failures show an error state and a Retry button. Mutation controls show loading/disabled states.
+- **Stock Warnings**: Cart rows show the stock badge; wishlist cards have no stock badge and disable Add when the product is out of stock.
 
 ---
 
@@ -743,19 +716,22 @@ This screen is responsible for the following core functional areas:
 
 - JSON Web Token (JWT) Bearer Token passed via the `Authorization` header for all wishlist and cart endpoints.
 - Every endpoint is protected by `JwtAuthGuard` and `RolesGuard`, with `@Roles('buyer')`.
+- Mutating add/move endpoints (`POST /wishlist/:productId`, `POST /wishlist/:productId/move-to-cart`, `POST /cart/items`) additionally require `ActiveUserGuard` so deactivated accounts cannot create items.
 
 ### 10.2 Public vs Protected Endpoints
 
 | Endpoint | Access Level | Description |
 |----------|-------------|-------------|
 | `GET /wishlist` | Protected | Requires a valid access token and the `buyer` role |
-| `POST /wishlist/:productId` | Protected | Requires a valid access token and the `buyer` role |
+| `POST /wishlist/:productId` | Protected | Requires a valid access token, the `buyer` role, and an active account (`ActiveUserGuard`) |
 | `DELETE /wishlist/:productId` | Protected | Requires a valid access token and the `buyer` role |
-| `POST /wishlist/:productId/move-to-cart` | Protected | Requires a valid access token and the `buyer` role |
+| `DELETE /wishlist` | Protected | Clear All — requires a valid access token and the `buyer` role |
+| `POST /wishlist/:productId/move-to-cart` | Protected | Requires a valid access token, the `buyer` role, and an active account (`ActiveUserGuard`) |
 | `GET /cart` | Protected | Requires a valid access token and the `buyer` role |
-| `POST /cart/items` | Protected | Requires a valid access token and the `buyer` role |
+| `POST /cart/items` | Protected | Requires a valid access token, the `buyer` role, and an active account (`ActiveUserGuard`) |
 | `PATCH /cart/items/:id` | Protected | Requires a valid access token and the `buyer` role |
 | `DELETE /cart/items/:id` | Protected | Requires a valid access token and the `buyer` role |
+| `DELETE /cart/items` | Protected | Clear All — requires a valid access token and the `buyer` role |
 
 ### 10.3 Role-Based Access
 
@@ -785,10 +761,14 @@ The Wishlist and Cart pages operate with standard REST API calls. Real-time WebS
 
 | Event | Trigger | Action |
 |-------|---------|--------|
-| `wishlist:toggle` | Heart icon click | Optimistic UI toggle; revert on API error |
-| `cart:add` | Add to cart button click | Increment cart badge count; show toast |
-| `cart:update` | Quantity change | Update subtotal display; update badge |
-| `cart:remove` | Remove button click | Remove item from view; update badge and subtotal |
+| `wishlist:add` | Product-detail or listing/search/recommendation Add to Wishlist click | Add via mutation; invalidate `['wishlist']`; duplicate behavior varies by surface |
+| `wishlist:remove` | Wishlist card trash button or listing/search/recommendation toggle | Remove via mutation; invalidate `['wishlist']` |
+| `wishlist:clear` | Clear All confirm | Invalidate `['wishlist']`; show cleared toast and empty state |
+| `wishlist:move` | Move to Cart click | Invalidate `['wishlist']` and `['cart']`; on `409` open `DuplicateCartAlertDialog` |
+| `cart:add` | Add to cart button click | Invalidate `['cart']`; refresh cart data and header badge; show a success toast on supported surfaces |
+| `cart:update` | Quantity change | Invalidate `['cart']`; update subtotal display and badge |
+| `cart:remove` | Remove button click | Invalidate `['cart']`; remove item from view; update badge and subtotal |
+| `cart:clear` | Clear All confirm | Invalidate `['cart']`; show cleared toast and empty state |
 
 ---
 
@@ -798,38 +778,40 @@ The Wishlist and Cart pages operate with standard REST API calls. Real-time WebS
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| Product Detail page | `/wishlist` | Click "View Wishlist" link |
-| Product Detail page | `/cart` | Click "Add to Cart" button |
-| Header cart icon | `/cart` | Click cart icon in header |
-| Header heart icon | `/wishlist` | Click wishlist icon in header |
-| Any page (unauthenticated) | `/login` | Clicking wishlist/cart action without auth |
+| Buyer navigation | `/buyer/wishlist` | Click "Wishlist" link (authenticated) |
+| Header cart icon | `/buyer/cart` | Click cart icon (authenticated) |
+| Header heart icon | `/buyer/wishlist` | Click wishlist icon (authenticated) |
+| Any page (unauthenticated) | Login-required dialog | Click header wishlist/cart icon or listing/search/recommendation action as guest |
+| Product detail (unauthenticated) | `/login?redirect=/buyer/products` | Click Add to Cart as guest; Add to Wishlist is disabled |
 
 ### 12.2 Internal Navigation
 
 | Source | Target | Trigger |
 |--------|--------|---------|
-| `/wishlist` | `/products/:slug` | Click product image or name |
-| `/wishlist` | `/cart` | Click "Add to Cart" on wishlist item |
-| `/cart` | `/products/:slug` | Click product image or name |
-| `/cart` | `/checkout` | Click "Proceed to Checkout" |
-| `/cart` | `/products` | Click "Continue Shopping" |
+| `/buyer/wishlist` | `/buyer/wishlist/products/:slug` | Click product image or name on a wishlist card |
+| `/buyer/wishlist` | Cart contents (implicit) | Click "Add" (Move to Cart) on a wishlist item — item is added to the cart; both query keys refresh and the user stays on the wishlist page |
+| `/buyer/cart` | `/buyer/products/:slug` | Click product image or name |
+| `/buyer/cart` | `/buyer/checkout` | Click "Proceed to Checkout" (active account) |
+| `/buyer/cart` | `/buyer/search` | Click "Continue Shopping" |
+| `/buyer/wishlist` (empty) | `/buyer/search` | Click "Continue Shopping" in the empty state |
 
 ### 12.3 Outbound Navigation
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| `/wishlist` | `/cart` | Move item to cart |
-| `/cart` | `/checkout` | Proceed to checkout (all items in stock) |
-| `/cart` | `/login` | Session expired |
+| `/buyer/cart` | `/buyer/checkout` | Proceed to checkout (active account) |
+| Login-required dialog | Login route | [Log In] clicked by a guest; header modal uses the selected wishlist/cart route, SearchFilter/MatchingRecommendations use the encoded current pathname, and the buyer product-list dialog goes to `/login` without a redirect |
+| `/login` | Protected page | Direct navigation by guest (via `ProtectedRoute`) |
 
 ### 12.4 Error Navigation
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| `/wishlist` | `/login` | 401 Unauthorized |
-| `/cart` | `/login` | 401 Unauthorized |
-| Product Detail / Product Card | `/login` | Guest user clicks "Add to Cart" (via alert modal) |
-| `/wishlist` | `/login` | Guest user clicks "Move to Cart" (via alert modal) |
+| `/buyer/wishlist` | `/login` | 401 Unauthorized or guest direct navigation |
+| `/buyer/cart` | `/login` | 401 Unauthorized or guest direct navigation |
+| Product Detail | `/login?redirect=/buyer/products` | Guest user clicks Add to Cart; the Add to Wishlist button is disabled |
+| Listing/search/recommendation page | Login-required dialog | Guest user clicks a wishlist/cart action; post-login target varies by page as specified above |
+| `/buyer/cart` | `AccountDeactivatedDialog` | Deactivated account clicks "Proceed to Checkout" |
 
 ---
 
@@ -851,10 +833,9 @@ The Wishlist and Cart pages operate with standard REST API calls. Real-time WebS
 
 | Cache Target | Strategy | TTL |
 |--------------|----------|-----|
-| Wishlist items | No cache (user-specific) | — |
-| Cart items | No cache (user-specific) | — |
-| Product details | Redis cache | 5 minutes |
-| Stock quantities | Real-time from DB | — |
+| Wishlist items | TanStack Query in-memory cache (user-keyed); `staleTime: 0`, refetch on mount/window focus, one retry | No persistent cache |
+| Cart items | TanStack Query in-memory cache (user-keyed); `staleTime: 0`, refetch on mount/window focus, one retry | No persistent cache |
+| Stock quantities | Loaded with wishlist/cart responses from the database | Refetched with the corresponding query |
 
 ### 13.3 Security Considerations
 
@@ -864,28 +845,29 @@ The Wishlist and Cart pages operate with standard REST API calls. Real-time WebS
 | Price manipulation | Price fetched from DB, not client-provided |
 | Stock manipulation | Stock validated server-side before operations |
 | IDOR attacks | Ownership validation (userId from JWT) |
-| Race conditions on stock | Atomic operations via Prisma transactions |
+| Race conditions on stock | Stock validated server-side before operations; the unique `[user_id, product_id]` constraint guards duplicate wishlist inserts. Move-to-Cart/Add-to-Cart are not wrapped in an explicit Prisma transaction in the current implementation. |
 
 ### 13.4 Responsive Design Requirements
 
 | Breakpoint | Wishlist Layout | Cart Layout |
 |------------|-----------------|-------------|
-| Desktop (≥ 1024px) | 4-column grid | Items list + right sidebar summary |
-| Tablet (768px – 1023px) | 2-column grid | Items list + bottom summary |
-| Mobile (< 768px) | 1-column list | Stacked items + bottom summary |
+| Desktop (≥ 1024px, `lg`) | 4-column grid | 3-column grid: items span 2, summary sidebar sticky on the right |
+| Tablet (768px – 1023px, `md`) | 3-column grid | Items stacked above the summary (summary below) |
+| Mobile (< 768px) | 2-column grid | Stacked items + bottom summary |
 
 ---
 
 ## 14. Configurable Items (External Definitions)
 
-Defined via `.env` configuration:
+Intended `.env` configuration values and their **current implementation status**:
 
-| Definition Key | Default Value | Description |
-|----------------|---------------|-------------|
-| `WISHLIST_MAX_ITEMS` | `100` | Maximum items per user wishlist |
-| `CART_MAX_ITEMS` | `50` | Maximum items per user cart |
-| `CART_MAX_QUANTITY_PER_ITEM` | `99` | Maximum quantity per cart item |
-| `LOW_STOCK_THRESHOLD` | `10` | Default low stock warning threshold |
+| Definition Key | Default Value | Current Implementation |
+|----------------|---------------|------------------------|
+| `WISHLIST_MAX_ITEMS` | `100` | Hardcoded `100` in `WishlistService.addToWishlist`; not read from env |
+| `CART_MAX_ITEMS` | `50` | Not enforced anywhere |
+| `CART_MAX_QUANTITY_PER_ITEM` | `99` | Enforced via `@Max(99)` in `AddToCartDto` / `UpdateCartQuantityDto` and the cart-row `QuantityStepper`; the product-detail stepper is capped by stock only and can expose values above 99; not env-driven |
+| `LOW_STOCK_THRESHOLD` | `10` | Hardcoded `10` in `calculateStockStatus` (wishlist and cart services); not read from env |
+| Shipping estimate | `0.00` | Fixed `"0.00"` in `CartService.getCartItems`; not env-driven |
 
 ---
 
@@ -908,14 +890,16 @@ Defined via `.env` configuration:
 | B-CART-006 | Cart persists across sessions (logged-in users) | BR-CART-007, Sec 6.8 |
 | B-CART-007 | Cart shows product images and names | Sec 5.2, BR-DISP-001 |
 
+> **Note:** Clear-All wishlist/cart (UC-WISH-006, UC-CART-006) and the duplicate-cart conflict handling (BR-CART-009, BR-WISH-006) are implemented in the current codebase but do not map to a dedicated requirement ID in `要件定義書_REQUIREMENT_SPEC.md`; they are documented here for implementation traceability.
+
 ### 15.2 Database Design Traceability
 
 | Database Table | Relevant Functional Operations |
 |----------------|-------------------------------|
-| `wishlists` | Add (INSERT), Remove (DELETE), View (SELECT), Move to Cart (DELETE) |
-| `carts` | Resolve the authenticated buyer's single cart (SELECT/CREATE) |
-| `cart_items` | Add (INSERT), Update Quantity (PATCH/UPDATE), Remove (DELETE), View (SELECT) |
-| `products` | Stock validation (SELECT), Price lookup (SELECT), Product details (SELECT) |
+| `wishlists` | Add (INSERT), Remove (DELETE), View (SELECT), Move to Cart (DELETE), Clear All (DELETE many) |
+| `carts` | Resolve the authenticated buyer's single cart (SELECT/UPSERT) |
+| `cart_items` | Add (INSERT), Update Quantity (PATCH/UPDATE), Remove (DELETE), View (SELECT), Clear All (DELETE many) |
+| `products` | Stock validation (SELECT), Price lookup (SELECT), Product details (SELECT), Category lookup (SELECT) |
 
 ### 15.3 Related Document References
 

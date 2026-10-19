@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCategoryTree } from '@/features/search/hooks/useCategoryTree'
@@ -21,6 +22,7 @@ function findCategoryName(categories: CategoryNode[], id: string): string | null
 }
 
 export function MatchingFilterChips({ filters, onRemove, onClearAll }: MatchingFilterChipsProps) {
+  const { t } = useTranslation('skin')
   const { data: categoryData } = useCategoryTree()
   const categories = categoryData?.data ?? []
   const categoryName = filters.categoryId
@@ -30,19 +32,23 @@ export function MatchingFilterChips({ filters, onRemove, onClearAll }: MatchingF
   const chips: Array<{ key: string; label: string; value?: string }> = []
 
   if (filters.categoryId) {
-    chips.push({ key: 'categoryId', label: categoryName ?? 'Category' })
+    chips.push({ key: 'categoryId', label: categoryName ?? t('matchingPage.category') })
   }
 
   if (filters.skinTypes) {
     const types = filters.skinTypes.split(',').filter(Boolean).filter((t) => t !== 'all')
     types.forEach((st) => {
-      chips.push({ key: 'skinTypes', label: st.charAt(0).toUpperCase() + st.slice(1), value: st })
+      chips.push({
+        key: 'skinTypes',
+        label: t(`matchingPage.skinTypes.${st}`, { defaultValue: st.charAt(0).toUpperCase() + st.slice(1) }),
+        value: st,
+      })
     })
   }
 
-  if (filters.minPrice !== undefined) chips.push({ key: 'minPrice', label: `Min: ${Number(filters.minPrice).toLocaleString()}Ks` })
-  if (filters.maxPrice !== undefined) chips.push({ key: 'maxPrice', label: `Max: ${Number(filters.maxPrice).toLocaleString()}Ks` })
-  if (filters.rating !== undefined) chips.push({ key: 'rating', label: `${filters.rating}+ Stars` })
+  if (filters.minPrice !== undefined) chips.push({ key: 'minPrice', label: t('matchingPage.minPriceChip', { price: Number(filters.minPrice).toLocaleString() }) })
+  if (filters.maxPrice !== undefined) chips.push({ key: 'maxPrice', label: t('matchingPage.maxPriceChip', { price: Number(filters.maxPrice).toLocaleString() }) })
+  if (filters.rating !== undefined) chips.push({ key: 'rating', label: t('matchingPage.ratingOption', { rating: filters.rating }) })
 
   if (chips.length === 0) return null
 
@@ -53,7 +59,7 @@ export function MatchingFilterChips({ filters, onRemove, onClearAll }: MatchingF
           {chip.label}
           <button
             type="button"
-            aria-label={`Remove ${chip.label}`}
+            aria-label={t('matchingPage.removeFilter', { label: chip.label })}
             onClick={() => onRemove(chip.key, chip.value)}
             className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
           >
@@ -69,7 +75,7 @@ export function MatchingFilterChips({ filters, onRemove, onClearAll }: MatchingF
           className="ml-1 h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
           onClick={onClearAll}
         >
-          Clear All
+          {t('matchingPage.clearAll')}
         </Button>
       )}
     </div>

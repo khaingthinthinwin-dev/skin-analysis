@@ -10,9 +10,9 @@
 | **Target Screen** | Admin Commission / Revenue Dashboard (手数料・収益管理) |
 | **Subsystem** | Commission Management & Revenue Tracking |
 | **Function ID** | FN-COMM-001 |
-| **Version** | 8.0 |
+| **Version** | 8.1 |
 | **Created** | 2026-08-05 |
-| **Last Updated** | 2026-08-24 |
+| **Last Updated** | 2026-10-15 |
 | **Author** | Senior System Engineer |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -33,6 +33,7 @@
 | 7.1 | 2026-08-24 | Senior System Engineer | Aligned payment status enums with DATABASE_SPEC v2.4: removed 'failed' from order payment statuses (pending/completed only), removed 'failed' from ad payment statuses (pending/completed/refunded only). Updated BR-REV-003, BR-ADFE-005, EL-35, EL-36, and cross-reference traceability matrix. |
 | 7.2 | 2026-08-24 | Senior System Engineer | UI cleanup of the Revenue tab payment panels: removed the "Failed" and "Refunded" status cards from the Payment Status Panel (EL-35) and the "Ad Failed" status card from the Ad Payment Status Panel (EL-36). Adjusted panel grid layout and spacing for a balanced display — order payment badges in a single-row 2-column grid, ad payment badges in a single-row 3-column grid. Updated default state and verification checklist accordingly. |
 | 8.0 | 2026-08-24 | Senior System Engineer | Added Export functionality: 3 new use cases (UC-COMM-012~014), Export Modal screen (Layout 5), 4 new operations (§6.12~6.15), export business rules (BR-EXP-001~006), export input/output specs, export validation rules, export error handling, export endpoints in permissions and audit logging. Supports CSV and Excel formats only (no PDF). Updated both EN and JP specs. |
+| 8.1 | 2026-10-15 | Senior System Engineer | Aligned to implementation (2026-10-15): corrected API paths (`/revenue/kpis`, `/revenue/target`, `/revenue/payments/status`, `/revenue/ad-fee`; added payout review/delete and payout-merchant endpoints), removed non-existent `failed` payout transition and `PAYOUT_FAILED` audit, corrected `netRevenue` formula (revenue − commission, not income − refunds), corrected progress basis (`orders.total_amount` from period start), replaced `COMM_*`/`EXP_*`/`ADFE_*` error codes with the global envelope codes, removed export estimated-rows/recent-history UI, added payout review/delete use cases, and corrected frontend route roles to `admin`/`super_admin`. |
 
 ---
 
@@ -72,7 +73,7 @@ This screen suite is responsible for the following core functional areas:
 2. **Commission Report Generation** — Generating merchant-level commission reports with filtering, sorting, and pagination.
 3. **Revenue Dashboard KPI** — Displaying revenue KPIs and trend visualization over configurable ranges.
 4. **Ad Fee Revenue Tracking** — Tracking and displaying advertisement fee revenue alongside commission revenue in the dashboard. (Ad fee rate configuration per placement/tier is administered via the Advertisement Management function, REQ §5.3.)
-5. **Payment Status Breakdown** — Summarizing payment statuses across completed, pending, and refunded records (order payments: pending/completed; ad payments: pending/completed/refunded).
+5. **Payment Status Breakdown** — Summarizing payout statuses (pending/processing/completed, from the payout list) and ad payment statuses (pending/completed/refunded).
 6. **Merchant Payout Management** — Processing merchant payouts with idempotency and status tracking (commission deduction only; ad fees are platform revenue and are never deducted from payouts).
 7. **Revenue Target Progress** — Configuring monthly/quarterly revenue targets and displaying current progress via a gauge bar (based on completed/settled order sales; ad fees excluded per DBS §3.18).
 8. **AI Revenue Forecast** — Predicting revenue and platform fees from historical data and rendering the forecast as a dotted line alongside the current trend.
@@ -112,10 +113,12 @@ This screen suite is responsible for the following core functional areas:
 | `from` | User Input | Start date for commission report filter |
 | `to` | User Input | End date for commission report filter |
 | `range` | User Input | Trend chart range selection (7d/30d/90d/1y) |
-| `status` | User Input | Payout status filter (pending/processing/completed/failed) |
+| `status` | User Input | Payout status filter (pending/processing/completed) |
+| `merchantId` | User Input | Payout merchant filter |
+| `period` | User Input | Payout period filter (`YYYY-MM`) |
+| `search` | User Input | Payout free-text search (merchant name/e-mail or period) |
 | `targetPeriod` | User Input | Revenue target period (monthly/quarterly) |
 | `targetAmount` | User Input | Revenue target amount in the edit target dialog |
-| `adFeeRange` | User Input | Ad fee trend range selection (7d/30d/90d/1y) |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
@@ -150,6 +153,8 @@ This screen suite is responsible for the following core functional areas:
 | UC-COMM-003 | Filter Commission Reports | Admin authenticated | Report list refreshed with filters | Admin |
 | UC-COMM-004 | View Revenue Dashboard | Admin authenticated | KPI cards and trend chart displayed | Admin |
 | UC-COMM-005 | Process Payout | Admin authenticated | Payout status updated and data refreshed | Admin |
+| UC-COMM-005a | Review Payout | Admin authenticated | Pending payout moved to processing (detail view / dialog cancel) | Admin |
+| UC-COMM-005b | Delete Payouts | Admin authenticated | Eligible payouts (completed, ≥ 3 months old) deleted | Admin |
 | UC-COMM-006 | Change Revenue Range | Admin authenticated | Trend chart refreshed for selected range | Admin |
 | UC-COMM-007 | Set Revenue Target | Admin authenticated | Revenue target saved and gauge bar updated | Admin |
 | UC-COMM-008 | View Target Progress | Admin authenticated | Gauge bar displays progress toward target | Admin |
@@ -247,15 +252,18 @@ Admin navigates to /admin/commission-revenue
 |---------------|--------|--------|---------|-------|
 | TR-COMM-04 | none | active | Target saved | amount > 0, valid period |
 | TR-COMM-05 | active | active | Target updated | new amount > 0, valid period |
-| TR-COMM-06 | active | none | Target cleared | admin removes target |
+
+> There is no delete/clear-target endpoint; the target remains until overwritten.
 
 ### 3.4 Payout State Transitions
 
 | Transition ID | Origin | Target | Trigger | Guard |
 |---------------|--------|--------|---------|-------|
-| TR-COMM-01 | pending | processing | Process payout clicked | payout exists, status = pending |
-| TR-COMM-02 | processing | completed | Backend confirms payment | success response |
-| TR-COMM-03 | pending | failed | Backend rejects processing | validation failure |
+| TR-COMM-01 | `pending` | `processing` | Review payout (detail view open, or process dialog cancel) | payout exists; conditional update on `status='pending'` — otherwise returns current status with HTTP 200 (no error, no audit) |
+| TR-COMM-02 | `pending` or `processing` | `completed` | Process payout | payout exists; not `completed` (409) / not `failed` (400); conditional update + unique `idempotencyKey` |
+| TR-COMM-03 | `completed` | (deleted) | Delete payouts | `status='completed'` AND `createdAt ≤ now − 3 months`, else 409 |
+
+> `failed` exists only in the DB column comment, the frontend union type, and badge maps — no API writer, transition, or filter supports it. There is no `PAYOUT_FAILED` audit event.
 
 ---
 
@@ -280,7 +288,7 @@ Admin navigates to /admin/commission-revenue
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-REV-001 | KPI Scope | Revenue KPIs consider only completed/settled orders and exclude refunds from net revenue. | Backend (query aggregation) |
+| BR-REV-001 | KPI Scope | Revenue KPIs consider only completed/settled orders (`payment_status = 'completed'`). `netRevenue = totalRevenue − totalCommission` (refunds are not subtracted). | Backend (query aggregation) |
 | BR-REV-002 | Trend Ranges | Revenue trend chart supports `7d`, `30d`, `90d`, and `1y` ranges. | Frontend (toggle group) |
 | BR-REV-003 | Payment Breakdown | Payment status panel summarizes completed and pending records for orders; completed, pending, and refunded for ad payments. | Backend (query aggregation) + Frontend (badges) |
 
@@ -289,8 +297,8 @@ Admin navigates to /admin/commission-revenue
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-REV-004 | Payout Idempotency | Payout processing is idempotent; retrying a processed payout returns conflict status. | Backend (service logic) |
-| BR-REV-005 | Payout Status Flow | Payout transitions pending → processing → completed, or pending → failed. | Backend (state machine) |
-| BR-REV-016 | Payout Formula | Net payout = total sales − commission (`net_payout = total_amount − commission_amount`, DBS §3.19). Ad fees are platform revenue and are never deducted from merchant payouts. Failed payouts record a `failure_reason`. | Backend (payout calculation service) |
+| BR-REV-005 | Payout Status Flow | Payout transitions: `pending` → `processing` (review) → `completed` (process). The API never produces `failed`; `failureReason` is always null. | Backend (state machine) |
+| BR-REV-016 | Payout Formula | Net payout = total sales − commission (`netAmount = total_amount − commission_amount`, DBS §3.19). Ad fees are platform revenue and are never deducted from merchant payouts (`adFeeAmount` is always `"0.00"`). | Backend (payout calculation service) |
 
 ### 4.5 Revenue Target Rules
 
@@ -298,9 +306,9 @@ Admin navigates to /admin/commission-revenue
 |---------|-----------|-------------|-------------------|
 | BR-REV-006 | Target Period | Revenue targets support `monthly` and `quarterly` periods only. | Backend (DTO validation) + Frontend (toggle group) |
 | BR-REV-007 | Target Amount | Target amount must be a positive decimal greater than 0 with a maximum of two decimal places. | Backend (DTO validation) + Frontend (form validation) |
-| BR-REV-008 | Progress Calculation | Progress = (actual revenue in period / target amount) × 100, where actual revenue is aggregated from completed/settled order sales (`order_items.total_price`, DBS §3.18). Gauge clamps display to 0–100%, and values above 100% are shown separately as "over target". | Backend (query aggregation) + Frontend (gauge rendering) |
+| BR-REV-008 | Progress Calculation | Progress = (actual revenue in period / target amount) × 100, where actual revenue is aggregated from completed/settled order sales (`orders.total_amount` with `createdAt >= period start`). The backend returns the percentage unclamped; the gauge clamps display to 0–100%, and values above 100% are shown as over-target. | Backend (query aggregation) + Frontend (gauge rendering) |
 | BR-REV-009 | Single Active Target | Only one active target per period type is stored; saving a new target for the same period overwrites the previous one. | Backend (service logic) |
-| BR-REV-010 | Target Scope | Progress is calculated from completed/settled order sales only (aggregated via `order_items.total_price`), consistent with KPI scope (BR-REV-001). Ad fee revenue is excluded from target progress (DBS §3.18). | Backend (query aggregation) |
+| BR-REV-010 | Target Scope | Progress is calculated from completed/settled order sales only (`orders.total_amount`, consistent with KPI scope BR-REV-001). Ad fee revenue is excluded from target progress (DBS §3.18). | Backend (query aggregation) |
 
 ### 4.6 AI Revenue Forecast Rules
 
@@ -329,7 +337,7 @@ Admin navigates to /admin/commission-revenue
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-COMM-006 | Admin Only | Only admin users can access commission and revenue admin routes. | Backend (JwtAuthGuard, RolesGuard) + Frontend (ProtectedRoute) |
-| BR-COMM-007 | Audit Logging | Audit log entries are created for commission rate updates, revenue target updates, and payout processing. | Backend (audit service) |
+| BR-COMM-007 | Audit Logging | Audit log entries are created for commission rate updates, revenue target updates, payout review/processing/deletion, and export generation. | Backend (audit service) |
 | BR-COMM-008 | Loading State | System uses skeleton loading states until API responses arrive. | Frontend (UI) |
 
 ### 4.9 Export Rules
@@ -404,7 +412,7 @@ Admin navigates to /admin/commission-revenue
 | EL-20 | Ad Fee Revenue Card | Card | `revenue.adFeeRevenue` | Yes | Total advertisement fee revenue KPI |
 | EL-21 | Total Income Card | Card | `revenue.totalIncome` | Yes | Combined platform income (commission + ad fees) KPI |
 | EL-22 | Avg Order Value Card | Card | `revenue.avgOrderValue` | Yes | Average order value KPI |
-| EL-23 | Net Revenue Card | Card | `revenue.netRevenue` | Yes | Net revenue KPI (total income - refunds) |
+| EL-23 | Net Revenue Card | Card | `revenue.netRevenue` | Yes | Net revenue KPI (total revenue − total commission) |
 | EL-24 | Trend Chart | Chart | — | Yes | Area/line chart with commission, ad fee, and total income series |
 | EL-25 | Range Toggle | Toggle Group | `revenue.range` | No | 7d / 30d / 90d / 1y range selection |
 | EL-26 | Forecast Legend | Text | `revenue.forecast` | No | "AI Forecast" dotted line legend |
@@ -463,23 +471,19 @@ Admin navigates to /admin/commission-revenue
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-50 | Modal Title | Heading (h3) | `export.title` | No | "Export Report" |
-| EL-51 | Report Type | Text | `export.reportType` | Yes | Display current report type (Commission / Revenue / Payout) |
+| EL-51 | Report Type | Text | `export.reportType` | Yes | Display current report type (Commission / Revenue / Payout), read-only |
 | EL-52 | Date Range Picker | Date Range Picker | `export.dateRange` | Yes | Start and end date for export (required, max 365 days) |
-| EL-53 | Format Selection | Radio Group | `export.format` | Yes | CSV / Excel (XLSX) |
-| EL-54 | Estimated Rows | Text | `export.estimatedRows` | No | "Estimated {n} rows" (shown after date range is set) |
-| EL-55 | Generate Button | Button (primary) | `export.generate` | Yes | "Generate Report" |
-| EL-56 | Cancel Button | Button (secondary) | `export.cancel` | No | Close modal |
-| EL-57 | Recent Exports Heading | Heading (h3) | `export.recentExports` | No | "Recent Exports" |
-| EL-58 | Recent Exports Table | Table | — | No | Columns: Report Type, Format, Date Range, Status, Generated At, Download |
-| EL-59 | Status Column | Table Column | — | Yes | Processing / Ready / Expired |
-| EL-60 | Download Column | Table Column | — | Yes | Download button (shown when status = Ready) |
+| EL-53 | Format Selection | Toggle Buttons | `export.format` | Yes | CSV / Excel (XLSX) |
+| EL-54 | Group By | Text | `export.groupBy` | No | Commission only — read-only display of current grouping (merchant/day/order) |
+| EL-55 | Merchant Select | Select | `export.merchant` | No | Payout only — All Merchants or a single merchant |
+| EL-56 | Generate Button | Button (primary) | `export.generate` | Yes | "Generate" |
+| EL-57 | Cancel Button | Button (secondary) | `export.cancel` | No | Close modal |
 
 **Default State:**
 - Modal closed by default
 - Date range empty (admin must select)
 - Format default: CSV
-- Estimated rows hidden until date range is applied
-- Recent exports table shown below the modal when on the Commission/Revenue page
+- No estimated-rows or recent-exports UI (exports download immediately; there is no export history)
 
 ---
 
@@ -529,10 +533,10 @@ Admin navigates to /admin/commission-revenue
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | `/admin/commission-revenue` route mounted or Tab 2 (Revenue) selected |
-| **API Endpoint** | `GET /api/v1/admin/revenue`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/targets`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments`, `GET /api/v1/admin/revenue/payouts`, `GET /api/v1/admin/revenue/ad-fees` |
+| **API Endpoint** | `GET /api/v1/admin/revenue/kpis`, `GET /api/v1/admin/revenue/trends`, `GET /api/v1/admin/revenue/target`, `GET /api/v1/admin/revenue/forecast`, `GET /api/v1/admin/revenue/payments/status`, `GET /api/v1/admin/revenue/payouts`, `GET /api/v1/admin/revenue/ad-fee` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
-| **Processing Steps** | 1. Fetch KPI, trend, target, forecast, payment, payout, and ad fee data in parallel. 2. Populate cards (including ad fee revenue and total income), chart, gauge, panels, and tables. 3. On failure, show alert and preserve last known data if available. |
+| **Processing Steps** | 1. Fetch KPI, trend, target, forecast, payment status, payout, and ad fee data in parallel. 2. Populate cards (including ad fee revenue and total income), chart, gauge, panels, and tables. 3. On failure, show error toast and preserve last known data if available. |
 | **Success Response** | 200 OK with dashboard data (including ad fee summary) |
 | **Post-Action** | Populate KPI cards (6 cards), trend chart (3 series), target gauge, forecast dotted line, payment status panels (order + ad), payout table, and ad fee summary card |
 | **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
@@ -545,7 +549,7 @@ Admin navigates to /admin/commission-revenue
 | **API Endpoint** | `GET /api/v1/admin/revenue/trends` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Range value is one of `7d`, `30d`, `90d`, `1y` |
-| **Processing Steps** | 1. Fetch trend series for selected range. 2. Fetch forecast series for the selected range (Sec 6.9). 3. Update chart, forecast dotted line, and tooltip labels. 4. On failure, maintain previous chart state and show alert. |
+| **Processing Steps** | 1. Fetch trend series for selected range. 2. Fetch forecast series for the selected range (Sec 6.9). 3. Update chart, forecast dotted line, and tooltip labels. 4. On failure, maintain previous chart state and show error toast. |
 | **Success Response** | 200 OK with trend series data |
 | **Post-Action** | Update chart, forecast dotted line, and tooltip labels |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
@@ -557,21 +561,21 @@ Admin navigates to /admin/commission-revenue
 | **Trigger** | "Process" button click on a pending payout |
 | **API Endpoint** | `POST /api/v1/admin/revenue/payouts/:id/process` |
 | **Request Content-Type** | `application/json` |
-| **Pre-Submission Validation** | Payout exists and status = pending |
-| **Processing Steps** | 1. Confirm action. 2. Call payout process endpoint. 3. Refresh payout list and KPI metrics on success. 4. On failure, payout record stores `failure_reason` with status = failed and an error toast is shown. 5. Log PAYOUT_PROCESSED / PAYOUT_FAILED event. |
+| **Pre-Submission Validation** | Payout exists; status is `pending` or `processing` (Process button is only enabled for non-completed rows) |
+| **Processing Steps** | 1. Confirm action. 2. Call payout process endpoint (all underlying payout ids via `Promise.allSettled`). 3. On success the payout becomes `completed` with `processedAt`/`processedBy` and a unique `idempotencyKey`. 4. Refresh payout list and KPI metrics. 5. Log PAYOUT_PROCESSED event. |
 | **Success Response** | 200 OK with updated payout status |
-| **Post-Action** | Refresh payout list and KPI metrics, success toast |
-| **Error Response** | 404 Not Found, 409 Conflict, 500 Internal Server Error |
+| **Post-Action** | Refresh payout list and KPI metrics, success toast (partial/all-failed variants when multiple underlying payouts are processed) |
+| **Error Response** | 404 Not Found, 409 Conflict (already processed), 500 Internal Server Error |
 
 ### 6.7 Operation: Revenue Target Load
 
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | `/admin/commission-revenue` route mounted or Tab 2 (Revenue) selected |
-| **API Endpoint** | `GET /api/v1/admin/revenue/targets` |
+| **API Endpoint** | `GET /api/v1/admin/revenue/target` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
-| **Processing Steps** | 1. Fetch active revenue target and current period actual revenue (completed/settled order sales aggregated from `order_items.total_price`). 2. Calculate progress percentage. 3. Render target card, gauge bar, and period toggle. 4. On failure, show error alert and render gauge at 0%. |
+| **Processing Steps** | 1. Fetch the active revenue target for the selected period and current-period actual revenue (completed/settled order sales from `orders.total_amount`, `createdAt >= period start`). 2. Calculate progress percentage. 3. Render target card, gauge bar, and period toggle. 4. On failure, show error toast and render gauge at 0%. |
 | **Success Response** | 200 OK with target config, actual revenue, and progress percentage |
 | **Post-Action** | Render target amount, gauge bar progress, and period toggle |
 | **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
@@ -597,7 +601,7 @@ Admin navigates to /admin/commission-revenue
 | **API Endpoint** | `GET /api/v1/admin/revenue/forecast` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token; range is one of `7d`, `30d`, `90d`, `1y` |
-| **Processing Steps** | 1. Fetch historical revenue, platform fee, and ad fee series for the selected range. 2. Compute trend extrapolation for the forecast horizon. 3. Return predicted revenue, platform fee, and ad fee points. 4. Render as a dotted line appended to the current trend line. 5. On insufficient data, return empty forecast and hide the dotted line with an informational note. |
+| **Processing Steps** | 1. Fetch historical revenue and ad fee series for the selected range (completed orders + completed ad payments, bucketed daily or monthly). 2. With at least 7 populated buckets, apply linear regression (least squares) over bucket index for revenue and ad fee; predicted commission = predicted revenue × current commission rate. 3. Generate forecast points from the last actual bucket to the horizon (range end; current quarter start for `1y`). 4. Render as a dotted line appended to the current trend line. 5. On insufficient data (< 7 populated buckets), return an empty series with the note "Not enough historical data to generate a forecast" and hide the dotted line. |
 | **Success Response** | 200 OK with forecast series data (or empty series when data is insufficient) |
 | **Post-Action** | Render dotted forecast line and update legend/tooltip labels |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
@@ -607,10 +611,10 @@ Admin navigates to /admin/commission-revenue
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | `/admin/revenue` route mounted |
-| **API Endpoint** | `GET /api/v1/admin/revenue/ad-fees` |
+| **API Endpoint** | `GET /api/v1/admin/revenue/ad-fee` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Valid admin JWT access token |
-| **Processing Steps** | 1. Fetch ad fee KPI data (total ad fees collected, active ads, pending payments). 2. Fetch ad fee trend series for the selected range. 3. Fetch ad fee payment status breakdown. 4. Populate ad fee KPI card, ad fee trend series on chart, and ad payment status panel. 5. On failure, show alert and render ad fee card at 0. |
+| **Processing Steps** | 1. Fetch ad fee KPI data (total ad fees collected, active ads, pending/completed payments). 2. Fetch ad fee trend series for the selected range (shared with the trend chart range). 3. Fetch ad fee payment status breakdown. 4. Populate ad fee KPI card, ad fee trend series on chart, and ad payment status panel. 5. On failure, show error toast and render ad fee card at 0. |
 | **Success Response** | 200 OK with ad fee summary, trend series, and payment status |
 | **Post-Action** | Render ad fee KPI card, ad fee trend line, and ad payment status badges |
 | **Error Response** | 401/403 Unauthorized, 500 Internal Server Error |
@@ -620,10 +624,10 @@ Admin navigates to /admin/commission-revenue
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | Select `7d` / `30d` / `90d` / `1y` on Range Toggle |
-| **API Endpoint** | `GET /api/v1/admin/revenue/ad-fees` |
+| **API Endpoint** | `GET /api/v1/admin/revenue/ad-fee` |
 | **Request Content-Type** | `application/json` |
 | **Pre-Submission Validation** | Range value is one of `7d`, `30d`, `90d`, `1y` |
-| **Processing Steps** | 1. Fetch ad fee trend series for selected range. 2. Update ad fee series on the trend chart. 3. On failure, maintain previous chart state and show alert. |
+| **Processing Steps** | 1. Fetch ad fee trend series for selected range (shared range with the trend chart — see Sec 6.5). 2. Update ad fee series on the trend chart. 3. On failure, maintain previous chart state and show error toast. |
 | **Success Response** | 200 OK with ad fee trend series data |
 | **Post-Action** | Update ad fee trend line on the chart |
 | **Error Response** | 400 Validation Error, 500 Internal Server Error |
@@ -634,7 +638,7 @@ Admin navigates to /admin/commission-revenue
 |-----------|---------------|
 | **Trigger** | "Export" button click on Commission tab |
 | **API Endpoint** | `POST /api/v1/admin/commission/export` |
-| **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx', groupBy?: 'merchant' \| 'day' \| 'order' }` |
 | **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
 | **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Generate file synchronously. 4. Stream file to client. 5. Log EXPORT_GENERATED event to audit_logs. |
 | **Success Response** | 200 OK with file stream |
@@ -660,7 +664,7 @@ Admin navigates to /admin/commission-revenue
 |-----------|---------------|
 | **Trigger** | "Export" button click on Payout table |
 | **API Endpoint** | `POST /api/v1/admin/revenue/payouts/export` |
-| **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx' }` |
+| **Request Body** | `{ dateFrom: string, dateTo: string, format: 'csv' \| 'xlsx', merchantId?: string }` |
 | **Pre-Submission Validation** | dateFrom and dateTo are valid ISO dates, dateFrom <= dateTo, date range <= 365 days, format is 'csv' or 'xlsx' |
 | **Processing Steps** | 1. Validate admin role. 2. Validate request body. 3. Generate file synchronously. 4. Stream file to client. 5. Log EXPORT_GENERATED event to audit_logs. |
 | **Success Response** | 200 OK with file stream |
@@ -675,7 +679,7 @@ Admin navigates to /admin/commission-revenue
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
-| `commissionRate` | Commission Rate | 手数料率 | DECIMAL(5,2) | Yes | Input (number) | Required, regex `/^\d+(\.\d{1,2})?$/`, 0 < value < 100 |
+| `commissionRate` | Commission Rate | 手数料率 | DECIMAL(5,2) | Yes | Input (number) | Required, regex `/^\d+(\.\d{1,2})?$/`, 0 < value ≤ 100 |
 
 ### 7.2 Input Specification — Report Filter (入力定義)
 
@@ -689,7 +693,7 @@ Admin navigates to /admin/commission-revenue
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `range` | Range | 期間 | ENUM | Yes | Toggle Group | One of `7d`, `30d`, `90d`, `1y` |
-| `status` | Status | ステータス | ENUM | No | Select | One of `pending`, `processing`, `completed`, `failed` |
+| `status` | Status | ステータス | ENUM | No | Select | One of `pending`, `processing`, `completed` |
 
 ### 7.4 Output Specification — Commission (出力定義)
 
@@ -774,7 +778,7 @@ Admin navigates to /admin/commission-revenue
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `range` | Must be one of `7d`, `30d`, `90d`, `1y` | "Invalid range" | "無効な期間です" |
-| `status` | Must be one of `pending`, `completed` | "Invalid status" | "無効なステータスです" |
+| `status` | Must be one of `pending`, `processing`, `completed` | "Invalid status" | "無効なステータスです" |
 
 ### 8.4 Revenue Target Validation (Strict Mode)
 
@@ -789,7 +793,7 @@ Admin navigates to /admin/commission-revenue
 |-------|-----------------|--------------------|--------------------|
 | `range` | Must be one of `7d`, `30d`, `90d`, `1y` | "Invalid range" | "無効な期間です" |
 
-### 8.7 Export Validation (Strict Mode)
+### 8.6 Export Validation (Strict Mode)
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
@@ -800,8 +804,8 @@ Admin navigates to /admin/commission-revenue
 
 ### 8.8 Validation Enforcement Layers
 
-1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
-2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
+1. **Frontend (Client)**: Plain React state (`useState`/`useReducer`) with manual validation (regex + numeric checks) and inline error text. No react-hook-form / Zod.
+2. **Backend (Server)**: NestJS global `ValidationPipe` + class-validator DTOs on all endpoints.
 
 ---
 
@@ -812,48 +816,54 @@ Admin navigates to /admin/commission-revenue
 ```json
 {
   "statusCode": 400,
-  "message": ["commissionRate must be a number greater than 0 and at most 100"],
-  "error": "Bad Request",
+  "error": "BAD_REQUEST",
+  "errorCode": "VAL_001",
+  "message": ["commissionRate must be a number with up to 2 decimal places"],
   "timestamp": "2026-08-06T12:00:00.000Z",
-  "path": "/api/v1/admin/commission"
+  "path": "/api/v1/admin/commission",
+  "details": { "validationErrors": [] }
 }
 ```
+
+> The module never attaches custom error codes; `errorCode` comes from the global `AllExceptionsFilter` mapping (400→`VAL_001`, 401→`AUTH_001`, 403→`RES_004`, 404→`RES_001`, 409→`RES_003`, 429→`RATE_001`, 500→`SYS_001`). `message` is a string, or a string array for class-validator failures.
 
 ### 9.2 Error Classification Table — Commission
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
-| `400` | `COMM_001` | Invalid commission rate | Inline field error on edit dialog |
-| `403` | `COMM_002` | Unauthorized access to admin route | Redirect to `/unauthorized` or alert |
+| `400` | `VAL_001` | Invalid commission rate (DTO) | Inline error text in edit dialog |
+| `400` | service message | Rate ≤ 0 or > 100 | Destructive toast with server message |
+| `401` | `AUTH_001` | Missing/invalid token | Redirect to login |
+| `403` | `RES_004` | Non-admin role | Redirect to `/unauthorized` |
 
 ### 9.3 Error Classification Table — Revenue / Payout / Ad Fee
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
-| `400` | `COMM_005` | Invalid target amount or period | Inline field error on edit target dialog |
-| `404` | `COMM_003` | Payout not found | Alert banner + refresh list |
-| `409` | `COMM_004` | Payout already processed | Alert banner + disable action |
-| `422` | `COMM_006` | Insufficient historical data for forecast | Informational note; forecast dotted line hidden |
-| `404` | `ADFE_001` | Ad fee record not found | Alert banner + refresh ad fee data |
-| `500` | `SYS_001` | Server error | Alert banner with retry option |
-| network | `NET_ERR` | Network failure | Alert banner for connectivity issue |
+| `400` | `VAL_001` | Invalid filter/range/target (DTO) | Inline error text where applicable |
+| `400` | service message | Target amount ≤ 0 | Inline error text in edit target dialog |
+| `404` | `RES_001` | Payout not found (process/review/delete) | Error toast + refresh list |
+| `409` | `RES_003` | Payout already processed | Destructive toast "Payout already processed" |
+| `409` | `RES_003` | Payout not deletable | AlertDialog "Payout cannot be deleted" with server message |
+| `422` | — | ~~Insufficient historical data for forecast~~ **Does not occur**: the API returns HTTP 200 with an empty series + note | Informational note under chart; forecast dotted line hidden |
+| `500` | `SYS_001` | Server error | Destructive toast |
+| network | `NET_ERR` | Network failure | Error toast for connectivity issue |
 
 ### 9.4 Error Classification Table — Export
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
-| `400` | `EXP_001` | Missing dateFrom or dateTo | "Start date and end date are required" |
-| `400` | `EXP_002` | dateTo before dateFrom | "End date must be after start date" |
-| `400` | `EXP_003` | Date range exceeds 365 days | "Date range cannot exceed 365 days" |
-| `400` | `EXP_004` | Invalid format | "Invalid export format. Use CSV or Excel." |
-| `500` | `EXP_005` | Export generation failed | "Report generation failed. Please try again." |
+| `400` | `VAL_001` | Missing/invalid `dateFrom`/`dateTo`/`format` (DTO) | Inline error text in export dialog |
+| `400` | service message | `dateTo <= dateFrom` | Inline error text |
+| `400` | service message | Date range exceeds 365 days | Inline error text |
+| `500` | `SYS_001` | Export generation failed | Destructive toast "Export failed" |
 
 ### 9.5 Frontend Error Display Behavior
 
-- **Field-Level Validation**: Red border and inline text below invalid input.
-- **Form-Level Summary**: Alert banner at top of form listing all errors.
-- **Toast Notifications**: Used for API errors and successful actions (rate update, payout processing).
-- **Loading States**: Skeleton loading and spinner on buttons during API calls.
+- **Field-Level Validation**: Inline error text below the invalid input (no red border requirement).
+- **Toast Notifications**: Used for API errors and successful actions (rate update, target save, payout processed, export generated).
+- **Alert Dialog**: Payout delete failures open an AlertDialog with the server message.
+- **Loading States**: Skeleton placeholders for cards/panels; tables dim while fetching; buttons disable during submission.
 
 ---
 
@@ -862,7 +872,7 @@ Admin navigates to /admin/commission-revenue
 ### 10.1 Authentication Requirements
 
 - JSON Web Token (JWT) Bearer Token passed via `Authorization` header for protected endpoints.
-- Only users with the `admin` role can access `/admin/commission-revenue`.
+- Only users with the `admin` or `super_admin` role can access `/admin/commission-revenue`.
 
 ### 10.2 Protected Endpoints
 
@@ -871,15 +881,18 @@ Admin navigates to /admin/commission-revenue
 | `GET /api/v1/admin/commission` | Protected (Admin) | Fetch commission settings |
 | `PATCH /api/v1/admin/commission` | Protected (Admin) | Update commission rate |
 | `GET /api/v1/admin/commission/reports` | Protected (Admin) | Fetch merchant commission reports |
-| `GET /api/v1/admin/revenue` | Protected (Admin) | Fetch revenue KPI data |
+| `GET /api/v1/admin/revenue/kpis` | Protected (Admin) | Fetch revenue KPI data |
 | `GET /api/v1/admin/revenue/trends` | Protected (Admin) | Fetch revenue trend series |
-| `GET /api/v1/admin/revenue/targets` | Protected (Admin) | Fetch revenue target and progress |
+| `GET /api/v1/admin/revenue/target` | Protected (Admin) | Fetch revenue target and progress |
 | `PUT /api/v1/admin/revenue/targets` | Protected (Admin) | Save/update revenue target |
 | `GET /api/v1/admin/revenue/forecast` | Protected (Admin) | Fetch AI revenue forecast series |
-| `GET /api/v1/admin/revenue/ad-fees` | Protected (Admin) | Fetch ad fee revenue data |
-| `GET /api/v1/admin/revenue/payments` | Protected (Admin) | Fetch payment status breakdown |
+| `GET /api/v1/admin/revenue/ad-fee` | Protected (Admin) | Fetch ad fee revenue data |
+| `GET /api/v1/admin/revenue/payments/status` | Protected (Admin) | Fetch payout status breakdown (fetched by the page, not rendered) |
 | `GET /api/v1/admin/revenue/payouts` | Protected (Admin) | Fetch payout list |
+| `GET /api/v1/admin/revenue/payouts/merchants` | Protected (Admin) | Fetch distinct payout merchants |
+| `POST /api/v1/admin/revenue/payouts/:id/review` | Protected (Admin) | Review payout (pending → processing) |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Protected (Admin) | Process a payout |
+| `DELETE /api/v1/admin/revenue/payouts` | Protected (Admin) | Delete eligible payouts |
 | `POST /api/v1/admin/commission/export` | Protected (Admin) | Export commission report |
 | `POST /api/v1/admin/revenue/export` | Protected (Admin) | Export revenue report |
 | `POST /api/v1/admin/revenue/payouts/export` | Protected (Admin) | Export payout history |
@@ -889,6 +902,7 @@ Admin navigates to /admin/commission-revenue
 | Role | Can View Commission | Can Edit Rate | Can Process Payout | Can Export |
 |------|:-------------------:|:-------------:|:------------------:|:----------:|
 | `admin` | ✓ | ✓ | ✓ | ✓ |
+| `super_admin` | ✓ | ✓ | ✓ | ✓ |
 | `buyer` | ✗ | ✗ | ✗ | ✗ |
 | `merchant` | ✗ | ✗ | ✗ | ✗ |
 
@@ -896,13 +910,14 @@ Admin navigates to /admin/commission-revenue
 
 | Event | Data Logged | Retention |
 |-------|-------------|-----------|
-| `COMMISSION_RATE_UPDATED` | adminId, oldRate, newRate, ip, timestamp | 2 years |
-| `TARGET_UPDATED` | adminId, oldAmount, newAmount, period, ip, timestamp | 2 years |
-| `PAYOUT_PROCESSED` | adminId, payoutId, amount, merchantId, ip, timestamp | 2 years |
-| `PAYOUT_FAILED` | adminId, payoutId, reason, ip, timestamp | 1 year |
-| `EXPORT_GENERATED` | adminId, reportType, format, dateRange, rowCount, ip, timestamp | 1 year |
+| `COMMISSION_RATE_UPDATED` | userId, entityType `CommissionSetting`, oldValue `{rate}`, newValue `{rate}`, ip | 2 years |
+| `TARGET_UPDATED` | userId, entityType `RevenueTarget`, oldValue `{targetAmount}`, newValue `{targetAmount, period}`, ip | 2 years |
+| `PAYOUT_REVIEWED` | userId, entityType `Payout`, oldValue `{status}`, newValue `{status}`, ip | 2 years |
+| `PAYOUT_PROCESSED` | userId, entityType `Payout`, oldValue `{status}`, newValue `{status, amount}`, ip | 2 years |
+| `PAYOUT_DELETED` | userId, entityType `Payout` (one row per payout), oldValue `{status, merchantId, periodStart, orderIds, totalAmount}`, ip | 2 years |
+| `EXPORT_GENERATED` | userId, newValue `{reportType, format, dateFrom, dateTo, rowCount}`, ip | 1 year |
 
-Retention is aligned with Development Rules §6.4 (admin actions: 2 years; financial records: 1 year).
+Retention is aligned with Development Rules §6.4 (admin actions: 2 years; financial records: 1 year). `PAYOUT_FAILED` is never written (no failure path exists).
 
 ---
 
@@ -918,11 +933,12 @@ No WebSocket or server-sent event integration is required for this release. UI n
 |-------|---------|--------|
 | `rateUpdated` | Commission rate saved | Success toast |
 | `targetUpdated` | Revenue target saved | Success toast |
-| `payoutProcessed` | Payout processed | Success toast |
+| `payoutProcessed` | Payout processed | Success toast (partial/all-failed variants when batching) |
+| `payoutDeleted` | Payouts deleted | Success toast |
 | `exportComplete` | Export generated successfully | Success toast |
-| `forecastUnavailable` | Insufficient historical data | Informational note next to chart |
-| `error` | API error | Dismissible alert banner with retry option |
-| `networkError` | Connectivity issue | Alert banner for connectivity issue |
+| `forecastUnavailable` | Insufficient historical data | Informational note under chart |
+| `error` | API error | Destructive toast (server message when present) |
+| `networkError` | Connectivity issue | Error toast for connectivity issue |
 
 ---
 
@@ -978,7 +994,7 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 
 | Concern | Mitigation |
 |---------|------------|
-| Unauthorized Access | Admin-only RBAC enforced on backend (`@UseGuards(JwtAuthGuard, RolesGuard)`, `@Roles('admin')`) and frontend (`<ProtectedRoute roles={['admin']} />`) |
+| Unauthorized Access | Admin-only RBAC enforced on backend (`@UseGuards(JwtAuthGuard, RolesGuard)`, `@Roles('admin')`) and frontend (route protection with `roles={['admin', 'super_admin']}`) |
 | PII Exposure | No PII in client logs |
 | Currency Precision | Decimal amounts transmitted as strings (string-safe formatting) |
 | Audit Trail | Rate updates and payout processing logged with admin identity |
@@ -1037,7 +1053,7 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | A-REV-008 | Revenue trend supports 7d/30d/90d/1y ranges | BR-REV-002, Sec 4.3, 6.5 |
 | A-REV-009 | Gauge bar clamps to 0–100%, over-target shown separately | BR-REV-008, Sec 4.5, 6.7 |
 | A-REV-010 | Payout processing is idempotent | BR-REV-004, Sec 4.4, 6.6 |
-| A-REV-011 | Payout status flow: pending → processing → completed / failed | BR-REV-005, Sec 3.4, 6.6 |
+| A-REV-011 | Payout status flow: pending → processing → completed (review/process; no failed state) | BR-REV-005, Sec 3.4, 6.6 |
 | A-REV-012 | Revenue targets support monthly and quarterly only | BR-REV-006, Sec 4.5, 7.6 |
 | A-REV-013 | Only one active target per period type | BR-REV-009, Sec 4.5, 6.8 |
 | A-REV-014 | Forecast is indicative, never written to financial records | BR-REV-015, Sec 4.6 |
@@ -1061,15 +1077,18 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 | `GET /api/v1/admin/commission` | Commission Dashboard Load (Sec 6.1) |
 | `PATCH /api/v1/admin/commission` | Commission Rate Edit (Sec 6.2) |
 | `GET /api/v1/admin/commission/reports` | Report Filter (Sec 6.3) |
-| `GET /api/v1/admin/revenue` | Revenue Dashboard Load (Sec 6.4) |
+| `GET /api/v1/admin/revenue/kpis` | Revenue Dashboard Load (Sec 6.4) |
 | `GET /api/v1/admin/revenue/trends` | Trend Range Change (Sec 6.5) |
-| `GET /api/v1/admin/revenue/targets` | Revenue Target Load (Sec 6.7) |
+| `GET /api/v1/admin/revenue/target` | Revenue Target Load (Sec 6.7) |
 | `PUT /api/v1/admin/revenue/targets` | Revenue Target Save (Sec 6.8) |
 | `GET /api/v1/admin/revenue/forecast` | Revenue Forecast Load (Sec 6.9) |
-| `GET /api/v1/admin/revenue/ad-fees` | Ad Fee Revenue Load (Sec 6.10) |
-| `GET /api/v1/admin/revenue/payments` | Revenue Dashboard Load — payment status (Sec 6.4) |
+| `GET /api/v1/admin/revenue/ad-fee` | Ad Fee Revenue Load (Sec 6.10) |
+| `GET /api/v1/admin/revenue/payments/status` | Revenue Dashboard Load — payout status counts (Sec 6.4; fetched, not rendered) |
 | `GET /api/v1/admin/revenue/payouts` | Revenue Dashboard Load — payout list (Sec 6.4) |
+| `GET /api/v1/admin/revenue/payouts/merchants` | Payout merchant filter options (Sec 6.4) |
+| `POST /api/v1/admin/revenue/payouts/:id/review` | Payout review — pending → processing (Sec 3.4) |
 | `POST /api/v1/admin/revenue/payouts/:id/process` | Payout Processing (Sec 6.6) |
+| `DELETE /api/v1/admin/revenue/payouts` | Payout deletion (Sec 3.4) |
 | `POST /api/v1/admin/commission/export` | Export Commission Report (Sec 6.12) |
 | `POST /api/v1/admin/revenue/export` | Export Revenue Report (Sec 6.13) |
 | `POST /api/v1/admin/revenue/payouts/export` | Export Payout History (Sec 6.14) |
@@ -1084,16 +1103,16 @@ Targets are aligned with Development Rules §10.1–10.2 and Requirements Defini
 
 ### 15.4 Audit / Verification Checklist
 
-- [ ] Audit log entries created for rate updates, target updates, and payout processing
+- [ ] Audit log entries created for rate updates, target updates, payout review/processing/deletion, and export generation
 - [ ] Currency values never rendered as floats (string-safe formatting)
-- [ ] Target progress calculation excludes refunds (consistent with KPI scope)
+- [ ] Target progress calculated from completed orders only (from period start), excluding ad fees
 - [ ] Forecast values never written back to financial records or used in aggregations
 - [ ] Ad fee revenue included in total platform income KPI
-- [ ] Ad fee payment status tracked alongside order payment status
-- [ ] Payment status panels render only supported statuses (orders: completed/pending; ads: completed/pending/refunded) with balanced grid spacing
+- [ ] Ad fee payment status tracked alongside payout status
+- [ ] Payout status panels render only supported statuses (payouts: pending/processing/completed; ads: completed/pending/refunded) with balanced grid spacing
 - [ ] Ad fee trend series rendered as separate line on revenue chart
 - [ ] Payout net amount computed as total − commission only (no ad fee deduction)
-- [ ] Revenue target progress aggregated from order sales (`order_items.total_price`), excluding ad fees
+- [ ] Payout review moves pending → processing; process moves pending/processing → completed; delete limited to completed payouts ≥ 3 months old
 - [ ] Commission rate accepts 0 < rate ≤ 100 with max 2 decimal places (default 12%)
 - [ ] Export functionality available on both Commission and Revenue tabs
 - [ ] Export supports CSV and Excel formats only (no PDF)

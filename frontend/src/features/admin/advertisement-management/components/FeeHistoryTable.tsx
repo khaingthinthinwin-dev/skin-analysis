@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -51,6 +52,7 @@ export function FeeHistoryTable({
   onDeleteRow,
   isDeleting = false,
 }: FeeHistoryTableProps) {
+  const { t } = useTranslation()
   const deletableRows = rows.filter((row) => isHistoryDeletable(row.createdAt))
   const allDeletableSelected =
     deletableRows.length > 0 &&
@@ -62,14 +64,14 @@ export function FeeHistoryTable({
           <thead className="sticky top-0 z-10">
             <tr>
               <th scope="col" className={`${TH_CLASS} w-10`} />
-              <th scope="col" className={TH_CLASS}>Date</th>
-              <th scope="col" className={TH_CLASS}>Placement</th>
-              <th scope="col" className={TH_CLASS}>Tier</th>
-              <th scope="col" className={`${TH_CLASS} ${OLD_RATE_COL_CLASS} text-right`}>Old Rate</th>
-              <th scope="col" className={`${TH_CLASS} text-right`}>New Rate</th>
-              <th scope="col" className={`${TH_CLASS} ${CHANGED_BY_COL_CLASS}`}>Changed By</th>
-              <th scope="col" className={`${TH_CLASS} ${REASON_COL_CLASS}`}>Reason</th>
-              <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+              <th scope="col" className={TH_CLASS}>{t('admin.ads.feeHistory.date', 'Date')}</th>
+              <th scope="col" className={TH_CLASS}>{t('admin.ads.feeHistory.placement', 'Placement')}</th>
+              <th scope="col" className={TH_CLASS}>{t('admin.ads.feeHistory.tier', 'Tier')}</th>
+              <th scope="col" className={`${TH_CLASS} ${OLD_RATE_COL_CLASS} text-right`}>{t('admin.ads.feeHistory.oldRate', 'Old Rate')}</th>
+              <th scope="col" className={`${TH_CLASS} text-right`}>{t('admin.ads.feeHistory.newRate', 'New Rate')}</th>
+              <th scope="col" className={`${TH_CLASS} ${CHANGED_BY_COL_CLASS}`}>{t('admin.ads.feeHistory.changedBy', 'Changed By')}</th>
+              <th scope="col" className={`${TH_CLASS} ${REASON_COL_CLASS}`}>{t('admin.ads.feeHistory.reason', 'Reason')}</th>
+              <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>{t('admin.ads.feeHistory.actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -112,27 +114,27 @@ export function FeeHistoryTable({
                 disabled={deletableRows.length === 0}
                 title={
                   deletableRows.length === 0
-                    ? 'History from the current month cannot be deleted'
-                    : 'Select all deletable fee change history'
+                    ? t('admin.ads.feeHistory.currentMonthProtected', 'Fee change history from the current month is protected and cannot be deleted. Select records from previous months to remove them.')
+                    : t('admin.ads.feeHistory.selectAllLabel', 'Select all deletable fee change history')
                 }
-                aria-label="Select all deletable fee change history"
+                aria-label={t('admin.ads.feeHistory.selectAllLabel', 'Select all deletable fee change history')}
               />
             </th>
-            <th scope="col" className={TH_CLASS}>Date</th>
-            <th scope="col" className={TH_CLASS}>Placement</th>
-            <th scope="col" className={TH_CLASS}>Tier</th>
-            <th scope="col" className={`${TH_CLASS} ${OLD_RATE_COL_CLASS} text-right`}>Old Rate</th>
-            <th scope="col" className={`${TH_CLASS} text-right`}>New Rate</th>
-            <th scope="col" className={`${TH_CLASS} ${CHANGED_BY_COL_CLASS}`}>Changed By</th>
-            <th scope="col" className={`${TH_CLASS} ${REASON_COL_CLASS}`}>Reason</th>
-            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>Actions</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.feeHistory.date', 'Date')}</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.feeHistory.placement', 'Placement')}</th>
+            <th scope="col" className={TH_CLASS}>{t('admin.ads.feeHistory.tier', 'Tier')}</th>
+            <th scope="col" className={`${TH_CLASS} ${OLD_RATE_COL_CLASS} text-right`}>{t('admin.ads.feeHistory.oldRate', 'Old Rate')}</th>
+            <th scope="col" className={`${TH_CLASS} text-right`}>{t('admin.ads.feeHistory.newRate', 'New Rate')}</th>
+            <th scope="col" className={`${TH_CLASS} ${CHANGED_BY_COL_CLASS}`}>{t('admin.ads.feeHistory.changedBy', 'Changed By')}</th>
+            <th scope="col" className={`${TH_CLASS} ${REASON_COL_CLASS}`}>{t('admin.ads.feeHistory.reason', 'Reason')}</th>
+            <th scope="col" className={`${TH_STICKY_CLASS} text-right`}>{t('admin.ads.feeHistory.actions', 'Actions')}</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
               <td colSpan={9} className={`${TD_CLASS} py-10 text-center text-muted-foreground`}>
-                No fee change history found.
+                {t('admin.ads.feeHistory.empty', 'No fee change history found.')}
               </td>
             </tr>
           ) : (
@@ -149,6 +151,10 @@ export function FeeHistoryTable({
                 : index % 2 === 1
                   ? ' before:bg-muted/50'
                   : ''
+              const placementLabel = t(
+                `admin.ads.placement.${row.placement}`,
+                PLACEMENT_LABELS[row.placement],
+              )
               return (
                 <tr key={row.id} className={`${ROW_CLASS}${rowBg}`}>
                   <td className={TD_CLASS}>
@@ -159,17 +165,17 @@ export function FeeHistoryTable({
                       title={
                         deletable
                           ? undefined
-                          : 'History from the current month cannot be deleted'
+                          : t('admin.ads.feeHistory.currentMonthProtected', 'Fee change history from the current month is protected and cannot be deleted. Select records from previous months to remove them.')
                       }
-                      aria-label={`Select fee change history from ${formatDate(row.createdAt)}`}
+                      aria-label={t('admin.ads.feeHistory.selectRowLabel', 'Select fee change history from {{date}}', { date: formatDate(row.createdAt) })}
                     />
                   </td>
                   <td className={`${TD_CLASS} whitespace-nowrap tabular-nums`}>
                     {formatDate(row.createdAt)}
                   </td>
                   <td className={`${TD_CLASS} font-medium text-foreground`}>
-                    <div className="max-w-[120px] truncate" title={PLACEMENT_LABELS[row.placement]}>
-                      {PLACEMENT_LABELS[row.placement]}
+                    <div className="max-w-[120px] truncate" title={placementLabel}>
+                      {placementLabel}
                     </div>
                   </td>
                   <td className={TD_CLASS}>
@@ -196,10 +202,10 @@ export function FeeHistoryTable({
                       disabled={!deletable || isDeleting || !onDeleteRow}
                       title={
                         deletable
-                          ? 'Delete this history record'
-                          : 'History from the current month cannot be deleted'
+                          ? t('admin.ads.feeHistory.deleteRecordTitle', 'Delete this history record')
+                          : t('admin.ads.feeHistory.currentMonthProtected', 'Fee change history from the current month is protected and cannot be deleted. Select records from previous months to remove them.')
                       }
-                      aria-label={`Delete fee change history from ${formatDate(row.createdAt)}`}
+                      aria-label={t('admin.ads.feeHistory.deleteRecordLabel', 'Delete fee change history from {{date}}', { date: formatDate(row.createdAt) })}
                       onClick={() => onDeleteRow?.(row)}
                     >
                       <Trash2 className="mr-1 h-4 w-4" />

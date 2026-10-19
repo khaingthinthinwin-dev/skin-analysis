@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +32,7 @@ export function ReactivateFeeModal({
   onConfirm,
   onClose,
 }: ReactivateFeeModalProps) {
+  const { t } = useTranslation()
   const [reason, setReason] = useState('')
 
   const canConfirm = reason.trim().length <= REASON_MAX
@@ -42,27 +44,26 @@ export function ReactivateFeeModal({
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
             <RotateCcw className="h-6 w-6 text-emerald-600" />
           </div>
-          <DialogTitle className="text-center">Reactivate Fee Setting</DialogTitle>
+          <DialogTitle className="text-center">{t('admin.ads.fee.reactivate.title', 'Reactivate Fee Setting')}</DialogTitle>
           <DialogDescription className="text-center">
             {feeSetting
-              ? `${PLACEMENT_LABELS[feeSetting.placement]} - ${feeSetting.tier}`
-              : 'Reactivate fee setting.'}
+              ? `${t(`admin.ads.placement.${feeSetting.placement}`, PLACEMENT_LABELS[feeSetting.placement])} - ${t(`admin.ads.tier.${feeSetting.tier}`, feeSetting.tier)}`
+              : t('admin.ads.fee.reactivate.descriptionFallback', 'Reactivate fee setting.')}
           </DialogDescription>
         </DialogHeader>
         {feeSetting && (
           <div className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 text-sm">
-            <span className="font-medium">{PLACEMENT_LABELS[feeSetting.placement]}</span>
+            <span className="font-medium">{t(`admin.ads.placement.${feeSetting.placement}`, PLACEMENT_LABELS[feeSetting.placement])}</span>
             <TierBadge tier={feeSetting.tier} />
           </div>
         )}
         <div className="space-y-3">
           <p role="alert" className="text-sm text-muted-foreground">
-            This package will become available to merchants again with its current rate
-            and configuration.
+            {t('admin.ads.fee.reactivate.notice', 'This package will become available to merchants again with its current rate and configuration.')}
           </p>
           <div className="space-y-1">
             <label htmlFor="reactivate-reason" className="text-sm font-medium">
-              Change reason <span className="text-muted-foreground">(optional)</span>
+              {t('admin.ads.fee.changeReasonLabel', 'Change reason')} <span className="text-muted-foreground">{t('admin.ads.fee.reactivate.optional', '(optional)')}</span>
             </label>
             <Textarea
               id="reactivate-reason"
@@ -70,7 +71,7 @@ export function ReactivateFeeModal({
               maxLength={REASON_MAX}
               onChange={(e) => setReason(e.target.value)}
               rows={4}
-              placeholder="Why is this fee setting reactivated?"
+              placeholder={t('admin.ads.fee.reactivate.changeReasonPlaceholder', 'Why is this fee setting reactivated?')}
               className={reason.length > REASON_MAX ? 'border-destructive' : ''}
             />
             <p className="text-right text-xs text-muted-foreground">{reason.length}/{REASON_MAX}</p>
@@ -78,16 +79,16 @@ export function ReactivateFeeModal({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={() => onConfirm(reason.trim() || undefined)} disabled={!canConfirm}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Reactivating...
+                {t('admin.ads.fee.reactivate.reactivating', 'Reactivating...')}
               </>
             ) : (
-              'Confirm Reactivate'
+              t('admin.ads.fee.reactivate.confirm', 'Confirm Reactivate')
             )}
           </Button>
         </DialogFooter>

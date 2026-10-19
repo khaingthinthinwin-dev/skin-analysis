@@ -1,5 +1,6 @@
 // [PPH] Commission & Revenue - Manage platform fees, payouts, and revenue targets
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
 } from "@/features/admin/commission-revenue/services/commission.service";
 
 export default function CommissionAndRevenue() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [reportFilters, setReportFilters] = useState<CommissionReportFilter>(
     {},
@@ -45,11 +47,11 @@ export default function CommissionAndRevenue() {
         queryClient.invalidateQueries({
           queryKey: ["admin", "commission", "reports"],
         });
-        toast({ title: "Commission rate updated" });
+        toast({ title: t("admin.commission.toast.rateUpdated", "Commission rate updated") });
       },
       onError: () => {
         toast({
-          title: "Failed to update commission rate",
+          title: t("admin.commission.toast.rateUpdateFailed", "Failed to update commission rate"),
           variant: "destructive",
         });
       },
@@ -75,7 +77,7 @@ export default function CommissionAndRevenue() {
         {/* [A] Page Header */}
         <div style={{ marginBottom: 24 }}>
           <h1 className="text-foreground" style={{ fontSize: 24, fontWeight: 700 }}>
-            Commission & Revenue
+            {t("admin.commission.title", "Commission & Revenue")}
           </h1>
         </div>
 
@@ -90,13 +92,13 @@ export default function CommissionAndRevenue() {
               value="commission"
               className="text-muted-foreground px-6 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary"
             >
-              Commission
+              {t("admin.commission.tabs.commission", "Commission")}
             </TabsTrigger>
             <TabsTrigger
               value="revenue"
               className="text-muted-foreground px-6 py-3 text-sm font-semibold bg-transparent border-none cursor-pointer border-b-2 border-b-transparent -mb-0.5 rounded-none data-[state=active]:text-foreground data-[state=active]:border-b-primary"
             >
-              Revenue
+              {t("admin.commission.tabs.revenue", "Revenue")}
             </TabsTrigger>
           </TabsList>
 
@@ -118,7 +120,16 @@ export default function CommissionAndRevenue() {
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-card-foreground text-[15px] font-bold">
-                  Commission Report ({groupBy === "day" ? "daily" : groupBy === "order" ? "by order" : "by merchant"})
+                  {t("admin.commission.reportTitle", "Commission Report ({{groupBy}})", {
+                    groupBy: t(
+                      groupBy === "day"
+                        ? "admin.commission.groupBy.daily"
+                        : groupBy === "order"
+                          ? "admin.commission.groupBy.order"
+                          : "admin.commission.groupBy.merchant",
+                      groupBy === "day" ? "daily" : groupBy === "order" ? "by order" : "by merchant",
+                    ),
+                  })}
                 </span>
                 <Button
                   size="sm"
@@ -128,7 +139,7 @@ export default function CommissionAndRevenue() {
                   }}
                   disabled={!reportsQuery.data?.reports.length}
                 >
-                  Export
+                  {t("admin.commission.actions.export", "Export")}
                 </Button>
               </div>
               <CommissionReportsTable reports={reportsQuery.data?.reports} groupBy={groupBy} isFetching={reportsQuery.isFetching} />

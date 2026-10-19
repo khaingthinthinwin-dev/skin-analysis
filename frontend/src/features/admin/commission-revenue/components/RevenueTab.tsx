@@ -1,4 +1,5 @@
 import React, { useReducer, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { toast } from "@/components/ui/toast";
@@ -146,6 +147,7 @@ function dialogReducer(state: DialogState, action: DialogAction): DialogState {
 // [G]-[M] Revenue tab orchestration (DD_02 §2). Revenue data fetches only
 // while this tab is mounted (Radix Tabs unmounts inactive content).
 export const RevenueTab: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [range, setRange] = useState<TrendRange>("30d");
   const [period, setPeriod] = useState<TargetPeriod>("monthly");
@@ -181,12 +183,12 @@ export const RevenueTab: React.FC = () => {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["admin", "revenue", "target"] });
         queryClient.invalidateQueries({ queryKey: ["admin", "revenue", "kpis"] });
-        toast({ title: "Revenue target updated" });
+        toast({ title: t("admin.commission.toast.targetUpdated", "Revenue target updated") });
       },
       onError: (err: Error) => {
         const axiosError = err as AxiosError<{ message?: string }>;
-        const msg = axiosError.response?.data?.message || "Failed to save revenue target";
-        toast({ title: "Failed to save target", description: msg, variant: "destructive" });
+        const msg = axiosError.response?.data?.message || t("admin.commission.toast.targetSaveFailed", "Failed to save revenue target");
+        toast({ title: t("admin.commission.toast.targetSaveFailedTitle", "Failed to save target"), description: msg, variant: "destructive" });
       },
     });
   };
@@ -200,11 +202,17 @@ export const RevenueTab: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "commission", "payouts"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "revenue", "kpis"] });
       if (failed.length === 0) {
-        toast({ title: "Payout processed" });
+        toast({ title: t("admin.commission.toast.payoutProcessed", "Payout processed") });
       } else if (succeeded > 0) {
-        toast({ title: "Payout partially processed", description: `${succeeded} succeeded, ${failed.length} skipped (already processed).` });
+        toast({
+          title: t("admin.commission.toast.payoutPartial", "Payout partially processed"),
+          description: t("admin.commission.toast.payoutPartialDescription", "{{succeeded}} succeeded, {{failed}} skipped (already processed).", {
+            succeeded,
+            failed: failed.length,
+          }),
+        });
       } else {
-        toast({ title: "Payout already processed", variant: "destructive" });
+        toast({ title: t("admin.commission.toast.payoutAlreadyProcessed", "Payout already processed"), variant: "destructive" });
       }
       dispatchDialog({ type: "SET_CONFIRM", payout: null });
     });
@@ -232,7 +240,7 @@ export const RevenueTab: React.FC = () => {
     deletePayoutMutation.mutate(selectedUnderlyingPayoutIds, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["admin", "commission", "payouts"] });
-        toast({ title: "Payouts deleted" });
+        toast({ title: t("admin.commission.toast.payoutsDeleted", "Payouts deleted") });
         setSelectedPayoutIds([]);
         dispatchDialog({ type: "CLOSE_DELETE_DIALOG" });
       },
@@ -243,7 +251,9 @@ export const RevenueTab: React.FC = () => {
         dispatchDialog({
           type: "SET_DELETE_ERROR",
           error: {
-            title: status === 409 ? "Payout cannot be deleted" : "Failed to delete payout",
+            title: status === 409
+              ? t("admin.commission.toast.payoutCannotDelete", "Payout cannot be deleted")
+              : t("admin.commission.toast.payoutDeleteFailed", "Failed to delete payout"),
             message: Array.isArray(message) ? message.join(", ") : message,
           },
         });
@@ -255,7 +265,7 @@ export const RevenueTab: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-end gap-2">
         <Button size="sm" onClick={() => dispatchDialog({ type: "OPEN_EXPORT", reportType: "revenue" })}>
-          Export Revenue
+          {t("admin.commission.export.revenue", "Export Revenue")}
         </Button>
       </div>
 
@@ -284,69 +294,69 @@ export const RevenueTab: React.FC = () => {
 
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-sm font-medium">Merchant Payouts</h3>
+          <h3 className="text-sm font-medium">{t("admin.commission.payouts.title", "Merchant Payouts")}</h3>
           <Button size="sm" onClick={() => dispatchDialog({ type: "OPEN_EXPORT", reportType: "payout" })}>
-            Export Payout
+            {t("admin.commission.export.payout", "Export Payout")}
           </Button>
         </div>
         <div className="flex flex-col gap-3 rounded-md border bg-card p-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="payout-status-filter" className="text-xs font-medium text-muted-foreground">Status</label>
+            <label htmlFor="payout-status-filter" className="text-xs font-medium text-muted-foreground">{t("admin.commission.table.status", "Status")}</label>
             <select
               id="payout-status-filter"
               className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:w-[140px]"
               value={filter.status}
               onChange={(e) => dispatchFilter({ type: "SET_STATUS", value: e.target.value })}
             >
-              <option value="">All</option>
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="completed">Completed</option>
+              <option value="">{t("common.filters.all", "All")}</option>
+              <option value="pending">{t("admin.commission.status.pending", "Pending")}</option>
+              <option value="processing">{t("admin.commission.status.processing", "Processing")}</option>
+              <option value="completed">{t("admin.commission.status.completed", "Completed")}</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="payout-merchant-filter" className="text-xs font-medium text-muted-foreground">Merchant</label>
+            <label htmlFor="payout-merchant-filter" className="text-xs font-medium text-muted-foreground">{t("admin.commission.payout.merchant", "Merchant")}</label>
             <select
               id="payout-merchant-filter"
               className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:w-[180px]"
               value={filter.merchantId}
               onChange={(e) => dispatchFilter({ type: "SET_MERCHANT", value: e.target.value })}
             >
-              <option value="">All</option>
+              <option value="">{t("common.filters.all", "All")}</option>
               {payoutMerchantsQuery.data?.map((m) => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="payout-period-filter" className="text-xs font-medium text-muted-foreground">Period</label>
+            <label htmlFor="payout-period-filter" className="text-xs font-medium text-muted-foreground">{t("admin.commission.payout.period", "Period")}</label>
             <select
               id="payout-period-filter"
               className="flex h-9 w-full items-center rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:w-[170px]"
               value={filter.period}
               onChange={(e) => dispatchFilter({ type: "SET_PERIOD", value: e.target.value })}
             >
-              <option value="">All periods</option>
+              <option value="">{t("admin.commission.payout.allPeriods", "All periods")}</option>
               {periodOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
           </div>
           <div className="flex min-w-[220px] flex-1 flex-col gap-1">
-            <label htmlFor="payout-search" className="text-xs font-medium text-muted-foreground">Search</label>
+            <label htmlFor="payout-search" className="text-xs font-medium text-muted-foreground">{t("common.filters.search", "Search")}</label>
             <div className="relative flex h-9 w-full items-center">
               <Input
                 id="payout-search"
                 value={filter.searchInput}
                 onChange={(e) => dispatchFilter({ type: "SET_SEARCH_INPUT", value: e.target.value })}
                 onKeyDown={(e) => { if (e.key === "Enter") applyPayoutSearch(); }}
-                placeholder="Search merchant or period"
+                placeholder={t("admin.commission.payout.searchPlaceholder", "Search merchant or period")}
                 className="h-9 pr-10 text-sm"
               />
               <button
                 type="button"
-                aria-label="Search payouts"
-                title="Search"
+                aria-label={t("admin.commission.payout.searchLabel", "Search payouts")}
+                title={t("common.filters.search", "Search")}
                 onClick={applyPayoutSearch}
                 className="absolute right-0 flex h-9 w-9 items-center justify-center rounded-r-md border-l border-input text-muted-foreground hover:bg-muted hover:text-foreground"
               >
@@ -360,18 +370,18 @@ export const RevenueTab: React.FC = () => {
               variant="outline"
               onClick={() => dispatchFilter({ type: "RESET" })}
             >
-              Reset
+              {t("admin.commission.filters.reset", "Reset")}
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="border-red-300 bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800 disabled:opacity-50"
               disabled={selectedUnderlyingPayoutIds.length === 0 || deletePayoutMutation.isPending}
-              title="Delete selected payouts"
+              title={t("admin.commission.payout.deleteSelected", "Delete selected payouts")}
               onClick={handleDeletePayouts}
             >
               <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Delete selected payouts</span>
+              <span className="sr-only">{t("admin.commission.payout.deleteSelected", "Delete selected payouts")}</span>
             </Button>
           </div>
         </div>
@@ -422,21 +432,21 @@ export const RevenueTab: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-destructive" />
-              Are you sure want to delete that rows
+              {t("admin.commission.payout.deleteTitle", "Are you sure you want to delete these rows?")}
             </DialogTitle>
             <DialogDescription>
-              You selected {selectedPayoutIds.length} payout row
-              {selectedPayoutIds.length === 1 ? "" : "s"}. Only completed payouts
-              that are at least three months old can be deleted.
+              {t("admin.commission.payout.deleteDescription", "You selected {{count}} payout rows. Only completed payouts that are at least three months old can be deleted.", { count: selectedPayoutIds.length })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => dispatchDialog({ type: "CLOSE_DELETE_DIALOG" })} disabled={deletePayoutMutation.isPending}>
-              Cancel
+              {t("common.cancel", "Cancel")}
             </Button>
             <Button variant="destructive" onClick={confirmDeletePayouts} disabled={deletePayoutMutation.isPending}>
               <Trash2 className="h-4 w-4" />
-              {deletePayoutMutation.isPending ? "Deleting..." : "Confirm delete"}
+              {deletePayoutMutation.isPending
+                ? t("admin.commission.payout.deleting", "Deleting...")
+                : t("admin.commission.payout.confirmDelete", "Confirm delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -464,7 +474,7 @@ export const RevenueTab: React.FC = () => {
             <AlertDialogDescription>{dialog.deleteError?.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => dispatchDialog({ type: "SET_DELETE_ERROR", error: null })}>OK</AlertDialogAction>
+            <AlertDialogAction onClick={() => dispatchDialog({ type: "SET_DELETE_ERROR", error: null })}>{t("common.ok", "OK")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

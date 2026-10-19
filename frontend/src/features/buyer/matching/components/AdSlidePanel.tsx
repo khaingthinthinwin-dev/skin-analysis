@@ -109,25 +109,25 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
               <div className="flex flex-wrap items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs uppercase tracking-wider font-semibold py-1 px-3 max-w-full"
+                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-[11px] sm:text-xs uppercase tracking-wider font-semibold py-1 px-3 max-w-full"
                   title={announcement || 'Sponsored'}
                 >
                   <Megaphone className="w-3.5 h-3.5 mr-1 inline shrink-0" />
                   <span className="truncate">{announcement || 'Sponsored'}</span>
                 </Badge>
                 {ad.shopName && (
-                  <Badge className="bg-accent text-white font-bold text-xs py-1 px-3">
+                  <Badge className="bg-accent text-white font-bold text-[11px] sm:text-xs py-1 px-3">
                     {ad.shopName}
                   </Badge>
                 )}
               </div>
 
-              <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-tight text-white leading-tight">
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">
                 {ad.title}
               </h2>
 
               {content && (
-                <p className="text-sm sm:text-base text-zinc-200/90 max-w-none line-clamp-3">
+                <p className="text-sm sm:text-base text-zinc-200/90 max-w-none leading-relaxed">
                   {content}
                 </p>
               )}
@@ -137,11 +137,11 @@ export function AdSlidePanel({ ads = [], onImpression, onClick }: AdSlidePanelPr
                   <Button
                     asChild
                     size="lg"
-                    className="bg-white text-zinc-900 hover:bg-zinc-100 font-bold shadow-lg"
+                    className="h-9 gap-1.5 px-5 bg-white text-zinc-900 hover:bg-zinc-100 text-xs sm:text-sm font-semibold shadow-lg"
                   >
                     <Link to={productPath} onClick={() => onClick?.(ad.adId)}>
                       Learn more
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                      <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                     </Link>
                   </Button>
                 ) : (

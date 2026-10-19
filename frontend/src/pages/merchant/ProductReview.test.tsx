@@ -5,6 +5,34 @@ import ProductReview from './ProductReview'
 import { useProduct, useProducts } from '@/hooks/useProducts'
 import type { Product } from '@/types/product.types'
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, values?: { name?: string }) => {
+      const labels: Record<string, string> = {
+        'merchant.productReview.title': 'Product Review',
+        'merchant.productReview.subtitle': 'View review counts for your products',
+        'merchant.productReview.searchLabel': 'Search products',
+        'merchant.productReview.reviewCount': 'Review Count',
+        'merchant.productReview.viewProduct': 'View {{name}}',
+        'merchant.productReview.highlightUnavailable': 'The product linked from this notification could not be loaded.',
+        'merchant.products.searchPlaceholder': 'Search products...',
+        'merchant.products.error.load': 'Failed to load products. Please try again.',
+        'merchant.products.retry': 'Retry',
+        'merchant.products.table.image': 'Image',
+        'merchant.products.table.name': 'Product Name',
+        'merchant.products.table.sku': 'SKU',
+        'merchant.products.table.price': 'Price (Discount Price)',
+        'merchant.products.table.compareAtPrice': 'Compare At Price',
+        'merchant.products.table.action': 'Action',
+        'merchant.products.empty': 'No products found',
+        'merchant.products.imageAlt': 'Image of {{name}}',
+        'merchant.products.noImage': 'No image',
+      }
+      return (labels[key] ?? key).replace('{{name}}', values?.name ?? '')
+    },
+  }),
+}))
+
 vi.mock('@/hooks/useProducts', () => ({
   useProduct: vi.fn(),
   useProducts: vi.fn(),

@@ -1,7 +1,9 @@
-# DD_MATCH_02 — Frontend Page (Recommendations)
+﻿# DD_MATCH_02 — Frontend Page (Recommendations)
 
-> **Doc ID:** SKM-DD-MATCH-02 | **Version:** 1.0 | **Status:** Released  
-> **Last Updated:** 2026-09-01
+> **Doc ID:** SKM-DD-MATCH-02 | **Version:** 1.1 | **Status:** Released  
+> **Last Updated:** 2026-10-15 (code reconciliation)
+
+> **Source update (2026-10-15):** The page defaults to 12 results, uses `createdAt desc` (Newest), and has numbered pagination on all viewport sizes; there is no mobile Load More. Product grid is 1 column by default, 2 at `sm`, and 3 at `lg`; filter sidebar becomes a sheet below `lg`. Grid/list toggle, wishlist, in-stock cart action, category/rating filters, removable filter chips, and history expansion are implemented. Ingredients are not exposed in this page's filter UI.
 
 ---
 
@@ -9,9 +11,10 @@
 
 The Recommendations page is the personalized product discovery entry point. It displays a responsive grid of product recommendation cards, a filters sidebar (desktop) / drawer (mobile), sort controls, pagination, recommendation history accordion, and a cross-screen sponsored ad carousel panel. The page adapts its UI based on the recommendation source (`ai` vs `generic`).
 
-- **File Path:** `frontend/src/pages/buyer/Recommendations.tsx`
+- **File Path:** `frontend/src/pages/buyer/MatchingRecommendations.tsx`
 - **Route:** `/buyer/recommendations`
 - **Layout:** `BuyerLayout.tsx` (authenticated buyer shell)
+- **Code note (2026-10-15):** the ASCII layouts below are conceptual. As built: the filter panel offers **Category, Skin Type, Price Range and Rating (no ingredients picker)**; the grid is **1 / `sm:2` / `lg:3` columns** (not 4/2/1); there is **no Load More** — numbered pagination at every viewport; filter chips (`MatchingFilterChips`) render above the panel on desktop and mobile; mobile filters open in a `Sheet` (side `right`) with a `Show {total} Products` footer.
 
 ---
 
@@ -37,7 +40,7 @@ The Recommendations page is the personalized product discovery entry point. It d
 │                                                                  │
 │  ┌──────────────┐  ┌──────────────────────────────────────────┐  │
 │  │  [B] FILTERS │  │  [C] RECOMMENDATION GRID                 │  │
-│  │  PANEL       │  │  4 columns desktop / 2 tablet / 1 mobile │  │
+│  │  PANEL       │  │  3 columns desktop / 2 small / 1 mobile │  │
 │  │              │  │  Match score badges on cards              │  │
 │  │  [B1] Skin   │  │                                          │  │
 │  │  Type (pre-  │  │  [C5] PAGINATION (desktop)               │  │
@@ -109,62 +112,67 @@ Same as AI Analysis State, but with a subtle compact banner:
 ### 3.1 Match Search Params Schema
 
 ```typescript
-// frontend/src/features/recommendations/schemas/matchingSearchParams.schema.ts
+// frontend/src/schemas/matching.schema.ts
 import { z } from 'zod';
 
-export const matchingSearchParamsSchema = z.object({
-  skinTypes: z.string().optional().transform((val) => {
-    if (!val) return [];
-    return val.split(',').filter(Boolean);
-  }),
-  ingredients: z.string().optional().transform((val) => {
-    if (!val) return [];
-    return val.split(',').filter(Boolean);
-  }),
+export const matchQuerySchema = z.object({
+  skinTypes: z.string().optional().transform((val) => (val === 'all' || val === '' ? undefined : val)),
+  ingredients: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
-  sort: z.enum(['matchScore', 'price', 'createdAt']).optional().default('matchScore'),
+  rating: z.coerce.number().min(1).max(5).optional(),
+  // The sort bar defaults to "Newest" and the value is sent explicitly so the
+  // option shown is always the order the API applies (BR-MATCH-025 allowlist).
+  sort: z.enum(['matchScore', 'price', 'rating', 'createdAt']).optional().default('createdAt'),
   order: z.enum(['asc', 'desc']).optional().default('desc'),
-  page: z.coerce.number().min(1).optional().default(1),
-  limit: z.coerce.number().min(1).max(50).optional().default(20),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(12),
 });
 
-export type MatchingSearchParams = z.infer<typeof matchingSearchParamsSchema>;
+export type MatchQueryParams = z.infer<typeof matchQuerySchema>
 ```
 
 ### 3.2 useMatchFilters Hook
 
 ```typescript
-// frontend/src/features/recommendations/hooks/useMatchFilters.ts
-import { useSearchParams } from 'react-router-dom';
-import { matchingSearchParamsSchema, type MatchingSearchParams } from '../schemas/matchingSearchParams.schema';
+// frontend/src/features/buyer/matching/hooks/useMatchFilters.ts
+import { useSearchParams } from 'react-router';
+import { matchQuerySchema, type MatchQueryParams } from '@/schemas/matching.schema';
 
 export function useMatchFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const filters: MatchingSearchParams = matchingSearchParamsSchema.parse(
-    Object.fromEntries(searchParams)
+  const filters: MatchQueryParams = useMemo(
+    () => matchQuerySchema.parse(Object.fromEntries(searchParams)),
+    [searchParams],
   );
 
-  const updateFilters = (updates: Partial<MatchingSearchParams>) => {
-    const next = new URLSearchParams(searchParams);
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === '') {
-        next.delete(key);
-      } else {
-        next.set(key, String(value));
-      }
-    });
-    // Reset page to 1 on any filter/sort change (BR-MATCH-020)
-    if (Object.keys(updates).some(k => k !== 'page')) {
-      next.set('page', '1');
-    }
-    setSearchParams(next);
-  };
+  const updateFilters = useCallback(
+    (updates: Partial<MatchQueryParams>, options?: { replace?: boolean; keepPage?: boolean }) => {
+      setSearchParams(
+        (prev: URLSearchParams) => {
+          const next = new URLSearchParams(prev);
+          Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === null || value === '') next.delete(key);
+            else next.set(key, String(value));
+          });
+          // A sort/filter change restarts at page 1 — unless the caller is only
+          // persisting the current selection (e.g. pinning the default sort on
+          // load), where the current page must survive a refresh.
+          if (!options?.keepPage && Object.keys(updates).some((k) => k !== 'page')) {
+            next.set('page', '1');
+          }
+          return next;
+        },
+        { replace: options?.replace ?? false },
+      );
+    },
+    [setSearchParams],
+  );
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setSearchParams({});
-  };
+  }, [setSearchParams]);
 
   return { filters, updateFilters, resetFilters };
 }
@@ -176,13 +184,13 @@ export function useMatchFilters() {
 
 ### 4.1 PageHeader Component
 
-- **File Path:** `frontend/src/features/recommendations/components/PageHeader.tsx`
+- **File Path:** Header (title, source badge, subtitle) is rendered inline in `frontend/src/pages/buyer/MatchingRecommendations.tsx` — there is no separate `PageHeader.tsx`
 - Renders page title (h1), source badge (emerald green or amber), and source subtitle
 - Conditional: Profile Prompt Banner (prominent for generic, subtle for stale, hidden for fresh)
 
 ### 4.2 ProfilePromptBanner Component
 
-- **File Path:** `frontend/src/features/recommendations/components/ProfilePromptBanner.tsx`
+- **File Path:** `frontend/src/features/buyer/matching/components/ProfilePromptBanner.tsx`
 - 3 states: prominent (generic), subtle compact (stale), hidden (fresh)
 - Prominent: AI illustration + heading + body + CTA button
 - Subtle: heading + body + subtle CTA button
@@ -190,22 +198,22 @@ export function useMatchFilters() {
 
 ### 4.3 FiltersPanel Component
 
-- **File Path:** `frontend/src/features/recommendations/components/FiltersPanel.tsx`
+- **File Path:** `frontend/src/features/buyer/matching/components/FiltersPanel.tsx`
 - Desktop: sticky sidebar (always visible)
-- Mobile: drawer (hamburger trigger, slide-in from left)
-- Filter groups: Skin Type (checkboxes), Price Range (min/max inputs), Ingredients (checkboxes)
-- Reset Filters button
+- Mobile: opened from a `Filters` button in a `Sheet` (side `right`) with `Clear All` + `Show {total} Products` footer
+- Filter groups: Category (`CategorySelect`), Skin Type (checkboxes), Price Range (min/max inputs with inline validation), Rating (radios 3.0/3.5/4.0/4.5). **No ingredients control — `ingredients` is API-only**
+- Reset Filters button (rendered only when filters are active)
 
-### 4.4 RecommendationGrid Component
+### 4.4 Result Grid (inline)
 
-- **File Path:** `frontend/src/features/recommendations/components/RecommendationGrid.tsx`
-- Responsive grid: 4 columns (desktop) / 2 columns (tablet) / 1 column (mobile)
-- Renders `RecommendationCard` components
-- Skeleton shimmer during loading (shadcn `Skeleton`)
+- **File Path:** Rendered inline in `frontend/src/pages/buyer/MatchingRecommendations.tsx` (no `RecommendationGrid.tsx`)
+- Responsive grid: 3 columns (`lg:grid-cols-3`) desktop / 2 (`sm:grid-cols-2`) tablet / 1 column (mobile); list view (`ViewToggle`) renders wide rows instead
+- Card markup is inline in the page (the `features/buyer/matching/components/RecommendationCard.tsx` file exists but is **not imported** by the page)
+- `SkeletonGrid` shimmer during loading (`frontend/src/features/buyer/matching/components/SkeletonGrid.tsx`)
 
 ### 4.5 RecommendationCard Component
 
-- **File Path:** `frontend/src/features/recommendations/components/RecommendationCard.tsx`
+- **File Path:** Card markup is inline in `frontend/src/pages/buyer/MatchingRecommendations.tsx`; `features/buyer/matching/components/RecommendationCard.tsx` exists but is unused by the page
 - Card with product image, name, price, skin type tags
 - Conditional badge: match score (ai) or category badge (generic)
 - Out-of-stock indicator
@@ -231,47 +239,47 @@ interface RecommendationCardProps {
 }
 ```
 
-### 4.6 AdSlidePanel Component
+### 4.6 Ad Panel — shared `AdBannerSlider`
 
-- **File Path:** `frontend/src/components/AdSlidePanel.tsx`
-- Reusable cross-screen sponsored ad carousel
-- Horizontal glass-morphism carousel with up to 5 slides
-- Each slide: image (left), title + description (center), CTA button (right)
-- 5-second auto-rotation (pauses on hover/touch)
+- **File Path:** `frontend/src/components/shared/AdBannerSlider.tsx` (the design path `frontend/src/components/AdSlidePanel.tsx` does not exist; `features/buyer/matching/components/AdSlidePanel.tsx` exists but is unused by this page)
+- Reusable cross-screen sponsored ad carousel (also used by Search, ProductDetail, Checkout)
+- Horizontal carousel card with up to 5 slides; each slide: image (right), title + description (left), CTA button
+- 5-second auto-rotation — pauses on hover, focus, and `prefers-reduced-motion`
 - Left/right arrows + dot indicators
-- Disclosure footer: "Sponsored products are paid placements from merchants"
+- Client-side eligibility filter (placement match, `approvalStatus === 'approved'`, `startsAt <= now <= expiresAt`); resolves the ad's `sku` to a product for navigation; fires impressions once via `IntersectionObserver` at ≥ 50% visibility
 
 **Props Interface:**
 ```typescript
-interface AdSlidePanelProps {
-  placement: string;
-  maxSlides?: number;  // default 5
-  autoSlideMs?: number; // default 5000
+interface AdBannerSliderProps {
+  placement: AdBannerPlacement; // 'recommendation_page_banner' on this page
+  fallbackProductId?: string;
+  onImpression?: (adIds: string[]) => void;
+  onAdClick?: (adId: string) => void;
 }
 ```
 
 ### 4.7 HistoryAccordion Component
 
-- **File Path:** `frontend/src/features/recommendations/components/HistoryAccordion.tsx`
-- Accordion rows grouped by analysis date
-- Expanded: compact product mini-cards (image + name + score + price)
-- Collapsed: date header + chevron
+- **File Path:** `frontend/src/features/buyer/matching/components/HistoryAccordion.tsx`
+- Accordion rows grouped by analysis date (first session expanded by default)
+- Expanded: compact product mini-cards (image + name + score + price) linking to `/buyer/products/:slug`
+- Collapsed: date header + chevron; the page fetches 5 sessions, `See more` refetches 50, `Show less` returns to 5
 
-### 4.8 Pagination / Load More
+### 4.8 Pagination (all viewports)
 
 - **Desktop:** `Pagination` component with previous/next arrows + page numbers
-- **Mobile:** "Load More" button (rose-gold ghost style)
+- **Mobile:** Uses the same numbered pagination; Load More is not implemented.
 - Uses TanStack Query `keepPreviousData` for smooth transitions
 
 ### 4.9 EmptyState Component
 
-- **File Path:** `frontend/src/features/recommendations/components/EmptyState.tsx`
-- "No matching products" + Reset Filters button
+- **File Path:** `frontend/src/features/buyer/matching/components/EmptyState.tsx`
+- Default message: "No products match your filters. Try adjusting your criteria." (no Reset button inside the component; the mobile filter button sits below it)
 
 ### 4.10 ErrorBanner Component
 
-- **File Path:** `frontend/src/features/recommendations/components/ErrorBanner.tsx`
-- Alert with error message + Retry button
+- **File Path:** `frontend/src/features/buyer/matching/components/ErrorBanner.tsx`
+- Alert with error message ("Something went wrong. Please try again.") + Retry button
 - Retry refetches last failed query via TanStack Query
 
 ---
@@ -295,13 +303,11 @@ interface AdSlidePanelProps {
   3. Reset `page` to 1
   4. Trigger refetch
 
-### 5.3 Filter Change — Ingredients
+### 5.3 Filter Change — Category & Rating
 
-- **Trigger:** Checkbox check/uncheck
-- **Action:**
-  1. Update URL query param `ingredients` (comma-separated)
-  2. Reset `page` to 1
-  3. Trigger refetch
+- **Category:** `CategorySelect` change → updates URL `categoryId` (self + descendants expanded server-side), resets `page` to 1, refetch. Chip shows the resolved category name with per-chip remove.
+- **Rating:** radio change → updates URL `rating` (1–5), resets `page` to 1, refetch. Chip shows `{rating}+ Stars`.
+- **Ingredients:** no UI control exists; `ingredients` can only be supplied as an API query parameter.
 
 ### 5.4 Reset Filters
 
@@ -328,13 +334,9 @@ interface AdSlidePanelProps {
   2. Trigger refetch with `keepPreviousData`
   3. Scroll to top of grid
 
-### 5.7 Load More — Mobile
+### 5.7 Load More — Not Implemented
 
-- **Trigger:** Click "Load More" button
-- **Action:**
-  1. Increment `page` by 1
-  2. Trigger refetch with `keepPreviousData`
-  3. Append new results to existing grid
+- The page has numbered pagination at all viewport sizes. It retains previous results while the selected page loads and does not append pages.
 
 ### 5.8 Recommendation Card Click
 
@@ -343,10 +345,10 @@ interface AdSlidePanelProps {
 
 ### 5.9 Ad Panel — CTA Click
 
-- **Trigger:** Click "Shop Now" on ad slide
+- **Trigger:** Click "Learn more" on ad slide
 - **Action:**
-  1. Fire-and-forget `POST /ads/track/click`
-  2. Navigate to `ad.linkUrl`
+  1. Fire-and-forget `POST /ads/track/click` with `{ adId }`
+  2. Navigate to `/buyer/products/{sku}` (fallbacks: ad `productId` route, then ad `linkUrl`/`target_url`)
 
 ### 5.10 Start Skin Analysis CTA
 
@@ -385,18 +387,23 @@ interface AdSlidePanelProps {
 
 | Value | Label (EN) | Label (JA) | Default When |
 |-------|------------|------------|-------------|
-| `matchScore` | Match Score | 一致度 | `source = "ai"` |
-| `price` | Price | 価格 | — |
-| `createdAt` | Created At | 登録日 | — |
+| `createdAt` (`desc`) | Newest | 新着 | Default for both sources — pinned into the URL on mount (`replace` + `keepPage`) |
+| `matchScore` (`desc`) | Match Score | 一致度 | Offered only when `source = "ai"` |
+| `price` (`asc`/`desc`) | Price: Low to High / High to Low | 価格 | — |
+| `rating` (`desc`) | Highest Rated | 評価 | — |
+
+`resolveMatchingSort()` falls back to "Newest" when the URL carries a sort the current source cannot honour (e.g. stale `matchScore` after the AI analysis lapsed, or an unlisted direction such as `rating:asc`).
 
 ### 7.3 Category Badge Options (Generic Source)
 
-| Condition | Badge | Color |
+Backend-computed `categoryBadge` (shown for both sources; page styles only `topRated`/`bestSeller` — `featured`/`new` currently render unstyled):
+
+| Condition (evaluated in `getCategoryBadge`, precedence order) | Badge | Page colour class |
 |-----------|-------|-------|
-| `is_featured = true` | "⭐ Featured" | amber |
-| `avg_rating >= 4.5` | "🏆 Top Rated" | teal |
-| `review_count >= 100` | "🔥 Best Seller" | orange |
-| `createdAt >= 30 days ago` | "✨ New" | purple |
+| `isFeatured = true` | `featured` | (no style map entry) |
+| `avgRating >= 4.7` AND `reviewCount >= 100` | `topRated` | teal |
+| `reviewCount >= 200` | `bestSeller` | orange |
+| `createdAt` within last 30 days | `new` | (no style map entry) |
 
 ---
 
@@ -435,9 +442,9 @@ interface AdSlidePanelProps {
 
 | Breakpoint | Min Width | Layout Behavior |
 |------------|-----------|-----------------|
-| Mobile (default) | 0px | Filters as drawer (hamburger), 1-column grid, Load More button |
-| Tablet (`md:`) | 768px | Filters sidebar (narrower), 2-column grid |
-| Desktop (`lg:`) | 1024px | Filters sidebar + 4-column grid, pagination controls |
+| Mobile (default) | 0px | Filters as sheet, 1-column grid, numbered pagination |
+| Small (`sm:`) | 640px | 2-column grid |
+| Desktop (`lg:`) | 1024px | Filters sidebar + 3-column grid, pagination controls |
 | Wide (`xl:`) | 1280px | Same as desktop with enhanced spacing |
 
 ---

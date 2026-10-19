@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatPrice } from '@/lib/format'
 import type { RevenueAnalytics } from '@/types/admin-ad-management'
@@ -25,6 +26,7 @@ interface BreakdownTableProps {
 }
 
 function BreakdownTable({ title, description, rows }: BreakdownTableProps) {
+  const { t } = useTranslation()
   return (
     <Card>
       <CardHeader>
@@ -35,17 +37,17 @@ function BreakdownTable({ title, description, rows }: BreakdownTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Placement / Tier</TableHead>
-              <TableHead className="text-right">Ad Count</TableHead>
-              <TableHead className="text-right">Total Revenue</TableHead>
-              <TableHead className="text-right">Avg CTR</TableHead>
+              <TableHead>{t('admin.ads.analytics.tables.placementTier', 'Placement / Tier')}</TableHead>
+              <TableHead className="text-right">{t('admin.ads.analytics.tables.adCount', 'Ad Count')}</TableHead>
+              <TableHead className="text-right">{t('admin.ads.analytics.tables.totalRevenue', 'Total Revenue')}</TableHead>
+              <TableHead className="text-right">{t('admin.ads.analytics.tables.averageCtr', 'Avg CTR')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
-                  No data
+                  {t('admin.ads.analytics.tables.noData', 'No data')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -70,10 +72,11 @@ interface AdsByPlacementTableProps {
 }
 
 export function AdsByPlacementTable({ rows }: AdsByPlacementTableProps) {
+  const { t } = useTranslation()
   return (
     <BreakdownTable
-      title="Ads by Placement"
-      description="Advertisement breakdown by placement"
+      title={t('admin.ads.analytics.tables.byPlacementTitle', 'Ads by Placement')}
+      description={t('admin.ads.analytics.tables.byPlacementDescription', 'Advertisement breakdown by placement')}
       rows={rows.map((row) => ({
         name: row.placementName,
         adCount: row.adCount,
@@ -89,10 +92,11 @@ interface AdsByTierTableProps {
 }
 
 export function AdsByTierTable({ rows }: AdsByTierTableProps) {
+  const { t } = useTranslation()
   return (
     <BreakdownTable
-      title="Ads by Tier"
-      description="Advertisement breakdown by tier"
+      title={t('admin.ads.analytics.tables.byTierTitle', 'Ads by Tier')}
+      description={t('admin.ads.analytics.tables.byTierDescription', 'Advertisement breakdown by tier')}
       rows={rows.map((row) => ({
         name: row.tierName,
         adCount: row.adCount,

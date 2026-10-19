@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Eye, DollarSign } from 'lucide-react';
@@ -21,6 +22,7 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
   selectedPayoutIds,
   onSelectionChange,
 }) => {
+  const { t } = useTranslation();
   const selected = new Set(selectedPayoutIds);
   const pagePayoutIds = payouts.map((payout) => payout.payoutId);
   const allPageSelected = pagePayoutIds.length > 0 && pagePayoutIds.every((id) => selected.has(id));
@@ -49,27 +51,27 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
             <TableHead className="w-12 bg-primary/10">
               <input
                 type="checkbox"
-                aria-label="Select all payouts on this page"
+                aria-label={t('admin.commission.payout.selectPage', 'Select all payouts on this page')}
                 checked={allPageSelected}
                 onChange={togglePage}
               />
             </TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Merchant</TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Period</TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold text-center">Total Orders</TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Total Amount</TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Commission</TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Net Payout</TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Status</TableHead>
-            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">Completed Date</TableHead>
-            <TableHead className="text-right bg-primary/10 whitespace-nowrap font-bold">Action</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.payout.merchant', 'Merchant')}</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.payout.period', 'Period')}</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold text-center">{t('admin.commission.payout.totalOrders', 'Total Orders')}</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.payout.totalAmount', 'Total Amount')}</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.table.commission', 'Commission')}</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.payout.netPayout', 'Net Payout')}</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.table.status', 'Status')}</TableHead>
+            <TableHead className="bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.payout.completedDate', 'Completed Date')}</TableHead>
+            <TableHead className="text-right bg-primary/10 whitespace-nowrap font-bold">{t('admin.commission.table.action', 'Action')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {payouts.length === 0 ? (
             <TableRow>
               <TableCell colSpan={10} className="text-center py-6 text-muted-foreground">
-                No merchant payouts found.
+                {t('admin.commission.payout.empty', 'No merchant payouts found.')}
               </TableCell>
             </TableRow>
           ) : (
@@ -78,7 +80,7 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                 <TableCell>
                   <input
                     type="checkbox"
-                    aria-label={`Select payout ${p.orderId ?? p.payoutId}`}
+                    aria-label={t('admin.commission.payout.selectItem', 'Select payout {{id}}', { id: p.orderId ?? p.payoutId })}
                     checked={selected.has(p.payoutId)}
                     onChange={() => togglePayout(p.payoutId)}
                   />
@@ -106,7 +108,7 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                     <Button
                       size="icon"
                       variant="outline"
-                      aria-label="View payout details"
+                      aria-label={t('admin.commission.payout.viewDetails', 'View payout details')}
                       className="h-7 w-7 border-sky-300 bg-sky-100 text-sky-700 hover:bg-sky-200 hover:text-sky-800"
                       onClick={() => onViewDetail?.(p.payoutId)}
                     >
@@ -115,7 +117,7 @@ export const PayoutTable: React.FC<PayoutTableProps> = ({
                     <Button
                       size="icon"
                       variant="outline"
-                      aria-label="Process payout"
+                      aria-label={t('admin.commission.payout.process', 'Process payout')}
                       className="h-7 w-7 border-green-300 bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 disabled:opacity-50"
                       disabled={p.status === 'completed'}
                       onClick={() => onProcessPayout?.(p.payoutId)}
@@ -144,4 +146,3 @@ const formatDate = (date: string): string =>
     month: 'short',
     day: 'numeric',
   });
-

@@ -1,8 +1,10 @@
-# Functional Specification (機能設計書) — Matching & Recommendation
+﻿# Functional Specification (機能設計書) — Matching & Recommendation
 
 ---
 
 ## Document Control
+
+> **Current source alignment (2026-10-15):** This document retains its original structure. Where older sections conflict with the implementation, current behavior is: UI filters are category, skin type, price, and minimum rating (ingredients are API-only); default page size is 12 and default sort is `createdAt desc`; sorting supports `matchScore`, `price`, `rating`, and `createdAt`; results include wishlist/cart actions, grid/list toggle, numbered pagination, and five-session expandable history. Similar lookup returns an empty result for an unknown source product. The ad is the shared `AdBannerSlider` at `recommendation_page_banner`, with 5-second rotation, pause on hover/focus/reduced motion, ≥50% visibility impressions, and no separate disclosure footer. API/controller location is `backend/src/modules/buyer/matching/`.
 
 | Attribute | Value |
 |-----------|-------|
@@ -10,9 +12,9 @@
 | **Target Screen** | Recommendations Page (おすすめ商品ページ) — Matching & Recommendation |
 | **Subsystem** | Buyer Module — Smart Product Matching & Personalized Recommendation |
 | **Function ID** | FN-MATCH-001 |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Created** | 2026-08-26 |
-| **Last Updated** | 2026-08-31 |
+| **Last Updated** | 2026-10-15 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -24,6 +26,7 @@
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-08-28 | Software Architect | Initial release. Functional specification for the Matching & Recommendation page covering AI-based recommendations, generic fallback, matching filters, recommendation history, similar products, and cross-screen ad panel. |
+| 1.1 | 2026-10-15 | Code reconciliation | Reconciled with implementation: controller/service at `backend/src/modules/buyer/matching/`, page `MatchingRecommendations.tsx`; added rating/category filters; sort allowlist includes `rating`, UI default Newest; frontend page size 12; similar returns empty 200 (no 404); no rate limiting; ads via shared `AdBannerSlider` + `GET /ads`. |
 
 ---
 
@@ -51,11 +54,11 @@
 
 ### 1.1 Purpose and Scope
 
-This screen serves as the personalized product discovery entry point within the Cosmetics Finder platform. The Matching & Recommendation subsystem provides the complete set of capabilities necessary for buyers to receive personalized skincare product recommendations derived from their AI skin analysis results, to narrow those recommendations through multi-dimensional matching filters (skin type, ingredients, price range), and to discover similar products from any product detail context.
+This screen serves as the buyer's product discovery page. It uses the latest completed skin analysis when one exists, and otherwise returns general catalog results. Buyers can filter by category, skin type, price, and minimum rating, sort and paginate results, switch grid/list presentation, and use wishlist/cart actions. Ingredient filtering is supported by the API but has no control in this page.
 
 This subsystem bridges AI skin analysis and the product catalog. It is responsible for translating a buyer's AI-detected skin conditions into a ranked, score-annotated set of compatible products while maintaining performance through Redis caching and guaranteeing that only active products from approved merchant shops are ever surfaced.
 
-Additionally, the subsystem retrieves recommendation history from the buyer's completed AI skin analysis results to enable re-engagement, and displays approved merchant advertisements in the Cross-Screen Slide-Down Panel with transparent disclosure.
+The subsystem also retrieves history from completed analysis sessions, exposes a public similar-product endpoint, and displays the shared sponsored-ad banner at the recommendation placement.
 
 ### 1.2 Functional Responsibilities
 
@@ -69,15 +72,15 @@ This screen is responsible for the following core functional areas:
 6. **Skin Type Compatibility Display** — Showing each recommendation's compatible skin types and match score so buyers understand why a product was recommended.
 7. **Caching** — Serving repeated personalized recommendation queries from Redis to meet performance targets, with invalidation on analysis changes.
 8. **Recommendation History** — Viewing past recommendations retrieved from the buyer's completed AI skin analysis results.
-9. **Advertisement Display** — Displaying sponsored products from approved merchant advertisements only in the Cross-Screen Slide-Down Panel with transparent disclosure, prioritized by paid amount and rotation order.
-10. **Cross-Screen Ad Panel** — A reusable Slide-Down Panel component (D0) that displays sponsored advertisements across 6 screens (Homepage, Search, Category, Product Detail, Recommendation, Cart) with image, title, description, CTA button, 5-second auto-slide rotation, and round-robin ad serving.
+9. **Sponsored Banner Integration** — Rendering the shared `AdBannerSlider` at `recommendation_page_banner` and forwarding impression/click tracking callbacks. Ad selection and policy belong to the shared ads feature.
+10. **Shopping Actions and Presentation** — Providing grid/list view, product detail links, wishlist toggles, and add-to-cart for in-stock items, with guest and duplicate-action feedback.
 
 ### 1.3 Target Users
 
 | Attribute | Value |
 |-----------|-------|
 | **Primary Actor** | Buyer (authenticated; AI-result recommendations when analysis exists, generic recommendation results when analysis does not exist) |
-| **Required Authentication** | JWT Bearer Token (for `/buyer/recommendations` page / recommendations API), None (for similar products on product detail pages) |
+| **Required Authentication** | Buyer route; JWT Bearer Token and buyer role for personalized/history APIs; similar-products API is public |
 | **Data Scope** | Own latest AI analysis result when available; otherwise global active product catalog for generic results, filters, and similar products |
 
 ### 1.4 Relationships with Other Functions and Peripheral Systems
@@ -116,17 +119,19 @@ This screen is responsible for the following core functional areas:
 | `ingredients` | Query Parameter | Ingredient filter (comma-separated) |
 | `minPrice` | Query Parameter | Lower price bound |
 | `maxPrice` | Query Parameter | Upper price bound |
-| `sort` | Query Parameter | Sort field (`matchScore`, `price`, `createdAt`) |
+| `rating` | Query Parameter | Minimum average rating (1–5) |
+| `categoryId` / `category` | Query Parameter | Category filter; `category` is an alias |
+| `sort` | Query Parameter | Sort field (`matchScore`, `price`, `rating`, `createdAt`) |
 | `order` | Query Parameter | Sort direction (`asc`, `desc`) |
 | `page` | Query Parameter | Page number (1-indexed) |
-| `limit` | Query Parameter | Items per page (max 50) |
+| `limit` | Query Parameter | Items per page (max 50; frontend default 12, service fallback 20) |
 | `productId` | Path Parameter | Product ID for similar-product lookup |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
 | `data` | Recommendation Result DTO Array | Paginated list of scored product recommendations |
 | `meta` | Pagination Meta DTO | `page`, `limit`, `total`, `totalPages` |
-| `source` | Source Enum | Recommendation source selected by analysis availability (`ai` when analysis exists, `generic` when no valid analysis exists) |
+| `source`, `analysisAge`, `skinTypes` | Response Fields | Selected source plus analysis age and analysis-derived skin types |
 | `data` (similar) | Product Summary DTO Array | Similar products for a given product |
 
 ### 1.6 Related Documents
@@ -150,6 +155,9 @@ This screen is responsible for the following core functional areas:
 | UC-MATCH-003 | Filter by Skin Type | Recommendations displayed. | Results narrowed to products compatible with the selected skin types. | Buyer |
 | UC-MATCH-004 | Filter by Ingredients | Recommendations displayed. | Results narrowed to products containing any selected ingredient. | Buyer |
 | UC-MATCH-005 | Filter by Price Range | Recommendations displayed. | Results narrowed to products within the min/max price bounds. | Buyer |
+| UC-MATCH-006 | Filter by Category and Rating | Recommendations displayed. | Results narrowed to selected category descendants and the minimum rating. | Buyer |
+| UC-MATCH-007 | Manage Wishlist and Cart | In-stock recommendation cards displayed. | Buyer can save/remove wishlist items or add an item to cart. | Buyer |
+| UC-MATCH-010 | Sort, Paginate, and Change View | Recommendation results displayed. | Results reflect the URL sort/page; grid or list presentation selected locally. | Buyer |
 | UC-MATCH-008 | View Recommendation History | Buyer has previous recommendation sessions. | Past recommended products displayed with timestamps. | Buyer |
 | UC-MATCH-009 | View Sponsored Recommendations | Approved, active, paid ads exist. | Sponsored ads appear in the Slide-Down Panel (D0) above the recommendation grid, labeled with disclosure footer. | Buyer |
 
@@ -191,7 +199,7 @@ This screen is responsible for the following core functional areas:
               ▼                   ▼
         ┌──────────────┐    ┌──────────────────────┐
         │ Redis HIT    │    │ Redis MISS →         │
-        │ (≤200ms)     │    │ PostgreSQL WHERE     │
+        │ (cached)     │    │ PostgreSQL WHERE     │
         └──────┬───────┘    │ is_active + approved │
                │            │ shop + skin types    │
                │            │ + filters            │
@@ -232,14 +240,17 @@ This screen is responsible for the following core functional areas:
 | Step | Action | Status Before | Status After | Assigned To |
 |:----:|--------|---------------|--------------|-------------|
 | 1 | Buyer navigates to /buyer/recommendations | — | Page displayed | System |
-| 2 | System checks whether the buyer has a valid AI analysis result | — | Source = `ai` if analysis exists; otherwise `generic` | System |
+| 2 | System checks the buyer's latest completed analysis | — | Source = `ai` if a completed analysis exists (regardless of age); otherwise `generic` | System |
 | 3 | Buyer applies filters / changes sort | Default list | URL params updated | Buyer |
 | 4 | Frontend calls GET /api/v1/recommendations/personalized | URL params valid | Query in-flight (skeleton) | System |
 | 5 | Backend checks Redis cache | — | HIT (return cached) or MISS (query DB) | System |
 | 6 | Backend builds Prisma WHERE (active + approved shop + skin types + filters) | — | Filtered candidate set | System |
 | 7 | Backend computes match score, sorts, returns `{ data, meta, source }` | — | 200 response | System |
 | 8 | Frontend renders recommendation cards according to selected source | Data received | AI match cards or generic product cards displayed | System |
-| 9 | Buyer clicks a recommendation | Results displayed | Navigates to /buyer/products/:id | Buyer |
+| 9 | Buyer clicks a recommendation | Results displayed | Navigates to `/buyer/products/:slug` | Buyer |
+| 10 | Buyer changes a filter or sort | Current results displayed | URL updates and page resets to 1 | Buyer |
+| 11 | Buyer pages through results | Multiple pages exist | Numbered pagination loads the selected page; prior results remain during fetch | Buyer |
+| 12 | Buyer interacts with a product card | Product available | Wishlist action or in-stock add-to-cart action runs | Buyer |
 
 ### 2.4 Relevant Requirements Covered
 
@@ -251,8 +262,8 @@ This screen is responsible for the following core functional areas:
 | B-MATCH-004 | User can filter products by price range |
 | B-MATCH-006 | System displays "Recommended for You" section |
 | B-MATCH-007 | System tracks recommendation history for buyers |
-| B-MATCH-008 | System displays sponsored ads via Slide-Down Panel |
-| B-MATCH-010 | Cross-screen ad panel (D0) displays sponsored ads across 6 screens |
+| B-MATCH-008 | System displays sponsored ads via shared recommendation banner |
+| B-MATCH-010 | Shared ad component provides cross-screen sponsored banner functionality |
 | B-AI-004 | Personalized product recommendations with match scores |
 | B-PROD-006 | Product detail shows skin type compatibility |
 
@@ -288,9 +299,9 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 
 | Source | Description | Used When | UI Indicators | Can Refresh |
 |--------|-------------|-----------|---------------|:-----------:|
-| `AI_ANALYSIS` (fresh) | Latest valid AI skin analysis result (skin type + conditions) | Latest completed analysis is no more than 24 hours old | Badge: "🧬 AI Analysis" (emerald green) · Match score badges on cards · **No** prompt banner · History section visible when sessions exist | ✓ (run new analysis) |
-| `AI_ANALYSIS` (stale) | AI analysis exists but is older than 24 hours | Latest completed analysis is more than 24 hours old | Badge: "🧬 AI Analysis" (emerald green) · Match score badges on cards · **Subtle** prompt banner: "Want Fresh Results?" · History section visible when sessions exist | ✓ (retake analysis) |
-| `GENERIC` | Featured + top-rated products as fallback | No valid analysis is available | Badge: "⬡ General Picks" (amber) · Category badges on cards · **Prominent** prompt banner: "Start Skin Analysis →" · History section remains visible when sessions exist | ✓ (run new analysis) |
+| `AI_ANALYSIS` (fresh) | Latest completed analysis (skin type + conditions) | Latest completed analysis is no more than 24 hours old | Badge: "AI Analysis" · Match score where available · No prompt banner · History section when sessions exist | ✓ (run new analysis) |
+| `AI_ANALYSIS` (stale) | Completed analysis older than 24 hours; still used for results | Latest completed analysis is more than 24 hours old | Badge: "AI Analysis" · Match score where available · Prompt banner: "Want Fresh Results?" · History section when sessions exist | ✓ (retake analysis) |
+| `GENERIC` | Active catalog products without an analysis context | No completed analysis is available | Badge: "General Picks" · Category badges where applicable · Prompt to start skin analysis · History when sessions exist | ✓ (run new analysis) |
 
 ---
 
@@ -300,12 +311,12 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-MATCH-001 | Recommendation Source Selection | The recommendations page has no buyer-selected mode. The backend selects the source based on the buyer's analysis availability: **(a) Fresh analysis (≤ 24h):** Return `source = "ai"` with AI-based recommendations, match score badges, skin type filters pre-selected from analysis, no prompt banner. **(b) Stale analysis (> 24h):** Return `source = "ai"` with AI-based recommendations, match score badges, skin type filters pre-selected from analysis, subtle prompt banner ("Want Fresh Results?"). **(c) No analysis:** Return `source = "generic"` with generic featured/top-rated recommendations, category badges on cards, prominent prompt banner ("Start Skin Analysis →"). History section is shown independently when completed sessions exist, regardless of source. | Backend (matching service) |
-| BR-MATCH-002 | Authentication for Recommendations | The `/buyer/recommendations` page and personalized API require a valid JWT and a `buyer` role (or higher). Guest / unauthenticated users are blocked and redirected to login. | Backend (JwtAuthGuard) + Frontend Router |
-| BR-MATCH-003 | Analysis Freshness | An AI analysis result is considered current for 24 hours after analysis; results beyond the window are treated as stale but still use `source = "ai"` with match scores. The UI shows a subtle "Want Fresh Results?" prompt banner to encourage retaking the analysis. Only when no analysis exists does the system fall back to `source = "generic"`. | Backend (analysis cache TTL) |
+| BR-MATCH-001 | Recommendation Source Selection | The backend uses the latest completed analysis (`analysisStatus = completed`, `completedAt` present), regardless of age: `source = ai`. Without one, `source = generic`. Freshness affects only the prompt banner; history is fetched independently. Generic results are not restricted to featured products. | Backend + frontend |
+| BR-MATCH-002 | Authentication for Recommendations | Personalized and history APIs require a valid JWT and buyer role. Similar lookup is public. The page is under the buyer route group. | Backend guards + buyer route |
+| BR-MATCH-003 | Analysis Freshness | Analysis age is returned in hours. Analysis older than 24 hours remains the AI source; the page shows a retake prompt. It does not expire from recommendation source selection. | Backend + frontend |
 | BR-MATCH-004 | Profile Prompt Banner — Time-Based Display | The Profile Prompt Banner (EL-03a) adapts based on analysis freshness: **(a) No analysis (`source = "generic"`):** Show full-width prominent banner with heading "Get Personalized Recommendations", body text, and CTA "Start Skin Analysis →". **(b) Stale analysis (`source = "ai"`, analysis > 24h old):** Show subtle banner with heading "Want Fresh Results?", body "Retake your skin analysis for updated recommendations", and CTA "Retake Analysis →". **(c) Fresh analysis (`source = "ai"`, analysis ≤ 24h old):** Hide banner completely. In all cases, when `source = "generic"`: show "⬡ General Picks" amber badge, render category-status badges on cards, sort by `is_featured desc` then `avg_rating desc`. History section remains visible when completed sessions exist, independent of source. | Backend (matching service) + Frontend UI |
 | BR-MATCH-005 | Guest Access Restriction | Unauthenticated visitors attempting to access `/buyer/recommendations` are redirected to the Login page. | Frontend (Auth Route Guard) |
-| BR-MATCH-006 | Filter Override | If the buyer explicitly changes the `skinTypes` filter, the filtered value overrides the analysis-derived skin types for that query. | Backend (query precedence) |
+| BR-MATCH-006 | Skin Type Filter | Explicit skin-type selections filter results; for AI results the displayed products must remain compatible with the analysis types. The `all` sentinel clears the explicit selection. | Backend + frontend |
 
 ### 4.2 Matching Algorithm Rules
 
@@ -313,21 +324,22 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 |---------|-----------|-------------|-------------------|
 | BR-MATCH-007 | Match Score Range | Every recommendation carries a `matchScore` between 0 and 100 (integer). | Backend (scoring) |
 | BR-MATCH-008 | Score Components | Score = Skin Type Compatibility (50) + Skin Concern Match (20) + Average Rating (20) + Featured Boost (10). | Backend (scoring) |
-| BR-MATCH-009 | Skin Type Compatibility | Products whose `skin_types` array contains the user's primary skin type receive the full 50 points; products containing a secondary skin type receive 30; products with no overlap receive 0. | Backend (Prisma + scoring) |
+| BR-MATCH-009 | Skin Type Compatibility | An exact product skin-type match receives 50 points; otherwise a product with one or more skin type tags receives 30; products with no tags receive 0. | Backend scoring |
 | BR-MATCH-010 | Concern Matching | Products whose `tags` or `ingredients` match the buyer's skin concerns (e.g., acne, dark spots, wrinkles) earn up to 20 points. | Backend (Prisma + scoring) |
 | BR-MATCH-011 | Rating Factor | `avg_rating >= 4.5` earns 20 points; `4.0–4.49` earns 15; `3.0–3.99` earns 10; below 3.0 earns 0. | Backend (scoring) |
-| BR-MATCH-012 | Featured Boost | Products with `is_featured = true` earn a 10-point boost (deterministic tie-breaker ordering). | Backend (scoring) |
-| BR-MATCH-013 | Skin Type Overlap Filter | Personalized queries require at least one overlapping skin type between the user and the product (`skin_types` `hasSome`); products with zero overlap are excluded. | Backend (Prisma `hasSome`) |
-| BR-MATCH-014 | Similar Product Criteria | Similar products share the same `category_id` and at least one `skin_types` value with the source product; the source product itself and inactive products are excluded. | Backend (Prisma WHERE) |
-| BR-MATCH-015 | Similar Limit | Similar product list is capped (default 8 items). | Backend (take limit) |
+| BR-MATCH-012 | Featured Boost | Products with `is_featured = true` earn a 10-point boost. This is part of the score, not a separate tie-breaker. | Backend (scoring) |
+| BR-MATCH-013 | Analysis Compatibility | AI source results use analysis skin types as the default and allow products tagged `all`; explicit filtering must preserve analysis compatibility. | Backend + frontend |
+| BR-MATCH-014 | Similar Product Criteria | Similar products share category; when the source product has skin types, results share at least one. The source product is excluded. Only active products from approved shops are returned. | Backend (Prisma WHERE) |
+| BR-MATCH-015 | Similar Limit | Similar product limit defaults to 8 and must be 1–20. Unknown source product returns an empty result. | Backend DTO/service |
 
 ### 4.3 Filter Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-MATCH-016 | Skin Type Filter | `skinTypes` filter uses `hasSome` semantics on the `skin_types` array. | Backend (Prisma `hasSome`) |
+| BR-MATCH-016 | Skin Type Filter | Explicit `skinTypes` uses `hasSome`; `all` is a no-selection sentinel. On AI source, UI-side filtering preserves analysis compatibility. | Backend + frontend |
 | BR-MATCH-017 | Ingredient Filter | `ingredients` filter uses `hasSome` semantics on the `ingredients` array. | Backend (Prisma `hasSome`) |
 | BR-MATCH-018 | Price Range Bounds | `price >= minPrice` and `price <= maxPrice`; both bounds must be ≥ 0. | Backend (DTO + Prisma) |
+| BR-MATCH-019 | Category and Rating | `categoryId` (or alias `category`) includes descendant categories; `rating` filters `avgRating >= rating`. | Backend (service) |
 | BR-MATCH-020 | Page Reset on Change | Any filter or sort change resets `page` to 1. | Frontend (updateParams) |
 
 ### 4.4 Visibility Rules
@@ -342,43 +354,41 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-MATCH-024 | Default Sort | AI-analysis recommendation results default to `matchScore desc`; no-analysis generic results default to `is_featured desc`, then `avg_rating desc`; similar results default to `createdAt desc`. | Backend (service logic) |
-| BR-MATCH-025 | Sort Allowlist | `sort` ∈ {`matchScore`, `price`, `createdAt`}; `order` ∈ {`asc`, `desc`}; other values rejected. | Backend (DTO validation) |
-| BR-MATCH-026 | Pagination Defaults | `page` defaults to 1; `limit` defaults to 20; `limit` maximum 50. | Backend (DTO defaults) |
+| BR-MATCH-024 | Default Sort | UI explicitly sends `createdAt desc` (Newest) for both sources. If sort is omitted at service level, AI defaults to match score and generic to featured then rating; similar defaults to `createdAt desc`. | Frontend + backend |
+| BR-MATCH-025 | Sort Allowlist | `sort` ∈ {`matchScore`, `price`, `rating`, `createdAt`}; `order` ∈ {`asc`, `desc`}; other values rejected. Generic `matchScore` falls back to Newest. | Backend DTO/service |
+| BR-MATCH-026 | Pagination Defaults | Page defaults to 1. Frontend limit defaults to 12; service fallback is 20 when omitted. Limit maximum is 50. Numbered pagination is used on mobile and desktop. | Frontend + backend |
 | BR-MATCH-027 | Result Counting | `total` counts the full match set ignoring pagination (`skip`/`take`). | Backend (Prisma `count`) |
 | BR-MATCH-028 | Decimal Serialization | `price`, `compare_at_price`, and `avg_rating` serialized as strings. | Backend (serializer) |
-| BR-MATCH-029 | Cache-Aside Pattern | Redis checked first → miss → query DB → seed Redis. TTL must always be set. Never cache sensitive data. | Backend (matching service) |
+| BR-MATCH-029 | Cache-Aside Pattern | Personalized responses use Redis cache-aside with a 300-second TTL. Cache key includes user and result-affecting normalized query values. Similar/history/ad cache behavior is not implemented in this matching service. | Backend (matching service) |
 
 ### 4.6 Recommendation History Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-MATCH-030 | History Storage | Recommendation history is driven by the `skin_analysis_recommendations` table, which stores recommended products generated during each AI skin analysis session. | Database (`skin_analysis_recommendations`) |
-| BR-MATCH-031 | Generic Excluded | Generic fallback recommendations are not saved to the skin analysis recommendations history. | Backend (matching service) |
-| BR-MATCH-032 | History Retention | Historical skin analysis and recommendation records are retained for 180 days. Records older than 180 days are purged by a scheduled job. | Backend (cron job) |
-| BR-MATCH-033 | History Pagination | Recommendation history sessions are paginated (default 20, max 50) and sorted by `skin_analyses.completed_at desc` (newest sessions first) via join between `skin_analyses` and `skin_analysis_recommendations`. | Backend (service + DTO) |
+| BR-MATCH-030 | History Source | History is derived from the buyer's completed skin-analysis sessions and their saved recommendation rows. | Backend (Prisma) |
+| BR-MATCH-031 | Generic Excluded | Generic fallback responses are not written by this matching service to analysis recommendation history; history is read from completed analysis sessions. | Backend (matching service) |
+| BR-MATCH-032 | History Product Eligibility | History displays products only when still active and sold by an approved shop. Retention/purge behavior is outside the current matching source. | Backend (service) |
+| BR-MATCH-033 | History Pagination | Sessions are sorted by completion time descending; API default limit 20, max 50. Page initially requests 5; See more requests 50. Products are scored and sorted by score descending. | Backend + frontend |
 
 ### 4.7 Advertisement Placement Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-MATCH-037 | Eligible Advertisement Filter | Sponsored ads in the Slide-Down Panel are selected from `advertisements` where `is_active = true`, `approval_status = 'approved'`, `payment_status = 'completed'`, `starts_at <= now`, and `expires_at > now`. | Backend (ad service) |
-| BR-MATCH-038 | Ad Impression Recording | When a sponsored ad becomes visible in the panel (IntersectionObserver ≥ 50%), a client-side impression event is fired. Impression tracking is handled at the application layer via the ad panel API. | Frontend + Backend |
-| BR-MATCH-040 | No-Analysis Ads | Sponsored ads are also shown when the buyer has no analysis result, using the same eligible advertisement filter. | Backend (ad service) |
+| BR-MATCH-037 | Sponsored Banner Placement | Recommendations renders shared `AdBannerSlider` with placement `recommendation_page_banner`; shared ads feature owns selection and eligibility. | Frontend + ads module |
+| BR-MATCH-038 | Ad Impression Recording | Shared banner fires callback when at least 50% visible; matching service posts impression IDs to the ads tracking endpoint. | Frontend + ads module |
+| BR-MATCH-040 | No-Analysis Ads | Banner is rendered independently of recommendation source; it disappears when no eligible banner data is available. | Frontend + ads module |
 
 ### 4.8 Cross-Screen Slide-Down Panel Rules (D0)
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-MATCH-045 | Panel Component | The Slide-Down Panel (D0) is a reusable horizontal carousel component displayed across 6 screens: Homepage, Search Results, Category Pages, Product Detail, Recommendation, and Cart. | Frontend (AdSlidePanel component) |
-| BR-MATCH-046 | Panel Structure | Each panel contains up to 5 ad slides. Each slide has: [D0a] Image/Banner (left), [D0b] Title, [D0c] Description, [D0d] CTA Button (right). Panel slides horizontally with 5-second auto-rotation. | Frontend (AdSlidePanel) |
-| BR-MATCH-047 | Panel Position | The panel is positioned between content sections (not overlaying content). Position varies by screen: below hero (Homepage), above results (Search/Category), below add-to-cart (Product Detail), between organic sections (Recommendation), above checkout (Cart). | Frontend (per-screen layout) |
-| BR-MATCH-048 | Auto-Slide | Panel auto-slides every 5 seconds. Auto-slide pauses on hover (desktop) or touch (mobile). Manual left/right arrows override auto-slide. Dot indicators show current position. | Frontend (AdSlidePanel) |
-| BR-MATCH-049 | Max Slides Per Screen | Maximum 5 ads per panel per screen. If fewer than 5 eligible ads exist, the panel shows only available ads (no placeholders). | Backend (ad service) |
-| BR-MATCH-050 | Round-Robin Rotation | Ads with the same `payment_amount` rotate round-robin across page views. **Implementation:** (1) Group eligible ads by `payment_amount` tier. (2) Within each tier, maintain a session-based rotation index stored in Redis key `ad_rotation:{session_id}:{placement}`. (3) On each page load, select the next ad in the tier using `index % tier_count`. (4) Increment index after each selection. (5) When index reaches tier count, reset to 0 (circular). (6) If session has no index, start at 0. (7) Redis TTL for rotation key = 24 hours. (8) Fallback: if Redis unavailable, use `ORDER BY created_at ASC` (deterministic but non-rotating). | Backend (ad service + Redis) |
-| BR-MATCH-051 | Advertisement Priority | Eligible ads are prioritized by `advertisements.payment_amount desc`, then `advertisements.created_at desc`. | Backend (ad service) |
-| BR-MATCH-052 | Panel Impression Tracking | When the panel becomes visible (IntersectionObserver threshold ≥ 50%), all ads currently in the viewport are recorded as impressions via the ad panel API. | Frontend + Backend (ad tracking) |
-| BR-MATCH-053 | Panel Disclosure | Every panel must display a disclosure footer: "Sponsored products are paid placements from merchants". | Frontend (AdSlidePanel) |
+| BR-MATCH-045 | Shared Banner Component | Recommendation page uses `AdBannerSlider` from the shared components, placement `recommendation_page_banner`. | Frontend (`AdBannerSlider`) |
+| BR-MATCH-046 | Banner Content | Banner shows announcement badge, title, optional description, image, merchant/category tag, and Learn more action; image fallbacks are available. | Frontend (`AdBannerSlider`) |
+| BR-MATCH-047 | Banner Eligibility | Component checks matching placement, approved status, and valid start/expiry timestamps; no eligible ads means no banner. | Frontend + sponsored ads hook |
+| BR-MATCH-048 | Auto-Slide | Multiple ads rotate every 5 seconds. Rotation pauses on hover, keyboard focus, or reduced-motion preference. | Frontend (`AdBannerSlider`) |
+| BR-MATCH-049 | Click Destination | Click records the ad and resolves SKU product, fallback product, target/link URL, or product catalog fallback. External HTTP(S) URLs use full-page navigation. | Frontend (`AdBannerSlider`) |
+| BR-MATCH-050 | Impression Tracking | IntersectionObserver threshold is 50%; displayed ad IDs are reported once per ad set. | Frontend + ads tracking API |
+| BR-MATCH-051 | Ad Disclosure | The banner displays its announcement badge (default `SPONSORED`); there is no separate disclosure footer in this component. | Frontend (`AdBannerSlider`) |
 
 ---
 
@@ -398,29 +408,32 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 | EL-02 | Source Badge | Badge / Pill | `matching.source` | Yes | If buyer has analysis results: "🧬 AI Analysis" emerald green pill. If buyer has no analysis results: "⬡ General Picks" amber/orange pill. |
 | EL-02a | Source Subtitle | Text | `matching.subtitle` | Yes | If buyer has analysis results: "Based on your AI analysis · {skinType} · {N} results". If buyer has no analysis results: "Showing featured products · No skin analysis found". |
 | EL-03a | Profile Prompt Banner | Container / Banner | `matching.profilePrompt` | Conditional | Full-width banner with **3 states**: **(a) No analysis (`source = "generic"`):** Prominent banner with AI face scan illustration, heading "Get Personalized Recommendations", body "Run an AI skin analysis to receive products matched to your skin type and concerns", CTA "✦ Start Skin Analysis →" (rose-gold). **(b) Stale analysis (`source = "ai"`, analysis > 24h old):** Subtle compact banner with heading "Want Fresh Results?", body "Retake your skin analysis for updated recommendations", CTA "Retake Analysis →". **(c) Fresh analysis (`source = "ai"`, analysis ≤ 24h old):** Hidden. Navigates to `/buyer/skin-analysis`. |
-| EL-06 | Filters Panel | Aside (desktop sidebar / mobile drawer) | `matching.filtersTitle` | Yes | Filter groups: Skin Type, Price Range, Ingredients, and Sort. If buyer has analysis results: Skin Type pre-selected from analysis result. If buyer has no analysis results: all unchecked. |
-| EL-17 | Recommendation Grid | Grid | — | Yes | Responsive grid of `RecommendationCard` components. 4 columns desktop / 2 columns tablet / 1 column mobile. |
-| EL-19 | Product Card Badge | Badge | — | Conditional | If buyer has analysis results: "92% match" (green→teal gradient pill) on each card. If buyer has no analysis results: category-status badge — "⭐ Featured" (amber), "🏆 Top Rated" (teal), "🔥 Best Seller" (orange), or "✨ New" (purple) based on product flags. No match score shown for generic results. |
+| EL-06 | Filters Panel | Aside (desktop sidebar / mobile sheet) | — | Yes | Filter groups: Category, Skin Type, Price Range, Rating. Ingredients are accepted by API but not exposed as a page control. |
+| EL-17 | Recommendation Results | Responsive grid/list | — | Yes | Grid defaults to 1 column, 2 at `sm`, 3 at `lg`; List view is selectable. |
+| EL-19 | Product Card Badge | Badge | — | Conditional | AI results show match score when non-null. Category badge is computed independently by backend precedence: featured, top rated, best seller, new. Generic score is null. |
 | EL-20 | Skin Type Tags | Tag Group | — | Conditional | Screen item mapping: `lblSkinTypeTags`. Compatible skin types are displayed on each product card below the product name. |
-| EL-21 | Sort Controls | Select / Dropdown | `matching.sort` | Yes | Sort field (`matchScore`, `price`, `createdAt`) and sort direction (`asc`, `desc`). Defaults follow BR-MATCH-024. Any sort change resets `page` to 1. |
-| EL-22 | Pagination | Pagination | `matching.pagination` | Conditional | Previous/next + page numbers. Desktop only. |
-| EL-23 | Load More Button | Button (outline) | `matching.loadMore` | Conditional | Mobile: infinite-scroll trigger. Rose-gold ghost button. |
+| EL-21 | Sort Controls | Select / Dropdown | — | Yes | Newest, price low/high, highest rating; AI results also offer Match Score. Sort change resets `page` to 1. |
+| EL-22 | Pagination | Pagination | — | Conditional | Previous/next and page numbers at all viewport sizes. Existing page remains visible during fetch. |
+| EL-23 | View Toggle | Toggle | — | Yes | Switches grid/list presentation locally; no API query change. |
 | EL-24 | Empty State | EmptyState | `matching.empty` | Conditional | "No matching products" + Reset Filters button. |
 | EL-25 | Error Banner | Alert | `matching.errors.serverError` | Conditional | Inline error with retry button. |
+| EL-26 | Wishlist Action | Card button | — | Yes | Toggles wishlist membership; guest login dialog and non-buyer feedback are handled in the page. |
+| EL-27 | Add-to-Cart Action | Card button | — | Conditional | Shown only for in-stock products; adds quantity 1; handles guest login and duplicate item dialog. |
+| EL-28 | View Toggle | Toggle | — | Yes | Switches grid/list layout using local page state. |
 
-**Recommendation History Section (shown only when analysis results exist):**
+**Recommendation History Section (shown when completed history sessions exist, independent of current source):**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-31 | History Section Heading | Heading (h2) | `matching.historyTitle` | Conditional | "📋 Previously Recommended" — shown when the buyer has past completed analysis sessions, regardless of the current recommendation `source`. |
-| EL-32 | History Session Group | Card Group | — | Conditional | Accordion rows grouped by analysis date, including stale sessions. Expanded row shows compact product mini-cards (image + name + saved score + price). Collapsed row shows only the date header + chevron. |
-| EL-33 | History Empty State | EmptyState | `matching.historyEmpty` | Conditional | "No recommendation history yet" — shown when the buyer has no completed analysis sessions in `skin_analysis_recommendations`, regardless of the current recommendation `source`. |
+| EL-32 | History Session Group | Card Group | — | Conditional | Newest completed sessions first. Initially first five; See more fetches up to 50. Expanded rows show eligible products with image, name, score, price, and product link. |
+| EL-33 | History Empty State | Prompt | — | Conditional | When there is no history, the page prompts the buyer to complete a skin analysis. |
 
 **Cross-Screen Slide-Down Ad Panel (D0) — shown for both analysis-result and no-analysis results:**
 
 | Element ID | Element Name | Element Type | i18n Key | Required | Description |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-41 | Ad Slide-Down Panel | Carousel | — | Conditional | Horizontal glass-morphism carousel panel. Up to 5 ad slides. Each slide: [D0a] product image left, [D0b] title + [D0c] description center, [D0d] "Shop Now" CTA right. Left/right arrows + dot indicators. 5s auto-rotate (pauses on hover/touch). Small italic disclosure footer: "Sponsored products are paid placements from merchants". Shown for both `source = "ai"` and `source = "generic"` responses. |
+| EL-41 | Sponsored Banner | Shared `AdBannerSlider` | — | Conditional | Uses `recommendation_page_banner`. Rotates every 5 seconds when multiple ads exist; pauses on hover/focus/reduced-motion preference; impression is tracked at ≥50% visibility. Displays announcement badge; no separate disclosure footer. |
 
 #### 5.1.2 Conditional Rendering Summary
 
@@ -458,8 +471,8 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 | Attribute | Specification |
 |-----------|---------------|
 | **Trigger** | Page load |
-| **API Endpoint** | `GET /api/v1/ads/panel?placement=category_banner` |
-| **Processing Steps** | 1. Query eligible rows from `advertisements`. 2. Resolve the recommendation panel to the existing `category_banner` placement. 3. Sort by `payment_amount desc`, then `created_at desc`. 4. Apply session-based round-robin among equal-priority ads. 5. Return ads. |
+| **API Endpoint** | Shared sponsored-ad hook requests placement `recommendation_page_banner`; endpoint owned by ads module |
+| **Processing Steps** | 1. Shared banner loads ads for the recommendation placement. 2. Component filters placement, approval status and active schedule. 3. Banner hides if no eligible ads are returned. 4. Matching page forwards impression/click events to ads tracking endpoints. |
 
 ### 6.9 Operation: Track Ad Panel Impression
 
@@ -479,6 +492,15 @@ The page does not expose or require a buyer-selected mode. The backend selects t
 |-------|-------------|----------------|
 | `id` | `products.id` | UUID string |
 | `name` | `products.name` | String |
+| `slug` | `products.slug` | Product route uses `/buyer/products/:slug` |
+| `brandName` | Merchant shop name | String |
+| `shortDescription` | `products.short_description` | String or null |
+| `price`, `compareAtPrice`, `avgRating` | Product decimals | Strings; `compareAtPrice` may be null |
+| `images`, `skinTypes` | Product arrays | String arrays |
+| `reviewCount`, `isFeatured`, `isInStock` | Product fields/stock quantity | Number and booleans |
+| `matchScore` | Computed | Number for AI source, null otherwise |
+| `categoryBadge` | Computed | `featured`, `topRated`, `bestSeller`, `new`, or null |
+| `source`, `analysisAge`, `skinTypes` | Latest completed analysis context | `ai`/`generic`, age hours or null, analysis type list |
 **Request Example:**
 
 ```json
@@ -539,28 +561,27 @@ Sponsored products are not inserted into the recommendation grid. Advertisement 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
 | `skinTypes` | Optional, valid enum values | "Invalid skin type" | "無効な肌タイプです" |
-| `ingredients` | Optional, array of strings | "Invalid ingredients" | "無効な成分です" |
+| `ingredients` | Optional comma-separated string; API filter, not exposed in page UI | No array validation in `MatchQueryDto` | — |
 | `minPrice` | Optional, ≥ 0 | "Minimum price must be 0 or more" | "最低価格は0以上である必要があります" |
 | `maxPrice` | Optional, ≥ 0 | "Maximum price must be 0 or more" | "最高価格は0以上である必要があります" |
-| `sort` | Optional, matchScore/price/createdAt | "Invalid sort field" | "無効な並び順項目です" |
+| `rating` | Optional, 1–5 | class-validator rejects out-of-range values | — |
+| `categoryId`, `category` | Optional strings | `category` is an alias for `categoryId` | — |
+| `sort` | Optional, matchScore/price/rating/createdAt | class-validator rejects unsupported values | — |
 | `order` | Optional, asc/desc | "Invalid sort direction" | "無効な並び順です" |
 | `page` | Optional, ≥ 1 | "Page must be at least 1" | "ページは1以上である必要があります" |
 | `limit` | Optional, 1–50 | "Limit must be between 1 and 50" | "件数は1〜50の間である必要があります" |
-| `productId` | Required, valid UUID | "Invalid product ID" | "無効な商品IDです" |
+| `productId` | Path value; no UUID validator declared in `MatchingController` | Unknown ID returns empty similar-products result | — |
 
 ### 8.2 History & Tracking Validation
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
-| `historyId` | Required, valid UUID | "Invalid history ID" | "無効な履歴IDです" |
-| `isHelpful` | Required, boolean | "Invalid feedback value" | "無効なフィードバック値です" |
-| `adId` | Required, valid UUID | "Invalid advertisement ID" | "無効な広告IDです" |
-| `adIds` | Required, array of UUIDs, max 5 | "Invalid advertisement IDs" | "無効な広告IDです" |
-| `contextId` | Optional, valid UUID | "Invalid context ID" | "無効なコンテキストIDです" |
+| `page`, `limit` (history) | Page ≥1; limit 1–50 | `HistoryQueryDto` | — |
+| Ad tracking fields | **No DTO validation** — ads controller accepts raw `{ adIds: string[] }` / `{ adId, placement? }` bodies (log-only, no UUID checks) | — | — |
 
 ### 8.3 Validation Enforcement Layers
 
-1. **Frontend (Client)**: `matchingSearchParamsSchema` (Zod) parse + coercion of URL query parameters, with `z.coerce.number()` for numeric fields and real-time inline feedback.
+1. **Frontend (Client)**: `matchQuerySchema` (Zod, `frontend/src/schemas/matching.schema.ts`) parse + coercion of URL query parameters, with `z.coerce.number()` for numeric fields and real-time inline feedback. Defaults sent explicitly: `sort=createdAt`, `order=desc`, `limit=12` (frontend default — the backend default of 20 never applies from this page).
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on `GET /api/v1/recommendations/*` (whitelist + forbidNonWhitelisted).
 3. **Database (DB)**: Prisma indexes and CHECK constraints (e.g., `chk_products_price`, `chk_products_stock`) as final safety net.
 
@@ -588,10 +609,7 @@ Sponsored products are not inserted into the recommendation grid. Advertisement 
 | `400` | `BAD_REQUEST` | Invalid context ID for ad panel | Panel not rendered (silent) |
 | `401` | `UNAUTHORIZED` | Missing/invalid token on personalized endpoint | Redirect to login |
 | `403` | `FORBIDDEN` | Non-buyer role attempting personalized access | Redirect to /unauthorized |
-| `404` | `NOT_FOUND` | Similar product not found (invalid productId) | Empty state / hide similar section |
-| `404` | `NOT_FOUND` | History record not found (invalid historyId) | Silent ignore (no user-facing error for tracking) |
-| `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded on public similar endpoint | "Too many requests. Please wait" + retry countdown |
-| `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded on ad panel endpoint | Panel not rendered (silent, no user-facing error) |
+| `200` | — | Similar source product not found | Matching service returns empty `data` and zero totals |
 | `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong" + retry button |
 
 ### 9.3 Frontend Error Display Behavior
@@ -620,13 +638,12 @@ Rules:
 
 ### 10.1 Authentication Requirements
 
-- Personalized recommendations require a valid JWT Bearer Token (`buyer` role or higher).
+- Personalized recommendations and history require a valid JWT Bearer Token and `buyer` role.
 - Similar products endpoint is public — no JWT required.
-- Rate limiting is enforced on the public similar products endpoint to protect against abuse.
 
 ### 10.2 Public vs Protected Endpoints
 
-| `GET /recommendations/personalized` | Protected | Requires valid access token + `buyer` role or higher |
+| `GET /recommendations/personalized` | Protected | Requires valid access token + `buyer` role |
 | `GET /recommendations/similar/:productId` | Public | No authentication required |
 | `GET /recommendations/history` | Protected | Requires valid access token + `buyer` role |
 | `POST /ads/track/click` | Public | No authentication required (guests tracked by session) |
@@ -637,17 +654,16 @@ Rules:
 
 | Role | Get Personalized | Filter Results | Get Similar | View History | Track Interactions | Sponsored Display |
 |------|:----------------:|:--------------:|:-----------:|:------------:|:------------------:|:-----------------:|
-| Visitor (guest) | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ (on recommendations screen) / ✓ (other screens) |
+| Visitor (guest) | ✗ | ✗ | ✓ | ✗ | Guest action prompts login | Banner availability is handled by shared ads feature |
 | `buyer` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `merchant` | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
-| `admin` | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
+| `merchant` | ✗ (buyer-only) | ✗ | ✓ (public endpoint) | ✗ | Page shopping actions unavailable | Shared ads behavior |
+| `admin` | ✗ (buyer-only) | ✗ | ✓ (public endpoint) | ✗ | Page shopping actions unavailable | Shared ads behavior |
 
 ### 10.4 Security Audit Logging
 
 | Event | Data Logged | Retention |
 |-------|-------------|-----------|
-| `RECOMMENDATION_EXECUTED` | userId, source, filters, timestamp | 90 days |
-| `RECOMMENDATION_ACCESS_DENIED` | userId, target endpoint, timestamp | 90 days |
+| Matching-specific audit events | No such event contract is implemented in `MatchingService` | — |
 
 ---
 
@@ -655,7 +671,7 @@ Rules:
 
 ### 11.1 Current Implementation
 
-The Matching & Recommendation page operates with standard REST API calls. Real-time WebSocket connections are not required for this feature; personalization changes (new analysis) are reflected on the next query (mitigated by the 5-minute personalized cache TTL and immediate cache invalidation on analysis change).
+The Matching & Recommendation page operates with REST queries and TanStack Query refetching; this page does not declare a WebSocket subscription. The matching service exposes `invalidateUserCache(userId)` for analysis-completion integration; this method removes matching personalized-cache keys for that user.
 
 ### 11.2 Client-Side State Updates
 
@@ -713,22 +729,22 @@ The Matching & Recommendation page operates with standard REST API calls. Real-t
 
 | Metric | Target |
 |--------|--------|
-| Personalized recommendation response time (10K records) | ≤ 3 seconds (NFR-002) |
-| API response time (p95) | ≤ 500ms (NFR-003) |
-| Filter application time | ≤ 500ms |
-| Match score computation (in-memory) | ≤ 50ms |
-| Cache hit response time | ≤ 200ms |
-| Similar products response time | ≤ 500ms |
-| Page Load (Initial Render) | ≤ 2 seconds (NFR-001) |
+| Personalized recommendation response time | Target defined by project NFRs; not guaranteed by this implementation spec |
+| API response time (p95) | Target defined by project NFRs; not measured here |
+| Filter application time | No implementation timing assertion |
+| Match score computation | Computed in service; no timing assertion |
+| Cache TTL | 300 seconds for personalized responses |
+| Similar products response time | No implementation timing assertion |
+| Page Load (Initial Render) | No implementation timing assertion |
 
 ### 13.2 Caching Strategy (Development Rules Section 10.5)
 
 | Cache Target | Strategy | TTL | Invalidation |
 |--------------|----------|-----|--------------|
-| Personalized recommendation results | `cache:recommendations:user:{userId}:{hashOfQuery}` (String JSON) | 5 minutes | New AI analysis or any product mutation → `DEL` |
-| Similar product results | `cache:recommendations:similar:{productId}` (String JSON) | 5 minutes | Product update/delete → `DEL` |
-| Sponsored ad pool | `cache:recommendations:ads:eligible` (String JSON) | 10 minutes | Ad approval/rejection, payment status change, or ad expiry → `DEL` |
-| Recommendation history | NOT cached (query hits DB directly; low-volume per user) | — | — |
+| Personalized recommendation results | Per-user `cache:recommendations:user:{userId}:{sha256}` JSON | 5 minutes | `invalidateUserCache(userId)` removes matching user keys |
+| Similar product results | No matching-service cache | — | — |
+| Sponsored ad pool | Owned by shared ads feature | — | — |
+| Recommendation history | No matching-service cache | — | — |
 
 Rules:
 - Cache-aside pattern: Check Redis → miss → query DB → seed Redis.
@@ -742,8 +758,8 @@ Rules:
 |---------|------------|
 | SQL injection in filters | Prisma parameterized queries; no string interpolation into SQL |
 | XSS in URL params | React auto-escaping, no `dangerouslySetInnerHTML` |
-| Extremely long ingredient list | 400 validation error; max array length enforced |
-| Invalid UUID in `productId` | 400 validation error |
+| Ingredient query | String accepted by matching DTO; no array-length rule in DTO |
+| Unknown `productId` in similar route | Empty similar-products response |
 | Data leakage (unapproved shops) | Unapproved shop products excluded at query level (Section 12.2) |
 | Unauthorized personalization | JWT required; access to recommendations screen and data is denied to guests |
 | PII / health data exposure | Never log analysis images or skin data; only identifiers in event logs |
@@ -752,38 +768,30 @@ Rules:
 
 | Breakpoint | Layout |
 |------------|--------|
-| Desktop (≥ 1024px) | Filters sidebar + results grid (4 columns) |
-| Tablet (768px – 1023px) | Filters sidebar (narrower) + grid (2 columns) |
-| Mobile (< 768px) | Filters drawer + stacked grid (1 column) |
+| Desktop (`lg`, 1024px+) | Filters sidebar + results grid (3 columns) |
+| Small (`sm`, 640px+) | Results grid (2 columns); filter sheet below `lg` |
+| Mobile (< 640px) | Filter sheet + results grid (1 column) |
 
 ---
 
 ## 14. Configurable Items (External Definitions)
 
-Defined via `.env` configuration:
+The values below are implementation defaults/constants, not environment variables unless explicitly configured elsewhere.
 
 | Definition Key | Default Value | Description |
 |----------------|---------------|-------------|
-| `RECOMMENDATION_DEFAULT_LIMIT` | `20` | Default items per page |
-| `RECOMMENDATION_MAX_LIMIT` | `50` | Maximum items per page allowed |
-| `RECOMMENDATION_SIMILAR_LIMIT` | `8` | Maximum number of similar products returned |
-| `RECOMMENDATION_CACHE_TTL_SECONDS` | `300` | Personalized + similar result Redis cache TTL (5 minutes) |
-| `RECOMMENDATION_ANALYSIS_TTL_HOURS` | `24` | AI analysis result freshness window (Rule 4.7.2) |
-| `RECOMMENDATION_SCORE_SKIN_TYPE` | `50` | Weight for skin type compatibility score |
-| `RECOMMENDATION_SCORE_CONCERN` | `20` | Weight for skin concern match score |
-| `RECOMMENDATION_SCORE_RATING` | `20` | Weight for average rating factor |
-| `RECOMMENDATION_SCORE_FEATURED` | `10` | Weight for featured product boost |
-| `RECOMMENDATION_SLOW_QUERY_MS` | `500` | Slow-query warn threshold for `RECOMMENDATION_EXECUTED` logging |
-| `RECOMMENDATION_RATE_LIMIT_PER_MINUTE` | `60` | Max public similar-request rate per minute per IP |
-| `RECOMMENDATION_HISTORY_DEFAULT_LIMIT` | `20` | Default items per history page |
-| `RECOMMENDATION_HISTORY_MAX_LIMIT` | `50` | Maximum items per history page |
-| `SPONSORED_MAX_PER_PANEL` | `5` | Max sponsored ads per cross-screen ad panel |
-| `AD_PANEL_AUTO_SLIDE_MS` | `5000` | Auto-slide interval for cross-screen ad panel (5 seconds) |
-| `AD_PANEL_MAX_SLIDES` | `5` | Maximum slides per ad panel per screen |
-| `AD_PANEL_CACHE_TTL_SECONDS` | `600` | Cross-screen ad panel cache TTL (10 minutes) |
-| `AD_PANEL_IMPRESSION_THRESHOLD` | `0.5` | IntersectionObserver threshold for impression tracking (50%) |
-| `AD_RATE_LIMIT_PER_MINUTE` | `120` | Max ad panel + tracking requests per minute per IP |
-| `RECOMMENDATION_HISTORY_RETENTION_DAYS` | `180` | Days to retain recommendation history records before purge |
+| Frontend page-size default | `12` | Frontend Zod default; service fallback when omitted is 20 |
+| `RECOMMENDATION_MAX_LIMIT` | `50` | Maximum page size enforced by matching DTO |
+| Similar query default | `8` | Default similar-products limit; maximum is 20 |
+| Personalized cache TTL | `300` seconds | Hard-coded personalized response cache TTL; similar/history are not cached by matching service |
+| Analysis prompt threshold | `24` hours | Prompt threshold only; old completed analysis remains the AI source |
+| Skin type score | `50` / `30` / `0` | Exact match / has other tags / no tags |
+| Concern score | `10` each, max `20` | Matching concern substrings in product tags or ingredients |
+| Rating score | `20` / `15` / `10` / `0` | Rating thresholds 4.5 / 4.0 / 3.0 / below 3.0 |
+| Featured score | `10` | Hard-coded featured boost |
+| History page default/max | `20` / `50` | Backend history DTO defaults and bounds; UI requests 5 then 50 |
+| Shared banner auto-slide interval | `5000` ms | `AdBannerSlider` constant; pauses on hover, focus and reduced motion |
+| Shared banner impression threshold | `0.5` | `AdBannerSlider` IntersectionObserver threshold |
 
 ---
 
