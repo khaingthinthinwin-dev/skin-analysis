@@ -43,8 +43,14 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto, license?: Express.Multer.File) {
-    const { email, password, name, role = 'buyer', address, phone } =
-      registerDto;
+    const {
+      email,
+      password,
+      name,
+      role = 'buyer',
+      address,
+      phone,
+    } = registerDto;
 
     // Check if user exists
     const existingUser = await this.usersService.findByEmail(email);
