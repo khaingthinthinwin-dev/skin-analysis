@@ -110,6 +110,19 @@
   - **Expected Result**: All buyer-specific labels and toasts switch to the selected language (Japanese / Myanmar / English)
   - **Business Rules**: None (i18n behavior)
 
+- [ ] **N-08**: Notification bell displays badge and opens notification panel with relative timestamps
+  - **Evidence**:
+    - `N-08_1_notification_badge.png`
+    - `N-08_2_notification_drawer.png`
+    - Test: search-filter.spec.ts › "should display notification bell badge and open panel" – pending
+  - **Precondition**: Logged-in buyer with unread notifications
+  - **Steps**:
+    1. Observe the notification bell icon on the top right navigation bar
+    2. Verify the unread notification badge count is displayed
+    3. Click the notification bell icon
+  - **Expected Result**: Notification bell displays the unread badge; clicking it opens the panel showing notification items along with their relative created time (e.g., "5m ago", "2h ago")
+  - **Business Rules**: None (Header Notification UI)
+
 ---
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
