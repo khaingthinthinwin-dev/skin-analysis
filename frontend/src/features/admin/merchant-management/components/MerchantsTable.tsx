@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,23 +17,24 @@ export const MerchantsTable: React.FC<MerchantsTableProps> = ({
   onSelectReview,
   onApprove,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Shop Name</TableHead>
-            <TableHead>User Email</TableHead>
-            <TableHead>License Status</TableHead>
-            <TableHead>Submitted At</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t('admin.merchants.table.shopName', 'Shop Name')}</TableHead>
+            <TableHead>{t('admin.merchants.table.userEmail', 'User Email')}</TableHead>
+            <TableHead>{t('admin.merchants.field.licenseStatus', 'License Status')}</TableHead>
+            <TableHead>{t('admin.merchants.table.submittedAt', 'Submitted At')}</TableHead>
+            <TableHead className="text-right">{t('admin.merchants.table.actions', 'Actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {merchants.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                No merchant applications.
+                {t('admin.merchants.table.emptyApplications', 'No merchant applications.')}
               </TableCell>
             </TableRow>
           ) : (
@@ -61,11 +63,11 @@ export const MerchantsTable: React.FC<MerchantsTableProps> = ({
                     disabled={merchant.licenseStatus !== 'approved'}
                     onClick={() => onSelectReview?.(merchant)}
                   >
-                    View License
+                    {t('admin.merchants.table.viewLicense', 'View License')}
                   </Button>
                   {merchant.licenseStatus === 'pending' && (
                     <Button size="sm" onClick={() => onApprove?.(merchant.id)}>
-                      Approve
+                      {t('admin.merchants.actions.approve', 'Approve')}
                     </Button>
                   )}
                 </TableCell>

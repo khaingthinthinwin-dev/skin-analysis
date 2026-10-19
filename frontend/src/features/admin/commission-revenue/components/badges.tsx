@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { AdFeePaymentStatus, PaymentStatus, Payout } from '../services/commission.service';
@@ -79,11 +80,14 @@ const PAYOUT_STATUS_LABELS: Record<Payout['status'], string> = {
 export const PayoutStatusBadge: React.FC<{
   status: Payout['status'];
   className?: string;
-}> = ({ status, className }) => (
-  <StatusBadge tone={PAYOUT_STATUS_TONES[status]} className={className}>
-    {PAYOUT_STATUS_LABELS[status]}
-  </StatusBadge>
-);
+}> = ({ status, className }) => {
+  const { t } = useTranslation();
+  return (
+    <StatusBadge tone={PAYOUT_STATUS_TONES[status]} className={className}>
+      {t(`admin.commission.status.${status}`, PAYOUT_STATUS_LABELS[status])}
+    </StatusBadge>
+  );
+};
 
 // Payment status pill, e.g. "Completed" / "Pending" / "Refunded".
 // Pass children to override the label (e.g. "3 completed orders").
@@ -91,11 +95,14 @@ export const PaymentStatusBadge: React.FC<{
   kind: PaymentStatusKind;
   className?: string;
   children?: React.ReactNode;
-}> = ({ kind, className, children }) => (
-  <StatusBadge tone={PAYMENT_STATUS_TONES[kind]} className={className}>
-    {children ?? PAYMENT_STATUS_LABELS[kind]}
-  </StatusBadge>
-);
+}> = ({ kind, className, children }) => {
+  const { t } = useTranslation();
+  return (
+    <StatusBadge tone={PAYMENT_STATUS_TONES[kind]} className={className}>
+      {children ?? t(`admin.commission.status.${kind}`, PAYMENT_STATUS_LABELS[kind])}
+    </StatusBadge>
+  );
+};
 
 // Two-line status stat: the count on top (plain foreground colour, sized like
 // the Ad Fee Summary card numbers) with the coloured status pill underneath.
@@ -108,4 +115,3 @@ export const PaymentStatusStat: React.FC<{
     <PaymentStatusBadge kind={kind} />
   </div>
 );
-

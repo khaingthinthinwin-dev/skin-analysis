@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
   onCancel,
   processing,
 }) => {
+  const { t } = useTranslation();
   if (!payout) {
     return null;
   }
@@ -41,35 +43,34 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Process payout for {payout.merchantName}?</DialogTitle>
+          <DialogTitle>{t('admin.commission.payout.confirmTitle', 'Process payout for {{merchantName}}?', { merchantName: payout.merchantName })}</DialogTitle>
           <DialogDescription>
-            This will mark the payout as completed. Ad fees are excluded from payouts
-            (net = total amount - commission).
+            {t('admin.commission.payout.confirmDescription', 'This will mark the payout as completed. Ad fees are excluded from payouts (net = total amount - commission).')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 py-2">
           <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Total Amount</span>
+            <span className="text-sm text-muted-foreground">{t('admin.commission.payout.totalAmount', 'Total Amount')}</span>
             <span>{formatCurrency(payout.totalAmount)} Ks</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Commission Fee</span>
+            <span className="text-sm text-muted-foreground">{t('admin.commission.payout.commissionFee', 'Commission Fee')}</span>
             <span>-{formatCurrency(payout.commissionAmount)} Ks</span>
           </div>
           <div className="border-t" />
           <div className="flex justify-between font-semibold">
-            <span>Net Payout</span>
+            <span>{t('admin.commission.payout.netPayout', 'Net Payout')}</span>
             <span>{formatCurrency(payout.netAmount)} Ks</span>
           </div>
 
           {hasBreakdown && (
             <>
               <div className="my-2 border-t" />
-              <p className="text-xs font-medium text-muted-foreground">Breakdown</p>
+              <p className="text-xs font-medium text-muted-foreground">{t('admin.commission.payout.breakdown', 'Breakdown')}</p>
               {payout.completedCount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-green-600">
-                    {payout.completedCount} completed order{payout.completedCount > 1 ? 's' : ''}
+                    {t('admin.commission.payout.completedOrders', '{{count}} completed orders', { count: payout.completedCount })}
                   </span>
                   <span className="text-green-600">{formatCurrency(payout.completedTotal)} Ks</span>
                 </div>
@@ -77,7 +78,7 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
               {payout.pendingCount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-amber-600">
-                    {payout.pendingCount} pending order{payout.pendingCount > 1 ? 's' : ''}
+                    {t('admin.commission.payout.pendingOrders', '{{count}} pending orders', { count: payout.pendingCount })}
                   </span>
                   <span className="text-amber-600">{formatCurrency(payout.pendingTotal)} Ks</span>
                 </div>
@@ -87,10 +88,10 @@ export const PayoutConfirmationDialog: React.FC<PayoutConfirmationDialogProps> =
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => { onCancel?.(); onOpenChange(false); }} disabled={processing}>
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button variant="default" onClick={() => onConfirm(payout.payoutId)} disabled={processing}>
-            {processing ? 'Processing...' : 'Confirm'}
+            {processing ? t('admin.commission.payout.processing', 'Processing...') : t('common.confirm', 'Confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

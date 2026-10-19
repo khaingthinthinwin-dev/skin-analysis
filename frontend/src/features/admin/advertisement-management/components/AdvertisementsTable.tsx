@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,23 +16,24 @@ export const AdvertisementsTable: React.FC<AdvertisementsTableProps> = ({
   onApprove,
   onReject,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Ad Title</TableHead>
-            <TableHead>Announcement</TableHead>
-            <TableHead>Payment</TableHead>
-            <TableHead>Approval</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t('admin.ads.list.table.title', 'Ad Title')}</TableHead>
+            <TableHead>{t('admin.ads.reviewModal.announcement', 'Announcement')}</TableHead>
+            <TableHead>{t('admin.ads.list.table.payment', 'Payment')}</TableHead>
+            <TableHead>{t('admin.ads.list.table.approval', 'Approval')}</TableHead>
+            <TableHead className="text-right">{t('admin.ads.list.table.actions', 'Actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {ads.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                No advertisement submissions.
+                {t('admin.ads.list.noSubmissions', 'No advertisement submissions.')}
               </TableCell>
             </TableRow>
           ) : (
@@ -41,7 +43,7 @@ export const AdvertisementsTable: React.FC<AdvertisementsTableProps> = ({
                 <TableCell className="max-w-xs truncate">{ad.announcementMessage}</TableCell>
                 <TableCell>
                   <Badge variant={ad.paymentStatus === 'completed' ? 'default' : 'outline'}>
-                    {ad.paymentStatus}
+                    {t(`admin.ads.status.${ad.paymentStatus}`, ad.paymentStatus)}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -54,21 +56,21 @@ export const AdvertisementsTable: React.FC<AdvertisementsTableProps> = ({
                         : 'outline'
                     }
                   >
-                    {ad.approvalStatus}
+                    {t(`admin.ads.status.${ad.approvalStatus}`, ad.approvalStatus)}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right space-x-2">
                   {ad.approvalStatus === 'pending' && (
                     <>
                       <Button size="sm" onClick={() => onApprove?.(ad.id)}>
-                        Approve
+                        {t('admin.ads.list.approve', 'Approve')}
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => onReject?.(ad.id, 'Inappropriate content')}
                       >
-                        Reject
+                        {t('admin.ads.list.reject', 'Reject')}
                       </Button>
                     </>
                   )}

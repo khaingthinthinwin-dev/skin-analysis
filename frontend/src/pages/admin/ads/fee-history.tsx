@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ function apiErrorMessage(error: unknown): string {
 }
 
 export default function FeeHistoryPage() {
+  const { t } = useTranslation()
   const [placement, setPlacement] = useState<Placement | undefined>(undefined)
   const [tier, setTier] = useState<Tier | undefined>(undefined)
   const [month, setMonth] = useState<string | undefined>(undefined)
@@ -84,8 +86,11 @@ export default function FeeHistoryPage() {
           toast({
             title:
               result.deletedCount === 1
-                ? 'Fee change history deleted'
-                : `${result.deletedCount} fee change history records deleted`,
+                ? t('admin.ads.feeHistory.deleteSuccessSingle', 'Fee change history deleted')
+                : t('admin.ads.feeHistory.deleteSuccessCount', {
+                    count: result.deletedCount,
+                    defaultValue: '{{count}} fee change history records deleted',
+                  }),
             variant: 'default',
           })
           setPendingDeleteIds(null)
@@ -93,7 +98,7 @@ export default function FeeHistoryPage() {
         },
         onError: (error) => {
           toast({
-            title: 'Failed to delete fee change history',
+            title: t('admin.ads.feeHistory.deleteFailed', 'Failed to delete fee change history'),
             description: apiErrorMessage(error),
             variant: 'destructive',
           })
@@ -106,20 +111,20 @@ export default function FeeHistoryPage() {
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fee Change History</h1>
-          <p className="text-muted-foreground">Audit trail of fee setting changes</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('admin.ads.feeHistory.title', 'Fee Change History')}</h1>
+          <p className="text-muted-foreground">{t('admin.ads.feeHistory.subtitle', 'Audit trail of fee setting changes')}</p>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link to="/admin/ads/packages">
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to Packages
+            {t('admin.ads.feeHistory.backToPackages', 'Back to Packages')}
           </Link>
         </Button>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-3">
         <div className="w-full min-w-0 sm:w-auto">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Month</span>
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.ads.feeHistory.month', 'Month')}</span>
           <Select
             value={month ?? 'all'}
             onValueChange={(value) => {
@@ -128,21 +133,24 @@ export default function FeeHistoryPage() {
               clearSelection()
             }}
           >
-            <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Month filter">
+            <SelectTrigger className="h-9 w-full sm:w-44" aria-label={t('admin.ads.feeHistory.monthFilterLabel', 'Month filter')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All months</SelectItem>
+              <SelectItem value="all">{t('admin.ads.feeHistory.allMonths', 'All months')}</SelectItem>
               {monthOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`admin.ads.feeHistory.month${Number(option.value.slice(5))}`, {
+                    year: option.value.slice(0, 4),
+                    defaultValue: option.label,
+                  })}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="w-full min-w-0 sm:w-auto">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Placement</span>
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.ads.feeHistory.placement', 'Placement')}</span>
           <Select
             value={placement ?? 'all'}
             onValueChange={(value) => {
@@ -151,21 +159,21 @@ export default function FeeHistoryPage() {
               clearSelection()
             }}
           >
-            <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Placement filter">
+            <SelectTrigger className="h-9 w-full sm:w-44" aria-label={t('admin.ads.feeHistory.placementFilterLabel', 'Placement filter')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All placements</SelectItem>
+              <SelectItem value="all">{t('admin.ads.feeHistory.allPlacements', 'All placements')}</SelectItem>
               {ADMIN_AD_PLACEMENTS.map((p) => (
                 <SelectItem key={p} value={p}>
-                  {PLACEMENT_LABELS[p]}
+                  {t(`admin.ads.placement.${p}`, PLACEMENT_LABELS[p])}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="w-full min-w-0 sm:w-auto">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Tier</span>
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.ads.feeHistory.tier', 'Tier')}</span>
           <Select
             value={tier ?? 'all'}
             onValueChange={(value) => {
@@ -174,14 +182,14 @@ export default function FeeHistoryPage() {
               clearSelection()
             }}
           >
-            <SelectTrigger className="h-9 w-full sm:w-36" aria-label="Tier filter">
+            <SelectTrigger className="h-9 w-full sm:w-36" aria-label={t('admin.ads.feeHistory.tierFilterLabel', 'Tier filter')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All tiers</SelectItem>
-              {ADMIN_AD_TIERS.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {TIER_LABELS[t]}
+              <SelectItem value="all">{t('admin.ads.feeHistory.allTiers', 'All tiers')}</SelectItem>
+              {ADMIN_AD_TIERS.map((tier) => (
+                <SelectItem key={tier} value={tier}>
+                  {t(`admin.ads.tier.${tier}`, TIER_LABELS[tier])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -191,12 +199,12 @@ export default function FeeHistoryPage() {
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto">
           {selectedIds.length > 0 && (
             <span className="text-sm text-muted-foreground">
-              {selectedIds.length} selected
+              {t('admin.ads.feeHistory.selectedCount', { count: selectedIds.length, defaultValue: '{{count}} selected' })}
             </span>
           )}
           {selectedIds.length > 50 && (
             <span role="alert" className="text-sm text-destructive">
-              Maximum 50 records per bulk operation
+              {t('admin.ads.feeHistory.maxBulkSelection', 'Maximum 50 records per bulk operation')}
             </span>
           )}
           {selectedIds.length > 0 && (
@@ -206,7 +214,7 @@ export default function FeeHistoryPage() {
               onClick={clearSelection}
               disabled={deleteMutation.isPending}
             >
-              Clear
+              {t('common.filters.clear', 'Clear')}
             </Button>
           )}
           <Button
@@ -218,7 +226,7 @@ export default function FeeHistoryPage() {
               deleteMutation.isPending
             }
             onClick={requestDeleteSelected}
-            aria-label="Delete selected fee change history"
+            aria-label={t('admin.ads.feeHistory.deleteSelectedLabel', 'Delete selected fee change history')}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -226,8 +234,7 @@ export default function FeeHistoryPage() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Fee change history from the current month is protected and cannot be deleted. Select
-        records from previous months to remove them.
+        {t('admin.ads.feeHistory.currentMonthProtected', 'Fee change history from the current month is protected and cannot be deleted. Select records from previous months to remove them.')}
       </p>
 
       <FeeHistoryTable

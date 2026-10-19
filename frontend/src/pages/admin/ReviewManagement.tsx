@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   useAdminReviews,
   useAdminReports,
@@ -142,21 +143,22 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 function ReviewStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const variants: Record<string, { badge: string; icon: React.ReactNode; label: string }> = {
     pending: {
       badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
       icon: <Clock className="h-3 w-3 mr-1" />,
-      label: 'Pending',
+      label: t('admin.reviews.status.pending', 'Pending'),
     },
     approved: {
       badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
       icon: <CheckCircle className="h-3 w-3 mr-1" />,
-      label: 'Approved',
+      label: t('admin.reviews.status.approved', 'Approved'),
     },
     rejected: {
       badge: 'bg-red-500/10 text-red-400 border-red-500/20',
       icon: <XCircle className="h-3 w-3 mr-1" />,
-      label: 'Rejected',
+      label: t('admin.reviews.status.rejected', 'Rejected'),
     },
   };
   const v = variants[status] || variants.pending;
@@ -169,26 +171,27 @@ function ReviewStatusBadge({ status }: { status: string }) {
 }
 
 function ReportStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const variants: Record<string, { badge: string; icon: React.ReactNode; label: string }> = {
     pending: {
       badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
       icon: <Clock className="h-3 w-3 mr-1" />,
-      label: 'Pending',
+      label: t('admin.reviews.status.pending', 'Pending'),
     },
     reviewed: {
       badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
       icon: <Eye className="h-3 w-3 mr-1" />,
-      label: 'Reviewed',
+      label: t('admin.reviews.status.reviewed', 'Reviewed'),
     },
     resolved: {
       badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
       icon: <CheckCircle className="h-3 w-3 mr-1" />,
-      label: 'Resolved',
+      label: t('admin.reviews.status.resolved', 'Resolved'),
     },
     rejected: {
       badge: 'bg-red-500/10 text-red-400 border-red-500/20',
       icon: <XCircle className="h-3 w-3 mr-1" />,
-      label: 'Rejected',
+      label: t('admin.reviews.status.rejected', 'Rejected'),
     },
   };
   const v = variants[status] || variants.pending;
@@ -273,12 +276,13 @@ function useNotificationTarget() {
 }
 
 function HighlightBadge() {
+  const { t } = useTranslation();
   return (
     <Badge
       variant="outline"
       className="mr-1.5 bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-300"
     >
-      From notification
+      {t('admin.reviews.fromNotification', 'From notification')}
     </Badge>
   );
 }
@@ -286,6 +290,7 @@ function HighlightBadge() {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function ReviewManagement() {
+  const { t } = useTranslation();
   // ── Reviews State ────────────────────────────────────────────────────────
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewLimit, setReviewLimit] = useState(10);
@@ -398,12 +403,12 @@ export default function ReviewManagement() {
   // ── Sort Mapping ─────────────────────────────────────────────────────────
   const sortOptions = useMemo(
     () => [
-      { value: 'createdAt:desc', label: 'Newest' },
-      { value: 'createdAt:asc', label: 'Oldest' },
-      { value: 'rating:desc', label: 'Rating (High-Low)' },
-      { value: 'rating:asc', label: 'Rating (Low-High)' },
+      { value: 'createdAt:desc', label: t('admin.reviews.sort.newest', 'Newest') },
+      { value: 'createdAt:asc', label: t('admin.reviews.sort.oldest', 'Oldest') },
+      { value: 'rating:desc', label: t('admin.reviews.sort.ratingHighLow', 'Rating (High-Low)') },
+      { value: 'rating:asc', label: t('admin.reviews.sort.ratingLowHigh', 'Rating (Low-High)') },
     ],
-    [],
+    [t],
   );
 
   const currentSortValue = `${reviewSort}:${reviewOrder}`;
@@ -421,12 +426,12 @@ export default function ReviewManagement() {
       { id, data: { action: 'approve' } },
       {
         onSuccess: () => {
-          toast.success('Review approved');
+          toast.success(t('admin.reviews.toast.reviewApproved', 'Review approved'));
           closeReviewDetail();
           refreshStats();
         },
         onError: (error: unknown) =>
-          toast.error(apiErrorMessage(error, 'Failed to approve review')),
+          toast.error(apiErrorMessage(error, t('admin.reviews.toast.reviewApproveFailed', 'Failed to approve review'))),
       },
     );
   };
@@ -438,14 +443,14 @@ export default function ReviewManagement() {
       { id: targetId, data: { action: 'reject', reason: rejectReason } },
       {
         onSuccess: () => {
-          toast.success('Review rejected');
+          toast.success(t('admin.reviews.toast.reviewRejected', 'Review rejected'));
           setRejectTarget(null);
           setRejectReason('');
           closeReviewDetail();
           refreshStats();
         },
         onError: (error: unknown) =>
-          toast.error(apiErrorMessage(error, 'Failed to reject review')),
+          toast.error(apiErrorMessage(error, t('admin.reviews.toast.reviewRejectFailed', 'Failed to reject review'))),
       },
     );
   };
@@ -458,13 +463,13 @@ export default function ReviewManagement() {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget, {
       onSuccess: () => {
-        toast.success('Review deleted');
+        toast.success(t('admin.reviews.toast.reviewDeleted', 'Review deleted'));
         setDeleteTarget(null);
         closeReviewDetail();
         refreshStats();
       },
         onError: (error: unknown) =>
-          toast.error(apiErrorMessage(error, 'Failed to delete review')),
+          toast.error(apiErrorMessage(error, t('admin.reviews.toast.reviewDeleteFailed', 'Failed to delete review'))),
     });
   };
 
@@ -473,7 +478,7 @@ export default function ReviewManagement() {
     if (!bulkApproveOpen || selectedReviews.length === 0) return;
     if (!allSelectedPending) {
       setBulkApproveOpen(false);
-      toast.error('Only pending reviews can be approved');
+      toast.error(t('admin.reviews.toast.onlyPendingApprove', 'Only pending reviews can be approved'));
       return;
     }
     bulkModerateMutation.mutate(
@@ -482,7 +487,11 @@ export default function ReviewManagement() {
         onSuccess: (result) => {
           if (result.failed > 0) {
             toast.error(
-              `${result.processed} of ${selectedReviews.length} approved, ${result.failed} failed`,
+              t('admin.reviews.toast.bulkApprovePartial', '{{processed}} of {{total}} approved, {{failed}} failed', {
+                processed: result.processed,
+                total: selectedReviews.length,
+                failed: result.failed,
+              }),
             );
             setSelectedReviews(
               result.results
@@ -490,14 +499,14 @@ export default function ReviewManagement() {
                 .map((r) => r.id),
             );
           } else {
-            toast.success(`${selectedReviews.length} reviews approved`);
+            toast.success(t('admin.reviews.toast.bulkApproved', '{{count}} reviews approved', { count: selectedReviews.length }));
             setSelectedReviews([]);
           }
           setBulkApproveOpen(false);
           refreshStats();
         },
         onError: (error: unknown) =>
-          toast.error(apiErrorMessage(error, 'Failed to approve reviews')),
+          toast.error(apiErrorMessage(error, t('admin.reviews.toast.bulkApproveFailed', 'Failed to approve reviews'))),
       },
     );
   };
@@ -508,7 +517,7 @@ export default function ReviewManagement() {
     if (!allSelectedPending) {
       setBulkRejectOpen(false);
       setRejectReason('');
-      toast.error('Only pending reviews can be rejected');
+      toast.error(t('admin.reviews.toast.onlyPendingReject', 'Only pending reviews can be rejected'));
       return;
     }
     bulkModerateMutation.mutate(
@@ -517,7 +526,11 @@ export default function ReviewManagement() {
         onSuccess: (result) => {
           if (result.failed > 0) {
             toast.error(
-              `${result.processed} of ${selectedReviews.length} rejected, ${result.failed} failed`,
+              t('admin.reviews.toast.bulkRejectPartial', '{{processed}} of {{total}} rejected, {{failed}} failed', {
+                processed: result.processed,
+                total: selectedReviews.length,
+                failed: result.failed,
+              }),
             );
             setSelectedReviews(
               result.results
@@ -525,7 +538,7 @@ export default function ReviewManagement() {
                 .map((r) => r.id),
             );
           } else {
-            toast.success(`${selectedReviews.length} reviews rejected`);
+            toast.success(t('admin.reviews.toast.bulkRejected', '{{count}} reviews rejected', { count: selectedReviews.length }));
             setSelectedReviews([]);
           }
           setBulkRejectOpen(false);
@@ -533,7 +546,7 @@ export default function ReviewManagement() {
           refreshStats();
         },
         onError: (error: unknown) =>
-          toast.error(apiErrorMessage(error, 'Failed to reject reviews')),
+          toast.error(apiErrorMessage(error, t('admin.reviews.toast.bulkRejectFailed', 'Failed to reject reviews'))),
       },
     );
   };
@@ -546,7 +559,11 @@ export default function ReviewManagement() {
         onSuccess: (result) => {
           if (result.failed > 0) {
             toast.error(
-              `${result.processed} of ${selectedReviews.length} deleted, ${result.failed} failed`,
+              t('admin.reviews.toast.bulkDeletePartial', '{{processed}} of {{total}} deleted, {{failed}} failed', {
+                processed: result.processed,
+                total: selectedReviews.length,
+                failed: result.failed,
+              }),
             );
             setSelectedReviews(
               result.results
@@ -554,14 +571,14 @@ export default function ReviewManagement() {
                 .map((r) => r.id),
             );
           } else {
-            toast.success(`${selectedReviews.length} reviews deleted`);
+            toast.success(t('admin.reviews.toast.bulkDeleted', '{{count}} reviews deleted', { count: selectedReviews.length }));
             setSelectedReviews([]);
           }
           setBulkDeleteOpen(false);
           refreshStats();
         },
         onError: (error: unknown) =>
-          toast.error(apiErrorMessage(error, 'Failed to delete reviews')),
+          toast.error(apiErrorMessage(error, t('admin.reviews.toast.bulkDeleteFailed', 'Failed to delete reviews'))),
       },
     );
   };
@@ -575,11 +592,11 @@ export default function ReviewManagement() {
     if (!reportDeleteTarget) return;
     deleteReportMutation.mutate(reportDeleteTarget, {
       onSuccess: () => {
-        toast.success('Report deleted');
+        toast.success(t('admin.reviews.toast.reportDeleted', 'Report deleted'));
         setReportDeleteTarget(null);
         closeReportDetail();
       },
-      onError: () => toast.error('Failed to delete report'),
+      onError: () => toast.error(t('admin.reviews.toast.reportDeleteFailed', 'Failed to delete report')),
     });
   };
 
@@ -592,11 +609,11 @@ export default function ReviewManagement() {
       },
       {
         onSuccess: () => {
-          toast.success('Report rejected');
+          toast.success(t('admin.reviews.toast.reportRejected', 'Report rejected'));
           setReportRejectOpen(false);
           closeReportDetail();
         },
-        onError: () => toast.error('Failed to reject report'),
+        onError: () => toast.error(t('admin.reviews.toast.reportRejectFailed', 'Failed to reject report')),
       },
     );
   };
@@ -655,10 +672,10 @@ export default function ReviewManagement() {
       {/* ── [A] Page Header ─────────────────────────────────────────────── */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Review & Report Management
+          {t('admin.reviews.title', 'Review & Report Management')}
         </h1>
         <p className="text-muted-foreground">
-          Moderate product reviews and reports
+          {t('admin.reviews.subtitle', 'Moderate product reviews and reports')}
         </p>
       </div>
 
@@ -667,14 +684,14 @@ export default function ReviewManagement() {
         <TabsList>
           <TabsTrigger value="reviews" className="gap-2">
             <FileText className="h-4 w-4" />
-            Reviews
+            {t('admin.reviews.tabs.reviews', 'Reviews')}
             <Badge variant="secondary" className="ml-1">
               {reviewTotal}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="reports" className="gap-2">
             <Flag className="h-4 w-4" />
-            Reports
+            {t('admin.reviews.tabs.reports', 'Reports')}
             <Badge variant="secondary" className="ml-1">
               {reportsQuery.data?.total ?? 0}
             </Badge>
@@ -689,7 +706,7 @@ export default function ReviewManagement() {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               {
-                label: 'Total Reviews',
+                label: t('admin.reviews.stats.total', 'Total Reviews'),
                 value: stats.total,
                 icon: FileText,
                 color: 'text-blue-400',
@@ -697,7 +714,7 @@ export default function ReviewManagement() {
                 filter: '',
               },
               {
-                label: 'Pending',
+                label: t('admin.reviews.status.pending', 'Pending'),
                 value: stats.pending,
                 icon: Clock,
                 color: 'text-amber-400',
@@ -705,7 +722,7 @@ export default function ReviewManagement() {
                 filter: 'pending',
               },
               {
-                label: 'Approved',
+                label: t('admin.reviews.status.approved', 'Approved'),
                 value: stats.approved,
                 icon: CheckCircle,
                 color: 'text-emerald-400',
@@ -713,7 +730,7 @@ export default function ReviewManagement() {
                 filter: 'approved',
               },
               {
-                label: 'Rejected',
+                label: t('admin.reviews.status.rejected', 'Rejected'),
                 value: stats.rejected,
                 icon: XCircle,
                 color: 'text-red-400',
@@ -768,7 +785,7 @@ export default function ReviewManagement() {
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search reviews by user, product, or content..."
+                placeholder={t('admin.reviews.filters.reviewSearch', 'Search reviews by user, product, or content...')}
                 value={reviewSearch}
                 onChange={(e) => {
                   setReviewSearch(e.target.value);
@@ -798,7 +815,7 @@ export default function ReviewManagement() {
             {selectedReviews.length > 0 && (
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted p-3">
                 <span className="text-sm font-medium">
-                  {selectedReviews.length} selected
+                  {t('admin.reviews.selectedCount', '{{count}} selected', { count: selectedReviews.length })}
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
@@ -806,7 +823,7 @@ export default function ReviewManagement() {
                     disabled={bulkModerateDisabled}
                     onClick={() => setBulkApproveOpen(true)}
                   >
-                    <Check className="h-4 w-4 mr-1" /> Approve All
+                    <Check className="h-4 w-4 mr-1" /> {t('admin.reviews.actions.approveAll', 'Approve All')}
                   </Button>
                   <Button
                     size="sm"
@@ -814,7 +831,7 @@ export default function ReviewManagement() {
                     disabled={bulkModerateDisabled}
                     onClick={() => setBulkRejectOpen(true)}
                   >
-                    <Flag className="h-4 w-4 mr-1" /> Reject All
+                    <Flag className="h-4 w-4 mr-1" /> {t('admin.reviews.actions.rejectAll', 'Reject All')}
                   </Button>
                   <Button
                     size="sm"
@@ -822,7 +839,7 @@ export default function ReviewManagement() {
                     disabled={bulkDeleteMutation.isPending || bulkDeleteOpen}
                     onClick={() => setBulkDeleteOpen(true)}
                   >
-                    <Trash2 className="h-4 w-4 mr-1" /> Delete All
+                    <Trash2 className="h-4 w-4 mr-1" /> {t('admin.reviews.actions.deleteAll', 'Delete All')}
                   </Button>
                 </div>
               </div>
@@ -841,13 +858,13 @@ export default function ReviewManagement() {
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('admin.reviews.table.user', 'User')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.product', 'Product')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.rating', 'Rating')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.title', 'Title')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.status', 'Status')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.date', 'Date')}</TableHead>
+                    <TableHead className="text-right">{t('admin.reviews.table.actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -857,7 +874,7 @@ export default function ReviewManagement() {
                         colSpan={8}
                         className="border-b border-border text-center py-12 text-muted-foreground"
                       >
-                        No reviews found.
+                        {t('admin.reviews.table.emptyReviews', 'No reviews found.')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -888,7 +905,7 @@ export default function ReviewManagement() {
                             </div>
                             <div>
                               <p className="font-medium text-sm">
-                                {review.user?.name || 'N/A'}
+                                {review.user?.name || t('admin.reviews.na', 'N/A')}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {review.user?.email || ''}
@@ -907,7 +924,7 @@ export default function ReviewManagement() {
                             )}
                             <div>
                               <p className="text-sm font-medium max-w-[140px] truncate">
-                                {review.product?.name || 'N/A'}
+                                {review.product?.name || t('admin.reviews.na', 'N/A')}
                               </p>
                               {review.product?.price != null && (
                                 <p className="text-xs text-muted-foreground">
@@ -966,7 +983,7 @@ export default function ReviewManagement() {
               limit={reviewLimit}
               onLimitChange={setReviewLimit}
               total={reviewTotal}
-              itemLabel="reviews"
+              itemLabel={t('admin.reviews.pagination.reviews', 'reviews')}
             />
           </div>
         </TabsContent>
@@ -979,7 +996,7 @@ export default function ReviewManagement() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
             {[
               {
-                label: 'Total Reports',
+                label: t('admin.reviews.stats.totalReports', 'Total Reports'),
                 value: reportsQuery.data?.total ?? 0,
                 icon: Flag,
                 color: 'text-blue-400',
@@ -987,7 +1004,7 @@ export default function ReviewManagement() {
                 filter: '',
               },
               {
-                label: 'Pending',
+                label: t('admin.reviews.status.pending', 'Pending'),
                 value: reports.filter((r) => r.status === 'pending').length,
                 icon: Clock,
                 color: 'text-amber-400',
@@ -995,7 +1012,7 @@ export default function ReviewManagement() {
                 filter: 'pending',
               },
               {
-                label: 'Reviewed',
+                label: t('admin.reviews.status.reviewed', 'Reviewed'),
                 value: reports.filter((r) => r.status === 'reviewed').length,
                 icon: Eye,
                 color: 'text-blue-400',
@@ -1003,7 +1020,7 @@ export default function ReviewManagement() {
                 filter: 'reviewed',
               },
               {
-                label: 'Resolved',
+                label: t('admin.reviews.status.resolved', 'Resolved'),
                 value: reports.filter((r) => r.status === 'resolved').length,
                 icon: CheckCircle,
                 color: 'text-emerald-400',
@@ -1011,7 +1028,7 @@ export default function ReviewManagement() {
                 filter: 'resolved',
               },
               {
-                label: 'Rejected',
+                label: t('admin.reviews.status.rejected', 'Rejected'),
                 value: reports.filter((r) => r.status === 'rejected').length,
                 icon: XCircle,
                 color: 'text-red-400',
@@ -1064,7 +1081,7 @@ export default function ReviewManagement() {
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search reports..."
+                placeholder={t('admin.reviews.filters.reportSearch', 'Search reports...')}
                 value={reportSearch}
                 onChange={(e) => {
                   setReportSearch(e.target.value);
@@ -1081,12 +1098,12 @@ export default function ReviewManagement() {
               <Table className="border-separate border-spacing-0 [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_th]:h-12 [&_th]:border-b [&_th]:border-border [&_th]:bg-primary/10 [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-bold [&_th]:text-muted-foreground [&_th]:whitespace-nowrap [&_th:last-child]:w-32 [&_th:last-child]:text-right [&_td]:border-b [&_td]:border-border [&_td]:bg-card [&_td]:px-2 [&_td]:py-3 [&_td]:text-[13px] [&_td]:text-muted-foreground [&_td]:whitespace-nowrap [&_td:last-child]:w-32 sm:[&_td]:px-3.5 [&_tbody_tr]:border-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-muted/40 [&_tbody_tr[data-highlighted]>td]:border-b-0">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Reporter</TableHead>
-                    <TableHead>Review</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('admin.reviews.table.reporter', 'Reporter')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.review', 'Review')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.reason', 'Reason')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.status', 'Status')}</TableHead>
+                    <TableHead>{t('admin.reviews.table.date', 'Date')}</TableHead>
+                    <TableHead className="text-right">{t('admin.reviews.table.actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1096,7 +1113,7 @@ export default function ReviewManagement() {
                         colSpan={6}
                         className="text-center py-6 text-muted-foreground"
                       >
-                        No reports found.
+                        {t('admin.reviews.table.emptyReports', 'No reports found.')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -1119,7 +1136,7 @@ export default function ReviewManagement() {
                             </div>
                             <div>
                               <p className="font-medium text-sm">
-                                {report.reporter?.name || 'N/A'}
+                                {report.reporter?.name || t('admin.reviews.na', 'N/A')}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {report.reporter?.email || ''}
@@ -1152,7 +1169,7 @@ export default function ReviewManagement() {
                                   updateStatusMutation.mutate(
                                     { id: report.id, data: { status: 'reviewed' } },
                                     {
-                                      onError: () => toast.error('Failed to update report'),
+                                      onError: () => toast.error(t('admin.reviews.toast.reportUpdateFailed', 'Failed to update report')),
                                     },
                                   );
                                 }
@@ -1189,7 +1206,7 @@ export default function ReviewManagement() {
               limit={reportLimit}
               onLimitChange={setReportLimit}
               total={reportTotal}
-              itemLabel="reports"
+              itemLabel={t('admin.reviews.pagination.reports', 'reports')}
             />
           </div>
         </TabsContent>
@@ -1204,7 +1221,7 @@ export default function ReviewManagement() {
         <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
-              Review Detail
+              {t('admin.reviews.detail.reviewTitle', 'Review Detail')}
             </DialogTitle>
           </DialogHeader>
           {detailReview && (
@@ -1212,13 +1229,13 @@ export default function ReviewManagement() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Review Information
+                    {t('admin.reviews.detail.information', 'Review Information')}
                   </p>
                 </div>
 
                 <div className="rounded-md border border-slate-200 bg-white p-2">
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                    Reviewer
+                    {t('admin.reviews.detail.reviewer', 'Reviewer')}
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700">
@@ -1231,10 +1248,10 @@ export default function ReviewManagement() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-slate-900">
-                        {detailReview.user?.name || 'N/A'}
+                        {detailReview.user?.name || t('admin.reviews.na', 'N/A')}
                       </p>
                       <p className="truncate text-xs text-slate-600">
-                        {detailReview.user?.email || 'N/A'}
+                        {detailReview.user?.email || t('admin.reviews.na', 'N/A')}
                       </p>
                     </div>
                   </div>
@@ -1242,7 +1259,7 @@ export default function ReviewManagement() {
 
                 <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
                   <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                    Product
+                    {t('admin.reviews.table.product', 'Product')}
                   </p>
                   <div className="flex items-center gap-3">
                     {detailReview.product?.images?.[0] && (
@@ -1258,17 +1275,17 @@ export default function ReviewManagement() {
                           to={`/buyer/products/${detailReview.product.slug}`}
                           className="truncate text-sm font-medium text-slate-900 underline-offset-2 hover:text-blue-600 hover:underline"
                         >
-                          {detailReview.product?.name || 'N/A'}
+                          {detailReview.product?.name || t('admin.reviews.na', 'N/A')}
                         </Link>
                       ) : (
                         <p className="truncate text-sm font-medium text-slate-900">
-                          {detailReview.product?.name || 'N/A'}
+                          {detailReview.product?.name || t('admin.reviews.na', 'N/A')}
                         </p>
                       )}
                       <p className="text-xs text-slate-600">
                         {detailReview.product?.price != null
                           ? `$${Number(detailReview.product.price).toFixed(2)}`
-                          : 'Price unavailable'}
+                          : t('admin.reviews.detail.priceUnavailable', 'Price unavailable')}
                       </p>
                     </div>
                   </div>
@@ -1277,7 +1294,7 @@ export default function ReviewManagement() {
                 <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Status
+                      {t('admin.reviews.table.status', 'Status')}
                     </p>
                     <div className="mt-1">
                       <ReviewStatusBadge status={detailReview.status} />
@@ -1286,7 +1303,7 @@ export default function ReviewManagement() {
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Rating
+                      {t('admin.reviews.table.rating', 'Rating')}
                     </p>
                     <div className="mt-1 flex items-center gap-1">
                       <StarRating rating={detailReview.rating} />
@@ -1298,7 +1315,7 @@ export default function ReviewManagement() {
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Submitted
+                      {t('admin.reviews.detail.submitted', 'Submitted')}
                     </p>
                     <p className="mt-1 text-sm text-slate-700">
                       {new Date(detailReview.createdAt).toLocaleDateString()}
@@ -1309,13 +1326,13 @@ export default function ReviewManagement() {
 
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Review Content
+                  {t('admin.reviews.detail.content', 'Review Content')}
                 </p>
 
                 <div className="rounded-md border border-slate-200 bg-white p-2">
                   <div className="flex items-center gap-2 mb-2">
                     {detailReview.isVerifiedPurchase && (
-                      <Badge variant="secondary">Verified Purchase</Badge>
+                      <Badge variant="secondary">{t('admin.reviews.verifiedPurchase', 'Verified Purchase')}</Badge>
                     )}
                   </div>
 
@@ -1335,7 +1352,7 @@ export default function ReviewManagement() {
                 {detailReview.images?.length > 0 && (
                   <div className="mt-2 rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500 mb-1">
-                      Images
+                      {t('admin.reviews.detail.images', 'Images')}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
                       {detailReview.images.map((img, i) => (
@@ -1354,10 +1371,10 @@ export default function ReviewManagement() {
               {detailReview.status === 'pending' && (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Rejection Reason
+                    {t('admin.reviews.detail.rejectionReason', 'Rejection Reason')}
                   </p>
                   <Textarea
-                    placeholder="Enter rejection reason (required)..."
+                    placeholder={t('admin.reviews.dialog.rejectionPlaceholder', 'Enter rejection reason (required)...')}
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
                     className="min-h-[72px] rounded-md border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 dark:border-border dark:bg-secondary/50 dark:text-foreground dark:placeholder:text-muted-foreground dark:focus-visible:ring-ring"
@@ -1370,7 +1387,7 @@ export default function ReviewManagement() {
                   variant="outline"
                   onClick={closeReviewDetail}
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </Button>
                 {detailReview.status === 'pending' && (
                   <Button
@@ -1378,7 +1395,7 @@ export default function ReviewManagement() {
                     disabled={moderateMutation.isPending}
                     className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
                   >
-                    <Check className="h-4 w-4 mr-1" /> Approve
+                    <Check className="h-4 w-4 mr-1" /> {t('admin.reviews.actions.approve', 'Approve')}
                   </Button>
                 )}
                 {detailReview.status === 'pending' && (
@@ -1387,7 +1404,7 @@ export default function ReviewManagement() {
                     onClick={handleReject}
                     disabled={!rejectReason.trim() || moderateMutation.isPending}
                   >
-                    <Flag className="h-4 w-4 mr-1" /> Reject
+                    <Flag className="h-4 w-4 mr-1" /> {t('admin.reviews.actions.reject', 'Reject')}
                   </Button>
                 )}
               </div>
@@ -1406,10 +1423,10 @@ export default function ReviewManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Review</DialogTitle>
+            <DialogTitle>{t('admin.reviews.dialog.rejectReviewTitle', 'Reject Review')}</DialogTitle>
           </DialogHeader>
           <Textarea
-            placeholder="Enter rejection reason (required)..."
+            placeholder={t('admin.reviews.dialog.rejectionPlaceholder', 'Enter rejection reason (required)...')}
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
           />
@@ -1421,14 +1438,14 @@ export default function ReviewManagement() {
                 setRejectReason('');
               }}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               variant="destructive"
               disabled={!rejectReason.trim()}
               onClick={handleReject}
             >
-              Reject
+              {t('admin.reviews.actions.reject', 'Reject')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1441,18 +1458,17 @@ export default function ReviewManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Review</DialogTitle>
+            <DialogTitle>{t('admin.reviews.dialog.deleteReviewTitle', 'Delete Review')}</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to permanently delete this review? This action
-            cannot be undone.
+            {t('admin.reviews.dialog.deleteReviewDescription', 'Are you sure you want to permanently delete this review? This action cannot be undone.')}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              {t('common.delete', 'Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1462,26 +1478,24 @@ export default function ReviewManagement() {
       <Dialog open={bulkApproveOpen} onOpenChange={() => setBulkApproveOpen(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve {selectedReviews.length} Reviews</DialogTitle>
+            <DialogTitle>{t('admin.reviews.dialog.bulkApproveTitle', 'Approve {{count}} Reviews', { count: selectedReviews.length })}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to approve the selected{' '}
-            {selectedReviews.length === 1 ? 'review' : 'reviews'}? Their status
-            will change to Approved.
+            {t('admin.reviews.dialog.bulkApproveDescription', 'Are you sure you want to approve the selected {{count}} reviews? Their status will change to Approved.', { count: selectedReviews.length })}
           </p>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setBulkApproveOpen(false)}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
               onClick={handleBulkApprove}
               disabled={bulkModerateMutation.isPending}
             >
-              Approve All
+              {t('admin.reviews.actions.approveAll', 'Approve All')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1497,10 +1511,10 @@ export default function ReviewManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject {selectedReviews.length} Reviews</DialogTitle>
+            <DialogTitle>{t('admin.reviews.dialog.bulkRejectTitle', 'Reject {{count}} Reviews', { count: selectedReviews.length })}</DialogTitle>
           </DialogHeader>
           <Textarea
-            placeholder="Enter rejection reason (required)..."
+            placeholder={t('admin.reviews.dialog.rejectionPlaceholder', 'Enter rejection reason (required)...')}
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
           />
@@ -1512,14 +1526,14 @@ export default function ReviewManagement() {
                 setRejectReason('');
               }}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               variant="destructive"
               disabled={!rejectReason.trim() || bulkModerateMutation.isPending}
               onClick={handleBulkReject}
             >
-              Reject All
+              {t('admin.reviews.actions.rejectAll', 'Reject All')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1529,26 +1543,24 @@ export default function ReviewManagement() {
       <Dialog open={bulkDeleteOpen} onOpenChange={() => setBulkDeleteOpen(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {selectedReviews.length} Reviews</DialogTitle>
+            <DialogTitle>{t('admin.reviews.dialog.bulkDeleteTitle', 'Delete {{count}} Reviews', { count: selectedReviews.length })}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to permanently delete the selected{' '}
-            {selectedReviews.length === 1 ? 'review' : 'reviews'}? This action
-            cannot be undone.
+            {t('admin.reviews.dialog.bulkDeleteDescription', 'Are you sure you want to permanently delete the selected {{count}} reviews? This action cannot be undone.', { count: selectedReviews.length })}
           </p>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setBulkDeleteOpen(false)}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleBulkDelete}
               disabled={bulkDeleteMutation.isPending}
             >
-              Delete All
+              {t('admin.reviews.actions.deleteAll', 'Delete All')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1559,7 +1571,7 @@ export default function ReviewManagement() {
         <DialogContent className="max-w-xl rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-border dark:bg-background dark:text-foreground dark:[&_.bg-slate-50]:bg-secondary/40 dark:[&_.bg-white]:bg-secondary/50 dark:[&_.border-slate-200]:border-border dark:[&_.bg-slate-200]:bg-secondary dark:[&_.text-slate-900]:text-foreground dark:[&_.text-slate-700]:text-foreground dark:[&_.text-slate-600]:text-muted-foreground dark:[&_.text-slate-500]:text-muted-foreground dark:[&_.text-slate-400]:text-muted-foreground">
           <DialogHeader className="border-b border-slate-200 pb-2">
             <DialogTitle className="text-base font-semibold tracking-wide text-slate-900">
-              Report Detail
+              {t('admin.reviews.detail.reportTitle', 'Report Detail')}
             </DialogTitle>
           </DialogHeader>
           {detailReport && (
@@ -1567,26 +1579,26 @@ export default function ReviewManagement() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Report Information
+                    {t('admin.reviews.detail.reportInformation', 'Report Information')}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Reporter
+                      {t('admin.reviews.table.reporter', 'Reporter')}
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-900">
-                      {detailReport.reporter?.name || 'N/A'}
+                      {detailReport.reporter?.name || t('admin.reviews.na', 'N/A')}
                     </p>
                     <p className="text-xs text-slate-600">
-                      {detailReport.reporter?.email || 'N/A'}
+                      {detailReport.reporter?.email || t('admin.reviews.na', 'N/A')}
                     </p>
                   </div>
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Reason
+                      {t('admin.reviews.table.reason', 'Reason')}
                     </p>
                     <div className="mt-1">
                       <ReasonBadge reason={detailReport.reason} />
@@ -1595,7 +1607,7 @@ export default function ReviewManagement() {
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Submitted
+                      {t('admin.reviews.detail.submitted', 'Submitted')}
                     </p>
                     <p className="mt-1 text-sm text-slate-700">
                       {new Date(detailReport.createdAt).toLocaleDateString()}
@@ -1604,7 +1616,7 @@ export default function ReviewManagement() {
 
                   <div className="rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Status
+                      {t('admin.reviews.table.status', 'Status')}
                     </p>
                     <div className="mt-1">
                       <ReportStatusBadge status={detailReport.status} />
@@ -1615,7 +1627,7 @@ export default function ReviewManagement() {
                 {detailReport.description && (
                   <div className="mt-3 rounded-md border border-slate-200 bg-white p-2">
                     <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                      Report Details
+                      {t('admin.reviews.detail.reportDetails', 'Report Details')}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-700">
                       {detailReport.description}
@@ -1626,7 +1638,7 @@ export default function ReviewManagement() {
 
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Reported Review
+                  {t('admin.reviews.detail.reportedReview', 'Reported Review')}
                 </p>
 
                 <div className="rounded-md border border-slate-200 bg-white p-2">
@@ -1641,17 +1653,20 @@ export default function ReviewManagement() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-slate-900">
-                        By: {detailReport.review?.user?.name || 'N/A'} ({detailReport.review?.user?.email || 'N/A'})
+                        {t('admin.reviews.detail.reviewBy', 'By: {{name}} ({{email}})', {
+                          name: detailReport.review?.user?.name || t('admin.reviews.na', 'N/A'),
+                          email: detailReport.review?.user?.email || t('admin.reviews.na', 'N/A'),
+                        })}
                       </p>
                       <p className="truncate text-xs text-slate-600">
-                        {detailReport.review?.product?.name || 'N/A'}
+                        {detailReport.review?.product?.name || t('admin.reviews.na', 'N/A')}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
                     <p className="whitespace-pre-wrap text-xs leading-5 text-slate-700">
-                      {detailReport.review?.body || detailReport.review?.title || 'No review content available.'}
+                      {detailReport.review?.body || detailReport.review?.title || t('admin.reviews.detail.noReviewContent', 'No review content available.')}
                     </p>
                   </div>
                 </div>
@@ -1661,7 +1676,7 @@ export default function ReviewManagement() {
                 detailReport.status !== 'rejected' && (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                     <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      Admin Note <span className="text-red-500">*</span>
+                      {t('admin.reviews.detail.adminNote', 'Admin Note')} <span className="text-red-500">*</span>
                     </p>
                     <Textarea
                       value={reportAdminNote}
@@ -1669,7 +1684,7 @@ export default function ReviewManagement() {
                         setReportAdminNote(e.target.value);
                         if (reportAdminNoteError) setReportAdminNoteError('');
                       }}
-                      placeholder="Add internal resolution notes..."
+                      placeholder={t('admin.reviews.detail.adminNotePlaceholder', 'Add internal resolution notes...')}
                       className={`min-h-[72px] rounded-md bg-white text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-300 dark:bg-secondary/50 dark:text-foreground dark:placeholder:text-muted-foreground dark:focus-visible:ring-ring ${
                         reportAdminNoteError
                           ? 'border-red-500 focus-visible:ring-red-300'
@@ -1687,7 +1702,7 @@ export default function ReviewManagement() {
                   variant="outline"
                   onClick={closeReportDetail}
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </Button>
                 {detailReport.status !== 'resolved' &&
                   detailReport.status !== 'rejected' && (
@@ -1697,7 +1712,7 @@ export default function ReviewManagement() {
                         onClick={() => {
                           if (!detailReport) return;
                           if (!reportAdminNote.trim()) {
-                            setReportAdminNoteError('Admin note is required.');
+                            setReportAdminNoteError(t('admin.reviews.detail.adminNoteRequired', 'Admin note is required.'));
                             return;
                           }
                           updateStatusMutation.mutate(
@@ -1710,22 +1725,22 @@ export default function ReviewManagement() {
                                     { onError: () => {} },
                                   );
                                 }
-                                toast.success('Report resolved');
+                                toast.success(t('admin.reviews.toast.reportResolved', 'Report resolved'));
                                 closeReportDetail();
                               },
-                              onError: () => toast.error('Failed to resolve report'),
+                              onError: () => toast.error(t('admin.reviews.toast.reportResolveFailed', 'Failed to resolve report')),
                             },
                           );
                         }}
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" /> Resolve
+                        <CheckCircle className="h-4 w-4 mr-1" /> {t('admin.reviews.actions.resolve', 'Resolve')}
                       </Button>
                       <Button
                         variant="destructive"
                         onClick={() => setReportRejectOpen(true)}
                         disabled={!reportAdminNote.trim() || updateStatusMutation.isPending}
                       >
-                        <XCircle className="h-4 w-4 mr-1" /> Reject
+                        <XCircle className="h-4 w-4 mr-1" /> {t('admin.reviews.actions.reject', 'Reject')}
                       </Button>
                     </>
                   )}
@@ -1739,25 +1754,24 @@ export default function ReviewManagement() {
       <Dialog open={reportRejectOpen} onOpenChange={() => setReportRejectOpen(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Report</DialogTitle>
+            <DialogTitle>{t('admin.reviews.dialog.rejectReportTitle', 'Reject Report')}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to reject this report? Its status will change
-            to Rejected.
+            {t('admin.reviews.dialog.rejectReportDescription', 'Are you sure you want to reject this report? Its status will change to Rejected.')}
           </p>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setReportRejectOpen(false)}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleRejectReport}
               disabled={updateStatusMutation.isPending}
             >
-              Reject
+              {t('admin.reviews.actions.reject', 'Reject')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1770,25 +1784,24 @@ export default function ReviewManagement() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Report</DialogTitle>
+            <DialogTitle>{t('admin.reviews.dialog.deleteReportTitle', 'Delete Report')}</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to permanently delete this report? This action
-            cannot be undone.
+            {t('admin.reviews.dialog.deleteReportDescription', 'Are you sure you want to permanently delete this report? This action cannot be undone.')}
           </p>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setReportDeleteTarget(null)}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleConfirmDeleteReport}
               disabled={deleteReportMutation.isPending}
             >
-              Delete
+              {t('common.delete', 'Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

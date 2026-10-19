@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Sparkles } from 'lucide-react'
 
@@ -8,6 +9,7 @@ interface ProfilePromptBannerProps {
 }
 
 export function ProfilePromptBanner({ source, analysisAge }: ProfilePromptBannerProps) {
+  const { t } = useTranslation('skin')
   const age = analysisAge ?? 0
 
   // Fresh analysis (≤ 24h) - no banner
@@ -22,8 +24,8 @@ export function ProfilePromptBanner({ source, analysisAge }: ProfilePromptBanner
         <div className="flex items-center gap-3">
           <span className="text-lg">💡</span>
           <div>
-            <p className="text-sm font-semibold text-amber-700">Want Fresh Results?</p>
-            <p className="text-xs text-amber-600">Retake your skin analysis for updated recommendations</p>
+            <p className="text-sm font-semibold text-amber-700">{t('matchingPage.freshResults.title')}</p>
+            <p className="text-xs text-amber-600">{t('matchingPage.freshResults.description')}</p>
           </div>
         </div>
         <Button
@@ -33,7 +35,7 @@ export function ProfilePromptBanner({ source, analysisAge }: ProfilePromptBanner
           asChild
         >
           <Link to="/buyer/skin-analysis">
-            <RefreshCw className="h-4 w-4 mr-1.5" /> Retake Analysis
+          <RefreshCw className="h-4 w-4 mr-1.5" /> {t('matchingPage.freshResults.retake')}
           </Link>
         </Button>
       </div>
@@ -45,12 +47,12 @@ export function ProfilePromptBanner({ source, analysisAge }: ProfilePromptBanner
     <div className="rounded-xl p-5 sm:p-6 bg-gradient-to-r from-pink-50 to-purple-50 border border-purple-100 flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
       <div className="text-4xl sm:text-5xl flex-shrink-0">🧑‍🔬</div>
       <div className="flex-1 min-w-0 text-center sm:text-left">
-        <h2 className="text-lg font-bold text-gray-900">Get Personalized Recommendations</h2>
-        <p className="text-sm text-gray-600 mt-1">Run an AI skin analysis to receive products matched to your skin type and concerns</p>
+        <h2 className="text-lg font-bold text-gray-900">{t('matchingPage.profilePrompt.title')}</h2>
+        <p className="text-sm text-gray-600 mt-1">{t('matchingPage.profilePrompt.description')}</p>
       </div>
       <Button className="flex-shrink-0 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold px-6" asChild>
         <Link to="/buyer/skin-analysis">
-          <Sparkles className="h-4 w-4 mr-2" /> Start Skin Analysis
+          <Sparkles className="h-4 w-4 mr-2" /> {t('matchingPage.profilePrompt.start')}
         </Link>
       </Button>
     </div>

@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../utils/constants';
 interface AuthFixtures {
   buyerPage: Page;
   merchantPage: Page;
+  blockCdnFonts: void;
 }
 
 // Use seed data credentials (no registration needed)
@@ -17,7 +18,22 @@ const SEED_BUYER = {
   password: 'Cosmetics@123',
 };
 
+// The Google Fonts CDN intermittently hangs in this environment, which stalls
+// both page.screenshot() (waits for document.fonts.ready) and
+// waitForLoadState('networkidle') (waits for the pending stylesheet).
+// Aborting those requests lets font loading settle instantly; screenshots
+// fall back to system fonts.
+async function blockCdnFonts(page: Page) {
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) =>
+    route.abort()
+  );
+}
+
 async function loginViaUI(page: Page, email: string, password: string) {
+  // buyerPage/merchantPage use their own context+page, bypassing the auto
+  // fixture below — block the font CDN here too before any navigation.
+  await blockCdnFonts(page);
+
   await page.goto('/login');
   await page.waitForLoadState('networkidle');
 
@@ -41,6 +57,14 @@ async function loginViaUI(page: Page, email: string, password: string) {
 }
 
 export const test = base.extend<AuthFixtures>({
+  blockCdnFonts: [
+    async ({ page }, use) => {
+      await blockCdnFonts(page);
+      await use();
+    },
+    { auto: true },
+  ],
+
   buyerPage: async ({ browser }, use) => {
     const context = await browser.newContext();
     const page = await context.newPage();

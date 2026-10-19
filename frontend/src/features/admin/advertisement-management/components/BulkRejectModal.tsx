@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +29,7 @@ export function BulkRejectModal({
   onConfirm,
   onClose,
 }: BulkRejectModalProps) {
+  const { t } = useTranslation()
   const [reason, setReason] = useState('')
 
   const canConfirm = reason.trim().length > 0 && reason.trim().length <= REASON_MAX
@@ -39,19 +41,20 @@ export function BulkRejectModal({
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
-          <DialogTitle className="text-center">Bulk Reject Ads</DialogTitle>
+          <DialogTitle className="text-center">
+            {t('admin.ads.bulkReject.title', 'Bulk Reject Ads')}
+          </DialogTitle>
           <DialogDescription className="text-center">
-            You are about to reject {count} advertisement{count === 1 ? '' : 's'}.
+            {t('admin.ads.bulkReject.description', 'You are about to reject {{count}} advertisements.', { count })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <p role="alert" className="text-sm text-destructive">
-            The advertisements will not be displayed. Paid amounts will be refunded in full (100%)
-            according to the refund rule.
+            {t('admin.ads.bulkReject.refundNotice', 'The advertisements will not be displayed. Paid amounts will be refunded in full (100%) according to the refund rule.')}
           </p>
           <div className="space-y-1">
             <label htmlFor="bulk-reject-reason" className="text-sm font-medium">
-              Rejection reason <span className="text-destructive">*</span>
+              {t('admin.ads.bulkReject.reason', 'Rejection reason')} <span className="text-destructive">*</span>
             </label>
             <Textarea
               id="bulk-reject-reason"
@@ -59,23 +62,25 @@ export function BulkRejectModal({
               maxLength={REASON_MAX}
               onChange={(e) => setReason(e.target.value)}
               rows={4}
-              placeholder="Describe why these advertisements are rejected..."
+              placeholder={t('admin.ads.bulkReject.reasonPlaceholder', 'Describe why these advertisements are rejected...')}
               className={reason.length > REASON_MAX ? 'border-destructive' : ''}
             />
             <p className="text-right text-xs text-muted-foreground">{reason.length}/{REASON_MAX}</p>
             {reason.trim().length === 0 && (
               <p role="alert" className="text-sm text-destructive">
-                Rejection reason is required.
+                {t('admin.ads.bulkReject.reasonRequired', 'Rejection reason is required.')}
               </p>
             )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button variant="destructive" onClick={() => onConfirm(reason.trim())} disabled={!canConfirm}>
-            {isLoading ? 'Rejecting...' : 'Confirm Reject'}
+            {isLoading
+              ? t('admin.ads.bulkReject.rejecting', 'Rejecting...')
+              : t('admin.ads.bulkReject.confirm', 'Confirm Reject')}
           </Button>
         </DialogFooter>
       </DialogContent>

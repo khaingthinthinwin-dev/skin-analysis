@@ -9,7 +9,9 @@
     "loading": "読み込み中...",
     "save": "保存",
     "cancel": "キャンセル",
+    "close": "閉じる",
     "delete": "削除",
+    "ok": "OK",
     "submit": "送信",
     "back": "戻る",
     "next": "次へ",
@@ -32,8 +34,16 @@
     },
     "pagination": {
       "rows": "表示件数:",
-      "rowsAria": "ページあたりの表示件数",
-      "showingOrders": "注文 {{start}}–{{end}} 件 / 全 {{total}} 件中"
+      "row": "行",
+      "rowsPerPage": "1ページあたりの表示件数",
+      "showingRange": "{{itemLabel}} 全<total>{{total}}</total>件中<range>{{from}}～{{to}}</range>件を表示",
+      "previousPageLabel": "前のページ",
+      "previous": "前へ",
+      "nextPageLabel": "次のページ",
+      "next": "次へ",
+      "showingOrders": "注文 {{start}}–{{end}} 件 / 全 {{total}} 件中",
+      "ariaLabel": "ページネーション",
+      "goToPage": "{{page}}ページへ移動"
     },
     "payment": {
       "pending": "保留中",
@@ -134,7 +144,8 @@
       "noAccount": "アカウントをお持ちでないですか？",
       "createAccount": "作成する",
       "showPassword": "パスワードを表示",
-      "hidePassword": "パスワードを非表示"
+      "hidePassword": "パスワードを非表示",
+      "errorFallback": "ログインに失敗しました"
     },
     "register": {
       "title": "アカウント作成",
@@ -158,12 +169,21 @@
       "merchant": "出品者 - スキンケア商品を販売する",
       "showPassword": "パスワードを表示",
       "hidePassword": "パスワードを非表示",
+      "errorFallback": "アカウントの作成に失敗しました",
       "passwordRequirement": {
         "length": "8文字以上",
         "uppercase": "大文字1つ (A-Z)",
         "lowercase": "小文字1つ (a-z)",
         "number": "数字1つ (0-9)",
         "special": "特殊文字1つ (@$!%*?&)"
+      },
+      "passwordStrength": {
+        "label": "パスワードの強度:",
+        "weak": "弱い",
+        "fair": "普通",
+        "good": "良好",
+        "strong": "強い",
+        "veryStrong": "非常に強い"
       },
       "license": "事業許可書 (PDF)",
       "licensePlaceholder": "ドラッグ＆ドロップまたはクリックしてアップロード",
@@ -176,7 +196,8 @@
         "required": "出品者登録には事業許可書が必要です"
       },
       "agreeToTerms": "利用規約に同意します",
-      "termsOfService": "利用規約"
+      "termsOfService": "利用規約",
+      "termsAgreement": "私は<termsLink>利用規約</termsLink>に同意します"
     },
     "forgotPassword": {
       "title": "パスワードをお忘れですか？",
@@ -185,7 +206,8 @@
       "emailPlaceholder": "user@example.com",
       "submit": "認証コードを送信",
       "submitting": "送信中...",
-      "backToLogin": "ログインに戻る"
+      "backToLogin": "ログインに戻る",
+      "errorFallback": "認証コードの送信に失敗しました"
     },
     "verifyCode": {
       "title": "認証コードを入力",
@@ -212,7 +234,30 @@
       "successTitle": "パスワードリセット成功",
       "successMessage": "パスワードが正常にリセットされました。新しいパスワードでログインできます。",
       "backToLogin": "ログインに戻る",
-      "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。"
+      "invalidToken": "認証コードが無効または期限切れです。新しいコードをリクエストしてください。",
+      "errorFallback": "パスワードの再設定に失敗しました"
+    },
+    "validation": {
+      "emailRequired": "メールアドレスを入力してください",
+      "emailInvalid": "有効なメールアドレスを入力してください",
+      "passwordRequired": "パスワードを入力してください",
+      "passwordMinLength": "パスワードは8文字以上で入力してください",
+      "nameMinLength": "名前は2文字以上で入力してください",
+      "nameMaxLength": "名前は200文字以内で入力してください",
+      "emailMaxLength": "メールアドレスは255文字以内で入力してください",
+      "passwordMaxLength": "パスワードは128文字以内で入力してください",
+      "passwordUppercase": "パスワードには英大文字を1文字以上含めてください",
+      "passwordLowercase": "パスワードには英小文字を1文字以上含めてください",
+      "passwordNumber": "パスワードには数字を1つ以上含めてください",
+      "passwordSpecial": "パスワードには特殊文字を1つ以上含めてください (@$!%*?&)",
+      "confirmPasswordRequired": "パスワードを再入力してください",
+      "roleRequired": "ロールを選択してください",
+      "termsRequired": "利用規約に同意してください",
+      "passwordMismatch": "パスワードが一致しません",
+      "licenseRequired": "出品者登録には事業許可書が必要です",
+      "licenseType": "サポートされていないファイル形式です。PDFファイルのみ対応しています。",
+      "licenseSize": "ファイルサイズが10MBを超えています",
+      "licenseName": "ファイル名はlicense.pdfである必要があります"
     },
     "createAdmin": {
       "title": "管理者アカウント作成",
@@ -1324,6 +1369,950 @@
     "dismiss": "バナーを閉じる"
   },
   "admin": {
+    "dashboard": {
+      "console": "管理ガバナンスコンソール",
+      "welcome": "{{name}}さん、ようこそ！",
+      "administrator": "管理者",
+      "subtitle": "プラットフォーム全体の指標、出品者の承認、コンテンツのモデレーション、監査を管理します。",
+      "reviewMerchantApprovals": "出品者の申請を確認",
+      "userGovernance": "ユーザー管理",
+      "accountsRoles": "アカウントと権限",
+      "userGovernanceDescription": "ロールベースのアクセス制御により、購入者、出品者、管理者の権限を管理します。",
+      "manageUsers": "ユーザーを管理",
+      "adApprovals": "広告の承認",
+      "merchantCampaigns": "出品者のキャンペーン",
+      "adApprovalsDescription": "購入者向けフィードに掲載する前に、出品者の広告バナー申請を確認して承認します。",
+      "manageAds": "広告を管理",
+      "commissionRevenue": "手数料・収益",
+      "financialAnalytics": "財務分析",
+      "commissionRevenueDescription": "マーケットプレイスの手数料率、注文の精算、プラットフォーム全体の収益を確認します。",
+      "viewRevenue": "収益を表示",
+      "stats": {
+        "totalUsers": "ユーザー総数",
+        "totalMerchants": "出品者総数",
+        "pendingMerchants": "審査待ちの出品者",
+        "pendingAds": "審査待ちの広告",
+        "pendingReports": "対応待ちの報告"
+      }
+    },
+    "masterData": {
+      "title": "マスターデータ",
+      "subtitle": "ユーザー権限、注文フロー、プロモーション、商品カタログを管理する参照データです。",
+      "newCategory": "新しいカテゴリー",
+      "tabs": {
+        "userRoles": "ユーザーロール",
+        "orderStatuses": "注文ステータス",
+        "discountTypes": "割引タイプ",
+        "categories": "カテゴリー",
+        "adPlacements": "広告掲載枠"
+      },
+      "toast": {
+        "categoryCreated": "カテゴリーを作成しました",
+        "categoryCreateFailed": "カテゴリーを作成できませんでした"
+      },
+      "adPlacementsDescription": "広告掲載枠は広告を購入できる固定の枠です。このタブでは既定の掲載枠（コードと名称）のみを表示します。プラン、期間、広告の上限数、日額料金は ad_fee_settings に保存され、「広告管理」で設定します。",
+      "table": {
+        "code": "コード",
+        "name": "名称",
+        "description": "説明",
+        "status": "ステータス",
+        "order": "順序",
+        "terminal": "最終状態",
+        "slug": "スラッグ"
+      },
+      "status": {
+        "active": "有効",
+        "inactive": "無効"
+      },
+      "loading": "マスターデータを読み込み中...",
+      "empty": "データがありません。",
+      "form": {
+        "title": "新しいカテゴリー",
+        "description": "商品カテゴリーをカタログに追加します。スラッグを空欄にすると、名称から自動生成されます。",
+        "slugValidation": "半角英小文字、数字、ハイフンのみ使用できます",
+        "nameRequired": "名称を入力してください",
+        "name": "名称",
+        "namePlaceholder": "口紅",
+        "slug": "スラッグ",
+        "slugPlaceholder": "lipstick",
+        "cancel": "キャンセル",
+        "creating": "作成中...",
+        "submit": "カテゴリーを作成"
+      },
+      "placements": {
+        "code": "掲載枠コード",
+        "name": "掲載枠名",
+        "searchPageBanner": "検索ページのバナー",
+        "recommendationPageBanner": "おすすめページのバナー",
+        "checkoutPageBanner": "購入手続きページのバナー",
+        "productDetailPageBanner": "商品詳細ページのバナー"
+      }
+    },
+    "merchants": {
+      "title": "出店者管理",
+      "subtitle": "事業ライセンスを確認し、出店者登録を管理します",
+      "stats": {
+        "total": "出店者数",
+        "pending": "審査中",
+        "approved": "承認済み",
+        "rejected": "却下済み"
+      },
+      "filters": {
+        "searchPlaceholder": "出店者名またはメールアドレスで検索..."
+      },
+      "sort": {
+        "newest": "新しい順",
+        "oldest": "古い順",
+        "nameAsc": "名前（A-Z）",
+        "nameDesc": "名前（Z-A）"
+      },
+      "field": {
+        "shop": "店舗",
+        "owner": "オーナー",
+        "registered": "登録日",
+        "licenseStatus": "ライセンスのステータス"
+      },
+      "table": {
+        "actions": "操作",
+        "empty": "出店者が見つかりません。",
+        "shopName": "店舗名",
+        "userEmail": "ユーザーのメールアドレス",
+        "submittedAt": "申請日",
+        "emptyApplications": "出店者の申請はありません。",
+        "viewLicense": "ライセンスを表示",
+        "viewDetails": "出店者の詳細を表示"
+      },
+      "status": {
+        "pending": "審査中",
+        "approved": "承認済み",
+        "rejected": "却下済み"
+      },
+      "na": "該当なし",
+      "license": {
+        "link": "ライセンス"
+      },
+      "pagination": {
+        "itemLabel": "出店者"
+      },
+      "detail": {
+        "title": "出店者の詳細",
+        "information": "出店者情報",
+        "registered": "登録日 {{date}}",
+        "businessLicense": "事業ライセンス",
+        "licenseDocument": "事業ライセンス書類",
+        "pdfDocument": "PDF書類",
+        "download": "ダウンロード",
+        "status": "ステータス",
+        "submitted": "申請日",
+        "rejectionReason": "却下理由"
+      },
+      "actions": {
+        "approve": "承認",
+        "reject": "却下"
+      },
+      "toast": {
+        "approved": "出店者を承認しました",
+        "approveFailed": "出店者を承認できませんでした",
+        "rejected": "出店者を却下しました",
+        "rejectFailed": "出店者を却下できませんでした"
+      },
+      "approve": {
+        "title": "出店者を承認",
+        "confirm": "{{name}}を承認しますか？ステータスは承認済みに変更されます。"
+      },
+      "reject": {
+        "title": "出店者を却下",
+        "confirm": "{{name}}を却下しますか？",
+        "reasonPlaceholder": "却下理由を入力してください（必須、最大500文字）..."
+      }
+    },
+    "reviews": {
+      "countLabel_one": "（{{count}}件のレビュー）",
+      "countLabel_other": "（{{count}}件のレビュー）",
+      "loading": "レビューを読み込み中...",
+      "loadError": "レビューを読み込めませんでした。",
+      "empty": "レビューはまだありません。",
+      "pending": "審査中",
+      "verified": "確認済み",
+      "reportLabel": "このレビューを報告",
+      "imageAlt": "レビュー画像{{index}}",
+      "loadMore": "レビューをさらに表示",
+      "title": "レビュー・通報管理",
+      "subtitle": "商品レビューと通報を確認・管理します",
+      "fromNotification": "通知から",
+      "tabs": {
+        "reviews": "レビュー",
+        "reports": "通報"
+      },
+      "stats": {
+        "total": "レビュー総数",
+        "totalReports": "通報総数"
+      },
+      "status": {
+        "pending": "保留中",
+        "approved": "承認済み",
+        "rejected": "却下済み",
+        "reviewed": "確認済み",
+        "resolved": "対応済み"
+      },
+      "sort": {
+        "newest": "新しい順",
+        "oldest": "古い順",
+        "ratingHighLow": "評価の高い順",
+        "ratingLowHigh": "評価の低い順"
+      },
+      "filters": {
+        "reviewSearch": "ユーザー、商品、内容からレビューを検索...",
+        "reportSearch": "通報を検索..."
+      },
+      "selectedCount_one": "{{count}}件選択中",
+      "selectedCount_other": "{{count}}件選択中",
+      "actions": {
+        "approve": "承認",
+        "reject": "却下",
+        "resolve": "対応済みにする",
+        "approveAll": "すべて承認",
+        "rejectAll": "すべて却下",
+        "deleteAll": "すべて削除"
+      },
+      "table": {
+        "user": "ユーザー",
+        "product": "商品",
+        "rating": "評価",
+        "reviewContent": "レビュー内容",
+        "title": "タイトル",
+        "status": "ステータス",
+        "date": "日付",
+        "actions": "操作",
+        "emptyReviews": "レビューが見つかりません。",
+        "reporter": "通報者",
+        "review": "レビュー",
+        "noComment": "コメントなし",
+        "reason": "理由",
+        "emptyReports": "通報が見つかりません。"
+      },
+      "pagination": {
+        "reviews": "件のレビュー",
+        "reports": "件の通報"
+      },
+      "detail": {
+        "reviewTitle": "レビュー詳細",
+        "information": "レビュー情報",
+        "reviewer": "投稿者",
+        "priceUnavailable": "価格を確認できません",
+        "submitted": "投稿日時",
+        "content": "レビュー内容",
+        "images": "画像",
+        "rejectionReason": "却下理由",
+        "reportTitle": "通報詳細",
+        "reportInformation": "通報情報",
+        "reportDetails": "通報内容",
+        "reportedReview": "通報されたレビュー",
+        "reviewBy": "{{name}}（{{email}}）",
+        "noReviewContent": "レビュー内容がありません。",
+        "adminNote": "管理者メモ",
+        "adminNotePlaceholder": "対応内容を入力...",
+        "adminNoteRequired": "管理者メモを入力してください。"
+      },
+      "na": "該当なし",
+      "verifiedPurchase": "購入済み",
+      "dialog": {
+        "rejectionPlaceholder": "却下理由を入力してください...",
+        "rejectReviewTitle": "レビューを却下",
+        "deleteReviewTitle": "レビューを削除",
+        "deleteReviewDescription": "このレビューを完全に削除しますか？この操作は取り消せません。",
+        "bulkApproveTitle": "{{count}}件のレビューを承認",
+        "bulkApproveTitle_one": "{{count}}件のレビューを承認",
+        "bulkApproveTitle_other": "{{count}}件のレビューを承認",
+        "bulkApproveDescription": "選択した{{count}}件のレビューを承認しますか？ステータスが「承認済み」に変更されます。",
+        "bulkApproveDescription_one": "選択したレビューを承認しますか？ステータスが「承認済み」に変更されます。",
+        "bulkApproveDescription_other": "選択した{{count}}件のレビューを承認しますか？ステータスが「承認済み」に変更されます。",
+        "bulkRejectTitle": "{{count}}件のレビューを却下",
+        "bulkRejectTitle_one": "{{count}}件のレビューを却下",
+        "bulkRejectTitle_other": "{{count}}件のレビューを却下",
+        "bulkDeleteTitle": "{{count}}件のレビューを削除",
+        "bulkDeleteTitle_one": "{{count}}件のレビューを削除",
+        "bulkDeleteTitle_other": "{{count}}件のレビューを削除",
+        "bulkDeleteDescription": "選択した{{count}}件のレビューを完全に削除しますか？この操作は取り消せません。",
+        "bulkDeleteDescription_one": "選択したレビューを完全に削除しますか？この操作は取り消せません。",
+        "bulkDeleteDescription_other": "選択した{{count}}件のレビューを完全に削除しますか？この操作は取り消せません。",
+        "rejectReportTitle": "通報を却下",
+        "rejectReportDescription": "この通報を却下しますか？ステータスが「却下済み」に変更されます。",
+        "deleteReportTitle": "通報を削除",
+        "deleteReportDescription": "この通報を完全に削除しますか？この操作は取り消せません。"
+      },
+      "toast": {
+        "reviewApproved": "レビューを承認しました",
+        "reviewApproveFailed": "レビューを承認できませんでした",
+        "reviewRejected": "レビューを却下しました",
+        "reviewRejectFailed": "レビューを却下できませんでした",
+        "reviewDeleted": "レビューを削除しました",
+        "reviewDeleteFailed": "レビューを削除できませんでした",
+        "onlyPendingApprove": "保留中のレビューのみ承認できます",
+        "onlyPendingReject": "保留中のレビューのみ却下できます",
+        "bulkApprovePartial": "{{total}}件中{{processed}}件を承認しました（{{failed}}件失敗）",
+        "bulkApproved_one": "{{count}}件のレビューを承認しました",
+        "bulkApproved_other": "{{count}}件のレビューを承認しました",
+        "bulkApproveFailed": "レビューを一括承認できませんでした",
+        "bulkRejectPartial": "{{total}}件中{{processed}}件を却下しました（{{failed}}件失敗）",
+        "bulkRejected_one": "{{count}}件のレビューを却下しました",
+        "bulkRejected_other": "{{count}}件のレビューを却下しました",
+        "bulkRejectFailed": "レビューを一括却下できませんでした",
+        "bulkDeletePartial": "{{total}}件中{{processed}}件を削除しました（{{failed}}件失敗）",
+        "bulkDeleted_one": "{{count}}件のレビューを削除しました",
+        "bulkDeleted_other": "{{count}}件のレビューを削除しました",
+        "bulkDeleteFailed": "レビューを一括削除できませんでした",
+        "reportDeleted": "通報を削除しました",
+        "reportDeleteFailed": "通報を削除できませんでした",
+        "reportRejected": "通報を却下しました",
+        "reportRejectFailed": "通報を却下できませんでした",
+        "reportResolved": "通報に対応しました",
+        "reportResolveFailed": "通報に対応できませんでした",
+        "reportUpdateFailed": "通報を更新できませんでした"
+      }
+    },
+    "commission": {
+      "title": "手数料・収益",
+      "actions": { "export": "エクスポート" },
+      "tabs": { "commission": "手数料", "revenue": "収益" },
+      "reportTitle": "手数料レポート（{{groupBy}}）",
+      "reportTitlePlain": "手数料レポート",
+      "groupBy": {
+        "daily": "日別",
+        "order": "注文別",
+        "merchant": "販売者別",
+        "byDay": "日別",
+        "byOrder": "注文別",
+        "byMerchant": "販売者別"
+      },
+      "export": {
+        "revenue": "収益をエクスポート",
+        "payout": "支払いをエクスポート",
+        "title": "レポートをエクスポート",
+        "description": "選択した期間の{{reportType}}レポートをダウンロードします。",
+        "reportType": "レポートの種類",
+        "groupBy": "集計単位",
+        "allMerchants": "すべての販売者",
+        "startDate": "開始日",
+        "endDate": "終了日",
+        "format": "形式",
+        "formatLabel": "エクスポート形式",
+        "generating": "作成中...",
+        "generate": "作成",
+        "failed": "エクスポートに失敗しました",
+        "successTitle": "エクスポートを作成しました",
+        "successDescription": "{{reportType}}レポートをダウンロードしています。",
+        "validation": {
+          "dateRequired": "開始日と終了日を選択してください。",
+          "dateOrder": "終了日は開始日より後の日付にしてください。",
+          "maxRange": "期間は365日以内にしてください。"
+        }
+      },
+      "filters": {
+        "from": "開始",
+        "to": "終了",
+        "fromDate": "開始日",
+        "toDate": "終了日",
+        "apply": "適用",
+        "reset": "リセット",
+        "invalidDateRange": "開始日は終了日より前の日付にしてください。"
+      },
+      "kpi": { "periodLabel": "{{period}}の収益" },
+      "payout": {
+        "merchant": "販売者",
+        "allPeriods": "すべての期間",
+        "breakdown": "支払い内訳",
+        "commissionFee": "手数料",
+        "completedDate": "完了日",
+        "completedOrders_one": "{{count}}件の完了した注文",
+        "completedOrders_other": "{{count}}件の完了した注文",
+        "confirmDelete": "削除を確定",
+        "confirmDescription": "支払いを完了済みにします。広告料金は支払いに含まれません（純支払額 = 合計金額 - 手数料）。",
+        "confirmTitle": "{{merchantName}}への支払いを処理しますか？",
+        "deleteDescription": "この操作は取り消せません。",
+        "deleteSelected": "選択した支払いを削除",
+        "deleteTitle": "選択した行を削除しますか？",
+        "deleting": "削除中...",
+        "detailDescription": "支払いの詳細",
+        "detailTitle": "支払い詳細",
+        "empty": "支払いが見つかりません。",
+        "netPayout": "純支払額",
+        "paidDate": "支払日",
+        "pendingOrders_one": "保留中の注文{{count}}件",
+        "pendingOrders_other": "保留中の注文{{count}}件",
+        "period": "期間",
+        "process": "処理",
+        "processing": "処理中...",
+        "searchLabel": "支払いを検索",
+        "searchPlaceholder": "販売者または期間を検索",
+        "selectItem": "支払いを選択",
+        "selectPage": "このページの支払いをすべて選択",
+        "totalAmount": "合計金額",
+        "totalOrders": "注文数",
+        "viewDetails": "詳細を表示"
+      },
+      "payouts": { "title": "販売者への支払い" },
+      "status": {
+        "pending": "保留中",
+        "processing": "処理中",
+        "completed": "完了",
+        "failed": "失敗",
+        "refunded": "返金済み"
+      },
+      "payoutStatus": "支払い状況",
+      "adFees": {
+        "title": "広告料金の概要",
+        "activeAds": "掲載中の広告",
+        "totalCollected": "徴収合計"
+      },
+      "adPaymentStatus": "広告料金の支払い状況",
+      "table": {
+        "action": "操作",
+        "commission": "手数料",
+        "date": "日付",
+        "empty": "手数料レポートが見つかりません。",
+        "merchant": "販売者",
+        "orderNumber": "注文番号",
+        "orders": "注文数",
+        "rate": "手数料率",
+        "revenue": "収益",
+        "status": "ステータス"
+      },
+      "rate": {
+        "title": "手数料率",
+        "description": "完了した取引ごとに適用されるプラットフォーム手数料",
+        "edit": "手数料率を編集",
+        "appliedHint": "保存後、新しい注文に適用されます",
+        "dialogTitle": "手数料率を編集",
+        "dialogDescription": "プラットフォーム手数料の割合を設定します。保存後、新しい取引に適用されます。",
+        "inputLabel": "手数料率",
+        "validation": "手数料率は0～100の範囲で入力してください"
+      },
+      "target": {
+        "validation": "目標額は正の数で、小数点以下2桁まで入力してください。",
+        "editTitle": "収益目標を編集",
+        "setTitle": "収益目標を設定",
+        "dialogDescription": "{{period}}の収益目標を設定します。変更は選択した期間にのみ適用されます。",
+        "amount": "目標額",
+        "amountPlaceholder": "0.00",
+        "period": "期間",
+        "saving": "保存中...",
+        "save": "目標を保存",
+        "actualRevenue": "実際の収益",
+        "description": "目標を設定して収益の達成状況を確認します。",
+        "edit": "目標を編集",
+        "empty": "この期間の収益目標は設定されていません。",
+        "progress": "目標の{{progress}}%",
+        "progressLabel": "達成状況",
+        "set": "目標を設定",
+        "title": "収益目標"
+      },
+      "toast": {
+        "rateUpdated": "手数料率を更新しました",
+        "rateUpdateFailed": "手数料率を更新できませんでした",
+        "payoutAlreadyProcessed": "この支払いはすでに処理されています",
+        "payoutCannotDelete": "この支払いは削除できません",
+        "payoutDeleteFailed": "支払いを削除できませんでした",
+        "payoutPartial": "一部の支払いを処理しました",
+        "payoutPartialDescription": "{{success}}件を処理しました。{{failed}}件は失敗しました。",
+        "payoutProcessed": "支払いを処理しました",
+        "payoutsDeleted_one": "{{count}}件の支払いを削除しました",
+        "payoutsDeleted_other": "{{count}}件の支払いを削除しました",
+        "targetSaveFailed": "収益目標を保存できませんでした",
+        "targetSaveFailedTitle": "目標を保存できませんでした",
+        "targetUpdated": "収益目標を更新しました"
+      },
+      "trend": {
+        "adFee": "広告料金",
+        "aiForecast": "AI予測",
+        "chartLabel": "収益",
+        "chartTitle": "収益推移",
+        "commission": "手数料",
+        "description": "期間ごとの収益",
+        "descriptionWithForecast": "収益の推移と予測",
+        "empty": "収益データがありません。",
+        "revenue": "収益",
+        "title": "収益推移"
+      }
+    },
+    "ads": {
+      "placement": {
+        "search_page_banner": "検索ページバナー",
+        "recommendation_page_banner": "おすすめページバナー",
+        "checkout_page_banner": "購入手続きページバナー",
+        "productDetail_page_banner": "商品詳細ページバナー"
+      },
+      "tier": {
+        "basic": "ベーシック",
+        "standard": "スタンダード",
+        "premium": "プレミアム"
+      },
+      "status": {
+        "pending": "保留中",
+        "approved": "承認済み",
+        "rejected": "却下済み",
+        "completed": "完了",
+        "refunded": "返金済み",
+        "active": "有効",
+        "inactive": "無効"
+      },
+      "reviewModal": {
+        "viewTitle": "広告を表示",
+        "reviewTitle": "広告を審査",
+        "advertisementBy": "{{shopName}}の広告",
+        "loadingDetails": "広告の詳細を読み込み中...",
+        "shopInformation": "店舗情報",
+        "shop": "店舗",
+        "placement": "掲載枠",
+        "tier": "プラン",
+        "preview": "広告プレビュー",
+        "noBannerImage": "バナー画像がありません",
+        "announcement": "お知らせ",
+        "skuLabel": "SKU: {{sku}}",
+        "startDate": "開始日",
+        "endDate": "終了日",
+        "duration": "掲載期間",
+        "durationDays_one": "{{count}}日",
+        "durationDays_other": "{{count}}日",
+        "feeAndPayment": "料金・支払い",
+        "dailyRate": "1日あたりの料金",
+        "totalFee": "合計料金",
+        "feePaid": "支払済み料金",
+        "paymentStatus": "支払い状況",
+        "paidOn": "{{date}}に支払い済み",
+        "feeLockedNotice": "購入時の料金が適用されます。以降の料金設定変更はこの広告に影響しません。",
+        "rejectionReason": "却下理由",
+        "rejectionInput": "却下理由の入力",
+        "rejectionPlaceholder": "広告を却下する理由を入力してください...",
+        "rejectionRequired": "却下理由を入力してください。",
+        "rejecting": "却下中...",
+        "confirmReject": "却下を確定",
+        "reject": "却下",
+        "approving": "承認中...",
+        "approve": "承認"
+      },
+      "bulk": {
+        "selectedCount_one": "{{count}}件の広告を選択中",
+        "selectedCount_other": "{{count}}件の広告を選択中",
+        "maxSelection": "一括操作では広告を最大50件まで選択できます。",
+        "approveSelected": "選択した広告をすべて承認",
+        "approveAll": "すべて承認",
+        "rejectSelected": "選択した広告をすべて却下",
+        "rejectAll": "すべて却下"
+      },
+      "bulkApprove": {
+        "title": "広告を一括承認",
+        "description_one": "{{count}}件の広告を承認します。",
+        "description_other": "{{count}}件の広告を承認します。",
+        "approving": "承認中...",
+        "confirm": "承認を確定"
+      },
+      "bulkReject": {
+        "title": "広告を一括却下",
+        "description_one": "{{count}}件の広告を却下します。",
+        "description_other": "{{count}}件の広告を却下します。",
+        "refundNotice": "広告は表示されず、返金ルールに基づき支払済み金額の全額（100%）が返金されます。",
+        "reason": "却下理由",
+        "reasonPlaceholder": "広告を却下する理由を入力してください...",
+        "reasonRequired": "却下理由を入力してください。",
+        "rejecting": "却下中...",
+        "confirm": "却下を確定"
+      },
+      "dateRange": {
+        "from": "開始",
+        "to": "終了",
+        "clear": "期間をクリア"
+      },
+      "multiSelect": {
+        "select": "{{label}}を選択",
+        "all": "{{label}}をすべて選択",
+        "selectedCount_one": "{{count}}件選択中",
+        "selectedCount_other": "{{count}}件選択中",
+        "clear": "選択をクリア",
+        "noOptions": "選択肢がありません"
+      },
+      "pagination": {
+        "rows": "表示件数:",
+        "rowsPerPage": "1ページあたりの表示件数",
+        "showingPage": "{{totalPages}}ページ中{{page}}ページ目を表示",
+        "previousPageLabel": "前のページ",
+        "previous": "前へ",
+        "goToPage": "{{page}}ページへ移動",
+        "nextPageLabel": "次のページ",
+        "next": "次へ"
+      },
+      "analytics": {
+        "title": "収益分析",
+        "subtitle": "承認済み広告の収益概要",
+        "backToAds": "広告一覧に戻る",
+        "dateRange": "期間",
+        "placement": "掲載枠",
+        "placementsLabel": "掲載枠",
+        "tier": "プラン",
+        "tiersLabel": "プラン",
+        "tables": {
+          "placementTier": "掲載枠 / プラン",
+          "adCount": "広告数",
+          "totalRevenue": "収益合計",
+          "averageCtr": "平均CTR",
+          "noData": "データがありません",
+          "byPlacementTitle": "掲載枠別の広告",
+          "byPlacementDescription": "掲載枠別の広告内訳",
+          "byTierTitle": "プラン別の広告",
+          "byTierDescription": "プラン別の広告内訳"
+        },
+        "charts": {
+          "noData": "データがありません",
+          "pieChartLabel": "{{title}}の円グラフ",
+          "segmentTitle": "{{label}}: {{revenue}}（{{percent}}%）",
+          "revenueByPlacement": "掲載枠別収益",
+          "revenueByPlacementDescription": "広告掲載枠別の収益割合",
+          "revenueByTier": "プラン別収益",
+          "revenueByTierDescription": "広告プラン別の収益割合",
+          "revenueTrend": "収益推移",
+          "dailyRevenue": "選択した期間の日別収益",
+          "trendChartLabel": "収益推移の折れ線グラフ",
+          "pointTitle": "{{date}}: {{revenue}}"
+        }
+      },
+      "export": {
+        "title": "レポートのエクスポート",
+        "subtitle": "広告と料金履歴のCSVレポートを作成します",
+        "backToAds": "広告一覧に戻る",
+        "dateRange": "期間",
+        "exportFormatLabel": "エクスポート形式",
+        "format": "形式",
+        "generateFailed": "レポートを作成できませんでした",
+        "generateSuccess": "レポートを作成し、ダウンロードを開始しました",
+        "generateReport": "レポートを作成",
+        "generateReportLabel": "レポートを作成",
+        "generating": "作成中...",
+        "helperText": "CSVレポートを作成してダウンロードします。フィルターは任意です。空欄の場合はすべてが対象になります。",
+        "invalidRange": "終了日は開始日より後の日付にしてください。",
+        "placement": "掲載枠",
+        "placementsLabel": "掲載枠",
+        "searchShopNameLabel": "店舗名を検索",
+        "searchShopPlaceholder": "店舗を検索...",
+        "shop": "店舗",
+        "status": "ステータス",
+        "statusesLabel": "ステータス",
+        "tier": "プラン",
+        "tiersLabel": "プラン"
+      },
+      "feeHistory": {
+        "title": "料金変更履歴",
+        "subtitle": "料金設定の変更履歴",
+        "backToPackages": "プラン一覧に戻る",
+        "month": "月",
+        "monthFilterLabel": "月で絞り込む",
+        "allMonths": "すべての月",
+        "placement": "掲載枠",
+        "placementFilterLabel": "掲載枠で絞り込む",
+        "allPlacements": "すべての掲載枠",
+        "tier": "プラン",
+        "tierFilterLabel": "プランで絞り込む",
+        "allTiers": "すべてのプラン",
+        "date": "日付",
+        "oldRate": "変更前料金",
+        "newRate": "変更後料金",
+        "changedBy": "変更者",
+        "reason": "理由",
+        "actions": "操作",
+        "selectAllLabel": "削除可能な料金変更履歴をすべて選択",
+        "selectRowLabel": "{{date}}の料金変更履歴を選択",
+        "deleteRecordTitle": "この履歴を削除",
+        "deleteRecordLabel": "{{date}}の料金変更履歴を削除",
+        "empty": "料金変更履歴が見つかりません。",
+        "maxBulkSelection": "一括操作では最大50件まで選択できます",
+        "deleteSelectedLabel": "選択した料金変更履歴を削除",
+        "currentMonthProtected": "当月の料金変更履歴は保護されているため削除できません。削除するには前月以前の履歴を選択してください。",
+        "deleteSuccessSingle": "料金変更履歴を削除しました",
+        "deleteSuccessCount_one": "料金変更履歴を{{count}}件削除しました",
+        "deleteSuccessCount_other": "料金変更履歴を{{count}}件削除しました",
+        "deleteFailed": "料金変更履歴を削除できませんでした",
+        "selectedCount_one": "{{count}}件を選択中",
+        "selectedCount_other": "{{count}}件を選択中"
+      },
+      "list": {
+        "title": "広告管理",
+        "subtitle": "出品者の広告を確認し、広告料金を管理します",
+        "managePackages": "プランを管理",
+        "revenueAnalytics": "収益分析",
+        "pendingCount_one": "審査待ちの広告 {{count}}件",
+        "pendingCount_other": "審査待ちの広告 {{count}}件",
+        "approveSuccess": "広告を承認しました",
+        "approveFailed": "広告を承認できませんでした",
+        "rejectSuccess": "広告を却下しました",
+        "rejectFailed": "広告を却下できませんでした",
+        "bulkApproved": "広告を{{count}}件承認しました",
+        "bulkRejected": "広告を{{count}}件却下しました",
+        "bulkApproveFailed": "一括承認に失敗しました",
+        "bulkRejectFailed": "一括却下に失敗しました",
+        "empty": "広告が見つかりません。",
+        "noSubmissions": "広告の申請がありません。",
+        "approve": "承認",
+        "reject": "却下",
+        "selectAll": "審査待ちの広告をすべて選択",
+        "selectAdvertisement": "広告「{{title}}」を選択",
+        "reviewAdvertisement": "「{{title}}」を審査",
+        "viewAdvertisement": "「{{title}}」を表示",
+        "newBadge": "新着",
+        "filters": {
+          "searchShop": "店舗を検索...",
+          "searchShopLabel": "店舗名を検索",
+          "statusFilterLabel": "ステータスで絞り込む",
+          "allStatuses": "すべてのステータス",
+          "placementFilterLabel": "掲載枠で絞り込む",
+          "allPlacements": "すべての掲載枠",
+          "tierFilterLabel": "プランで絞り込む",
+          "allTiers": "すべてのプラン",
+          "reset": "すべてのフィルターをリセット"
+        },
+        "table": {
+          "shop": "店舗",
+          "title": "タイトル",
+          "placement": "掲載枠",
+          "tier": "プラン",
+          "status": "ステータス",
+          "approval": "審査状況",
+          "payment": "支払い",
+          "fee": "料金",
+          "submitted": "申請日",
+          "schedule": "掲載期間",
+          "actions": "操作"
+        }
+      },
+      "packages": {
+        "title": "広告プラン・料金管理",
+        "subtitle": "掲載枠とプランごとに広告料金を設定します",
+        "backToAds": "広告一覧に戻る",
+        "viewHistory": "変更履歴を表示",
+        "allCreatedTooltip": "12種類すべての掲載枠・プランを作成済みです",
+        "createFeeSetting": "料金設定を作成",
+        "createSuccess": "料金設定を作成しました",
+        "createFailed": "料金設定を作成できませんでした",
+        "updateSuccess": "料金設定を更新しました",
+        "updateFailed": "料金設定を更新できませんでした",
+        "deactivateSuccess": "料金設定を無効にしました",
+        "deactivateFailed": "料金設定を無効にできませんでした",
+        "reactivateSuccess": "料金設定を再有効化しました",
+        "reactivateFailed": "料金設定を再有効化できませんでした"
+      },
+      "fee": {
+        "adTable": {
+          "header": {
+            "placement": "掲載場所",
+            "tier": "プラン",
+            "dailyRate": "日額料金 (KS)",
+            "actions": "操作"
+          },
+          "empty": "料金設定がありません。",
+          "updateRate": "料金を更新"
+        },
+        "table": {
+          "header": {
+            "placement": "掲載枠",
+            "tier": "プラン",
+            "dailyRate": "日額料金",
+            "duration": "期間",
+            "totalFee": "合計料金",
+            "maxAds": "広告上限数",
+            "status": "ステータス",
+            "actions": "操作"
+          },
+          "empty": "料金設定が見つかりません。",
+          "durationDays_one": "{{count}}日",
+          "durationDays_other": "{{count}}日"
+        },
+        "create": {
+          "title": "料金設定を作成",
+          "description": "掲載枠とプランの組み合わせに新しい広告料金を設定します。",
+          "placementLabel": "掲載枠",
+          "placementPlaceholder": "掲載枠を選択",
+          "tierLabel": "プラン",
+          "tierPlaceholder": "プランを選択",
+          "creating": "作成中...",
+          "submit": "料金設定を作成",
+          "optionAlreadyExists": "この掲載枠とプランの料金設定はすでに存在します。"
+        },
+        "dailyRateLabel": "日額料金",
+        "durationLabel": "期間（日）",
+        "maxAdsLabel": "広告上限数",
+        "totalFeeLabel": "合計料金（日額料金 × 期間）",
+        "effectiveFromLabel": "適用開始日",
+        "changeReasonLabel": "変更理由",
+        "deactivate": {
+          "title": "料金設定を無効化",
+          "descriptionFallback": "料金設定を無効にします。",
+          "notice": "この変更は既存の広告に影響しません（料金固定ルール）。無効中はこの掲載枠とプランを新たに購入できません。",
+          "changeReasonPlaceholder": "料金設定を無効にする理由を入力してください",
+          "changeReasonRequired": "変更理由を入力してください。",
+          "deactivating": "無効化中...",
+          "confirm": "無効化を確定"
+        },
+        "deleteHistory": {
+          "title": "料金変更履歴を削除",
+          "descriptionOne": "この料金変更履歴を完全に削除します。",
+          "descriptionCount": "料金変更履歴{{count}}件を完全に削除します。",
+          "warning": "この操作は取り消せません。当月に作成された履歴は保護され、削除要求は常に拒否されます。",
+          "deleting": "削除中...",
+          "confirm": "削除を確定"
+        },
+        "edit": {
+          "title": "料金設定を編集",
+          "descriptionFallback": "料金設定の詳細を編集します。",
+          "changeReasonPlaceholder": "料金設定を変更する理由を入力してください",
+          "currentTotalFee": "現在の合計料金",
+          "saving": "保存中...",
+          "submit": "変更を保存"
+        },
+        "reactivate": {
+          "title": "料金設定を再有効化",
+          "descriptionFallback": "料金設定を再有効化します。",
+          "notice": "現在の料金と設定で、このプランを再び出品者が利用できるようにします。",
+          "optional": "（任意）",
+          "changeReasonPlaceholder": "料金設定を再有効化する理由を入力してください",
+          "reactivating": "再有効化中...",
+          "confirm": "再有効化を確定"
+        },
+        "validation": {
+          "placementRequired": "掲載枠を選択してください",
+          "tierRequired": "プランを選択してください",
+          "dailyRate": "日額料金は0より大きい値にしてください",
+          "duration": "期間は1日以上にしてください",
+          "maxAds": "広告上限数は1以上にしてください",
+          "effectiveFrom": "適用開始日を入力してください",
+          "changeReasonRequired": "変更理由を入力してください",
+          "changeReasonMax": "変更理由は1000文字以内で入力してください"
+        }
+      }
+    },
+    "content": {
+      "title": "商品コンテンツのモデレーション",
+      "subtitle": "商品コンテンツを確認・審査します",
+      "stats": { "total": "商品総数" },
+      "filters": { "searchPlaceholder": "商品名または店舗名で検索..." },
+      "status": { "active": "有効", "inactive": "無効" },
+      "sort": {
+        "newest": "新しい順",
+        "oldest": "古い順",
+        "priceHighLow": "価格の高い順",
+        "priceLowHigh": "価格の安い順",
+        "nameAsc": "名前（A～Z）",
+        "nameDesc": "名前（Z～A）"
+      },
+      "bulk": {
+        "deactivateAll": "すべて無効化",
+        "activateAll": "すべて有効化",
+        "deactivateTitle": "選択した商品を無効化",
+        "activateTitle": "選択した商品を有効化",
+        "deactivateDescription": "選択した商品を無効にしてストアに表示しないようにします。この操作は後から元に戻せます。",
+        "activateDescription": "選択した商品を有効にしてストアに表示します。"
+      },
+      "table": {
+        "product": "商品",
+        "shop": "店舗",
+        "price": "価格",
+        "status": "ステータス",
+        "created": "作成日",
+        "actions": "操作",
+        "empty": "商品が見つかりません。",
+        "selected": "{{count}}件を選択中"
+      },
+      "na": "該当なし",
+      "pagination": { "itemLabel": "件の商品" },
+      "detail": {
+        "title": "商品モデレーション",
+        "info": "商品情報",
+        "images": "商品画像"
+      },
+      "action": { "deactivate": "無効化", "reactivate": "再有効化" },
+      "dialog": {
+        "deactivateTitle": "商品を無効化",
+        "reactivateTitle": "商品を再有効化"
+      },
+      "reasonPlaceholder": "無効化の理由を入力してください（必須、最大500文字）...",
+      "queue": {
+        "title": "コンテンツ審査キュー",
+        "empty": "審査が必要な報告済み商品またはコンテンツはありません。",
+        "reason": "理由: {{reason}}",
+        "reported": "報告済み"
+      },
+      "license": {
+        "title": "事業ライセンスの審査: {{shopName}}",
+        "documentUrl": "書類URL:",
+        "rejectionReason": "却下理由:",
+        "rejectionPlaceholder": "却下理由を入力してください（例: 書類の有効期限切れ）...",
+        "confirmRejection": "却下を確定",
+        "reject": "却下",
+        "approve": "出品者を承認"
+      },
+      "toast": {
+        "deactivated": "商品を無効化しました",
+        "reactivated": "商品を再有効化しました",
+        "updateFailed": "商品を更新できませんでした",
+        "bulkFailed": "商品を更新できませんでした",
+        "bulkActivated": "商品を{{count}}件有効化しました",
+        "bulkDeactivated": "商品を{{count}}件無効化しました",
+        "bulkPartial": "{{successCount}}件を更新しました（{{failureCount}}件失敗）"
+      }
+    },
+    "users": {
+      "title": "ユーザー管理",
+      "subtitle": "ユーザーアカウントを管理し、有効化または無効化します",
+      "stats": { "total": "ユーザー総数" },
+      "filters": { "searchPlaceholder": "名前またはメールアドレスで検索..." },
+      "status": { "active": "有効", "inactive": "無効" },
+      "tooltip": {
+        "adminNoDeactivate": "管理者アカウントは無効化できません。",
+        "licenseStatus": "ライセンスのステータス: {{status}}。ライセンスが承認済みの出品者のみ無効化または再有効化できます。"
+      },
+      "sort": {
+        "newest": "新しい順",
+        "oldest": "古い順",
+        "nameAsc": "名前（A～Z）",
+        "nameDesc": "名前（Z～A）"
+      },
+      "toast": {
+        "deactivated": "ユーザーを無効化しました",
+        "deactivateFailed": "ユーザーを無効化できませんでした",
+        "reactivated": "ユーザーを再有効化しました",
+        "reactivateFailed": "ユーザーを再有効化できませんでした"
+      },
+      "table": {
+        "user": "ユーザー",
+        "actions": "操作",
+        "noUsers": "ユーザーが見つかりません。"
+      },
+      "field": {
+        "email": "メールアドレス",
+        "role": "ロール",
+        "status": "ステータス",
+        "joined": "登録日",
+        "name": "名前"
+      },
+      "na": "該当なし",
+      "pagination": { "itemLabel": "件のユーザー" },
+      "detail": {
+        "title": "ユーザー詳細",
+        "userInfo": "ユーザー情報",
+        "account": "アカウント",
+        "userId": "ユーザーID",
+        "profile": "プロフィール"
+      },
+      "deactivate": {
+        "button": "無効化",
+        "title": "ユーザーを無効化",
+        "confirm": "{{name}}を無効化しますか？このユーザーはログインできなくなります。",
+        "reasonPlaceholder": "無効化の理由を入力してください（必須）..."
+      },
+      "reactivate": {
+        "button": "再有効化",
+        "title": "ユーザーを再有効化",
+        "confirm": "{{name}}を再有効化しますか？このユーザーは再びログインできるようになります。"
+      },
+      "activate": { "button": "有効化" }
+    },
     "orders": {
       "title": "すべての注文",
       "subtitle": "すべての店舗・出品者のプラットフォーム注文を表示します。",

@@ -1,101 +1,74 @@
 # DD_SEARCH_02 — Frontend Page (Search & Filter)
 
-> **Doc ID:** SKM-DD-SEARCH-02 | **Version:** 1.1 | **Status:** Released  
-> **Last Updated:** 2026-08-25
+> **Doc ID:** SKM-DD-SEARCH-02 | **Version:** 1.2 | **Status:** Released  
+> **Last Updated:** 2026-10-15
+
+> **Codebase alignment:** Aligned with `frontend/src/pages/buyer/Products.tsx`,
+> `frontend/src/features/search/**` and `frontend/src/schemas/search.schema.ts` as of 2026-10-15.
 
 ---
 
 ## 1. Overview
 
-The Search & Filter page is the product discovery hub of the Cosmetics Finder platform. It consists of a page header, a sponsored ad slide-down panel (conditional), a search bar and filters panel in the same row, a results area with product grid/list, sort controls, view mode toggle, active filter chips, and pagination. All search state is managed via URL query parameters using `useSearchParams`, ensuring results are shareable and back-button friendly.
+The Search & Filter page is the product discovery hub of the Cosmetics Finder platform. It consists of a page header, a full-width search bar, a sponsored ad slide panel (conditional), a row of active filter chips, a filters panel (desktop sidebar / mobile drawer), and a results area with product grid/list, sort control, view mode toggle, and pagination. All search state is managed via URL query parameters (React Router `useSearchParams`), ensuring results are shareable and back-button friendly.
 
-**Page layout flow:** A → Advertisement → B+C → D — The page header ([A]) renders at the top, followed by the sponsored ad slide-down panel (between [A] and [B+C]), then the search bar ([B]) and filters panel ([C]) in the same row, with the results area ([D]) below.
+**Page layout flow:** A → B → Advertisement → C+D — The page header ([A]) renders at the top, followed by the full-width search bar ([B]), then the sponsored ad slide panel ([D0]), then the active filter chips, then the filters panel ([C]) and results area ([D]) in the same row (desktop) / stacked (mobile).
 
-- **File Path:** `frontend/src/pages/Products.tsx` (primary), `frontend/src/pages/Search.tsx` (alias)
-- **Route:** `/products`, `/search`
-- **Layout:** Full-width page with header → ad panel → search+filters row (side-by-side on desktop/tablet, trigger on mobile) → results area → footer
+- **File Path:** `frontend/src/pages/buyer/Products.tsx` (default export `Products`)
+- **Route:** `/products` (public, shareable), `/buyer/products` and `/buyer/search` (buyer area). Product detail: `/buyer/products/:slug`.
+- **Layout:** Page → search bar → ad panel → filter chips → (filters sidebar | results) → footer
 
 ---
 
 ## 2. Layout Structure
 
-The page follows the flow: **A → Advertisement → B+C → D**. The search bar and filters panel render in the same row/section, with the results area below.
+The page follows the flow: **A → B → Advertisement → C+D**. The search bar renders full width at the top; the ad panel renders below it; the filter chips render below the ad panel; then the filters panel and results area render side-by-side on desktop.
 
 ### 2.1 Desktop Layout (≥ 1024px)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ [A] PAGE HEADER — Logo + "Cosmetics Finder"                          │
-│     [A1] Page Title: "Search Products"                               │
 ├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│ ┌──────────────────────────────────────────────────────────────────┐ │
-│ │ [D0] SPONSORED AD SLIDE-DOWN PANEL (conditional)                 │ │
-│ │      Horizontally centered between [A] and [B+C]                │ │
-│ │      ┌─────────────┬──────────────────────────┐                 │ │
-│ │      │ [D0a] Image │ [D0b] Title              │                 │ │
-│ │      │ / Banner    │ [D0c] Description         │                 │ │
-│ │      │             │ [D0d] CTA Button           │                 │ │
-│ │      └─────────────┴──────────────────────────┘                 │ │
-│ │      (full container width, horizontal slide, 5s auto, max 5)   │ │
-│ └──────────────────────────────────────────────────────────────────┘ │
-│                                                                      │
-│ ┌──────────────────────────┐  ┌──────────────────────────────────┐  │
-│ │  [B] SEARCH BAR          │  │  [C] FILTERS PANEL               │  │
-│ │  [B1] Keyword Input      │  │  [C1] Categories                 │  │
-│ │  [B2] Search  [B3] Clear │  │  [C2] Skin Type  [C3] Ingredients│  │
-│ │                          │  │  [C4] Price Range  [C5] Rating    │  │
-│ │                          │  │  [C6] Apply Filters               │  │
-│ │                          │  │  [C7] Reset Filters               │  │
-│ └──────────────────────────┘  └──────────────────────────────────┘  │
-│                                                                      │
-│ ┌──────────────────────────────────────────────────────────────────┐ │
-│ │  [D] RESULTS AREA                                                 │ │
-│ │  [D1] Results Count  [D2] Sort Select  [D2a] View Toggle        │ │
-│ │  [D3] Active Filter Chips                                        │ │
-│ │  [D4] Product Grid (4 columns)                                   │ │
-│ │      or Product List (stacked rows)                              │ │
-│ │  (cond.) Loading Skeleton / Empty State / Error Banner            │ │
-│ │  [D5] Pagination + Page Size Select                              │ │
-│ └──────────────────────────────────────────────────────────────────┘ │
+│ [B] SEARCH BAR (full width)                                          │
+│     [B1] Keyword Input                            [B2] Search Button │
+├──────────────────────────────────────────────────────────────────────┤
+│ [D0] SPONSORED AD PANEL (conditional, full container width)          │
+│      image/banner · title · description · CTA badge                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ [D3] ACTIVE FILTER CHIPS (+ Clear All)                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────┐  ┌─────────────────────────────────────────┐  │
+│ │ [C] FILTERS PANEL  │  │ [D] RESULTS AREA                        │  │
+│ │ [C1] Categories    │  │ [D1] Sort Select   [D2] View Toggle     │  │
+│ │ [C2] Skin Type     │  │ [D3] Product Grid (3 cols) / List       │  │
+│ │ [C3] Price Range   │  │ (cond.) Spinner / Empty / Error         │  │
+│ │ [C4] Rating        │  │ [D4] Pagination                         │  │
+│ │ [C5] Clear All     │  │                                         │  │
+│ └────────────────────┘  └─────────────────────────────────────────┘  │
 │                                                                      │
 │ [E] FOOTER CONTROLS — [Language Toggle] [Theme Toggle]               │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Mobile Layout (< 768px)
+### 2.2 Mobile Layout (< 1024px)
 
 ```
 ┌───────────────────────────────────────────────────────┐
 │ [A] PAGE HEADER (Logo + System Name)                  │
-│     [A1] Page Title: "Search Products"                 │
-│                                                       │
-│ [D0] SPONSORED AD SLIDE-DOWN PANEL (conditional)      │
-│    ┌──────────────────────────────────────┐           │
-│    │ [D0a] Image/Banner (full-width)      │           │
-│    │ [D0b] Title                          │           │
-│    │ [D0c] Description (2-line clamp)     │           │
-│    │ [D0d] CTA Button (full-width)        │           │
-│    └──────────────────────────────────────┘           │
-│    (stacked, full container width, 5s auto, max 5)    │
-│                                                       │
-│ ┌──────────────────────────┐┌──────────────┐          │
-│ │ [B] SEARCH BAR           ││[C] FILTERS   │          │
-│ │ [B1] Input [B2] [B3]     ││  TRIGGER     │          │
-│ └──────────────────────────┘└──────────────┘          │
-│                                                       │
-│ [D1] Results Count  [D2] Sort Select                  │
-│ [D2a] View Toggle (Grid/List)                         │
-│ [D3] Active Filter Chips Row                          │
-│ [D4] PRODUCT GRID (1–2 cols) / LIST (stacked rows)    │
-│ [D5] Pagination   [D6] Page Size Select               │
-│                                                       │
+│ [B] SEARCH BAR (full width)                           │
+│ [D0] SPONSORED AD PANEL (conditional)                 │
+│ [D3] ACTIVE FILTER CHIPS (+ Clear All)                │
+│ [D1] Sort Select        [D2] View Toggle              │
+│ [Filters] button (outline, opens filter drawer)       │
+│ [D3] PRODUCT GRID (1–3 cols) / LIST (stacked rows)    │
+│ [D4] Pagination                                       │
 │ [E] FOOTER CONTROLS ([Language] [Theme])              │
 │                                                       │
-│ [C] FILTER DRAWER (bottom sheet / overlay, cond.)     │
-│    [C1] Categories  [C2] Skin Type  [C3] Ingredients  │
-│    [C4] Price Range  [C5] Rating                      │
-│    [C6] Apply Filters  [C7] Reset Filters             │
+│ [C] FILTER SHEET (right-side drawer, conditional)     │
+│    [C1] Categories  [C2] Skin Type  [C3] Price Range  │
+│    [C4] Rating                                        │
+│    [C5] Clear All   [Show N Products]                 │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -103,120 +76,124 @@ The page follows the flow: **A → Advertisement → B+C → D**. The search bar
 
 | Breakpoint | Min Width | Layout Behavior |
 |:-----------|:----------|:----------------|
-| Mobile (default) | 0px | Search bar ([B]) and filter trigger button ([C]) in the same row. Filters open as a bottom-sheet/overlay drawer. Grid view: 1–2 columns; List view: stacked rows. Grid/List view toggle in results toolbar (persists to localStorage). Sponsored ad slide-down panel between page header and search+filters row, stacked layout (full-width image, title, description, CTA). |
-| Tablet (`md:`) | 768px | Search bar ([B]) and filters panel ([C]) in the same row — search bar left, compact filters right. Results grid with 2–3 columns. Grid/List view toggle in results toolbar. Sponsored ad slide-down panel switches to horizontal layout (image left, text block right), full container width, horizontally centered between page header and search+filters row. |
-| Desktop (`lg:`) | 1024px | Search bar ([B]) and filters panel ([C]) side-by-side in the same row — search bar left, full filters sidebar right. Results area below with 4-column grid. Grid/List view toggle in results toolbar. Sponsored ad slide-down panel renders horizontal (image left, text block right), full container width, horizontally centered between page header and search+filters row. |
-| Wide (`xl:`) | 1280px | Same as `lg:` with enhanced spacing. Search bar + filters in the same row, results below with 4-column grid. Sponsored ad slide-down panel identical to `lg:` with enhanced spacing. |
+| Mobile (default) | 0px | Search bar full width. Filters opened via a "Filters" trigger button as a right-side sheet (drawer). Grid view renders 1 column; List view renders stacked rows. Sponsored ad panel below the search bar, full width. |
+| Tablet (`sm:`/`md:`) | 640px / 768px | Grid view renders 2–3 columns. Filters still in the mobile drawer until `lg:`. |
+| Desktop (`lg:`) | 1024px | Filters sidebar (`w-72`, sticky) shown on the left, results area on the right with a 3-column grid. "Filters" trigger hidden. |
 
 ---
 
-## 3. Form State & Validation (Zod searchParamsSchema + TanStack Query)
+## 3. Form State & Validation (Zod `searchParamsSchema` + TanStack Query)
 
 All search state is derived from URL query parameters, parsed and validated with Zod. TanStack Query manages the query lifecycle, caching, and deduplication.
 
 ### 3.1 Search Params Schema
 
 ```typescript
-// frontend/src/features/search/schemas/searchParams.schema.ts
-import { z } from 'zod';
+// frontend/src/schemas/search.schema.ts
+import { z } from 'zod'
+
+const skinTypeEnum = z.enum(['dry', 'oily', 'combination', 'sensitive', 'normal'])
+const sortFieldEnum = z.enum(['price', 'rating', 'createdAt'])
+const sortOrderEnum = z.enum(['asc', 'desc'])
 
 export const searchParamsSchema = z.object({
-  q: z.string().max(255, 'Keyword must be 255 characters or fewer').optional().default(''),
-  categoryId: z.string().uuid('Invalid category ID').optional().default(''),
+  q: z.string().max(255).optional().default(''),
+  categoryId: z.string().uuid().optional().default(''),
   skinTypes: z
-    .union([z.string(), z.array(z.string())])
-    .transform((v) => (Array.isArray(v) ? v : v ? v.split(',') : []))
+    .union([z.string(), z.array(skinTypeEnum)])
     .optional()
+    .transform((v) => {
+      if (Array.isArray(v)) return v
+      if (!v) return []
+      return v.split(',').filter(Boolean) as z.infer<typeof skinTypeEnum>[]
+    })
     .default([]),
   ingredients: z
     .union([z.string(), z.array(z.string())])
-    .transform((v) => (Array.isArray(v) ? v : v ? v.split(',') : []))
     .optional()
+    .transform((v) => (Array.isArray(v) ? v : v ? v.split(',').filter(Boolean) : []))
     .default([]),
-  minPrice: z.coerce.number().min(0, 'Minimum price must be 0 or more').optional().default(undefined),
-  maxPrice: z.coerce.number().min(0, 'Maximum price must be 0 or more').optional().default(undefined),
-  rating: z.coerce.number().min(1).max(5, 'Rating must be between 1 and 5').optional().default(undefined),
-  sort: z.enum(['price', 'rating', 'createdAt']).optional().default('createdAt'),
-  order: z.enum(['asc', 'desc']).optional().default('desc'),
-  page: z.coerce.number().min(1, 'Page must be at least 1').optional().default(1),
-  limit: z.coerce.number().min(1).max(100, 'Limit must be between 1 and 100').optional().default(20),
+  tags: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((v) => (Array.isArray(v) ? v : v ? v.split(',').filter(Boolean) : []))
+    .default([]),
+  minPrice: z.coerce.number().min(0).optional(),
+  maxPrice: z.coerce.number().min(0).optional(),
+  rating: z.coerce.number().min(1).max(5).optional(),
+  sort: sortFieldEnum.optional().default('createdAt'),
+  order: sortOrderEnum.optional().default('desc'),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(12),
 }).refine(
-  (data) => data.minPrice === undefined || data.maxPrice === undefined || data.minPrice <= data.maxPrice,
-  { message: 'Minimum price cannot exceed maximum price', path: ['minPrice'] }
-);
+  (data) =>
+    data.minPrice === undefined ||
+    data.maxPrice === undefined ||
+    data.minPrice <= data.maxPrice,
+  { message: 'Minimum price cannot exceed maximum price', path: ['minPrice'] },
+)
 
-export type SearchParams = z.infer<typeof searchParamsSchema>;
+export type SearchParams = z.infer<typeof searchParamsSchema>
+
+export const SORT_OPTIONS = [
+  { value: 'createdAt:desc', label: 'Newest' },
+  { value: 'price:asc', label: 'Price: Low to High' },
+  { value: 'price:desc', label: 'Price: High to Low' },
+  { value: 'rating:desc', label: 'Highest Rated' },
+] as const
+
+export const PAGE_SIZE_OPTIONS = [12, 24, 48] as const
 ```
+
+> **Default page limit is 12.** `PAGE_SIZE_OPTIONS` is `[12, 24, 48]`.
 
 ### 3.2 Product Search Query Hook
 
 ```typescript
 // frontend/src/features/search/hooks/useProductSearch.ts
-import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { searchParamsSchema, type SearchParams } from '../schemas/searchParams.schema';
-import { productService } from '../services/product.service';
-import { useMemo } from 'react';
-
-export function useProductSearch() {
-  const [searchParams, setSearchParams] = useSearchParams();
+export function useProductSearch(enabled = true) {
+  const [searchParams, setSearchParams] = useReactRouterSearchParams()
 
   const parsedParams = useMemo(() => {
-    const raw = Object.fromEntries(searchParams.entries());
-    return searchParamsSchema.parse(raw);
-  }, [searchParams]);
+    const raw = Object.fromEntries(searchParams.entries())
+    return searchParamsSchema.parse(raw)
+  }, [searchParams])
 
   const query = useQuery({
-    queryKey: ['products', parsedParams],
-    queryFn: () => productService.search(parsedParams),
-    placeholderData: (prev) => prev, // keepPreviousData
+    queryKey: ['products', parsedParams] as const,
+    queryFn: ({ signal }) => productService.search(parsedParams, signal),
+    placeholderData: (prev) => prev,          // keepPreviousData
     staleTime: 30_000,
-  });
+    enabled,
+  })
 
   const updateParams = (updates: Partial<SearchParams>) => {
-    const next = { ...parsedParams, ...updates, page: updates.page ?? 1 };
-    setSearchParams(serializeParams(next));
-  };
+    const next = { ...parsedParams, ...updates, page: updates.page ?? 1 }
+    setSearchParams(serializeParams(next))
+  }
 
-  return {
-    ...query,
-    params: parsedParams,
-    updateParams,
-  };
+  return { ...query, params: parsedParams, updateParams }
 }
 
-function serializeParams(params: SearchParams): Record<string, string> {
-  const entries: [string, string][] = [];
-  if (params.q) entries.push(['q', params.q]);
-  if (params.categoryId) entries.push(['categoryId', params.categoryId]);
-  if (params.skinTypes.length) entries.push(['skinTypes', params.skinTypes.join(',')]);
-  if (params.ingredients.length) entries.push(['ingredients', params.ingredients.join(',')]);
-  if (params.minPrice !== undefined) entries.push(['minPrice', String(params.minPrice)]);
-  if (params.maxPrice !== undefined) entries.push(['maxPrice', String(params.maxPrice)]);
-  if (params.rating !== undefined) entries.push(['rating', String(params.rating)]);
-  if (params.sort !== 'createdAt') entries.push(['sort', params.sort]);
-  if (params.order !== 'desc') entries.push(['order', params.order]);
-  if (params.page > 1) entries.push(['page', String(params.page)]);
-  if (params.limit !== 20) entries.push(['limit', String(params.limit)]);
-  return Object.fromEntries(entries);
-}
+// serializeParams omits default values (q/categoryId empty, arrays empty,
+// sort=createdAt, order=desc, page=1, limit=12) from the URL.
 ```
 
-### 3.3 Category Tree Hook
+### 3.3 Category Tree Query
 
 ```typescript
 // frontend/src/features/search/hooks/useCategoryTree.ts
-import { useQuery } from '@tanstack/react-query';
-import { categoryService } from '../services/category.service';
-
 export function useCategoryTree() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getTree,
     staleTime: 30 * 60 * 1000, // 30 min
-  });
+    throwOnError: false,
+  })
 }
 ```
+
+The page also issues the same `['categories']` query inline (via `categoryService.getTree`, `staleTime: 30 * 60 * 1000`) to resolve category names for chips.
 
 ---
 
@@ -225,89 +202,83 @@ export function useCategoryTree() {
 ### 4.1 SearchBar Component
 
 - **File Path:** `frontend/src/features/search/components/SearchBar.tsx`
-- Renders keyword input with 300ms debounce, Search button, and Clear Search button
-- Debounce: `IDLE` → `LOADING` fires after 300ms of typing idle (ST-DEB-001); Enter key bypasses debounce (ST-DEB-003)
-- Clear Search (B3) visible only when `q` is non-empty; clears `q` and refetches default catalog
-- AutoFocus on direct `/search` route
+- Renders a `<form role="search">` with the keyword input, a gradient Search icon button (`type="submit"`), and an inline Clear (×) button shown only when the input is non-empty
+- Debounce: `DEBOUNCE_MS = 300`; typing updates the draft and fires `onChange` after 300ms of idle
+- Enter key or the Search button calls `flush()`, which cancels the debounce and calls both `onChange` and `onSubmit` immediately (ST-DEB-003)
+- Clear (×) cancels the debounce and calls `onChange('')` + `onSubmit('')`
+- All labels/aria come from i18n (`buyer.search.placeholder`, `buyer.search.aria.*`)
 
 ### 4.2 FilterPanel Component
 
 - **File Path:** `frontend/src/features/search/components/FilterPanel.tsx`
-- Desktop/tablet: rendered side-by-side with SearchBar in the same row. Mobile: hidden drawer triggered by `btnMobileFilter` (EL-28)
-- Contains accordion groups: Categories (C1), Skin Type (C2), Ingredients (C3), Price Range (C4), Rating (C5)
-- Apply Filters (C6) and Reset Filters (C7) buttons at the bottom
-- Mobile drawer: bottom-sheet overlay with focus trap + `aria-modal`; Apply closes drawer, Close (X) dismisses without applying pending changes
+- Desktop/tablet (`variant="desktop"`): rendered in the left sidebar; mobile (`variant="mobile"`): rendered inside the filter drawer
+- Groups: Category (`CategorySelect`), Skin Type (checkboxes; pill buttons on mobile), Price Range (min/max number inputs), Rating (radio group)
+- Skin types: `dry`, `oily`, `combination`, `sensitive`, `normal` (multi-select)
+- Rating options: `4.5`, `4.0`, `3.5`, `3.0` (single-select radio)
+- **No "Apply" button** — filter changes propagate immediately via `onUpdate`. Price values commit on input blur (or Enter). A single **Clear All** button is shown when `hasActiveFilters` and `onReset` is provided
+- Price validation uses `validatePriceRange` (`frontend/src/lib/priceRangeValidation.ts`); on error it shows an inline `role="alert"` message and notifies the page via `onPriceErrorChange(true)`
+- Mobile drawer is a right-side `Sheet` containing the same groups plus a footer with **Clear All** and a **"Show N Products"** primary button that closes the drawer
 
-### 4.3 CategoryTree Component
+### 4.3 CategorySelect Component
 
-- **File Path:** `frontend/src/features/search/components/CategoryTree.tsx`
-- Renders nested category checkboxes from `useCategoryTree()` hook
-- Single-select: checking a category sets `categoryId`; unchecking clears it
+- **File Path:** `frontend/src/features/search/components/CategorySelect.tsx`
+- Flattens the nested category tree (`flattenCategories`) and injects an "All" item (`buyer.search.all`) at the top
+- Single-select: clicking a category calls `onSelect(id)`; clicking "All" clears `categoryId`
+- Collapses to `COLLAPSED_COUNT = 5` items with a **View More / View Less** toggle rendered only when `allItems.length > 5`
 - Backend includes all descendant categories in results (BR-SEARCH-010)
+- Variants: `default` (sidebar list, indented by depth), `pills` (mobile), `nav`
 
 ### 4.4 FilterChips Component
 
 - **File Path:** `frontend/src/features/search/components/FilterChips.tsx`
-- Displays active filter tags/chips from URL query params (BR-SEARCH-019)
-- Each chip exposes an individual remove action so users can remove that filter value without clearing the others
-- One chip per active filter value (e.g., "Skin Type: Dry", "$10–$50", "Rating: 4★+")
-- Close (×) icon on each chip removes that single filter value, resets `page` to 1 (BR-SEARCH-022)
-- "Clear all" button removes all filters at once, keeps keyword `q` (BR-SEARCH-023)
-- Placement: above results on desktop; above results inside drawer header on mobile (BR-SEARCH-024)
+- Renders one chip per active filter value from URL params (BR-SEARCH-019): keyword (`"q"`), category (resolved name), each skin type, each ingredient, each tag, min price (`Min: Ks …`), max price (`Max: Ks …`), and rating (`N+ Stars`)
+- Returns `null` when there are no chips
+- Each chip has a Close (×) button (`aria-label` "Remove {label}") that removes that single value and resets `page` to 1 (BR-SEARCH-022)
+- A **Clear All** button (i18n `buyer.search.clearAll`) is shown when `onClearAll` is provided; it removes all filters (BR-SEARCH-023)
+- Category chip label uses the resolved category name passed by the page
 
 ### 4.5 ViewToggle Component
 
 - **File Path:** `frontend/src/features/search/components/ViewToggle.tsx`
-- Segmented Grid/List toggle in the results toolbar next to `selSort`
-- Grid: responsive 1–4 column card layout (mobile 1–2 cols, desktop 4 cols)
-- List: stacked single-column rows (thumbnail left, title/description/price right); no horizontal scroll; long text truncated
-- Persists to `localStorage` key `search.viewMode`; defaults to Grid; never written to URL
+- `role="group"` with two `size="icon"` buttons (Grid / List) using `LayoutGrid` / `List` icons
+- Active segment uses the default button variant and `aria-pressed={true}`; inactive segment is `ghost`
+- Persists to `localStorage` key `search.viewMode` (managed by the page); defaults to Grid; never written to URL
 - Switching views re-renders already-fetched `data` — no API refetch triggered
-- `role="group"` with visible label; each segment is a focusable button with `aria-pressed`; keyboard operable (Tab, Enter, Space, arrow keys); touch targets ≥ 44px
 
 ### 4.6 SortSelect Component
 
 - **File Path:** `frontend/src/features/search/components/SortSelect.tsx`
-- Dropdown with options: Newest, Price: Low to High, Price: High to Low, Highest Rated
-- Maps option → `sort` + `order` params (`price/asc`, `price/desc`, `rating/desc`, `createdAt/desc`)
-- Change resets `page` to 1
+- shadcn `Select` driven by `SORT_OPTIONS` (`createdAt:desc`, `price:asc`, `price:desc`, `rating:desc`); value is `"{sort}:{order}"`
+- Labels come from i18n (`buyer.search.sortOptions.*`); trigger placeholder is `buyer.search.sortBy`
+- Change calls `onChange(sort, order)`; the page resets `page` to 1
 
-### 4.7 ProductGrid / ProductList Components
+### 4.7 ProductCard Component
 
-- **File Path:** `frontend/src/features/products/components/ProductCard.tsx`
-- Grid view: vertical card. List view: horizontal row layout (thumbnail left, details right)
-- Reused `ProductCard` component; click navigates to `/products/:slug`
-- Out-of-stock products flagged `isInStock: false` (BR-SEARCH-014)
-- Loading: `sklLoading` shimmer placeholders (lavender) matching current view mode
-- Empty: `pnlEmpty` state with "No products found" + Reset Filters button
+- **File Path:** `frontend/src/features/search/components/ProductCard.tsx`
+- `view="grid"`: vertical `Card` with image, SALE badge (when `compareAtPrice`), out-of-stock badge, wishlist heart (top-right), shop name, name, star rating, up to 3 skin-type badges, price (`Ks` formatted) and an add-to-cart button shown only when `isInStock`
+- `view="list"`: horizontal row — thumbnail left; title, description, rating, price/compare-at price, wishlist and add-to-cart controls on the right
+- Grid card is keyboard-activatable (`role="link"`, `tabIndex={0}`, Enter/Space); both views navigate via `productLink`
+- Prices formatted by `formatKs` as `{value.toLocaleString('en-US')} Ks`; missing images fall back to the i18n "No image" placeholder
+- Wishlist/cart actions stop propagation and show per-item loading spinners
 
-### 4.8 Pagination Component
+### 4.8 Pagination (inline in `Products.tsx`)
 
-- **File Path:** `frontend/src/components/ui/pagination.tsx`
-- Previous/next + page numbers; First/last page boundaries disable buttons (Sec 3.3)
-- Page size select: 10 / 20 / 50 (default 20)
-- Page beyond range clamped to last page or empty state
+- Rendered inside the results card only when `meta.totalPages > 1`
+- `getPageItems` produces page numbers with `'ellipsis'` placeholders (windowed for > 5 pages)
+- Prev/Next buttons (`aria-label` "Previous page" / "Next page") disable at the bounds; current page uses `aria-current="page"`
+- Clicking a page or Prev/Next updates the `page` param
 
 ### 4.9 SponsoredAdSlider Component
 
 - **File Path:** `frontend/src/features/search/components/SponsoredAdSlider.tsx`
-- Renders the sponsored advertisement slide-down panel between page header ([A]) and search bar + filters row ([B]+[C])
-- Fetches eligible ads via `GET /api/v1/ads?placement=search_top` — parallel to product results fetch, does not block product loading
-- Renders animated slide-down container (`slotAdTop`) spanning the full container width, horizontally centered between [A] and [B]+[C], with search bar + filters rendered immediately below
-- Per-ad slide cards (`cardAdSlide`) with: image/banner (`imgAdBanner`), title (`lblAdTitle`), description (`txtAdDescription`), CTA (`btnAdCta`), "Sponsored" badge (`badgeSponsored`)
-- Desktop/tablet (≥ 768px): horizontal slide — image 320×120 (`object-cover`) left, text block right, inline CTA
-- Mobile (< 768px): stacked slide — full-width 16:9 image, title, description, full-width CTA below
-- Auto-slides every 5 seconds with vertical slide-down transition (500ms); maximum 5 ads
-- Auto-advancement pauses while the slider or any slider content is hovered or keyboard-focused; resumes when both hover and focus have ended (WCAG 2.2.2)
-- `prefers-reduced-motion: reduce` disables all entrance and slide animations; auto-slide is disabled while the preference is enabled
-- Hidden on ad fetch error or no eligible ads — graceful degradation; ad failure never blocks product results
-- Sub-items: `trackAdSlides` (slider track), `cardAdSlide` (per-ad card), `imgAdBanner` (image), `lblAdTitle` (title), `txtAdDescription` (description), `btnAdCta` (CTA link), `badgeSponsored` (sponsor badge)
-
-## 4.10 Accessibility — SponsoredAdSlider
-
-- The slider is keyboard reachable, and focus entering the slider pauses auto-slide immediately.
-- Hovering over the slider pauses auto-slide immediately. Auto-slide resumes only after the pointer leaves and focus has left the slider, preventing either interaction from restarting the timer prematurely.
-- When `prefers-reduced-motion: reduce` matches, disable auto-slide and all slide-down/slide-transition animation; content remains available through static keyboard controls.
+- Renders the sponsored advertisement slide panel below the full-width search bar, above the filter chips and filters/results row
+- Fetches ads via `useSponsoredAds('search_page_banner')` → `GET /api/v1/search/ads?placement=search_page_banner`; parallel to product results, never blocking product loading
+- Filters the response client-side to `placement === 'search_page_banner'`, `approvalStatus === 'approved'`, and an active schedule window (`startsAt <= now <= expiresAt`)
+- When no eligible ads are returned and the request is not pending/errored, a built-in `FALLBACK_ADS` set (e.g. "Daily Moisture Cream") is shown
+- Slides through `activeAds` with `AUTO_SLIDE_MS = 5000`; pauses on hover, keyboard focus, or `prefers-reduced-motion: reduce`
+- Ad title/description can be hydrated from the linked product SKU via `useAdProducts`, which calls the buyer endpoint `GET /api/v1/products/:sku`
+- Click-through: `/buyer/products/{sku}` when a SKU exists, else `fallbackProductId`, else `ad.target_url`/`ad.linkUrl`, else `/buyer/products`; external `http(s)` URLs use `window.location.assign`
+- Hides (`return null`) when there are no ads; image failures fall back through product image → ad image → sample image → placeholder
 
 ---
 
@@ -315,89 +286,46 @@ export function useCategoryTree() {
 
 ### 5.1 Keyword Search (Debounced)
 
-- **Input:** `txtSearch` (B1) — 300ms debounce (ST-DEB-001)
-- **Action:**
-  1. After 300ms of typing idle, update `q` URL param via `setSearchParams`
-  2. TanStack Query refetches `GET /api/v1/products` with new key
-  3. `IDLE` → `LOADING` transition occurs at debounce fire time (ST-DEB-005)
-  4. Previous in-flight request cancelled/superseded (ST-DEB-004)
+- **Input:** keyword input (`SearchBar`) — 300ms debounce (ST-DEB-001)
+- **Action:** after 300ms of idle, `onChange` → `handleFilterUpdate({ q })` → `serializeToUrl` → URL update → TanStack Query refetches `['products', params]`
 
-### 5.2 Search Button (Immediate)
+### 5.2 Search Button / Enter (Immediate)
 
-- **Button:** `btnSearch` (B2) — submit/primary
-- **Action:**
-  1. Fires query immediately, bypassing debounce (ST-DEB-003)
-  2. Updates `q` param and refetches
+- Calls `flush()` on the form submit, bypassing debounce (ST-DEB-003) and updating `q` immediately
 
 ### 5.3 Clear Search
 
-- **Button:** `btnClearSearch` (B3) — ghost/icon; hidden when `q` is empty
-- **Action:**
-  1. Clears `q` param from URL
-  2. Resets `txtSearch` to empty
-  3. Refetches default catalog (sorted by `createdAt desc`)
+- Inline × in the input; cancels debounce and clears `q`
 
-### 5.4 Apply Filters
+### 5.4 Filter Change (immediate)
 
-- **Button:** `btnApplyFilters` (C6) — primary
-- **Action:**
-  1. Collect changed filters (skinTypes, ingredients, minPrice, maxPrice, rating, categoryId)
-  2. Validate numeric fields (min ≥ 0, max ≥ 0, min ≤ max)
-  3. Merge into current params with `page: 1` (BR-SEARCH-011)
-  4. `setSearchParams(toQueryString(...))`
-  5. TanStack Query refetches; grid shows skeleton during fetch
-  6. On mobile: close the filters drawer
+- `handleFilterUpdate(updates)` merges `{ ...params, ...updates, page: 1 }` and writes to the URL
+- Blocked entirely while `priceRangeErrorRef.current` is `true` (invalid price range)
 
-### 5.5 Reset Filters
+### 5.5 Price Range Commit
 
-- **Button:** `btnResetFilters` (C7) — outline
-- **Action:**
-  1. Removes all filter params (`categoryId`, `skinTypes`, `ingredients`, `minPrice`, `maxPrice`, `rating`)
-  2. Keeps keyword `q` intact
-  3. Resets `page` to 1 (BR-SEARCH-011)
-  4. Refetches default result set
+- On blur/Enter, `validatePriceRange(priceMin, priceMax)` runs; on error the inline alert shows and `onPriceErrorChange(true)` cancels the in-flight `['products']` query and disables further updates
 
-### 5.6 Sort Change
+### 5.6 Clear All
 
-- **Input:** `selSort` (D2) — select dropdown
-- **Action:**
-  1. Maps selected option → `sort` + `order` URL params
-  2. Resets `page` to 1
-  3. Refetches via TanStack Query; re-renders grid in new order
+- `handleClearAll` clears all filter params, resets price drafts/errors, keeps `sort`/`order`/`limit`, and sets `page: 1`
 
-### 5.7 View Mode Toggle
+### 5.7 Sort Change
 
-- **Input:** `tglViewMode` (D2a) — segmented Grid/List toggle
-- **Action:**
-  1. Sets `tglViewMode` to clicked value (`grid` or `list`)
-  2. Re-renders product grid/list using already-fetched `data` — no API refetch
-  3. Leaves all URL query params untouched
-  4. Persists selection to `localStorage` key `search.viewMode`
+- `onChange(sort, order)` → `handleFilterUpdate({ sort, order })`; resets `page` to 1
 
-### 5.8 Active Filter Chip Removal
+### 5.8 View Mode Toggle
 
-- **Input:** `chipFilter` × close icon
-- **Action:**
-  1. Removes that single filter value from URL params
-  2. Resets `page` to 1 (BR-SEARCH-022)
-  3. Refetches
+- `setView(next)` re-renders using already-fetched `data`; writes `localStorage['search.viewMode']`; URL untouched
 
-### 5.9 Clear All Filters
+### 5.9 Pagination
 
-- **Button:** `btnClearAllFilters` — ghost/link; visible only when ≥ 1 chip present
-- **Action:**
-  1. Removes all active filters at once (BR-SEARCH-023)
-  2. Keeps keyword `q` intact
-  3. Resets `page` to 1; refetches default result set
+- `handlePageUpdate({ page })` updates the `page` param (preserving other params); `keepPreviousData` keeps prior results visible during the fetch
 
 ### 5.10 Mobile Filter Drawer
 
-- **Button:** `btnMobileFilter` — icon, outline; hidden on desktop
-- **Action:**
-  1. Opens `pnlFilters` as bottom-sheet/overlay drawer
-  2. Focus trap + `aria-modal` applied
-  3. "Apply Filters" applies and closes drawer
-  4. Close (X) dismisses without applying pending changes
+- **Button:** "Filters" (outline, `lg:hidden`) → opens the right-side `Sheet`
+- Footer: **Clear All** (text button) and **Show N Products** (primary, closes the sheet; label from `buyer.search.showProducts` with the current total)
 
 ---
 
@@ -408,47 +336,71 @@ Filter options are sourced from the database and hardcoded enums:
 | Filter | Source | Values |
 |--------|--------|--------|
 | Skin Type | Hardcoded enum | `dry`, `oily`, `combination`, `sensitive`, `normal` |
-| Ingredients | `GET /api/v1/categories` + product data | Dynamic from product catalog |
-| Categories | `GET /api/v1/categories` (cached, TTL 30 min) | Nested tree from `categories` table |
-| Sort Options | Hardcoded | `newest` (`createdAt desc`), `price asc`, `price desc`, `rating` (`rating desc`) |
-| Page Size | Hardcoded | `10`, `20`, `50` |
-| View Mode | Hardcoded | `grid`, `list` (persisted to localStorage) |
+| Categories | `GET /api/v1/search/categories` (cached, TTL 30 min) | Nested tree, flattened with an "All" item |
+| Rating | Hardcoded | `4.5`, `4.0`, `3.5`, `3.0` |
+| Sort Options | `SORT_OPTIONS` | `newest` (`createdAt:desc`), `price:asc`, `price:desc`, `rating:desc` |
+| Page Size | `PAGE_SIZE_OPTIONS` | `12`, `24`, `48` (default `12`) |
+| View Mode | Hardcoded | `grid`, `list` (persisted to `localStorage`) |
 
 ---
 
-## 7. Error Handling
+## 7. Internationalization (i18n)
 
-### 7.1 Field-Level Errors
+- **Runtime locale files:** `frontend/public/locales/{en,ja,my}/translation.json`
+- **i18n config:** `frontend/src/i18n.ts` — `fallbackLng: 'en'`, `supportedLngs: ['en', 'my', 'ja']`, HTTP backend loading `/locales/{{lng}}/{{ns}}.json`, `defaultNS: 'translation'`
+- **Language switcher:** `SUPPORTED_LANGUAGES` in `frontend/src/lib/constants.ts` = `[{ en, 'English' }, { my, 'မြန်မာ' }, { ja, '日本語' }]`
+- **Screen keys:** all Search & Filter strings live under the `buyer.search.*` namespace, e.g.:
 
-- Red border on invalid filter input (e.g., `minPrice > maxPrice`)
-- Inline error message below the field
-- Real-time validation via Zod `searchParamsSchema`
+| Key | English | Japanese | Myanmar |
+|-----|---------|----------|---------|
+| `buyer.search.placeholder` | Search by product name, ingredient, or concern... | — | — |
+| `buyer.search.filters` | Filters | フィルター | စစ်ထုတ်ရန် |
+| `buyer.search.clearAll` | Clear All | すべてクリア | အားလုံးရှင်းလင်းရန် |
+| `buyer.search.noProducts` | No products found | 商品が見つかりません | ကုန်ပစ္စည်း မတွေ့ပါ |
+| `buyer.search.guestWishlist` | Please log in to use the wishlist | お気に入りを利用するにはログインしてください | ဆန္ဒစာရင်းအသုံးပြုရန် အကောင့်ဝင်ပါ |
+| `buyer.search.guestCart` | Please log in to add items to your cart | カートに商品を追加するにはログインしてください | စျေးခြင်းဘူးထဲ ထည့်ရန် အကောင့်ဝင်ပါ |
 
-### 7.2 Form-Level / API Errors
-
-| HTTP Status | Scenario | UI Behavior |
-|-------------|----------|-------------|
-| `400` | Validation failures (invalid params) | Inline validation hint + top alert banner |
-| `401` | Guest attempts shopping action without authentication | Alert modal (no auto-close) → redirect to `/login?redirect=<path>` |
-| `403` | Merchant/Admin attempts shopping action | Alert banner (destructive, no auto-close): "Shopping features are only available to buyers" |
-| `429` | Rate limit exceeded on public search | `alertError` banner: "Too many requests. Please wait {seconds} seconds" + retry countdown |
-| `500` | Server error | `alertError` banner: "Something went wrong" + retry button |
-| Network error | Offline / connection failure | `alertError` banner: "Network error. Please check your connection" + retry button |
-
-### 7.3 Loading States
-
-- Skeleton shimmer grid (`sklLoading`) during fetch; matches current view mode (grid blocks or list rows)
-- Spinner on Apply/Search buttons during API calls
-- `placeholderData: (prev) => prev` in TanStack Query preserves previous results during page changes (`keepPreviousData`)
-
-### 7.4 Empty Results
-
-- `EmptyState` component with message + illustration: "No products found" + "Try clearing filters or broadening your keyword"
-- Includes `btnResetFilters` action button
+> **Known localization gaps (hard-coded English):** price-range validation messages in
+> `frontend/src/lib/priceRangeValidation.ts` ("Price cannot be negative.",
+> "Minimum price cannot be greater than maximum price."), the pagination Prev/Next
+> `aria-label`s, and the ad slider Prev/Next `aria-label`s
+> ("Previous advertisement" / "Next advertisement").
 
 ---
 
-## 8. Cross-References
+## 8. Error Handling
+
+### 8.1 Field-Level Errors
+
+- Invalid price range (`min > max`) or negative price shows an inline `role="alert"` message below the price inputs
+- The page blocks URL/query updates and cancels the in-flight product query while the price error is present
+
+### 8.2 Product List / API Errors
+
+| Scenario | UI Behavior |
+|----------|-------------|
+| Product list request fails (`isError`) | Inline error state: icon + `buyer.search.errorTitle` ("Something went wrong") + `buyer.search.errorDescription` ("Failed to load products. Please try again."). No auto-retry button — recovery is via changing URL state. |
+| Guest attempts a shopping action | `Dialog` (no auto-close) with `buyer.search.loginRequired` title and a per-action message (`buyer.search.guestWishlist` / `buyer.search.guestCart`); buttons `common.cancel` and Login → `navigate('/login')` (no redirect param) |
+| Merchant/Admin attempts a shopping action | **Not enforced on the routed page.** `Products.tsx` guards only `!isAuthenticated` (guest). There is no merchant/admin shopping guard and no `SHOPPING_NOT_ALLOWED` error code in the codebase. The unrouted legacy `frontend/src/pages/buyer/SearchFilter.tsx` shows a plain `toast.error('Shopping features are only available to buyers.')`; PCL A-07 is therefore an unimplemented/known gap for this screen. |
+| Add-to-cart generic failure (non-409) | `toast.error` with `buyer.search.toastError` |
+| Add-to-cart 409 | Opens the "Already in Cart" dialog (`DuplicateCartAlertDialog`) |
+| Wishlist 409 | `toast.info` with `buyer.search.alreadyInWishlist` ("Already in your wishlist") |
+| Wishlist generic failure (non-409) | `toast.error` with `buyer.search.toastError` |
+
+### 8.3 Loading States
+
+- `isLoading`: a centered spinner (`Loader2`) in the results area
+- `placeholderData: (prev) => prev` preserves previous results during pagination/filter changes (`keepPreviousData`)
+- Per-item spinners on the wishlist heart and add-to-cart button via `isWishlistLoading` / `isCartLoading`
+
+### 8.4 Empty Results
+
+- Empty state: icon + `buyer.search.noProducts` ("No products found") + `buyer.search.noProductsHint` ("Try adjusting your search or filter criteria.")
+- **There is no reset button in the empty state** — users clear filters via the FilterChips / FilterPanel "Clear All" controls
+
+---
+
+## 9. Cross-References
 
 | Related Document | Purpose |
 |-----------------|---------|
@@ -456,5 +408,7 @@ Filter options are sourced from the database and hardcoded enums:
 | [DD_SEARCH_03](./DD_Search_And_Filter_03_API_ENDPOINTS.md) | Backend REST API contract |
 | [DD_SEARCH_04](./DD_Search_And_Filter_04_DTOS_AND_TYPES.md) | DTO and type definitions |
 | [DD_SEARCH_05](./DD_Search_And_Filter_05_BUSINESS_LOGIC.md) | Backend business rules and caching |
+| [DD_SEARCH_06](./DD_Search_And_Filter_06_TEST_SPEC.md) | Test specification (synced to PCL scenario IDs) |
+| [SearchAndFilter_PCL](../SearchAndFilter_PCL.md) | Program checklist (scenario IDs N / A / B / I) |
 | [機能設計書_Search_And_Filter](../機能設計書%20_Search_And_Filter.md) | Full functional specification (v2.3) |
 | [画面項目設計書_Search_And_Filter](../画面項目設計書_Search_And_Filter.md) | Screen items specification (v2.6) |

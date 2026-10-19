@@ -1,0 +1,22 @@
+{
+  "capturedAt": "2026-10-16T07:10:51.786Z",
+  "description": "DB users + merchants after merchant registration with license",
+  "results": [
+    {
+      "label": "users + merchants by email",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "b70d67aa-1548-466c-a74c-a148140acdac",
+          "email": "marcus.alonso.mvamp3v15@gmail.com",
+          "name": "Marcus Alonso",
+          "role_code": "merchant",
+          "shop_name": "Marcus Alonso",
+          "business_license_url": "/uploads/licenses/license_marcus_alonso_mvamp3v15_gmail_com_1792134650631.pdf",
+          "license_status": "pending",
+          "merchant_created_at": "2026-10-16T00:40:50.637Z"
+        }
+      ]
+    }
+  ]
+}

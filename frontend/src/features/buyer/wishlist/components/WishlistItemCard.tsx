@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ShoppingCart, Trash2, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ export function WishlistItemCard({
   isMoving,
   isRemoving,
 }: WishlistItemCardProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [imgError, setImgError] = useState(false);
   const imageUrl = getImageUrl(item.productImage);
@@ -66,7 +68,7 @@ export function WishlistItemCard({
             e.stopPropagation();
             onRemove(item.productId);
           }}
-          aria-label={`Remove ${item.productName} from wishlist`}
+          aria-label={t('wishlist.removeProduct', { product: item.productName })}
         >
           {isRemoving ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -79,7 +81,7 @@ export function WishlistItemCard({
       <CardContent className="p-2.5 sm:p-4 space-y-2 sm:space-y-3">
         <div>
           <span className="text-[10px] sm:text-[11px] font-bold text-purple-600 uppercase tracking-wider block truncate">
-            {item.category || 'Uncategorized'}
+            {item.category || t('wishlist.uncategorized')}
           </span>
           <Link
             to={productLink}
@@ -112,7 +114,7 @@ export function WishlistItemCard({
             ) : (
               <ShoppingCart className="h-3.5 w-3.5" />
             )}{' '}
-            Add
+            {t('wishlist.moveToCart')}
           </Button>
         </div>
       </CardContent>

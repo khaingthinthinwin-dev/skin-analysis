@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-10-16T07:13:00.832Z",
+  "description": "DB users row — 128-char password accepted",
+  "results": [
+    {
+      "label": "users by email",
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "17964961-aafd-4ace-b387-4d195e5c510c",
+          "email": "leo.harding.mvamrx1s28@gmail.com",
+          "name": "Leo Harding",
+          "role_code": "buyer",
+          "is_active": true,
+          "email_verified": false,
+          "created_at": "2026-10-16T00:43:00.488Z"
+        }
+      ]
+    }
+  ]
+}

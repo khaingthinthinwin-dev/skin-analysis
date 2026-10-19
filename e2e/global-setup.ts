@@ -3,11 +3,20 @@ import * as path from 'path';
 import { SCREEN_FOLDERS, getScreenFromFilePath } from './utils/screenshot';
 
 const TEST_RESULTS_DIR = path.resolve(__dirname, 'test-results');
+const TEST_DIR = path.resolve(__dirname, 'tests');
 
 function removeDir(dirPath: string) {
   if (fs.existsSync(dirPath)) {
     fs.rmSync(dirPath, { recursive: true, force: true });
   }
+}
+
+function resolveTestPath(arg: string): string {
+  const normalized = arg.replace(/\\/g, '/');
+  if (path.isAbsolute(normalized)) return normalized;
+  const candidate = path.join(TEST_DIR, normalized);
+  if (fs.existsSync(candidate)) return candidate;
+  return normalized;
 }
 
 function modulesFromArgs(): Set<string> {
@@ -16,7 +25,9 @@ function modulesFromArgs(): Set<string> {
 
   for (const arg of args) {
     if (arg.startsWith('-')) continue;
-    const normalized = arg.replace(/\\/g, '/');
+    const resolvedPath = resolveTestPath(arg);
+    const normalized = resolvedPath.replace(/\\/g, '/');
+
     for (const screen of SCREEN_FOLDERS) {
       if (normalized.includes(screen)) {
         modules.add(screen);

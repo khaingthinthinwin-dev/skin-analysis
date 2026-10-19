@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -21,9 +22,9 @@ interface EditTargetDialogProps {
   saving?: boolean;
 }
 
-const PERIOD_LABELS: { value: TargetPeriod; label: string }[] = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
+const PERIOD_LABELS: { value: TargetPeriod; key: string; fallback: string }[] = [
+  { value: 'monthly', key: 'admin.commission.period.monthly', fallback: 'Monthly' },
+  { value: 'quarterly', key: 'admin.commission.period.quarterly', fallback: 'Quarterly' },
 ];
 
 // [R] Edit Target Dialog (DD_02). Validates a decimal-string amount with up to
@@ -37,6 +38,7 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
   onSave,
   saving,
 }) => {
+  const { t } = useTranslation();
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
   const [prevTarget, setPrevTarget] = useState(target);
@@ -55,7 +57,7 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
 
   const validate = (): boolean => {
     if (!/^\d+(\.\d{1,2})?$/.test(amount) || parseFloat(amount) <= 0) {
-      setError('Target amount must be a positive number with up to 2 decimal places.');
+      setError(t('admin.commission.target.validation', 'Target amount must be a positive number with up to 2 decimal places.'));
       return false;
     }
     setError('');
@@ -72,21 +74,23 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {target ? 'Edit Revenue Target' : 'Set Revenue Target'}
+            {target ? t('admin.commission.target.editTitle', 'Edit Revenue Target') : t('admin.commission.target.setTitle', 'Set Revenue Target')}
           </DialogTitle>
           <DialogDescription>
-            Define the revenue target for the {period} period. Changes apply to the selected period only.
+            {t('admin.commission.target.dialogDescription', 'Define the revenue target for the {{period}} period. Changes apply to the selected period only.', {
+              period: t(`admin.commission.period.${period}`, period),
+            })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <span className="text-xs text-muted-foreground">Target Amount</span>
+            <span className="text-xs text-muted-foreground">{t('admin.commission.target.amount', 'Target Amount')}</span>
             <Input
               id="target-amount"
               type="number"
               min={0}
               step={0.01}
-              placeholder="0.00"
+              placeholder={t('admin.commission.target.amountPlaceholder', '0.00')}
               value={amount}
               onChange={(e) => {
                 setAmount(e.target.value);
@@ -96,7 +100,7 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
           <div className="space-y-1.5">
-            <span className="text-xs text-muted-foreground">Period</span>
+            <span className="text-xs text-muted-foreground">{t('admin.commission.target.period', 'Period')}</span>
             <div className="flex gap-2">
               {PERIOD_LABELS.map((p) => (
                 <Button
@@ -110,7 +114,7 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
                     onPeriodChange(p.value);
                   }}
                 >
-                  {p.label}
+                  {t(p.key, p.fallback)}
                 </Button>
               ))}
             </div>
@@ -118,10 +122,10 @@ export const EditTargetDialog: React.FC<EditTargetDialogProps> = ({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Target'}
+            {saving ? t('admin.commission.target.saving', 'Saving...') : t('admin.commission.target.save', 'Save Target')}
           </Button>
         </DialogFooter>
       </DialogContent>

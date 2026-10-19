@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { RefreshCw, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +24,8 @@ interface FilterBarProps {
   shopPlaceholder?: string
 }
 
-export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...' }: FilterBarProps) {
+export function FilterBar({ filters, onChange, shopPlaceholder }: FilterBarProps) {
+  const { t } = useTranslation()
   const [shopInput, setShopInput] = useState(filters.shop ?? '')
 
   useEffect(() => {
@@ -53,9 +55,9 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
         <Input
           value={shopInput}
           onChange={(e) => setShopInput(e.target.value)}
-          placeholder={shopPlaceholder}
+          placeholder={shopPlaceholder ?? t('admin.ads.list.filters.searchShop', 'Search shop...')}
           className="h-9 w-full pl-8 sm:w-40"
-          aria-label="Search shop name"
+          aria-label={t('admin.ads.list.filters.searchShopLabel', 'Search shop name')}
         />
       </div>
 
@@ -64,14 +66,14 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
           value={filters.status ?? 'all'}
           onValueChange={(value) => onChange({ status: value === 'all' ? undefined : (value as ApprovalStatus) })}
         >
-          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Status filter">
+          <SelectTrigger className="h-9 w-full sm:w-32" aria-label={t('admin.ads.list.filters.statusFilterLabel', 'Status filter')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="all">{t('admin.ads.list.filters.allStatuses', 'All Status')}</SelectItem>
             {ADMIN_AD_STATUSES.map((status) => (
               <SelectItem key={status} value={status}>
-                {status}
+                {t(`admin.ads.status.${status}`, status)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -83,14 +85,14 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
           value={filters.placement ?? 'all'}
           onValueChange={(value) => onChange({ placement: value === 'all' ? undefined : (value as Placement) })}
         >
-          <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Placement filter">
+          <SelectTrigger className="h-9 w-full sm:w-40" aria-label={t('admin.ads.list.filters.placementFilterLabel', 'Placement filter')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Placements</SelectItem>
+            <SelectItem value="all">{t('admin.ads.list.filters.allPlacements', 'All Placements')}</SelectItem>
             {ADMIN_AD_PLACEMENTS.map((placement) => (
               <SelectItem key={placement} value={placement}>
-                {PLACEMENT_LABELS[placement]}
+                {t(`admin.ads.placement.${placement}`, PLACEMENT_LABELS[placement])}
               </SelectItem>
             ))}
           </SelectContent>
@@ -102,14 +104,14 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
           value={filters.tier ?? 'all'}
           onValueChange={(value) => onChange({ tier: value === 'all' ? undefined : (value as Tier) })}
         >
-          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Tier filter">
+          <SelectTrigger className="h-9 w-full sm:w-32" aria-label={t('admin.ads.list.filters.tierFilterLabel', 'Tier filter')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Tiers</SelectItem>
+            <SelectItem value="all">{t('admin.ads.list.filters.allTiers', 'All Tiers')}</SelectItem>
             {ADMIN_AD_TIERS.map((tier) => (
               <SelectItem key={tier} value={tier}>
-                {TIER_LABELS[tier]}
+                {t(`admin.ads.tier.${tier}`, TIER_LABELS[tier])}
               </SelectItem>
             ))}
           </SelectContent>
@@ -131,7 +133,7 @@ export function FilterBar({ filters, onChange, shopPlaceholder = 'Search shop...
         variant="outline"
         size="sm"
         onClick={handleRefresh}
-        aria-label="Reset all filters"
+        aria-label={t('admin.ads.list.filters.reset', 'Reset all filters')}
         className="ml-auto w-full shrink-0 sm:w-auto"
       >
         <RefreshCw className="h-4 w-4" />

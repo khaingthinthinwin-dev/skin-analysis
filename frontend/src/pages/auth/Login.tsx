@@ -55,7 +55,7 @@ export default function Login() {
       await login(data)
       toast.success(t('auth.login.success'))
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed'
+      const errorMessage = err instanceof Error ? err.message : t('auth.login.errorFallback', 'Login failed')
       setError(errorMessage)
     } finally {
       setIsLoading(false)

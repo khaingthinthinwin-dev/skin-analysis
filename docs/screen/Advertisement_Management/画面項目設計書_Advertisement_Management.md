@@ -4,9 +4,9 @@
 **Target Screen:** Advertisement Management (広告管理)
 **Subsystem:** Advertisement — Shop Advertisement Management
 **Function ID:** FN-AD-001
-**Version:** 1.1
+**Version:** 1.2
 **Created:** 2026-08-25
-**Last Updated:** 2026-08-25
+**Last Updated:** 2026-10-16
 **Author:** Senior System Engineer
 **Review Status:** Approved (承認済み)
 **Classification:** Internal — Engineering Division
@@ -21,6 +21,7 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-25 | Senior System Engineer | Initial release. Screen items specification for Merchant Advertisement Management (`/merchant/advertisements`) and Admin Advertisement Moderation (`/admin/ads`) screens, including package catalog, content upload dialog, payment dialog, edit dialog, and admin fee settings panel. |
 | 1.1 | 2026-08-25 | Senior System Engineer | Aligned with DATABASE_SPEC v2.5 and Functional Specification v2.6. Removed application-level states (`draft`, `content_uploaded`) from DB-layer references. Updated: approval status filter options (§4.6), badge colors (§4.7), button visibility conditions (§4.7), backend execution logic (§5.1–5.4), API response examples (§8.1–8.2), DB defaults (§7.2), and test checklist (§12.4–12.5). |
+| 1.2 | 2026-10-16 | Engineering | Updated to match current implementation: placements changed to 4 actual values (search_page_banner, recommendation_page_banner, checkout_page_banner, productDetail_page_banner); image selected from merchant's own product images (dropdown, no file upload); content max 100 chars; startsAt ≥ 3 days from today; linkUrl removed; admin routes reflect /admin/ads sub-routes and /admin/ad-fees with PUT; weekly limit note removed. |
 
 ### 1.2 Related Documents
 
@@ -493,7 +494,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 | 75 | `lblPendingSchedule` | Pending Schedule | Static Label (`<span>`) | String | Yes | Format: "Aug 24, 2026 → Aug 31, 2026" | — | `advertisements.starts_at` + `advertisements.expires_at` | i18n: `merchant.ads.schedule`. |
 | 76 | `lblPendingShop` | Pending Shop Name | Static Label (`<span>`) | String | Yes | Merchant's shop name | — | `shops.name` | i18n: `admin.ads.shopName`. |
 | 77 | `lblPendingFee` | Pending Fee Info | Static Label (`<span>`) | String | Yes | Format: "Fee: $35.00 · Paid" | — | `advertisements.payment_amount` | i18n: `admin.ads.feeInfo`. |
-| 78 | `btnApproveAd` | Approve Button | Button (`success`) | — | Yes | Text: "Approve" | — | — | Calls `PATCH /admin/ads/:id/approve`. Validates weekly limit (max 5). Loading: Spinner + "Approving...". i18n: `admin.ads.approve`. Tailwind: `bg-green-600 hover:bg-green-700`. |
+| 78 | `btnApproveAd` | Approve Button | Button (`success`) | — | Yes | Text: "Approve" | — | — | Calls `POST /admin/ads/:id/approve`. Loading: Spinner + "Approving...". i18n: `admin.ads.approve`. Tailwind: `bg-green-600 hover:bg-green-700`. |
 | 79 | `btnRejectAd` | Reject Button | Button (`destructive`) | — | Yes | Text: "Reject" | — | — | Shows `txtRejectReason` textarea. Calls `PATCH /admin/ads/:id/reject` with reason. Auto-refund on rejection. Loading: Spinner + "Rejecting...". i18n: `admin.ads.reject`. Tailwind: `bg-destructive`. |
 | 80 | `txtRejectReason` | Rejection Reason Input | Textarea | String(2000) | Conditional | Shown when Reject button clicked. Empty. Placeholder: "Enter rejection reason" | MaxLength: 2000. Required when rejecting. | — | i18n: `admin.ads.rejectReason`. Tailwind: `border-destructive/50`. |
 
@@ -599,7 +600,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 - **Trigger:** Admin clicks "Approve" on a pending ad.
 - **Processing Logic:**
   1. **Backend Dispatch:** `PATCH /api/v1/admin/ads/:id/approve`.
-  2. **Backend Execution:** Validate weekly limit (max 5 approved active ads for current week); set `approval_status = approved`, `approved_by`, `approved_at`.
+  2. **Backend Execution:** Set `approval_status = approved`, `approved_by`, `approved_at`. Invalidate cache and notify merchant.
   3. **Post-Execution UI:** Ad removed from pending queue. Show success toast. Refresh pending queue. Update weekly limit indicator.
 - **Exception Handling:**
   - `409 WEEKLY_LIMIT_REACHED`: Display "Weekly advertisement limit reached (max 5)" in alert banner.
@@ -1342,7 +1343,7 @@ The Advertisement Management screens enable merchants to browse Admin-created ad
 - [ ] Pending cards display full ad preview
 - [ ] Weekly limit indicator shows correct count
 - [ ] Approve button processes approval (PATCH /admin/ads/:id/approve)
-- [ ] Approval validates weekly limit (max 5)
+- [ ] Approval processes without weekly limit enforcement
 - [ ] Weekly limit exceeded shows error (WEEKLY_LIMIT_REACHED)
 - [ ] Reject button shows reason textarea
 - [ ] Reject without reason shows validation error (VAL-AD-030)

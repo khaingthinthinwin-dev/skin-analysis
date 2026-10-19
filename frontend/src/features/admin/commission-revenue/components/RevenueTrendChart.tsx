@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardContent,
@@ -60,6 +61,7 @@ export const RevenueTrendChart: React.FC<RevenueTrendChartProps> = ({
   range,
   onRangeChange,
 }) => {
+  const { t } = useTranslation();
   const W = 600;
   const H = 300;
   const pad = { top: 14, right: 14, bottom: 52, left: 46 };
@@ -144,27 +146,28 @@ type TickLabel = { index: number; label: string };
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">Revenue Trend</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('admin.commission.trend.title', 'Revenue Trend')}</CardTitle>
           <RangeToggle value={range} onChange={onRangeChange} />
         </div>
         <CardDescription className="text-xs">
-          Revenue, Commission, and Ad Fee over the selected range.
-          {forecastPoints.length > 0 && ' The AI forecast is shown as a dotted line.'}
+          {forecastPoints.length > 0
+            ? t('admin.commission.trend.descriptionWithForecast', 'Revenue, Commission, and Ad Fee over the selected range. The AI forecast is shown as a dotted line.')
+            : t('admin.commission.trend.description', 'Revenue, Commission, and Ad Fee over the selected range.')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mb-2">
-                    <LegendItem series="Revenue" color={seriesColor.revenue} dot />
-          <LegendItem series="Commission" color={seriesColor.commission} dot />
-          <LegendItem series="Ad Fee" color={seriesColor.adFee} dot />
+                    <LegendItem series={t('admin.commission.trend.revenue', 'Revenue')} color={seriesColor.revenue} dot />
+          <LegendItem series={t('admin.commission.trend.commission', 'Commission')} color={seriesColor.commission} dot />
+          <LegendItem series={t('admin.commission.trend.adFee', 'Ad Fee')} color={seriesColor.adFee} dot />
           {forecastPoints.length > 0 && (
-            <LegendItem series="AI Forecast" color={seriesColor.forecast} dashed />
+            <LegendItem series={t('admin.commission.trend.aiForecast', 'AI Forecast')} color={seriesColor.forecast} dashed />
           )}
         </div>
 
         {isEmpty ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No trend data available.
+            {t('admin.commission.trend.empty', 'No trend data available.')}
           </p>
         ) : (
           <svg
@@ -173,9 +176,9 @@ type TickLabel = { index: number; label: string };
             viewBox={`0 0 ${W} ${H}`}
             className="w-full"
             role="img"
-            aria-label="Revenue trend chart"
+            aria-label={t('admin.commission.trend.chartLabel', 'Revenue trend chart')}
           >
-            <title>Revenue trend over time</title>
+            <title>{t('admin.commission.trend.chartTitle', 'Revenue trend over time')}</title>
             {Array.from({ length: gridCount + 1 }).map((_, i) => {
               const frac = i / gridCount;
               const vx = max * frac;

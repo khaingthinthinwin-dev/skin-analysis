@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -12,6 +13,7 @@ import type { ApprovalStatus, Placement, Tier } from '@/types/admin-ad-managemen
 type ExportBase = Omit<AdminExportInput, 'reportType'>
 
 export default function ExportReportsPage() {
+  const { t } = useTranslation()
   const [reportType, setReportType] = useState<ReportType>('ad_performance')
   const {
     exportAdPerformanceMutation,
@@ -25,7 +27,7 @@ export default function ExportReportsPage() {
     exportFeeHistoryMutation.isPending
 
   const handleGenerate = (base: ExportBase) => {
-    const onError = () => toast({ title: 'Failed to generate report', variant: 'destructive' })
+    const onError = () => toast({ title: t('admin.ads.export.generateFailed', 'Failed to generate report'), variant: 'destructive' })
     if (reportType === 'ad_performance') {
       exportAdPerformanceMutation.mutate(
         {
@@ -36,12 +38,12 @@ export default function ExportReportsPage() {
           tier: base.tier as Tier[] | undefined,
           status: base.status as ApprovalStatus[] | undefined,
         },
-        { onSuccess: () => toast({ title: 'Report generated and download started', variant: 'default' }), onError },
+        { onSuccess: () => toast({ title: t('admin.ads.export.generateSuccess', 'Report generated and download started'), variant: 'default' }), onError },
       )
     } else if (reportType === 'submission_history') {
       exportSubmissionHistoryMutation.mutate(
         { dateFrom: base.dateFrom, dateTo: base.dateTo, format: 'csv', shop: base.shop },
-        { onSuccess: () => toast({ title: 'Report generated and download started', variant: 'default' }), onError },
+        { onSuccess: () => toast({ title: t('admin.ads.export.generateSuccess', 'Report generated and download started'), variant: 'default' }), onError },
       )
     } else {
       exportFeeHistoryMutation.mutate(
@@ -52,7 +54,7 @@ export default function ExportReportsPage() {
           placement: base.placement as Placement[] | undefined,
           tier: base.tier as Tier[] | undefined,
         },
-        { onSuccess: () => toast({ title: 'Report generated and download started', variant: 'default' }), onError },
+        { onSuccess: () => toast({ title: t('admin.ads.export.generateSuccess', 'Report generated and download started'), variant: 'default' }), onError },
       )
     }
   }
@@ -61,13 +63,13 @@ export default function ExportReportsPage() {
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Export Reports</h1>
-          <p className="text-muted-foreground">Generate CSV reports for advertisements and fee history</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('admin.ads.export.title', 'Export Reports')}</h1>
+          <p className="text-muted-foreground">{t('admin.ads.export.subtitle', 'Generate CSV reports for advertisements and fee history')}</p>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link to="/admin/ads">
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to Ads
+            {t('admin.ads.export.backToAds', 'Back to Ads')}
           </Link>
         </Button>
       </div>

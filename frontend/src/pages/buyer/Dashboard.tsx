@@ -3,15 +3,17 @@ import { Sparkles, Wand2, Heart, ShoppingCart, Search, ArrowRight, UserCheck, Sh
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
 export default function BuyerDashboard() {
   const { user } = useAuth()
+  const { t } = useTranslation()
 
   const stats = [
-    { label: 'AI Skin Analysis', value: 'Analyzed', change: 'Combination Skin', icon: Sparkles, color: 'text-pink-500' },
-    { label: 'AI Matches', value: '12 Items', change: 'Personalized for you', icon: Wand2, color: 'text-purple-600' },
-    { label: 'Wishlist Items', value: '8 Saved', change: 'Saved products', icon: Heart, color: 'text-rose-500' },
-    { label: 'Shopping Cart', value: '3 Items', change: 'Ready for checkout', icon: ShoppingCart, color: 'text-amber-600' },
+    { label: t('buyer.dashboard.stats.skinAnalysis'), value: t('buyer.dashboard.stats.analyzed'), change: t('buyer.dashboard.stats.combinationSkin'), icon: Sparkles, color: 'text-pink-500' },
+    { label: t('buyer.dashboard.stats.aiMatches'), value: t('buyer.dashboard.stats.matchCount'), change: t('buyer.dashboard.stats.personalized'), icon: Wand2, color: 'text-purple-600' },
+    { label: t('buyer.dashboard.stats.wishlist'), value: t('buyer.dashboard.stats.savedCount'), change: t('buyer.dashboard.stats.savedProducts'), icon: Heart, color: 'text-rose-500' },
+    { label: t('buyer.dashboard.stats.cart'), value: t('buyer.dashboard.stats.cartCount'), change: t('buyer.dashboard.stats.readyForCheckout'), icon: ShoppingCart, color: 'text-amber-600' },
   ]
 
   return (
@@ -21,18 +23,18 @@ export default function BuyerDashboard() {
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-purple-200 text-xs font-bold uppercase tracking-wider">
             <Sparkles className="h-4 w-4 text-pink-300" />
-            <span>Buyer Beauty Hub</span>
+            <span>{t('buyer.dashboard.beautyHub')}</span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight">
-            Welcome back, {user?.name || 'Beauty Enthusiast'}!
+            {t('buyer.dashboard.welcome', { name: user?.name || t('buyer.dashboard.beautyEnthusiast') })}
           </h1>
           <p className="text-sm text-purple-100/80">
-            Check your AI skin profile results, matched recommendations, and saved skincare routines.
+            {t('buyer.dashboard.welcomeDescription')}
           </p>
         </div>
         <Button asChild size="lg" className="bg-pink-500 hover:bg-pink-600 text-white font-bold shrink-0 shadow-md">
           <Link to="/buyer/skin-analysis">
-            <Sparkles className="mr-2 h-4 w-4" /> Start AI Skin Scan
+            <Sparkles className="mr-2 h-4 w-4" /> {t('buyer.dashboard.startAiScan')}
           </Link>
         </Button>
       </div>
@@ -67,18 +69,18 @@ export default function BuyerDashboard() {
                 <Sparkles className="h-6 w-6" />
               </div>
               <div>
-                <CardTitle className="text-lg">AI Skin Scan</CardTitle>
-                <CardDescription>Instant facial skin diagnosis</CardDescription>
+                <CardTitle className="text-lg">{t('buyer.dashboard.skinScan.title')}</CardTitle>
+                <CardDescription>{t('buyer.dashboard.skinScan.subtitle')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-xs text-muted-foreground mb-4">
-              Upload or take a photo to analyze your skin type, hydration levels, and specific skincare concerns.
+              {t('buyer.dashboard.skinScan.description')}
             </p>
             <Button asChild className="w-full bg-primary justify-between">
               <Link to="/buyer/skin-analysis">
-                Perform Scan <ArrowRight className="h-4 w-4" />
+                {t('buyer.dashboard.skinScan.action')} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -91,18 +93,18 @@ export default function BuyerDashboard() {
                 <Wand2 className="h-6 w-6" />
               </div>
               <div>
-                <CardTitle className="text-lg">Product Recommendations</CardTitle>
-                <CardDescription>Personalized match scores</CardDescription>
+                <CardTitle className="text-lg">{t('buyer.dashboard.recommendations.title')}</CardTitle>
+                <CardDescription>{t('buyer.dashboard.recommendations.subtitle')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-xs text-muted-foreground mb-4">
-              View skincare products tailored specifically to your skin profile with high confidence match ratings.
+              {t('buyer.dashboard.recommendations.description')}
             </p>
             <Button asChild variant="outline" className="w-full justify-between">
               <Link to="/buyer/recommendations">
-                View Recommendations <ArrowRight className="h-4 w-4" />
+                {t('buyer.dashboard.recommendations.action')} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -115,18 +117,18 @@ export default function BuyerDashboard() {
                 <Search className="h-6 w-6" />
               </div>
               <div>
-                <CardTitle className="text-lg">Cosmetics Catalog</CardTitle>
-                <CardDescription>Search & filter products</CardDescription>
+                <CardTitle className="text-lg">{t('buyer.dashboard.catalog.title')}</CardTitle>
+                <CardDescription>{t('buyer.dashboard.catalog.subtitle')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-xs text-muted-foreground mb-4">
-              Search top brands, filter by skincare concerns, ingredient lists, price ranges, and verified reviews.
+              {t('buyer.dashboard.catalog.description')}
             </p>
             <Button asChild variant="outline" className="w-full justify-between">
               <Link to="/buyer/search">
-                Search Catalog <ArrowRight className="h-4 w-4" />
+                {t('buyer.dashboard.catalog.action')} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardContent>
@@ -139,14 +141,14 @@ export default function BuyerDashboard() {
           <ShieldCheck className="h-6 w-6" />
         </div>
         <div className="flex-1">
-          <h4 className="text-sm font-bold text-foreground">Dermatologist Approved AI Engine</h4>
+          <h4 className="text-sm font-bold text-foreground">{t('buyer.dashboard.trust.title')}</h4>
           <p className="text-xs text-muted-foreground">
-            All skin analysis algorithms and recommendations are modeled after clinical skincare guidelines.
+            {t('buyer.dashboard.trust.description')}
           </p>
         </div>
         <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
           <Link to="/shared/profile">
-            <UserCheck className="mr-1 h-4 w-4" /> Skin Profile Settings
+            <UserCheck className="mr-1 h-4 w-4" /> {t('buyer.dashboard.trust.action')}
           </Link>
         </Button>
       </div>

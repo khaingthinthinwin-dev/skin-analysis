@@ -117,9 +117,9 @@ export default function SkinAnalysisPage() {
           variant="outline"
           size="sm"
           onClick={handleViewHistory}
-          className="rounded-full border-border/80 text-xs font-semibold shadow-xs hover:bg-muted/50"
+          className="rounded-full border-border bg-background text-xs font-bold text-foreground shadow-sm hover:bg-muted hover:text-foreground"
         >
-          <History className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
+          <History className="mr-1.5 h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
           View History
         </Button>
 

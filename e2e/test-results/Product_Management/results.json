@@ -1,0 +1,23 @@
+{
+  "module": "Product_Management",
+  "timestamp": "2026-10-15T02:55:23.355Z",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 16295,
+  "tests": [
+    {
+      "title": "N-07: should update stock quantity inline",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 9090
+    },
+    {
+      "title": "B-06: should display empty state when merchant has no products",
+      "file": "D:\\SkinTest_Main\\skin-analysis\\e2e\\tests\\Product_Management\\Product_Management.spec.ts",
+      "status": "passed",
+      "duration": 7205
+    }
+  ]
+}

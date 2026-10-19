@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrendRange } from '../services/commission.service';
 
 interface RangeToggleProps {
@@ -15,6 +16,7 @@ const RANGES: { value: TrendRange; label: string }[] = [
 
 // [H6] 7d | 30d | 90d | 1y toggle group for the trend chart (DD_02).
 export const RangeToggle: React.FC<RangeToggleProps> = ({ value, onChange }) => {
+  const { t } = useTranslation();
   return (
     <div className="flex gap-0 border border-border rounded-lg overflow-hidden">
       {RANGES.map((r) => (
@@ -28,7 +30,7 @@ export const RangeToggle: React.FC<RangeToggleProps> = ({ value, onChange }) => 
               : 'bg-card text-muted-foreground'
           } ${r.value !== '1y' ? 'border-r border-r-border' : ''}`}
         >
-          {r.label}
+          {t(`admin.commission.range.${r.value}`, r.label)}
         </button>
       ))}
     </div>

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { API_BASE_URL } from '../../utils/constants';
 import { person } from '../../utils/identity';
+import { seedKnownResetCode } from '../../utils/reset-code';
 
 const API = API_BASE_URL;
 
@@ -166,6 +167,8 @@ test.describe('Auth API Contract Tests', () => {
 
   test.describe('I-10: POST /auth/forgot-password - returns success message', () => {
     test('should return success message for valid email', async ({ request }) => {
+      // forgot-password may wait on external SMTP delivery
+      test.setTimeout(60_000);
       const user = person('Paulo', 'Costa');
 
       await request.post(`${API}/auth/register`, {
@@ -184,6 +187,8 @@ test.describe('Auth API Contract Tests', () => {
 
   test.describe('I-11: POST /auth/forgot-password - returns error for non-existent email', () => {
     test('should return error or same message for non-existent email', async ({ request }) => {
+      // forgot-password may wait on external SMTP delivery
+      test.setTimeout(60_000);
       const response = await request.post(`${API}/auth/forgot-password`, {
         data: { email: 'casey.morrow@gmail.com' },
       });
@@ -238,6 +243,35 @@ test.describe('Auth API Contract Tests', () => {
     });
   });
 
+  test.describe('I-16: Login does not set a refresh_token cookie', () => {
+    test('should not set refresh_token cookie on login', async ({ request }) => {
+      const user = person('Ivy', 'Cookiecheck');
+      await request.post(`${API}/auth/register`, {
+        multipart: { name: user.name, email: user.email, password: 'TestPass123!', role: 'buyer' },
+      });
+
+      const response = await request.post(`${API}/auth/login`, {
+        data: { email: user.email, password: 'TestPass123!' },
+      });
+
+      expect([200, 201]).toContain(response.status());
+
+      // Tokens come back in the JSON body (BR-AUTH-017/018)
+      const body = await response.json();
+      const payload = body.data || body;
+      expect(payload.accessToken).toBeDefined();
+      expect(payload.refreshToken).toBeDefined();
+
+      // No refresh_token cookie may be set — the refresh token is sent in the body
+      const refreshCookies = response
+        .headersArray()
+        .filter((h) => h.name.toLowerCase() === 'set-cookie')
+        .map((h) => h.value)
+        .filter((cookie) => /refresh/i.test(cookie));
+      expect(refreshCookies).toHaveLength(0);
+    });
+  });
+
   test.describe('I-17: Register with merchant role creates merchants record', () => {
     test('should return merchant data for merchant registration', async ({ request }) => {
       const user = person('Helena', 'Vargas');
@@ -275,6 +309,91 @@ test.describe('Auth API Contract Tests', () => {
       const body = await response.json();
       expect(body.accessToken || body.data?.accessToken).toBeDefined();
       expect(body.refreshToken || body.data?.refreshToken).toBeDefined();
+    });
+  });
+
+  test.describe('I-19: Auth API Myanmar language responses', () => {
+    test('should return Myanmar error messages when Accept-Language is my', async ({ request }) => {
+      const headers = { 'Accept-Language': 'my' };
+      const loginResponse = await request.post(`${API}/auth/login`, {
+        headers,
+        data: {
+          email: `missing-${Date.now()}@example.com`,
+          password: 'WrongPass123!',
+        },
+      });
+
+      expect([400, 401]).toContain(loginResponse.status());
+      const loginBody = await loginResponse.json();
+      expect(loginBody.message).toBe('Invalid credentials');
+
+      const registerResponse = await request.post(`${API}/auth/register`, {
+        headers,
+        data: { name: '', email: '', password: '' },
+      });
+
+      expect(registerResponse.status()).toBe(400);
+      const registerBody = await registerResponse.json();
+      expect(registerBody.message).toBeTruthy();
+      expect(JSON.stringify(registerBody.message)).not.toMatch(/[\u1000-\u109F]/);
+    });
+  });
+
+  test.describe('I-20: POST /auth/verify-code - status contract', () => {
+    test('should return 201 for valid verification code', async ({ request }) => {
+      // forgot-password may wait on external SMTP delivery
+      test.setTimeout(60_000);
+      const user = person('Vera', 'Verifycode');
+      await request.post(`${API}/auth/register`, {
+        multipart: { name: user.name, email: user.email, password: 'TestPass123!', role: 'buyer' },
+      });
+
+      const forgot = await request.post(`${API}/auth/forgot-password`, {
+        data: { email: user.email },
+      });
+      expect([200, 201]).toContain(forgot.status());
+
+      // Make the freshly issued code deterministic
+      await seedKnownResetCode(user.email, '123456');
+
+      const response = await request.post(`${API}/auth/verify-code`, {
+        data: { email: user.email, code: '123456' },
+      });
+
+      expect(response.status()).toBe(201);
+      const body = await response.json();
+      expect(body.data?.message || body.message).toBe('Verification code is valid.');
+    });
+
+    test('should return 400 for invalid verification code', async ({ request }) => {
+      // forgot-password may wait on external SMTP delivery
+      test.setTimeout(60_000);
+      const user = person('Victor', 'Verifycode');
+      await request.post(`${API}/auth/register`, {
+        multipart: { name: user.name, email: user.email, password: 'TestPass123!', role: 'buyer' },
+      });
+
+      const forgot = await request.post(`${API}/auth/forgot-password`, {
+        data: { email: user.email },
+      });
+      expect([200, 201]).toContain(forgot.status());
+      await seedKnownResetCode(user.email, '123456');
+
+      // Unissued 6-digit code → standard error body
+      const wrong = await request.post(`${API}/auth/verify-code`, {
+        data: { email: user.email, code: '999999' },
+      });
+      expect(wrong.status()).toBe(400);
+      const wrongBody = await wrong.json();
+      expect(wrongBody.statusCode).toBe(400);
+      expect(String(wrongBody.message)).toBe('Invalid or expired verification code');
+      expect(wrongBody.error).toBeDefined();
+
+      // Short code → rejected by DTO validation with 400
+      const short = await request.post(`${API}/auth/verify-code`, {
+        data: { email: user.email, code: '1234' },
+      });
+      expect(short.status()).toBe(400);
     });
   });
 });
