@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import type { Profile } from '@/types/profile.types'
 import { LicenseResubmissionButton } from './LicenseResubmissionCard'
-import { Mail, Calendar, Shield, FileCheck, Circle } from 'lucide-react'
+import { Mail, Calendar, Shield, FileCheck, Circle, Phone, MapPin } from 'lucide-react'
 
 interface ProfileInfoCardProps {
   profile: Profile
@@ -112,6 +112,34 @@ export function ProfileInfoCard({
               <p className="text-sm text-muted-foreground">{profile.email}</p>
             </div>
           </div>
+
+          {userRole === 'merchant' && (
+            <>
+              <div className="flex items-center space-x-3">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">
+                    {t('profile.info.phone', 'Phone Number')}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {profile.phone || '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">
+                    {t('profile.info.address', 'Shop Address')}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {profile.address || '—'}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <Separator />

@@ -139,7 +139,12 @@ export default function VerifyCode() {
                       className="text-center text-2xl tracking-[0.5em]"
                     />
                   </FormControl>
-                  <FormMessage />
+                  {/* Reserve the validation-message slot: without it, blurring the
+                      auto-focused input inserts the error text mid-click and shifts
+                      the buttons/links below, swallowing the user's first click. */}
+                  <div className="min-h-[20px]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Check, ChevronRight, Ticket, Tag } from 'lucide-react';
+import { Check, ChevronRight, Ticket, Tag, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -21,9 +21,9 @@ interface VoucherSelectionModalProps {
   promotions: MerchantPromotion[];
   appliedCoupon: CouponValidation | null;
   appliedCode: string | null;
-  onSelectPromotion: (code: string) => void;
+  onSelectPromotion: (code: string) => Promise<void> | void;
   onRemovePromotion: () => void;
-  onEnterCode: (code: string) => void;
+  onEnterCode: (code: string) => Promise<void> | void;
   isLoading: boolean;
   subtotal: number;
 }
@@ -63,6 +63,21 @@ function getExpiryLabel(expiresAt: string, t: TFunction): string {
   });
 }
 
+/** Extract a human-readable message from an Axios-style error */
+function extractErrorMessage(err: unknown): string | null {
+  if (!err || typeof err !== 'object') return null;
+  const e = err as Record<string, unknown>;
+  // Axios error shape
+  const response = e['response'] as Record<string, unknown> | undefined;
+  if (response) {
+    const data = response['data'] as Record<string, unknown> | undefined;
+    if (data?.message && typeof data.message === 'string') return data.message;
+    if (data?.error && typeof data.error === 'string') return data.error;
+  }
+  if (typeof e['message'] === 'string') return e['message'];
+  return null;
+}
+
 export function VoucherSelectionModal({
   open,
   onOpenChange,
@@ -78,20 +93,32 @@ export function VoucherSelectionModal({
   const { t } = useTranslation();
   const [manualCode, setManualCode] = useState('');
   const [selectedCode, setSelectedCode] = useState<string | null>(appliedCode);
+  const [manualError, setManualError] = useState<string | null>(null);
 
-  const handleApplyManual = () => {
+  const handleApplyManual = async () => {
     const code = manualCode.trim();
-    if (code) {
+    if (!code) return;
+    setManualError(null);
+    try {
+      await onEnterCode(code);
       setSelectedCode(code);
-      onEnterCode(code);
       onOpenChange(false);
+    } catch (err) {
+      const msg =
+        extractErrorMessage(err) ??
+        t('buyer.checkout.vouchers.invalidCode', 'Invalid coupon code');
+      setManualError(msg);
     }
   };
 
-  const handleSelectPromo = (code: string) => {
-    setSelectedCode(code);
-    onSelectPromotion(code);
-    onOpenChange(false);
+  const handleSelectPromo = async (code: string) => {
+    try {
+      await onSelectPromotion(code);
+      setSelectedCode(code);
+      onOpenChange(false);
+    } catch {
+      // selection errors are handled by the parent (toast)
+    }
   };
 
   const handleRemove = () => {
@@ -155,6 +182,7 @@ export function VoucherSelectionModal({
               >
                 {promotions
                   .filter((promo) => {
+                    // Hide only globally exhausted promotions (no capacity left at all)
                     if (promo.maxUses != null && promo.usedCount != null && promo.usedCount >= promo.maxUses) {
                       return false;
                     }
@@ -166,32 +194,43 @@ export function VoucherSelectionModal({
                   .map((promo) => {
                     const isSelected = selectedCode === promo.code;
                     const meetsMin = !promo.minOrderAmount || subtotal >= Number.parseFloat(promo.minOrderAmount);
+                    const alreadyUsed = !!promo.userAlreadyUsed;
+                    const isDisabled = !meetsMin || alreadyUsed;
+
                     return (
                       <Label
                         key={promo.id}
                         htmlFor={`promo-${promo.id}`}
                         className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
-                          isSelected
-                            ? 'border-primary bg-primary/5'
-                            : meetsMin
-                              ? 'border-border hover:border-primary/50 cursor-pointer'
-                              : 'border-border opacity-50 cursor-not-allowed'
+                          alreadyUsed
+                            ? 'border-border bg-muted/40 opacity-60 cursor-not-allowed'
+                            : isSelected
+                              ? 'border-primary bg-primary/5'
+                              : meetsMin
+                                ? 'border-border hover:border-primary/50 cursor-pointer'
+                                : 'border-border opacity-50 cursor-not-allowed'
                         }`}
                       >
                         <RadioGroupItem
                           value={promo.code}
                           id={`promo-${promo.id}`}
-                          disabled={!meetsMin}
+                          disabled={isDisabled}
                           className="shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-primary">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-sm font-semibold ${alreadyUsed ? 'text-muted-foreground' : 'text-primary'}`}>
                               {formatDiscount(promo, t)}
                             </span>
                             <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono font-medium">
                               {promo.code}
                             </span>
+                            {alreadyUsed && (
+                              <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                                <AlertCircle className="h-3 w-3" />
+                                {t('buyer.checkout.vouchers.alreadyUsed', 'Already used')}
+                              </span>
+                            )}
                           </div>
                           {promo.description && (
                             <p className="mt-0.5 text-xs text-muted-foreground truncate">
@@ -233,24 +272,43 @@ export function VoucherSelectionModal({
               {t('buyer.checkout.vouchers.haveACode', 'Have a code?')}
             </p>
             <div className="flex gap-2">
-              <Input
-                value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
-                placeholder={t('buyer.checkout.vouchers.enterCouponCode', 'Enter coupon code')}
-                aria-label={t('buyer.checkout.vouchers.couponCodeAria', 'Coupon code')}
-                disabled={isLoading}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleApplyManual();
-                  }
-                }}
-              />
+              <div className="flex-1 space-y-1">
+                <Input
+                  value={manualCode}
+                  onChange={(e) => {
+                    setManualCode(e.target.value);
+                    if (manualError) setManualError(null);
+                  }}
+                  placeholder={t('buyer.checkout.vouchers.enterCouponCode', 'Enter coupon code')}
+                  aria-label={t('buyer.checkout.vouchers.couponCodeAria', 'Coupon code')}
+                  aria-describedby={manualError ? 'coupon-error' : undefined}
+                  aria-invalid={!!manualError}
+                  disabled={isLoading}
+                  className={manualError ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleApplyManual();
+                    }
+                  }}
+                />
+                {manualError && (
+                  <p
+                    id="coupon-error"
+                    role="alert"
+                    className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400"
+                  >
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    {manualError}
+                  </p>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleApplyManual}
                 disabled={!manualCode.trim() || isLoading}
+                className="self-start"
               >
                 {isLoading
                   ? t('buyer.checkout.vouchers.applying', 'Applying...')

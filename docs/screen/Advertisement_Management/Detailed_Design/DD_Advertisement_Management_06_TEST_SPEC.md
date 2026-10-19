@@ -1,552 +1,313 @@
 # DD_Advertisement_Management_06 — Test Specification
 
-> **Doc ID:** SKM-DD-AD-06 | **Version:** 1.0 | **Status:** Released
-> **Last Updated:** 2026-08-26
+> **Doc ID:** SKM-DD-AD-06 | **Version:** 2.0 | **Status:** Released
+> **Last Updated:** 2026-10-16
 > **Target Screen:** Advertisement Management (広告管理)
 > **Subsystem:** Advertisement — Shop Advertisement Management
 > **Function ID:** FN-AD-001
 
 ---
 
+## Revision History
+
+| Version | Date | Author | Summary |
+|---------|------|--------|---------|
+| 1.0 | 2026-08-26 | Software Architect | Initial test specification. |
+| 2.0 | 2026-10-16 | Engineering | Rewritten to match current implementation: product-image validation, 3-day lead time, content ≤100 chars, hard/soft delete, no weekly-limit enforcement, current-month fee history protection, refund semantics, export behavior, cache keys, existing spec files. |
+
+---
+
 ## 1. Overview
 
-This document defines the testing strategy for the Advertisement Management module, covering Backend Unit Tests, Frontend Component Tests, and End-to-End (E2E) Scenarios.
+This document specifies unit/integration test coverage for Advertisement Management. Tests focus on actual business rules as implemented.
+
+**Test Scope:**
+- Merchant: package selection, content upload (product-image validation), schedule (3-day lead), payment, my-ads listing, edit, delete (hard/soft), toggle, active ads.
+- Admin: ad review (approve/reject/bulk), fee settings CRUD/deactivate/reactivate, fee history (list/delete with month protection), revenue analytics (range, refunds), CSV exports, audit/logging.
+- Edge cases, cache invalidation, ownership/permissions.
+
+**Existing Spec Files (actual):**
+- `backend/src/modules/admin/advertisement-management/admin-ad-analytics.service.spec.ts`
+- `backend/src/modules/admin/advertisement-management/admin-ad-export.service.spec.ts`
+- `backend/src/modules/admin/advertisement-management/admin-ad-management.service.spec.ts`
+- `frontend/src/components/shared/AdBannerSlider.test.tsx`
+- Merchant has no spec files.
 
 ---
 
-## 2. Backend Unit Tests
+## 2. Test Strategy
 
-### 2.1 `advertisements.service.spec.ts` (Merchant)
-
-Mock dependencies: `PrismaService`, `RedisService`, `ConfigService`.
-
-| Test Suite | Scenario | Expected Outcome |
-|------------|----------|------------------|
-| **selectPackage** | Valid active package, approved shop | Creates ad record, returns DTO (201) |
-| **selectPackage** | Shop not approved (`license_status = 'pending'`) | Throws `ForbiddenException('SHOP_NOT_APPROVED')` |
-| **selectPackage** | Shop not found | Throws `NotFoundException` |
-| **selectPackage** | Inactive package (`is_active = false`) | Throws `NotFoundException('AD_PACKAGE_INVALID')` |
-| **selectPackage** | Non-existent `feeSettingId` | Throws `NotFoundException('AD_PACKAGE_INVALID')` |
-| **selectPackage** | Invalid UUID format | Throws `BadRequestException` |
-| **selectPackage** | Cache invalidation | Invalidates `cache:ads:packages` |
-| **selectPackage** | Audit log | Logs `AD_SELECTED` event with correct data |
-| **uploadContent** | Valid content fields, own ad in draft state | Updates ad, returns DTO |
-| **uploadContent** | Valid content, own ad in content_uploaded state (re-upload) | Updates ad, returns DTO |
-| **uploadContent** | Valid content, own ad in rejected state (resubmit) | Updates ad, returns DTO |
-| **uploadContent** | Not ad owner | Throws `ForbiddenException` |
-| **uploadContent** | Ad not found | Throws `NotFoundException` |
-| **uploadContent** | Ad already paid (`payment_status = 'completed'`) | Throws `BadRequestException` |
-| **uploadContent** | Ad already approved | Throws `BadRequestException` |
-| **uploadContent** | Title empty | Throws `BadRequestException` (validation) |
-| **uploadContent** | Title exceeds 200 chars | Throws `BadRequestException` (validation) |
-| **uploadContent** | Announcement message empty | Throws `BadRequestException` (validation) |
-| **uploadContent** | Announcement message exceeds 500 chars | Throws `BadRequestException` (validation) |
-| **uploadContent** | Content exceeds 5000 chars | Throws `BadRequestException` (validation) |
-| **uploadContent** | Link URL invalid format | Throws `BadRequestException` (validation) |
-| **uploadContent** | Link URL exceeds 2048 chars | Throws `BadRequestException` (validation) |
-| **uploadContent** | Image: valid JPG | Saves image, updates `image_url` |
-| **uploadContent** | Image: valid PNG | Saves image, updates `image_url` |
-| **uploadContent** | Image: valid WebP | Saves image, updates `image_url` |
-| **uploadContent** | Image: invalid MIME type | Throws `UnsupportedMediaTypeException` |
-| **uploadContent** | Image: file > 5MB | Throws `PayloadTooLargeException` |
-| **uploadContent** | No image provided | Ad updated without image change |
-| **uploadContent** | Start date in the past | Throws `BadRequestException` |
-| **uploadContent** | Start date = today | Succeeds |
-| **uploadContent** | Expires_at derived correctly (7-day package) | `expiresAt = startsAt + 7 days` |
-| **uploadContent** | Expires_at derived correctly (30-day package) | `expiresAt = startsAt + 30 days` |
-| **uploadContent** | Schedule invalid (`expiresAt <= startsAt`) | Throws `ConflictException` |
-| **uploadContent** | Audit log | Logs `AD_CONTENT_UPLOADED` event |
-| **payFee** | Valid ad with content, payment_status = pending | Processes payment, returns DTO |
-| **payFee** | Not ad owner | Throws `ForbiddenException` |
-| **payFee** | Ad not found | Throws `NotFoundException` |
-| **payFee** | Ad has no content (title only, no image) | Throws `BadRequestException` |
-| **payFee** | Ad already paid | Throws `BadRequestException` |
-| **payFee** | Ad already approved | Throws `BadRequestException` |
-| **payFee** | Payment recorded in `ad_payments` | Ledger entry created with amount, status |
-| **payFee** | `payment_amount` snapshot stored | `payment_amount = dailyRate * durationDays` |
-| **payFee** | `week_number` derived from `starts_at` | Correct ISO week number stored |
-| **payFee** | `payment_status` set to `completed` | Ad moves to PENDING_APPROVAL |
-| **payFee** | `approval_status` remains `pending` | Unchanged after payment |
-| **payFee** | Cache invalidation | Invalidates `cache:ads:active` |
-| **payFee** | Audit log | Logs `AD_PAID` event |
-| **listOwnAds** | No filters | Returns own ads with pagination |
-| **listOwnAds** | Filter: status = active | Returns only active ads |
-| **listOwnAds** | Filter: status = expired | Returns only expired ads |
-| **listOwnAds** | Filter: status = inactive | Returns only inactive ads |
-| **listOwnAds** | Filter: approvalStatus = pending | Returns only pending approval ads |
-| **listOwnAds** | Filter: approvalStatus = approved | Returns only approved ads |
-| **listOwnAds** | Filter: approvalStatus = rejected | Returns only rejected ads |
-| **listOwnAds** | Search by title | Filters by title ILIKE |
-| **listOwnAds** | Pagination page 1 | Returns correct page |
-| **listOwnAds** | Pagination page 2 | Returns second page |
-| **listOwnAds** | Empty result | Returns empty data with correct meta |
-| **listOwnAds** | Sorted by createdAt DESC | Correct sort order |
-| **updateContent** | Valid update, own ad in draft state | Updates content, returns DTO |
-| **updateContent** | Valid update, own ad in rejected state | Updates content, returns DTO |
-| **updateContent** | Not ad owner | Throws `ForbiddenException` |
-| **updateContent** | Ad not found | Throws `NotFoundException` |
-| **updateContent** | Ad already paid (cannot edit) | Throws `BadRequestException` |
-| **updateContent** | Ad already approved (cannot edit) | Throws `BadRequestException` |
-| **updateContent** | Audit log | Logs `AD_UPDATED` event |
-| **deleteAd** | Own ad in draft state | Soft-deletes, returns 200 |
-| **deleteAd** | Own ad in content_uploaded state | Soft-deletes, returns 200 |
-| **deleteAd** | Own inactive ad | Soft-deletes, returns 200 |
-| **deleteAd** | Not ad owner | Throws `ForbiddenException` |
-| **deleteAd** | Ad not found | Throws `NotFoundException` |
-| **deleteAd** | Ad already paid (cannot delete) | Throws `BadRequestException` |
-| **deleteAd** | Ad already approved (cannot delete) | Throws `BadRequestException` |
-| **deleteAd** | Record retained (`is_active = false`) | Record not physically deleted |
-| **deleteAd** | Cache invalidation (was active) | Invalidates `cache:ads:active` |
-| **deleteAd** | Audit log | Logs `AD_DELETED` event |
-| **toggleActive** | Own approved ad, toggle on | Sets `is_active = true` |
-| **toggleActive** | Own approved ad, toggle off | Sets `is_active = false` |
-| **toggleActive** | Not ad owner | Throws `ForbiddenException` |
-| **toggleActive** | Ad not found | Throws `NotFoundException` |
-| **toggleActive** | Ad not approved (cannot toggle) | Throws `BadRequestException` |
-| **toggleActive** | Ad not paid (cannot toggle) | Throws `BadRequestException` |
-| **toggleActive** | Cache invalidation | Invalidates `cache:ads:active` |
-| **toggleActive** | Audit log | Logs `AD_TOGGLED` event with old/new values |
-| **listActiveAds** | Cache hit | Returns cached data without DB query |
-| **listActiveAds** | Cache miss, active ads exist | Queries DB, seeds cache, returns data |
-| **listActiveAds** | Cache miss, no active ads | Returns empty array |
-| **listActiveAds** | Only approved + paid + in-schedule ads returned | Correct filter applied |
-| **listActiveAds** | Expired ads excluded | Not returned |
-| **listActiveAds** | Inactive ads excluded | Not returned |
-| **listActiveAds** | Rejected ads excluded | Not returned |
-| **listActiveAds** | Unpaid ads excluded | Not returned |
-| **listActiveAds** | Cache TTL = 5 min | Correct TTL set |
-| **listPackages** | Cache hit | Returns cached data without DB query |
-| **listPackages** | Cache miss, packages exist | Queries DB, seeds cache, returns data |
-| **listPackages** | Cache miss, no packages | Returns empty array |
-| **listPackages** | Only active packages returned | `is_active = true` filter |
-| **listPackages** | Grouped by placement | Correct grouping |
-| **listPackages** | Total fee computed | `totalFee = dailyRate * durationDays` |
-| **listPackages** | Cache TTL = 10 min | Correct TTL set |
-
-### 2.2 `advertisements.controller.spec.ts` (Merchant)
-
-Mock dependencies: `AdvertisementsService`.
-
-| Test Suite | Scenario | Expected Outcome |
-|------------|----------|------------------|
-| **POST /ads/packages/:feeSettingId/select** | Valid request | Calls `service.selectPackage`, returns 201 |
-| **POST /ads/packages/:feeSettingId/select** | Missing auth | Returns 401 Unauthorized |
-| **POST /ads/packages/:feeSettingId/select** | Invalid role (buyer) | Returns 403 Forbidden |
-| **POST /ads/packages/:feeSettingId/select** | Shop not approved | Returns 403 SHOP_NOT_APPROVED |
-| **POST /ads/packages/:feeSettingId/select** | Invalid UUID | Returns 400 Bad Request |
-| **PATCH /ads/:id/content** | Valid payload + image file | Calls `service.uploadContent`, returns 200 |
-| **PATCH /ads/:id/content** | Missing auth | Returns 401 Unauthorized |
-| **PATCH /ads/:id/content** | Not owner | Returns 403 Forbidden |
-| **PATCH /ads/:id/content** | Validation errors | Returns 400 Bad Request |
-| **PATCH /ads/:id/content** | Invalid image type | Returns 415 Unsupported Media Type |
-| **PATCH /ads/:id/content** | Image too large | Returns 413 Payload Too Large |
-| **POST /ads/:id/pay** | Valid request | Calls `service.payFee`, returns 200 |
-| **POST /ads/:id/pay** | Missing auth | Returns 401 Unauthorized |
-| **POST /ads/:id/pay** | Not owner | Returns 403 Forbidden |
-| **POST /ads/:id/pay** | Ad has no content | Returns 400 Bad Request |
-| **GET /ads** | Valid query | Calls `service.listOwnAds`, returns 200 |
-| **GET /ads** | Missing auth | Returns 401 Unauthorized |
-| **GET /ads** | Invalid query params | Returns 400 Bad Request |
-| **PATCH /ads/:id** | Valid payload | Calls `service.updateContent`, returns 200 |
-| **PATCH /ads/:id** | Not owner | Returns 403 Forbidden |
-| **PATCH /ads/:id** | Not found | Returns 404 Not Found |
-| **DELETE /ads/:id** | Own ad | Calls `service.deleteAd`, returns 200 |
-| **DELETE /ads/:id** | Not owner | Returns 403 Forbidden |
-| **DELETE /ads/:id** | Not found | Returns 404 Not Found |
-| **PATCH /ads/:id/toggle** | Valid request | Calls `service.toggleActive`, returns 200 |
-| **PATCH /ads/:id/toggle** | Not owner | Returns 403 Forbidden |
-| **PATCH /ads/:id/toggle** | Ad not approved | Returns 400 Bad Request |
-| **GET /ads/active** | Public access, no auth | Calls `service.listActiveAds`, returns 200 |
-| **GET /ads/packages** | Valid request | Calls `service.listPackages`, returns 200 |
-
-### 2.3 `advertisement-management.service.spec.ts` (Admin)
-
-Mock dependencies: `PrismaService`, `RedisService`.
-
-| Test Suite | Scenario | Expected Outcome |
-|------------|----------|------------------|
-| **listPendingAds** | Admin role, pending ads exist | Returns paginated pending list |
-| **listPendingAds** | No pending ads | Returns empty list |
-| **listPendingAds** | Filter by approvalStatus | Correctly filters |
-| **approveAd** | Valid pending ad, weekly limit not reached | Sets `approval_status = 'approved'` |
-| **approveAd** | Weekly limit reached (5 active) | Throws `ConflictException('WEEKLY_LIMIT_REACHED')` |
-| **approveAd** | Weekly limit = 4, approve 5th | Succeeds |
-| **approveAd** | Ad already approved | Throws `BadRequestException` |
-| **approveAd** | Ad already rejected | Throws `BadRequestException` |
-| **approveAd** | Ad not found | Throws `NotFoundException` |
-| **approveAd** | `approved_by` and `approved_at` set | Correct values stored |
-| **approveAd** | Cache invalidation | Invalidates `cache:ads:active` |
-| **approveAd** | Audit log | Logs `AD_APPROVED` event |
-| **rejectAd** | Valid pending ad with reason | Sets `approval_status = 'rejected'` |
-| **rejectAd** | Reason empty | Throws `BadRequestException` |
-| **rejectAd** | Reason exceeds 2000 chars | Throws `BadRequestException` |
-| **rejectAd** | Ad already approved | Throws `BadRequestException` |
-| **rejectAd** | Ad not found | Throws `NotFoundException` |
-| **rejectAd** | Auto-refund triggered | `ad_payments.payment_status = 'refunded'` |
-| **rejectAd** | Refund amount = paid amount | Correct amount |
-| **rejectAd** | `advertisements.payment_status = 'refunded'` | Updated |
-| **rejectAd** | `rejection_reason` stored | Correct value |
-| **rejectAd** | `approved_by` and `approved_at` set | Correct admin info |
-| **rejectAd** | Cache invalidation | Invalidates `cache:ads:active` |
-| **rejectAd** | Audit log | Logs `AD_REJECTED` event with reason and refund amount |
-| **listAllAds** | Admin role, all ads | Returns paginated list |
-| **listAllAds** | Filter by approvalStatus | Correctly filters |
-| **listAllAds** | Filter by paymentStatus | Correctly filters |
-| **listFeeSettings** | Admin role | Returns all fee settings |
-| **listFeeSettings** | Sorted by placement, tier | Correct sort order |
-| **createFeeSetting** | Valid data | Creates package, returns 201 |
-| **createFeeSetting** | Duplicate (placement, tier) active | Throws `ConflictException` |
-| **createFeeSetting** | Duration < 7 | Throws `BadRequestException` |
-| **createFeeSetting** | Duration > 30 | Throws `BadRequestException` |
-| **createFeeSetting** | Max ads < 1 | Throws `BadRequestException` |
-| **createFeeSetting** | Daily rate < 0 | Throws `BadRequestException` |
-| **createFeeSetting** | Cache invalidation | Invalidates `cache:ads:packages` |
-| **createFeeSetting** | Audit log | Logs `AD_PACKAGE_CREATED` event |
-| **updateFeeSetting** | Valid rate update | Updates rate, returns DTO |
-| **updateFeeSetting** | Fee setting not found | Throws `NotFoundException` |
-| **updateFeeSetting** | Rate change logged to `ad_fee_history` | Old/new rate, changed_by, changed_at |
-| **updateFeeSetting** | Rate change does not affect paid ads | BR-AD-052 verified |
-| **updateFeeSetting** | Cache invalidation | Invalidates `cache:ads:packages` |
-| **updateFeeSetting** | Audit log | Logs `AD_FEE_UPDATED` event |
-| **deactivateFeeSetting** | Valid deactivation | Sets `is_active = false` |
-| **deactivateFeeSetting** | Fee setting not found | Throws `NotFoundException` |
-| **deactivateFeeSetting** | Already-purchased ads unaffected | No change to advertisements |
-| **deactivateFeeSetting** | Cache invalidation | Invalidates `cache:ads:packages` |
-| **deactivateFeeSetting** | Audit log | Logs `AD_PACKAGE_DEACTIVATED` event |
-
-### 2.4 `admin-ads.controller.spec.ts`
-
-Mock dependencies: `AdvertisementManagementService`.
-
-| Test Suite | Scenario | Expected Outcome |
-|------------|----------|------------------|
-| **GET /admin/ads** | Valid request | Calls `service.listPendingAds`, returns 200 |
-| **GET /admin/ads** | Missing auth | Returns 401 Unauthorized |
-| **GET /admin/ads** | Invalid role (merchant) | Returns 403 Forbidden |
-| **PATCH /admin/ads/:id/approve** | Valid request | Calls `service.approveAd`, returns 200 |
-| **PATCH /admin/ads/:id/approve** | Missing auth | Returns 401 Unauthorized |
-| **PATCH /admin/ads/:id/approve** | Invalid role | Returns 403 Forbidden |
-| **PATCH /admin/ads/:id/approve** | Weekly limit reached | Returns 409 Conflict |
-| **PATCH /admin/ads/:id/reject** | Valid request with reason | Calls `service.rejectAd`, returns 200 |
-| **PATCH /admin/ads/:id/reject** | Missing auth | Returns 401 Unauthorized |
-| **PATCH /admin/ads/:id/reject** | Invalid role | Returns 403 Forbidden |
-| **PATCH /admin/ads/:id/reject** | Reason empty | Returns 400 Bad Request |
-| **GET /admin/ad-fee-settings** | Valid request | Calls `service.listFeeSettings`, returns 200 |
-| **POST /admin/ad-fee-settings** | Valid payload | Calls `service.createFeeSetting`, returns 201 |
-| **POST /admin/ad-fee-settings** | Duplicate (placement, tier) | Returns 409 Conflict |
-| **POST /admin/ad-fee-settings** | Validation errors | Returns 400 Bad Request |
-| **PATCH /admin/ad-fee-settings/:id** | Valid rate update | Calls `service.updateFeeSetting`, returns 200 |
-| **PATCH /admin/ad-fee-settings/:id** | Not found | Returns 404 Not Found |
-| **DELETE /admin/ad-fee-settings/:id** | Valid deactivation | Calls `service.deactivateFeeSetting`, returns 200 |
-| **DELETE /admin/ad-fee-settings/:id** | Not found | Returns 404 Not Found |
+| Test Type | Target | Focus |
+|---|---|---|
+| Unit | Services (AdvertisementsService, AdminAdManagementService, AdminAdExportService) | Business logic, validations, state transitions, cache, audit, refunds |
+| Unit | DTO validation (class-validator) | Field constraints, snake_case, enums |
+| Integration | Controllers + guards + validation pipes | Route behavior, RBAC, response wrapping |
+| Integration | Repository/cache (Prisma/Redis mocks or in-memory) | Query building, pagination, transactions |
+| E2E (optional) | API flows | End-to-end flows (merchant create→pay→admin approve) |
 
 ---
 
-## 3. Frontend Component Tests
+## 3. Merchant Service Tests (`AdvertisementsService`)
 
-Using Vitest + React Testing Library.
+### 3.1 listPackages
+- Returns empty if no active packages meet `effectiveFrom <= now`
+- Filters by `isActive=true` and has history with `effectiveFrom <= now`
+- Orders by `updatedAt desc, placement asc, tier asc`
+- Computes `totalFee = dailyRate*durationDays` (strings)
+- Returns `updatedAt` ISO
+- Cache hit returns cached JSON; miss queries DB and sets `cache:ads:packages` TTL 600s
 
-### 3.1 `AdvertisementManagement.test.tsx` (Merchant Page)
+### 3.2 selectPackage
+- `403 SHOP_NOT_APPROVED` if shop not approved
+- `404 AD_PACKAGE_INVALID` if package not found/active or `effectiveFrom > now`
+- Creates draft with correct defaults (pending/pending, isActive true, empty content, null schedule)
+- Sets `feeSettingId`, `shopId`
+- Audits `AD_SELECTED` with placement/tier
+- Returns mapped response
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Initial render | Displays page title "Advertisements" and subtitle |
-| Loading state | Shows skeleton loaders for stats and ad list |
-| Package catalog loaded | Displays package cards with placement, tier, rate, duration, total fee |
-| Tier badge colors | Basic = gray, Standard = blue, Premium = purple |
-| Select button enabled (approved merchant) | Button clickable |
-| Select button disabled (pending merchant) | Button disabled, info banner shown |
-| Info banner shown (pending merchant) | "Your shop is pending approval..." message visible |
-| Ad list loaded | Renders ad cards with thumbnail, title, badges, content preview |
-| Statistics cards | Active/Pending/Expired counts displayed |
-| Status filter change | Re-fetches ad list with new filter |
-| Approval status filter change | Re-fetches ad list with new filter |
-| Search input | Debounced 300ms, re-fetches with search query |
-| Pagination | Navigates between pages, page info displayed |
-| Empty state (no ads) | Shows "No advertisements found" message |
-| Empty state (no filter results) | Shows "No ads match your filter" message |
+### 3.3 uploadContent
+- Ownership enforced; non-owner → `403`
+- State: if not (pending+pending) → `400 'Advertisement cannot accept content'`
+- Image validation: product not found for merchant → `400 'Advertisement image must be selected from your products'`; returns sku
+- Schedule: startsAt < today+3 days (UTC midnight+3) → `400 'Start date must be at least 3 days from today'`
+- Schedule: expiresAt <= startsAt → `409 AD_SCHEDULE_INVALID`
+- Success updates content, imageUrl, sku, announcementMessage, startsAt, expiresAt
+- Invalidates `cache:ads:active`
+- Audits `AD_CONTENT_UPLOADED`
 
-### 3.2 `PackageSelectionDialog.test.tsx`
+### 3.4 payFee
+- Preconditions fail → `400 'Advertisement content and schedule are required'` (missing title/announcement/startsAt/expiresAt or wrong statuses)
+- Fee computed as `dailyRate*durationDays`, snapshotted to `paymentAmount`
+- Transaction creates `adPayment` with `method='stubbed'`, `status='completed'`, `transactionId='TXN-<uuid>'`, `paidAt=now`
+- Updates ad: `paymentStatus=completed`, `approvalStatus=pending`, `paymentAmount`, `paymentReference`, `weekNumber` (ISO week)
+- Invalidates cache; audits `AD_PAID`
+- Notifies admins (`AD_SUBMITTED`) — resubmission when previous was rejected; best-effort (notification failure doesn’t rollback)
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Open dialog | Displays package info (placement, tier, rate, duration, fee) |
-| Confirm selection | Calls `POST /ads/packages/:feeSettingId/select` |
-| Confirm success | Closes dialog, opens Upload Content dialog |
-| Confirm loading state | Shows spinner + "Selecting..." |
-| Cancel selection | Closes dialog without changes |
-| Error: shop not approved | Displays info banner |
-| Error: package unavailable | Displays dialog error |
+### 3.5 listOwnAds
+- Filters by shopId
+- `status='active'` applies time+status conditions correctly
+- `status='inactive'` OR/AND/NOT logic matches implementation
+- `status='expired'` excludes soft-deleted non-approved
+- Default hides soft-deleted ads except approved+inactive remain visible
+- search case-insensitive; pagination correct
+- Returns `{ data, meta }`
 
-### 3.3 `UploadContentDialog.test.tsx`
+### 3.6 updateContent
+- Editable only if rejected OR (pending+unpaid) → else `400`
+- `imageUrl` omitted → keeps current (no image resolution)
+- `imageUrl` provided → validated against merchant products
+- `startsAt` provided → revalidates 3-day lead; derives expiresAt from package duration
+- Updates fields; invalidates cache; audits `AD_UPDATED`
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Open dialog | Shows placement/tier read-only, empty form fields |
-| Start date defaults to today | Date picker shows today's date |
-| End date auto-calculated | Read-only display shows `startsAt + durationDays` |
-| Fee summary displayed | Shows "Fee: $XX.XX · X days × $X.XX/day" |
-| Title empty validation | Shows "Title is required" error |
-| Title max 200 chars | Input accepts max 200 chars |
-| Content optional | Can submit without content |
-| Content max 5000 chars | Input accepts max 5000 chars |
-| Image upload: valid JPG | Shows preview, no error |
-| Image upload: valid PNG | Shows preview, no error |
-| Image upload: valid WebP | Shows preview, no error |
-| Image upload: invalid type | Shows "Image must be JPG, PNG, or WebP" error |
-| Image upload: file > 5MB | Shows "Image must not exceed 5MB" error |
-| Image upload: drag & drop | Accepts dropped file |
-| Link URL optional | Can submit without link URL |
-| Link URL invalid format | Shows "Invalid URL format" error |
-| Announcement message empty | Shows "Announcement message is required" error |
-| Announcement message max 500 chars | Input accepts max 500 chars |
-| Start date in the past | Shows "Start date must be today or later" error |
-| Save & Continue success | Calls `PATCH /ads/:id/content`, closes dialog |
-| Save & Continue loading | Shows spinner + "Saving..." |
-| Cancel button | Closes dialog without saving |
+### 3.7 deleteAd
+- Approved+active+not expired → `400 'Active approved advertisements cannot be deleted'`
+- Expired OR paymentStatus pending → hard delete
+- Else (paid non-expired, e.g. approved but inactive or paid rejected state treated appropriately) → soft delete (`isActive=false`)
+- Invalidates cache; audits `AD_DELETED`; returns `{ message: 'Advertisement deleted' }`
 
-### 3.4 `PaymentDialog.test.tsx`
+### 3.8 toggleActive
+- Not approved+completed → `400 'Only approved and paid advertisements can be toggled'`
+- feeSetting optional (allowed)
+- Updates `isActive`; invalidates cache; audits `AD_TOGGLED`
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Open dialog | Displays fee summary |
-| Pay & Submit success | Calls `POST /ads/:id/pay`, closes dialog |
-| Pay & Submit loading | Shows spinner + "Processing payment..." |
-| Payment failure | Shows "Payment failed. Please try again." error |
-| Cancel button | Closes dialog without processing |
-
-### 3.5 `EditContentDialog.test.tsx`
-
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Open dialog (content_uploaded ad) | Pre-fills current content values |
-| Open dialog (rejected ad) | Pre-fills current content values |
-| Image shows current preview | Displays existing image |
-| Save button visible (content_uploaded) | Button shown |
-| Save & Pay button visible (rejected) | Button shown |
-| Save success | Calls `PATCH /ads/:id`, closes dialog |
-| Save & Pay success | Calls `PATCH /ads/:id`, then opens Payment dialog |
-| All validation rules same as Upload Content | Identical validation behavior |
-| Cancel button | Closes dialog without changes |
-
-### 3.6 `AdCard.test.tsx`
-
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Thumbnail displayed | Shows image or placeholder |
-| Title displayed | Shows ad title |
-| Approval status badge | Correct color: pending=amber, approved=green, rejected=red |
-| Payment status badge | Correct color: pending=amber, completed=green, refunded=gray |
-| Content preview truncated | Shows first 100 chars with ellipsis |
-| Announcement message truncated | Shows first 60 chars |
-| Schedule display | Shows formatted date range when set |
-| Rejection reason shown | Alert displayed when `approvalStatus = 'rejected'` |
-| Pay Fee button visible | Shown when content uploaded + payment_status = pending |
-| Resubmit button visible | Shown when `approvalStatus = 'rejected'` |
-| Edit button visible | Shown when content uploaded + payment_status = pending, or rejected |
-| Delete button visible | Shown when content uploaded + payment_status = pending, or inactive |
-| Toggle switch visible | Shown when approved + paid |
-| Toggle switch off | Shows inactive state |
-
-### 3.7 `AdminModerationPage.test.tsx` (Admin Page)
-
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Initial render | Displays "Advertisement Moderation" title |
-| Pending queue loaded | Shows pending ad cards |
-| Weekly limit indicator | Displays "X of 5 active ads this week" |
-| Pending ad card: full preview | Thumbnail, title, content, announcement, schedule, shop name, fee |
-| Approve button click | Calls `PATCH /admin/ads/:id/approve` |
-| Approve success | Ad removed from queue, toast shown |
-| Approve: weekly limit reached | Shows "Weekly advertisement limit reached (max 5)" error |
-| Reject button click | Shows rejection reason textarea |
-| Reject without reason | Shows "Rejection reason is required" validation error |
-| Reject with reason | Calls `PATCH /admin/ads/:id/reject` with reason |
-| Reject success | Ad removed from queue, auto-refund triggered |
-| Fee settings table loaded | Shows all packages with placement, tier, rate, duration |
-| New Package button | Opens Create Package dialog |
-| Create package dialog: all fields validated | Correct validation behavior |
-| Create package success | Refreshes table, package appears in merchant catalog |
-| Create package: duplicate rejected | Shows "A package with this placement and tier already exists" error |
-| Rate inline edit | Saves via `PATCH /admin/ad-fee-settings/:id` |
-| Rate change logged | `ad_fee_history` record created |
-| Deactivate package | Confirmation dialog, then deactivates |
-| Fee history button | Opens fee history dialog with audit trail |
-
-### 3.8 `CreatePackageDialog.test.tsx`
-
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Open dialog | Shows empty form with placement/tier selects |
-| Placement select | Shows 4 options: homepage_slider, product_sidebar, category_banner, search_top |
-| Tier select | Shows 3 options: basic, standard, premium |
-| Daily rate empty | Shows "Daily rate must be 0 or greater" error |
-| Daily rate < 0 | Shows validation error |
-| Duration < 7 | Shows "Duration must be between 7 and 30 days" error |
-| Duration > 30 | Shows validation error |
-| Max ads < 1 | Shows "Max ads must be at least 1" error |
-| Create success | Calls `POST /admin/ad-fee-settings`, closes dialog |
-| Create loading | Shows spinner + "Creating..." |
-| Cancel button | Closes dialog without changes |
+### 3.9 listActiveAds
+- Cache hit returns parsed
+- Cache miss queries correct conditions; maps with `tier`; sets TTL 300s
+- Orders by createdAt desc
 
 ---
 
-## 4. End-to-End (E2E) Scenarios
+## 4. Admin Service Tests (`AdminAdManagementService`)
 
-Using Playwright or Cypress.
+### 4.1 listAds
+- Excludes drafts with `paymentStatus='pending'`
+- Filters: status→approvalStatus, placement/tier via feeSetting, shop name contains (case-insensitive), dateFrom/dateTo on createdAt
+- Pagination/order by createdAt desc
 
-### 4.1 Merchant Full Advertisement Lifecycle
+### 4.2 viewAdDetail
+- 404 if not found
+- feeInfo computed (dailyRate/durationDays/totalFee)
+- paymentInfo from latest payment; analytics placeholders zeroed
 
-| Step | Action | Expected Outcome |
-|------|--------|------------------|
-| 1 | Merchant logs in with approved shop | Dashboard loads |
-| 2 | Navigate to `/merchant/advertisements` | Page loads with package catalog and ad list |
-| 3 | Browse package catalog | Package cards displayed with placement, tier, rate, duration, fee |
-| 4 | Click "Select" on a package | Package Selection Confirmation dialog opens |
-| 5 | Click "Confirm Selection" | Draft ad created (201), Upload Content dialog opens |
-| 6 | Enter title, content, announcement message | Fields validated |
-| 7 | Upload image (valid JPG) | Image preview shown |
-| 8 | Set start date to today | End date auto-calculated |
-| 9 | Click "Save & Continue" | Content saved, Pay Fee button appears on ad card |
-| 10 | Click "Pay Fee" on ad card | Payment Confirmation dialog opens |
-| 11 | Click "Pay & Submit" | Payment processed, ad moves to PENDING_APPROVAL |
-| 12 | Ad appears in admin queue | Admin sees pending ad card |
+### 4.3 approveAd
+- Not pending → `400 'Only pending advertisements can be processed'`
+- No weekly limit enforcement (test should not expect WEEKLY_LIMIT_REACHED)
+- Transaction sets approvedBy/approvedAt, notifies, audits
+- Invalidates cache; returns correct DTO
 
-### 4.2 Admin Approve Flow
+### 4.4 rejectAd
+- Not pending → `400`
+- Finds completed payments and refunds each (sets refundAmount, reason, refundedAt)
+- Sets ad `paymentStatus='refunded'` only if completed payments exist; else keeps original
+- Sets rejection fields; notifies; audits with refundAmount (toFixed(2)); invalidates cache
 
-| Step | Action | Expected Outcome |
-|------|--------|------------------|
-| 1 | Admin logs in | Dashboard loads |
-| 2 | Navigate to `/admin/advertisements` | Pending queue displayed |
-| 3 | View pending ad card | Full preview (thumbnail, title, content, schedule, shop, fee) |
-| 4 | Click "Approve" | Approval processed, ad removed from queue |
-| 5 | Verify weekly limit indicator updated | "X+1 of 5 active ads this week" |
-| 6 | Merchant sees approval notification | Ad appears as approved in merchant list |
+### 4.5 bulkApproveAds
+- Validates all pending; includes missing/non-pending in error with IDs
+- Updates all in tx; post-tx notifications/audits per ad (best-effort failures counted)
+- Audits bulk action; invalidates cache
 
-### 4.3 Admin Reject Flow
+### 4.6 bulkRejectAds
+- Validates pending; tx updates all with shared reason
+- Per-ad refund via `refundAd`; per-ad notify/audit; counts failures/refunds
+- Returns correct aggregates
 
-| Step | Action | Expected Outcome |
-|------|--------|------------------|
-| 1 | Admin logs in, navigates to pending queue | Pending ads displayed |
-| 2 | Click "Reject" on a pending ad | Rejection reason textarea shown |
-| 3 | Enter rejection reason | Reason field filled |
-| 4 | Click "Reject" to confirm | Rejection processed, auto-refund triggered |
-| 5 | Merchant sees rejection notification | Ad shows rejection reason, refund status |
-| 6 | Merchant clicks "Resubmit" | Edit Content dialog opens in resubmit mode |
-| 7 | Merchant edits content, clicks "Save & Pay" | Content saved, Payment dialog opens |
-| 8 | Merchant pays fresh fee | Ad returns to PENDING_APPROVAL |
+### 4.7 refundAd
+- Finds latest completed payment; updates payment and ad paymentStatus if exists
+- Returns processed with amount or '0.00'
+- On error returns failed with message
 
-### 4.4 Merchant Edit and Toggle Flow
+### 4.8 Fee Settings
+- `listFeeSettings` ordered by placement asc, tier asc
+- `createFeeSetting`: active exists → `409` conflict; inactive exists → reuses/reactivates (updates fields, sets active), creates history with old values; else creates new. Audits `FEE_CREATED` with `reactivated`. Notifies merchants (best-effort). Invalidates packages cache.
+- `updateFeeSetting`: updates fields; creates history with old/new; if active notifies merchants (best-effort); audits `FEE_UPDATED`; invalidates cache
+- `deactivateFeeSetting`: not found → `404`; already inactive → `409`. Creates history with snapshot; audits `FEE_DEACTIVATED`; invalidates
+- `reactivateFeeSetting`: not found → `404`; already active → `409`. Creates history; audits `FEE_REACTIVATED` (change_reason optional)
 
-| Step | Action | Expected Outcome |
-|------|--------|------------------|
-| 1 | Merchant navigates to ad list | Own ads displayed |
-| 2 | Click "Edit" on a content_uploaded ad | Edit Content dialog opens with pre-filled values |
-| 3 | Modify title and announcement | Fields updated |
-| 4 | Click "Save" | Content updated, dialog closes |
-| 5 | Toggle active switch off on approved ad | `is_active` set to false |
-| 6 | Verify ad hidden from storefront | `GET /ads/active` does not include ad |
-| 7 | Toggle active switch on | `is_active` set to true |
-| 8 | Verify ad visible on storefront | `GET /ads/active` includes ad |
+### 4.9 Fee History
+- Filters: placement/tier combined; month `YYYY-MM` uses UTC month bounds
+- `deleteFeeHistory`: empty → `400`; missing IDs → `404` listing missing; any created >= current UTC month start → `400 'Fee change history from the current month cannot be deleted'` (all-or-nothing); deletes others, audits with deletedIds
+- `currentMonthStartUtc()` correct (UTC)
 
-### 4.5 Admin Package Management Flow
-
-| Step | Action | Expected Outcome |
-|------|--------|------------------|
-| 1 | Admin navigates to fee settings | Fee settings table displayed |
-| 2 | Click "New Package" | Create Package dialog opens |
-| 3 | Select placement, tier, enter rate, duration, max ads | Fields validated |
-| 4 | Click "Create Package" | Package created (201), table refreshed |
-| 5 | Verify new package in merchant catalog | Merchant sees new package card |
-| 6 | Edit daily rate on existing package | Inline edit, saves via PATCH |
-| 7 | Verify rate change logged to `ad_fee_history` | History dialog shows new entry |
-| 8 | Click "Deactivate" on a package | Confirmation dialog |
-| 9 | Confirm deactivation | Package removed from merchant catalog |
-| 10 | Verify already-purchased ads unaffected | Existing ads continue to display |
-
-### 4.6 Pending Merchant Restrictions
-
-| Step | Action | Expected Outcome |
-|------|--------|------------------|
-| 1 | Pending merchant logs in | Dashboard loads with restricted access |
-| 2 | Navigate to `/merchant/advertisements` | Package catalog visible (read-only) |
-| 3 | View ad list | Own ads displayed (read-only) |
-| 4 | Attempt to click "Select" on package | Button disabled |
-| 5 | Info banner displayed | "Your shop is pending approval..." message |
-| 6 | Attempt to edit/toggle/delete ad | Actions disabled |
-
-### 4.7 Storefront Display Flow
-
-| Step | Action | Expected Outcome |
-|------|--------|------------------|
-| 1 | Buyer visits storefront | Storefront loads |
-| 2 | Banner carousel renders | `GET /ads/active` called |
-| 3 | Active ads displayed | Banner images + announcement messages shown |
-| 4 | Max 5 ads per rotation | Slider shows at most 5 ads |
-| 5 | Auto-rotation every 5 seconds | Slider advances automatically |
-| 6 | Click on banner | Redirects to `linkUrl` |
-| 7 | Expired ad | Not displayed (excluded by query filter) |
-| 8 | Inactive ad | Not displayed (excluded by query filter) |
+### 4.10 Revenue Analytics
+- Range validation: invalid dates → `400`; end<start → `400`; >365 days → `400`
+- Joins ads+fee_settings by fee_setting_id; filters approved and approved_at in range
+- Applies placement/tier filters
+- Refunds aggregated from ad_payments (refunded, refunded_at in range); totalFeesCollected = totalRevenue (refunds don’t reduce)
+- Buckets correct; trend by date; avgCtr 0
 
 ---
 
-## 5. Integration Tests
+## 5. Export Service Tests (`AdminAdExportService`)
 
-### 5.1 Cache Integration
+### 5.1 validateDateRange
+- Valid range returns start and endOfDay for YYYY-MM-DD
+- >365 → `400`; end<start → `400`; invalid → `400`
 
-| Test | Scenario | Expected Outcome |
-|------|----------|------------------|
-| **Cache cold start** | First `GET /ads/active` request | DB query executed, cache seeded |
-| **Cache warm** | Second `GET /ads/active` within 5 min | Served from cache, no DB query |
-| **Cache TTL expiry** | Request after 5 min | DB query re-executed, cache re-seeded |
-| **Cache invalidation on approve** | Admin approves ad | `DEL cache:ads:active`, next request re-queries |
-| **Cache invalidation on reject** | Admin rejects ad | `DEL cache:ads:active` |
-| **Cache invalidation on toggle** | Merchant toggles ad | `DEL cache:ads:active` |
-| **Cache invalidation on delete** | Merchant soft-deletes ad | `DEL cache:ads:active` |
-| **Package cache invalidation** | Admin creates/updates/deactivates package | `DEL cache:ads:packages` |
+### 5.2 exportAdPerformance
+- Filters by createdAt range, placement/tier/status
+- Uses `paymentAmount` or latest completed payment
+- Impressions/Clicks/CTR 0
+- Headers correct; CSV properly escaped; audits `EXPORT_GENERATED` with rowCount and filters
 
-### 5.2 Weekly Limit Integration
+### 5.3 exportSubmissionHistory
+- Emits rows per review event `AD_APPROVED`/`AD_REJECTED` in range
+- Populates reviewedBy from event.user.name, reviewedAt from event.createdAt
+- Rejection reason only for rejected; refund amount only for rejected with refunded payments
+- Fallback for ads without review events
+- Headers correct; audit logged
 
-| Test | Scenario | Expected Outcome |
-|------|----------|------------------|
-| **Approve within limit** | 4 active ads, approve 5th | Succeeds |
-| **Approve at limit** | 5 active ads, approve 6th | Returns 409 WEEKLY_LIMIT_REACHED |
-| **Cross-merchant** | Merchant A at limit, Merchant B approves | Merchant B succeeds (per-merchant limit) |
-| **Cross-week** | Week 35 has 5, week 36 approves | Succeeds (different week) |
+### 5.4 exportFeeHistory
+- Filters by createdAt range, placement/tier
+- Old values null → empty strings
+- Headers correct; audit logged
+
+---
+
+## 6. Controller/DTO Validation Tests
+
+### 6.1 Merchant DTOs
+- `AdListQueryDto`: defaults page=1,limit=20; bounds enforced; enums validated
+- `UploadAdContentDto`: title required ≤200; content optional ≤100 (message); imageUrl required ≤2048; announcementMessage required ≤500; startsAt valid date
+- `PayAdFeeDto`: paymentReference optional ≤100
+- `UpdateAdContentDto`: title required; content optional ≤100; imageUrl optional but if present valid; announcementMessage required; startsAt optional
+- `ToggleAdActiveDto`: isActive boolean
+
+### 6.2 Admin DTOs (snake_case)
+- `AdminAdListQueryDto`: enums, shop ≤255, dates, pagination
+- `AdminRejectAdDto`: rejection_reason required ≤1000
+- `AdminBulkApproveDto`: ad_ids 1–50 UUIDs
+- `AdminBulkRejectDto`: ad_ids 1–50, rejection_reason required ≤1000
+- Fee setting DTOs: `daily_rate` ≥0.01, `duration_days` ≥1, `max_ads` ≥1, `change_reason` ≤1000, `effective_from` required; reactivate change_reason optional
+- `AdminAdFeeHistoryQueryDto`: month format `YYYY-MM`, pagination
+- `DeleteAdFeeHistoryDto`: history_ids 1–50 UUIDs
+- Export DTOs: dates required, format='csv', arrays validated
+
+### 6.3 Controller behavior
+- `GET /ads/active` `@Public()` (no auth guard required)
+- `GET /ads/my-ads` and `DELETE /ads/:id` return unwrapped payloads
+- Other merchant writes wrapped in `{ data }`
+- Admin routes under `/admin`, `@Roles('admin')`
+- `ParseUUIDPipe` on path params where specified
+- Response status codes match implementation (201-style for creates via wrapped data, 200 for updates)
 
 ---
 
-## 6. Test Data Fixtures
+## 7. Integration/E2E Flow Tests
 
-### 6.1 Advertisement Fixtures
+### 7.1 Merchant flow: select→content→pay→view
+1. Select package (approved shop) → draft created
+2. Upload content with valid product image and startsAt = now+4 days → content ready
+3. Pay → payment completed, ad pending approval, weekNumber set
+4. `my-ads` shows pending_approval state
 
-| Fixture | Fields |
-|---------|--------|
-| `draftAd` | `approvalStatus: 'pending'`, `paymentStatus: 'pending'`, no content |
-| `contentUploadedAd` | `approvalStatus: 'pending'`, `paymentStatus: 'pending'`, has content + image |
-| `pendingApprovalAd` | `approvalStatus: 'pending'`, `paymentStatus: 'completed'`, has content + schedule |
-| `approvedAd` | `approvalStatus: 'approved'`, `paymentStatus: 'completed'`, `is_active: true` |
-| `rejectedAd` | `approvalStatus: 'rejected'`, `rejectionReason: '...'` |
-| `inactiveAd` | `approvalStatus: 'approved'`, `paymentStatus: 'completed'`, `is_active: false` |
-| `expiredAd` | `approvalStatus: 'approved'`, `paymentStatus: 'completed'`, `expiresAt` in past |
+### 7.2 Resubmission after rejection
+1. Paid ad rejected by admin (with reason) → approvalStatus rejected, paymentStatus refunded
+2. Merchant edits (can reschedule with new startsAt ≥3 days) and pays again → new payment created, ad back to pending approval, admins notified as resubmission
 
-### 6.2 Fee Settings Fixtures
+### 7.3 Delete rules
+- Draft (never paid): delete hard-deletes
+- Expired: hard-deletes
+- Paid non-expired inactive: soft-deletes (isActive false)
+- Active approved non-expired: delete blocked
 
-| Fixture | Fields |
-|---------|--------|
-| `basicHomepage` | `placement: 'homepage_slider'`, `tier: 'basic'`, `dailyRate: 3.00`, `durationDays: 7`, `maxAds: 1` |
-| `standardHomepage` | `placement: 'homepage_slider'`, `tier: 'standard'`, `dailyRate: 5.00`, `durationDays: 7`, `maxAds: 1` |
-| `premiumHomepage` | `placement: 'homepage_slider'`, `tier: 'premium'`, `dailyRate: 10.00`, `durationDays: 7`, `maxAds: 1` |
-| `basicSidebar` | `placement: 'product_sidebar'`, `tier: 'basic'`, `dailyRate: 2.00`, `durationDays: 15`, `maxAds: 1` |
-
-### 6.3 Merchant/User Fixtures
-
-| Fixture | Fields |
-|---------|--------|
-| `approvedMerchant` | `licenseStatus: 'approved'`, `shop.is_approved: true` |
-| `pendingMerchant` | `licenseStatus: 'pending'`, `shop.is_approved: false` |
-| `adminUser` | `role: 'admin'` |
+### 7.4 Toggle rules
+- Approved+completed only; toggling sets isActive; cache invalidated
 
 ---
+
+## 8. Frontend Tests
+
+### 8.1 `AdBannerSlider.test.tsx`
+- Renders nothing if no ads
+- Auto-rotates every 5s
+- Pauses on hover/focus
+- Navigates to product detail using `sku` → `/buyer/products/:sku`
+- Shows announcement/content as appropriate
+- Handles missing image/sku gracefully
+
+---
+
+## 9. Test Data/Fixtures
+
+**Seed data alignment:** `ad_fee_settings` has 12 rows (4 placements × 3 tiers) with durations 7/15/30 and maxAds 1/3/5/6 as per seed. Tests may use seeded values or fixtures.
+
+**Fixtures:**
+- Approved shop for merchant
+- Product with images array containing `imageUrl`
+- Fee settings with history having `effectiveFrom <= now`
+- Sample ads in various states (draft, content-ready, pending-approval, approved/active, rejected, expired, inactive)
+
+---
+
+## 10. Coverage Targets
+
+- Merchant service: ≥ 80% line coverage of core methods
+- Admin services: ≥ 80%
+- DTO validation: cover boundary values (max lengths, enums, ranges)
+- Critical paths: payment transaction, refund logic, delete rules, schedule validation — 100% branch coverage
+
+---
+
+## 11. Non-Functional Test Notes
+
+- Cache behavior: verify key names `cache:ads:active` (TTL 300) and `cache:ads:packages` (TTL 600), invalidation on all listed mutations
+- Best-effort notifications: notification failures must not cause payment/approval transactions to fail (verify try/catch)
+- Audit shape: merchant uses stringified `newValue`; admin uses objects
+- Export: CSV uses CRLF (`\r\n`) and proper escaping
+- Timezone: all schedule comparisons use UTC (3-day lead, ISO week)
+- All-or-nothing for fee history delete; current month protection
+
+---
+
+## 12. Cross-References
+
+| Related Document | Purpose |
+|------------------|---------|
+| [DD_Advertisement_Management_01_MODULE_OVERVIEW.md](./DD_Advertisement_Management_01_MODULE_OVERVIEW.md) | Module overview |
+| [DD_Advertisement_Management_03_API_ENDPOINTS.md](./DD_Advertisement_Management_03_API_ENDPOINTS.md) | API endpoints |
+| [DD_Advertisement_Management_04_DTOS_AND_TYPES.md](./DD_Advertisement_Management_04_DTOS_AND_TYPES.md) | DTOs/types |
+| [DD_Advertisement_Management_05_BUSINESS_LOGIC.md](./DD_Advertisement_Management_05_BUSINESS_LOGIC.md) | Business logic |
+| [機能設計書_Advertisement_Management](../機能設計書_Advertisement_Management.md) | Functional spec |
+| [画面項目設計書_Advertisement_Management](../画面項目設計書_Advertisement_Management.md) | Screen items spec |
 
 *End of Test Specification (Advertisement Management)*

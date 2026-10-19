@@ -434,8 +434,8 @@
 - **トリガー:** ユーザーが「アカウント作成」ボタンをクリック。
 - **処理ロジック:**
   1. **クライアント側事前チェック:** 厳格なバリデーション — すべてのフィールドが有効、パスワード一致、ロール選択済み。
-  2. **バックエンド送信:** `POST /api/v1/auth/register` に `{ name, email, password, role }` を送信。
-  3. **バックエンド実行:** ハッシュ化パスワード付きユーザーレコードを作成。`emailVerified = false`を設定。
+  2. **バックエンド送信:** `POST /api/v1/auth/register` に `{ name, email, password, role }`（出品者の場合は追加で `address`, `phone`）を送信。
+  3. **バックエンド実行:** ハッシュ化パスワード付きユーザーレコードを作成。`emailVerified = true`を設定（登録時点で検証済み扱い）。
   4. **実行後UI:** 成功トーストを表示。`/login`にナビゲート。
 - **例外処理:**
   - `AUTH_007`（409）: メールアドレスフィールドに「メールアドレスは既に登録されています」をインライン表示。
@@ -686,7 +686,7 @@
     "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "licenseStatus": "pending",
     "licenseUrl": "/uploads/licenses/f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b.pdf",
-    "emailVerified": false,
+    "emailVerified": true,
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
 }

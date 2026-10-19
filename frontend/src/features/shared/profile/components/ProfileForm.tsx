@@ -84,11 +84,17 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const [avatarPreview, setAvatarPreview] = useState<string>(initialAvatar)
   const [isProcessingImage, setIsProcessingImage] = useState(false)
 
+  const userRole = profile.role || profile.roleCode || 'buyer'
+  const isMerchant = userRole === 'merchant'
+
   const form = useForm<UpdateProfileFormData>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
       name: profile.name || '',
       avatarUrl: initialAvatar,
+      role: userRole,
+      phone: profile.phone || '',
+      address: profile.address || '',
     },
   })
 
@@ -124,7 +130,15 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
   const onSubmit = async (data: UpdateProfileFormData) => {
     try {
-      await updateProfile.mutateAsync(data)
+      // Shop contact details only apply to merchants
+      const payload: UpdateProfileFormData = {
+        name: data.name,
+        avatarUrl: data.avatarUrl,
+        ...(isMerchant
+          ? { phone: (data.phone ?? '').trim(), address: (data.address ?? '').trim() }
+          : {}),
+      }
+      await updateProfile.mutateAsync(payload)
       toast.success(t('profile.form.success', 'Profile updated successfully'))
     } catch {
       toast.error(t('profile.form.error', 'Failed to update profile'))
@@ -229,6 +243,58 @@ export function ProfileForm({ profile }: ProfileFormProps) {
                 </FormItem>
               )}
             />
+
+            {/* Shop contact details (merchant only) */}
+            {isMerchant && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('profile.form.phone', 'Phone Number')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder={t('profile.form.phonePlaceholder', '+95 9 123 456 789')}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t(
+                          'profile.form.phoneDescription',
+                          'Contact number customers can use to reach your shop',
+                        )}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('profile.form.address', 'Shop Address')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t(
+                            'profile.form.addressPlaceholder',
+                            'Street, township, city',
+                          )}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('profile.form.addressDescription', 'Shown on your public shop page')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
 
             <Button type="submit" disabled={updateProfile.isPending || isProcessingImage}>
               {updateProfile.isPending ? (

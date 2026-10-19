@@ -4,9 +4,9 @@
 **対象画面:** 広告管理
 **サブシステム:** 広告 ― ショップ広告管理
 **機能ID:** FN-AD-001
-**バージョン:** 1.1
+**バージョン:** 1.2
 **作成日:** 2026-08-25
-**最終更新日:** 2026-08-25
+**最終更新日:** 2026-10-16
 **作成者:** シニアシステムエンジニア
 **レビューステータス:** 承認済み
 **分類:** 社内 ― エンジニアリング部門
@@ -21,6 +21,7 @@
 | :--- | :--- | :--- | :--- |
 | 1.0 | 2026-08-25 | シニアシステムエンジニア | 初版リリース。マーチャント広告管理（`/merchant/advertisements`）と管理者広告モデレーション（`/admin/ads`）画面の画面項目仕様。パッケージカタログ、コンテンツアップロードダイアログ、支払いダイアログ、編集ダイアログ、管理者料金設定パネルを含む。 |
 | 1.1 | 2026-08-25 | シニアシステムエンジニア | DATABASE_SPEC v2.5 および機能設計書 v2.6 に整合。DB層参照からアプリケーションレベルの状態（`draft`、`content_uploaded`）を削除。更新：承認ステータスのフィルタオプション（§4.6）、バッジ色（§4.7）、ボタン表示条件（§4.7）、バックエンド実行ロジック（§5.1〜5.4）、APIレスポンス例（§8.1〜8.2）、DBデフォルト（§7.2）、テストチェックリスト（§12.4〜12.5）。 |
+| 1.2 | 2026-10-16 | エンジニアリング | 現在の実装に合わせて更新：掲載場所を4つの実際の値（search_page_banner、recommendation_page_banner、checkout_page_banner、productDetail_page_banner）に変更。画像はマーチャント自身の商品画像から選択（ドロップダウン、ファイルアップロードなし）。コンテンツの最大文字数を100文字に。startsAt は今日から3日以上。linkUrl を削除。管理者ルートは /admin/ads のサブルートと PUT 付きの /admin/ad-fees を反映。週間上限の注記を削除。 |
 
 ### 1.2 関連ドキュメント
 
@@ -491,7 +492,7 @@
 | 75 | `lblPendingSchedule` | 承認待ちスケジュール | 静的ラベル（`<span>`） | String | はい | 形式: "2026/08/24 → 2026/08/31" | — | `advertisements.starts_at` + `advertisements.expires_at` | i18n: `merchant.ads.schedule`。 |
 | 76 | `lblPendingShop` | 承認待ちショップ名 | 静的ラベル（`<span>`） | String | はい | マーチャントのショップ名 | — | `shops.name` | i18n: `admin.ads.shopName`。 |
 | 77 | `lblPendingFee` | 承認待ち料金情報 | 静的ラベル（`<span>`） | String | はい | 形式: "料金: ¥3,850 · 支払済" | — | `advertisements.payment_amount` | i18n: `admin.ads.feeInfo`。 |
-| 78 | `btnApproveAd` | 承認ボタン | Button（`success`） | — | はい | テキスト: "承認" | — | — | `PATCH /admin/ads/:id/approve` を呼び出す。週間上限（最大5件）を検証。ローディング: スピナー＋"承認中..."。i18n: `admin.ads.approve`。Tailwind: `bg-green-600 hover:bg-green-700`。 |
+| 78 | `btnApproveAd` | 承認ボタン | Button（`success`） | — | はい | テキスト: "承認" | — | — | `POST /admin/ads/:id/approve` を呼び出す。ローディング: スピナー＋"承認中..."。i18n: `admin.ads.approve`。Tailwind: `bg-green-600 hover:bg-green-700`。 |
 | 79 | `btnRejectAd` | 却下ボタン | Button（`destructive`） | — | はい | テキスト: "却下" | — | — | `txtRejectReason` テキストエリアを表示。理由付きで `PATCH /admin/ads/:id/reject` を呼び出す。却下時に自動返金。ローディング: スピナー＋"却下中..."。i18n: `admin.ads.reject`。Tailwind: `bg-destructive`。 |
 | 80 | `txtRejectReason` | 却下理由入力 | Textarea | String(2000) | 条件付き | 却下ボタンがクリックされたときに表示。空。プレースホルダー: "却下理由を入力" | MaxLength: 2000。却下時は必須。 | — | i18n: `admin.ads.rejectReason`。Tailwind: `border-destructive/50`。 |
 
@@ -597,7 +598,7 @@
 - **トリガー:** 管理者が承認待ち広告の「承認」をクリック。
 - **処理ロジック:**
   1. **バックエンド送信:** `PATCH /api/v1/admin/ads/:id/approve`。
-  2. **バックエンド実行:** 週間上限（現在の週の承認済みアクティブ広告最大5件）を検証。`approval_status = approved`、`approved_by`、`approved_at` を設定。
+  2. **バックエンド実行:** `approval_status = approved`、`approved_by`、`approved_at` を設定。キャッシュを無効化し、マーチャントに通知。
   3. **実行後UI:** 広告が承認待ちキューから削除。成功トーストを表示。承認待ちキューを更新。週間上限インジケーターを更新。
 - **例外処理:**
   - `409 WEEKLY_LIMIT_REACHED`: アラートバナーに「今週の広告枠上限(5件)に達しました」を表示。
@@ -1254,7 +1255,7 @@
 - [ ] 保留中カードが完全な広告プレビューを表示
 - [ ] 週間上限インジケーターが正しい件数を表示
 - [ ] 承認ボタンが承認を処理（PATCH /admin/ads/:id/approve）
-- [ ] 承認が週間上限（最大5件）を検証
+- [ ] 承認が週間上限の強制なしで処理される
 - [ ] 週間上限超過でエラーを表示（WEEKLY_LIMIT_REACHED）
 - [ ] 却下ボタンが理由テキストエリアを表示
 - [ ] 理由なしの却下で検証エラーを表示（VAL-AD-030）

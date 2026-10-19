@@ -392,6 +392,15 @@ export class PromotionsService {
     });
     const realUsedCount = usageResult[0]?._count.id ?? 0;
 
+    // Per-user check: each user may only use a coupon once
+    const userUsage = await this.prisma.order.count({
+      where: { buyerId: userId, couponCode: promotion.code },
+    });
+    if (userUsage > 0) {
+      throw new BadRequestException('You have already used this coupon');
+    }
+
+    // Global cap
     if (promotion.maxUses && realUsedCount >= promotion.maxUses) {
       throw new BadRequestException('Coupon has reached maximum usage');
     }

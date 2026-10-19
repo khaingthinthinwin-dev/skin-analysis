@@ -35,6 +35,11 @@ test.describe('Login Page', () => {
       await expect(loginPage.submitButton).toBeVisible();
       await expect(loginPage.forgotPasswordLink).toBeVisible();
       await expect(loginPage.registerLink).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-28_1_login_form_all_fields',
+        'Login page showing all form fields: email, password, sign-in, forgot-password and register links'
+      );
     });
 
     test('should have correct page title', async ({ page }) => {
@@ -76,6 +81,11 @@ test.describe('Login Page', () => {
       ).toBeVisible({ timeout: 10_000 });
       const toast = page.locator('[data-sonner-toaster] li');
       await expect(toast.first()).toBeVisible({ timeout: 5000 });
+      await captureScreenshot(
+        page,
+        'N-29_1_success_toast',
+        'Success toast notification displayed after login redirects to the dashboard'
+      );
     });
 
     test('N-25: should login successfully in Myanmar language', async ({ page }) => {
@@ -87,6 +97,11 @@ test.describe('Login Page', () => {
       await expect(page.getByText('စကားဝှက်', { exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'စကားဝှက်မေ့နေပါသလား?' })).toBeVisible();
       await expect(page.getByRole('link', { name: 'ဖန်တီးရန်' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-25_1_myanmar_login_form',
+        'Login page rendered in Myanmar with all labels verified'
+      );
 
       await page.locator('input[autocomplete="email"]').fill(testEmail);
       await page.locator('input[autocomplete="current-password"]').fill(testPassword);
@@ -94,6 +109,11 @@ test.describe('Login Page', () => {
 
       await expect(page).toHaveURL(/\/buyer/, { timeout: 15_000 });
       await expect(page.getByText('အကောင့်ဝင်ခြင်း အောင်မြင်ပါသည်')).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-25_2_myanmar_login_success',
+        'Buyer dashboard reached with Myanmar success toast after Myanmar-language login'
+      );
     });
   });
 
@@ -133,6 +153,11 @@ test.describe('Login Page', () => {
 
       const emailError = await loginPage.getEmailError();
       expect(emailError).toContain('valid email');
+      await captureScreenshot(
+        page,
+        'A-30_1_invalid_email_format_error',
+        'Validation error shown for invalid email format on the Login page'
+      );
     });
 
     test('should show validation error for short password', async ({ page }) => {
@@ -143,6 +168,11 @@ test.describe('Login Page', () => {
 
       const passwordError = await loginPage.getPasswordError();
       expect(passwordError).toBeTruthy();
+      await captureScreenshot(
+        page,
+        'A-31_1_short_password_error',
+        'Validation error shown for short password on the Login page'
+      );
     });
 
     test('A-22: should show invalid credentials error in Myanmar language', async ({ page }) => {
@@ -156,6 +186,11 @@ test.describe('Login Page', () => {
       await expect(error).toBeVisible();
       await expect(error).toHaveText('Request failed with status code 401');
       await expect(page).toHaveURL(/\/login/);
+      await captureScreenshot(
+        page,
+        'A-22_1_myanmar_invalid_credentials_error',
+        '401 error alert shown in Myanmar locale after invalid credentials'
+      );
     });
 
     test('A-25: should show invalid credentials error in Japanese', async ({ page }) => {
@@ -169,6 +204,11 @@ test.describe('Login Page', () => {
       await expect(error).toBeVisible();
       await expect(error).toHaveText('Request failed with status code 401');
       await expect(page).toHaveURL(/\/login/);
+      await captureScreenshot(
+        page,
+        'A-25_1_japanese_invalid_credentials_error',
+        '401 error alert shown in Japanese locale after invalid credentials'
+      );
     });
   });
 
@@ -182,6 +222,11 @@ test.describe('Login Page', () => {
       await expect(page.getByText('パスワード', { exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'パスワードをお忘れですか？' })).toBeVisible();
       await expect(page.getByRole('link', { name: '作成する' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-19_1_login_japanese',
+        'Login page rendered in Japanese'
+      );
 
       await chooseAuthLanguage(page, 'my');
       await expect(page.getByRole('heading', { name: 'အကောင့်ဝင်ရန်' })).toBeVisible();
@@ -189,6 +234,11 @@ test.describe('Login Page', () => {
       await expect(page.getByText('စကားဝှက်', { exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'စကားဝှက်မေ့နေပါသလား?' })).toBeVisible();
       await expect(page.getByRole('link', { name: 'ဖန်တီးရန်' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-19_2_login_myanmar',
+        'Login page rendered in Myanmar'
+      );
 
       await chooseAuthLanguage(page, 'en');
       await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
@@ -196,6 +246,11 @@ test.describe('Login Page', () => {
       await expect(page.getByText('Password', { exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Forgot password?' })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Create one' })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-19_3_login_english_restored',
+        'Login page restored to English after the language cycle'
+      );
     });
   });
 
@@ -236,6 +291,12 @@ test.describe('Login Page', () => {
       } catch {
         expect(buyerPage.url()).toContain(ROUTES.LOGIN);
       }
+
+      await captureScreenshot(
+        buyerPage,
+        'N-35_1_already_authenticated_redirect',
+        'Final state when an already-authenticated user visits /login (redirected to the dashboard)'
+      );
     });
   });
 });

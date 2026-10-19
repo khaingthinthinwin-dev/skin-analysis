@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   ConflictException,
@@ -536,7 +536,11 @@ export class RevenueService {
             },
           },
         },
-        orderBy: [{ periodStart: 'desc' }, { merchant: { shopName: 'asc' } }],
+        orderBy: [
+          { periodStart: 'desc' },
+          { createdAt: 'desc' },
+          { merchant: { shopName: 'asc' } },
+        ],
         skip: (page - 1) * limit,
         take: limit,
       }),

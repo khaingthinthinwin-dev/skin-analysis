@@ -1,357 +1,123 @@
-# DD_AUTH_05 — Business Logic
+# DD SignUp/Login 05 — Business Logic
 
-> **Doc ID:** SKM-DD-AUTH-05 | **Version:** 2.1 | **Status:** Released  
-> **Last Updated:** 2026-08-21
-
----
-
-## 1. Overview
-
-This document specifies the core business logic, token lifecycle management, and security rules implemented in the `AuthService`.
-
-- **Location:** `src/modules/auth/auth.service.ts`
+> **Doc ID:** SKM-DD-AUTH-05 | **Version:** 2.2 | **Status:** Aligned to current implementation
+> **Last Updated:** 2026-10-15
 
 ---
 
-## 2. Core Service Methods
+## 1. Scope and Sources
 
-### 2.1 register(dto, licenseFile)
+This document records behavior present in the current NestJS auth service and frontend auth flows. It does not specify unimplemented rate limits, token cookies, atomic transactions, or guarantees that are not present in those sources.
 
-1. **Validation:** Handled by RegisterDto with class-validator. Includes conditional shopName check.
-2. **Logic:**
-   - Check email uniqueness in `users` table
-   - If `dto.role === 'merchant'`, validate shop name (not empty, max 255 chars) and license file (PDF, named license.pdf, max 10MB)
-   - Hash password with Argon2id (64MB memory, 3 iterations, 4 threads)
-   - Generate UUID (`gen_random_uuid()`) for user ID
-   - Upload license file to storage (if merchant)
-   - Insert `users` record with `is_active=true`, `email_verified=false`
-   - If `dto.role === 'merchant'`, insert `merchants` record with the provided `shop_name`, `license_status='pending'`, and set `users.merchant_id = merchants.id` (starts in PENDING state; merchant features stay locked until license is APPROVED)
-   - Log `USER_REGISTERED` event
-3. **Transaction Boundaries:** User creation, merchant record creation (including shop name), and license file upload must be atomic
-
-### 2.2 login(dto)
-
-1. **Validation:** Handled by LoginDto with class-validator
-2. **Rate Limiting:** Check `rate:auth:login:{ip}` in Redis. If count > 5, reject with 429
-3. **Logic:**
-   - Find user by email. If not found, return generic "Invalid email or password"
-   - Check `is_active` flag. If false, return 403 FORBIDDEN
-   - Verify password with `argon2.verify()`. If fails, return generic error
-   - Generate access token (15 min expiry) with payload `{sub, email, role, jti}`
-   - Generate refresh token (7 day expiry) with family ID
-   - Hash refresh token and store in `refresh_tokens` table
-   - Set httpOnly cookie with refresh token
-   - Log `USER_LOGIN_SUCCESS` event
-4. **Transaction Boundaries:** Token generation and storage must be atomic
-
-### 2.3 refreshToken(refreshToken)
-
-1. **Logic:**
-   - Verify JWT signature with `JWT_REFRESH_SECRET`
-   - Find `refresh_tokens` record by token hash
-   - If not found, return 401 UNAUTHORIZED
-   - Check `is_revoked` flag. If true, possible token reuse detected:
-     - Revoke ALL tokens for this user and family
-     - Log `SECURITY_VIOLATION` event
-     - Return 401 UNAUTHORIZED
-   - Check `absolute_limit_at` (90-day hard cap)
-   - Check `expires_at`
-   - Revoke old token, generate new access + refresh token
-   - Set new httpOnly cookie
-   - Log `TOKEN_REFRESHED` event
-2. **Transaction Boundaries:** Old token revocation and new token creation must be atomic
-
-### 2.4 logout(userId, jti, tokenPayload)
-
-1. **Logic:**
-   - Calculate remaining TTL of access token
-   - Add `jti` to Redis blacklist with TTL = remaining TTL
-   - Revoke all active refresh tokens for this user
-   - Clear refresh token cookie
-   - Log `USER_LOGOUT` event
-2. **Transaction Boundaries:** None (Redis and DB operations are independent)
-
-### 2.5 verifyToken(userId)
-
-1. **Logic:**
-   - Find user by `id` in `users` table
-   - If not found, return 401 UNAUTHORIZED
-   - Check `is_active` flag. If false, return 403 FORBIDDEN
-   - Return user profile data (excluding password hash)
-
-### 2.6 forgotPassword(dto)
-
-1. **Rate Limiting:** Check `rate:auth:forgot-password:{email}` in Redis. If count > 3, reject with 429
-2. **Logic:**
-   - Validate email format
-   - Find user by email in `users` table
-   - If user exists:
-     - Invalidate all previous unused tokens for this user (`UPDATE password_reset_tokens SET used = TRUE WHERE user_id = ? AND used = FALSE`)
-     - Generate secure random token (crypto.randomBytes(32))
-     - Hash token with SHA-256 for storage
-     - Insert `password_reset_tokens` record with 24-hour expiry
-     - Send reset email with link containing raw token
-   - Always return same response regardless of email existence (prevents email enumeration)
-   - Log `PASSWORD_RESET_REQUESTED` event
-3. **Transaction Boundaries:** Token invalidation and creation must be atomic
-
-### 2.7 resetPassword(dto)
-
-1. **Logic:**
-   - Validate token format
-   - Hash the received token with SHA-256
-   - Find `password_reset_tokens` record by `token_hash`
-   - Validate: token exists, `used = FALSE`, `expires_at > NOW()`
-   - If any validation fails, return 400 BAD_REQUEST with generic error
-   - Find user by `user_id` from token
-   - Validate password strength (min 8 chars, uppercase, lowercase, digit, special char)
-   - Hash new password with Argon2id
-   - Update user's `password_hash` in `users` table
-   - Mark token as `used = TRUE`
-   - Invalidate all other unused tokens for this user
-   - Log `PASSWORD_RESET_COMPLETED` event
-2. **Transaction Boundaries:** Password update, token marking, and invalidation of other tokens must be atomic
+- Backend: `backend/src/modules/auth/auth.service.ts`, `auth.controller.ts`, and `dto/`
+- Frontend: `frontend/src/pages/auth/`, `frontend/src/providers/AuthProvider.tsx`, and `frontend/src/lib/api-client.ts`
 
 ---
 
-## 3. Token Lifecycle Logic
+## 2. Registration
 
-### 3.1 Access Token Generation
+1. `POST /auth/register` checks for an existing user with the submitted email and returns conflict if one exists.
+2. The backend DTO accepts email, name, password, and optional buyer/merchant role. Role defaults to buyer in the service.
+3. The controller receives a multipart file named `license`; for merchants it is required, and for buyers it is rejected if supplied. Files must be PDF, named `license.pdf` case-insensitively, and no larger than 10 MB.
+4. Password is hashed with `argon2.hash()` and the user is created.
+5. For merchant role, the service uses `name` as both the account name and `shopName` when creating the merchant record; a provided license is saved and the license status starts as pending. The service also attempts to notify administrators.
+6. For buyer role, the service triggers the first skin-analysis reminder.
+7. The service generates and stores tokens and returns user and token data.
+8. The frontend validates additional client-side requirements (strong password, matching confirmation, license constraints, and terms agreement). It shows a success toast and navigates to Login after the request resolves; the frontend register provider does not persist the returned tokens.
 
-```typescript
-private generateAccessToken(user: User): string {
-  const payload: AccessTokenPayload = {
-    sub: user.id,
-    email: user.email,
-    role: user.role,
-    jti: uuidv4(),
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 15 * 60, // 15 minutes
-  };
-  
-  return this.jwtService.sign(payload, {
-    secret: process.env.JWT_ACCESS_SECRET,
-  });
-}
-```
-
-### 3.2 Refresh Token Generation
-
-```typescript
-private generateRefreshToken(user: User, family?: string): RefreshTokenResult {
-  const tokenFamily = family || uuidv4();
-  const payload: RefreshTokenPayload = {
-    sub: user.id,
-    jti: uuidv4(),
-    family: tokenFamily,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
-  };
-  
-  const token = this.jwtService.sign(payload, {
-    secret: process.env.JWT_REFRESH_SECRET,
-  });
-  
-  return { token, family: tokenFamily };
-}
-```
-
-### 3.3 Token Blacklisting (Redis)
-
-```typescript
-async blacklistToken(jti: string, ttlSeconds: number): Promise<void> {
-  await this.redis.setex(`blacklist:${jti}`, ttlSeconds, '1');
-}
-
-async isTokenBlacklisted(jti: string): Promise<boolean> {
-  const result = await this.redis.exists(`blacklist:${jti}`);
-  return result === 1;
-}
-```
-
-### 3.4 Password Reset Token Generation
-
-```typescript
-import * as crypto from 'crypto';
-
-async generatePasswordResetToken(userId: string): Promise<string> {
-  // Generate raw token (sent to user via email)
-  const rawToken = crypto.randomBytes(32).toString('hex');
-  
-  // Hash token for storage
-  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-  
-  // Set 24-hour expiry
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 24);
-  
-  // Invalidate previous unused tokens
-  await this.prisma.passwordResetToken.updateMany({
-    where: { userId, used: false },
-    data: { used: true },
-  });
-  
-  // Store hashed token
-  await this.prisma.passwordResetToken.create({
-    data: {
-      userId,
-      tokenHash,
-      expiresAt,
-      used: false,
-    },
-  });
-  
-  return rawToken;
-}
-```
-
-### 3.5 Password Reset Token Validation
-
-```typescript
-async validatePasswordResetToken(token: string): Promise<string | null> {
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  
-  const record = await this.prisma.passwordResetToken.findFirst({
-    where: {
-      tokenHash,
-      used: false,
-      expiresAt: { gt: new Date() },
-    },
-  });
-  
-  if (!record) {
-    return null; // Invalid, expired, or already used
-  }
-  
-  return record.userId;
-}
-```
+The existing implementation does not have a separate shop-name field, and the service does not atomically wrap user creation, merchant creation, and file persistence in a single transaction.
 
 ---
 
-## 4. Password Hashing Logic
+## 3. Login and Session Handling
 
-### 4.1 Argon2 Configuration
+### 3.1 Login
 
-```typescript
-import * as argon2 from 'argon2';
+1. The frontend validates email and requires a password of at least 8 characters.
+2. The backend looks up the email and verifies the password using Argon2.
+3. A missing user or incorrect password returns 401 `Invalid credentials`.
+4. On success, the backend creates tokens and stores a hashed refresh-token record. The response includes user, access token, and refresh token.
+5. The frontend stores both tokens in local storage and sets the user in `AuthProvider`.
+6. Login navigation uses a supplied `redirect` query value or the role-specific dashboard route.
 
-const ARGON2_OPTIONS: argon2.Options = {
-  type: argon2.argon2id,
-  memoryCost: 65536,    // 64MB
-  timeCost: 3,          // 3 iterations
-  parallelism: 4,       // 4 threads
-};
+The current login service code does not reject inactive accounts explicitly, set an HTTP-only refresh-token cookie, or implement login rate limiting in the inspected method.
 
-export async function hashPassword(password: string): Promise<string> {
-  return argon2.hash(password, ARGON2_OPTIONS);
-}
+### 3.2 Auth initialization and refresh
 
-export async function verifyPassword(hash: string, password: string): Promise<boolean> {
-  return argon2.verify(hash, password);
-}
-```
+- On initialization, `AuthProvider` reads `accessToken` from local storage and calls `/auth/verify`. If verification fails, both locally stored tokens are removed.
+- The API client attaches the access token as a bearer header.
+- On a 401 response, the API client tries `/auth/refresh` if a refresh token is in local storage. A successful response replaces both stored tokens and retries the original request. A failed refresh clears local tokens and navigates to `/login`.
+- Backend refresh validates the refresh JWT, checks revocation, finds an unrevoked unexpired refresh-token record, revokes that record, and stores a replacement token record. Failures are returned as 401.
 
----
+### 3.3 Logout
 
-## 5. Rate Limiting Logic
-
-### 5.1 Rate Limit Configuration
-
-```typescript
-const RATE_LIMIT_CONFIG = {
-  login: { limit: 5, window: 300 },      // 5 attempts per 5 minutes
-  register: { limit: 3, window: 3600 },  // 3 attempts per hour
-  refresh: { limit: 10, window: 60 },    // 10 attempts per minute
-  forgotPassword: { limit: 3, window: 3600 }, // 3 attempts per hour per email
-};
-```
-
-### 5.2 Rate Limit Check
-
-```typescript
-async checkRateLimit(key: string, limit: number, window: number): Promise<boolean> {
-  const redisKey = `rate:auth:${key}`;
-  const current = await this.redis.incr(redisKey);
-  
-  if (current === 1) {
-    await this.redis.expire(redisKey, window);
-  }
-  
-  return current <= limit;
-}
-```
+The backend logout endpoint uses the bearer access token to blacklist it for its remaining lifetime when it can verify the token and revokes all refresh-token records for the user. The current `AuthProvider.logout()` does not call that endpoint; it clears local storage, current user state, and the TanStack Query cache.
 
 ---
 
-## 6. Cookie Configuration
+## 4. Password Recovery
 
-### 6.1 Refresh Token Cookie Settings
+### 4.1 Request code
 
-```typescript
-const REFRESH_TOKEN_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  path: '/api/v1/auth/refresh',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
-};
-```
+1. The frontend validates the email and calls `POST /auth/forgot-password`.
+2. The backend looks up the account. If none is found, it returns 404 `No account found with this email address`.
+3. For an existing user, prior unused password-reset records are marked used. The service generates a six-digit code, hashes it with SHA-256, and stores the hash with a 10-minute expiry.
+4. The service attempts to email the code. Email delivery exceptions are logged; the request still returns the success message.
+5. On an API success response, the frontend navigates to Verify Code and stores the email in router location state.
 
-### 6.2 Clear Cookie Settings
+The current implementation's unknown-email response reveals that the account does not exist; it does not provide the email-enumeration protection described in older design text. No backend rate limiter is applied in the inspected auth controller/service flow. The UI's resend button imposes a 60-second client-side cooldown after a successful resend.
 
-```typescript
-const CLEAR_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  path: '/api/v1/auth/refresh',
-  maxAge: 0, // Expire immediately
-};
-```
+### 4.2 Verify code
 
----
+1. Verify Code requires an email from router location state; without it, the page navigates back to Forgot Password.
+2. The page validates that a code is present and exactly six characters.
+3. The backend finds the user by email, hashes the submitted code with SHA-256, and checks for a matching unused record whose expiry is in the future.
+4. A valid code returns a success message but is not marked used at this step.
+5. The frontend passes email and code to Reset Password in router location state.
 
-## 7. Validation Rules
+### 4.3 Reset password
 
-### 7.1 Registration Validation
-
-| Field | Rule | Error Message |
-|-------|------|---------------|
-| `email` | Required, valid format, max 255 chars | "Email is required" / "Invalid email" |
-| `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" |
-| `name` | Required, 1-200 chars | "Name is required" |
-| `role` | Optional, 'buyer' or 'merchant' | "Invalid role" |
-| `shopName` | Required if role=merchant, max 255 chars | "Shop name is required for merchant registration" |
-| `license` | Required if role=merchant, PDF, named license.pdf, max 10MB | Various license errors |
-
-### 7.2 Login Validation
-
-| Field | Rule | Error Message |
-|-------|------|---------------|
-| `email` | Required, valid format | "Email is required" / "Invalid email" |
-| `password` | Required, min 8 chars | "Password is required" |
-
-### 7.3 Forgot Password Validation
-
-| Field | Rule | Error Message |
-|-------|------|---------------|
-| `email` | Required, valid format | "Email is required" / "Invalid email" |
-
-### 7.4 Reset Password Validation
-
-| Field | Rule | Error Message |
-|-------|------|---------------|
-| `token` | Required | "Reset token is required" |
-| `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" |
+1. Reset Password requires email and code in router location state; if either is missing, it navigates to Forgot Password.
+2. The frontend validates password length (8–128), uppercase, lowercase, digit, special character from `@$!%*?&`, and confirmation match.
+3. The API request contains email, code, and password; confirmation is client-only.
+4. The backend verifies the email/code against an unused, unexpired code record, hashes the new password with Argon2, updates the user password, marks the matched code used, and invalidates the user's other unused code records.
+5. The frontend shows a success toast and replaces the form with a success view linking to Login.
 
 ---
 
-## 8. Cross-References
+## 5. Validation Summary
 
-| Related Document | Purpose |
-|-----------------|---------|
-| [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Endpoint routing to these methods |
-| [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | DTO definitions used in validation |
-| [DD_AUTH_06](./DD_SignUp_Login_06__TEST_SPEC.md) | Test specification |
-| [Requirement Spec](../../core-work/要件定義書_REQUIREMENT_SPEC.md) | Source business rules |
+| Concern | Frontend | Backend |
+|---|---|---|
+| Registration name | 2–200 characters | 2–100 characters |
+| Registration email | Required, valid, max 255 | Valid email |
+| Login password | Required, min 8 | Min 8 |
+| Registration/reset password | 8–128; uppercase, lowercase, digit, special | Registration DTO requires min 8 only; reset DTO additionally requires uppercase, lowercase, digit, special |
+| Role | Buyer or merchant | Buyer or merchant; registration defaults to buyer |
+| Merchant license | Required for merchant; PDF, max 10 MB, named `license.pdf` | Controller requires merchant file, rejects buyer file, checks PDF/name, and limits file size to 10 MB |
+| Recovery code | Required, exactly 6 characters | Email plus exactly 6-character code |
+| Password confirmation | Required and must match | Not sent to backend |
+| Terms agreement | Required by registration form | Not sent to backend |
+
+The difference between client and server validation limits is intentional to document current behavior, not to define a proposed contract.
+
+---
+
+## 6. Token and Persistence Notes
+
+- Access and refresh tokens are generated by `AuthService.generateTokens()` using configured JWT signing. The refresh-token expiry is configured from `jwt.refreshExpiration` with a `7d` fallback.
+- The service hashes refresh-token strings with Argon2 before storing them and stores an absolute-limit timestamp 90 days from creation.
+- The payload visibly constructed in the service contains `sub`, `email`, and `role`; other JWT claims may be supplied by JWT configuration.
+- Password recovery stores SHA-256 hashes of six-digit codes with a 10-minute expiry.
+- Password hashes are produced with the Argon2 package. The inspected service does not pass the fixed Argon2id tuning parameters previously stated in this document.
+
+---
+
+## 7. Cross-References
+
+| Related document | Purpose |
+|---|---|
+| [DD SignUp/Login 02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Page behavior |
+| [DD SignUp/Login 03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Endpoint contracts |
+| [DD SignUp/Login 04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | Field definitions |
+| [DD SignUp/Login 06](./DD_SignUp_Login_06__TEST_SPEC.md) | Test coverage |

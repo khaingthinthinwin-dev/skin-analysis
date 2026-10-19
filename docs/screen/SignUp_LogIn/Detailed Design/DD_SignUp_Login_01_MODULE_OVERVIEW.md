@@ -1,158 +1,104 @@
-# DD_AUTH_01 — Module Overview
+# DD SignUp/Login 01 — Module Overview
 
-> **Doc ID:** SKM-DD-AUTH-01 | **Version:** 2.1 | **Status:** Released  
-> **Last Updated:** 2026-08-21
+> **Doc ID:** SKM-DD-AUTH-01 | **Version:** 2.2 | **Status:** Aligned to current implementation
+> **Last Updated:** 2026-10-15
 
 ---
 
 ## 1. Module Overview
 
-The **Authentication Module** (認証モジュール) is the gateway for all user authentication within the Cosmetics Finder platform. It handles user registration (Buyer and Merchant), credential validation, JWT token lifecycle management, secure session termination, and password recovery. This module ensures that only properly validated, authenticated users can access protected platform features while maintaining security through dual-token architecture, Argon2 password hashing, Redis-based token blacklisting, and secure password reset via email links.
+The Authentication module provides separate frontend pages for account login, registration, and password recovery. The password recovery path uses an emailed six-digit verification code before the user can reset a password.
+
+The frontend is implemented with React, React Router, React Hook Form, Zod, and `react-i18next`. The auth pages call the shared `authService`; authenticated-user state is managed by `AuthProvider`. The backend implementation is in the NestJS auth module.
 
 ---
 
-## 2. Supported Use Cases
+## 2. Supported User Flows
 
-| ID | Use Case | Description |
-|---|----------|-------------|
-| UC-AUTH-01 | Register New Account | Create a new user account with email, password, name, and role selection (Buyer/Merchant). If role is merchant, a shop name is also collected. IDs use UUID primary keys. |
-| UC-AUTH-01A | Upload Merchant License | When registering as Merchant, input shop name and upload business license PDF (license.pdf, max 10MB). Creates a `merchants` record with `license_status='pending'`; merchant features stay locked until license is APPROVED. |
-| UC-AUTH-02 | Login with Credentials | Authenticate with email and password, receive JWT access token (15min) and refresh token (7 days). |
-| UC-AUTH-03 | Refresh Access Token | Automatically refresh expired access token using refresh token cookie with rotation. |
-| UC-AUTH-04 | Logout | Terminate session by blacklisting access token in Redis and revoking refresh token. |
-| UC-AUTH-05 | Verify Token Validity | Validate access token and return user profile data for protected route access. |
-| UC-AUTH-06 | Detect Token Reuse | Detect and handle revoked refresh token reuse by revoking all user tokens. |
-| UC-AUTH-07 | Request Password Reset | Send password reset email with secure token (24-hour expiry, single-use). Rate limited to 3 requests per email per hour. |
-| UC-AUTH-08 | Reset Password with Token | Reset password using token from email link. Validates token, updates password with Argon2 hash, invalidates all unused tokens for user. |
+| ID | Flow | Implemented behavior |
+|---|---|---|
+| UC-AUTH-01 | Register | Buyer or merchant submits name, email, password, role, terms agreement, and (for merchants) a business-license PDF. The UI shows success and navigates to Login. |
+| UC-AUTH-02 | Login | User submits email and password. On success, the auth provider stores the access and refresh tokens and sets the user in application state. |
+| UC-AUTH-03 | Restore authenticated user | On provider initialization, an access token in local storage is verified with `/auth/verify`; an invalid token causes stored tokens to be removed. |
+| UC-AUTH-04 | Refresh tokens | The API client attempts `/auth/refresh` after a 401 when a stored refresh token is available. |
+| UC-AUTH-05 | Logout | The auth provider clears local tokens, user state, and the query cache. The current provider implementation does not call the backend logout endpoint. |
+| UC-AUTH-06 | Request recovery code | User submits an email; the backend creates and emails a six-digit verification code for an existing account. |
+| UC-AUTH-07 | Verify recovery code | User submits the email and six-character code. On success, the frontend passes both values to Reset Password through router location state. |
+| UC-AUTH-08 | Reset password | User submits a new password with the email and code. A valid code is consumed after password update. |
 
 ---
 
-## 3. Session State Machine (Authentication Scope)
+## 3. Frontend Routes and Components
 
-The Authentication module manages the complete token lifecycle from unauthenticated state through session establishment and termination.
+| Page | Source | Route |
+|---|---|---|
+| Login | `frontend/src/pages/auth/Login.tsx` | `/login` |
+| Register | `frontend/src/pages/auth/Register.tsx` | `/register` |
+| Forgot Password | `frontend/src/pages/auth/ForgotPassword.tsx` | `/forgot-password` |
+| Verification Code | `frontend/src/pages/auth/VerifyCode.tsx` | `/verify-code` |
+| Reset Password | `frontend/src/pages/auth/ResetPassword.tsx` | `/reset-password` |
 
-```mermaid
-stateDiagram-v2
-    [*] --> UNAUTHENTICATED : Initial State
-    
-    UNAUTHENTICATED --> AUTHENTICATING : Submit Credentials
-    AUTHENTICATING --> AUTHENTICATED : Login Success
-    AUTHENTICATING --> UNAUTHENTICATED : Login Failed
-    
-    AUTHENTICATED --> TOKEN_REFRESHING : Access Token Expired
-    TOKEN_REFRESHING --> AUTHENTICATED : Refresh Success
-    TOKEN_REFRESHING --> UNAUTHENTICATED : Refresh Failed
-    
-    AUTHENTICATED --> LOGGING_OUT : User Logout
-    LOGGING_OUT --> UNAUTHENTICATED : Logout Complete
-    
-    AUTHENTICATED --> UNAUTHENTICATED : Token Reuse Detected
-    
-    UNAUTHENTICATED --> PASSWORD_RESET_PENDING : Request Password Reset
-    PASSWORD_RESET_PENDING --> PASSWORD_RESET_COMPLETE : Reset Password Success
-    PASSWORD_RESET_PENDING --> UNAUTHENTICATED : Reset Password Failure
-    
-    UNAUTHENTICATED --> [*] : Session Terminated
+Each route is wrapped by `frontend/src/layouts/AuthLayout.tsx`. Login, Register, and the recovery pages are separate routes, not tabs on a combined form.
+
+### Password-recovery navigation
+
+```text
+Login -> Forgot Password -> Verification Code -> Reset Password -> Login
 ```
 
-**Session States:**
-
-| State | Description | Can Access API | Can Refresh |
-|-------|-------------|:--------------:|:-----------:|
-| `UNAUTHENTICATED` | No tokens issued or session terminated | ✗ | ✗ |
-| `AUTHENTICATING` | Credentials submitted, awaiting validation | ✗ | ✗ |
-| `AUTHENTICATED` | Valid access token active (≤15 min) | ✓ | ✓ |
-| `TOKEN_REFRESHING` | Access token expired, refresh in progress | ✗ | ✓ |
-| `LOGGING_OUT` | Logout initiated, tokens being revoked | ✗ | ✗ |
-| `PASSWORD_RESET_PENDING` | Reset email sent, awaiting token usage | ✗ | ✗ |
-| `PASSWORD_RESET_COMPLETE` | Password successfully reset | ✗ | ✗ |
+Forgot Password passes the email in router location state. Verify Code requires that email and passes email plus code to Reset Password. Verify Code and Reset Password redirect to `/forgot-password` when required state is missing. Reset Password does not read a URL token or query parameter.
 
 ---
 
-## 4. Security & Permissions
+## 4. Authentication State and Token Storage
 
-1. **Password Hashing**: Argon2id algorithm with 64MB memory cost, 3 iterations, 4 threads.
-2. **JWT Dual-Token Architecture**: 
-   - Access Token: 15-minute expiry, stored in memory only (never localStorage).
-   - Refresh Token: 7-day expiry, stored in httpOnly secure cookie.
-3. **Token Rotation**: New refresh token issued on every refresh request. Old token revoked.
-4. **Token Family Tracking**: Each login session has unique family ID for breach detection.
-5. **Reuse Detection**: If revoked refresh token is used, ALL tokens for user are revoked.
-6. **Redis Blacklisting**: On logout, access token `jti` added to Redis blacklist with TTL.
-7. **Rate Limiting**: Login attempts limited to 5 per IP per 300 seconds. Password reset limited to 3 per email per hour.
-8. **Cookie Security**: httpOnly, Secure, SameSite=Strict, Path restricted to refresh endpoint.
-9. **Data Isolation**: Users can only access their own profile data.
-10. **Generic Error Messages**: Login failures return "Invalid email or password" to prevent user enumeration.
-11. **Password Reset Security**: Tokens expire after 24 hours, single-use, all previous unused tokens invalidated on new request.
-12. **Email Non-Disclosure**: Password reset always returns same message regardless of email existence.
+- `AuthProvider` stores `accessToken` and `refreshToken` in `localStorage` after successful login.
+- The frontend API client attaches the access token as a bearer authorization header when present.
+- When a request receives HTTP 401 and a refresh token is stored, the API client attempts `/auth/refresh`, saves the returned tokens, and retries the original request. If refresh fails, it removes stored tokens and redirects to `/login`.
+- Provider initialization verifies an existing access token through `/auth/verify`.
+- `AuthProvider.logout()` clears local storage, in-memory user state, and the TanStack Query cache. It does not invoke `authService.logout()` in the current implementation.
+- Successful login navigation is governed by the Login page's `redirect` query parameter or the dashboard route selected for the user's role.
+
+These are descriptions of the current code, not a claim that local storage is the recommended secure token-storage design.
 
 ---
 
-## 5. Architectural Components Involved
+## 5. Auth API Endpoints
 
-| Layer | Files |
-|-------|-------|
-| **Frontend Pages** | `Login.tsx`, `Register.tsx`, `ForgotPassword.tsx`, `ResetPassword.tsx` |
-| **Frontend Components** | `LoginForm.tsx`, `RegisterForm.tsx`, `ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx`, `PasswordStrengthIndicator.tsx`, `LicenseUpload.tsx` |
-| **Frontend Hooks** | `useAuth.ts` |
-| **Frontend Services** | `auth.service.ts` |
-| **Frontend Schemas** | `auth.schema.ts` |
-| **Frontend Providers** | `AuthProvider.tsx` |
-| **Backend API** | `auth.controller.ts` |
-| **Backend Service** | `auth.service.ts` |
-| **Backend DTOs** | `login.dto.ts`, `register.dto.ts`, `forgot-password.dto.ts`, `reset-password.dto.ts` |
-| **Backend Strategies** | `jwt-access.strategy.ts`, `jwt-refresh.strategy.ts` |
-| **Backend Guards** | `jwt-auth.guard.ts`, `local-auth.guard.ts` |
-| **Backend Config** | `jwt.config.ts`, `argon2.config.ts` |
-| **Shared Services** | `prisma.service.ts` (users, merchants, refresh_tokens, password_reset_tokens), `redis.service.ts` (blacklist, rate limiting), `email.service.ts` (reset link) |
+The frontend API client uses an `/api/v1` base URL and calls the following auth endpoints:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/auth/register` | Create buyer or merchant account; multipart form supports a license file. |
+| `POST` | `/auth/login` | Authenticate and return user and token data. |
+| `POST` | `/auth/refresh` | Exchange a refresh token supplied in the request body. |
+| `POST` | `/auth/logout` | Backend logout endpoint; not called by the current `AuthProvider.logout()`. |
+| `GET` | `/auth/verify` | Verify current access token and retrieve user data. |
+| `POST` | `/auth/forgot-password` | Request an emailed recovery code. |
+| `POST` | `/auth/verify-code` | Verify email and recovery code. |
+| `POST` | `/auth/reset-password` | Reset password with email, code, and new password. |
 
 ---
 
-## 6. API Endpoints
+## 6. Implementation References
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|:-------------:|
-| `POST` | `/api/v1/auth/register` | Register new user account | No |
-| `POST` | `/api/v1/auth/login` | Authenticate user, issue tokens | No |
-| `POST` | `/api/v1/auth/refresh` | Refresh access token via cookie | Cookie |
-| `POST` | `/api/v1/auth/logout` | Terminate session, blacklist token | Yes |
-| `GET` | `/api/v1/auth/verify` | Validate token, return user profile | Yes |
-| `POST` | `/api/v1/auth/forgot-password` | Request password reset email | No |
-| `POST` | `/api/v1/auth/reset-password` | Reset password with token | No |
-
----
-
-## 7. Database Tables Involved
-
-| Table | Purpose | Operations |
-|-------|---------|------------|
-| `users` | Store user credentials, profile, role, `merchant_id` | SELECT (login), INSERT (register), SELECT (verify), UPDATE (reset password) |
-| `merchants` | Store merchant business info and license status | INSERT (register, merchant only) |
-| `refresh_tokens` | Store hashed refresh tokens with family tracking | INSERT (login), SELECT (refresh), UPDATE (revoke) |
-| `password_reset_tokens` | Store hashed password reset tokens with expiry | INSERT (forgot password), SELECT (reset password), UPDATE (mark used) |
+| Layer | Source files |
+|---|---|
+| Frontend pages | `frontend/src/pages/auth/Login.tsx`, `Register.tsx`, `ForgotPassword.tsx`, `VerifyCode.tsx`, `ResetPassword.tsx` |
+| Frontend routing/layout | `frontend/src/app/routes.tsx`, `frontend/src/layouts/AuthLayout.tsx` |
+| Frontend validation | `frontend/src/schemas/auth.schema.ts` |
+| Frontend API and state | `frontend/src/services/auth.service.ts`, `frontend/src/providers/AuthProvider.tsx`, `frontend/src/lib/api-client.ts` |
+| Backend controller/service | `backend/src/modules/auth/auth.controller.ts`, `backend/src/modules/auth/auth.service.ts` |
+| Backend request validation | `backend/src/modules/auth/dto/` |
 
 ---
 
-## 8. External Dependencies
+## 7. Cross-References
 
-| Dependency | Purpose | Configuration |
-|------------|---------|---------------|
-| Redis | Token blacklisting, rate limiting | `REDIS_URL` |
-| Argon2 Library | Password hashing | `ARGON2_MEMORY_COST`, `ARGON2_TIME_COST`, `ARGON2_PARALLELISM` |
-| JWT Library | Token generation/verification | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` |
-| File Storage | Merchant license upload | `LICENSE_STORAGE_PATH` |
-| Email Service | Password reset link delivery | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` |
-
----
-
-## 9. Cross-References
-
-| Related Document | Purpose |
-|-----------------|---------|
-| [DD_AUTH_02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend page design |
-| [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Backend REST API contract |
-| [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | DTO and type definitions |
-| [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Backend business rules and token lifecycle |
-| [DD_AUTH_06](./DD_SignUp_Login_06__TEST_SPEC.md) | Test specification |
-| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Full functional specification |
-| [画面項目設計書_SignUp_Login](../画面項目設計書_SignUp_Login.md) | Screen items specification |
+| Related document | Purpose |
+|---|---|
+| [DD SignUp/Login 02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend page behavior |
+| [DD SignUp/Login 03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | API endpoint contracts |
+| [DD SignUp/Login 04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | Frontend and backend types |
+| [DD SignUp/Login 05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Current business logic |
+| [DD SignUp/Login 06](./DD_SignUp_Login_06__TEST_SPEC.md) | Test inventory and scenarios |

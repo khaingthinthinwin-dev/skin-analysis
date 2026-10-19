@@ -53,4 +53,26 @@ describe('CreateUserDto', () => {
     const errors = await validate(dto);
     expect(errors.length).toBe(0);
   });
+
+  it('should accept an optional boolean emailVerified', async () => {
+    const dto = plainToInstance(CreateUserDto, {
+      email: 'test@example.com',
+      name: 'John Doe',
+      passwordHash: 'password123',
+      emailVerified: true,
+    });
+    const errors = await validate(dto);
+    expect(errors.length).toBe(0);
+  });
+
+  it('should fail with non-boolean emailVerified', async () => {
+    const dto = plainToInstance(CreateUserDto, {
+      email: 'test@example.com',
+      name: 'John Doe',
+      passwordHash: 'password123',
+      emailVerified: 'yes',
+    });
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
+  });
 });

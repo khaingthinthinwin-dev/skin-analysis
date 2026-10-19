@@ -1,538 +1,184 @@
-# DD_AUTH_02 — Frontend Page (Login / Register / Password Reset)
+# DD SignUp/Login 02 — Frontend Pages
 
-> **Doc ID:** SKM-DD-AUTH-02 | **Version:** 2.1 | **Status:** Released  
-> **Last Updated:** 2026-08-21
+> **Doc ID:** SKM-DD-AUTH-02 | **Version:** 2.2 | **Status:** Aligned to current frontend implementation
 
 ---
 
 ## 1. Overview
 
-The Authentication pages consist of four main screens: `Login`, `Register`, `ForgotPassword`, and `ResetPassword`. They share a common layout with a tabbed interface for switching between login and registration forms. The Register form includes conditional fields for Merchant role (license upload). Forgot/Reset Password screens provide password recovery functionality.
+The authentication UI has five separate routes: Login, Register, Forgot Password, Verification Code, and Reset Password. Each page renders its own card inside the shared `AuthLayout`; Login and Register are not tabs on a shared page.
 
-- **File Path (Login):** `frontend/src/pages/Login.tsx`
-- **File Path (Register):** `frontend/src/pages/Register.tsx`
-- **File Path (ForgotPassword):** `frontend/src/pages/ForgotPassword.tsx`
-- **File Path (ResetPassword):** `frontend/src/pages/ResetPassword.tsx`
-- **Route (Login):** `/login`
-- **Route (Register):** `/register`
-- **Route (ForgotPassword):** `/forgot-password`
-- **Route (ResetPassword):** `/reset-password?token=xxx`
-- **Shared Layout:** `AuthLayout.tsx` (centered card with branding)
+| Page | Source file | Route |
+|---|---|---|
+| Login | `frontend/src/pages/auth/Login.tsx` | `/login` |
+| Register | `frontend/src/pages/auth/Register.tsx` | `/register` |
+| Forgot Password | `frontend/src/pages/auth/ForgotPassword.tsx` | `/forgot-password` |
+| Verification Code | `frontend/src/pages/auth/VerifyCode.tsx` | `/verify-code` |
+| Reset Password | `frontend/src/pages/auth/ResetPassword.tsx` | `/reset-password` |
 
----
-
-## 2. Layout Structure
-
-Both pages use a centered card layout with the Cosmetics Finder branding. The design is responsive with a max-width of 400px on desktop.
-
-### 2.1 Login Page Layout
-
-```
-┌────────────────────────────────────────────────────────┐
-│ Header (Language Toggle EN/JA/MY | Theme Toggle)       │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                 [Logo]                           │  │
-│  │           Cosmetics Finder                       │  │
-│  │                                                  │  │
-│  │  ┌──────────────────────────────────────────┐    │  │
-│  │  │ Email Label                              │    │  │
-│  │  │ [Email Input]                            │    │  │
-│  │  │                                          │    │  │
-│  │  │ Password Label                           │    │  │
-│  │  │ [Password Input] [Show/Hide]             │    │  │
-│  │  │                                          │    │  │
-│  │  │ [    Sign In    ] (Primary)              │    │  │
-│  │  │                                          │    │  │
-│  │  │ Don't have an account?                   │    │  │
-│  │  │ Sign Up ->                               │    │  │
-│  │  └──────────────────────────────────────────┘    │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-```
-
-### 2.2 Register Page Layout
-
-```
-┌────────────────────────────────────────────────────────┐
-│ Header (Language Toggle EN/JA/MY | Theme Toggle)       │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                 [Logo]                           │  │
-│  │           Cosmetics Finder                       │  │
-│  │                                                  │  │
-│  │  ┌──────────────────────────────────────────┐    │  │
-│  │  │ Full Name Label                          │    │  │
-│  │  │ [Full Name Input]                        │    │  │
-│  │  │                                          │    │  │
-│  │  │ Email Label                              │    │  │
-│  │  │ [Email Input]                            │    │  │
-│  │  │                                          │    │  │
-│  │  │ Password Label                           │    │  │
-│  │  │ [Password Input] [Show/Hide]             │    │  │
-│  │  │ [||||||____] Password Strength           │    │  │
-│  │  │ * 8+ chars  * Uppercase  * Lowercase     │    │  │
-│  │  │ * Number    * Special char               │    │  │
-│  │  │                                          │    │  │
-│  │  │ Confirm Password Label                   │    │  │
-│  │  │ [Confirm Password Input]                 │    │  │
-│  │  │                                          │    │  │
-│  │  │ I am a:                                  │    │  │
-│  │  │ (o) Buyer                                │    │  │
-│  │  │ ( ) Merchant                             │    │  │
-│  │  │                                          │    │  │
-│  │  │ [Shop Name - Merchant Only]              │    │  │
-│  │  │ [Shop Name Input]                        │    │  │
-│  │  │                                          │    │  │
-│  │  │ [Business License - Merchant Only]       │    │  │
-│  │  │ [Drag & Drop or Click to Upload]         │    │  │
-│  │  │ PDF only (max 10MB) - license.pdf        │    │  │
-│  │  │                                          │    │  │
-│  │  │ [ ] I agree to Terms of Service          │    │  │
-│  │  │                                          │    │  │
-│  │  │ [ Create Account ] (Primary)             │    │  │
-│  │  │                                          │    │  │
-│  │  │ Already have an account?                 │    │  │
-│  │  │ Sign In ->                               │    │  │
-│  │  └──────────────────────────────────────────┘    │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-```
-
-### 2.3 Forgot Password Page Layout
-
-```
-┌────────────────────────────────────────────────────────┐
-│ Header (Language Toggle EN/JA/MY | Theme Toggle)       │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                 [Logo]                           │  │
-│  │           Cosmetics Finder                       │  │
-│  │                                                  │  │
-│  │  ┌──────────────────────────────────────────┐    │  │
-│  │  │ Forgot your password?                    │    │  │
-│  │  │ Enter your email and we'll send you a    │    │  │
-│  │  │ reset link.                              │    │  │
-│  │  │                                          │    │  │
-│  │  │ Email Label                              │    │  │
-│  │  │ [Email Input]                            │    │  │
-│  │  │                                          │    │  │
-│  │  │ [  Send Reset Link  ] (Primary)          │    │  │
-│  │  │                                          │    │  │
-│  │  │ Back to Login ->                         │    │  │
-│  │  └──────────────────────────────────────────┘    │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-```
-
-**Success State:**
-```
-┌────────────────────────────────────────────────────────┐
-│ Header (Language Toggle EN/JA/MY | Theme Toggle)       │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                 [Logo]                           │  │
-│  │           Cosmetics Finder                       │  │
-│  │                                                  │  │
-│  │  ┌──────────────────────────────────────────┐    │  │
-│  │  │ If an account exists with that email,    │    │  │
-│  │  │ you'll receive a password reset link     │    │  │
-│  │  │ shortly.                                 │    │  │
-│  │  │                                          │    │  │
-│  │  │ Back to Login ->                         │    │  │
-│  │  └──────────────────────────────────────────┘    │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-```
-
-### 2.4 Reset Password Page Layout
-
-```
-┌────────────────────────────────────────────────────────┐
-│ Header (Language Toggle EN/JA/MY | Theme Toggle)       │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                 [Logo]                           │  │
-│  │           Cosmetics Finder                       │  │
-│  │                                                  │  │
-│  │  ┌──────────────────────────────────────────┐    │  │
-│  │  │ Reset your password                      │    │  │
-│  │  │ Enter your new password below.           │    │  │
-│  │  │                                          │    │  │
-│  │  │ New Password Label                       │    │  │
-│  │  │ [New Password Input] [Show/Hide]         │    │  │
-│  │  │ [||||||____] Password Strength           │    │  │
-│  │  │ * 8+ chars  * Uppercase  * Lowercase     │    │  │
-│  │  │ * Number    * Special char               │    │  │
-│  │  │                                          │    │  │
-│  │  │ Confirm Password Label                   │    │  │
-│  │  │ [Confirm Password Input]                 │    │  │
-│  │  │                                          │    │  │
-│  │  │ [ Reset Password ] (Primary)             │    │  │
-│  │  │                                          │    │  │
-│  │  │ Back to Login ->                         │    │  │
-│  │  └──────────────────────────────────────────┘    │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-```
-
-**Success State:**
-```
-┌────────────────────────────────────────────────────────┐
-│ Header (Language Toggle EN/JA/MY | Theme Toggle)       │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                 [Logo]                           │  │
-│  │           Cosmetics Finder                       │  │
-│  │                                                  │  │
-│  │  ┌──────────────────────────────────────────┐    │  │
-│  │  │ Your password has been reset             │    │  │
-│  │  │ successfully.                            │    │  │
-│  │  │                                          │    │  │
-│  │  │ Back to Login ->                         │    │  │
-│  │  └──────────────────────────────────────────┘    │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                        │
-└────────────────────────────────────────────────────────┘
-```
+All five routes are wrapped by `frontend/src/layouts/AuthLayout.tsx`, which renders the shared header and a centered content area with `max-w-md`. The page content uses a card layout. The shared header provides app-wide controls; those controls are not implemented by the individual auth pages.
 
 ---
 
-## 3. Form State & Validation (React Hook Form + Zod)
+## 2. Page Behavior
 
-Both forms use `react-hook-form` with `zodResolver` for schema validation.
+### 2.1 Login
 
-### 3.1 Login Form Hook
+**Fields**
 
-```typescript
-// frontend/src/features/auth/hooks/useLoginForm.ts
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { loginSchema, type LoginFormData } from '../schemas/auth.schema';
+- Email: email input, email autocomplete, autofocus.
+- Password: password input with a show/hide control.
 
-export function useLoginForm() {
-  const methods = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-    mode: 'onChange',
-  });
+**Validation and submission**
 
-  return { methods };
-}
-```
+- Uses `loginSchema` through React Hook Form and Zod with `mode: 'onTouched'`.
+- Email is required and must be valid. Password is required and must be at least 8 characters.
+- The submit button is disabled while the login request is in progress and displays a loading indicator.
+- On success, shows a success toast. Authentication navigation is handled by the auth provider; an authenticated user visiting this page is redirected to the `redirect` query value when present, otherwise to the dashboard route for their role.
+- On failure, displays the thrown error message in a destructive alert, or the translated fallback message when the error is not an `Error`.
 
-### 3.2 Register Form Hook
+**Navigation**
 
-```typescript
-// frontend/src/features/auth/hooks/useRegisterForm.ts
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { registerSchema, type RegisterFormData } from '../schemas/auth.schema';
+- “Forgot password” navigates to `/forgot-password`.
+- “Create account” navigates to `/register`.
 
-export function useRegisterForm() {
-  const methods = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: 'buyer',
-      shopName: '',
-      license: undefined,
-      agreeToTerms: false,
-    },
-    mode: 'onChange',
-  });
+### 2.2 Register
 
-  const selectedRole = methods.watch('role');
+**Fields**
 
-  return { methods, selectedRole };
-}
-```
+- Role radio group: `buyer` (default) or `merchant`.
+- Name: one input bound to `name`. Its label and placeholder change from full name to shop name when the selected role is merchant; there is no separate shop-name input.
+- Email.
+- Password and confirmation, each with an independent show/hide control.
+- Terms of Service agreement checkbox with a link to `/terms`.
+- Merchant-only business-license upload. The user can select a file or drag and drop it, see the selected filename, and remove it. The file picker accepts PDF files.
 
-### 3.3 Forgot Password Form Hook
+**Validation and submission**
 
-```typescript
-// frontend/src/features/auth/hooks/useForgotPasswordForm.ts
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { forgotPasswordSchema, type ForgotPasswordFormData } from '../schemas/auth.schema';
+- Uses `registerSchema` through React Hook Form and Zod with `mode: 'onTouched'`.
+- Name is 2–200 characters; email is required, valid, and at most 255 characters.
+- Password is 8–128 characters and must include an uppercase letter, lowercase letter, digit, and one of `@$!%*?&`. Confirmation is required and must match.
+- Role must be `buyer` or `merchant`; the Terms of Service checkbox must be selected.
+- A merchant must supply a license file. It must be a PDF, no larger than 10 MB, and named `license.pdf` (case-insensitive).
+- Choosing buyer clears any selected license file.
+- The submit button is disabled and shows a loading indicator while registration is in progress.
+- On success, shows a success toast and navigates to `/login`.
+- On failure, displays the thrown error message in a destructive alert, or the translated fallback message when the error is not an `Error`.
+- An already-authenticated user is redirected to the dashboard route for their role.
 
-export function useForgotPasswordForm() {
-  const methods = useForm<ForgotPasswordFormData>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: '',
-    },
-    mode: 'onChange',
-  });
+### 2.3 Forgot Password
 
-  return { methods };
-}
-```
+**Fields**
 
-### 3.4 Reset Password Form Hook
+- Email: email input with email autocomplete, autofocus, and email input mode.
 
-```typescript
-// frontend/src/features/auth/hooks/useResetPasswordForm.ts
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { resetPasswordSchema, type ResetPasswordFormData } from '../schemas/auth.schema';
+**Validation and submission**
 
-export function useResetPasswordForm() {
-  const methods = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
-    defaultValues: {
-      password: '',
-      confirmPassword: '',
-    },
-    mode: 'onChange',
-  });
+- Uses `forgotPasswordSchema` through React Hook Form and Zod with `mode: 'onTouched'`.
+- Email is required and must be valid.
+- The submit button is disabled and shows a loading indicator while the request is in progress.
+- On success, navigates to `/verify-code` and passes the email in router location state. This page does not render a separate success state.
+- On failure, displays the response message when available, otherwise the thrown error message or the translated fallback.
 
-  return { methods };
-}
-```
+**Navigation**
 
-### 3.5 Zod Validation Schema
+- “Back to Login” navigates to `/login`.
 
-```typescript
-// frontend/src/features/auth/schemas/auth.schema.ts
-import { z } from 'zod';
+### 2.4 Verification Code
 
-export const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Invalid email address'),
-  password: z.string().min(1, 'Password is required').min(8, 'Password must be at least 8 characters'),
-});
+**Entry conditions and fields**
 
-export const registerSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(200),
-  email: z.string().min(1, 'Email is required').email('Invalid email address').max(255),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Must contain at least 1 uppercase letter')
-    .regex(/[a-z]/, 'Must contain at least 1 lowercase letter')
-    .regex(/[0-9]/, 'Must contain at least 1 number')
-    .regex(/[@$!%*?&]/, 'Must contain at least 1 special character'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-  role: z.enum(['buyer', 'merchant'], { required_error: 'Please select a role' }),
-  shopName: z.string().max(255).optional(),
-  license: z.instanceof(File).optional(),
-  agreeToTerms: z.literal(true, {
-    errorMap: () => ({ message: 'You must agree to the Terms of Service' }),
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-}).refine(
-  (data) => data.role !== 'merchant' || (data.shopName && data.shopName.trim().length >= 1),
-  { message: 'Shop name is required for merchant registration', path: ['shopName'] }
-).refine(
-  (data) => data.role !== 'merchant' || data.license instanceof File,
-  { message: 'Business license is required for merchant registration', path: ['license'] }
-);
+- Reads the email from router location state. If no email is present, redirects to `/forgot-password` and renders no page content while redirecting.
+- Shows a masked version of the email in the description.
+- Code: text input with numeric input mode, one-time-code autocomplete, autofocus, and a maximum input length of 6.
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Invalid email address'),
-});
+**Validation and submission**
 
-export const resetPasswordSchema = z.object({
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Must contain at least 1 uppercase letter')
-    .regex(/[a-z]/, 'Must contain at least 1 lowercase letter')
-    .regex(/[0-9]/, 'Must contain at least 1 number')
-    .regex(/[@$!%*?&]/, 'Must contain at least 1 special character'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+- Uses `verifyCodeSchema` through React Hook Form with `mode: 'onTouched'`.
+- Code is required and must contain exactly 6 characters. The schema checks length; the input uses numeric input mode.
+- On successful verification, navigates to `/reset-password` and passes both email and code in router location state.
+- On failure, displays the response message when available, otherwise the thrown error message or the page fallback.
+- The resend action requests a new code for the same email. On success, displays a success alert and starts a 60-second cooldown; the action is disabled during the request and cooldown. On failure, displays the response message, thrown error message, or fallback.
 
-export type LoginFormData = z.infer<typeof loginSchema>;
-export type RegisterFormData = z.infer<typeof registerSchema>;
-export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
-export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
-```
+**Navigation**
+
+- “Back to email” navigates to `/forgot-password`.
+
+### 2.5 Reset Password
+
+**Entry conditions and fields**
+
+- Reads email and code from router location state. If either is missing, redirects to `/forgot-password` and renders no form content while redirecting.
+- New password and confirmation fields each have a show/hide control.
+- The new-password field has autofocus and a maximum input length of 128. A `PasswordStrengthIndicator` is rendered for that field.
+
+**Validation and submission**
+
+- Uses `resetPasswordSchema` through React Hook Form with `mode: 'onTouched'`.
+- Password is required, 8–128 characters, and must include an uppercase letter, lowercase letter, digit, and one of `@$!%*?&`. Confirmation is required and must match.
+- Submits email, code, and the new password. The confirmation value is for client-side validation and is not included in the reset request.
+- The submit button is disabled and shows a loading indicator while the request is in progress.
+- On success, shows a success toast and replaces the form with a success view containing a “Back to Login” link.
+- On failure, displays the response message when available, otherwise the thrown error message or the translated fallback.
 
 ---
 
-## 4. Sub-Components
+## 3. Form and Error Presentation
 
-### 4.1 LoginForm Component
-
-- **File Path:** `frontend/src/features/auth/components/LoginForm.tsx`
-- Uses `useLoginForm` hook
-- Renders email and password fields with validation
-- Shows loading spinner on submit button during API call
-- Displays error toast on login failure
-
-### 4.2 RegisterForm Component
-
-- **File Path:** `frontend/src/features/auth/components/RegisterForm.tsx`
-- Uses `useRegisterForm` hook
-- Renders all registration fields with conditional shop name and license upload
-- Shows PasswordStrengthIndicator component
-- Shows Shop Name field and LicenseUpload component only when role = 'merchant'
-
-### 4.3 PasswordStrengthIndicator Component
-
-- **File Path:** `frontend/src/features/auth/components/PasswordStrengthIndicator.tsx`
-- Visual bar showing password strength (Weak/Fair/Strong/Very Strong)
-- Checklist of password requirements with checkmarks
-
-### 4.4 LicenseUpload Component
-
-- **File Path:** `frontend/src/features/auth/components/LicenseUpload.tsx`
-- Drag & drop zone for PDF file upload
-- File name display and remove button
-- File type validation (PDF only)
-- File size validation (max 10MB)
-- File name validation (must be license.pdf)
-
-### 4.5 AuthTabs Component
-
-- **File Path:** `frontend/src/features/auth/components/AuthTabs.tsx`
-- Tab switcher between Login and Register forms
-- Preserves form state when switching tabs
-
-### 4.6 ForgotPasswordForm Component
-
-- **File Path:** `frontend/src/features/auth/components/ForgotPasswordForm.tsx`
-- Uses `useForgotPasswordForm` hook
-- Renders email field with validation
-- Shows loading spinner on submit button during API call
-- On success, replaces form with success message and "Back to Login" link
-
-### 4.7 ResetPasswordForm Component
-
-- **File Path:** `frontend/src/features/auth/components/ResetPasswordForm.tsx`
-- Uses `useResetPasswordForm` hook
-- Renders new password and confirm password fields with validation
-- Shows PasswordStrengthIndicator component
-- Extracts `token` from URL query parameters
-- On success, shows success message and "Back to Login" link
-- If token is invalid/expired, shows error and redirects to `/forgot-password`
+- The five pages use React Hook Form with Zod resolvers from `frontend/src/schemas/auth.schema.ts`.
+- Field validation messages are rendered below their respective fields.
+- Login, Register, Forgot Password, Verification Code, and Reset Password render request errors in destructive alerts with `role="alert"`.
+- Login and Register use the error message from an `Error` instance or their translated fallback. Forgot Password, Verification Code, and Reset Password prefer a server response message, then an `Error` message, then a page fallback.
+- Submit controls show a loading indicator and are disabled during their corresponding request. The implementation does not disable every form input during submission.
+- User-facing text is read through `react-i18next`; the shared header is responsible for the global language control.
 
 ---
 
-## 5. Action Buttons & Handlers
+## 4. Password Visibility and Strength
 
-### 5.1 Login Submit
-
-- **Button Type:** `submit`
-- **Validation:** Uses Zod loginSchema
-- **Action:**
-  1. Call `authService.login(email, password)`
-  2. Store access token in memory (not localStorage)
-  3. Set refresh token cookie via httpOnly
-  4. Fetch user profile via `authService.verify()`
-  5. Update AuthContext with user data
-  6. Redirect by role: buyer -> `/`, merchant -> `/merchant/dashboard`
-
-### 5.2 Register Submit
-
-- **Button Type:** `submit`
-- **Validation:** Uses Zod registerSchema
-- **Action:**
-  1. If role = merchant, validate shop name (1-255 characters) and license file (PDF, named license.pdf, max 10MB)
-  2. Call `authService.register(formData)` (includes name, email, password, role, and shopName/license if merchant)
-  3. If role = merchant, upload license file and map shop name via `authService.register` or `authService.uploadLicense` (creates `merchants` record with shop name and `license_status='pending'`)
-  4. Show success toast: "Account created! Please sign in."
-  5. Redirect to `/login` with success message
-
-### 5.3 Password Visibility Toggle
-
-- **Button Type:** `button`
-- **Action:** Toggle `showPassword` state between text/password input types
-- **Icon:** Eye (hidden) / EyeOff (visible)
-
-### 5.4 Forgot Password Submit
-
-- **Button Type:** `submit`
-- **Validation:** Uses Zod forgotPasswordSchema
-- **Action:**
-  1. Call `authService.forgotPassword(email)`
-  2. On success, replace form with success message: "If an account exists with that email, you'll receive a password reset link shortly."
-  3. Show "Back to Login" link
-
-### 5.5 Reset Password Submit
-
-- **Button Type:** `submit`
-- **Validation:** Uses Zod resetPasswordSchema
-- **Action:**
-  1. Extract `token` from URL query parameters
-  2. If no token, redirect to `/login`
-  3. Call `authService.resetPassword(token, password)`
-  4. On success, show success message: "Your password has been reset successfully."
-  5. Show "Back to Login" link
-  6. On error (invalid/expired token), show error and link to `/forgot-password`
-
-### 5.6 Navigation Links
-
-- **Forgot Password Link:** Navigates from `/login` to `/forgot-password`
-- **Back to Login Link:** Navigates from `/forgot-password` or `/reset-password` to `/login`
-- **Reset Password Page Load:** Extracts `token` from URL, redirects to `/login` if missing
+- Login and Register provide show/hide password controls.
+- Register shows a live checklist for minimum length, uppercase, lowercase, number, and special character requirements.
+- Reset Password uses the shared `PasswordStrengthIndicator` component for the new password.
+- Visibility controls are buttons and provide translated screen-reader labels.
 
 ---
 
-## 6. Lookup Data
+## 5. Password-Recovery Navigation Flow
 
-The Register form requires role options (hardcoded):
+1. Login links to Forgot Password.
+2. Forgot Password validates the email and requests a verification code.
+3. On success, Forgot Password navigates to Verification Code with the email in router location state.
+4. Verification Code validates the code and verifies it for that email.
+5. On success, Verification Code navigates to Reset Password with the email and code in router location state.
+6. Reset Password requires both state values, submits the new password with them, and shows the success view after success.
+7. Verification Code and Reset Password redirect to Forgot Password when their required router state is missing.
 
-| Value | Label (EN) | Label (JA) | Description |
-|-------|------------|------------|-------------|
-| `buyer` | Buyer | 購入者 | Browse products, AI analysis, purchase |
-| `merchant` | Merchant | 出品者 | Sell skincare products on the marketplace |
-
-*Note: Admin and Super Admin roles cannot self-register; they are system-seeded or created/provisioned by an Admin/Super Admin.
-
----
-
-## 7. Error Handling
-
-### 7.1 Field-Level Errors
-
-- Red border on invalid input
-- Inline error message below the field
-- Real-time validation on blur and change
-
-### 7.2 Form-Level Errors
-
-- Toast notification for API errors
-- Generic message for login: "Invalid email or password"
-- Specific message for registration: "Email already registered"
-- Generic message for forgot password: Always show same message regardless of email existence (prevents email enumeration)
-- Specific message for reset password: "Invalid or expired reset link. Please request a new one."
-
-### 7.3 Loading States
-
-- Spinner on submit buttons during API calls
-- Disable form inputs during submission
-- Prevent double submission
+The Reset Password route does not read a `token` query parameter; its required email and code are passed through router location state by the preceding page.
 
 ---
 
-## 8. Cross-References
+## 6. Implementation References
+
+| Concern | Source |
+|---|---|
+| Auth routes and page wrappers | `frontend/src/app/routes.tsx` |
+| Shared auth layout | `frontend/src/layouts/AuthLayout.tsx` |
+| Form schemas and inferred types | `frontend/src/schemas/auth.schema.ts` |
+| Auth service requests | `frontend/src/services/auth.service.ts` |
+| Login page | `frontend/src/pages/auth/Login.tsx` |
+| Register page | `frontend/src/pages/auth/Register.tsx` |
+| Forgot Password page | `frontend/src/pages/auth/ForgotPassword.tsx` |
+| Verification Code page | `frontend/src/pages/auth/VerifyCode.tsx` |
+| Reset Password page | `frontend/src/pages/auth/ResetPassword.tsx` |
+
+---
+
+## 7. Cross-References
 
 | Related Document | Purpose |
-|-----------------|---------|
-| [DD_AUTH_01](./DD_SignUp_Login_01_MODULE_OVERVIEW.md) | Module overview and architecture |
-| [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Backend REST API contract |
-| [DD_AUTH_04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | DTO and type definitions |
-| [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Backend business rules |
-| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Full functional specification |
+|---|---|
+| [DD SignUp/Login 01](./DD_SignUp_Login_01_MODULE_OVERVIEW.md) | Module overview and architecture |
+| [DD SignUp/Login 03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | Backend REST API contract |
+| [DD SignUp/Login 04](./DD_SignUp_Login_04_DTOS_AND_TYPES.md) | DTO and type definitions |
+| [DD SignUp/Login 05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Backend business rules |
+| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Functional specification |
