@@ -10,9 +10,9 @@
 | **対象画面** | 広告管理 |
 | **サブシステム** | 広告 ― ショップ広告管理 |
 | **機能ID** | FN-AD-001 |
-| **バージョン** | 2.6 |
+| **バージョン** | 2.7 |
 | **作成日** | 2026-08-05 |
-| **最終更新日** | 2026-08-26 |
+| **最終更新日** | 2026-10-16 |
 | **作成者** | ソフトウェアアーキテクト |
 | **ステータス** | 承認済み |
 | **分類** | 社内 ― エンジニアリング部門 |
@@ -29,6 +29,7 @@
 | 2.1 | 2026-08-18 | ソフトウェアアーキテクト | DATABASE_SPEC v2.2 & REQUIREMENT_SPEC v1.7 に整合。`payment_status` のenumを `pending/completed/refunded/failed`（DB正規値）に修正。広告期間の上限（7〜30日, M-AD-013/014）、マーチャントあたり同時掲載広告の最大数（2件, M-AD-012）、広告状態フロー（M-AD-010）、却下時の自動返金（M-AD-011）を追加。トレーサビリティマトリを更新 |
 | 2.2 | 2026-08-25 | ソフトウェアアーキテクト | 広告プロセスを REQ v2.11 §4.4 に整合。マーチャント広告作成フローを6ステップ ― **パッケージ選択 → コンテンツアップロード（画像＋テキスト）→ 料金支払い → 管理者審査 → 承認 → 掲載** として復元。パッケージ選択時に下書き広告を作成（支払いはまだ行われない）。マーチャントは別ステップで広告コンテンツ（`title`、`content`、`image_url`、`link_url`、`announcement_message`）をアップロード。支払いは別ステップとして実施され、広告を `PENDING_APPROVAL` にする。自社広告に対するマーチャントCRUDを復元（コンテンツ編集、掲載/非掲載切り替え、削除/ソフト無効化）。却下後の広告再提出（編集＋再提出）を復元。ステートマシンを `DRAFT` と `CONTENT_UPLOADED` ステートで更新。承認フローは再提出サイクルをサポート。ユースケース、ビジネスルール、画面仕様、機能操作、入出力仕様、検証ルール、エラー処理、権限、通知、トレーッビリティを全てこれに合わせて更新。 |
 | 2.6 | 2026-08-26 | ソフトウェアアーキテクト | DATABASE_SPEC v2.5 & DEVELOPMENT_RULES v2.1 に整合。`payment_status` のenumを `pending/completed/refunded` に修正（`failed` を削除 ― DBチェック制約に存在しない）。`approvalStatus` フィルタ/検証を `pending/approved/rejected` のみに修正（DBクエリ層からアプリケーションレベルの `draft`/`content_uploaded` を削除）。DEVELOPMENT_RULES §9.1 に基づき、バックエンドモジュールパスを `review-management` から `advertisement-management` に修正。 |
+| 2.7 | 2026-10-16 | エンジニアリング | 現在の実装に合わせて改訂：掲載場所の値を大文字小文字を区別する4つの値（search_page_banner、recommendation_page_banner、checkout_page_banner、productDetail_page_banner）に更新。画像はマーチャント自身の商品画像から選択（ファイルアップロード/multipart なし）。コンテンツの最大文字数を100文字に。startsAt は今日から3日以上。linkUrl を削除。マーチャントのエンドポイントを実際のパス/動作に更新。管理者エンドポイントを /admin/ad-fees に更新（更新は PUT）、料金履歴の一括削除、収益分析とCSVエクスポート。承認時に週間上限を強制しない。料金履歴の当月削除は保護される。 |
 
 ---
 
@@ -58,7 +59,7 @@
 
 本サブシステムは、Cosmetics Finder マーケットプレイス内のショップ広告のライフサイクル全体を管理します。広告プロセスは6つのステップ構成です：**1・パッケージ選択 → 2・コンテンツアップロード（画像＋テキスト）→ 3・料金支払い → 4・管理者審査 → 5・承認 → 6・掲載**。マーチャントは管理者が作成した広告パッケージを閲覧し、パッケージを選択して下書き広告を作成し、広告コンテンツ（タイトル、内容、画像、告知メッセージ）をアップロードし、広告料金を支払い、管理者の審査のために広告を提出します。管理者は理由付きで広告を承認・却下し（却却時には自動返金）、支払済・承認済・スケジュール内の広告のみがストアフロントにプラットフォーム全体で表示されます（バナー/画像＋告知メッセージ）。却却された広告は、マーチャントが編集して再提出できます。
 
-広告管理サブシステムは、管理者が管理するパッケージモデルを通じて、マーチャントの販促意図と購入者の視認性を結び付けます。広告パッケージは管理者によって `ad_fee_settings` に定義され、各パッケージは掲載場所、料金プラン、日額、表示期間（`duration_days`）を定義します。料金は `日額 × 表示日数` で算出されます。マーチャントがパッケージを選択すると、下書き広告レコードが `approval_status = pending` かつ `payment_status = pending` で作成されます。マーチャントは広告コンテンツ（画像＋テキスト）をアップロードし、支払いが完了すると広告は管理者審査の `PENDING_APPROVAL` に入ります。アクティブでスケジュール内の承認済み広告は、キャッシュ可能なエンドポイントを通じて公開ストアフロントに配信され、一貫したバナー描画が保証されます。プラットフォーム全体で週あたり最大5件のアクティブ広告が強制されます。ストアフロントスライダーは、1回転あたり最大5件の広告を表示し、料金プランの優先順序（Premium > Standard > Basic）順に並べ、同一プラン内ではラウンドロビンで回転し、5秒ごとに自動回転します。
+広告管理サブシステムは、管理者が管理するパッケージモデルを通じて、マーチャントの販促意図と購入者の視認性を結び付けます。広告パッケージは管理者によって `ad_fee_settings` に定義され、各パッケージは掲載場所、料金プラン、日額、表示期間（`duration_days`）を定義します。料金は `日額 × 表示日数` で算出されます。マーチャントがパッケージを選択すると、下書き広告レコードが `approval_status = pending` かつ `payment_status = pending` で作成されます。マーチャントは広告コンテンツ（自身の商品画像から選択した画像＋テキスト）を提供し、支払いが完了すると広告は管理者審査の `PENDING_APPROVAL` に入ります。アクティブでスケジュール内の承認済み広告は、キャッシュ可能なエンドポイントを通じて公開ストアフロントに配信され、一貫したバナー描画が保証されます。ストアフロントスライダーは、掲載場所ごとに広告を表示し、料金プランの優先順序（Premium > Standard > Basic）順に並べ、同一プラン内ではラウンドロビンで回転し、5秒ごとに自動回転します。
 
 ### 1.2 機能の責務
 
@@ -336,7 +337,7 @@
 | 7 | 取引が `ad_payments` に記録（amount, reference） | — | 台帳エントリ作成 | システム |
 | 8 | 広告が自動的に承認キューに入る | `payment_status = completed` | `approval_status = pending` | システム |
 | 9 | 管理者が保留中の広告を審査 | `approval_status = pending` | — | 管理者 |
-| 10a | 管理者が広告を承認（週間上限 ≤ 5 を検証） | `approval_status = pending` | `approval_status = approved`, `approved_by`/`approved_at` 設定 | 管理者 |
+| 10a | 管理者が広告を承認 | `approval_status = pending` | `approval_status = approved`, `approved_by`/`approved_at` 設定 | 管理者 |
 | 10b | 管理者が理由付きで広告を却下 | `approval_status = pending` | `approval_status = rejected`, `payment_status = refunded`（自動返金） | 管理者 |
 | 11 | 広告が承認バッジ付きでマーチャント一覧に表示 | — | — | システム |
 | 12 | アクティブ広告キャッシュが無効化 | — | キャッシュクリア | システム |
@@ -453,7 +454,7 @@
 | BR-AD-003 | 日付範囲 | `expiresAt` は `startsAt` より厳密に後でなければならない | バックエンド（DB制約 `chk_advertisements_dates`） |
 | BR-AD-004 | ショップ承認 | マーチャントはパッケージを選択する前に承認済みショップ（`is_approved = true`）を保有している必要がある | バックエンド（service check） |
 | BR-AD-005 | デフォルト状態 | パッケージ選択で自動作成される広告はデフォルトで `is_active = true`、`approval_status = pending`、`payment_status = pending` | バックエンド（service logic + DB defaults） |
-| BR-AD-006 | 画像任意 | 広告はテキストのみまたは画像付きにできる。画像は最大5MB、許可されたタイプ: JPG、PNG、WebP | バックエンド（ファイルアップロード検証） |
+| BR-AD-006 | アップロード時の画像必須 | バナー画像はコンテンツアップロード時に必須であり、マーチャント自身の商品画像から選択する必要がある（ファイルアップロードなし）。 | バックエンド（商品画像検証） |
 | BR-AD-007 | リンク任意 | クリックスルーリンクURLは任意 | バックエンド（DTO検証） |
 | BR-AD-024 | 告知メッセージ必須 | `announcement_message` は必須で、バナーに表示される。最大500文字 | バックエンド（DTO検証）+ DB（advertisements の NOT NULL） |
 
@@ -464,7 +465,7 @@
 | BR-AD-008 | スケジュール必須 | 支払い前には `startsAt` と `expiresAt` の両方が必要。`startsAt` はマーチャントが設定、`expiresAt` は `starts_at + パッケージ duration_days` として導出 | バックエンド（service logic） |
 | BR-AD-009 | スケジュール有効性 | `expires_at` > `starts_at` はDBチェック制約で強制 | バックエンド（DB制約 `chk_advertisements_dates`） |
 | BR-AD-010 | アクティブウィンドウ | 広告は `is_active = true` かつ `approval_status = approved` かつ `payment_status = completed` かつ `starts_at <= now` かつ `expires_at >= now` のときアクティブ | バックエンド（クエリフィルタ） |
-| BR-AD-025 | 週番号 | `week_number`（ISO週）は `starts_at` から導出され、週間上限追跡のために保存 | バックエンド（service logic） |
+| BR-AD-025 | 週番号 | `week_number`（ISO週）は `starts_at` から導出され、保存される | バックエンド（service logic） |
 
 ### 4.3 広告ステータスルール
 
@@ -481,7 +482,7 @@
 
 | ルールID | ルール名 | 説明 | 適用層 |
 |---------|-----------|-------------|-------------------|
-| BR-AD-015 | ファイルサイズ | 広告画像1枚あたり最大5MB | バックエンド（ファイルアップロード検証） |
+| BR-AD-015 | ファイルサイズ | 該当なし（画像は広告モジュールでアップロードされず、既存の商品画像から選択される）。 | — |
 | BR-AD-016 | ファイルタイプ | JPG、PNG、WebP のみ許可 | バックエンド（MIMEタイプ検証） |
 | BR-AD-017 | ファイル命名 | UUIDベースのファイル名 `{uuid}.{ext}` | バックエンド（アップロードサービス） |
 | BR-AD-018 | 保存 | webroot外に保存し、署名付きURLまたはAPIエンドポイント経由で配信 | バックエンド（アップロードサービス） |
@@ -509,7 +510,7 @@
 | ルールID | ルール名 | 説明 | 適用層 |
 |---------|-----------|-------------|-------------------|
 | BR-AD-033 | コンテンツ後支払い | 広告料金は選択時ではなく、コンテンツアップロード後（UC-AD-009）に請求される。支払い前に広告はコンテンツを保有していなければならない | バックエンド（service logic） |
-| BR-AD-034 | パッケージベースの料金計算 | 広告料金 = `日額 × 表示日数`。`ad_fee_settings` 内の選択した管理者作成パッケージ（`placement` × `tier`）から解決。シード掲載場所: `homepage_slider`（7日）、`product_sidebar`（15日）、`category_banner`（30日）、`search_top`（7日）。料金プラン: `basic`、`standard`、`premium` | バックエンド（ad_fee_settings クエリ） |
+| BR-AD-034 | パッケージベースの料金計算 | 広告料金 = `日額 × 表示日数`。`ad_fee_settings` 内の選択した管理者作成パッケージ（`placement` × `tier`）から解決。掲載場所: `search_page_banner`、`recommendation_page_banner`、`checkout_page_banner`、`productDetail_page_banner`（大文字小文字を区別）。料金プラン: `basic`、`standard`、`premium`。期間はパッケージで定義（1日以上。シード値は7/15/30）。 | バックエンド（ad_fee_settings クエリ） |
 | BR-AD-035 | 支払い記録と台帳 | 支払い詳細は `ad_payments` 台帳テーブルに `ad_id`、`merchant_id`（`merchants.id` 参照）、`amount`、`payment_method`、`payment_status`、`transaction_id` として記録 | バックエンド（payment service） |
 | BR-AD-036 | 支払い検証 | 広告が承認キューに入る前に支払いが検証（`payment_status = completed`）されている必要がある | バックエンド（service logic） |
 | BR-AD-037 | 料金変更監査 | 管理者によるレート変更は変更後に選択されるパッケージにのみ適用され、`ad_fee_history` に記録される | バックエンド（audit logic） |
@@ -631,8 +632,8 @@
 | EL-22b | 料金プラン表示 | テキスト（読み取り専用） | `merchant.ads.tier` | はい | 選択したパッケージの料金プラン |
 | EL-23 | タイトル入力 | 入力（テキスト） | `merchant.ads.title` | はい | 広告タイトル（1〜200文字） |
 | EL-24 | コンテンツ入力 | テキストエリア | `merchant.ads.content` | いいえ | 広告の内容・説明 |
-| EL-25 | 画像アップロード | ファイルアップロード | `merchant.ads.image` | いいえ | バナー画像のアップロード（JPG/PNG/WebP、最大5MB）。アップロード後にプレビュー表示 |
-| EL-26 | リンクURL入力 | 入力（url） | `merchant.ads.linkUrl` | いいえ | クリックスルーリンクURL |
+| EL-25 | 画像選択 | ドロップダウン/セレクト | `merchant.ads.imageUrl` | はい | マーチャント自身の商品画像からバナー画像を選択。SKUはスナップショットされる。 |
+| EL-26 | （削除） | — | — | — | リンクURLフィールドなし。ナビゲーションは商品SKUを使用。 |
 | EL-27 | 告知メッセージ入力 | テキストエリア | `merchant.ads.announcement` | はい | バナー告知メッセージ（最大500文字） |
 | EL-28 | 開始日入力 | 日付ピッカー | `merchant.ads.startDate` | はい | 広告開始日。`expires_at` は開始日＋パッケージ期間として自動計算 |
 | EL-29 | 終了日表示 | テキスト（読み取り専用） | `merchant.ads.endDate` | はい | 自動計算：開始日＋パッケージ `duration_days`。編集不可 |
@@ -688,8 +689,8 @@
 | EL-50 | ダイアログタイトル | 見出し（h5） | `merchant.ads.editTitle` | はい | "広告コンテンツを編集" |
 | EL-51 | タイトル入力 | 入力（テキスト） | `merchant.ads.title` | はい | 広告タイトル（1〜200文字） |
 | EL-52 | コンテンツ入力 | テキストエリア | `merchant.ads.content` | いいえ | 広告の内容・説明 |
-| EL-53 | 画像アップロード | ファイルアップロード | `merchant.ads.image` | いいえ | バナー画像のアップロード（JPG/PNG/WebP、最大5MB） |
-| EL-54 | リンクURL入力 | 入力（url） | `merchant.ads.linkUrl` | いいえ | クリックスルーリンクURL |
+| EL-53 | 画像選択 | ドロップダウン/セレクト | `merchant.ads.imageUrl` | いいえ | マーチャント自身の商品画像から画像を選択。省略すると現在の画像を維持 |
+| EL-54 | （削除） | — | — | — | リンクURLフィールドなし |
 | EL-55 | 告知メッセージ入力 | テキストエリア | `merchant.ads.announcement` | はい | バナー告知メッセージ（最大500文字） |
 | EL-56 | 保存ボタン | ボタン（primary） | `merchant.ads.save` | はい | コンテンツの変更を保存 |
 | EL-57 | 保存して支払いボタン | ボタン（primary） | `merchant.ads.savePay` | 条件付き | 却下された広告用：変更を保存し、再提出用の支払いダイアログを開く |
@@ -722,16 +723,16 @@
 
 | 要素ID | 要素名 | 要素タイプ | i18nキー | 必須 | 説明 |
 |------------|--------------|--------------|----------|:--------:|-------------|
-| EL-70 | 料金設定テーブル | テーブル | `admin.ads.feeSettings` | はい | `ad_fee_settings` からの全パッケージ：掲載場所、料金プラン、日額、表示日数、最大枠数、アクティブフラグ。`GET /admin/ad-fee-settings` で読み込み |
+| EL-70 | 料金設定テーブル | テーブル | `admin.ads.feeSettings` | はい | `ad_fee_settings` からの全パッケージ：掲載場所、料金プラン、日額、表示日数、最大枠数、アクティブフラグ。`GET /admin/ad-fees` で読み込み |
 | EL-71 | 日額入力 | 入力（数値） | `admin.ads.dailyRate` | いいえ | パッケージごとのインライン編集可能な日額（≥ 0） |
-| EL-72 | 料金保存ボタン | ボタン（primary） | `admin.ads.saveRate` | いいえ | `PATCH /admin/ad-fee-settings/:id` で料金を永続化。変更は `ad_fee_history` に記録 |
+| EL-72 | 料金保存ボタン | ボタン（primary） | `admin.ads.saveRate` | いいえ | `PUT /admin/ad-fees/:id` で料金/期間/最大枠数を永続化。変更は `ad_fee_history` に記録 |
 | EL-73 | 料金履歴表示 | ダイアログ/テーブル | `admin.ads.feeHistory` | いいえ | `ad_fee_history` からのレート変更監査証跡：旧/新レート、変更者、変更日時 |
-| EL-74 | 新規パッケージボタン | ボタン（primary） | `admin.ads.newPackage` | はい | パッケージ作成ダイアログを開く。`POST /admin/ad-fee-settings` で永続化 |
-| EL-74a | 掲載場所セレクト | セレクト | `admin.ads.placement` | はい | パッケージの掲載場所（`homepage_slider`, `product_sidebar`, `category_banner`, `search_top`）。料金プランとの組み合わせで一意でなければならない |
+| EL-74 | 新規パッケージボタン | ボタン（primary） | `admin.ads.newPackage` | はい | パッケージ作成ダイアログを開く。`POST /admin/ad-fees` で永続化 |
+| EL-74a | 掲載場所セレクト | セレクト | `admin.ads.placement` | はい | パッケージの掲載場所（`search_page_banner`, `recommendation_page_banner`, `checkout_page_banner`, `productDetail_page_banner`）。料金プランとの組み合わせで一意でなければならない |
 | EL-74b | 料金プランセレクト | セレクト | `admin.ads.tier` | はい | 料金プラン（`basic`, `standard`, `premium`） |
 | EL-74c | 表示日数入力 | 入力（数値） | `admin.ads.durationDays` | はい | 表示期間（日）（カタログ範囲 7〜30） |
 | EL-74d | 最大枠数入力 | 入力（数値） | `admin.ads.maxAds` | はい | 掲載場所のスロット容量 |
-| EL-75 | パッケージ無効化ボタン | ボタン（destructive） | `admin.ads.deactivate` | いいえ | `DELETE /admin/ad-fee-settings/:id` でパッケージをマーチャントカタログから削除（ソフト無効化。既存の支払済み広告は影響なし） |
+| EL-75 | パッケージ無効化ボタン | ボタン（destructive） | `admin.ads.deactivate` | いいえ | `PATCH /admin/ad-fees/:id/deactivate` でパッケージを無効化（ソフト無効化。既存の支払済み広告は影響なし） |
 
 **デフォルト状態：**
 - 料金設定テーブルは掲載場所→料金プラン順
@@ -791,7 +792,7 @@
 | **APIエンドポイント** | `PATCH /api/v1/admin/ads/:id/approve` |
 | **リクエストContent-Type** | なし |
 | **送信前検証** | 管理者ロール。広告が `approval_status = pending` |
-| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンと管理者ロールを検証。3. 広告を検索。`approval_status = pending` を確認。4. 週間上限を検証：同じ `week_number` を持つ承認済みアクティブ広告をカウント。≥ 5 なら 409 Conflict を返す。5. `approval_status = approved`、`approved_by`（管理者ID）、`approved_at`（現在時刻）を設定。6. アクティブ広告キャッシュを無効化。7. `AD_APPROVED` 監査イベントを記録。8. 承認をマーチャントに通知。9. 更新した広告DTOを返す。 |
+| **処理ステップ** | 1. `:id` をUUID形式として検証。2. JWTトークンと管理者ロールを検証。3. 広告を検索。`approval_status = pending` を確認。4. `approval_status = approved`、`approved_by`（管理者ID）、`approved_at`（現在時刻）を設定。5. アクティブ広告キャッシュを無効化。6. `AD_APPROVED` 監査イベントを記録。7. 承認をマーチャントに通知。8. 更新した広告DTOを返す。 |
 | **成功レスポンス** | 200 OK、更新された広告データ付き |
 | **事後アクション** | 広告はスケジュール内でストアフロント表示の対象になる |
 

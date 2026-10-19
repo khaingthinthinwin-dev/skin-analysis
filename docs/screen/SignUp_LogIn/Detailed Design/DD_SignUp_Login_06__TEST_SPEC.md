@@ -1,223 +1,77 @@
-# DD_AUTH_06 — Test Specification
+# DD SignUp/Login 06 — Test Specification
 
-> **Doc ID:** SKM-DD-AUTH-06 | **Version:** 2.1 | **Status:** Released  
-> **Last Updated:** 2026-08-21
+> **Doc ID:** SKM-DD-AUTH-06 | **Version:** 2.2 | **Status:** Aligned to current test suites
+> **Last Updated:** 2026-10-15
 
 ---
 
 ## 1. Overview
 
-This document defines the testing strategy for the Authentication Module, covering Unit Tests, Component Tests, and End-to-End (E2E) Scenarios.
+This document inventories the current auth-related automated test suites and summarizes the behaviors they cover. It does not assert unverified results or claim component test files that are not present in the repository.
 
 ---
 
-## 2. Backend Unit Tests (`src/modules/auth/tests/`)
+## 2. Backend Tests
 
-### 2.1 `auth.service.spec.ts`
+Current Jest test files:
 
-Mock dependencies: `PrismaService`, `RedisService`, `JwtService`, `ConfigService`.
+- `backend/src/modules/auth/auth.service.spec.ts`
+- `backend/src/modules/auth/auth.controller.spec.ts`
+- `backend/src/modules/auth/auth.module.spec.ts`
+- `backend/src/common/guards/jwt-auth.guard.spec.ts`
 
-| Test Suite | Scenario | Expected Outcome |
-|------------|----------|------------------|
-| **register** | Valid data, no license (buyer) | Creates user, hashes password, returns user DTO with merchantId/licenseStatus null |
-| **register** | Valid data with merchant role, shop name and license | Creates user + merchants record (with shop_name) with license_status='pending', uploads license, returns user with licenseUrl and licenseStatus='pending' |
-| **register** | Merchant role, empty shop name | Throws `BadRequestException` (400) |
-| **register** | Merchant role, shop name too long (>255 chars) | Throws `BadRequestException` (400) |
-| **register** | Email already exists | Throws `ConflictException` (409) |
-| **register** | Invalid license file type (not PDF) | Throws `BadRequestException` (415) |
-| **register** | License file named incorrectly | Throws `BadRequestException` (400) |
-| **register** | License file exceeds 10MB | Throws `PayloadTooLargeException` (413) |
-| **login** | Valid credentials | Returns accessToken and user DTO, sets refresh cookie |
-| **login** | Invalid email | Throws `UnauthorizedException` (401) with generic message |
-| **login** | Invalid password | Throws `UnauthorizedException` (401) with generic message |
-| **login** | Account deactivated | Throws `ForbiddenException` (403) |
-| **login** | Rate limit exceeded | Throws `TooManyRequestsException` (429) |
-| **refreshToken** | Valid refresh token | Returns new accessToken, rotates refresh token |
-| **refreshToken** | Refresh token expired | Throws `UnauthorizedException` (401) |
-| **refreshToken** | Refresh token revoked | Throws `UnauthorizedException` (401) |
-| **refreshToken** | Token reuse detected | Revokes all user tokens, throws `UnauthorizedException` (401) |
-| **refreshToken** | Absolute limit reached (90 days) | Throws `UnauthorizedException` (401) |
-| **logout** | Valid session | Blacklists token in Redis, revokes refresh tokens |
-| **verifyToken** | Valid token, active user | Returns user profile data |
-| **verifyToken** | Valid token, inactive user | Throws `ForbiddenException` (403) |
-| **verifyToken** | Invalid token | Throws `UnauthorizedException` (401) |
-| **forgotPassword** | Valid email, user exists | Creates reset token, sends email, returns success message |
-| **forgotPassword** | Valid email, user does not exist | Returns same success message (no email enumeration) |
-| **forgotPassword** | Invalid email format | Throws `BadRequestException` (400) |
-| **forgotPassword** | Rate limit exceeded | Throws `TooManyRequestsException` (429) |
-| **forgotPassword** | New request invalidates previous tokens | Previous unused tokens marked as used |
-| **resetPassword** | Valid token and password | Updates password, marks token used, invalidates other tokens |
-| **resetPassword** | Invalid token | Throws `BadRequestException` (400) |
-| **resetPassword** | Expired token (24h) | Throws `BadRequestException` (400) |
-| **resetPassword** | Already used token | Throws `BadRequestException` (400) |
-| **resetPassword** | Weak password | Throws `BadRequestException` (400) |
-
-### 2.2 `auth.controller.spec.ts`
-
-Mock dependencies: `AuthService`.
-
-| Test Suite | Scenario | Expected Outcome |
-|------------|----------|------------------|
-| **POST /register** | Valid payload | Calls `service.register`, returns 201 |
-| **POST /register** | Email exists | Returns 409 Conflict |
-| **POST /login** | Valid credentials | Calls `service.login`, returns 200 with accessToken |
-| **POST /login** | Invalid credentials | Returns 401 Unauthorized |
-| **POST /refresh** | Valid refresh cookie | Calls `service.refreshToken`, returns 200 |
-| **POST /refresh** | Missing refresh cookie | Returns 401 Unauthorized |
-| **POST /logout** | Valid token | Calls `service.logout`, returns 204 |
-| **GET /verify** | Valid token | Calls `service.verifyToken`, returns 200 with user |
-| **GET /verify** | Invalid token | Returns 401 Unauthorized |
-| **POST /forgot-password** | Valid email | Calls `service.forgotPassword`, returns 200 with message |
-| **POST /forgot-password** | Invalid email format | Returns 400 Bad Request |
-| **POST /forgot-password** | Rate limit exceeded | Returns 429 Too Many Requests |
-| **POST /reset-password** | Valid token and password | Calls `service.resetPassword`, returns 200 with message |
-| **POST /reset-password** | Invalid token | Returns 400 Bad Request |
-| **POST /reset-password** | Weak password | Returns 400 Bad Request |
+The service/controller suites cover registration and login outcomes, token refresh, logout, token verification, password recovery, verification codes, password reset, and administrative auth operations as defined by the current implementation. Keep expected DTO fields, status codes, and error messages aligned with the actual controller/service/DTO code, including the six-digit recovery-code flow.
 
 ---
 
-## 3. Frontend Component Tests
+## 3. Playwright E2E Tests
 
-Using Vitest + React Testing Library.
+Current SignUp/Login Playwright files:
 
-### 3.1 `LoginForm.test.tsx`
+- `e2e/tests/SignUp_LogIn/auth.spec.ts`
+- `e2e/tests/SignUp_LogIn/login.spec.ts`
+- `e2e/tests/SignUp_LogIn/register.spec.ts`
+- `e2e/tests/SignUp_LogIn/forgot-password.spec.ts`
+- `e2e/tests/SignUp_LogIn/reset-password.spec.ts`
+- `e2e/tests/SignUp_LogIn/api-auth.spec.ts`
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Initial render | Displays email and password inputs, disabled submit button |
-| Valid email input | Email field accepts valid format, no error shown |
-| Invalid email input | Shows "Invalid email address" error below field |
-| Empty password | Shows "Password is required" error on submit |
-| Short password | Shows "Password must be at least 8 characters" error |
-| Toggle password visibility | Clicking eye icon toggles input type between text/password |
-| Successful login | Calls authService.login, redirects by role |
-| Failed login | Shows "Invalid email or password" toast error |
-| Loading state | Shows spinner on submit button during API call |
-| Navigate to register | Clicking "Sign Up" link navigates to /register |
+### 3.1 UI scenarios
 
-### 3.2 `RegisterForm.test.tsx`
+The suites include coverage for:
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Initial render | Displays all fields, Buyer selected by default, license hidden |
-| Empty name | Shows "Name is required" error |
-| Invalid email | Shows "Invalid email address" error |
-| Weak password | Shows password strength indicator as "Weak" |
-| Strong password | Shows password strength indicator as "Very Strong" with all checks green |
-| Password mismatch | Shows "Passwords do not match" error on confirm field |
-| Select Merchant role | Shop name input and license upload field appear |
-| Select Buyer role | Shop name input and license upload field hidden |
-| Empty shop name when merchant role | Shows "Shop name is required for merchant registration" error |
-| Shop name too long (>255 chars) | Shows "Shop name must not exceed 255 characters" error |
-| Valid license upload | Shows filename and remove button |
-| Invalid license type | Shows "License must be a PDF file" error |
-| License too large | Shows "License must not exceed 10MB" error |
-| License wrong name | Shows "File must be named license.pdf" error |
-| Terms not checked | Shows "You must agree to the Terms of Service" error |
-| Successful registration | Shows success toast, redirects to /login |
-| Duplicate email | Shows "Email already registered" toast error |
-| Navigate to login | Clicking "Sign In" link navigates to /login |
+- Login form rendering, successful login, input validation, invalid-credential feedback, role-based redirect, already-authenticated redirect, and navigation to registration or password recovery.
+- Buyer and merchant registration, role-dependent license upload, license constraints, terms agreement, password complexity and confirmation, duplicate-email handling, and authenticated-user redirect.
+- Forgot Password form validation, submission feedback, navigation back to Login, and language switching.
+- Reset Password page entry conditions, password validation/confirmation, submission, invalid response feedback, navigation, and language switching.
+- Auth-page language switching, responsive layout, password visibility, protected-route behavior, and logout/session behavior.
 
-### 3.3 `PasswordStrengthIndicator.test.tsx`
+### 3.2 API scenarios
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Empty password | Shows "Weak" with 0 requirements met |
-| 8+ chars only | Shows "Fair" with 1 requirement met |
-| + Uppercase | Shows "Fair" with 2 requirements met |
-| + Lowercase | Shows "Strong" with 3 requirements met |
-| + Number | Shows "Strong" with 4 requirements met |
-| + Special char | Shows "Very Strong" with all 5 requirements met |
+`api-auth.spec.ts` covers auth API contracts including duplicate registration, invalid login credentials, refresh, logout, token verification, forgot/reset password, standard error response format, buyer registration token response, and language-header behavior. Expected response content must match current server behavior; the frontend's language setting does not itself establish that backend error messages are localized.
 
-### 3.4 `LicenseUpload.test.tsx`
+### 3.3 Recovery-flow expectations
 
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Initial render | Shows drag & drop zone with helper text |
-| Drag PDF file | Shows filename and remove button |
-| Click to upload | Opens file picker, accepts PDF only |
-| Invalid file type | Shows error "License must be a PDF file" |
-| File too large | Shows error "License must not exceed 10MB" |
-| Wrong filename | Shows error "File must be named license.pdf" |
-| Remove file | Clicking remove icon clears file, shows upload zone again |
-
-### 3.5 `ForgotPasswordForm.test.tsx`
-
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Initial render | Displays email input and submit button |
-| Valid email input | Email field accepts valid format, no error shown |
-| Invalid email input | Shows "Invalid email address" error below field |
-| Empty email | Shows "Email is required" error on submit |
-| Successful submission | Shows success message, form replaced with message text |
-| Back to Login link | Clicking link navigates to /login |
-| Loading state | Shows spinner on submit button during API call |
-| Rate limit error | Shows "Too many attempts" toast error |
-| Network error | Shows "Network error" toast error |
-| Auto-focus on email input | Email input is focused on page load |
-
-### 3.6 `ResetPasswordForm.test.tsx`
-
-| Scenario | Expected Outcome |
-|----------|------------------|
-| Initial render | Displays new password and confirm password inputs |
-| Valid password input | Password field accepts valid format |
-| Weak password | Shows password strength indicator as "Weak" |
-| Strong password | Shows password strength indicator as "Very Strong" with all checks green |
-| Password mismatch | Shows "Passwords do not match" error on confirm field |
-| Empty password | Shows "Password is required" error on submit |
-| Short password | Shows "Password must be at least 8 characters" error |
-| Missing uppercase | Shows password requirement not met |
-| Missing lowercase | Shows password requirement not met |
-| Missing number | Shows password requirement not met |
-| Missing special char | Shows password requirement not met |
-| Toggle password visibility | Clicking eye icon toggles input type between text/password |
-| Successful reset | Shows success message "Your password has been reset successfully" |
-| Back to Login link | Clicking link navigates to /login |
-| Invalid token error | Shows "Invalid or expired reset link" error |
-| Loading state | Shows spinner on submit button during API call |
-| No token in URL | Redirects to /login |
-| Auto-focus on new password input | New password input is focused on page load |
+- Forgot Password succeeds by navigating to Verification Code with the email in router location state.
+- Verification Code requires a six-character value and an email state value.
+- Successful verification passes email and code to Reset Password through router state.
+- Reset Password opened without the required state redirects to `/forgot-password`; it does not accept a `?token=` URL.
+- Reset request body includes email, code, and password; it does not include confirmation.
 
 ---
 
-## 4. End-to-End (E2E) Scenarios (Playwright)
+## 4. Coverage Notes
 
-| Scenario ID | Flow Description |
-|-------------|------------------|
-| **E2E-AUTH-01** | **Happy Path: Register and Login**<br>1. Navigate to /register.<br>2. Fill name, email, password, confirm password.<br>3. Select Buyer role.<br>4. Check terms checkbox.<br>5. Click "Create Account".<br>6. Verify success toast and redirect to /login.<br>7. Enter email and password.<br>8. Click "Sign In".<br>9. Verify redirect to home page (/). |
-| **E2E-AUTH-02** | **Merchant Registration with License**<br>1. Navigate to /register.<br>2. Fill name, email, password, confirm password.<br>3. Select Merchant role.<br>4. Fill shop name input.<br>5. Upload license.pdf file.<br>6. Check terms checkbox.<br>7. Click "Create Account".<br>8. Verify success toast and redirect to /login. |
-| **E2E-AUTH-03** | **Login and Logout**<br>1. Navigate to /login.<br>2. Enter valid credentials.<br>3. Click "Sign In".<br>4. Verify redirect to home page.<br>5. Click user menu, select "Logout".<br>6. Verify redirect to /login.<br>7. Try to access / (protected route).<br>8. Verify redirect to /login. |
-| **E2E-AUTH-04** | **Token Refresh**<br>1. Login with valid credentials.<br>2. Wait 15+ minutes (or mock token expiry).<br>3. Make API request.<br>4. Verify automatic token refresh occurs.<br>5. Verify request succeeds with new token. |
-| **E2E-AUTH-05** | **Invalid Login Attempts**<br>1. Navigate to /login.<br>2. Enter wrong password 5 times.<br>3. Verify "Too many attempts" error message.<br>4. Verify login form is disabled for 5 minutes. |
-| **E2E-AUTH-06** | **Registration Validation**<br>1. Navigate to /register.<br>2. Try to submit with empty fields.<br>3. Verify all validation errors appear.<br>4. Fill valid data except password mismatch.<br>5. Verify "Passwords do not match" error.<br>6. Fix password, submit.<br>7. Verify successful registration. |
-| **E2E-AUTH-07** | **Duplicate Email Handling**<br>1. Register with email test@example.com.<br>2. Try to register again with same email.<br>3. Verify "Email already registered" error. |
-| **E2E-AUTH-08** | **Language Toggle**<br>1. Navigate to /login.<br>2. Toggle language to Japanese.<br>3. Verify all labels change to Japanese.<br>4. Toggle language to Myanmar.<br>5. Verify all labels change to Myanmar.<br>6. Toggle back to English. |
-| **E2E-AUTH-09** | **Theme Toggle**<br>1. Navigate to /login.<br>2. Toggle theme to dark mode.<br>3. Verify dark background colors applied.<br>4. Toggle theme to light mode.<br>5. Verify light background colors applied. |
-| **E2E-AUTH-10** | **Responsive Layout**<br>1. Navigate to /login on desktop (1024px+).<br>2. Verify centered card layout.<br>3. Resize to tablet (768px).<br>4. Verify full-width card with padding.<br>5. Resize to mobile (< 768px).<br>6. Verify stacked layout. |
-| **E2E-AUTH-11** | **Forgot Password Flow**<br>1. Navigate to /login.<br>2. Click "Forgot password?" link.<br>3. Verify redirect to /forgot-password.<br>4. Enter email address.<br>5. Click "Send Reset Link".<br>6. Verify success message displayed.<br>7. Click "Back to Login" link.<br>8. Verify redirect to /login. |
-| **E2E-AUTH-12** | **Reset Password Flow**<br>1. Navigate to /reset-password?token=valid-token.<br>2. Enter new password meeting all requirements.<br>3. Enter matching confirm password.<br>4. Click "Reset Password".<br>5. Verify success message displayed.<br>6. Click "Back to Login" link.<br>7. Verify redirect to /login.<br>8. Login with new password.<br>9. Verify login succeeds. |
-| **E2E-AUTH-13** | **Invalid Reset Token**<br>1. Navigate to /reset-password?token=invalid-token.<br>2. Enter new password.<br>3. Click "Reset Password".<br>4. Verify "Invalid or expired reset link" error displayed.<br>5. Verify link to /forgot-password is shown. |
-| **E2E-AUTH-14** | **Forgot Password Rate Limit**<br>1. Navigate to /forgot-password.<br>2. Enter email and submit 3 times rapidly.<br>3. Verify "Too many attempts" error on 4th attempt.<br>4. Verify form is rate limited. |
+- No standalone frontend page/component test files were found for the five auth screens. `frontend/src/providers/AuthProvider.test.tsx` covers the auth provider; the Playwright UI tests are the current documented browser-level page coverage.
+- This document does not prescribe numeric coverage thresholds; none are treated as verified requirements here.
+- Verify any live-service, seeded-account, or environment prerequisites in the E2E fixtures before running the suite.
 
 ---
 
-## 5. Test Coverage Requirements
+## 5. Cross-References
 
-| Category | Minimum Coverage |
-|----------|-----------------|
-| Backend Unit Tests | 90% |
-| Frontend Component Tests | 85% |
-| E2E Critical Paths | 100% |
-| Integration Tests | 80% |
-
----
-
-## 6. Cross-References
-
-| Related Document | Purpose |
-|-----------------|---------|
-| [DD_AUTH_05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Business logic tested by unit tests |
-| [DD_AUTH_02](./DD_SignUp_Login_02_FRONTEND_Page.md) | Frontend components tested |
-| [DD_AUTH_03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | API endpoints tested |
-| [機能設計書_SignUp_Login](../機能設計書_SignUp_Login.md) | Functional requirements |
+| Related document | Purpose |
+|---|---|
+| [DD SignUp/Login 01](./DD_SignUp_Login_01_MODULE_OVERVIEW.md) | Module scope and flows |
+| [DD SignUp/Login 02](./DD_SignUp_Login_02_FRONTEND_Page.md) | UI details |
+| [DD SignUp/Login 03](./DD_SignUp_Login_03_API_ENDPOINTS.md) | API contracts |
+| [DD SignUp/Login 05](./DD_SignUp_Login_05_BUSINESS_LOGIC.md) | Business rules under test |

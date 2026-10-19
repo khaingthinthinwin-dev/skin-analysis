@@ -10,9 +10,9 @@
 | **Target Screen** | Sign-up / Login / Password Reset (新規登録 / ログイン / パスワード再設定) |
 | **Subsystem** | Authentication — User Registration, Session Management & Password Recovery |
 | **Function ID** | FN-AUTH-001 |
-| **Version** | 4.1 |
+| **Version** | 4.2 |
 | **Created** | 2026-08-04 |
-| **Last Updated** | 2026-08-21 |
+| **Last Updated** | 2026-10-15 |
 | **Author** | Software Architect |
 | **Status** | Released (承認済み) |
 | **Classification** | Internal — Engineering Division |
@@ -29,6 +29,7 @@
 | 3.1 | 2026-08-17 | Software Architect | Aligned with REQUIREMENT_SPEC v1.5 / DATABASE_SPEC v2.0: UUID primary keys, `merchants` table with license approval workflow (`license_status`), `users.merchant_id`, `super_admin` role, Argon2 password hashing. |
 | 4.0 | 2026-08-20 | Software Architect | Added Forgot Password / Reset Password features: new use cases (UC-AUTH-006/007), new screens (/forgot-password, /reset-password), new API endpoints, `password_reset_tokens` table integration, rate limiting (3/hour), 24-hour token expiry, single-use tokens. Admin registration disabled (login only). |
 | 4.1 | 2026-08-21 | Software Architect | Aligned with DATABASE_SPEC v2.1: added conditional shopName (店舗名) required for merchant registration, included super_admin in registration rules, and consolidated /api/v1 API prefixing. |
+| 4.2 | 2026-10-15 | Software Architect | Aligned auth page specifications with current Login, Register, Forgot Password, Verify Code, and Reset Password pages; replaced reset-link token flow with six-character verification-code flow. |
 
 ---
 
@@ -70,9 +71,9 @@ This screen is responsible for the following core functional areas:
 4. **Session Management** — Managing token refresh, rotation, and revocation with family tracking for breach detection.
 5. **Token Blacklisting** — Implementing Redis-based token blacklisting for secure logout.
 6. **Password Security** — Hashing passwords with Argon2id algorithm (64MB memory, 3 iterations, 4 threads).
-7. **Rate Limiting** — Protecting authentication endpoints from brute-force attacks.
+7. **Request Throttling** — The inspected auth service has no backend rate limiter; the Verify Code page applies a 60-second client-side resend cooldown after successful resend.
 8. **Account Verification** — Verifying token validity for protected route access.
-9. **Password Recovery** — Enabling users to reset forgotten passwords via secure email links with 24-hour expiry and single-use tokens.
+9. **Password Recovery** — Let users request an emailed six-digit code, verify it, and submit a new password.
 
 ### 1.3 Target Users
 
@@ -119,21 +120,21 @@ This screen is responsible for the following core functional areas:
 |-------------------|---------------|----------------------|
 | `email` | User Input | Email address for registration, login, or password reset |
 | `password` | User Input | Password for registration or login |
-| `name` | User Input | Full name for registration |
+| `name` | User Input | Name for registration; the UI relabels the same input as “Shop Name” for merchants |
 | `role` | User Input | Role selection (buyer/merchant) for registration |
-| `shopName` | User Input | Shop name for merchant registration (merchant only) |
 | `license` | File Upload | Business license PDF (merchant only, max 10MB) |
-| `refreshToken` | HTTP Cookie | Refresh token for session operations |
-| `resetToken` | URL Parameter | Password reset token from email link |
+| `confirmPassword`, `agreeToTerms` | Client-only form values | Registration validation; not sent to the API |
+| `refreshToken` | JSON request body | Refresh token used by the frontend API client |
+| `code` | User Input / router state | Six-character password-recovery code |
 
 | Output Information | Data Category | Destination / Description |
 |--------------------|---------------|---------------------------|
 | `accessToken` | JWT Token | Returned in response body for API authorization |
-| `refreshToken` | HTTP Cookie | Set as httpOnly cookie for session management |
+| `refreshToken` | JSON response body | Stored by the current frontend auth provider in local storage |
 | `user` | User DTO | User profile data (excluding password hash) |
 | `licenseUrl` | URL | Path to uploaded license file (merchant only) |
 | `blacklist` | Redis Key | Token revocation record for logout |
-| `resetEmailSent` | Boolean | Confirmation that reset email was sent |
+| `message` | API response | Message response for forgot-password, verify-code, and reset-password operations |
 
 ### 1.6 Related Documents
 
@@ -153,12 +154,13 @@ This screen is responsible for the following core functional areas:
 |-------|---------------|--------------|---------------|------------------|
 | UC-AUTH-001 | Register New Account | User is not authenticated. | New user record created in `users` table with hashed password. User redirected to login page. | Visitor |
 | UC-AUTH-001A | Upload Merchant License | User selects "Merchant" role during registration. | License PDF uploaded and stored. `merchants` record created with `license_status='pending'` awaiting admin approval. | Visitor |
-| UC-AUTH-002 | Login with Credentials | User has existing account. | JWT access token issued. Refresh token set as httpOnly cookie. User redirected to home page. | Visitor |
-| UC-AUTH-003 | Refresh Access Token | Valid refresh token exists in httpOnly cookie. | New access token issued. Old refresh token revoked and new one issued (rotation). | Authenticated User |
+| UC-AUTH-002 | Login with Credentials | User has existing account. | API returns user and tokens; frontend stores tokens and navigates to a redirect target or role dashboard. | Visitor |
+| UC-AUTH-003 | Refresh Access Token | Valid refresh token exists in local storage. | Frontend posts refresh token in request body; successful response replaces stored tokens and retries the original request. | Authenticated User |
 | UC-AUTH-004 | Logout | User is authenticated. | Access token blacklisted in Redis. Refresh token revoked. User redirected to login page. | Authenticated User |
 | UC-AUTH-005 | Verify Token Validity | User has access token. | Token validated. User profile returned. | Authenticated User |
-| UC-AUTH-006 | Request Password Reset | User has account but forgot password. | Password reset token created in `password_reset_tokens` table. Reset email sent to user. | Any User |
-| UC-AUTH-007 | Reset Password with Token | User clicked reset link from email. | Password updated in `users` table. Reset token marked as used. User redirected to login page. | Any User |
+| UC-AUTH-006 | Request Password Recovery Code | User enters an email on Forgot Password. | Frontend navigates to Verification Code with email in router location state after API success. | Visitor |
+| UC-AUTH-006A | Verify Password Recovery Code | Email is present in router state and user enters a six-character code. | Valid code is checked by the API; frontend passes email and code to Reset Password in router state. | Visitor |
+| UC-AUTH-007 | Reset Password with Code | Email and code are present in router state. | New password is submitted with email and code; success view offers a link to Login. | Visitor |
 
 ### 2.2 Primary Business Workflow
 
@@ -170,15 +172,15 @@ This screen is responsible for the following core functional areas:
                                  │
                                  ▼
                    ┌─────────────────────────────┐
-                   │  Auth Page Display          │
-                   │  (Login / Register Toggle)  │
+                   │  Separate Auth Routes       │
+                   │ (Login, Register, Recovery) │
                    └──────────┬──────────────────┘
                               │
               ┌───────────────┼───────────────────┐
               ▼               ▼                   ▼
     ┌─────────────┐  ┌──────────────┐   ┌──────────────────┐
-    │ Login Tab   │  │ Register Tab │   │ Language/Theme   │
-    │ (UC-AUTH-02)│  │ (UC-AUTH-01) │   │ Toggle           │
+    │ Login Page │  │ Register Page│   │ Language/Theme   │
+    │ (UC-AUTH-02)│  │ (UC-AUTH-01) │   │ Shared Header    │
     └──────┬──────┘  └──────┬───────┘   └──────────────────┘
            │                │
            ▼                ▼
@@ -216,11 +218,13 @@ This screen is responsible for the following core functional areas:
        │                          │
        ▼                          ▼
 ┌──────────────┐        ┌─────────────────────┐
-│ Issue Tokens │        │ Display Error       │
-│ Redirect to  │        │ Message             │
-│ Home         │        └─────────────────────┘
+│ Store Tokens │        │ Display Error       │
+│ Redirect by  │        │ Message             │
+│ Role/Query   │        └─────────────────────┘
 └──────────────┘
 ```
+
+Password recovery uses separate routes: Forgot Password sends the email to `/verify-code` in router state; successful code verification sends `{ email, code }` to `/reset-password` in router state. Missing required state on Verify Code or Reset Password returns the user to `/forgot-password`.
 
 ### 2.3 Workflow Critical Path Summary
 
@@ -248,9 +252,8 @@ This screen is responsible for the following core functional areas:
 | B-AUTH-007 | Refresh token rotation on every use |
 | B-AUTH-008 | Token family tracking for breach detection |
 | B-AUTH-009 | User can request password reset via email |
-| B-AUTH-010 | Reset link expires after 24 hours |
-| B-AUTH-011 | Reset token is single-use |
-| B-AUTH-012 | Rate limiting: max 3 reset requests per email per hour |
+| B-AUTH-010 | Recovery verification code expires after 10 minutes |
+| B-AUTH-011 | Recovery code is marked used after a successful password reset |
 
 ---
 
@@ -279,7 +282,7 @@ This screen is responsible for the following core functional areas:
 
 | Transition ID | Origin State | Target State | Trigger Action | Guard Conditions |
 |---------------|--------------|--------------|----------------|------------------|
-| TR-AUTH-01 | `NO_SESSION` | `ACCESS_VALID` | Login success | Valid credentials, rate limit not exceeded |
+| TR-AUTH-01 | `NO_SESSION` | `ACCESS_VALID` | Login success | Valid credentials |
 | TR-AUTH-02 | `ACCESS_VALID` | `ACCESS_VALID` | Token refresh | Valid refresh token, not blacklisted |
 | TR-AUTH-03 | `ACCESS_EXPIRED` | `ACCESS_VALID` | Token refresh | Valid refresh token, not expired |
 | TR-AUTH-04 | `ACCESS_VALID` | `BLACKLISTED` | Logout | User initiates logout |
@@ -294,7 +297,7 @@ This screen is responsible for the following core functional areas:
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-AUTH-001 | Email Uniqueness | Email must be unique across all users. | Backend (DB constraint + service check) |
-| BR-AUTH-002 | Password Strength | Minimum 8 characters, must include uppercase, lowercase, number, and special character. | Backend (DTO validation) + Frontend (Zod schema) |
+| BR-AUTH-002 | Password Strength | Frontend registration form requires 8–128 characters, uppercase, lowercase, digit, and one of `@$!%*?&`. Registration DTO requires a minimum of 8 characters only. | Frontend (Zod) + Backend (DTO; weaker rule) |
 | BR-AUTH-003 | Role Restriction | Only 'buyer' or 'merchant' roles allowed during registration. | Backend (DTO validation) |
 | BR-AUTH-004 | Default Role | If role not specified, defaults to 'buyer'. | Backend (service logic) |
 | BR-AUTH-005 | Email Verification | New users have `emailVerified = false`. | Backend (user creation) |
@@ -304,7 +307,7 @@ This screen is responsible for the following core functional areas:
 | BR-AUTH-023 | License File Size | License file must not exceed 10MB. | Backend (file validation) + Frontend (size check) |
 | BR-AUTH-024 | Merchant License Status | Merchant registration creates `merchants` record with `license_status='pending'`; merchant features stay locked until admin sets `license_status='approved'`. | Backend (merchant creation, approval workflow) |
 | BR-AUTH-025 | Admin Registration Disabled | Admin and Super Admin accounts cannot be created via registration. Admin/Super Admin accounts are system-seeded or created by Admin/Super Admin. | Backend (role validation) + Frontend (role options) |
-| BR-AUTH-026 | Merchant Shop Name Required | When role = 'merchant', shop name input (`shopName`) is mandatory (1-255 characters). | Backend (DTO validation) + Frontend (conditional validation) |
+| BR-AUTH-026 | Merchant Name Label | For a merchant, the same `name` input is labeled “Shop Name”; no separate `shopName` field is submitted. | Frontend label; backend service reuses `name` |
 
 ### 4.2 Login Rules
 
@@ -312,7 +315,7 @@ This screen is responsible for the following core functional areas:
 |---------|-----------|-------------|-------------------|
 | BR-AUTH-006 | Credential Validation | Email must exist and password must match Argon2 hash. | Backend (auth service) |
 | BR-AUTH-007 | Account Active Check | User must have `isActive = true` to login. | Backend (auth service) |
-| BR-AUTH-008 | Rate Limiting | Max 5 login attempts per IP per 300 seconds. | Backend (Redis rate limiter) |
+| BR-AUTH-008 | Login Rate Limiting | No login rate limiter is applied in the inspected auth service flow. | Not implemented in current source |
 | BR-AUTH-009 | Generic Error Messages | Never reveal whether email exists or password is wrong. | Backend (error handling) |
 
 ### 4.3 Token Rules
@@ -331,20 +334,20 @@ This screen is responsible for the following core functional areas:
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
 | BR-AUTH-016 | Password Hashing | Use Argon2id with 64MB memory, 3 iterations, 4 threads. | Backend (argon2 library) |
-| BR-AUTH-017 | Token Storage | Access token in memory only (never localStorage). Refresh token in httpOnly cookie. | Frontend (auth service) |
-| BR-AUTH-018 | Cookie Security | httpOnly, Secure, SameSite=Strict, Path=/api/v1/auth/refresh. | Backend (cookie settings) |
+| BR-AUTH-017 | Token Storage | The current frontend stores access and refresh tokens in localStorage after login. | Frontend (`AuthProvider`) |
+| BR-AUTH-018 | Refresh Request | The frontend sends the refresh token in the JSON request body; the controller does not use a refresh-token cookie. | Frontend API client and backend controller |
 | BR-AUTH-019 | CORS Protection | Only allowed origins can access auth endpoints. | Backend (CORS config) |
 
 ### 4.5 Password Reset Rules
 
 | Rule ID | Rule Name | Description | Enforcement Layer |
 |---------|-----------|-------------|-------------------|
-| BR-AUTH-030 | Reset Token Expiry | Password reset tokens expire after 24 hours. | Backend (password_reset_tokens table) |
-| BR-AUTH-031 | Single-Use Token | Reset token can only be used once. After successful reset, `used = TRUE`. | Backend (auth service) |
-| BR-AUTH-032 | Reset Rate Limiting | Max 3 password reset requests per email per hour. | Backend (Redis rate limiter) |
-| BR-AUTH-033 | Invalidate Old Tokens | When a new reset is requested, all previous unused tokens for that user are invalidated. | Backend (auth service) |
-| BR-AUTH-034 | Email Not Revealed | Response always shows same message regardless of whether email exists. | Backend (error handling) |
-| BR-AUTH-035 | Password Hash Updated | New password must be hashed with Argon2 before storing. | Backend (auth service) |
+| BR-AUTH-030 | Recovery Code Expiry | Password recovery code expires after 10 minutes. | Backend (auth service) |
+| BR-AUTH-031 | Recovery Code Use | Code is checked at verification and consumed after successful password reset. | Backend (auth service) |
+| BR-AUTH-032 | Replace Earlier Codes | A new code request marks the user's previous unused recovery records used. | Backend (auth service) |
+| BR-AUTH-033 | Unknown Email Response | Forgot-password currently returns 404 when no account exists; it does not always return a generic success response. | Backend (auth service) |
+| BR-AUTH-034 | Resend Cooldown | The Verification Code page prevents another resend for 60 seconds after a successful resend. | Frontend only |
+| BR-AUTH-035 | Password Hash Updated | New password is hashed with Argon2 before storing. | Backend (auth service) |
 
 ---
 
@@ -375,8 +378,8 @@ This screen is responsible for the following core functional areas:
 
 **Default State:**
 - Email input auto-focused
-- Log In button disabled until form is valid
-- Loading spinner on button during submission
+- Log In button is disabled and shows a loading indicator while the request is in progress.
+- An authenticated user is redirected to the `redirect` query value when present, otherwise to the dashboard route for the user's role.
 
 ### 5.2 Screen: Register Page (`/register`)
 
@@ -390,18 +393,19 @@ This screen is responsible for the following core functional areas:
 |------------|--------------|--------------|----------|:--------:|-------------|
 | EL-12 | Logo | Image | — | No | Application logo |
 | EL-13 | System Name | Text | `app.name` | No | "Cosmetics Finder" |
-| EL-14 | Full Name Label | Label | `auth.fullName` | Yes | "Full Name" |
-| EL-15 | Full Name Input | Input (text) | `auth.fullNamePlaceholder` | Yes | User's full name |
+| EL-14 | Name Label | Label | `auth.register.fullName` / `auth.register.shopName` | Yes | "Full Name" for buyer; "Shop Name" for merchant |
+| EL-15 | Name Input | Input (text) | `auth.register.fullNamePlaceholder` / `auth.register.shopNamePlaceholder` | Yes | One `name` value; no separate shop-name field |
 | EL-16 | Email Label | Label | `auth.email` | Yes | "Email" |
 | EL-17 | Email Input | Input (email) | `auth.emailPlaceholder` | Yes | Email address input |
 | EL-18 | Password Label | Label | `auth.password` | Yes | "Password" |
-| EL-19 | Password Input | Input (password) | `auth.passwordPlaceholder` | Yes | Password with strength indicator |
+| EL-19 | Password Input | Input (password) | `auth.register.passwordPlaceholder` | Yes | Password with show/hide control |
 | EL-20 | Password Requirements | Helper Text | — | No | Shows password rules |
 | EL-21 | Confirm Password Label | Label | `auth.confirmPassword` | Yes | "Confirm Password" |
 | EL-22 | Confirm Password Input | Input (password) | `auth.confirmPasswordPlaceholder` | Yes | Must match password |
 | EL-23 | Role Selection | Radio Group | `auth.iAm` | Yes | "I am a:" |
 | EL-24 | Buyer Radio | Radio Button | `auth.buyer` | Yes | "Buyer" - Browse and purchase |
 | EL-25 | Merchant Radio | Radio Button | `auth.merchant` | Yes | "Merchant" - Sell products |
+| EL-35 | Terms Agreement | Checkbox | `auth.register.termsAgreement` | Yes | Must be selected; client-side only |
 | EL-30 | License Label | Label | `auth.license` | Conditional | "Business License (PDF)" — shown when Merchant selected |
 | EL-31 | License Upload | File Input | `auth.licensePlaceholder` | Conditional | PDF upload with drag & drop zone — shown when Merchant selected |
 | EL-32 | License Helper | Helper Text | `auth.licenseHelper` | No | "Upload your business license as PDF (max 10MB). File must be named license.pdf." |
@@ -413,15 +417,15 @@ This screen is responsible for the following core functional areas:
 | EL-29 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
 
 **Default State:**
-- Full Name input auto-focused
 - Buyer radio selected by default
-- Create Account button disabled until form is valid
 - Password requirements shown below password field
 - License upload field hidden (shown only when Merchant selected)
+- Submit button is disabled and shows a loading indicator only while registration is in progress.
+- Selecting Buyer clears a previously selected license file.
 
 ### 5.3 Screen: Forgot Password Page (`/forgot-password`)
 
-**Purpose:** Allow users to request a password reset link via email.
+**Purpose:** Request a six-digit password recovery code by email.
 
 #### 5.3.1 UI Elements
 
@@ -432,26 +436,40 @@ This screen is responsible for the following core functional areas:
 | EL-40 | Logo | Image | — | No | Application logo |
 | EL-41 | System Name | Text | `app.name` | No | "Cosmetics Finder" |
 | EL-42 | Title | Text | `auth.forgotPasswordTitle` | No | "Forgot your password?" |
-| EL-43 | Description | Text | `auth.forgotPasswordDesc` | No | "Enter your email and we'll send you a reset link." |
+| EL-43 | Description | Text | `auth.forgotPassword.description` | No | Prompts the user to enter an email to receive a verification code. |
 | EL-44 | Email Label | Label | `auth.email` | Yes | "Email" |
 | EL-45 | Email Input | Input (email) | `auth.emailPlaceholder` | Yes | Email address input |
-| EL-46 | Send Reset Link Button | Button (primary) | `auth.sendResetLink` | Yes | Submit email to receive reset link |
+| EL-46 | Send Verification Code Button | Button (primary) | `auth.forgotPassword.submit` | Yes | Submit email and request a recovery code |
 | EL-47 | Back to Login Link | Link | `auth.backToLogin` | No | "Back to Login" |
 | EL-48 | Language Toggle | Toggle | — | No | Switch between EN/JA/MY |
 | EL-49 | Theme Toggle | Toggle | — | No | Switch between Light/Dark |
 
 **Default State:**
 - Email input auto-focused
-- Send Reset Link button disabled until form is valid
-- Loading spinner on button during submission
+- Submit button is disabled and shows a loading indicator while the request is in progress.
 
 **Success State:**
-- After submission, show success message: "If an account exists with that email, you'll receive a password reset link shortly."
-- Form is replaced with success message and "Back to Login" link
+- On API success, navigate to `/verify-code` and pass the entered email in React Router location state. The page does not replace its form with an in-place success view.
+- API failures are shown in a destructive alert; unknown email may be returned by the API as an error.
 
-### 5.4 Screen: Reset Password Page (`/reset-password`)
+### 5.4 Screen: Verification Code Page (`/verify-code`)
 
-**Purpose:** Allow users to set a new password after clicking the reset link from email.
+**Purpose:** Verify the six-character password recovery code sent for the submitted email.
+
+| Element | Type | Behavior |
+|---------|------|----------|
+| Page title and description | Text | Description displays a masked email from router location state. |
+| Code input | Text input | Numeric input mode, one-time-code autocomplete, autofocus, max length 6; schema requires exactly 6 characters. |
+| Verify button | Submit button | Calls verification with email and code; disabled with loading indicator while submitting. |
+| Resend code button | Button | Requests a new code for the same email; after success displays an alert and starts a 60-second cooldown. Disabled while resending or during cooldown. |
+| Back to email link | Link | Navigates to `/forgot-password`. |
+| Error/success alerts | Alert | Displays request errors or resend success. |
+
+If email is missing from router location state, the page redirects to `/forgot-password` and renders no form content. On successful verification, it navigates to Reset Password with email and code in location state.
+
+### 5.5 Screen: Reset Password Page (`/reset-password`)
+
+**Purpose:** Allow users to set a new password after verifying a recovery code.
 
 #### 5.4.1 UI Elements
 
@@ -464,8 +482,8 @@ This screen is responsible for the following core functional areas:
 | EL-52 | Title | Text | `auth.resetPasswordTitle` | No | "Reset your password" |
 | EL-53 | Description | Text | `auth.resetPasswordDesc` | No | "Enter your new password below." |
 | EL-54 | New Password Label | Label | `auth.newPassword` | Yes | "New Password" |
-| EL-55 | New Password Input | Input (password) | `auth.newPasswordPlaceholder` | Yes | Password with strength indicator |
-| EL-56 | Password Requirements | Helper Text | — | No | Shows password rules |
+| EL-55 | New Password Input | Input (password) | `auth.resetPassword.newPasswordPlaceholder` | Yes | Password with show/hide control and shared strength indicator |
+| EL-56 | Password Strength | Component | — | No | `PasswordStrengthIndicator` reflects the new password |
 | EL-57 | Confirm Password Label | Label | `auth.confirmPassword` | Yes | "Confirm Password" |
 | EL-58 | Confirm Password Input | Input (password) | `auth.confirmPasswordPlaceholder` | Yes | Must match new password |
 | EL-59 | Reset Password Button | Button (primary) | `auth.resetPassword` | Yes | Submit new password |
@@ -475,13 +493,14 @@ This screen is responsible for the following core functional areas:
 
 **Default State:**
 - New Password input auto-focused
-- Reset Password button disabled until form is valid
-- Loading spinner on button during submission
-- If token is invalid or expired, show error message and redirect to login
+- The page requires email and code in React Router location state. If either is missing, it redirects to `/forgot-password` and renders no form content.
+- Reset Password button is disabled and shows a loading indicator while the request is in progress.
 
 **Success State:**
 - After successful reset, show success message: "Your password has been reset successfully."
 - Show "Back to Login" link
+- A success toast is also shown; the form is replaced by the success view.
+- Invalid or expired code errors are displayed in an alert; the page does not automatically redirect to Login.
 
 ---
 
@@ -491,13 +510,13 @@ This screen is responsible for the following core functional areas:
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | "Create Account" button click on Register form |
+| **Trigger** | Register page form submission |
 | **API Endpoint** | `POST /api/v1/auth/register` |
-| **Request Content-Type** | `multipart/form-data` (when license file attached) or `application/json` |
-| **Pre-Submission Validation** | Full field validation (Zod schema). If role = merchant, shop name (1-255 chars) and license file validation. |
-| **Processing Steps** | 1. Validate email format and uniqueness. 2. Validate password strength. 3. Validate role is 'buyer' or 'merchant' (admin/super_admin not allowed). 4. If role = merchant, validate shop name (not empty, max 255 chars) and license file (PDF, named license.pdf, ≤10MB). 5. Hash password with Argon2. 6. Upload license file to storage. 7. Create `users` record. 8. If role = merchant, create `merchants` record with the provided `shop_name`, `license_status='pending'`, and link `users.merchant_id`. 9. Return user DTO (exclude password). 10. Log USER_REGISTERED event. |
-| **Success Response** | 201 Created with user data (including licenseUrl for merchants) |
-| **Post-Action** | Redirect to login page |
+| **Request Content-Type** | `multipart/form-data`; `authService.register()` appends `email`, `name`, `password`, optional `role`, and optional `license` file. |
+| **Pre-Submission Validation** | Zod validates name (2–200), email (valid, max 255), password (8–128 and complexity), confirmation match, buyer/merchant role, terms agreement, and conditional merchant license requirements. |
+| **Processing Steps** | The UI sends one `name` value. For merchants its label changes to “Shop Name”; no separate `shopName` field or request property exists. `confirmPassword` and `agreeToTerms` remain client-only. |
+| **Success Response** | Service returns user and token data within the API data envelope. |
+| **Post-Action** | Show a success toast and navigate to `/login`; the Register page does not establish the returned tokens in AuthProvider. |
 
 ### 6.2 Operation: User Login
 
@@ -506,10 +525,10 @@ This screen is responsible for the following core functional areas:
 | **Trigger** | "Log In" button click on Login form |
 | **API Endpoint** | `POST /api/v1/auth/login` |
 | **Request Content-Type** | `application/json` |
-| **Pre-Submission Validation** | Email format, password not empty |
-| **Processing Steps** | 1. Find user by email. 2. Check isActive. 3. Verify password with Argon2. 4. Check rate limit. 5. Generate access token (15 min). 6. Generate refresh token (7 days). 7. Hash and store refresh token. 8. Set httpOnly cookie. 9. Return access token + user DTO. 10. Log USER_LOGIN_SUCCESS event. |
-| **Success Response** | 200 OK with accessToken and user |
-| **Post-Action** | Redirect to home page |
+| **Pre-Submission Validation** | Zod requires a valid email and a password of at least 8 characters. |
+| **Processing Steps** | Login page calls the auth hook with email and password. On success the auth provider stores access and refresh tokens and sets the user. |
+| **Success Response** | API returns user, access token, and refresh token in the response body. |
+| **Post-Action** | Show a success toast. Auth navigation uses the `redirect` query value when present, otherwise the role-specific dashboard route. |
 
 ### 6.3 Operation: Token Refresh
 
@@ -551,26 +570,27 @@ This screen is responsible for the following core functional areas:
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | "Send Reset Link" button click on Forgot Password form |
+| **Trigger** | Forgot Password form submission |
 | **API Endpoint** | `POST /api/v1/auth/forgot-password` |
 | **Request Content-Type** | `application/json` |
-| **Pre-Submission Validation** | Email format validation |
-| **Processing Steps** | 1. Validate email format. 2. Check rate limit (max 3 per email per hour). 3. Find user by email. 4. If user exists: a. Invalidate all previous unused tokens for this user. b. Generate secure random token. c. Hash token and store in `password_reset_tokens` table with 24-hour expiry. d. Send reset email with link containing token. 5. Always return same response regardless of whether email exists. 6. Log PASSWORD_RESET_REQUESTED event. |
-| **Success Response** | 200 OK with message "If an account exists with that email, you'll receive a password reset link shortly." |
-| **Error Response** | 429 Too Many Requests (rate limit exceeded) |
+| **Pre-Submission Validation** | `forgotPasswordSchema` requires a valid email. |
+| **Processing Steps** | Frontend sends `{ email }`. On API success, the page navigates to `/verify-code` and passes the email in React Router location state. The page has no separate success view. |
+| **API Behavior** | Backend creates a six-digit code with a 10-minute expiry for an existing account and attempts to email it. Unknown email currently returns 404; email delivery failure is logged while the service returns its success message. |
+| **Error Response** | Page displays the response message when present, otherwise the thrown error message or translated fallback. |
 
 ### 6.7 Operation: Reset Password
 
 | Attribute | Specification |
 |-----------|---------------|
-| **Trigger** | "Reset Password" button click on Reset Password form (after clicking email link) |
+| **Trigger** | Reset Password form submission after successful code verification |
 | **API Endpoint** | `POST /api/v1/auth/reset-password` |
 | **Request Content-Type** | `application/json` |
-| **Request Body** | `{ token: string, password: string }` |
-| **Pre-Submission Validation** | Token not empty, password meets strength requirements |
-| **Processing Steps** | 1. Validate token format. 2. Hash the received token. 3. Find token record by `token_hash`. 4. Validate: token exists, not used, not expired (24 hours). 5. Find user by `user_id` from token. 6. Validate password strength (min 8 chars, uppercase, lowercase, digit, special char). 7. Hash new password with Argon2. 8. Update user's password in `users` table. 9. Mark token as `used = TRUE`. 10. Invalidate all other unused tokens for this user. 11. Return 200 OK. 12. Log PASSWORD_RESET_COMPLETED event. |
+| **Request Body** | `{ email, code, password }`; confirmation is not sent. |
+| **Pre-Submission Validation** | Email and code must be present in router state. Password must be 8–128 characters and satisfy the complexity rules; confirmation must match. |
+| **Processing Steps** | The page sends email, code, and new password. The API checks the recovery code, updates the password, and consumes the code on success. |
 | **Success Response** | 200 OK with message "Your password has been reset successfully." |
-| **Error Response** | 400 Bad Request (invalid/expired token, weak password) |
+| **Post-Action** | Show a success toast and replace the form with a success view containing a Back to Login link. |
+| **Error Response** | An invalid or expired code is displayed in the page alert; the user can return to Forgot Password. |
 
 ---
 
@@ -580,12 +600,13 @@ This screen is responsible for the following core functional areas:
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
-| `email` | Email | メールアドレス | VARCHAR(255) | Yes | Input (email) | `@IsEmail()`, `@IsNotEmpty()`, `@MaxLength(255)` |
-| `password` | Password | パスワード | VARCHAR(128) | Yes | Input (password) | `@MinLength(8)`, `@MaxLength(128)`, regex |
-| `name` | Full Name | 氏名 | VARCHAR(200) | Yes | Input (text) | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(200)` |
-| `role` | Role | ロール | ENUM | No | Radio Group | `@IsIn(['buyer', 'merchant'])`, default 'buyer' |
-| `shopName` | Shop Name | 店舗名 | VARCHAR(255) | Conditional | Input (text) | `@IsString()`, `@IsNotEmpty()`, `@MaxLength(255)` (when role = merchant) |
-| `license` | Business License | 事業許可書 | File (PDF) | Conditional | File Input | MIME: application/pdf, MaxSize: 10MB, FileName: license.pdf |
+| `email` | Email | メールアドレス | String | Yes | Input (email) | Frontend: valid email, max 255 characters |
+| `password` | Password | パスワード | String | Yes | Input (password) | Frontend: 8–128 characters, uppercase, lowercase, digit, and special character |
+| `name` | Full Name / Shop Name | 氏名 / 店舗名 | String | Yes | Input (text) | Frontend: 2–200 characters; same field is labeled “Shop Name” for merchants |
+| `role` | Role | ロール | Enum | Yes | Radio Group | `buyer` or `merchant`; defaults to `buyer` |
+| `confirmPassword` | Confirm Password | パスワード確認 | String | Yes | Input (password) | Client-only; must match password |
+| `agreeToTerms` | Terms agreement | 利用規約への同意 | Boolean | Yes | Checkbox | Client-only; must be true |
+| `license` | Business License | 事業許可書 | File (PDF) | Conditional | File input / drag and drop | Merchant only; PDF, ≤10 MB, filename `license.pdf` (case-insensitive) |
 
 ### 7.2 Input Specification — Login (入力定義)
 
@@ -600,19 +621,28 @@ This screen is responsible for the following core functional areas:
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
 | `email` | Email | メールアドレス | VARCHAR(255) | Yes | Input (email) | `@IsEmail()`, `@IsNotEmpty()` |
 
-### 7.4 Input Specification — Reset Password (入力定義)
+### 7.4 Input Specification — Verify Recovery Code (入力定義)
 
 | Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
 |-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
-| `token` | Reset Token | リセットトークン | VARCHAR(255) | Yes | URL Parameter | `@IsNotEmpty()` |
-| `password` | New Password | 新しいパスワード | VARCHAR(128) | Yes | Input (password) | `@MinLength(8)`, `@MaxLength(128)`, regex |
-| `confirmPassword` | Confirm Password | パスワード確認 | VARCHAR(128) | Yes | Input (password) | Must match password |
+| `email` | Email | メールアドレス | String in router state | Yes | Not directly editable | Passed from Forgot Password |
+| `code` | Verification Code | 確認コード | String(6) | Yes | Text input | Exactly 6 characters; numeric input mode; max length 6 |
 
-### 7.5 Output Specification — Login Success (出力定義)
+### 7.5 Input Specification — Reset Password (入力定義)
+
+| Field | Display Name (EN) | Display Name (JA) | Data Type & Length | Required | Input Control | Validation |
+|-------|-------------------|-------------------|-------------------|:--------:|---------------|------------|
+| `email` | Email | メールアドレス | String in router state | Yes | Not directly editable | Passed from Verify Code |
+| `code` | Verification Code | 確認コード | String(6) in router state | Yes | Not directly editable | Passed from Verify Code |
+| `password` | New Password | 新しいパスワード | String(128) | Yes | Input (password) | 8–128 characters; uppercase, lowercase, digit, special character |
+| `confirmPassword` | Confirm Password | パスワード確認 | String | Yes | Input (password) | Client-only; must match password |
+
+### 7.6 Output Specification — Login Success (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
 | `accessToken` | JWT Generation | Bearer token string |
+| `refreshToken` | API response body | Token string |
 | `user.id` | `users.id` | UUID string |
 | `user.email` | `users.email` | String |
 | `user.name` | `users.name` | String |
@@ -621,7 +651,7 @@ This screen is responsible for the following core functional areas:
 | `user.licenseStatus` | `merchants.license_status` | pending/approved/rejected or null |
 | `user.avatarUrl` | `users.avatar_url` | URL or null |
 
-### 7.6 Output Specification — Registration Success (出力定義)
+### 7.7 Output Specification — Registration Success (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
@@ -635,17 +665,11 @@ This screen is responsible for the following core functional areas:
 | `licenseUrl` | `merchants.business_license_url` | URL string or null (merchant only) |
 | `createdAt` | `users.created_at` | ISO 8601 timestamp |
 
-### 7.7 Output Specification — Forgot Password Success (出力定義)
+### 7.8 Output Specification — Recovery Operations (出力定義)
 
 | Field | Data Source | Display Format |
 |-------|-------------|----------------|
-| `message` | System | "If an account exists with that email, you'll receive a password reset link shortly." |
-
-### 7.8 Output Specification — Reset Password Success (出力定義)
-
-| Field | Data Source | Display Format |
-|-------|-------------|----------------|
-| `message` | System | "Your password has been reset successfully." |
+| `message` | API response | Message response for code request, code verification, or successful password reset |
 
 ---
 
@@ -655,12 +679,13 @@ This screen is responsible for the following core functional areas:
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
-| `email` | Required, valid email format, max 255 chars | "Email is required" / "Invalid email address" | "メールアドレスは必須です" / "メールアドレスが無効です" |
-| `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" / "Password must contain uppercase, lowercase, number, and special character" | "パスワードは8文字以上である必要があります" / "パスワードには大文字、小文字、数字、特殊文字を含めてください" |
-| `license` | Required when role = merchant. PDF only, named license.pdf, max 10MB | "Business license is required for merchant registration" / "File must be PDF format" / "File must be named license.pdf" / "File size must not exceed 10MB" | " Merchant登録には事業許可書が必要です" / "ファイルはPDF形式である必要があります" / "ファイル名はlicense.pdfである必要があります" / "ファイルサイズは10MB以下である必要があります" |
-| `shopName` | Required when role = merchant. 1-255 characters | "Shop name is required for merchant registration" / "Shop name must not exceed 255 characters" | "Merchant登録には店舗名が必要です" / "店舗名は255文字以下である必要があります" |
-| `name` | Required, 1-200 chars | "Name is required" | "名前は必須です" |
-| `role` | Optional, must be 'buyer' or 'merchant' | "Invalid role" | "無効なロールです" |
+| `name` | Required, 2–200 characters. Merchant UI labels this same field “Shop Name”. | “Name must be at least 2 characters” / “Name must not exceed 200 characters” | Frontend Zod schema |
+| `email` | Required, valid format, max 255 characters | “Email is required” / “Please enter a valid email address” / max-length message | Frontend Zod schema |
+| `password` | Required, 8–128 characters with uppercase, lowercase, digit, and one of `@$!%*?&` | Translated field-level validation messages | Frontend Zod schema |
+| `confirmPassword` | Required and must match password | “Passwords do not match” | Frontend Zod schema |
+| `role` | Buyer or merchant; defaults to buyer | “Please select a role” | Frontend Zod schema |
+| `agreeToTerms` | Must be true | Terms agreement validation message | Frontend Zod schema |
+| `licenseFile` | Required for merchant; PDF, ≤10 MB, filename `license.pdf` (case-insensitive) | File-specific validation messages | Frontend Zod schema |
 
 ### 8.2 Login Validation (Strict Mode)
 
@@ -675,15 +700,20 @@ This screen is responsible for the following core functional areas:
 |-------|-----------------|--------------------|--------------------|
 | `email` | Required, valid email format | "Email is required" / "Invalid email address" | "メールアドレスは必須です" / "メールアドレスが無効です" |
 
-### 8.4 Reset Password Validation (Strict Mode)
+### 8.4 Verify Code Validation
 
 | Field | Validation Rule | Error Message (EN) | Error Message (JA) |
 |-------|-----------------|--------------------|--------------------|
-| `token` | Required | "Reset token is required" | "リセットトークンは必須です" |
-| `password` | Required, 8-128 chars, uppercase, lowercase, digit, special char | "Password must be at least 8 characters" / "Password must contain uppercase, lowercase, number, and special character" | "パスワードは8文字以上である必要があります" / "パスワードには大文字、小文字、数字、特殊文字を含めてください" |
-| `confirmPassword` | Required, must match password | "Passwords do not match" | "パスワードが一致しません" |
+| `code` | Required; exactly 6 characters. Input uses numeric mode and max length 6. | “Verification code is required” / “Code must be exactly 6 digits” | Schema-defined messages |
 
-### 8.5 Password Strength Requirements
+### 8.5 Reset Password Validation
+
+| Field | Validation Rule | Error Message (EN) | Error Message (JA) |
+|-------|-----------------|--------------------|--------------------|
+| `password` | Required, 8–128 chars, uppercase, lowercase, digit, special char from `@$!%*?&` | Schema-defined password messages | Translated schema messages |
+| `confirmPassword` | Required and must match password | “Passwords do not match” | Translated schema message |
+
+### 8.6 Password Strength Requirements
 
 ```
 Minimum Requirements:
@@ -694,7 +724,7 @@ Minimum Requirements:
 ✓ At least 1 special character (@$!%*?&)
 ```
 
-### 8.6 Validation Enforcement Layers
+### 8.7 Validation Enforcement Layers
 
 1. **Frontend (Client)**: React Hook Form + Zod schema validation with real-time feedback.
 2. **Backend (Server)**: NestJS ValidationPipe + class-validator DTOs on all endpoints.
@@ -724,10 +754,7 @@ Minimum Requirements:
 | `400` | `VALIDATION_ERROR` | License file not named license.pdf | "File must be named license.pdf" |
 | `400` | `VALIDATION_ERROR` | License file exceeds 10MB | "File size must not exceed 10MB" |
 | `400` | `VALIDATION_ERROR` | License file missing for merchant | "Business license is required for merchant registration" |
-| `400` | `VALIDATION_ERROR` | Shop name missing for merchant | "Shop name is required for merchant registration" |
 | `409` | `CONFLICT` | Email already exists | "Email already registered" with link to login |
-| `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded | "Too many attempts. Please wait {seconds} seconds" |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
 ### 9.3 Error Classification Table — Login
 
@@ -735,9 +762,6 @@ Minimum Requirements:
 |-------------|------------|----------|---------------------|
 | `400` | `BAD_REQUEST` | Validation failures | Field-level inline errors |
 | `401` | `UNAUTHORIZED` | Invalid credentials | "Invalid email or password" (generic) |
-| `403` | `FORBIDDEN` | Account deactivated | "Account is deactivated. Contact support" |
-| `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded | "Too many attempts. Please wait {seconds} seconds" |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
 
 ### 9.4 Error Classification Table — Token Operations
 
@@ -754,19 +778,15 @@ Minimum Requirements:
 
 | HTTP Status | Error Code | Scenario | User-Facing Behavior |
 |-------------|------------|----------|---------------------|
-| `400` | `BAD_REQUEST` | Validation failures (invalid email format) | Field-level inline errors |
-| `400` | `BAD_REQUEST` | Invalid or expired reset token | "Invalid or expired reset link. Please request a new one." |
-| `400` | `BAD_REQUEST` | Password does not meet strength requirements | "Password must contain uppercase, lowercase, number, and special character" |
-| `400` | `BAD_REQUEST` | Passwords do not match | "Passwords do not match" |
-| `429` | `TOO_MANY_REQUESTS` | Rate limit exceeded (forgot password) | "Too many attempts. Please wait {seconds} seconds" |
-| `500` | `INTERNAL_SERVER_ERROR` | Server error | "Something went wrong. Please try again" |
+| API error | Response-dependent | Unknown email, invalid/expired code, or request failure | Destructive alert displays the response message when available, otherwise the thrown error message or page fallback. |
+| Client validation | N/A | Invalid form values | Field-level messages shown below the corresponding fields. |
 
 ### 9.6 Frontend Error Display Behavior
 
-- **Field-Level Validation**: Red border and inline text below invalid input.
-- **Form-Level Summary**: Alert banner at top of form listing all errors.
-- **Toast Notifications**: Used for API errors and successful actions.
-- **Loading States**: Spinner on submit buttons during API calls.
+- **Field-Level Validation**: React Hook Form renders schema messages below invalid fields.
+- **Request Errors**: Login and Register display the thrown `Error.message` or a translated fallback in a destructive alert. Forgot Password, Verify Code, and Reset Password prefer the response message, then the thrown error message, then a fallback.
+- **Success Feedback**: Login and Register show a success toast; Reset Password shows a success toast and success view. Forgot Password and Verify Code navigate on success; Verify Code also displays an alert after a successful resend.
+- **Loading States**: Each request submit button is disabled and displays a loading indicator while its request is in progress.
 
 ---
 
@@ -784,7 +804,8 @@ Minimum Requirements:
 | `POST /api/v1/auth/register` | Public | No authentication required |
 | `POST /api/v1/auth/login` | Public | No authentication required |
 | `POST /api/v1/auth/forgot-password` | Public | No authentication required |
-| `POST /api/v1/auth/reset-password` | Public | No authentication required (token in body) |
+| `POST /api/v1/auth/verify-code` | Public | No authentication required; accepts email and six-digit code |
+| `POST /api/v1/auth/reset-password` | Public | No authentication required; accepts email, code, and new password |
 | `POST /api/v1/auth/refresh` | Cookie-based | Requires valid refresh token in cookie |
 | `POST /api/v1/auth/logout` | Protected | Requires valid access token |
 | `GET /api/v1/auth/verify` | Protected | Requires valid access token |
@@ -841,7 +862,8 @@ Upon successful login, the frontend establishes WebSocket connection:
 | Any page (unauthenticated) | `/login` | Accessing protected route without token |
 | Any page (unauthenticated) | `/register` | Clicking "Sign Up" link |
 | Any page | `/forgot-password` | Clicking "Forgot password?" link |
-| Email reset link | `/reset-password?token=xxx` | Clicking reset link from email |
+| `/forgot-password` | `/verify-code` | Successful code request; email passed in router location state |
+| `/verify-code` | `/reset-password` | Successful code verification; email and code passed in router location state |
 | Logout action | `/login` | Session terminated |
 
 ### 12.2 Internal Navigation
@@ -852,17 +874,17 @@ Upon successful login, the frontend establishes WebSocket connection:
 | `/login` | `/forgot-password` | Click "Forgot password?" |
 | `/register` | `/login` | Click "Already have an account? Log In" |
 | `/forgot-password` | `/login` | Click "Back to Login" |
-| `/forgot-password` | `/login` | After successful submission |
+| `/forgot-password` | `/verify-code` | After successful code request |
+| `/verify-code` | `/forgot-password` | Required email is missing from router state |
+| `/verify-code` | `/reset-password` | Code verification succeeds |
+| `/reset-password` | `/forgot-password` | Email or code is missing from router state |
 | `/reset-password` | `/login` | Click "Back to Login" |
-| `/reset-password` | `/login` | After successful password reset |
 
 ### 12.3 Outbound Navigation (Post-Authentication)
 
 | Source | Target | Condition |
 |--------|--------|-----------|
-| `/login` (success) | `/` | Login successful, role = buyer |
-| `/login` (success) | `/merchant/dashboard` | Login successful, role = merchant |
-| `/login` (success) | `/admin/dashboard` | Login successful, role = admin |
+| `/login` (success) | Redirect query or role dashboard | Auth provider completes login; redirect query takes precedence |
 | `/register` (success) | `/login` | Registration successful |
 
 ### 12.4 Error Navigation
@@ -871,7 +893,6 @@ Upon successful login, the frontend establishes WebSocket connection:
 |--------|--------|-----------|
 | Any auth page | `/unauthorized` | 403 Forbidden |
 | Any auth page | `/` | Token verification success |
-| `/reset-password` | `/login` | Invalid or expired token |
 
 ---
 
@@ -894,14 +915,14 @@ Upon successful login, the frontend establishes WebSocket connection:
 
 | Concern | Mitigation |
 |---------|------------|
-| Brute Force Attacks | Rate limiting (5 attempts / 300 seconds per IP) |
+| Brute Force Attacks | Login rate limiting is not implemented in the inspected auth service flow. |
 | Password Theft | Argon2id hashing (memory-hard, GPU-resistant) |
 | Token Theft | httpOnly cookies, Secure flag, SameSite=Strict |
 | Session Hijacking | Token rotation, family tracking, reuse detection |
 | CSRF | SameSite cookies, CORS restrictions |
 | Malicious File Upload | PDF-only validation, file size limit (10MB), filename validation (license.pdf) |
-| Password Reset Abuse | Rate limiting (3 requests / hour per email), single-use tokens, 24-hour expiry |
-| Password Reset Token Theft | Tokens stored as hashes, one-time use, old tokens invalidated on new request |
+| Password Reset Abuse | Six-digit recovery code with a 10-minute expiry; a 60-second resend cooldown is enforced by the frontend after a successful resend. No backend rate limiter is applied in the inspected auth flow. |
+| Password Reset Code Theft | The recovery code is required with the account email to reset the password and is consumed on successful reset. |
 
 ### 13.3 Responsive Design Requirements
 
@@ -927,10 +948,6 @@ Defined via `.env` configuration:
 | `ARGON2_MEMORY_COST` | `65536` | Argon2 memory cost in KB (64MB) |
 | `ARGON2_TIME_COST` | `3` | Argon2 iterations |
 | `ARGON2_PARALLELISM` | `4` | Argon2 parallel threads |
-| `RATE_LIMIT_LOGIN` | `5` | Max login attempts per window |
-| `RATE_LIMIT_WINDOW` | `300` | Rate limit window in seconds |
-| `RATE_LIMIT_PASSWORD_RESET` | `3` | Max password reset requests per email per hour |
-| `PASSWORD_RESET_EXPIRY` | `86400` | Password reset token expiry in seconds (24 hours) |
 | `LICENSE_MAX_SIZE` | `10485760` | Maximum license file size in bytes (10MB) |
 | `LICENSE_ALLOWED_TYPES` | `['application/pdf']` | Allowed MIME types for license upload |
 | `LICENSE_ALLOWED_FILENAME` | `license.pdf` | Required filename for license upload |
@@ -953,9 +970,9 @@ Defined via `.env` configuration:
 | B-AUTH-007 | Refresh token rotation | BR-AUTH-013, Sec 6.3 |
 | B-AUTH-008 | Token family tracking | BR-AUTH-014, BR-AUTH-015 |
 | B-AUTH-009 | User can request password reset via email | UC-AUTH-006, Sec 6.6 |
-| B-AUTH-010 | Reset link expires after 24 hours | BR-AUTH-030, Sec 6.6 |
-| B-AUTH-011 | Reset token is single-use | BR-AUTH-031, Sec 6.7 |
-| B-AUTH-012 | Rate limiting: max 3 reset requests per email per hour | BR-AUTH-032, Sec 6.6 |
+| B-AUTH-010 | Six-digit recovery code expires after 10 minutes | UC-AUTH-006A/007, Sec 6.6–6.8 |
+| B-AUTH-011 | Recovery code is consumed after successful password reset | UC-AUTH-007, Sec 6.8 |
+| B-AUTH-012 | Resend is disabled for 60 seconds after a successful code resend; no backend request rate limit is implemented in the inspected flow | Sec 6.7 |
 | B-AUTH-020 | Merchant must upload business license PDF | UC-AUTH-001A, BR-AUTH-020~023, Sec 6.1 |
 
 ### 15.2 Database Design Traceability
@@ -966,7 +983,7 @@ Defined via `.env` configuration:
 | `merchants` | Registration (INSERT, merchant only — business license + `license_status='pending'`) |
 | `refresh_tokens` | Token storage (INSERT), Rotation (UPDATE), Revocation (UPDATE) |
 | `user_roles` | Role validation during registration |
-| `password_reset_tokens` | Forgot Password (INSERT), Reset Password (SELECT + UPDATE `used`) |
+| Recovery-code storage | Forgot Password (create code), Verify Code (check code), Reset Password (consume code) |
 
 ### 15.3 Related Document References
 

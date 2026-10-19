@@ -1,287 +1,291 @@
-# DD_PROMO_02 — Frontend Page (Promotion List / Create / Edit)
+# DD_PROMO_02 — Frontend Page Design
 
-> **Doc ID:** SKM-DD-PROMO-02 | **Version:** 1.0 | **Status:** Draft  
-> **Last Updated:** 2026-08-25
+> **Doc ID:** SKM-DD-PROMO-02 | **Version:** 2.0 | **Status:** Updated  
+> **Last Updated:** 2026-10-15
 
 ---
 
 ## 1. Overview
 
-The Promotion Management frontend consists of three screens: `PromotionListPage`, `PromotionCreatePage`, and `PromotionEditPage`. All share the `DashboardLayout` (sidebar + header) for merchant pages. The list screen supports search, status filtering, pagination, active-status toggling, and hard delete with a confirmation dialog. The create/edit screens use a single reusable `PromotionForm` with React Hook Form + Zod validation. For merchants with `pending`/`rejected` license status, the list renders in a restricted read-only mode with a status banner and hidden mutation controls.
+This document describes the actual promotion page implementation in the current repository.
 
-- **File Path (List):** `frontend/src/pages/merchant/promotions/index.tsx`
-- **File Path (Create):** `frontend/src/pages/merchant/promotions/new.tsx`
-- **File Path (Edit):** `frontend/src/pages/merchant/promotions/[id]/edit.tsx`
-- **Route (List):** `/merchant/promotions`
-- **Route (Create):** `/merchant/promotions/new`
-- **Route (Edit):** `/merchant/promotions/:id/edit`
-- **Shared Layout:** `DashboardLayout.tsx`
+The merchant promotion feature is composed of three primary pages:
+
+- `frontend/src/pages/merchant/Promotions.tsx` — list page
+- `frontend/src/pages/merchant/PromotionCreate.tsx` — create page
+- `frontend/src/pages/merchant/PromotionEdit.tsx` — edit page
+
+These screens are rendered under the merchant dashboard layout and use the shared `usePromotions` hook for loading and mutation flows.
+
+### Route map
+
+| Route | Component |
+|---|---|
+| `/merchant/promotions` | `Promotions` |
+| `/merchant/promotions/new` | `PromotionCreate` |
+| `/merchant/promotions/:id/edit` | `PromotionEdit` |
 
 ---
 
 ## 2. Layout Structure
 
-### 2.1 Promotion List Page Layout
+### 2.1 Promotion list page
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ DashboardLayout Header (Language EN/JA/MY | Theme Toggle)       │
-├───────────┬─────────────────────────────────────────────────────┤
-│ Sidebar   │  [A] Page Header "Promotion Management" +Breadcrumb│
-│ Products  │                                                     │
-│ Orders    │  [G] Pending Banner (when license pending/rejected) │
-│ Promotions│                                                     │
-│ ...       │  [B] Action Bar                                     │
-│           │   [Search Input] [Status Filter] [Add New ✗ hidden] │
-│           │                                                     │
-│           │  [C] Promotion Table                                │
-│           │   Code | Desc | Type | Discount | Usage | Expiry   │
-│           │   Status | Edit | Delete | Toggle                  │
-│           │                                                     │
-│           │  [D] Pagination  Page x of y (n promotions)         │
-│           └─────────────────────────────────────────────────────┘
-└─────────────────────────────────────────────────────────────────┘
-```
+`Promotions.tsx` renders a card-based layout with:
 
-**Restricted (pending/rejected) state:** `PendingBanner` is shown and `Add Promotion`, `Edit`, `Delete`, and `Toggle Active` controls are hidden. `Search`, `Status Filter`, and pagination remain functional (read-only view).
+- page title: `merchant.promotions.title`
+- account warning banners for deactivated, pending, or rejected merchants
+- search input
+- status filter dropdown
+- sort dropdown
+- Add New button when actions are allowed
+- promotion table with per-row controls
+- pagination controls
 
-### 2.2 Promotion Form Layout (Create/Edit)
+Key UI controls include:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ DashboardLayout Header  (Language, Theme Toggle)                │
-├───────────┬─────────────────────────────────────────────────────┤
-│ Sidebar   │  [A Page Header] "Add New / Edit Promotion"         │
-│           │  [B Error Alert] (conditional, API errors)          │
-│           │  [F Promotion Form]                                 │
-│           │   -- Basic Information --                           │
-│           │     Code Input | Description Textarea               │
-│           │   -- Discount Settings --                           │
-│           │     Discount Type | Discount Value                  │
-│           │     Min Order Amount | Max Uses                     │
-│           │   -- Validity Period --                             │
-│           │     Start Date | Expiry Date                        │
-│           │   -- Status --                                      │
-│           │     Is Active Switch                                │
-│           │   -- Actions --                                     │
-│           │     [Save/Update] [Cancel]                          │
-│           └─────────────────────────────────────────────────────┘
-└─────────────────────────────────────────────────────────────────┘
-```
+- search box
+- status filter: `all`, `active`, `inactive`, `expired`
+- sort: `newest`, `oldest`, `code`
+- Add New button
+- Edit, Delete, Toggle, and Copy actions per row
 
-### 2.3 Responsive Breakpoints
+### 2.2 Create and edit forms
 
-| Breakpoint | Min Width | Layout Behavior |
-| :--- | :--- | :--- |
-| Mobile (default) | 0px | Stacked form; table scrolls horizontally; bottom navigation |
-| Tablet (`md:`) | 768px | Full-width form, collapsible sidebar, reduced table columns |
-| Desktop (`lg:`) | 1024px | Full-width form, sidebar navigation, full table |
-| Wide (`xl:`) | 1280px | Full-width form, sidebar navigation, enhanced spacing |
+The create/edit screens are implemented as controlled components using local component state rather than `react-hook-form` + Zod.
+
+The form includes:
+
+- code
+- description
+- discount type (`percentage` or `fixed`)
+- discount value
+- min order amount
+- max uses
+- startsAt
+- expiresAt
+- isActive
+
+The create page performs inline validation. The edit page validates before submit, blocks changes when the coupon has already been used, and keeps the `code` field read-only.
 
 ---
 
-## 3. Form State & Validation (React Hook Form + Zod)
+## 3. State and Data Flow
 
-### 3.1 Promotion List Hook
+### 3.1 List query
 
-`frontend/src/features/promotions/hooks/usePromotionList.ts` manages the list query state: current page, `search` (debounced 300ms), `status` filter, license status, and loading/refetch behavior. It calls `promotions.service.list()` and returns `{ data, meta, isLoading, isRestricted, setPage, setSearch, setStatus, refetch }`.
+The list query is powered by `usePromotions(params)` from `frontend/src/hooks/usePromotions.ts`.
 
-### 3.2 Promotion Form Hook
-
-```typescript
-// frontend/src/features/promotions/hooks/usePromotionForm.ts
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { promotionSchema, type PromotionFormData } from '../schemas/promotion.schema';
-
-export function usePromotionForm(initial?: Partial<PromotionFormData>) {
-  const methods = useForm<PromotionFormData>({
-    resolver: zodResolver(promotionSchema),
-    defaultValues: {
-      code: initial?.code ?? '',
-      description: initial?.description ?? '',
-      discountType: initial?.discountType ?? undefined,
-      discountValue: initial?.discountValue ?? undefined,
-      minOrderAmount: initial?.minOrderAmount ?? undefined,
-      maxUses: initial?.maxUses ?? undefined,
-      startsAt: initial?.startsAt ?? new Date(),
-      expiresAt: initial?.expiresAt ?? undefined,
-      isActive: initial?.isActive ?? true,
-    },
-    mode: 'onChange',
-  });
-
-  return { methods };
+```ts
+const queryParams: PromotionQueryParams = {
+  search: search || undefined,
+  status: statusFilter === 'all' ? undefined : statusFilter,
+  sortBy,
+  page,
+  limit,
 }
 ```
 
-### 3.3 Zod Validation Schema
+This is then passed to `promotionService.getPromotions(params)`, which hits the backend `/promotions` route.
 
-```typescript
-// frontend/src/features/promotions/schemas/promotion.schema.ts
-import { z } from 'zod';
+### 3.2 Mutation hooks
 
-export const promotionSchema = z
-  .object({
-    code: z
-      .string()
-      .min(1, 'Code is required')
-      .max(50, 'Code must not exceed 50 characters')
-      .regex(/^[A-Za-z0-9_-]+$/, 'Code can only contain letters, numbers, hyphens, and underscores'),
-    description: z
-      .string()
-      .max(500, 'Description must not exceed 500 characters')
-      .optional(),
-    discountType: z.enum(['percentage', 'fixed'], { required_error: 'Discount type is required' }),
-    discountValue: z
-      .number({ required_error: 'Discount value is required' })
-      .positive('Discount value must be greater than 0'),
-    minOrderAmount: z.number().min(0, 'Minimum order amount must be 0 or greater').nullable().optional(),
-    maxUses: z.number().int().min(1, 'Maximum uses must be 1 or greater').nullable().optional(),
-    startsAt: z.date({ required_error: 'Start date is required' }),
-    expiresAt: z.date({ required_error: 'Expiry date is required' }),
-    isActive: z.boolean(),
-  })
-  .superRefine((data, ctx) => {
-    // Percentage must be 1-99
-    if (data.discountType === 'percentage' && (data.discountValue < 1 || data.discountValue > 99)) {
-      ctx.addIssue({ code: 'custom', message: 'Percentage must be between 1 and 99', path: ['discountValue'] });
-    }
-    // Expiry must be after start
-    if (data.expiresAt && data.startsAt && data.expiresAt <= data.startsAt) {
-      ctx.addIssue({ code: 'custom', message: 'Expiry date must be after start date', path: ['expiresAt'] });
-    }
-  });
+The main page uses these mutations:
 
-export type PromotionFormData = z.infer<typeof promotionSchema>;
+- `useCreatePromotion()`
+- `useUpdatePromotion()`
+- `useDeletePromotion()`
+- `useTogglePromotionActive()`
 
-export const couponValidationSchema = z.object({
-  code: z.string().min(1, 'Coupon code is required'),
-  orderAmount: z.number().min(0, 'Order amount must be 0 or greater'),
-});
+Each mutation invalidates the merchant promotions cache after a successful result.
+
+### 3.3 Merchant access logic
+
+The list page reads the account status using `useAuth()` and `useMerchantProductsGuard()` and checks values such as:
+
+- `user.licenseStatus`
+- `user.license_status`
+- `user.isActive` / `user.is_active`
+- `user.status`
+
+The page decides whether to show:
+
+- deactivated account banner
+- pending merchant banner
+- rejection banner
+- CRUD action controls
+
+The effective logic is:
+
+```ts
+const showPendingBanner = (guard.showPendingBanner || isPending) && !isDeactivated
+const showDeactivatedBanner = guard.showDeactivatedBanner || isDeactivated
+const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 ```
 
 ---
 
-## 4. Sub-Components
+## 4. Actual UI Behavior
 
-### 4.1 PromotionTable Component
+### 4.1 Table rows
 
-- **File Path:** `frontend/src/features/promotions/components/PromotionTable.tsx`
-- Renders columns: Code, Description, Discount Type, Discount Value, Usage (`used / max`), Expiry Date, Status, and action cell.
-- Edit button (pencil icon) navigates to `/merchant/promotions/:id/edit`; disabled when `usedCount > 0`.
-- Delete button (trash icon) opens `DeleteConfirmDialog`; disabled when `usedCount > 0`.
-- `swtActive` switch toggles `is_active`; hidden in restricted mode.
-- Expiry date rendered red when expired; empty state when no promotions.
+Promotion rows display:
 
-### 4.2 PromotionForm Component
+- code
+- description
+- discount type
+- discount value
+- usage
+- expiry date
+- status badge
+- actions area
 
-- **File Path:** `frontend/src/features/promotions/components/PromotionForm.tsx`
-- Uses `usePromotionForm` hook; renders the four sections (Basic Information, Discount Settings, Validity Period, Status) and the Save/Cancel actions.
-- In Edit mode, the Code field is disabled (read-only).
-- On submit calls `promotions.service.create()` (POST) or `promotions.service.update()` (PATCH).
+The usage label is formatted as:
 
-### 4.3 PendingBanner Component
+- `usedCount / maxUses` when `maxUses` exists
+- `usedCount / Unlimited` when `maxUses` is absent
 
-- **File Path:** `frontend/src/features/promotions/components/PendingBanner.tsx`
-- Rendered when `licenseStatus === 'pending'` (warning styling, `bg-amber-50 border-amber-200`) or `'rejected'` (destructive styling, includes rejection reason).
-- Hides all mutation controls when present.
+### 4.2 Status badges
 
-### 4.4 DeleteConfirmDialog Component
+The list page implements status color logic inline:
 
-- **File Path:** `frontend/src/features/promotions/components/DeleteConfirmDialog.tsx`
-- Uses `AlertDialog` UI primitive; opens on delete button click.
-- Confirm button shows spinner + "Deleting..." while the hard delete request is in flight; Cancel closes the dialog.
+```ts
+if (promo.expiresAt && new Date(promo.expiresAt) < now) {
+  return <Badge ...>Expired</Badge>
+}
+if (promo.maxUses && promo.usedCount >= promo.maxUses) {
+  return <Badge ...>Exhausted</Badge>
+}
+if (promo.isActive) {
+  return <Badge ...>Active</Badge>
+}
+return <Badge ...>Inactive</Badge>
+```
 
-### 4.5 StatusBadge / DiscountTypeBadge
+### 4.3 Actions
 
-- **StatusBadge:** renders Active / Inactive / Scheduled / Expired based on `is_active`, `starts_at`, and `expires_at`.
-- **DiscountTypeBadge:** "percentage" (blue) / "fixed" (green).
+Each promotion row exposes:
 
----
+- copy code
+- toggle active
+- edit
+- delete
 
-## 5. Action Buttons & Handlers
-
-### 5.1 Add New Promotion
-
-- **Button Type:** `button` (primary) — hidden when restricted.
-- **Action:** Navigate to `/merchant/promotions/new`, initialize empty form.
-
-### 5.2 Edit Promotion
-
-- **Button Type:** `ghost` icon button — hidden when restricted; disabled when `usedCount > 0`.
-- **Action:** Navigate to `/merchant/promotions/:id/edit`; load the existing promotion data and populate the form.
-
-### 5.3 Delete Promotion
-
-- **Button Type:** `button` opening `DeleteConfirmDialog`.
-- **Action (on confirm):** `DELETE /api/v1/promotions/:id`; on success remove row and show success toast.
-
-### 5.4 Toggle Active
-
-- **Button Type:** `switch`.
-- **Action:** `PATCH /api/v1/promotions/:id` with `{ isActive: newValue }`; update badge; on `403` revert switch.
-
-### 5.5 Save / Update Form
-
-- **Button Type:** `submit`.
-- **Action:** Validate; dispatch `POST /api/v1/promotions` (create) or `PATCH /api/v1/promotions/:id` (update); show success toast; navigate to `/merchant/promotions`.
-
-### 5.6 Cancel Form
-
-- **Action:** navigate to `/merchant/promotions` without saving.
-
-### 5.7 Pagination
-
-- **Buttons:** `btnPrevPage` / `btnNextPage` / `btnPageNumbers`.
-- **Action:** `GET /api/v1/promotions?page={n}&limit=20`; update table and `lblPageInfo` ("Page {page} of {totalPages} ({total} promotions)").
-
-### 5.8 Search & Filter
-
-- **Search:** debounced 300ms → `GET /api/v1/promotions?search={q}&status={s}&page=1&limit=20`; reset to page 1.
-- **Status filter:** `GET /api/v1/promotions?status={status}&page=1&limit=20`.
+Edit and delete are hidden or disabled based on merchant restrictions and whether the promotion has already been used.
 
 ---
 
-## 6. Lookup Data
+## 5. Validation Rules on the Frontend
 
-| Item | Options |
-|------|---------|
-| Discount Type | `percentage` ("Percentage (%)"), `fixed` ("Fixed Amount (MMK)") |
-| Status Filter | Active, Inactive, Scheduled, Expired |
-| Role Scope | Merchant (own), Admin (all), Buyer (validate only) |
+Create and edit pages implement validation inline with local `errors` state.
+
+### 5.1 Create form validation
+
+Current rules:
+
+- code required, max 50 characters
+- discount value required and > 0
+- percentage discount must be between 1 and 99
+- fixed discount cannot be equal to or greater than `minOrderAmount`
+- expiry must be after start date
+- `maxUses` must be at least 1 when present
+- `minOrderAmount` must be >= 0
+- new promotion start date must not be in the past
+
+### 5.2 Edit form validation
+
+The edit flow uses the same discount and date rules and additionally blocks submission if the coupon has already been used:
+
+```ts
+const isUsed = (promotion.usedCount ?? 0) > 0
+if (isUsed) return false
+```
+
+The UI also shows a warning banner when the coupon is already used.
 
 ---
 
-## 7. Error Handling
+## 6. Page Details
 
-### 7.1 Field-Level
+### 6.1 `Promotions.tsx`
 
-Red border + inline text below the invalid field; real-time validation via RHF + Zod.
+This is the main merchant page. It handles:
 
-### 7.2 Form-Level
+- query state (`search`, `statusFilter`, `sortBy`, `page`, `limit`)
+- `error` handling with `getPromotionErrorInfo(error)`
+- loading state with `LoadingSpinner`
+- account restriction banners
+- success and error toast notifications
+- delete confirmation via `AlertDialog`
+- code copying via `navigator.clipboard.writeText()`
 
-- Alert banner listing API errors (`PROMO_CODE_DUPLICATE`, `BAD_REQUEST`, `FORBIDDEN`, `PROMO_NOT_FOUND`, `SYS_001`).
-- Toast for 409 usage restriction (`PROMO_EDIT_RESTRICTED` / `PROMO_DELETE_RESTRICTED`).
-- License restriction banner for `MERCHANT_NOT_APPROVED` / `MERCHANT_REJECTED`.
+### 6.2 `PromotionCreate.tsx`
 
-### 7.3 Loading States
+This page:
 
-- Skeleton loaders on initial list load.
-- Spinner on submit/delete buttons and toast on network error (`NET_ERR`).
+- sets default start and expiry datetimes
+- blocks deactivated, pending, and rejected merchants by redirecting back to `/merchant/promotions`
+- converts form values into request payloads
+- calls `createPromotion.mutate(...)`
+- redirects back to the list when creation succeeds
+
+### 6.3 `PromotionEdit.tsx`
+
+This page:
+
+- loads a promotion by `id`
+- maps the record to local form state through `promoToForm()`
+- keeps `code` read-only
+- allows editing description, discount type/value, min order, max uses, dates, and active flag
+- prevents editing for used coupons and shows a warning banner
+
+---
+
+## 7. Data Contracts Used by the Frontend
+
+These interfaces are defined in `frontend/src/types/promotion.types.ts`.
+
+```ts
+export interface Promotion {
+  id: string
+  merchantId: string
+  code: string
+  description?: string
+  discountTypeCode: string
+  discountValue: number
+  minOrderAmount?: number
+  maxUses?: number
+  usedCount: number
+  startsAt: string
+  expiresAt: string
+  isActive: boolean
+  createdAt: string
+}
+```
+
+```ts
+export interface ValidateCouponData {
+  couponCode: string
+  subtotal: number
+}
+```
+
+This differs from some earlier docs that modeled the frontend around `discountType`, `orderAmount`, or a standardized `PromotionFormData` schema.
 
 ---
 
 ## 8. Cross-References
 
-| Related Document | Purpose |
-|------------------|---------|
-| [DD_PROMO_01](./DD_Promotion_01_MODULE_OVERVIEW.md) | Module overview and architecture |
-| [DD_PROMO_03](./DD_Promotion_03_API_ENDPOINTS.md) | API endpoint contracts consumed by frontend hooks |
-| [DD_PROMO_04](./DD_Promotion_04_DTOS_AND_TYPES.md) | DTO and type definitions used in form state and validation |
-| [DD_PROMO_05](./DD_Promotion_05_BUSINESS_LOGIC.md) | Business logic and validation rules |
-| [DD_PROMO_06](./DD_Promotion_06_TEST.md) | Frontend component and E2E test specification |
-| [プロモーション管理画面_機能設計書](../プロモーション管理画面_機能設計書.md) | Functional requirements and operation specifications (v1.6) |
-| [プロモーション管理画面_画面項目設計書](../プロモーション管理画面_画面項目設計書.md) | Screen-item definitions, validation, API mappings, and i18n (v1.3) |
-| [データベース設計書_DATABASE_SPEC](../../../core-work/データベース設計書_DATABASE_SPEC.md) | Table constraints and UUID data model (v2.4) |
-| [開発ルール_DEVELOPMENT_RULES](../../../core-work/開発ルール_DEVELOPMENT_RULES.md) | Security, accessibility, API, and quality rules (v2.1) |
+| Related document | Purpose |
+|---|---|
+| [DD_Promotion_01_MODULE_OVERVIEW](./DD_Promotion_01_MODULE_OVERVIEW.md) | Module context and route ownership |
+| [DD_Promotion_03_API_ENDPOINTS](./DD_Promotion_03_API_ENDPOINTS.md) | Exact backend route contracts |
+| [DD_Promotion_04_DTOS_AND_TYPES](./DD_Promotion_04_DTOS_AND_TYPES.md) | DTOs and request models |
+| [DD_Promotion_05_BUSINESS_LOGIC](./DD_Promotion_05_BUSINESS_LOGIC.md) | Service-side logic |
+| [DD_Promotion_06_TEST](./DD_Promotion_06_TEST.md) | Testing strategy |
+
+---
+
+## 9. Notes
+
+This doc intentionally reflects the live code in the repository, not a theoretical idealized design. The current implementation uses direct component state plus service-layer mutations and route-scoped merchant guards.

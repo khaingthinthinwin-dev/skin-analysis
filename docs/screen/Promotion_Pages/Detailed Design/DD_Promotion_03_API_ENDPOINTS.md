@@ -1,164 +1,199 @@
-# DD_PROMO_03 — API Endpoints
+# DD_PROMO_03 — API Endpoint Design
 
-> **Doc ID:** SKM-DD-PROMO-03 | **Version:** 1.0 | **Status:** Draft  
-> **Last Updated:** 2026-08-25
+> **Doc ID:** SKM-DD-PROMO-03 | **Version:** 2.0 | **Status:** Updated  
+> **Last Updated:** 2026-10-15
 
 ---
 
-## 1. Controller Setup
+## 1. Controller and Route Base
 
-- **File:** `src/modules/promotions/promotions.controller.ts`
-- **Base Route:** `/api/v1/promotions`
-- **Guards:** `JwtAuthGuard` + `RolesGuard` (role set per endpoint).
+The live backend controller is:
 
-```typescript
-@ApiTags('Promotions')
-@Controller('promotions')
-export class PromotionsController {
-  constructor(private readonly promotionsService: PromotionsService) {}
+- `backend/src/modules/merchant/promotions/promotions.controller.ts`
+
+The module is mounted with:
+
+- `@Controller('promotions')`
+
+and is protected by:
+
+- `@UseGuards(JwtAuthGuard, RolesGuard)`
+- class-level `@Roles('merchant')`
+
+Additional permission checks are enforced by `RequireApprovedMerchantGuard` on mutation and validation flows.
+
+---
+
+## 2. Endpoint Contract
+
+| Method | Path | Purpose | Guard behavior |
+|---|---|---|---|
+| `GET` | `/promotions` | List merchant promotions | authenticated merchant |
+| `GET` | `/promotions/:id` | Get promotion detail | authenticated merchant |
+| `POST` | `/promotions` | Create a promotion | approved merchant only |
+| `PATCH` | `/promotions/:id` | Update a promotion | approved merchant only |
+| `DELETE` | `/promotions/:id` | Remove a promotion | approved merchant only |
+| `PATCH` | `/promotions/:id/toggle-active` | Toggle active state | approved merchant only |
+| `POST` | `/promotions/validate` | Validate a coupon code | approved merchant only |
+
+---
+
+## 3. Request and Response Shape
+
+### 3.1 GET /promotions
+
+This endpoint calls `findAll(userId, query)`.
+
+Accepted query params from `PromotionQueryDto`:
+
+- `search?: string`
+- `status?: 'active' | 'inactive' | 'expired'`
+- `sortBy?: 'newest' | 'oldest' | 'code'`
+- `page?: number`
+- `limit?: number`
+
+Example response shape:
+
+```json
+{
+  "items": [
+    {
+      "id": "promo-123",
+      "merchantId": "merchant-456",
+      "code": "SAVE10",
+      "description": "Spring discount",
+      "discountTypeCode": "percentage",
+      "discountValue": "10",
+      "minOrderAmount": "50000",
+      "maxUses": 50,
+      "usedCount": 4,
+      "startsAt": "2026-10-01T00:00:00.000Z",
+      "expiresAt": "2026-11-01T00:00:00.000Z",
+      "isActive": true,
+      "createdAt": "2026-09-28T00:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 12,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}
+```
+
+### 3.2 GET /promotions/:id
+
+This endpoint calls `findOne(userId, id)` and returns a single promotion record with `discountType` and decimal values serialized as strings.
+
+### 3.3 POST /promotions
+
+Request body:
+
+```json
+{
+  "code": "SAVE10",
+  "description": "Spring discount",
+  "discountTypeCode": "percentage",
+  "discountValue": 10,
+  "minOrderAmount": 50000,
+  "maxUses": 50,
+  "startsAt": "2026-10-01T00:00:00.000Z",
+  "expiresAt": "2026-11-01T00:00:00.000Z",
+  "isActive": true
+}
+```
+
+This maps to `CreatePromotionDto` in `backend/src/modules/merchant/promotions/dto/create-promotion.dto.ts`.
+
+### 3.4 PATCH /promotions/:id
+
+Request body is a partial update object shaped by `UpdatePromotionDto`.
+
+Supported fields in the current implementation:
+
+- `description`
+- `discountTypeCode`
+- `discountValue`
+- `minOrderAmount`
+- `maxUses`
+- `startsAt`
+- `expiresAt`
+- `isActive`
+
+### 3.5 DELETE /promotions/:id
+
+Deletion is a hard delete and the service blocks deletion if the promotion has already been used.
+
+### 3.6 PATCH /promotions/:id/toggle-active
+
+This endpoint flips `isActive` without requiring a full update payload and is used by the merchant list page toggle switch.
+
+### 3.7 POST /promotions/validate
+
+Actual validation input uses `couponCode` and `subtotal`.
+
+Request body:
+
+```json
+{
+  "couponCode": "SAVE10",
+  "subtotal": 50000
+}
+```
+
+Current response shape:
+
+```json
+{
+  "valid": true,
+  "discountType": "percentage",
+  "discountValue": "10",
+  "discountAmount": "5000",
+  "finalAmount": "45000"
 }
 ```
 
 ---
 
-## 2. API Endpoints Contract
+## 4. Business Rules Encoded by Endpoint
 
-### 2.1 POST /promotions
+The current endpoint behavior matches the live service implementation:
 
-- **Auth:** Yes (merchant/admin; license `approved`)
-- **Body:** `CreatePromotionDto`
-  - `code` (string, required, max 50, `^[A-Za-z0-9_-]+$`)
-  - `description` (string, optional, max 500)
-  - `discountType` (enum: `percentage` | `fixed`, required)
-  - `discountValue` (number, required, > 0; percentage must be 1–99)
-  - `minOrderAmount` (number, optional, ≥ 0)
-  - `maxUses` (int, optional, ≥ 1)
-  - `startsAt` (ISO 8601 UTC, required)
-  - `expiresAt` (ISO 8601 UTC, required, after `startsAt`)
-  - `isActive` (boolean, optional, default `true`)
-- **Response:** `201 Created` — `{ data: PromotionResponseDto }`
-- **Error Responses:**
-  - `400 BAD_REQUEST` — validation failed
-  - `400 PROMO_CODE_DUPLICATE` — code already exists
-  - `400 PROMO_INVALID_DISCOUNT` — `discountValue <= 0`
-  - `400 PROMO_INVALID_TYPE` — invalid `discountType`
-  - `400 PROMO_INVALID_DATE_RANGE` — `expiresAt <= startsAt`
-  - `400 PROMO_PERCENTAGE_OUT_OF_RANGE` — percentage outside 1–99
-  - `401 UNAUTHORIZED` — missing/invalid JWT
-  - `403 MERCHANT_NOT_APPROVED` / `MERCHANT_REJECTED` — restricted license
-  - `429 TOO_MANY_REQUESTS` — rate limit exceeded
-- **Logic:** `service.createPromotion(merchantId, dto)`
-- **Rate Limit:** 10 per 60s per merchant
-
-### 2.2 GET /promotions (list)
-
-- **Auth Required:** Yes (merchant/admin)
-- **Query Params:** `page` (default 1), `limit` (default 20, max 100), `search` (optional, by code), `status` (optional: `active` | `inactive` | `scheduled` | `expired`)
-- **Response:** `200 OK` — `{ data: PromotionResponseDto[], meta: { page, limit, total, totalPages } }`
-- **Error Responses:** `401 UNAUTHORIZED`, `429 TOO_MANY_REQUESTS`
-- **Logic:** `service.listPromotions(merchantId, page, limit, search, status)`; pending/rejected merchants still receive their own read-only list.
-- **Rate Limit:** 60 per 60s per merchant
-
-### 2.3 PATCH /promotions/:id (update)
-
-- **Auth Required:** Yes (merchant/admin; owner; license `approved`)
-- **Body:** `UpdatePromotionDto` (all fields optional; `code` ignored / read-only)
-- **Usage:** Full update and active-status toggle (`{ isActive }`).
-- **Response:** `200 OK` — `{ data: PromotionResponseDto }`
-- **Error Responses:**
-  - `403 MERCHANT_NOT_APPROVED` / `MERCHANT_REJECTED` — restricted license
-  - `403 FORBIDDEN` — not owner
-  - `404 PROMO_NOT_FOUND`
-  - `409 PROMO_EDIT_RESTRICTED` — `usedCount > 0`
-- **Logic:** `service.updatePromotion(id, user, dto)`
-- **Cache:** invalidate `promo:detail:{code}` + `promo:list:{merchantId}`
-- **Rate Limit:** 30 per 60s per merchant
-
-### 2.4 DELETE /promotions/:id (hard delete)
-
-- **Auth Required:** Yes (merchant/admin; owner; license `approved`)
-- **Body:** None
-- **Response:** `204 No Content`
-- **Error Responses:**
-  - `403` — restricted license / not owner
-  - `404 PROMO_NOT_FOUND`
-  - `409 PROMO_DELETE_RESTRICTED` — `usedCount > 0`
-- **Logic:** `service.deletePromotion(id, user)` (permanent DB delete)
-- **Cache:** invalidate `promo:detail:{code}` + `promo:list:{merchantId}` (+ optional quota key)
-- **Rate Limit:** 30 per 60s per merchant
-
-### 2.5 POST /promotions/validate (validate coupon)
-
-- **Auth Required:** Yes (buyer)
-- **Body:** `ValidateCouponDto`
-  - `code` (string, required, non-empty)
-  - `orderAmount` (number, required, ≥ 0, MMK)
-- **Response:** `200 OK`
-  ```json
-  {
-    "data": {
-      "valid": true,
-      "discountType": "percentage",
-      "discountValue": "10.00",
-      "discountAmount": "500.00",
-      "finalAmount": "4500.00"
-    }
-  }
-  ```
-- **Error Responses (400):**
-  - `PROMO_EXPIRED` — current time ≥ `expires_at`
-  - `PROMO_MAX_USES_REACHED` — `usedCount >= maxUses`
-  - `PROMO_MIN_ORDER_NOT_MET` — `orderAmount < minOrderAmount`
-  - `PROMO_INACTIVE` — `is_active = false`
-  - `PROMO_ALREADY_APPLIED` — order already has a coupon
-  - `PROMO_NOT_FOUND` — code does not exist
-- **Logic:** `service.validateCoupon(dto)` — **does NOT increment usage**; usage is committed atomically with the order.
-- **Rate Limit:** 30 per 60s per user
-- **Note:** The checkout flow may expose the same logic via a coupon endpoint (e.g., `POST /api/v1/checkout/validate-coupon` with `couponCode`/`subtotal`) that delegates to `validateCoupon`.
+- percentage discount > 99 is rejected
+- fixed discount >= min order is rejected
+- `expiresAt <= startsAt` is rejected
+- duplicated code values conflict on create
+- used promotions cannot be edited or deleted
+- validation checks `isActive`, `startsAt`, `expiresAt`, `maxUses`, and `minOrderAmount`
 
 ---
 
-## 3. Protected Endpoint Guards
+## 5. Current Error Behavior
 
-All promotion endpoints execute guards sequentially:
+The service throws a mix of Nest exceptions:
 
-```typescript
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('promotions')
-export class PromotionsController { ... }
-```
+- `NotFoundException` for missing merchant or promotion
+- `BadRequestException` for validation failures
+- `ConflictException` for duplicate or used-promotion cases
 
-| Guard | Purpose | Behavior |
-|-------|---------|----------|
-| `JwtAuthGuard` | Validates JWT signature | Checks `Authorization: Bearer <token>`. Verifies signature, expiry, and Redis blacklist. |
-| `RolesGuard` | Enforces role-based access | Checks `@Roles()` decorator against the user's `role` claim. Merchants/admins for CRUD; buyers for validate. |
+Examples from the current code:
 
----
-
-## 4. Rate Limiting Configuration
-
-| Endpoint | Limit | Window | Key |
-|----------|-------|--------|-----|
-| `POST /promotions` | 10 | 60s | merchant ID |
-| `GET /promotions` | 60 | 60s | merchant ID |
-| `PATCH /promotions/:id` | 30 | 60s | merchant ID |
-| `DELETE /promotions/:id` | 30 | 60s | merchant ID |
-| `POST /promotions/validate` | 30 | 60s | user ID |
-
-**Redis Key Pattern:** `rate:promo:{endpoint}:{identifier}`
+- `Promotion not found`
+- `Coupon not found`
+- `Coupon is no longer active`
+- `Coupon has expired or is not yet valid`
+- `Coupon has reached maximum usage`
+- `Cannot edit a promotion that has already been used`
 
 ---
 
-## 5. Cross-References
+## 6. Cross-References
 
-| Related Document | Purpose |
-|------------------|---------|
-| [DD_PROMO_01](./DD_Promotion_01_MODULE_OVERVIEW.md) | Module overview and architecture |
-| [DD_PROMO_02](./DD_Promotion_02_FRONTEND_Page.md) | Frontend page design |
-| [DD_PROMO_04](./DD_Promotion_04_DTOS_AND_TYPES.md) | Full DTO and type definitions |
-| [DD_PROMO_05](./DD_Promotion_05_BUSINESS_LOGIC.md) | Business logic for endpoint implementations |
-| [DD_PROMO_06](./DD_Promotion_06_TEST.md) | Backend unit and controller test specification |
-| [プロモーション管理画面_機能設計書](../プロモーション管理画面_機能設計書.md) | Full functional specification (v1.6) |
-| [プロモーション管理画面_画面項目設計書](../プロモーション管理画面_画面項目設計書.md) | Screen-item definitions, validation, and API response mappings (v1.3) |
-| [データベース設計書_DATABASE_SPEC](../../../core-work/データベース設計書_DATABASE_SPEC.md) | Table constraints and UUID data model (v2.4) |
-| [開発ルール_DEVELOPMENT_RULES](../../../core-work/開発ルール_DEVELOPMENT_RULES.md) | Security, accessibility, API, and quality rules (v2.1) |
+| Related document | Purpose |
+|---|---|
+| [DD_Promotion_01_MODULE_OVERVIEW](./DD_Promotion_01_MODULE_OVERVIEW.md) | Module scope |
+| [DD_Promotion_02_FRONTEND_Page](./DD_Promotion_02_FRONTEND_Page.md) | UI behavior tied to these routes |
+| [DD_Promotion_04_DTOS_AND_TYPES](./DD_Promotion_04_DTOS_AND_TYPES.md) | DTOs used by these routes |
+| [DD_Promotion_05_BUSINESS_LOGIC](./DD_Promotion_05_BUSINESS_LOGIC.md) | Logic behind each endpoint |
+| [DD_Promotion_06_TEST](./DD_Promotion_06_TEST.md) | Test coverage for the API layer |
