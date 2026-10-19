@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,17 +47,21 @@ function readDismissedIds(userId: string): Set<string> {
   }
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(
+  iso: string,
+  t: TFunction,
+  locale: string,
+): string {
   const diffMs = Date.now() - new Date(iso).getTime()
   if (Number.isNaN(diffMs)) return ''
   const mins = Math.floor(diffMs / 60000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`
+  if (mins < 1) return t('notifications.time.justNow', 'Just now')
+  if (mins < 60) return t('notifications.time.minutes', '{{count}} min ago', { count: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  if (hours < 24) return t('notifications.time.hours', '{{count}} hour ago', { count: hours })
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`
-  return new Date(iso).toLocaleDateString('en-US', {
+  if (days < 30) return t('notifications.time.days', '{{count}} day ago', { count: days })
+  return new Date(iso).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -240,10 +246,52 @@ function adActionHint(item: NotificationItem): string | null {
   return null
 }
 
-function orderActionHint(item: NotificationItem): string | null {
+function orderActionHint(item: NotificationItem, t: TFunction): string | null {
   return ORDER_NOTIFICATION_TYPES.has(normalizeNotificationType(item.type))
-    ? 'View order →'
+    ? t('notifications.viewOrder', 'View order →')
     : null
+}
+
+function localizedNotificationText(
+  item: NotificationItem,
+  t: TFunction,
+): { title: string; message: string } {
+  const type = normalizeNotificationType(item.type)
+  if (type === 'ANALYSIS' || type === 'ANALYSIS_COMPLETED') {
+    return {
+      title: t('notifications.analysisCompleted', 'Analysis completed 🔔'),
+      message: t('notifications.analysisCompletedMessage', 'Your skin analysis is ready. Check your results and personalized recommendations.'),
+    }
+  }
+  if (type === 'SKIN_CHECK_REMINDER') {
+    return {
+      title: t('notifications.reanalysisReminder', 'Re-analysis reminder 📅'),
+      message: t('notifications.reanalysisReminderMessage', "It's been a while since your last skin analysis. Take a new analysis to check your skin condition."),
+    }
+  }
+  if (type === 'ORDER_STATUS_UPDATED') {
+    const statusText = item.title.replace(/^Order\s+/i, '').trim()
+    const statusKey = statusText.toLowerCase().replace(/[\s-]+/g, '_')
+    const status = t(`common.status.${statusKey}`, statusText)
+    const orderNumber = item.message.match(/order\s+([^\s.]+)/i)?.[1] ?? ''
+    return {
+      title: t('notifications.orderStatusTitle', 'Order {{status}}', { status }),
+      message: t('notifications.orderStatusMessage', 'Your order {{orderNumber}} is now {{status}}.', { orderNumber, status: status.toLowerCase() }),
+    }
+  }
+  if (type === 'ORDER_PLACED') {
+    const orderNumber = item.message.match(/order\s+([^\s.]+)/i)?.[1] ?? ''
+    const isMerchantOrder = /^A buyer placed order\b/i.test(item.message)
+    return {
+      title: isMerchantOrder
+        ? t('notifications.newOrderReceived', 'New order received')
+        : t('notifications.orderPlaced', 'Order placed'),
+      message: isMerchantOrder
+        ? t('notifications.newOrderReceivedMessage', 'A buyer placed order {{orderNumber}}.', { orderNumber })
+        : t('notifications.orderPlacedMessage', 'Your order was placed.'),
+    }
+  }
+  return { title: item.title, message: item.message }
 }
 
 // Review notifications deep-link straight to the queue entry they are about so
@@ -332,22 +380,24 @@ function NotificationCard({
   isMerchant: boolean
   isAdmin?: boolean
 }) {
+  const { t, i18n } = useTranslation()
   const { Icon, color } = iconForType(item.type, item.title, item.message)
   const isMerchantReg = MERCHANT_ADMIN_ACTION_TYPES.has(
     normalizeNotificationType(item.type),
   )
   const adHint = adActionHint(item)
+  const localizedText = localizedNotificationText(item, t)
   const normalizedType = normalizeNotificationType(item.type)
   const approvedProductId =
     normalizedType === 'REVIEW_APPROVED' && item.entityType === 'Product'
       ? item.entityId
       : null
   const reportHint = REVIEW_REPORT_TYPES.has(normalizedType)
-    ? 'Review in Review Management →'
+    ? t('notifications.reviewReport', 'Review in Review Management →')
     : REVIEW_SUBMISSION_TYPES.has(normalizedType)
-      ? 'Moderate in Review Management →'
+      ? t('notifications.reviewSubmission', 'Moderate in Review Management →')
       : null
-  const orderHint = orderActionHint(item)
+  const orderHint = orderActionHint(item, t)
   const displayMessage = isMerchantRejectedNotification(item)
     ? MERCHANT_REJECTION_TEXT
     : item.message
@@ -370,19 +420,19 @@ function NotificationCard({
           >
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                {item.title}
+                {localizedText.title}
                 {!item.isRead && (
                   <span className="h-2 w-2 rounded-full bg-purple-500" aria-label="Unread" />
                 )}
               </h3>
               <span className="text-[11px] text-muted-foreground shrink-0">
-                {timeAgo(item.createdAt)}
+                {timeAgo(item.createdAt, t, i18n.resolvedLanguage || i18n.language || 'en-US')}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">{displayMessage}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{isMerchantRejectedNotification(item) ? displayMessage : localizedText.message}</p>
             {isAdmin && isMerchantReg && (
               <p className="text-xs font-semibold text-purple-600 underline hover:text-purple-700 cursor-pointer">
-                View in Merchant Management →
+                {t('notifications.viewMerchantManagement', 'View in Merchant Management →')}
               </p>
             )}
             {adHint && (
@@ -405,7 +455,7 @@ function NotificationCard({
               onClick={() => onOpen(item)}
               className="block text-xs font-semibold text-purple-600 hover:underline"
             >
-              {isMerchant ? 'View in Product Review →' : 'View your review →'}
+              {isMerchant ? t('notifications.viewProductReview', 'View in Product Review →') : t('notifications.viewYourReview', 'View your review →')}
             </Link>
           )}
         </div>
@@ -415,6 +465,7 @@ function NotificationCard({
 }
 
 export default function Notifications() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
@@ -606,10 +657,10 @@ export default function Notifications() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <Bell className="h-6 w-6 text-purple-600" /> Notifications Center
+            <Bell className="h-6 w-6 text-purple-600" /> {t('notifications.title', 'Notifications Center')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Your latest account and order updates
+            {t('notifications.subtitle', 'Your latest account and order updates')}
           </p>
         </div>
         {displayedNotifications.length > 0 && (
@@ -619,13 +670,13 @@ export default function Notifications() {
             disabled={isMarkingAllRead}
             onClick={() => void handleMarkAllAsRead()}
           >
-            Mark all read
+            {t('notifications.markAllRead', 'Mark all read')}
           </Button>
         )}
       </div>
 
       {isLoading ? (
-        <div className="space-y-3" aria-label="Loading notifications">
+        <div className="space-y-3" aria-label={t('notifications.loading', 'Loading notifications')}>
           {[0, 1, 2].map((i) => (
             <Card key={i} className="border-border/80 shadow-xs">
               <CardContent className="p-4 flex items-start gap-3 animate-pulse">
@@ -642,10 +693,10 @@ export default function Notifications() {
         <Card className="border-border/80 shadow-xs">
           <CardContent className="p-8 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              Couldn&apos;t load notifications. Please try again.
+              {t('notifications.loadError', "Couldn't load notifications. Please try again.")}
             </p>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
-              Retry
+              {t('notifications.retry', 'Retry')}
             </Button>
           </CardContent>
         </Card>
@@ -653,9 +704,9 @@ export default function Notifications() {
         <Card className="border-border/80 shadow-xs">
           <CardContent className="p-8 text-center space-y-2">
             <Bell className="h-8 w-8 mx-auto text-muted-foreground" />
-            <p className="text-sm font-semibold text-foreground">No notifications yet</p>
+            <p className="text-sm font-semibold text-foreground">{t('notifications.emptyTitle', 'No notifications yet')}</p>
             <p className="text-xs text-muted-foreground">
-              New merchant registrations and moderation events will appear here.
+              {t('notifications.emptyDescription', 'New merchant registrations and moderation events will appear here.')}
             </p>
           </CardContent>
         </Card>
@@ -683,23 +734,23 @@ export default function Notifications() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Rejection details</DialogTitle>
+            <DialogTitle>{t('notifications.rejectionDetails', 'Rejection details')}</DialogTitle>
             <DialogDescription>{MERCHANT_REJECTION_TEXT}</DialogDescription>
           </DialogHeader>
           {rejectionReason && (
             <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
-                Rejection reason
+                {t('notifications.rejectionReason', 'Rejection reason')}
               </p>
               <p className="whitespace-pre-wrap text-sm text-muted-foreground">{rejectionReason}</p>
             </div>
           )}
           <p className="text-sm text-muted-foreground">
-            Review your Store Profile before resubmitting your application.
+            {t('notifications.reviewStoreProfile', 'Review your Store Profile before resubmitting your application.')}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRejectedNotification(null)}>
-              Close
+              {t('notifications.close', 'Close')}
             </Button>
             <Button
               onClick={() => {
@@ -707,7 +758,7 @@ export default function Notifications() {
                 navigate('/merchant/profile')
               }}
             >
-              Resubmit from Store Profile
+              {t('notifications.resubmit', 'Resubmit from Store Profile')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -723,32 +774,31 @@ export default function Notifications() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Account Deactivated</DialogTitle>
-            <DialogDescription>Your account has been deactivated by an administrator</DialogDescription>
+            <DialogTitle>{t('notifications.accountDeactivated', 'Account Deactivated')}</DialogTitle>
+            <DialogDescription>{t('notifications.deactivatedByAdmin', 'Your account has been deactivated by an administrator')}</DialogDescription>
           </DialogHeader>
           <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
-              Account Status
+              {t('notifications.accountStatus', 'Account Status')}
             </p>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-              Your account has been deactivated. Some features may be restricted until an admin
-              reactivates your account.
+              {t('notifications.deactivatedMessage', 'Your account has been deactivated. Some features may be restricted until an admin reactivates your account.')}
             </p>
           </div>
           {deactivationReason && (
             <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 mt-3">
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-destructive">
-                Deactivation Reason
+                {t('notifications.deactivationReason', 'Deactivation Reason')}
               </p>
               <p className="whitespace-pre-wrap text-sm text-muted-foreground">{deactivationReason}</p>
             </div>
           )}
           <p className="text-sm text-muted-foreground">
-            Please contact support or visit your profile for more information.
+            {t('notifications.contactSupport', 'Please contact support or visit your profile for more information.')}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeactivatedNotification(null)}>
-              Close
+              {t('notifications.close', 'Close')}
             </Button>
             <Button
               onClick={() => {
@@ -762,7 +812,7 @@ export default function Notifications() {
                 navigate(profilePath)
               }}
             >
-              Go to Profile
+              {t('notifications.goToProfile', 'Go to Profile')}
             </Button>
           </DialogFooter>
         </DialogContent>
