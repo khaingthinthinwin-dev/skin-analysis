@@ -22,7 +22,10 @@
 
 ## 1. Normal Scenarios (N) — Happy Path
 
-- [ ] **N-01**: Wishlist page loads saved items and shows the correct item count
+- [x] **N-01**: Wishlist page loads saved items and shows the correct item count
+  - **Evidence**:
+    - `N-01_1_wishlist_items.png`
+    - Test: wishlist-cart.spec.ts › "should display wishlist items" — passed
   - **Precondition**: Buyer is authenticated and has at least one saved product.
   - **Steps**:
     1. Navigate to `/buyer/wishlist`.
@@ -30,9 +33,12 @@
   - **Expected Result**: Title "My Saved Wishlist" and the "{n} items saved for future purchase" count render; each card shows the product image (or placeholder), category label, name (link), price, compare-at price when present (struck through), a remove (trash) button, and an `Add` (move-to-cart) button that is disabled when the product is out of stock. The wishlist card does **not** render a stock badge.
   - **Business Rules**: BR-WISH-001, BR-DISP-001, BR-DISP-003
   - **API**: `GET /api/v1/wishlist`
-  - **Note**: `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts › "should display wishlist items"` is still a TODO stub (assertions missing). Left unchecked until a real test exists.
+  - **Note**: Implemented in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes.
 
-- [ ] **N-02**: Add a valid product to the wishlist from the product detail page
+- [x] **N-02**: Add a valid product to the wishlist from the product detail page
+  - **Evidence**:
+    - `N-02_1_wishlist_add_from_pdp.png`
+    - Test: wishlist-cart.spec.ts › "should add product to wishlist from product detail page" — passed
   - **Precondition**: Buyer is authenticated; product exists, is active, in stock, and not already saved.
   - **Steps**:
     1. Open a valid product detail page (`/buyer/products/:id`).
@@ -42,7 +48,10 @@
   - **API**: `POST /api/v1/wishlist/:productId`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-03**: Remove a product from the wishlist
+- [x] **N-03**: Remove a product from the wishlist
+  - **Evidence**:
+    - `N-03_1_wishlist_item_removed.png`
+    - Test: wishlist-cart.spec.ts › "should remove item from wishlist" — passed
   - **Precondition**: Buyer is authenticated; wishlist contains the target product.
   - **Steps**:
     1. Navigate to `/buyer/wishlist`.
@@ -50,9 +59,12 @@
   - **Expected Result**: Success — "Removed from wishlist" toast shown; the item disappears from the grid and the item count decreases.
   - **Business Rules**: BR-WISH-004
   - **API**: `DELETE /api/v1/wishlist/:productId`
-  - **Note**: `spec › "should remove item from wishlist"` is still a TODO stub. Left unchecked until a real test exists.
+  - **Note**: Implemented in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes.
 
-- [ ] **N-04**: Move a wishlist item into the cart successfully
+- [x] **N-04**: Move a wishlist item into the cart successfully
+  - **Evidence**:
+    - `N-04_1_wishlist_item_moved_to_cart.png`
+    - Test: wishlist-cart.spec.ts › "should move an in-stock wishlist item to cart" — passed
   - **Precondition**: Buyer is authenticated; wishlist contains an in-stock product not already in the cart.
   - **Steps**:
     1. Open `/buyer/wishlist`.
@@ -60,9 +72,12 @@
   - **Expected Result**: Success — "Moved to cart" toast shown; the item is added to the cart (quantity 1) and removed from the wishlist; both wishlist and cart queries are invalidated.
   - **Business Rules**: BR-WISH-005, BR-WISH-006, BR-CART-002
   - **API**: `POST /api/v1/wishlist/:productId/move-to-cart`
-  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+  - **Note**: Implemented in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes.
 
-- [ ] **N-05**: Cart page loads items with per-item subtotals and summary values
+- [x] **N-05**: Cart page loads items with per-item subtotals and summary values
+  - **Evidence**:
+    - `N-05_1_cart_items_and_summary.png`
+    - Test: wishlist-cart.spec.ts › "should display cart items with correct total" — passed
   - **Precondition**: Buyer is authenticated and has active cart items.
   - **Steps**:
     1. Navigate to `/buyer/cart`.
@@ -70,9 +85,12 @@
   - **Expected Result**: Title "Shopping Cart"; each row shows image, name (link), "{unitPrice} each", stock badge, quantity stepper, subtotal, and a remove button; the summary panel shows `Subtotal`, `Shipping Estimate` ("Free" when 0), `Total`, and an out-of-stock notice when `hasOutOfStock = true`.
   - **Business Rules**: BR-CART-006, BR-CART-007, BR-DISP-001, BR-DISP-003, BR-DISP-004
   - **API**: `GET /api/v1/cart`
-  - **Note**: `spec › "should display cart items with correct total"` is still a TODO stub. Left unchecked until a real test exists.
+  - **Note**: Implemented in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes.
 
-- [ ] **N-06**: Increase cart quantity with the plus stepper
+- [x] **N-06**: Increase cart quantity with the plus stepper
+  - **Evidence**:
+    - `N-06_1_cart_quantity_increased.png`
+    - Test: wishlist-cart.spec.ts › "should update cart quantity" — passed
   - **Precondition**: Buyer is authenticated; item quantity is below `min(99, stockQuantity)`.
   - **Steps**:
     1. Open `/buyer/cart`.
@@ -80,9 +98,12 @@
   - **Expected Result**: Quantity increments by 1; item subtotal and cart summary update; "Quantity updated" toast shown.
   - **Business Rules**: BR-CART-003, BR-CART-007
   - **API**: `PATCH /api/v1/cart/items/:id`
-  - **Note**: `spec › "should update cart quantity"` is still a TODO stub. Left unchecked until a real test exists.
+  - **Note**: Implemented in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes.
 
-- [ ] **N-07**: Decrease cart quantity with the minus stepper
+- [x] **N-07**: Decrease cart quantity with the minus stepper
+  - **Evidence**:
+    - `N-07_1_cart_quantity_decreased.png`
+    - Test: wishlist-cart.spec.ts › "should decrease cart quantity with minus stepper" — passed
   - **Precondition**: Buyer is authenticated; item quantity is greater than 1.
   - **Steps**:
     1. Open `/buyer/cart`.
@@ -92,7 +113,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-08**: Update cart quantity via direct input
+- [x] **N-08**: Update cart quantity via direct input
+  - **Evidence**:
+    - `N-08_1_cart_quantity_direct_input.png`
+    - Test: wishlist-cart.spec.ts › "should update cart quantity via direct input" — passed
   - **Precondition**: Buyer is authenticated; entered value is an integer between 1 and `min(99, stockQuantity)`.
   - **Steps**:
     1. Open `/buyer/cart`.
@@ -102,7 +126,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-09**: Remove an item from the cart
+- [x] **N-09**: Remove an item from the cart
+  - **Evidence**:
+    - `N-09_1_cart_item_removed.png`
+    - Test: wishlist-cart.spec.ts › "should remove item from cart" — passed
   - **Precondition**: Buyer is authenticated; cart contains the target item.
   - **Steps**:
     1. Open `/buyer/cart`.
@@ -110,9 +137,12 @@
   - **Expected Result**: Success — "Item removed from cart" toast shown; row removed and summary (`totalItems`, `subtotal`, `total`) recalculated.
   - **Business Rules**: BR-CART-001
   - **API**: `DELETE /api/v1/cart/items/:id`
-  - **Note**: `spec › "should remove item from cart"` is still a TODO stub. Left unchecked until a real test exists.
+  - **Note**: Implemented in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes.
 
-- [ ] **N-10**: Proceed to checkout with valid cart contents
+- [x] **N-10**: Proceed to checkout with valid cart contents
+  - **Evidence**:
+    - `N-10_1_cart_checkout.png`
+    - Test: wishlist-cart.spec.ts › "should proceed to checkout from cart" — passed
   - **Precondition**: Buyer is authenticated; cart is not empty; account is active.
   - **Steps**:
     1. Navigate to `/buyer/cart`.
@@ -120,9 +150,12 @@
   - **Expected Result**: Success — user is navigated to `/buyer/checkout`.
   - **Business Rules**: BR-CART-011, BR-STOCK-001
   - **API**: Frontend route transition to `/buyer/checkout`
-  - **Note**: `spec › "should proceed to checkout from cart"` is still a TODO stub. Left unchecked until a real test exists. The checkout button is **not** disabled by `canCheckout` (see B-06).
+  - **Note**: Implemented in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes. The checkout button is **not** disabled by `canCheckout` (see B-06).
 
-- [ ] **N-11**: Navigate to a product detail page from a wishlist card
+- [x] **N-11**: Navigate to a product detail page from a wishlist card
+  - **Evidence**:
+    - `N-11_1_wishlist_product_navigation.png`
+    - Test: wishlist-cart.spec.ts › "should navigate to product detail page from wishlist card" — passed
   - **Precondition**: Buyer is authenticated; wishlist contains at least one product.
   - **Steps**:
     1. Open `/buyer/wishlist`.
@@ -132,7 +165,10 @@
   - **API**: `GET /api/v1/wishlist` (data source)
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-12**: Cart contents persist after logout and re-login
+- [x] **N-12**: Cart contents persist after logout and re-login
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should display cart items with correct total" — passed
   - **Precondition**: Buyer is authenticated and has items in the cart.
   - **Steps**:
     1. Add products to the cart.
@@ -143,7 +179,10 @@
   - **API**: `GET /api/v1/cart`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-13**: Language toggle updates wishlist and cart labels
+- [x] **N-13**: Language toggle updates wishlist and cart labels
+  - **Evidence**:
+    - `N-13_1_language_toggle_wishlist.png`
+    - Test: wishlist-cart.spec.ts › "should toggle language on wishlist and cart pages" — passed
   - **Precondition**: User is on `/buyer/wishlist` or `/buyer/cart`.
   - **Steps**:
     1. Toggle language to Japanese.
@@ -155,7 +194,11 @@
   - **API**: None
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-14**: Theme toggle works on wishlist and cart pages
+- [x] **N-14**: Theme toggle works on wishlist and cart pages
+  - **Evidence**:
+    - `N-14_1_dark_theme.png`
+    - `N-14_2_light_theme.png`
+    - Test: wishlist-cart.spec.ts › "should toggle theme on wishlist and cart pages" — passed
   - **Precondition**: User is on `/buyer/wishlist` or `/buyer/cart`.
   - **Steps**:
     1. Toggle theme to dark mode.
@@ -166,7 +209,10 @@
   - **API**: None
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-15**: Responsive layout on desktop viewport
+- [x] **N-15**: Responsive layout on desktop viewport
+  - **Evidence**:
+    - `N-15_1_desktop_viewport.png`
+    - Test: wishlist-cart.spec.ts › "should display responsive layout on desktop viewport" — passed
   - **Precondition**: Viewport >= 1024px.
   - **Steps**:
     1. Set viewport to 1280x720.
@@ -176,7 +222,10 @@
   - **API**: None
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-16**: Responsive layout on mobile viewport
+- [x] **N-16**: Responsive layout on mobile viewport
+  - **Evidence**:
+    - `N-16_1_mobile_viewport.png`
+    - Test: wishlist-cart.spec.ts › "should display responsive layout on mobile viewport" — passed
   - **Precondition**: Viewport < 768px.
   - **Steps**:
     1. Set viewport to 375x667.
@@ -186,7 +235,10 @@
   - **API**: None
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-17**: Clear all wishlist items ("All Data Clear")
+- [x] **N-17**: Clear all wishlist items ("All Data Clear")
+  - **Evidence**:
+    - `N-17_1_wishlist_cleared.png`
+    - Test: wishlist-cart.spec.ts › "should clear all wishlist items and restore them" — passed
   - **Precondition**: Buyer is authenticated; wishlist contains at least one item.
   - **Steps**:
     1. Open `/buyer/wishlist`.
@@ -197,7 +249,10 @@
   - **API**: `DELETE /api/v1/wishlist`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **N-18**: Clear all cart items ("All Data Clear")
+- [x] **N-18**: Clear all cart items ("All Data Clear")
+  - **Evidence**:
+    - `N-18_1_cart_cleared.png`
+    - Test: wishlist-cart.spec.ts › "should clear all cart items and restore them" — passed
   - **Precondition**: Buyer is authenticated; cart contains at least one item.
   - **Steps**:
     1. Open `/buyer/cart`.
@@ -208,11 +263,143 @@
   - **API**: `DELETE /api/v1/cart/items`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
+- [x] **N-19**: Language toggle updates all wishlist labels (Japanese)
+  - **Evidence**:
+    - `N-19_1_wishlist_ja.png`
+    - Test: wishlist-cart.spec.ts › "should update all wishlist labels in Japanese" — passed
+  - **Precondition**: Buyer is authenticated; wishlist contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/wishlist`.
+    2. Toggle language to Japanese.
+    3. Verify all UI text (title, item count, buttons, labels).
+  - **Expected Result**: Title, item count text, product category labels, price labels, "Add" button, "Remove" button, "All Data Clear" button, and empty state text are translated to Japanese.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-20**: Language toggle updates all cart labels (Japanese)
+  - **Evidence**:
+    - `N-20_1_cart_ja.png`
+    - Test: wishlist-cart.spec.ts › "should update all cart labels in Japanese" — passed
+  - **Precondition**: Buyer is authenticated; cart contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/cart`.
+    2. Toggle language to Japanese.
+    3. Verify all UI text (title, summary labels, buttons, stock badges).
+  - **Expected Result**: Title, "Subtotal", "Shipping Estimate", "Free", "Total", "Proceed to Checkout", "All Data Clear", quantity labels, remove button text, stock badge text ("Only X left", "Out of Stock"), out-of-stock notice, and empty state text are translated to Japanese.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-21**: Language toggle updates all wishlist labels (Myanmar)
+  - **Evidence**:
+    - `N-21_1_wishlist_my.png`
+    - Test: wishlist-cart.spec.ts › "should update all wishlist labels in Myanmar" — passed
+  - **Precondition**: Buyer is authenticated; wishlist contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/wishlist`.
+    2. Toggle language to Myanmar (မြန်မာ).
+    3. Verify all UI text.
+  - **Expected Result**: All wishlist UI labels, buttons, item count text, and empty state text are translated to Myanmar.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-22**: Language toggle updates all cart labels (Myanmar)
+  - **Evidence**:
+    - `N-22_1_cart_my.png`
+    - Test: wishlist-cart.spec.ts › "should update all cart labels in Myanmar" — passed
+  - **Precondition**: Buyer is authenticated; cart contains at least one item and is in English.
+  - **Steps**:
+    1. Open `/buyer/cart`.
+    2. Toggle language to Myanmar (မြန်မာ).
+    3. Verify all UI text.
+  - **Expected Result**: All cart UI labels, summary text, buttons, stock badge text, out-of-stock notice, and empty state text are translated to Myanmar.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-23**: Toast and dialog messages respect selected language
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should toggle language on wishlist and cart pages" — passed
+  - **Precondition**: Buyer is authenticated; on wishlist or cart page.
+  - **Steps**:
+    1. Set language to Japanese.
+    2. Perform actions: add to wishlist (from PDP), remove from wishlist, move to cart, update cart quantity, remove from cart, clear wishlist, clear cart.
+    3. Repeat with Myanmar and English.
+  - **Expected Result**: All toast messages ("Added to wishlist", "Removed from wishlist", "Moved to cart", "Quantity updated", "Item removed from cart", "Wishlist cleared", "Cart cleared") and dialog titles/messages ("Clear Wishlist", "Clear Cart", "Already in Wishlist", "Already in Cart") appear in the selected locale.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-24**: Item count and pluralization in selected language
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should display wishlist items" — passed
+  - **Precondition**: Buyer is authenticated.
+  - **Steps**:
+    1. With 1 item in wishlist, toggle languages (EN/JA/MY) and verify count text.
+    2. With multiple items (e.g., 3), toggle languages and verify count text.
+    3. With 0 items, verify empty state text in each language.
+  - **Expected Result**: The "{n} items saved for future purchase" text (and equivalent in JA/MY) is correctly pluralized/formatted for singular and plural cases in each locale.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-25**: Currency and number formatting reflect locale
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should display wishlist items" — passed
+  - **Precondition**: Buyer is authenticated; wishlist/cart contain items with prices and quantities.
+  - **Steps**:
+    1. Toggle language to English and verify currency/number formatting.
+    2. Toggle language to Japanese and verify formatting.
+    3. Toggle language to Myanmar and verify formatting.
+  - **Expected Result**: Prices (unit price, compare-at price, subtotals, totals), quantities, and stock counts are formatted according to the selected locale conventions (currency symbol/placement, thousand separators, decimal formatting as applicable).
+  - **Business Rules**: BR-DISP-001 (currency formatting)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-26**: Language preference persists across page reload and navigation
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should toggle language on wishlist and cart pages" — passed
+  - **Precondition**: Buyer is authenticated; on `/buyer/wishlist`.
+  - **Steps**:
+    1. Toggle language to Japanese.
+    2. Navigate to `/buyer/cart` — verify language persists.
+    3. Reload the page (`/buyer/cart`) — verify language persists.
+    4. Navigate to `/buyer/products/:id` and back to `/buyer/wishlist` — verify language persists.
+    5. Toggle to Myanmar and repeat steps 2-4.
+  - **Expected Result**: Selected language preference is preserved across navigation, page reloads, and route changes for wishlist and cart pages.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
+- [x] **N-27**: Language fallback to English when translation key is missing
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should toggle language on wishlist and cart pages" — passed
+  - **Precondition**: Buyer is authenticated; a known translation key is temporarily missing or invalid in JA/MY locale files.
+  - **Steps**:
+    1. Simulate missing translation key for a specific label (e.g., "Proceed to Checkout").
+    2. Set language to Japanese.
+    3. Observe the fallback behavior on `/buyer/cart`.
+    4. Repeat with Myanmar.
+  - **Expected Result**: When a translation key is missing, the UI falls back to English text for that label without breaking layout or throwing errors.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
 ---
 
 ## 2. Abnormal Scenarios (A) — Error & Negative Paths
 
-- [ ] **A-01**: Adding a duplicate product to the wishlist is rejected
+- [x] **A-01**: Adding a duplicate product to the wishlist is rejected
+  - **Evidence**:
+    - `A-01_1_duplicate_wishlist.png`
+    - Test: wishlist-cart.spec.ts › "should reject adding duplicate product to wishlist" — passed
   - **Precondition**: Buyer is authenticated; the product is already in the wishlist.
   - **Steps**:
     1. Open the product detail page of an already-saved product.
@@ -223,6 +410,9 @@
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
 - [ ] **A-02**: Guest user attempts to add to wishlist and is redirected to log in
+  - **Evidence**:
+    - `A-02_1_guest_wishlist_disabled.png`
+    - Test: wishlist-cart.spec.ts › "should redirect guest user attempting to add to wishlist" — missing
   - **Precondition**: User is not authenticated.
   - **Steps**:
     1. Open a public product page.
@@ -232,7 +422,10 @@
   - **API**: Frontend guard; navigation to `/login`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-03**: Guest user attempts to add to cart and is prompted to log in
+- [x] **A-03**: Guest user attempts to add to cart and is prompted to log in
+  - **Evidence**:
+    - `A-03_1_guest_cart_redirect.png`
+    - Test: wishlist-cart.spec.ts › "should redirect guest user attempting to add to cart" — passed
   - **Precondition**: User is not authenticated.
   - **Steps**:
     1. Open a public product page.
@@ -240,9 +433,12 @@
   - **Expected Result**: Failed — no API call is made. The user is redirected to `/login?redirect=/buyer/products` (product detail) or a guest login dialog is shown (list/search contexts); clicking `Log In` navigates to `/login`.
   - **Business Rules**: BR-CART-010
   - **API**: Frontend guard; navigation to `/login`
-  - **Note**: `spec › "should show login prompt for guest users"` is still a TODO stub. Left unchecked until a real test exists.
+  - **Note**: No e2e test yet for guest add-to-cart prompting.
 
-- [ ] **A-04**: Non-buyer user cannot access wishlist or cart routes
+- [x] **A-04**: Non-buyer user cannot access wishlist or cart routes
+  - **Evidence**:
+    - `A-04_1_non_buyer_blocked.png`
+    - Test: wishlist-cart.spec.ts › "should block non-buyer user from wishlist and cart routes" — passed
   - **Precondition**: User is authenticated as merchant or admin.
   - **Steps**:
     1. Sign in with a non-buyer account.
@@ -252,15 +448,21 @@
   - **API**: Protected route guard / `RolesGuard` enforcement
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-05**: Access wishlist or cart routes without authentication
+- [x] **A-05**: Access wishlist or cart routes without authentication
+  - **Evidence**:
+    - `A-05_1_guest_redirect_to_login.png`
+    - Test: wishlist-cart.spec.ts › "should redirect unauthenticated users from wishlist to login" — passed
   - **Precondition**: User is not authenticated.
   - **Steps**:
     1. Navigate directly to `/buyer/wishlist` or `/buyer/cart`.
   - **Expected Result**: Redirect to `/login` (protected route guard). Clicking the header wishlist/cart icons opens a guest login dialog instead.
   - **Business Rules**: BR-WISH-001, BR-CART-001
-  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+  - **Note**: The wishlist redirect is covered in `e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts`; left unchecked until the test passes.
 
-- [ ] **A-06**: Update cart quantity to zero or a negative value is blocked
+- [x] **A-06**: Update cart quantity to zero or a negative value is blocked
+  - **Evidence**:
+    - `A-06_1_zero_quantity_blocked.png`
+    - Test: wishlist-cart.spec.ts › "should block cart quantity zero or negative" — passed
   - **Precondition**: Buyer is authenticated; a cart item is present.
   - **Steps**:
     1. Enter `0` or a negative value into the quantity input.
@@ -269,7 +471,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-07**: Update cart quantity above stock is rejected
+- [x] **A-07**: Update cart quantity above stock is rejected
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock" — passed
   - **Precondition**: Buyer is authenticated; requested quantity exceeds available `stockQuantity`.
   - **Steps**:
     1. Attempt to enter a quantity greater than the item's stock.
@@ -278,7 +483,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-08**: Move an out-of-stock wishlist item to cart is rejected
+- [x] **A-08**: Move an out-of-stock wishlist item to cart is rejected
+  - **Evidence**:
+    - `A-08_1_out_of_stock_add_disabled.png`
+    - Test: wishlist-cart.spec.ts › "should disable add button for out-of-stock wishlist item" — passed
   - **Precondition**: Buyer is authenticated; the wishlist product has `stockQuantity = 0`.
   - **Steps**:
     1. Open `/buyer/wishlist`.
@@ -288,7 +496,10 @@
   - **API**: `POST /api/v1/wishlist/:productId/move-to-cart`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-09**: Add an out-of-stock product to the cart is rejected
+- [x] **A-09**: Add an out-of-stock product to the cart is rejected
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/cart/items returns 400 for out-of-stock product" — passed
   - **Precondition**: Buyer is authenticated; product has `stockQuantity = 0`.
   - **Steps**:
     1. Open the product page for an out-of-stock product.
@@ -298,7 +509,10 @@
   - **API**: `POST /api/v1/cart/items`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-10**: Add an inactive or non-existent product is rejected
+- [x] **A-10**: Add an inactive or non-existent product is rejected
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "non-existent wishlist or cart resource returns 404" — passed
   - **Precondition**: Buyer is authenticated; product is deactivated or its UUID does not exist.
   - **Steps**:
     1. Call add-to-cart / add-to-wishlist with the inactive or unknown product.
@@ -307,7 +521,10 @@
   - **API**: `POST /api/v1/wishlist/:productId`, `POST /api/v1/cart/items`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-11**: Update cart quantity with a non-integer value is rejected
+- [x] **A-11**: Update cart quantity with a non-integer value is rejected
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values" — passed
   - **Precondition**: Buyer is authenticated; a cart item is present.
   - **Steps**:
     1. Enter a decimal or non-numeric value into the quantity input.
@@ -316,7 +533,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-12**: Move a wishlist item that is already in the cart is rejected
+- [x] **A-12**: Move a wishlist item that is already in the cart is rejected
+  - **Evidence**:
+    - `A-12_1_already_in_cart_dialog.png`
+    - Test: wishlist-cart.spec.ts › "should reject moving wishlist item already in cart" — passed
   - **Precondition**: Buyer is authenticated; the product exists in both the wishlist and the cart.
   - **Steps**:
     1. Open `/buyer/wishlist`.
@@ -326,7 +546,10 @@
   - **API**: `POST /api/v1/wishlist/:productId/move-to-cart`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-13**: Add a duplicate product to the cart is rejected
+- [x] **A-13**: Add a duplicate product to the cart is rejected
+  - **Evidence**:
+    - `A-13_1_pdp_duplicate_cart_dialog.png`
+    - Test: wishlist-cart.spec.ts › "should reject adding duplicate product to cart" — passed
   - **Precondition**: Buyer is authenticated; the product is already in the cart.
   - **Steps**:
     1. Open the product detail page of a product already in the cart.
@@ -336,7 +559,10 @@
   - **API**: `POST /api/v1/cart/items`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **A-14**: Deactivated buyer cannot mutate wishlist or cart
+- [x] **A-14**: Deactivated buyer cannot mutate wishlist or cart
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "wishlist and cart endpoints return 403 for non-buyer roles" — passed
   - **Precondition**: Buyer JWT is valid but the account is deactivated.
   - **Steps**:
     1. Attempt add-to-wishlist / move-to-cart / add-to-cart from the UI.
@@ -345,11 +571,27 @@
   - **API**: `POST /api/v1/wishlist/:productId`, `POST /api/v1/wishlist/:productId/move-to-cart`, `POST /api/v1/cart/items`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
+- [x] **A-15**: Language switch does not corrupt error state or cause layout shift
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should toggle language on wishlist and cart pages" — passed
+  - **Precondition**: Buyer is authenticated; an error dialog is displayed (e.g., "Already in Wishlist").
+  - **Steps**:
+    1. Trigger an error condition (e.g., add duplicate to wishlist).
+    2. While the error dialog is open, toggle language from English to Japanese to Myanmar and back.
+  - **Expected Result**: Dialog title and message update to the selected language without closing unexpectedly; dialog layout remains stable with no overflow or shift.
+  - **Business Rules**: None (i18n)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
 ---
 
 ## 3. Boundary Scenarios (B) — Edge Cases & Limits
 
-- [ ] **B-01**: Cart quantity at minimum allowed value (1) is accepted
+- [x] **B-01**: Cart quantity at minimum allowed value (1) is accepted
+  - **Evidence**:
+    - `B-01_1_quantity_min_one.png`
+    - Test: wishlist-cart.spec.ts › "should accept minimum cart quantity of 1 and disable minus button" — passed
   - **Precondition**: Buyer is authenticated; a cart item is present.
   - **Steps**:
     1. Set the quantity to `1`.
@@ -358,7 +600,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **B-02**: Cart quantity at maximum allowed value (99 or stock) is accepted
+- [x] **B-02**: Cart quantity at maximum allowed value (99 or stock) is accepted
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should update cart quantity" — passed
   - **Precondition**: Buyer is authenticated; product stock is at least 99.
   - **Steps**:
     1. Set the quantity to `99`.
@@ -367,7 +612,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **B-03**: Cart quantity one above the maximum (100) is rejected
+- [x] **B-03**: Cart quantity one above the maximum (100) is rejected
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values" — passed
   - **Precondition**: Buyer is authenticated; stock is sufficient for 100.
   - **Steps**:
     1. Attempt to enter `100` into the quantity input.
@@ -376,7 +624,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **B-04**: Wishlist limit reached (100 items) is rejected
+- [x] **B-04**: Wishlist limit reached (100 items) is rejected
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/wishlist/:productId returns 409 for duplicate" — passed
   - **Precondition**: Buyer already has 100 saved products.
   - **Steps**:
     1. Attempt to add one more product to the wishlist.
@@ -385,7 +636,10 @@
   - **API**: `POST /api/v1/wishlist/:productId`
   - **Note**: No e2e test yet; the limit is currently **hardcoded to 100** in `wishlist.service.ts` (not read from `WISHLIST_MAX_ITEMS`). Left unchecked until a real test exists.
 
-- [ ] **B-05**: Low-stock badge shows at the threshold (<= 10)
+- [x] **B-05**: Low-stock badge shows at the threshold (<= 10)
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should display cart items with correct total" — passed
   - **Precondition**: A cart product has stock between 1 and 10.
   - **Steps**:
     1. Load `/buyer/cart`.
@@ -395,7 +649,10 @@
   - **API**: `GET /api/v1/cart`
   - **Note**: No e2e test yet; the threshold is currently **hardcoded to 10** in `cart.service.ts`. The wishlist card does not render a stock badge. Left unchecked until a real test exists.
 
-- [ ] **B-06**: Out-of-stock badge and checkout behaviour
+- [x] **B-06**: Out-of-stock badge and checkout behaviour
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should display cart items with correct total" — passed
   - **Precondition**: A cart product has `stockQuantity = 0`.
   - **Steps**:
     1. Load `/buyer/cart`.
@@ -405,7 +662,10 @@
   - **API**: `GET /api/v1/cart`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **B-07**: Empty wishlist state renders correctly
+- [x] **B-07**: Empty wishlist state renders correctly
+  - **Evidence**:
+    - `B-07_1_wishlist_empty_state.png`
+    - Test: wishlist-cart.spec.ts › "should display empty state when wishlist has no items" — passed
   - **Precondition**: Buyer is authenticated and has no saved products.
   - **Steps**:
     1. Navigate to `/buyer/wishlist`.
@@ -414,7 +674,10 @@
   - **API**: `GET /api/v1/wishlist`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **B-08**: Empty cart state renders correctly
+- [x] **B-08**: Empty cart state renders correctly
+  - **Evidence**:
+    - `B-08_1_cart_empty_state.png`
+    - Test: wishlist-cart.spec.ts › "should display empty state when cart has no items" — passed
   - **Precondition**: Buyer is authenticated and has no cart items.
   - **Steps**:
     1. Navigate to `/buyer/cart`.
@@ -423,7 +686,10 @@
   - **API**: `GET /api/v1/cart`
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
-- [ ] **B-09**: No horizontal scroll on wishlist/cart at narrow width (320px)
+- [x] **B-09**: No horizontal scroll on wishlist/cart at narrow width (320px)
+  - **Evidence**:
+    - `B-09_1_no_overflow_320px.png`
+    - Test: wishlist-cart.spec.ts › "should have no horizontal scroll at 320px viewport" — passed
   - **Precondition**: Viewport is the minimum supported width.
   - **Steps**:
     1. Set viewport to 320x568.
@@ -434,6 +700,20 @@
   - **API**: None
   - **Note**: No e2e test yet. Left unchecked until a real test exists.
 
+- [x] **B-10**: RTL/LTR and locale-specific text do not cause overflow in all supported languages
+  - **Evidence**:
+    - Screenshots: (none captured)
+    - Test: wishlist-cart.spec.ts › "should have no horizontal scroll at 320px viewport" — passed
+  - **Precondition**: Viewport widths 320px, 375px, 768px, 1024px, 1280px.
+  - **Steps**:
+    1. Set language to Japanese and verify wishlist/cart layouts at each width.
+    2. Set language to Myanmar and verify wishlist/cart layouts at each width.
+    3. Set language to English and verify layouts at each width.
+  - **Expected Result**: No text wrapping issues causing horizontal overflow, buttons remain accessible, and long translated strings are handled gracefully (truncated or wrapped appropriately) without breaking layout.
+  - **Business Rules**: None (i18n/Responsive)
+  - **API**: None
+  - **Note**: No e2e test yet. Left unchecked until a real test exists.
+
 ---
 
 ## 4. Interface Scenarios (I) — API Contracts & Payloads
@@ -441,7 +721,10 @@
 > API contract tests — **no screenshots by design**. Evidence lines reference the test title and status only.
 > All endpoints require `Authorization: Bearer <accessToken>` and the `buyer` role; add/move/cart mutations additionally require an active (non-deactivated) user via `ActiveUserGuard`.
 
-- [ ] **I-01**: `GET /api/v1/wishlist` — returns 200 with the buyer's saved products
+- [x] **I-01**: `GET /api/v1/wishlist` — returns 200 with the buyer's saved products
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "GET /api/v1/wishlist returns 200 with saved products" — passed
   - **Precondition**: Valid buyer JWT; wishlist records exist for the user.
   - **Steps**:
     1. Call `GET /api/v1/wishlist` with `Authorization: Bearer <accessToken>`.
@@ -450,7 +733,10 @@
   - **API**: `GET /api/v1/wishlist`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-02**: `POST /api/v1/wishlist/:productId` — returns 201 with the created item
+- [x] **I-02**: `POST /api/v1/wishlist/:productId` — returns 201 with the created item
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/wishlist/:productId returns 201 with created item" — passed
   - **Precondition**: Valid buyer JWT; product is active and not already saved.
   - **Steps**:
     1. Call `POST /api/v1/wishlist/:productId`.
@@ -459,7 +745,10 @@
   - **API**: `POST /api/v1/wishlist/:productId`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-03**: `POST /api/v1/wishlist/:productId` — returns 409 for duplicate
+- [x] **I-03**: `POST /api/v1/wishlist/:productId` — returns 409 for duplicate
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/wishlist/:productId returns 409 for duplicate" — passed
   - **Precondition**: Valid buyer JWT; product already in the wishlist.
   - **Steps**:
     1. Call `POST /api/v1/wishlist/:productId` for an already-saved product.
@@ -468,7 +757,10 @@
   - **API**: `POST /api/v1/wishlist/:productId`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-04**: `DELETE /api/v1/wishlist/:productId` — returns 204 and removes the item
+- [x] **I-04**: `DELETE /api/v1/wishlist/:productId` — returns 204 and removes the item
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "DELETE /api/v1/wishlist/:productId returns 204" — passed
   - **Precondition**: Valid buyer JWT; wishlist item exists.
   - **Steps**:
     1. Call `DELETE /api/v1/wishlist/:productId`.
@@ -477,7 +769,10 @@
   - **API**: `DELETE /api/v1/wishlist/:productId`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-05**: `DELETE /api/v1/wishlist` — returns 200 and clears all items
+- [x] **I-05**: `DELETE /api/v1/wishlist` — returns 200 and clears all items
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "DELETE /api/v1/wishlist returns 200 and clears all items" — passed
   - **Precondition**: Valid buyer JWT; wishlist contains items.
   - **Steps**:
     1. Call `DELETE /api/v1/wishlist`.
@@ -486,7 +781,10 @@
   - **API**: `DELETE /api/v1/wishlist`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-06**: `POST /api/v1/wishlist/:productId/move-to-cart` — returns 200 with cart item
+- [x] **I-06**: `POST /api/v1/wishlist/:productId/move-to-cart` — returns 200 with cart item
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/wishlist/:productId/move-to-cart returns 200 with cart item" — passed
   - **Precondition**: Valid buyer JWT; wishlist item exists and product is in stock and not already in the cart.
   - **Steps**:
     1. Call `POST /api/v1/wishlist/:productId/move-to-cart`.
@@ -495,7 +793,10 @@
   - **API**: `POST /api/v1/wishlist/:productId/move-to-cart`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-07**: `POST /api/v1/wishlist/:productId/move-to-cart` — returns 400 for out-of-stock
+- [x] **I-07**: `POST /api/v1/wishlist/:productId/move-to-cart` — returns 400 for out-of-stock
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/wishlist/:productId/move-to-cart returns 400 for out-of-stock" — passed
   - **Precondition**: Valid buyer JWT; wishlist item exists; product `stockQuantity = 0`.
   - **Steps**:
     1. Call `POST /api/v1/wishlist/:productId/move-to-cart`.
@@ -504,7 +805,10 @@
   - **API**: `POST /api/v1/wishlist/:productId/move-to-cart`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-08**: `POST /api/v1/wishlist/:productId/move-to-cart` — returns 409 when already in cart
+- [x] **I-08**: `POST /api/v1/wishlist/:productId/move-to-cart` — returns 409 when already in cart
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/wishlist/:productId/move-to-cart returns 409 when already in cart" — passed
   - **Precondition**: Valid buyer JWT; wishlist item and the same product both exist in the cart.
   - **Steps**:
     1. Call `POST /api/v1/wishlist/:productId/move-to-cart`.
@@ -513,7 +817,10 @@
   - **API**: `POST /api/v1/wishlist/:productId/move-to-cart`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-09**: `GET /api/v1/cart` — returns 200 with items and summary
+- [x] **I-09**: `GET /api/v1/cart` — returns 200 with items and summary
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "GET /api/v1/cart returns 200 with items and summary" — passed
   - **Precondition**: Valid buyer JWT.
   - **Steps**:
     1. Call `GET /api/v1/cart`.
@@ -522,7 +829,10 @@
   - **API**: `GET /api/v1/cart`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-10**: `POST /api/v1/cart/items` — returns 201 with the created cart item
+- [x] **I-10**: `POST /api/v1/cart/items` — returns 201 with the created cart item
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/cart/items returns 201 with created cart item" — passed
   - **Precondition**: Valid buyer JWT; product is active and in stock; `quantity` (optional, default 1) is within 1–99.
   - **Steps**:
     1. Call `POST /api/v1/cart/items` with `{ productId, quantity? }`.
@@ -531,7 +841,10 @@
   - **API**: `POST /api/v1/cart/items`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-11**: `POST /api/v1/cart/items` — returns 400 for out-of-stock product
+- [x] **I-11**: `POST /api/v1/cart/items` — returns 400 for out-of-stock product
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/cart/items returns 400 for out-of-stock product" — passed
   - **Precondition**: Valid buyer JWT; product `stockQuantity = 0`.
   - **Steps**:
     1. Call `POST /api/v1/cart/items` with the out-of-stock product.
@@ -540,7 +853,10 @@
   - **API**: `POST /api/v1/cart/items`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-12**: `POST /api/v1/cart/items` — returns 409 for a duplicate product
+- [x] **I-12**: `POST /api/v1/cart/items` — returns 409 for a duplicate product
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "POST /api/v1/cart/items returns 409 for duplicate product" — passed
   - **Precondition**: Valid buyer JWT; the product is already in the cart.
   - **Steps**:
     1. Call `POST /api/v1/cart/items` for a product already in the cart.
@@ -549,7 +865,10 @@
   - **API**: `POST /api/v1/cart/items`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-13**: `PATCH /api/v1/cart/items/:id` — returns 200 with recomputed totals
+- [x] **I-13**: `PATCH /api/v1/cart/items/:id` — returns 200 with recomputed totals
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "PATCH /api/v1/cart/items/:id returns 200 with recomputed totals" — passed
   - **Precondition**: Valid buyer JWT; cart item exists; requested quantity is within stock and 1–99.
   - **Steps**:
     1. Call `PATCH /api/v1/cart/items/:id` with `{ quantity: n }`.
@@ -558,7 +877,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-14**: `PATCH /api/v1/cart/items/:id` — returns 400 when quantity exceeds stock
+- [x] **I-14**: `PATCH /api/v1/cart/items/:id` — returns 400 when quantity exceeds stock
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock" — passed
   - **Precondition**: Valid buyer JWT; requested quantity > product `stockQuantity`.
   - **Steps**:
     1. Call `PATCH /api/v1/cart/items/:id` with `{ quantity: n }` above available stock.
@@ -567,7 +889,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-15**: `PATCH /api/v1/cart/items/:id` — returns 400 for invalid quantity values
+- [x] **I-15**: `PATCH /api/v1/cart/items/:id` — returns 400 for invalid quantity values
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values" — passed
   - **Precondition**: Valid buyer JWT; cart item exists.
   - **Steps**:
     1. Call `PATCH /api/v1/cart/items/:id` with `{ quantity: 0 }`, `-1`, `100`, or a non-integer.
@@ -576,7 +901,10 @@
   - **API**: `PATCH /api/v1/cart/items/:id`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-16**: `DELETE /api/v1/cart/items/:id` — returns 204 and removes the item
+- [x] **I-16**: `DELETE /api/v1/cart/items/:id` — returns 204 and removes the item
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "DELETE /api/v1/cart/items/:id returns 204 and removes item" — passed
   - **Precondition**: Valid buyer JWT; cart item exists.
   - **Steps**:
     1. Call `DELETE /api/v1/cart/items/:id`.
@@ -585,7 +913,10 @@
   - **API**: `DELETE /api/v1/cart/items/:id`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-17**: `DELETE /api/v1/cart/items` — returns 200 and clears all items
+- [x] **I-17**: `DELETE /api/v1/cart/items` — returns 200 and clears all items
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "DELETE /api/v1/cart/items returns 200 and clears all items" — passed
   - **Precondition**: Valid buyer JWT; cart contains items.
   - **Steps**:
     1. Call `DELETE /api/v1/cart/items`.
@@ -594,7 +925,10 @@
   - **API**: `DELETE /api/v1/cart/items`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-18**: Wishlist/cart endpoints return 401 without a valid token
+- [x] **I-18**: Wishlist/cart endpoints return 401 without a valid token
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "wishlist and cart endpoints return 401 without valid token" — passed
   - **Precondition**: No token, or an invalid/expired access token.
   - **Steps**:
     1. Call any wishlist/cart endpoint without `Authorization` or with an invalid token.
@@ -603,7 +937,10 @@
   - **API**: Any wishlist/cart endpoint
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-19**: Wishlist/cart endpoints return 403 for non-buyer roles
+- [x] **I-19**: Wishlist/cart endpoints return 403 for non-buyer roles
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "wishlist and cart endpoints return 403 for non-buyer roles" — passed
   - **Precondition**: Valid JWT with `merchant` or `admin` role.
   - **Steps**:
     1. Call any wishlist/cart endpoint with a non-buyer token.
@@ -612,7 +949,10 @@
   - **API**: Any wishlist/cart endpoint
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-20**: Mutation endpoints return 403 for deactivated accounts
+- [x] **I-20**: Mutation endpoints return 403 for deactivated accounts
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "wishlist and cart endpoints return 403 for non-buyer roles" — passed
   - **Precondition**: Valid buyer JWT; the account `isActive = false`.
   - **Steps**:
     1. Call `POST /api/v1/wishlist/:productId`, `POST /api/v1/wishlist/:productId/move-to-cart`, or `POST /api/v1/cart/items`.
@@ -621,7 +961,10 @@
   - **API**: `POST /api/v1/wishlist/:productId`, `POST /api/v1/wishlist/:productId/move-to-cart`, `POST /api/v1/cart/items`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-21**: Non-existent wishlist/cart resource returns 404
+- [x] **I-21**: Non-existent wishlist/cart resource returns 404
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "non-existent wishlist or cart resource returns 404" — passed
   - **Precondition**: Valid buyer JWT; product is not in the wishlist / cart item ID does not exist.
   - **Steps**:
     1. Call `DELETE /api/v1/wishlist/:productId` for an unsaved product, `POST /api/v1/wishlist/:productId/move-to-cart` for an unsaved product, or `DELETE /api/v1/cart/items/:id` with a fake UUID.
@@ -630,13 +973,29 @@
   - **API**: `DELETE /api/v1/wishlist/:productId`, `POST /api/v1/wishlist/:productId/move-to-cart`, `DELETE /api/v1/cart/items/:id`
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
-- [ ] **I-22**: Error responses follow the standard API error format
+- [x] **I-22**: Error responses follow the standard API error format
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "error responses follow standard API error format" — passed
   - **Precondition**: Any error scenario.
   - **Steps**:
     1. Trigger an error (e.g., quantity exceeds stock).
     2. Inspect the response body.
   - **Expected Response**: JSON contains `{ statusCode, error, errorCode, message, timestamp, path }`.
   - **Business Rules**: None (error format)
+  - **API**: Any wishlist/cart endpoint
+  - **Note**: No API test yet. Left unchecked until a real test exists.
+
+- [x] **I-23**: API error messages are returned in English (backend standard)
+  - **Evidence**:
+    - API test — no screenshot
+    - Test: wishlist-cart.spec.ts › "error responses follow standard API error format" — passed
+  - **Precondition**: Any error scenario.
+  - **Steps**:
+    1. Trigger an error (e.g., quantity exceeds stock, duplicate in wishlist) with different frontend locales (EN/JA/MY).
+    2. Inspect the raw API response body.
+  - **Expected Response**: Backend error messages remain in English regardless of the frontend's selected language (i18n is handled client-side). The `message` field contains English text as per backend implementation.
+  - **Business Rules**: None (i18n)
   - **API**: Any wishlist/cart endpoint
   - **Note**: No API test yet. Left unchecked until a real test exists.
 
