@@ -47,6 +47,8 @@ test.describe('N-02: Merchant Registration', () => {
       mimeType: 'application/pdf',
       buffer: pdfBuffer,
     });
+    await registerPage.fillAddress('123 Test Street, Yangon');
+    await registerPage.fillPhone('+95912345678');
     await captureScreenshot(page, 'N-02_2_license_uploaded');
 
     await registerPage.checkTerms();
@@ -73,6 +75,11 @@ test.describe('Extra: Merchant Login', () => {
     await loginPage.login('smt@gmail.com', 'Cosmetics@123');
     await loginPage.expectRedirectTo(ROUTES.MERCHANT_DASHBOARD);
     await expect(page.getByText('Merchant Portal')).toBeVisible({ timeout: 10_000 });
+    await captureScreenshot(
+      page,
+      'N-30_1_merchant_dashboard',
+      'Merchant Portal dashboard after merchant login'
+    );
   });
 });
 
@@ -84,6 +91,11 @@ test.describe('Extra: Login Error Feedback', () => {
     await loginPage.goto();
     await loginPage.login('tyler.nguyen@gmail.com', 'WrongPassword123!');
     await loginPage.expectErrorVisible();
+    await captureScreenshot(
+      page,
+      'A-32_1_generic_credential_error',
+      'Generic credential error shown without revealing whether the account exists'
+    );
   });
 });
 
@@ -247,6 +259,12 @@ test.describe('N-08: Theme Switching', () => {
         html.evaluate((element) => element.classList.contains('dark'))
       )
       .toBe(!initialDarkMode);
+    await settlePaint(page);
+    await captureScreenshot(
+      page,
+      'N-08_1_theme_toggled',
+      'Auth page after toggling the theme - dark-mode class flipped'
+    );
 
     await themeToggle.click();
     await expect
@@ -254,6 +272,12 @@ test.describe('N-08: Theme Switching', () => {
         html.evaluate((element) => element.classList.contains('dark'))
       )
       .toBe(initialDarkMode);
+    await settlePaint(page);
+    await captureScreenshot(
+      page,
+      'N-08_2_theme_restored',
+      'Auth page after toggling back - original theme restored'
+    );
   });
 });
 

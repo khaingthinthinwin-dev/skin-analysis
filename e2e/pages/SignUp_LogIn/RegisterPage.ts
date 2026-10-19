@@ -7,6 +7,8 @@ export class RegisterPage {
   readonly emailInput: Locator;
   readonly passwordInput: Locator;
   readonly confirmPasswordInput: Locator;
+  readonly addressInput: Locator;
+  readonly phoneInput: Locator;
   readonly buyerRadio: Locator;
   readonly merchantRadio: Locator;
   readonly licenseFileInput: Locator;
@@ -24,6 +26,9 @@ export class RegisterPage {
     this.emailInput = page.getByRole('textbox', { name: /email/i });
     this.passwordInput = page.getByPlaceholder('Create a password');
     this.confirmPasswordInput = page.getByPlaceholder('Confirm your password');
+    // Placeholders are identical in every locale, so these stay language-proof
+    this.addressInput = page.getByPlaceholder('123 Yangon Street, Yangon');
+    this.phoneInput = page.getByPlaceholder('+95 9 123 456 789');
     this.buyerRadio = page.getByRole('radio', { name: /buyer/i });
     this.merchantRadio = page.getByRole('radio', { name: /merchant/i });
     this.licenseFileInput = page.locator('input[type="file"]');
@@ -60,6 +65,14 @@ export class RegisterPage {
 
   async fillConfirmPassword(password: string) {
     await this.confirmPasswordInput.fill(password);
+  }
+
+  async fillAddress(address: string) {
+    await this.addressInput.fill(address);
+  }
+
+  async fillPhone(phone: string) {
+    await this.phoneInput.fill(phone);
   }
 
   async selectRole(role: 'buyer' | 'merchant') {
@@ -103,6 +116,8 @@ export class RegisterPage {
     role?: 'buyer' | 'merchant';
     agreeToTerms?: boolean;
     licensePath?: string;
+    address?: string;
+    phone?: string;
   }) {
     await this.fillName(data.name);
     await this.fillEmail(data.email);
@@ -111,6 +126,12 @@ export class RegisterPage {
 
     if (data.role) {
       await this.selectRole(data.role);
+    }
+
+    // Address and phone are required for merchant registration
+    if (data.role === 'merchant') {
+      await this.fillAddress(data.address ?? '123 Test Street, Yangon');
+      await this.fillPhone(data.phone ?? '+95912345678');
     }
 
     if (data.licensePath && data.role === 'merchant') {

@@ -1,639 +1,282 @@
 # DD_Advertisement_Management_05 — Business Logic
 
-> **Doc ID:** SKM-DD-AD-05 | **Version:** 1.0 | **Status:** Released
-> **Last Updated:** 2026-08-26
+> **Doc ID:** SKM-DD-AD-05 | **Version:** 2.0 | **Status:** Released
+> **Last Updated:** 2026-10-16
 > **Target Screen:** Advertisement Management (広告管理)
 > **Subsystem:** Advertisement — Shop Advertisement Management
 > **Function ID:** FN-AD-001
 
 ---
 
+## Revision History
+
+| Version | Date | Author | Summary |
+|---------|------|--------|---------|
+| 1.0 | 2026-08-26 | Software Architect | Initial business logic specification. |
+| 2.0 | 2026-10-16 | Engineering | Rewritten to match current implementation (product-image selection, content ≤100 chars, 3-day lead time, no weekly-limit enforcement on approval, hard/soft delete rules, current-month protection on fee history delete, refund logic, analytics, audit shapes). |
+
+---
+
 ## 1. Overview
 
-This document specifies the core business logic, state transitions, validation rules, and cache management implemented in the Advertisement Management services.
+This document specifies business logic, state transitions, validation rules, and cache management for Advertisement Management.
 
-- **Merchant Service Location:** `backend/src/modules/merchant/advertisements/advertisements.service.ts`
-- **Admin Service Location:** `backend/src/modules/admin/advertisement-management/advertisement-management.service.ts`
+- **Merchant Service:** `backend/src/modules/merchant/advertisements/advertisements.service.ts`
+- **Admin Services:** `backend/src/modules/admin/advertisement-management/admin-ad-management.service.ts`, `admin-ad-export.service.ts`
 - **Cache Keys:** `cache:ads:active` (TTL 5 min), `cache:ads:packages` (TTL 10 min)
 
 ---
 
-## 2. Core Service Methods — Merchant
+## 2. Merchant Service Methods
 
-### 2.1 selectPackage(feeSettingId, merchantId)
+### 2.1 listPackages()
+- **Route:** `GET /ads/packages`
+- **Logic:** Try Redis cache `PACKAGES_CACHE_KEY`. If miss, query `adFeeSetting.findMany` with `isActive: true` and `history.some({ effectiveFrom <= now })`, include latest `history` (take 1), order by `updatedAt desc, placement asc, tier asc`. Filter to only settings whose latest `effectiveFrom <= now`. Return mapped objects including `dailyRate` string, `durationDays`, `maxAds`, `totalFee = dailyRate*durationDays` string, `updatedAt` ISO. Cache result 600s.
+- **Cache:** Read-through; writes on miss.
 
-**Endpoint:** `POST /ads/packages/:feeSettingId/select`
+### 2.2 selectPackage(feeSettingId, userId)
+- **Route:** `POST /ads/packages/:feeSettingId/select`
+- **Steps:**
+  1. Resolve shop: `shop.findUnique({ where: { userId } })`; if not found → `404 Shop not found`. If `!shop.isApproved` → `403 SHOP_NOT_APPROVED`.
+  2. Find active package with `effectiveFrom <= now`: `adFeeSetting.findFirst({ where: { id, isActive: true, history: { some: { effectiveFrom: { lte: new Date() } } } } })`. If none → `404 AD_PACKAGE_INVALID`.
+  3. Create draft advertisement:
+     - `shopId`, `feeSettingId`, `title=''`, `announcementMessage=''`, `approvalStatus='pending'`, `paymentStatus='pending'`, `isActive=true`, `startsAt=null`, `expiresAt=null`, `weekNumber=null`. Include `feeSetting`, `shop`.
+  4. Audit `AD_SELECTED` with `{ shopId, feeSettingId, placement, tier }` (merchant audit, `entityType='Advertisement'`, `newValue` stringified).
+- **Return:** `toResponse(ad)`.
 
-1. **Validate UUID:** `feeSettingId` must be valid UUID format.
-2. **Resolve Merchant:** Look up merchant profile from `merchantId` (JWT).
-3. **Verify Shop:** Resolve merchant's shop via `shops` table. Verify `is_approved = true`. If not, throw `ForbiddenException('SHOP_NOT_APPROVED')`.
-4. **Resolve Package:** Find `ad_fee_settings` by `feeSettingId`. If not found or `is_active = false`, throw `NotFoundException('AD_PACKAGE_INVALID')`.
-5. **Create Advertisement (Transaction):**
-   ```sql
-   INSERT INTO advertisements (
-     id, shop_id, title, content, announcement_message,
-     image_url, link_url, is_active, approval_status, payment_status,
-     starts_at, expires_at, created_at
-   ) VALUES (
-     gen_random_uuid(), <shop_id>, '', NULL, '',
-     NULL, NULL, true, 'pending', 'pending',
-     NULL, NULL, NOW()
-   );
-   ```
-6. **Invalidate Cache:** `DEL cache:ads:packages`.
-7. **Audit Log:** `AD_SELECTED` event — `shopId`, `adId`, `feeSettingId`, `merchantId`, `placement`, `tier`, timestamp. Retention: 90 days.
-8. **Return:** `AdvertisementResponseDto` (draft state, 201 Created).
+### 2.3 uploadContent(id, dto, userId)
+- **Route:** `PATCH /ads/:id/content`
+- **Guards:**
+  - Ownership via `getOwnedAd` (shop ownership + throws if no feeSetting). `getOwnedAd` requires `ad.shopId === shop.id`; else `403`; if ad not found `404`; if no feeSetting → `409 'Advertisement package is unavailable'`.
+  - State: if `paymentStatus !== 'pending'` OR `approvalStatus !== 'pending'` → `400 'Advertisement cannot accept content'`.
+- **Logic:**
+  1. Resolve product image: `resolveProductImage(dto.imageUrl, userId)`. Finds merchant, then `product.findFirst({ where: { merchantId, images: { has: imageUrl } } })`. If not found → `400 'Advertisement image must be selected from your products'`. Returns `{ imageUrl, sku }` (sku snapshotted).
+  2. Build schedule: `getSchedule(dto.startsAt, ad.feeSetting.durationDays, minDaysFromToday=3)`.
+     - Parse `startsAt` to Date. Compute `minDate = today (UTC 00:00:00)` + 3 days. If invalid or `startsAt < minDate` → `400 'Start date must be at least 3 days from today'`.
+     - `expiresAt = new Date(startsAt); expiresAt.setUTCDate(expiresAt.getUTCDate() + durationDays)`. If `expiresAt <= startsAt` → `409 AD_SCHEDULE_INVALID`.
+  3. Update ad: set `title`, `content` (or null), `imageUrl`, `sku`, `announcementMessage`, `startsAt`, `expiresAt`. Include relations for response.
+  4. `redis.del(ACTIVE_ADS_CACHE_KEY)`. Audit `AD_CONTENT_UPLOADED` with `{ shopId, title, hasImage }`.
+- **Return:** `toResponse(updated)`.
 
-### 2.2 uploadContent(id, dto, file, merchantId)
+### 2.4 payFee(id, dto, userId)
+- **Route:** `POST /ads/:id/pay`
+- **Guards:**
+  - Ownership + `getOwnedAd`. feeSetting must exist.
+  - Preconditions: `approvalStatus in {pending,rejected}` AND `paymentStatus in {pending,refunded}` AND `title`, `announcementMessage`, `startsAt`, `expiresAt` all non-null → else `400 'Advertisement content and schedule are required'`.
+- **Transaction:**
+  1. Find merchant by `userId` (must exist).
+  2. Create `adPayment`: `adId=id`, `merchantId`, `amount = dailyRate * durationDays`, `paymentMethod='stubbed'`, `paymentStatus='completed'`, `transactionId='TXN-'+randomUUID()`, `paidAt=now`.
+  3. Update ad: `paymentStatus='completed'`, `approvalStatus='pending'`, `paymentAmount=amount`, `paymentReference = dto.paymentReference || null`, `weekNumber = getIsoWeek(startsAt)`.
+- **Post-tx:**
+  - `redis.del(ACTIVE_ADS_CACHE_KEY)`
+  - Audit `AD_PAID` with `{ shopId, amount: toFixed(2), reference }`
+  - Notify admins: `notifyAdminsOfNewSubmission(result, isResubmission = ad.approvalStatus === 'rejected')`. Builds title/message for resubmission vs new; best-effort (logs on failure, does not rollback). Creates notifications for all `admin`/`super_admin` users (type `AD_SUBMITTED`).
+- **Return:** `toResponse(result)`.
 
-**Endpoint:** `PATCH /ads/:id/content`
+### 2.5 listOwnAds(query, userId)
+- **Route:** `GET /ads/my-ads`
+- **Logic:**
+  1. `getShop(userId)`.
+  2. Build `where: { shopId }`. Apply `approvalStatus` if present. Apply `search` as title contains (case-insensitive). Apply status filters:
+     - `status==='active'`: `isActive=true`, `approvalStatus='approved'`, `paymentStatus='completed'`, `startsAt <= now`, `expiresAt >= now`
+     - `status==='inactive'`: `OR` includes `approvalStatus='pending'`, OR `{ approvalStatus='approved', paymentStatus='completed', startsAt > now }`, OR `{ isActive=false, approvalStatus='approved' }`; `AND` ensures `expiresAt >= now OR expiresAt null`; `NOT` excludes `{ isActive=false, approvalStatus != 'approved' }`
+     - `status==='expired'`: `expiresAt < now`, `NOT` excludes soft-deleted non-approved
+     - default: `OR [{ isActive:true }, { approvalStatus:'approved' }]` (hides soft-deleted ads except approved+inactive remain visible)
+  3. Paginate by `skip=(page-1)*limit`, `take=limit`, order by `createdAt desc`, include `feeSetting`, `shop`. Count total.
+- **Return:** `{ data: mapped, meta }` (unwrapped by controller).
 
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Resolve Merchant:** Look up merchant profile, resolve shop.
-3. **Ownership Check:** Find advertisement by `id`. Verify `shop_id` matches merchant's shop. If not, throw `ForbiddenException`.
-4. **State Check:** Verify ad allows content upload: `approval_status = 'pending'` AND `payment_status = 'pending'`. Application-level state is `draft` or `content_uploaded` (derived from content fields).
-5. **Validate Content Fields:**
-   - `title`: required, 1–200 chars.
-   - `announcementMessage`: required, max 500 chars.
-   - `content`: optional, max 5000 chars.
-   - `linkUrl`: optional, valid URL format, max 2048 chars.
-6. **Validate Image (if provided):**
-   - MIME type must be `image/jpeg`, `image/png`, or `image/webp`. Throw `UnsupportedMediaTypeException` if invalid.
-   - File size must be <= 5MB (`AD_IMAGE_MAX_SIZE_MB`). Throw `PayloadTooLargeException` if exceeded.
-   - Generate UUID filename: `{uuid}.{ext}`. Store outside webroot at `AD_IMAGE_STORAGE_PATH`.
-7. **Resolve Schedule:**
-   - `startsAt` = request value (must be >= today).
-   - Resolve fee setting from the ad's package: look up the package's `daily_rate` and `duration_days`.
-   - `expiresAt` = `startsAt + durationDays` days.
-   - Validate `expiresAt > startsAt` (DB constraint `chk_advertisements_dates`).
-8. **Update Advertisement (Transaction):**
-   ```sql
-   UPDATE advertisements SET
-     title = <title>,
-     content = <content>,
-     image_url = <image_url>,
-     link_url = <link_url>,
-     announcement_message = <announcement_message>,
-     starts_at = <starts_at>,
-     expires_at = <expires_at>
-   WHERE id = <id> AND shop_id = <shop_id>;
-   ```
-   `approval_status` remains `'pending'` (unchanged).
-9. **Audit Log:** `AD_CONTENT_UPLOADED` event — `shopId`, `adId`, `merchantId`, `title`, `hasImage`, timestamp. Retention: 90 days.
-10. **Return:** `AdvertisementResponseDto`.
+### 2.6 updateContent(id, dto, userId)
+- **Route:** `PATCH /ads/:id`
+- **Guards:**
+  - Ownership + feeSetting exists.
+  - Editable if `approvalStatus==='rejected'` OR (`approvalStatus==='pending' AND paymentStatus==='pending'`) → else `400 'Advertisement cannot be edited'`.
+- **Logic:**
+  1. If `dto.imageUrl` present → `resolveProductImage(dto.imageUrl, userId)`; else undefined.
+  2. If `dto.startsAt` present → `getSchedule(dto.startsAt, ad.feeSetting.durationDays, 3)` (applies to rejected resubmissions). Else null.
+  3. Update: set title, content (null if empty), imageUrl/sku only if resolved, announcementMessage; merge schedule if provided.
+  4. `redis.del(ACTIVE_ADS_CACHE_KEY)`. Audit `AD_UPDATED` with `{ shopId }`.
+- **Return:** `toResponse(updated)`.
 
-### 2.3 payFee(id, dto, merchantId)
+### 2.7 deleteAd(id, userId)
+- **Route:** `DELETE /ads/:id`
+- **Logic:**
+  1. `getOwnedAd(id, userId)`. Compute `isExpired = ad.expiresAt && new Date(ad.expiresAt) < now`.
+  2. If `approvalStatus==='approved' AND isActive===true AND !isExpired` → `400 'Active approved advertisements cannot be deleted'`.
+  3. If `isExpired OR paymentStatus==='pending'` → **hard delete** `prisma.advertisement.delete({ where:{id} })`. Else → **soft delete** `update({ where:{id}, data:{isActive:false} })`.
+  4. `redis.del(ACTIVE_ADS_CACHE_KEY)`. Audit `AD_DELETED` with `{ shopId }`.
+- **Return:** `{ message: 'Advertisement deleted' }` (unwrapped).
 
-**Endpoint:** `POST /ads/:id/pay`
+### 2.8 toggleActive(id, dto, userId)
+- **Route:** `PATCH /ads/:id/toggle`
+- **Guards:**
+  - Resolve shop. Find ad by id with feeSetting include. If not found → `404 Advertisement not found`. Ownership check against shop → `403`. State: if `approvalStatus!=='approved' OR paymentStatus!=='completed'` → `400 'Only approved and paid advertisements can be toggled'`. (feeSetting optional per implementation comment).
+- **Logic:** Update `isActive = dto.isActive`. `redis.del(ACTIVE_ADS_CACHE_KEY)`. Audit `AD_TOGGLED` with `{ shopId, isActive }`.
+- **Return:** `toResponse(updated)`.
 
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Resolve Merchant:** Look up merchant profile, resolve shop.
-3. **Ownership Check:** Find advertisement by `id`. Verify `shop_id` matches. Throw `ForbiddenException` if mismatch.
-4. **Pre-Payment Validation:**
-   - Ad must have content: `content IS NOT NULL AND image_url IS NOT NULL` (application-level `content_uploaded` state).
-   - `payment_status = 'pending'`.
-   - Schedule must be set: `starts_at IS NOT NULL AND expires_at IS NOT NULL`.
-5. **Resolve Fee:** Look up package's `daily_rate` and `duration_days`. Compute `totalFee = dailyRate * durationDays`.
-6. **Process Payment (Transaction):**
-   - Payment gateway is stubbed — simulate success.
-   - Record in `ad_payments`:
-     ```sql
-     INSERT INTO ad_payments (
-       id, ad_id, merchant_id, amount, payment_method,
-       payment_status, transaction_id, paid_at
-     ) VALUES (
-       gen_random_uuid(), <ad_id>, <merchant_id>, <totalFee>,
-       'stubbed', 'completed', 'TXN-<uuid>', NOW()
-     );
-     ```
-   - Update advertisement:
-     ```sql
-     UPDATE advertisements SET
-       payment_status = 'completed',
-       payment_amount = <totalFee>,
-       payment_reference = <paymentReference>,
-       week_number = EXTRACT(ISOWEEK FROM starts_at)
-     WHERE id = <id>;
-     ```
-   - `approval_status` remains `'pending'` (unchanged).
-7. **Invalidate Cache:** `DEL cache:ads:active`.
-8. **Audit Log:** `AD_PAID` event — `shopId`, `adId`, `amount`, `reference`, timestamp. Retention: 90 days.
-9. **Return:** `AdvertisementResponseDto` (PENDING_APPROVAL state).
+### 2.9 listActiveAds()
+- **Route:** `GET /ads/active` (Public)
+- **Logic:** Try Redis `ACTIVE_ADS_CACHE_KEY`. If miss, query `findMany` with conditions: `isActive=true`, `approvalStatus='approved'`, `paymentStatus='completed'`, `startsAt <= now`, `expiresAt >= now`, order by `createdAt desc`, include `feeSetting`. Map via `toActiveResponse` (includes `tier` from feeSetting). Set cache 300s.
+- **Return:** result array.
 
-### 2.4 listOwnAds(query, merchantId)
-
-**Endpoint:** `GET /ads`
-
-1. **Validate Query:** `AdListQueryDto` — page, limit, status, approvalStatus, search.
-2. **Resolve Merchant:** Resolve shop id from `merchantId`.
-3. **Build Prisma WHERE:**
-   ```typescript
-   const where = { shopId: merchantShopId };
-   ```
-4. **Apply Status Filter:**
-   - `status = 'active'`: `is_active = true AND approvalStatus = 'approved' AND paymentStatus = 'completed' AND startsAt <= now AND expiresAt >= now`.
-   - `status = 'inactive'`: `is_active = false`.
-   - `status = 'expired'`: `expiresAt < now`.
-5. **Apply Approval Status Filter:** `approvalStatus` filter on DB-level values (`pending`, `approved`, `rejected`).
-6. **Apply Search:** `title` ILIKE `%search%`.
-7. **Apply Pagination:** Offset = `(page - 1) * limit`. Order by `createdAt DESC`. Use index `idx_advertisements_shop_id`.
-8. **Return:** `PaginatedAdsResponseDto` with data and meta.
-9. **Cache:** None (per-merchant, not cached).
-
-### 2.5 updateContent(id, dto, file, merchantId)
-
-**Endpoint:** `PATCH /ads/:id`
-
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Resolve Merchant:** Look up merchant profile, resolve shop.
-3. **Ownership Check:** Verify `shop_id` matches. Throw `ForbiddenException` if mismatch.
-4. **State Check:** Verify ad allows editing:
-   - `approval_status = 'pending'` AND `payment_status = 'pending'` (draft or content_uploaded), OR
-   - `approval_status = 'rejected'` (rejected — for resubmission).
-5. **Update Content Fields:** Apply partial updates for provided fields (`title`, `content`, `image`, `linkUrl`, `announcementMessage`).
-6. **Audit Log:** `AD_UPDATED` event — `shopId`, `adId`, `merchantId`, changes, timestamp. Retention: 90 days.
-7. **Return:** `AdvertisementResponseDto`.
-
-### 2.6 deleteAd(id, merchantId)
-
-**Endpoint:** `DELETE /ads/:id`
-
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Resolve Merchant:** Look up merchant profile, resolve shop.
-3. **Ownership Check:** Verify `shop_id` matches. Throw `ForbiddenException` if mismatch.
-4. **State Check:** Verify ad allows deletion:
-   - `approval_status = 'pending'` AND `payment_status = 'pending'` (draft or content_uploaded), OR
-   - `is_active = false` (inactive).
-5. **Soft Delete:**
-   ```sql
-   UPDATE advertisements SET is_active = false WHERE id = <id>;
-   ```
-   Record retained for history (BR-AD-012).
-6. **Invalidate Cache:** If ad was previously active (`approval_status = 'approved' AND payment_status = 'completed'`), invalidate `DEL cache:ads:active`.
-7. **Audit Log:** `AD_DELETED` event — `shopId`, `adId`, `merchantId`, timestamp. Retention: 90 days.
-8. **Return:** Success message (200 OK).
-
-### 2.7 toggleActive(id, dto, merchantId)
-
-**Endpoint:** `PATCH /ads/:id/toggle`
-
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Resolve Merchant:** Look up merchant profile, resolve shop.
-3. **Ownership Check:** Verify `shop_id` matches. Throw `ForbiddenException` if mismatch.
-4. **State Check:** Verify ad is `approval_status = 'approved'` AND `payment_status = 'completed'`. Throw `BadRequestException` if not.
-5. **Update Toggle:**
-   ```sql
-   UPDATE advertisements SET is_active = <isActive> WHERE id = <id>;
-   ```
-6. **Invalidate Cache:** `DEL cache:ads:active`.
-7. **Audit Log:** `AD_TOGGLED` event — `shopId`, `adId`, `merchantId`, `oldIsActive`, `newIsActive`, timestamp. Retention: 90 days.
-8. **Return:** `AdvertisementResponseDto`.
-
-### 2.8 listActiveAds()
-
-**Endpoint:** `GET /ads/active` (Public)
-
-1. **No Auth Required:** `@Public()` decorator.
-2. **Check Cache:** `GET cache:ads:active`.
-3. **On Cache Hit:** Parse JSON, return `ActiveAdvertisementResponseDto[]`.
-4. **On Cache Miss:**
-   ```sql
-   SELECT * FROM advertisements
-   WHERE is_active = true
-     AND approval_status = 'approved'
-     AND payment_status = 'completed'
-     AND starts_at <= NOW()
-     AND expires_at >= NOW()
-   ORDER BY created_at DESC;
-   ```
-5. **Seed Cache:** `SET cache:ads:active <json> EX 300` (5 min TTL).
-6. **Return:** Active ads subset (id, shopId, title, content, announcementMessage, imageUrl, linkUrl, startsAt, expiresAt).
-7. **Client-Side Display Rules:** Slider cap 5 per rotation, tier priority Premium > Standard > Basic (client-side when package context available), round-robin within tier, auto-rotation every 5 seconds.
-
-### 2.9 listPackages()
-
-**Endpoint:** `GET /ads/packages`
-
-1. **Validate Auth:** Merchant or Admin role.
-2. **Check Cache:** `GET cache:ads:packages`.
-3. **On Cache Hit:** Return cached data.
-4. **On Cache Miss:**
-   ```sql
-   SELECT * FROM ad_fee_settings
-   WHERE is_active = true
-   ORDER BY placement ASC, tier ASC;
-   ```
-5. **Group by Placement:** For each placement, expose tier options with `dailyRate`, `durationDays`, `maxAds`.
-6. **Compute Total Fee:** `totalFee = dailyRate * durationDays` for each package.
-7. **Seed Cache:** `SET cache:ads:packages <json> EX 600` (10 min TTL).
-8. **Return:** `AdPackageResponseDto[]`.
+### 2.10 Helpers (merchant)
+- `getShop(userId)`: finds shop by userId; `404 Shop not found`.
+- `getOwnedAd(id,userId)`: gets shop, finds ad by id (include feeSetting); ownership check; if no feeSetting → `409 'Advertisement package is unavailable'`; returns ad.
+- `getSchedule(startsAtValue, durationDays, minDaysFromToday=3)`: parse startsAt; build minDate UTC midnight + minDaysFromToday; validate ≥ minDate → else `400 'Start date must be at least 3 days from today'`; compute expiresAt = startsAt + durationDays (UTC); if `expiresAt <= startsAt` → `409 AD_SCHEDULE_INVALID`.
+- `resolveProductImage(imageUrl,userId)`: find merchant; `product.findFirst({ where:{merchantId, images:{has:imageUrl}}, select:{id,sku} })`; if none → `400 'Advertisement image must be selected from your products'`; return `{imageUrl, sku}`.
+- `getIsoWeek(date: Date)`: ISO week calculation (UTC).
+- `toResponse(ad)`: maps ad (with feeSetting, shop) to API shape (dates ISO strings, amounts toFixed(2), package nested).
+- `toActiveResponse(ad)`: maps active ad subset (includes `tier`).
+- `audit(userId, action, entityId, value)`: creates `auditLog` with `entityType='Advertisement'`, `newValue=JSON.stringify(value)`.
+- `notifyAdminsOfNewSubmission(ad, isResubmission)`: finds admins (`roleCode in ['admin','super_admin']`), finds shop name; builds title/message; `notification.createMany` (best-effort, logs on error).
 
 ---
 
-## 3. Core Service Methods — Admin
+## 3. Admin Service Methods (`AdminAdManagementService`)
 
-### 3.1 listPendingAds(query)
+### 3.1 listAds(query)
+- **Filters:** `status` → `approvalStatus`; `placement`/`tier` applied via `feeSetting` relation (if both set, applied together correctly); `shop` → shop name contains (case-insensitive); `dateFrom/dateTo` → `createdAt` range (end of day for dateTo). Adds `AND NOT { paymentStatus: 'pending' }` (excludes drafts). Paginate by createdAt desc, include `feeSetting`, `shop{id,name}`. Return paginated mapped results.
 
-**Endpoint:** `GET /admin/ads?approvalStatus=pending`
+### 3.2 viewAdDetail(id)
+- **Find ad** with feeSetting, shop, `adPayments` ordered desc. If not found → `404 Advertisement not found`. Build `feeInfo` (dailyRate/durationDays/totalFee). Build `paymentInfo` from latest payment. Return extended DTO with `analytics = { impressions:0, clicks:0, ctr:0 }`.
 
-1. **Validate Auth:** Admin role required.
-2. **Build Prisma WHERE:**
-   ```typescript
-   const where = {
-     approvalStatus: 'pending',
-     paymentStatus: 'completed',
-   };
-   ```
-3. **Apply Pagination:** Order by `createdAt ASC` (oldest first). Use index `idx_advertisements_approval_status` + `idx_advertisements_payment_status`.
-4. **Include Relations:** Join `shops` for shop name.
-5. **Return:** `PaginatedAdsResponseDto`.
+### 3.3 approveAd(id, adminId)
+- **State:** `assertPending(ad.approvalStatus)` → `400 'Only pending advertisements can be processed'` if not pending.
+- **Transaction:**
+  1. Update ad: `approvalStatus=APPROVED`, `approvedBy=adminId`, `approvedAt=now`.
+  2. Notify merchant: create notification `AD_APPROVED` for `ad.shop.userId` (title "Advertisement Approved", message includes title).
+  3. Audit: `AD_APPROVED`, `entityType='Advertisement'`, `newValue={ shopId, approvalStatus }`.
+- **Post-tx:** `redis.del(ACTIVE_ADS_CACHE_KEY)`. Return DTO with `approvalStatus=APPROVED`.
 
-### 3.2 approveAd(id, adminId)
+### 3.4 rejectAd(id, dto, adminId)
+- **State:** `assertPending`.
+- **Transaction:**
+  1. Find completed payments for ad. For each, update to `REFUNDED` with `refundAmount=amount`, `refundReason=dto.rejection_reason`, `refundedAt=now`. Track totalRefund.
+  2. Update ad: `approvalStatus=REJECTED`, `approvedBy`, `approvedAt`, `rejectionReason`; `paymentStatus = REFUNDED` only if completed payments existed, else keep original.
+  3. Notify merchant `AD_REJECTED` with reason.
+  4. Audit `AD_REJECTED` with `{ shopId, approvalStatus, rejectionReason, refundAmount: totalRefund.toFixed(2) }`.
+- **Post-tx:** invalidate cache. Return DTO.
 
-**Endpoint:** `PATCH /admin/ads/:id/approve`
+### 3.5 bulkApproveAds(dto, adminId)
+- **Find all** ads by IDs (include shop.userId, title, approvalStatus). `assertAllPending` checks every requested ID exists and is pending; if any invalid → `400` listing invalid IDs.
+- **Transaction:** `updateMany` to set approved for all IDs.
+- **Post-tx (best-effort):** For each found ad, notify and audit `AD_APPROVED`. Count failures. Audit bulk action `BULK_AD_APPROVED` with adIds/count. Invalidate cache. Return results.
 
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Validate Auth:** Admin role required.
-3. **Find Advertisement:** Verify `approval_status = 'pending'`. If already approved/rejected, throw `BadRequestException`.
-4. **Weekly Limit Check (BR-AD-046):**
-   ```sql
-   SELECT COUNT(*) FROM advertisements
-   WHERE shop_id = <shop_id>
-     AND approval_status = 'approved'
-     AND week_number = <week_number>;
-   ```
-   - `week_number` is derived from the ad's `starts_at`.
-   - If count >= 5 (`AD_WEEKLY_LIMIT`), throw `ConflictException('WEEKLY_LIMIT_REACHED')`.
-5. **Approve (Transaction):**
-   ```sql
-   UPDATE advertisements SET
-     approval_status = 'approved',
-     approved_by = <admin_id>,
-     approved_at = NOW()
-   WHERE id = <id>;
-   ```
-6. **Invalidate Cache:** `DEL cache:ads:active`.
-7. **Audit Log:** `AD_APPROVED` event — `shopId`, `adId`, `adminId`, timestamp. Retention: 2 years (Development Rules §6.4).
-8. **Notify Merchant:** Notification + ad becomes displayable (cache refresh <= 5 min).
-9. **Return:** `AdvertisementResponseDto`.
+### 3.6 bulkRejectAds(dto, adminId)
+- **Find all pending** as above. Transaction updates all to rejected with shared reason. Post-tx: for each, call `refundAd(ad.id, dto.rejection_reason)` (returns refundStatus/amount), notify merchant, audit `AD_REJECTED`. Count failures. Audit `BULK_AD_REJECTED`. Invalidate cache. Return with refundsProcessed/refundsFailed.
 
-### 3.3 rejectAd(id, dto, adminId)
+### 3.7 refundAd(adId, reason)
+- **Find latest completed payment** (`orderBy createdAt desc`). If exists, update payment to REFUNDED with refundAmount, refundReason, refundedAt; update ad `paymentStatus=REFUNDED`. Return processed with refundAmount (or '0.00'). On error, log and return failed.
 
-**Endpoint:** `PATCH /admin/ads/:id/reject`
+### 3.8 Fee Settings
+- **listFeeSettings:** all ordered by placement asc, tier asc; map to response (includes totalFee).
+- **createFeeSetting:** find existing by `(placement,tier)` unique. If exists and active → `409 'An active fee setting already exists...'`. If exists and inactive → update to set fields + `isActive=true` (reuse). Else create new. In transaction create `ad_fee_history` with old values (null if new) and new values; audit `FEE_CREATED` with `reactivated` flag. After tx, notify all merchants (`roleCode='merchant'`) with `NEW_ADS_PACKAGE` (best-effort). Invalidate packages cache.
+- **updateFeeSetting:** find existing; in tx update dailyRate/durationDays/maxAds, create history with old/new, audit `FEE_UPDATED` including old/new objects. If active, notify active merchants (`isActive=true`) with `ADS_PACKAGE_UPDATED` (best-effort). Invalidate cache.
+- **deactivateFeeSetting:** if not found → `404`; if already inactive → `409 'Fee setting is already inactive'`. In tx set inactive, create history with old=current and new=current (snapshot) and reason; audit `FEE_DEACTIVATED`. Invalidate cache.
+- **reactivateFeeSetting:** if not found → `404`; if already active → `409 'Fee setting is already active'`. In tx set active, create history (snapshot), audit `FEE_REACTIVATED` (change_reason may be null). Invalidate cache.
 
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Validate Auth:** Admin role required.
-3. **Find Advertisement:** Verify `approval_status = 'pending'`. If already approved/rejected, throw `BadRequestException`.
-4. **Validate Reason:** `dto.reason` required, max 2000 chars.
-5. **Reject (Transaction):**
-   - Update advertisement:
-     ```sql
-     UPDATE advertisements SET
-       approval_status = 'rejected',
-       approved_by = <admin_id>,
-       approved_at = NOW(),
-       rejection_reason = <reason>
-     WHERE id = <id>;
-     ```
-   - Auto-refund payment:
-     ```sql
-     UPDATE ad_payments SET
-       payment_status = 'refunded',
-       refund_amount = amount,
-       refund_reason = <reason>,
-       refunded_at = NOW()
-     WHERE ad_id = <id>;
-     ```
-   - Update advertisement payment status:
-     ```sql
-     UPDATE advertisements SET
-       payment_status = 'refunded'
-     WHERE id = <id>;
-     ```
-6. **Invalidate Cache:** `DEL cache:ads:active`.
-7. **Audit Log:** `AD_REJECTED` event — `shopId`, `adId`, `adminId`, `reason`, `refundAmount`, timestamp. Retention: 2 years.
-8. **Notify Merchant:** Notification with `rejection_reason`; refund processed; merchant may edit and resubmit.
-9. **Return:** `AdvertisementResponseDto`.
+### 3.9 Fee History
+- **listFeeHistory:** build where with `setting` relation for placement/tier (combined, not overwritten). If `month` `YYYY-MM`, filter `createdAt` between month start and next month start (UTC). Paginate, include `setting` and `changedByAdmin{name,id}`. Map to response with `changedByName`, old/new as strings/nulls.
+- **deleteFeeHistory:** deduplicate IDs. If empty → `400 'At least one fee history record must be selected'`. Fetch rows; if missing count differs → `404` listing missing. Filter protected: rows with `createdAt >= currentMonthStartUtc()` → if any, `400 'Fee change history from the current month cannot be deleted'`. `deleteMany` by IDs. Audit `FEE_HISTORY_DELETED` with `deletedIds` (and entityId if single). Returns deletedCount/deletedIds.
 
-### 3.4 listAllAds(query)
+Helper: `currentMonthStartUtc()` returns first day of current UTC month.
 
-**Endpoint:** `GET /admin/ads`
+### 3.10 Revenue Analytics
+- **Input validation:** parse dates; if invalid → `400 Invalid date range`. If end < start → `400 dateTo must be on or after dateFrom`. Days diff > 365 → `400 Date range must not exceed 365 days`.
+- **Queries:**
+  - Raw SQL joins `advertisements ad` and `ad_fee_settings f` on `f.id = ad.fee_setting_id` where `ad.approval_status='approved' AND ad.approved_at >= start AND ad.approved_at <= endOfDay(dateTo)`. Apply placement/tier IN filters if provided. Returns rows with `payment_amount`, `placement`, `tier`, `approved_at`.
+  - Raw SQL aggregates refunds: `SUM(refund_amount)` and count from `ad_payments` where `payment_status='refunded' AND refunded_at >= start AND refunded_at <= endOfDay(dateTo)`.
+- **Aggregation:** compute totals (totalRevenue = sum of payment_amount; totalFeesCollected = totalRevenue; totalRefunds = refund sum; avgRevenuePerAd = totalRevenue/totalAdsApproved). Build maps by placement, tier, trend (by date `YYYY-MM-DD` from approved_at). Sort results. Return with `avgCtr=0` placeholders.
 
-1. **Validate Auth:** Admin role required.
-2. **Build Prisma WHERE:** Apply approvalStatus, paymentStatus filters.
-3. **Apply Pagination:** Order by `createdAt DESC`. Include `shops` relation.
-4. **Return:** `PaginatedAdsResponseDto`.
-
-### 3.5 listFeeSettings()
-
-**Endpoint:** `GET /admin/ad-fee-settings`
-
-1. **Validate Auth:** Admin role required.
-2. **Query:** `SELECT * FROM ad_fee_settings ORDER BY placement ASC, tier ASC;`
-3. **Return:** `AdminAdFeeSettingResponseDto[]`.
-
-### 3.6 createFeeSetting(dto, adminId)
-
-**Endpoint:** `POST /admin/ad-fee-settings`
-
-1. **Validate Auth:** Admin role required.
-2. **Validate DTO:** `CreateAdFeeSettingDto` — placement, tier, dailyRate, durationDays, maxAds.
-3. **Check Uniqueness:** Verify no active `ad_fee_settings` exists with same (`placement`, `tier`). If duplicate, throw `ConflictException('AD_PACKAGE_DUPLICATE')`.
-4. **Insert (Transaction):**
-   ```sql
-   INSERT INTO ad_fee_settings (
-     id, placement, tier, daily_rate, duration_days, max_ads, is_active, created_at
-   ) VALUES (
-     gen_random_uuid(), <placement>, <tier>, <dailyRate>, <durationDays>, <maxAds>, true, NOW()
-   );
-   ```
-5. **Invalidate Cache:** `DEL cache:ads:packages`.
-6. **Audit Log:** `AD_PACKAGE_CREATED` event — `settingId`, `placement`, `tier`, `dailyRate`, `durationDays`, `maxAds`, `adminId`, timestamp. Retention: 2 years.
-7. **Return:** `AdminAdFeeSettingResponseDto` (201 Created).
-
-### 3.7 updateFeeSetting(id, dto, adminId)
-
-**Endpoint:** `PATCH /admin/ad-fee-settings/:id`
-
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Validate Auth:** Admin role required.
-3. **Find Fee Setting:** If not found, throw `NotFoundException`.
-4. **Fetch Old Rate:** `SELECT daily_rate FROM ad_fee_settings WHERE id = <id>;`
-5. **Update (Transaction):**
-   ```sql
-   UPDATE ad_fee_settings SET
-     daily_rate = <newRate>,
-     updated_at = NOW()
-   WHERE id = <id>;
-   ```
-6. **Log Rate Change to `ad_fee_history`:**
-   ```sql
-   INSERT INTO ad_fee_history (
-     id, ad_fee_setting_id, old_daily_rate, new_daily_rate,
-     changed_by, changed_at
-   ) VALUES (
-     gen_random_uuid(), <id>, <oldRate>, <newRate>, <adminId>, NOW()
-   );
-   ```
-7. **Invalidate Cache:** `DEL cache:ads:packages`.
-8. **Audit Log:** `AD_FEE_UPDATED` event — `settingId`, `placement`, `tier`, `oldRate`, `newRate`, `adminId`, timestamp. Retention: 2 years.
-9. **Return:** `AdminAdFeeSettingResponseDto`.
-
-> Rate change applies only to packages selected after the change. Already-paid ads are unaffected (BR-AD-052).
-
-### 3.8 deactivateFeeSetting(id, adminId)
-
-**Endpoint:** `DELETE /admin/ad-fee-settings/:id`
-
-1. **Validate UUID:** `id` must be valid UUID format.
-2. **Validate Auth:** Admin role required.
-3. **Find Fee Setting:** If not found, throw `NotFoundException`.
-4. **Soft Deactivate:**
-   ```sql
-   UPDATE ad_fee_settings SET is_active = false WHERE id = <id>;
-   ```
-   Already-purchased advertisements are unaffected.
-5. **Invalidate Cache:** `DEL cache:ads:packages`.
-6. **Audit Log:** `AD_PACKAGE_DEACTIVATED` event — `settingId`, `placement`, `tier`, `adminId`, timestamp. Retention: 2 years.
-7. **Return:** `AdminAdFeeSettingResponseDto`.
+### 3.11 Export (AdminAdExportService)
+- **validateDateRange:** same range checks (≤365). Returns `{ start, end: endOfDay if YYYY-MM-DD }`.
+- **exportAdPerformance:** build where on `createdAt` range; apply placement/tier/status filters (status filters `approvalStatus`). Fetch ads with feeSetting, shop, latest completed payment. Map rows: Fee Paid/Revenue from `paymentAmount` or latest payment; Impressions/Clicks/CTR = 0. Build CSV, audit `EXPORT_GENERATED` with reportType `ad_performance`, rowCount, filters.
+- **exportSubmissionHistory:** fetch ads in range (include feeSetting, shop, approver, adPayments). Fetch `auditLog` events where `action in ['AD_APPROVED','AD_REJECTED']`, `entityType='Advertisement'`, entityId in adIds, createdAt in range (include user). Group by event; for each event produce row with status from action, reviewedBy from event.user.name, reviewedAt from event.createdAt, rejection reason only if rejected, fee paid from paymentAmount, refund amount only if rejected and refunded>0 (sum of refunded payment amounts). Fallback for ads with no review events in period. Audit export.
+- **exportFeeHistory:** fetch `ad_fee_history` in createdAt range with setting and changedByAdmin; map old/new (empty string if null old). CSV with headers as specified. Audit export.
+- **CSV helpers:** quote cells containing comma/quote/newline; double quotes inside.
 
 ---
 
-## 4. State Transition Rules
+## 4. State Transitions
 
-### 4.1 Application-Level State Derivation
+Application states derived from `approvalStatus`, `paymentStatus`, `isActive`, `startsAt`, `expiresAt`, content presence:
 
-The database stores `approval_status`, `payment_status`, `is_active`, `starts_at`, and `expires_at`. Application-level display states are derived:
+| State | Conditions |
+|---|---|
+| DRAFT | `approvalStatus='pending'`, `paymentStatus='pending'`, no meaningful content (title/announcement/image typically empty) |
+| CONTENT_READY | `approvalStatus='pending'`, `paymentStatus='pending'`, content+schedule present (title, announcementMessage, imageUrl, startsAt, expiresAt set) |
+| PENDING_APPROVAL | `approvalStatus='pending'`, `paymentStatus='completed'` (paid, awaiting admin) |
+| APPROVED | `approvalStatus='approved'`, `paymentStatus='completed'`, `isActive` true/false as set, `startsAt > now` (scheduled) or current depending on time |
+| REJECTED | `approvalStatus='rejected'` |
+| SCHEDULED | `approvalStatus='approved'`, `paymentStatus='completed'`, `isActive=true`, `startsAt > now` |
+| ACTIVE | `approvalStatus='approved'`, `paymentStatus='completed'`, `isActive=true`, `startsAt <= now <= expiresAt` |
+| INACTIVE | `approvalStatus='approved'`, `paymentStatus='completed'`, `isActive=false` (merchant toggled) |
+| EXPIRED | `expiresAt < now` |
 
-```typescript
-function deriveAdDisplayState(ad: AdvertisementRecord): AdDisplayState {
-  // Rejected
-  if (ad.approval_status === 'rejected') return 'rejected';
+Valid transitions (key):
+- selectPackage → DRAFT
+- uploadContent (with valid content+schedule) → CONTENT_READY
+- payFee → PENDING_APPROVAL
+- approveAd → APPROVED/SCHEDULED/ACTIVE by schedule
+- rejectAd → REJECTED
+- updateContent on REJECTED → can resubmit via payFee back to PENDING_APPROVAL
+- toggleActive on APPROVED+completed → INACTIVE/ACTIVE (if in schedule)
+- time passes → SCHEDULED→ACTIVE→EXPIRED
 
-  // Inactive (merchant toggled off)
-  if (!ad.is_active) return 'inactive';
-
-  // Expired
-  if (ad.expires_at && ad.expires_at < new Date()) return 'expired';
-
-  // Pending approval — paid, awaiting admin
-  if (ad.approval_status === 'pending' && ad.payment_status === 'completed') {
-    return 'pending_approval';
-  }
-
-  // Approved, not yet in schedule
-  if (ad.approval_status === 'approved' && ad.paymentStatus === 'completed') {
-    if (ad.starts_at && ad.starts_at > new Date()) return 'approved';
-    return 'active';
-  }
-
-  // Pending — with content (content_uploaded)
-  if (ad.approval_status === 'pending' && ad.payment_status === 'pending') {
-    if (ad.title || ad.content || ad.image_url) return 'content_uploaded';
-    return 'draft';
-  }
-
-  return 'draft';
-}
-```
-
-### 4.2 Valid State Transitions
-
-| Transition | From State | To State | Trigger | Guard |
-|------------|-----------|----------|---------|-------|
-| TR-AD-01 | — | draft | `selectPackage` | Valid active package, shop approved |
-| TR-AD-02 | draft | content_uploaded | `uploadContent` | Content fields validated |
-| TR-AD-03 | content_uploaded | pending_approval | `payFee` | Payment succeeds |
-| TR-AD-04 | pending_approval | active (approved) | `approveAd` | Weekly limit <= 5 |
-| TR-AD-05 | pending_approval | rejected | `rejectAd` | Reason provided, auto-refund |
-| TR-AD-06 | rejected | draft | `updateContent` + `payFee` | Content updated + fresh payment |
-| TR-AD-07 | active | inactive | `toggleActive` | Merchant owns ad |
-| TR-AD-08 | inactive | active | `toggleActive` | Merchant owns ad, in schedule |
-| TR-AD-09 | content_uploaded | deleted | `deleteAd` | Merchant owns ad |
-| TR-AD-10 | draft | deleted | `deleteAd` | Merchant owns ad |
-| TR-AD-11 | active | expired | time | `expires_at < now` (system check) |
+Delete rules: hard delete if expired OR paymentStatus==='pending'; else soft delete (set isActive=false) for paid non-expired. Cannot delete active approved non-expired.
 
 ---
 
-## 5. Validation Rules
+## 5. Validation Rules (Summary)
 
-### 5.1 Backend Validation Summary
-
-| Endpoint | Field | Rule | Error |
-|----------|-------|------|-------|
-| `POST /ads/packages/:feeSettingId/select` | `feeSettingId` | Valid UUID, active `ad_fee_settings` | `400 AD_PACKAGE_INVALID` / `404 NOT_FOUND` |
-| `POST /ads/packages/:feeSettingId/select` | Shop | `is_approved = true` | `403 SHOP_NOT_APPROVED` |
-| `PATCH /ads/:id/content` | `title` | Required, 1–200 chars | `400 BAD_REQUEST` |
-| `PATCH /ads/:id/content` | `announcementMessage` | Required, max 500 chars | `400 BAD_REQUEST` |
-| `PATCH /ads/:id/content` | `content` | Optional, max 5000 chars | `400 BAD_REQUEST` |
-| `PATCH /ads/:id/content` | `linkUrl` | Optional, valid URL, max 2048 chars | `400 BAD_REQUEST` |
-| `PATCH /ads/:id/content` | `startsAt` | Required, >= today | `400 BAD_REQUEST` |
-| `PATCH /ads/:id/content` | Image | MIME: JPG/PNG/WebP, <= 5MB | `415` / `413` |
-| `PATCH /ads/:id/content` | Schedule | `expiresAt > startsAt` | `409 CONFLICT` |
-| `POST /ads/:id/pay` | Ad state | Content uploaded, `payment_status = 'pending'` | `400 BAD_REQUEST` |
-| `PATCH /admin/ads/:id/approve` | Weekly limit | <= 5 active ads per week | `409 WEEKLY_LIMIT_REACHED` |
-| `PATCH /admin/ads/:id/reject` | `reason` | Required, max 2000 chars | `400 BAD_REQUEST` |
-| `POST /admin/ad-fee-settings` | `placement`, `tier` | Unique active combination | `409 CONFLICT` |
-| `POST /admin/ad-fee-settings` | `durationDays` | 7–30 | `400 BAD_REQUEST` |
-| `POST /admin/ad-fee-settings` | `maxAds` | >= 1 | `400 BAD_REQUEST` |
-| `POST /admin/ad-fee-settings` | `dailyRate` | >= 0, <= 10000 | `400 BAD_REQUEST` |
-
-### 5.2 Database-Level Constraints
-
-| Constraint | Table | Rule |
-|------------|-------|------|
-| `chk_advertisements_dates` | `advertisements` | `expires_at > starts_at` |
-| `chk_advertisements_approval_status` | `advertisements` | `approval_status IN ('pending', 'approved', 'rejected')` |
-| `chk_advertisements_payment_status` | `advertisements` | `payment_status IN ('pending', 'completed', 'refunded')` |
-| `chk_ad_fee_settings_duration` | `ad_fee_settings` | `duration_days >= 7 AND duration_days <= 30` |
-| `chk_ad_fee_settings_rate` | `ad_fee_settings` | `daily_rate >= 0` |
-| `uq_ad_fee_settings_placement_tier` | `ad_fee_settings` | Unique (`placement`, `tier`) where `is_active = true` |
+| Check | Location | Rule | Error |
+|---|---|---|---|
+| Shop approved | selectPackage | `shop.isApproved` true | `403 SHOP_NOT_APPROVED` |
+| Package valid | selectPackage | active + has effectiveFrom <= now | `404 AD_PACKAGE_INVALID` |
+| Image ownership | upload/update | imageUrl in merchant's product images | `400 Advertisement image must be selected from your products` |
+| Start date lead time | upload/update (if startsAt provided) | `startsAt >= today UTC 00:00 + 3 days` | `400 Start date must be at least 3 days from today` |
+| Schedule ordering | getSchedule | `expiresAt > startsAt` | `409 AD_SCHEDULE_INVALID` |
+| Editable state | updateContent | rejected OR (pending+unpaid) | `400 Advertisement cannot be edited` |
+| Pay preconditions | payFee | content+schedule present; approvalStatus in {pending,rejected}, paymentStatus in {pending,refunded} | `400 Advertisement content and schedule are required` |
+| Delete guard | deleteAd | cannot delete active approved non-expired | `400 Active approved advertisements cannot be deleted` |
+| Toggle guard | toggleActive | approved AND completed | `400 Only approved and paid advertisements can be toggled` |
+| Admin pending | approve/reject/bulk | approvalStatus === 'pending' | `400 Only pending advertisements can be processed` |
+| Fee history current month | deleteFeeHistory | createdAt >= current UTC month start → protected | `400 Fee change history from the current month cannot be deleted` |
+| Fee history missing | deleteFeeHistory | all IDs must exist | `404` listing missing |
+| Fee setting active conflict | create | (placement,tier) active exists | `409 ...already exists for this placement and tier` |
+| Fee setting state conflicts | deactivate/reactivate | already inactive/active | `409` |
+| Analytics range | getRevenueAnalytics | ≤365 days, end>=start, valid dates | `400` |
+| Bulk size | bulk ops/delete history | 1–50 IDs | validated by DTOs |
 
 ---
 
-## 6. Cache Management
+## 6. Cache & Audit
 
-### 6.1 Active Ads Cache
+**Cache:**
+- `cache:ads:active` TTL 300s: invalidated on uploadContent, payFee, updateContent, deleteAd, toggleActive, approveAd, rejectAd, bulkApproveAds, bulkRejectAds.
+- `cache:ads:packages` TTL 600s: invalidated on selectPackage? (select creates draft; implementation does not explicitly del packages on select, only on fee-setting mutations and maybe not necessary). Explicit invalidations: createFeeSetting, updateFeeSetting, deactivateFeeSetting, reactivateFeeSetting. (Packages list is read-through.)
 
-| Attribute | Value |
-|-----------|-------|
-| **Key** | `cache:ads:active` |
-| **TTL** | 5 minutes (300 seconds) |
-| **Data** | JSON array of `ActiveAdvertisementResponseDto` |
-| **Populated On** | `GET /ads/active` (cache miss) |
-| **Invalidated On** | Content upload, payment, admin approve/reject, merchant edit/toggle/delete, admin package changes |
-
-### 6.2 Package Catalog Cache
-
-| Attribute | Value |
-|-----------|-------|
-| **Key** | `cache:ads:packages` |
-| **TTL** | 10 minutes (600 seconds) |
-| **Data** | JSON array of grouped `AdPackageResponseDto` |
-| **Populated On** | `GET /ads/packages` (cache miss) |
-| **Invalidated On** | Admin package create/update/deactivate |
-
-### 6.3 Cache Invalidation Pattern
-
-```typescript
-async function invalidateAdCaches(): Promise<void> {
-  await this.redis.del('cache:ads:active');
-  await this.redis.del('cache:ads:packages');
-}
-
-async function invalidatePackageCache(): Promise<void> {
-  await this.redis.del('cache:ads:packages');
-}
-```
+**Audit:**
+- Merchant: `AD_SELECTED`, `AD_CONTENT_UPLOADED`, `AD_PAID`, `AD_UPDATED`, `AD_DELETED`, `AD_TOGGLED` with `entityType='Advertisement'`, `newValue` stored as JSON string (merchant service). Includes relevant context (shopId, etc.)
+- Admin: `AD_APPROVED`, `AD_REJECTED`, `BULK_AD_APPROVED`, `BULK_AD_REJECTED`, `FEE_CREATED`, `FEE_UPDATED`, `FEE_DEACTIVATED`, `FEE_REACTIVATED`, `FEE_HISTORY_DELETED`, `EXPORT_GENERATED`. Admin stores `oldValue/newValue` as Prisma JSON (objects). `EXPORT_GENERATED` includes reportType, format, rowCount, filters.
 
 ---
 
-## 7. Weekly Ad Limit
+## 7. Notes on Non-Implemented Items
 
-### 7.1 Rule Definition
-
-- **Maximum:** 5 approved, paid, active advertisements per week per merchant.
-- **Week Definition:** Monday 00:00 to Sunday 23:59 (UTC); ISO week number.
-- **Validation Timing:** Checked at approval time (`approveAd`).
-- **DB Query:**
-  ```sql
-  SELECT COUNT(*) FROM advertisements
-  WHERE shop_id = <shop_id>
-    AND approval_status = 'approved'
-    AND payment_status = 'completed'
-    AND week_number = <target_week_number>;
-  ```
-- **Error:** `409 WEEKLY_LIMIT_REACHED` when count >= 5.
-
-### 7.2 Week Number Derivation
-
-```typescript
-function getWeekNumber(date: Date): number {
-  // ISO week number
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
-```
-
-Stored in `advertisements.week_number` at payment time for efficient querying.
+- **Weekly limit:** Not enforced. `weekNumber` computed at payment but `approveAd` has no count check against 5/week. Bulk approve also has no weekly limit validation.
+- **Image upload:** No multipart; `imageUrl` must be from merchant's own product images. No file storage in ad module.
+- **Link/URL field:** No `linkUrl`/navigation target stored on ads (merchant DTOs do not include it; storefront uses `sku` to navigate to `/buyer/products/:sku` via `AdBannerSlider`).
+- **Max ads per package:** `max_ads` exists in fee settings and is returned, but enforcement (preventing selection beyond maxAds) is not implemented in code shown.
 
 ---
 
-## 8. Fee Resolution
+## 8. Cross-References
 
-### 8.1 Fee Calculation
-
-```
-totalFee = daily_rate × duration_days
-```
-
-- `daily_rate` and `duration_days` resolved from the selected `ad_fee_settings` package at package selection time.
-- `payment_amount` is a snapshot stored at payment time — subsequent rate changes do not affect already-paid ads (BR-AD-052).
-
-### 8.2 Fee Resolution Flow
-
-1. Merchant selects package → `feeSettingId` resolves to `ad_fee_settings` record.
-2. Package selection stores a reference to the fee setting.
-3. Content upload resolves fee from the package: `dailyRate * durationDays`.
-4. Payment records `payment_amount = totalFee` in both `advertisements` and `ad_payments`.
-
----
-
-## 9. Audit Logging
-
-### 9.1 Event Types and Retention
-
-| Event | Data Logged | Retention |
-|-------|-------------|-----------|
-| `AD_SELECTED` | shopId, adId, feeSettingId, merchantId, placement, tier, timestamp | 90 days |
-| `AD_CONTENT_UPLOADED` | shopId, adId, merchantId, title, hasImage, timestamp | 90 days |
-| `AD_PAID` | shopId, adId, amount, reference, timestamp | 90 days |
-| `AD_UPDATED` | shopId, adId, merchantId, changes, timestamp | 90 days |
-| `AD_DELETED` | shopId, adId, merchantId, timestamp | 90 days |
-| `AD_TOGGLED` | shopId, adId, merchantId, oldIsActive, newIsActive, timestamp | 90 days |
-| `AD_APPROVED` | shopId, adId, adminId, timestamp | 2 years |
-| `AD_REJECTED` | shopId, adId, adminId, reason, refund amount, timestamp | 2 years |
-| `AD_PACKAGE_CREATED` | settingId, placement, tier, daily rate, duration, max ads, adminId, timestamp | 2 years |
-| `AD_PACKAGE_DEACTIVATED` | settingId, placement, tier, adminId, timestamp | 2 years |
-| `AD_FEE_UPDATED` | settingId, placement, tier, old rate, new rate, adminId, timestamp | 2 years |
-
-> Merchant-side events: 90-day retention. Admin approval/rejection/fee-change events: 2-year retention per Development Rules §6.4.
-
----
-
-## 10. Ownership Enforcement
-
-### 10.1 Merchant Ownership Check
-
-All merchant endpoints (`PATCH /ads/:id`, `DELETE /ads/:id`, `PATCH /ads/:id/toggle`, `PATCH /ads/:id/content`, `POST /ads/:id/pay`) enforce:
-
-```typescript
-const ad = await this.prisma.advertisement.findUnique({ where: { id } });
-if (!ad) throw new NotFoundException();
-
-const merchantProfile = await this.resolveMerchant(userId);
-const shop = await this.prisma.shop.findUnique({ where: { merchantId: merchantProfile.id } });
-
-if (ad.shopId !== shop.id) {
-  throw new ForbiddenException('You do not have permission to manage this advertisement');
-}
-```
-
-### 10.2 Admin Authorization
-
-Admin endpoints require `admin` role via `@Roles('admin')` guard. Admins have full access to all advertisements and package management.
-
-### 10.3 Pending Merchant Restrictions
-
-Merchants with `license_status` of `'pending'` or `'rejected'`:
-- Can browse package catalog (read-only).
-- Can view their own ad list (read-only).
-- **Cannot** select packages, upload content, pay, edit, toggle, or delete.
-- Frontend disables Select button; backend returns `403 SHOP_NOT_APPROVED`.
-
----
+| Related Document | Purpose |
+|------------------|---------|
+| [DD_Advertisement_Management_01_MODULE_OVERVIEW.md](./DD_Advertisement_Management_01_MODULE_OVERVIEW.md) | Module overview |
+| [DD_Advertisement_Management_03_API_ENDPOINTS.md](./DD_Advertisement_Management_03_API_ENDPOINTS.md) | API endpoints |
+| [DD_Advertisement_Management_04_DTOS_AND_TYPES.md](./DD_Advertisement_Management_04_DTOS_AND_TYPES.md) | DTOs/types |
+| [DD_Advertisement_Management_06_TEST_SPEC.md](./DD_Advertisement_Management_06_TEST_SPEC.md) | Test specification |
 
 *End of Business Logic (Advertisement Management)*

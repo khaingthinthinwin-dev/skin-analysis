@@ -3,15 +3,473 @@
   "specFiles": [
     "e2e/tests/Wishlist_Cart/wishlist-cart.spec.ts"
   ],
+  "format": "pcl-id-keyed",
   "mappings": {
-    "should display wishlist page": "E2E-WISH-01: Wishlist page loads",
-    "should display wishlist items": "E2E-WISH-02: Wishlist items display",
-    "should remove item from wishlist": "E2E-WISH-03: Remove from wishlist works",
-    "should display cart page": "E2E-CART-01: Cart page loads",
-    "should display cart items with correct total": "E2E-CART-02: Cart items and total display correctly",
-    "should update cart quantity": "E2E-CART-03: Quantity update works",
-    "should remove item from cart": "E2E-CART-04: Remove from cart works",
-    "should proceed to checkout from cart": "E2E-CART-05: Checkout redirect works",
-    "should show login prompt for guest users": "E2E-CART-06: Guest login prompt displays"
+    "N-01": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display wishlist items"
+      }
+    ],
+    "N-02": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should add product to wishlist from product detail page"
+      }
+    ],
+    "N-03": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should remove item from wishlist"
+      }
+    ],
+    "N-04": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should move an in-stock wishlist item to cart"
+      }
+    ],
+    "N-05": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display cart items with correct total"
+      }
+    ],
+    "N-06": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should update cart quantity"
+      }
+    ],
+    "N-07": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should decrease cart quantity with minus stepper"
+      }
+    ],
+    "N-08": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should update cart quantity via direct input"
+      }
+    ],
+    "N-09": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should remove item from cart"
+      }
+    ],
+    "N-10": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should proceed to checkout from cart"
+      }
+    ],
+    "N-11": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should navigate to product detail page from wishlist card"
+      }
+    ],
+    "N-12": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display cart items with correct total"
+      }
+    ],
+    "N-13": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should toggle language on wishlist and cart pages"
+      }
+    ],
+    "N-14": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should toggle theme on wishlist and cart pages"
+      }
+    ],
+    "N-15": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display responsive layout on desktop viewport"
+      }
+    ],
+    "N-16": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display responsive layout on mobile viewport"
+      }
+    ],
+    "N-17": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should clear all wishlist items and restore them"
+      }
+    ],
+    "N-18": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should clear all cart items and restore them"
+      }
+    ],
+    "N-19": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should update all wishlist labels in Japanese"
+      }
+    ],
+    "N-20": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should update all cart labels in Japanese"
+      }
+    ],
+    "N-21": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should update all wishlist labels in Myanmar"
+      }
+    ],
+    "N-22": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should update all cart labels in Myanmar"
+      }
+    ],
+    "N-23": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should toggle language on wishlist and cart pages"
+      },
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should reject adding duplicate product to wishlist"
+      }
+    ],
+    "N-24": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display wishlist items"
+      }
+    ],
+    "N-25": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display wishlist items"
+      },
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display cart items with correct total"
+      }
+    ],
+    "N-26": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should toggle language on wishlist and cart pages"
+      }
+    ],
+    "N-27": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should toggle language on wishlist and cart pages"
+      }
+    ],
+    "A-01": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should reject adding duplicate product to wishlist"
+      }
+    ],
+    "A-02": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should redirect guest user attempting to add to wishlist"
+      }
+    ],
+    "A-03": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should redirect guest user attempting to add to cart"
+      }
+    ],
+    "A-04": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should block non-buyer user from wishlist and cart routes"
+      }
+    ],
+    "A-05": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should redirect unauthenticated users from wishlist to login"
+      }
+    ],
+    "A-06": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should block cart quantity zero or negative"
+      }
+    ],
+    "A-07": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock"
+      }
+    ],
+    "A-08": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should disable add button for out-of-stock wishlist item"
+      }
+    ],
+    "A-09": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/cart/items returns 400 for out-of-stock product"
+      }
+    ],
+    "A-10": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "non-existent wishlist or cart resource returns 404"
+      }
+    ],
+    "A-11": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values"
+      }
+    ],
+    "A-12": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should reject moving wishlist item already in cart"
+      }
+    ],
+    "A-13": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should reject adding duplicate product to cart"
+      }
+    ],
+    "A-14": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "wishlist and cart endpoints return 403 for non-buyer roles"
+      }
+    ],
+    "A-15": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should toggle language on wishlist and cart pages"
+      },
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should reject adding duplicate product to wishlist"
+      }
+    ],
+    "B-01": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should accept minimum cart quantity of 1 and disable minus button"
+      }
+    ],
+    "B-02": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should update cart quantity"
+      }
+    ],
+    "B-03": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values"
+      }
+    ],
+    "B-04": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/wishlist/:productId returns 409 for duplicate"
+      }
+    ],
+    "B-05": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display cart items with correct total"
+      }
+    ],
+    "B-06": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display cart items with correct total"
+      },
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should proceed to checkout from cart"
+      }
+    ],
+    "B-07": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display empty state when wishlist has no items"
+      }
+    ],
+    "B-08": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should display empty state when cart has no items"
+      }
+    ],
+    "B-09": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should have no horizontal scroll at 320px viewport"
+      }
+    ],
+    "B-10": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "should have no horizontal scroll at 320px viewport"
+      }
+    ],
+    "I-01": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "GET /api/v1/wishlist returns 200 with saved products"
+      }
+    ],
+    "I-02": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/wishlist/:productId returns 201 with created item"
+      }
+    ],
+    "I-03": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/wishlist/:productId returns 409 for duplicate"
+      }
+    ],
+    "I-04": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "DELETE /api/v1/wishlist/:productId returns 204"
+      }
+    ],
+    "I-05": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "DELETE /api/v1/wishlist returns 200 and clears all items"
+      }
+    ],
+    "I-06": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/wishlist/:productId/move-to-cart returns 200 with cart item"
+      }
+    ],
+    "I-07": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/wishlist/:productId/move-to-cart returns 400 for out-of-stock"
+      }
+    ],
+    "I-08": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/wishlist/:productId/move-to-cart returns 409 when already in cart"
+      }
+    ],
+    "I-09": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "GET /api/v1/cart returns 200 with items and summary"
+      }
+    ],
+    "I-10": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/cart/items returns 201 with created cart item"
+      }
+    ],
+    "I-11": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/cart/items returns 400 for out-of-stock product"
+      }
+    ],
+    "I-12": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "POST /api/v1/cart/items returns 409 for duplicate product"
+      }
+    ],
+    "I-13": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "PATCH /api/v1/cart/items/:id returns 200 with recomputed totals"
+      }
+    ],
+    "I-14": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock"
+      }
+    ],
+    "I-15": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values"
+      }
+    ],
+    "I-16": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "DELETE /api/v1/cart/items/:id returns 204 and removes item"
+      }
+    ],
+    "I-17": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "DELETE /api/v1/cart/items returns 200 and clears all items"
+      }
+    ],
+    "I-18": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "wishlist and cart endpoints return 401 without valid token"
+      }
+    ],
+    "I-19": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "wishlist and cart endpoints return 403 for non-buyer roles"
+      }
+    ],
+    "I-20": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "wishlist and cart endpoints return 403 for non-buyer roles"
+      }
+    ],
+    "I-21": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "non-existent wishlist or cart resource returns 404"
+      }
+    ],
+    "I-22": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "error responses follow standard API error format"
+      }
+    ],
+    "I-23": [
+      {
+        "file": "wishlist-cart.spec.ts",
+        "title": "error responses follow standard API error format"
+      }
+    ]
   }
 }

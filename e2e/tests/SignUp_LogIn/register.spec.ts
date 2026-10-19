@@ -30,11 +30,21 @@ test.describe('Register Page', () => {
       await expect(registerPage.termsCheckbox).toBeVisible();
       await expect(registerPage.submitButton).toBeVisible();
       await expect(registerPage.loginLink).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-31_1_register_form_all_fields',
+        'Register page showing all form fields: name, email, passwords, roles, terms, submit and login link'
+      );
     });
 
     test('should have buyer selected by default', async ({ page }) => {
       await registerPage.goto();
       await expect(registerPage.buyerRadio).toBeChecked();
+      await captureScreenshot(
+        page,
+        'N-32_1_buyer_role_selected_by_default',
+        'Buyer role selected by default with the license upload section hidden'
+      );
     });
 
     test('should hide license upload for buyer role', async ({ page }) => {
@@ -118,6 +128,11 @@ test.describe('Register Page', () => {
       const emailError = page.locator('p.text-destructive').first();
       await expect(emailError).toBeVisible();
       await expect(emailError).toContainText(/email/i);
+      await captureScreenshot(
+        page,
+        'A-27_1_invalid_email_error',
+        'Invalid email format validation error on the Register page'
+      );
     });
 
     test('should show error for short password', async ({ page }) => {
@@ -132,6 +147,11 @@ test.describe('Register Page', () => {
 
       const passwordError = await registerPage.getPasswordError();
       expect(passwordError).toBeTruthy();
+      await captureScreenshot(
+        page,
+        'A-28_1_short_password_error',
+        'Minimum 8-character password validation error on the Register page'
+      );
     });
 
     test('should show error for password missing uppercase', async ({ page }) => {
@@ -221,6 +241,11 @@ test.describe('Register Page', () => {
 
       const termsError = page.locator('p.text-destructive').filter({ hasText: /terms/i });
       await expect(termsError).toBeVisible();
+      await captureScreenshot(
+        page,
+        'A-26_1_terms_not_checked_error',
+        'Terms-not-accepted validation error shown on submit'
+      );
     });
   });
 
@@ -263,6 +288,11 @@ test.describe('Register Page', () => {
       await registerPage.selectRole('merchant');
       const uploadArea = page.locator('text=/drag.*drop|click to upload/i').first();
       await expect(uploadArea).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-33_1_license_upload_visible',
+        'License upload area visible after selecting the Merchant role'
+      );
     });
 
     test('should show error for merchant without license', async ({ page }) => {
@@ -288,7 +318,10 @@ test.describe('Register Page', () => {
       await registerPage.fillPassword('TestPass123!');
       await registerPage.fillConfirmPassword('TestPass123!');
       await registerPage.selectRole('merchant');
-      await registerPage.checkTerms();
+
+      // The name label switches to "Shop Name" — clear it so the merchant
+      // registers without a shop name (BR-AUTH-026)
+      await page.getByLabel('Shop Name').clear();
 
       const pdfBuffer = Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF');
       await registerPage.licenseFileInput.setInputFiles({
@@ -297,8 +330,15 @@ test.describe('Register Page', () => {
         buffer: pdfBuffer,
       });
 
+      await registerPage.checkTerms();
+
       await registerPage.clickSubmit();
-      await registerPage.expectErrorVisible();
+      await registerPage.expectErrorVisible('Name must be at least 2 characters');
+      await captureScreenshot(
+        page,
+        'A-29_1_shop_name_required',
+        'Merchant without Shop Name — min-length error shown under the field'
+      );
     });
 
     test('should show error for non-PDF license file', async ({ page }) => {
@@ -385,6 +425,11 @@ test.describe('Register Page', () => {
 
       const strength = await registerPage.getPasswordStrengthIndicator();
       expect(strength).toBe('weak');
+      await captureScreenshot(
+        page,
+        'N-34_1_strength_weak',
+        'Password strength indicator showing weak for a short password'
+      );
     });
 
     test('should show strong indicator for complex password', async ({ page }) => {
@@ -541,6 +586,8 @@ test.describe('Register Page', () => {
         mimeType: 'application/pdf',
         buffer: pdfBuffer,
       });
+      await registerPage.fillAddress('123 Test Street, Yangon');
+      await registerPage.fillPhone('+95912345678');
       await registerPage.checkTerms();
       await captureScreenshot(page, 'B-05_1_license_case');
       await registerPage.clickSubmit();
@@ -567,6 +614,11 @@ test.describe('Register Page', () => {
       await expect(page.getByText(/購入者/)).toBeVisible();
       await expect(page.getByText(/出品者/)).toBeVisible();
       await expect(page.getByRole('button', { name: 'アカウント作成', exact: true })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-20_1_register_japanese',
+        'Register page rendered in Japanese'
+      );
 
       await chooseAuthLanguage(page, 'my');
       await expect(page.getByRole('heading', { name: 'အကောင့်ဖန်တီးရန်' })).toBeVisible();
@@ -576,6 +628,11 @@ test.describe('Register Page', () => {
       await expect(page.getByText(/ဝယ်ယူသူ/)).toBeVisible();
       await expect(page.getByText(/ရောင်းချသူ/)).toBeVisible();
       await expect(page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-20_2_register_myanmar',
+        'Register page rendered in Myanmar'
+      );
 
       await chooseAuthLanguage(page, 'en');
       await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible();
@@ -585,6 +642,11 @@ test.describe('Register Page', () => {
       await expect(page.getByText(/Buyer/)).toBeVisible();
       await expect(page.getByText(/Merchant/)).toBeVisible();
       await expect(page.getByRole('button', { name: 'Create Account', exact: true })).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-20_3_register_english_restored',
+        'Register page restored to English after the language cycle'
+      );
     });
   });
 
@@ -605,9 +667,19 @@ test.describe('Register Page', () => {
       await page.locator('input[autocomplete="new-password"]').nth(0).fill('TestPass123!');
       await page.locator('input[autocomplete="new-password"]').nth(1).fill('TestPass123!');
       await registerPage.checkTerms();
+      await captureScreenshot(
+        page,
+        'N-23_1_myanmar_buyer_form_filled',
+        'Myanmar-language register form (Buyer role) filled and ready to submit'
+      );
       await page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true }).click();
 
       await expect(page.getByText('အကောင့်ဖန်တီးခြင်း အောင်မြင်ပါသည်')).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-23_2_myanmar_buyer_success',
+        'Myanmar success message after buyer registration in Myanmar language'
+      );
       await expect(page).toHaveURL(/\/login$/, { timeout: 15_000 });
     });
 
@@ -624,15 +696,27 @@ test.describe('Register Page', () => {
       await page.locator('input[autocomplete="email"]').fill(user.email);
       await page.locator('input[autocomplete="new-password"]').nth(0).fill('TestPass123!');
       await page.locator('input[autocomplete="new-password"]').nth(1).fill('TestPass123!');
+      await registerPage.fillAddress('123 Test Street, Yangon');
+      await registerPage.fillPhone('+95912345678');
       await registerPage.licenseFileInput.setInputFiles({
         name: 'license.pdf',
         mimeType: 'application/pdf',
         buffer: Buffer.from('%PDF-1.4\n%E2E Test License PDF\n%%EOF'),
       });
       await registerPage.checkTerms();
+      await captureScreenshot(
+        page,
+        'N-24_1_myanmar_merchant_form_filled',
+        'Myanmar-language register form (Merchant role) with license uploaded'
+      );
       await page.getByRole('button', { name: 'အကောင့်ဖန်တီးရန်', exact: true }).click();
 
       await expect(page.getByText('အကောင့်ဖန်တီးခြင်း အောင်မြင်ပါသည်')).toBeVisible();
+      await captureScreenshot(
+        page,
+        'N-24_2_myanmar_merchant_success',
+        'Myanmar success message after merchant registration in Myanmar language'
+      );
       await expect(page).toHaveURL(/\/login$/, { timeout: 15_000 });
     });
   });
@@ -651,6 +735,11 @@ test.describe('Register Page', () => {
       expect(errorTexts).toContain('စကားဝှက်ကို ထည့်သွင်းပါ');
       expect(errorTexts).toContain('စကားဝှက်ကို အတည်ပြုရန် ပြန်ထည့်ပါ');
       expect(errorTexts).toContain('ဝန်ဆောင်မှု စည်းမျဉ်းများကို သဘောတူရပါမည်');
+      await captureScreenshot(
+        page,
+        'A-20_1_myanmar_empty_field_errors',
+        'Myanmar-language validation errors for an empty register form'
+      );
     });
 
     test('A-21: should show duplicate email error in Myanmar language', async ({ page }) => {
@@ -678,6 +767,11 @@ test.describe('Register Page', () => {
       await expect(error).toBeVisible();
       await expect(error).toHaveText('Request failed with status code 409');
       await expect(page).toHaveURL(/\/register/);
+      await captureScreenshot(
+        page,
+        'A-21_1_myanmar_duplicate_email_error',
+        '409 duplicate-email error alert displayed in Myanmar locale'
+      );
     });
   });
 
@@ -706,6 +800,55 @@ test.describe('Register Page', () => {
       const nameError = page.locator('p.text-destructive').first();
       await expect(nameError).toBeVisible();
       await expect(nameError).toContainText('အမည်ကို အနည်းဆုံး ၂ လုံး ထည့်သွင်းပါ');
+      await captureScreenshot(
+        page,
+        'B-06_1_myanmar_name_min_error',
+        'Myanmar 2-character minimum name rule - 1-character name rejected at the boundary'
+      );
+    });
+  });
+
+  test.describe('B-07: Register name upper bound', () => {
+    test('should block name longer than 200 characters', async ({ page }) => {
+      await registerPage.goto();
+      const user = person('Baron', 'Longname');
+
+      // Enter 201 characters as user input — the field truncates at maxLength=200,
+      // so the Zod max(200) rule never fires
+      const nameInput = page.locator('input[autocomplete="name"]');
+      await nameInput.click();
+      await nameInput.pressSequentially('A'.repeat(201), { delay: 0 });
+      expect((await nameInput.inputValue()).length).toBe(200);
+
+      await registerPage.fillEmail(user.email);
+      await registerPage.fillPassword('TestPass123!');
+      await registerPage.fillConfirmPassword('TestPass123!');
+      await registerPage.checkTerms();
+      await captureScreenshot(
+        page,
+        'B-07_1_name_truncated_at_200',
+        '201-character name truncated to 200 by maxLength=200 — no client-side max error'
+      );
+
+      // Submission proceeds client-side; the backend rejects names over its 100-char limit
+      await registerPage.clickSubmit();
+      await registerPage.expectErrorVisible();
+      await captureScreenshot(
+        page,
+        'B-07_2_backend_rejects_name',
+        'Frontend limit 200 / backend limit 100 mismatch — submission rejected by the API'
+      );
+
+      // API confirmation: a 101–200 character name passes frontend rules but exceeds the backend limit
+      const apiResponse = await page.request.post(`${API_BASE_URL}/auth/register`, {
+        form: {
+          name: 'B'.repeat(150),
+          email: person('Api', 'Longname').email,
+          password: 'TestPass123!',
+          role: 'buyer',
+        },
+      });
+      expect(apiResponse.status()).toBe(400);
     });
   });
 

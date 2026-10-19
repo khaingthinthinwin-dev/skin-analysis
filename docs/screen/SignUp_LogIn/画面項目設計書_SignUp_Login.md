@@ -1,12 +1,12 @@
  # Screen Items Specification (画面項目設計書) — Sign-up / Login / Password Reset
 
 **Document ID:** SKM-SIS-SCR-001  
-**Target Screen:** Authentication (Sign-up / Login / Password Reset)  
+**Target Screen:** Authentication (Sign-up / Login / Password Recovery)  
 **Subsystem:** User Authentication  
 **Function ID:** FN-AUTH-001  
-**Version:** 4.1  
+**Version:** 4.2  
 **Created:** 2026-08-04  
-**Last Updated:** 2026-08-21  
+**Last Updated:** 2026-10-15  
 **Author:** Senior System Engineer  
 **Review Status:** Approved (承認済み)  
 **Classification:** Internal — Engineering Division
@@ -25,6 +25,7 @@
 | 3.1 | 2026-08-17 | Senior System Engineer | Aligned with REQUIREMENT_SPEC v1.5 / DATABASE_SPEC v2.0: UUID primary keys, license stored in `merchants.business_license_url` with `license_status='pending'` approval workflow, Argon2 password hashing, role VARCHAR(20). |
 | 4.0 | 2026-08-20 | Senior System Engineer | Added Forgot Password (`/forgot-password`) and Reset Password (`/reset-password`) screens. New item definitions, event specifications, validation error mappings, API response mappings, i18n keys, and test cases. |
 | 4.1 | 2026-08-21 | Senior System Engineer | Aligned with DATABASE_SPEC v2.1: added conditional shopName (店舗名) required for merchant registration, included super_admin in role remarks, and updated Register Page layouts/operations. |
+| 4.2 | 2026-10-15 | Senior System Engineer | Aligned screen items and events with current auth pages; replaced reset-link token flow and separate merchant shop-name field with verification-code and shared-name-input behavior. |
 
 ### 1.2 Related Documents
 
@@ -40,13 +41,13 @@
 ## 2. Screen Overview & Purpose (画面概要・目的)
 
 ### 2.1 Purpose (目的)
-The Sign-up, Login, and Password Reset pages are the entry points for user authentication in the Cosmetics Finder platform. They enable new users to create accounts (as Buyers or Merchants), existing users to authenticate via email and password receiving JWT tokens for session management, and all users to recover forgotten passwords via secure email links.
+The Login, Register, Forgot Password, Verification Code, and Reset Password pages are separate auth routes in the Cosmetics Finder platform. They support account creation, sign-in, and password recovery using an emailed six-digit code.
 
 ### 2.2 Target Users & Roles (対象ユーザーと権限)
 
 | Attribute | Value |
 | :--- | :--- |
-| **Primary Actors** | Unauthenticated visitors (Sign-up, Password Reset Request), Authenticated users (Login), Any user with reset token (Password Reset) |
+| **Primary Actors** | Unauthenticated visitors using Login, Register, or password-recovery routes |
 | **Required Authentication** | None (Sign-up, Forgot Password), JWT Bearer Token (Login/Session), Reset Token (Password Reset) |
 | **Data Scope** | New user creation, existing user credential verification, password recovery |
 | **Access Control** | Public routes — no guards applied |
@@ -59,7 +60,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 5. **Error Handling** — Display inline and form-level errors with error codes.
 6. **Internationalization** — Full i18n support for EN, JA, MY.
 7. **Responsive Design** — Mobile-first centered card layout.
-8. **Password Recovery** — Request password reset link via email, set new password with token validation.
+8. **Password Recovery** — Request a code, verify it, then set a new password with email and code carried in route state.
 
 ---
 
@@ -128,7 +129,8 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 │              ┌─────────────────────────────┐            │
 │              │   [F] REGISTER FORM         │            │
 │              │                             │            │
-│              │   [F1] Full Name Input      │            │
+│              │   [F1] Name Input           │            │
+│              │       (label becomes Shop Name for Merchant)│
 │              │   [F2] Email Input          │            │
 │              │   [F3] Password Input       │            │
 │              │       + Requirements List   │            │
@@ -137,10 +139,9 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 │              │       + Show/Hide Toggle    │            │
 │              │   [F5] Role Selection       │            │
 │              │       (Buyer / Merchant)    │            │
-│              │   [F8] Shop Name Input (cond.)│ ← NEW    │
-│              │       (Shown if Merchant)   │            │
 │              │   [F6] License Upload (cond.)│           │
 │              │       (Shown if Merchant)   │            │
+│              │   Terms Agreement Checkbox  │            │
 │              │   [F7] Submit Button        │            │
 │              │                             │            │
 │              └─────────────────────────────┘            │
@@ -182,12 +183,14 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 │              │   "Forgot your password?"   │            │
 │              │                             │            │
 │              │   [K2] Description Text     │            │
-│              │   "Enter your email..."     │            │
+│              │   "Enter your email to      │            │
+│              │    receive a verification   │            │
+│              │    code."                   │            │
 │              │                             │            │
 │              │   [K3] Email Input          │            │
 │              │                             │            │
 │              │   [K4] Submit Button        │            │
-│              │   "Send Reset Link"         │            │
+│              │   "Send Verification Code"  │            │
 │              │                             │            │
 │              └─────────────────────────────┘            │
 │                                                         │
@@ -204,31 +207,24 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Forgot Password — Success State:**
+**Forgot Password — Success:** On API success, navigate to `/verify-code` and pass email in React Router location state. There is no in-place success state.
+
+#### Verification Code Page Layout (`/verify-code`)
+
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    BROWSER VIEWPORT                      │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │      [A] PAGE HEADER        │            │
-│              │   Logo + System Name        │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │   [M] SUCCESS MESSAGE       │            │
-│              │   "If an account exists..." │            │
-│              └─────────────────────────────┘            │
-│                                                         │
-│              ┌─────────────────────────────┐            │
-│              │   [L] BACK TO LOGIN LINK    │            │
-│              │   "Back to Login"           │            │
-│              └─────────────────────────────┘            │
-│                                                         │
+│ Verification title and masked email description         │
+│ Error alert / resend-success alert (conditional)        │
+│ Six-character code input (numeric input mode)           │
+│ Verify button                                           │
+│ Resend code button (60-second cooldown after success)  │
+│ Back to email link                                      │
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### Reset Password Page Layout
+The page reads email from router location state and redirects to `/forgot-password` if it is missing. On successful verification it navigates to `/reset-password` with email and code in router state.
+
+#### Reset Password Page Layout (`/reset-password`)
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                    BROWSER VIEWPORT                      │
@@ -355,8 +351,8 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
-| 14 | `lblFullName` | Full Name Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Full Name" | — | Hardcoded UI text | Associated with `txtFullName` via `htmlFor`/`id`. |
-| 15 | `txtFullName` | Full Name Input | Input (`text`) | String(200) | Mandatory | Empty. Placeholder: "John Doe" | MaxLength: 200. MinLength: 2. | `users.name` | AutoComplete: `name`. |
+| 14 | `lblFullName` | Name Label | Static Label (`<label>`) | String | — | Buyer: "Full Name"; merchant: "Shop Name" | — | i18n label based on selected role | Label for the single `name` field; no separate shop-name input. |
+| 15 | `txtFullName` | Name Input | Input (`text`) | String(200) | Mandatory | Empty. Role-dependent placeholder | MaxLength: 200. Schema minimum: 2. | `users.name` | AutoComplete: `name`; same value is used for account name and merchant shop name. |
 | 16 | `lblRegEmail` | Email Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Email" | — | Hardcoded UI text | Associated with `txtRegEmail` via `htmlFor`/`id`. |
 | 17 | `txtRegEmail` | Email Input | Input (`email`) | String(255) | Mandatory | Empty. Placeholder: "user@example.com" | Format: Valid email. MaxLength: 255. | `users.email` | AutoComplete: `email`. |
 | 18 | `lblRegPassword` | Password Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Password" | — | Hardcoded UI text | Associated with `txtRegPassword` via `htmlFor`/`id`. |
@@ -370,8 +366,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | 26 | `rdoRole` | Role Selection | Radio Group | Enum | Mandatory | Default: `buyer` | Options: buyer, merchant | `users.role` | `buyer`: Browse and purchase. `merchant`: Sell products. Register allows only buyer/merchant; Admin/Super Admin accounts are system-seeded or created by Admin/Super Admin. |
 | 27 | `rdoBuyer` | Buyer Radio | Radio Button | — | — | Selected by default | Value: `buyer` | — | Label: "Buyer — Browse and purchase products" |
 | 28 | `rdoMerchant` | Merchant Radio | Radio Button | — | — | Unselected | Value: `merchant` | — | Label: "Merchant — Sell skincare products" |
-| 28A | `lblShopName` | Shop Name Label | Static Label (`<label>`) | String | — | Visible only when `rdoMerchant` selected. Text: "Shop Name" | — | Hardcoded UI text | Associated with `txtShopName` via `htmlFor`/`id`. Required indicator: red asterisk `*`. |
-| 28B | `txtShopName` | Shop Name Input | Input (`text`) | String(255) | Conditional | Hidden by default. Visible when `rdoMerchant` selected. Placeholder: "Enter your shop name" | MaxLength: 255. MinLength: 1. | `merchants.shop_name` | AutoComplete: `organization`. Required when registering as merchant. |
+| 28C | `chkAgreeToTerms` | Terms Agreement | Checkbox | Boolean | Mandatory | Unchecked | Must be checked before submit | Client-only form value | Terms link navigates to `/terms`; value is not sent to the registration API. |
 | 29 | `btnRegister` | Create Account Button | Button (`submit`, `default`) | — | — | Visible. Text: "Create Account" | — | — | Full width. Loading: Spinner + "Creating account...". Disabled when loading. |
 | 30 | `lblHasAccount` | Login Prompt | Static Label | String | — | Text: "Already have an account?" | — | — | Footer text. |
 | 31 | `lnkSignIn` | Login Link | Link (`<Link>`) | String | — | Text: "Sign in" | — | — | Navigates to `/login`. |
@@ -386,13 +381,15 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
 | 37 | `lblForgotTitle` | Forgot Password Title | Static Label (`<h2>`) | String | — | Visible. Text: "Forgot your password?" | — | Hardcoded UI text | Tailwind: `text-2xl font-bold text-center`. |
-| 38 | `lblForgotDesc` | Forgot Password Description | Static Label (`<p>`) | String | — | Visible. Text: "Enter your email and we'll send you a reset link." | — | Hardcoded UI text | Tailwind: `text-muted-foreground text-center`. |
+| 38 | `lblForgotDesc` | Forgot Password Description | Static Label (`<p>`) | String | — | Prompts for email to receive a verification code. | — | i18n text | Tailwind: `text-muted-foreground text-center`. |
 | 39 | `lblForgotEmail` | Email Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Email" | — | Hardcoded UI text | Associated with `txtForgotEmail` via `htmlFor`/`id`. |
-| 40 | `txtForgotEmail` | Email Input | Input (`email`) | String(255) | Mandatory | Empty. Placeholder: "user@example.com" | Format: Valid email. MaxLength: 255. | — | AutoFocus: true. AutoComplete: `email`. InputMode: `email`. |
-| 41 | `btnSendResetLink` | Send Reset Link Button | Button (`submit`, `default`) | — | — | Visible. Text: "Send Reset Link" | — | — | Full width. Loading: Spinner + "Sending...". Disabled when loading or form invalid. |
+| 40 | `txtForgotEmail` | Email Input | Input (`email`) | String | Mandatory | Empty. Placeholder: "user@example.com" | Format: Valid email. | — | AutoFocus: true. AutoComplete: `email`. InputMode: `email`; no explicit maxLength on the input. |
+| 41 | `btnSendResetLink` | Send Verification Code Button | Button (`submit`, `default`) | — | — | Localized submit label | — | — | Full width. Loading indicator while submitting; successful request navigates to `/verify-code` with email in router state. |
 | 42 | `lnkBackToLoginForgot` | Back to Login Link | Link (`<Link>`) | String | — | Text: "Back to Login" | — | — | Navigates to `/login`. |
 
 ### 4.7 Section [J]: Reset Password Form (パスワードリセットフォーム)
+
+The page requires `email` and `code` in React Router location state. If either is missing, it redirects to `/forgot-password`; neither value is entered on this page or read from a URL token.
 
 | No. | Item ID | Item Name (Logical) | Component Type | Data Type & Max Length | Required | Initial State / Default Value | Input Constraints / Formats | Data Source / DB Mapping | Remarks / Business Rules |
 | :---: | :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -401,12 +398,25 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | 45 | `lblNewPassword` | New Password Label | Static Label (`<label>`) | String | — | Always displayed. Text: "New Password" | — | Hardcoded UI text | Associated with `txtNewPassword` via `htmlFor`/`id`. |
 | 46 | `txtNewPassword` | New Password Input | Input (`password`) | String(128) | Mandatory | Empty. Placeholder: "Create a new password" | Complex regex (see §4.5.1). | — | AutoFocus: true. AutoComplete: `new-password`. Toggleable show/hide. |
 | 47 | `btnShowNewPassword` | Show/Hide New Password | Icon Button | — | — | Visible. Eye icon. | — | — | Toggles `txtNewPassword` type between `password` and `text`. |
-| 48 | `lstResetPasswordRequirements` | Password Requirements | Helper Text List | — | — | Visible below password field | Checklist of 5 requirements | — | Real-time feedback as user types. Green check when met. Same rules as Register. |
+| 48 | `cmpPasswordStrength` | Password Strength Indicator | Component | — | — | Visible below new-password field | Reflects current password value | — | Uses shared `PasswordStrengthIndicator` component. |
 | 49 | `lblResetConfirmPassword` | Confirm Password Label | Static Label (`<label>`) | String | — | Always displayed. Text: "Confirm Password" | — | Hardcoded UI text | Associated with `txtResetConfirmPassword` via `htmlFor`/`id`. |
 | 50 | `txtResetConfirmPassword` | Confirm Password Input | Input (`password`) | String(128) | Mandatory | Empty. Placeholder: "Confirm your new password" | Must match `txtNewPassword`. | — | AutoComplete: `new-password`. Toggleable show/hide. |
 | 51 | `btnShowResetConfirmPassword` | Show/Hide Confirm Password | Icon Button | — | — | Visible. Eye icon. | — | — | Toggles `txtResetConfirmPassword` type. |
 | 52 | `btnResetPassword` | Reset Password Button | Button (`submit`, `default`) | — | — | Visible. Text: "Reset Password" | — | — | Full width. Loading: Spinner + "Resetting...". Disabled when loading or form invalid. |
 | 53 | `lnkBackToLoginReset` | Back to Login Link | Link (`<Link>`) | String | — | Text: "Back to Login" | — | — | Navigates to `/login`. |
+
+### 4.8 Section [Q]: Verification Code Form
+
+| Item | Component | Required / Constraints | Behavior |
+|------|-----------|-----------------------|----------|
+| Email description | Text | Email from router location state | Displays masked email; missing email redirects to `/forgot-password`. |
+| Verification code | Text input | Required, exactly 6 characters; max length 6 | Numeric input mode, one-time-code autocomplete, autofocus. |
+| Verify button | Submit button | — | Calls code verification; disabled with loading indicator while submitting. |
+| Resend button | Button | — | Requests a new code. Shows success alert and starts 60-second cooldown on success; disabled during request/cooldown. |
+| Back to email | Link | — | Navigates to `/forgot-password`. |
+| Alerts | Alert | Conditional | Shows request error or resend success. |
+
+Successful verification navigates to `/reset-password` with `{ email, code }` in router location state.
 
 ### 4.5.1 Password Validation Rules (Register)
 
@@ -425,27 +435,22 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 ### 5.1 Login Form Submit (`btnLogin` onClick)
 - **Trigger:** User clicks "Sign In" button.
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** Form undergoes validation — email format, password not empty.
+  1. **Client-Side Pre-Check:** `loginSchema` validates a required valid email and required password of at least 8 characters.
   2. **Backend Dispatch:** `POST /api/v1/auth/login` with `{ email, password }`.
   3. **Backend Execution:** Verify credentials against `users` table. Issue JWT access + refresh tokens.
-  4. **Post-Execution UI:** Store tokens in localStorage. Navigate to `/dashboard/profile`. Show success toast.
+  4. **Post-Execution UI:** AuthProvider stores access and refresh tokens and sets the user. Show success toast. Navigation uses the `redirect` query value when present or the role dashboard.
 - **Exception Handling:**
-  - `AUTH_001` (401): Display "Invalid email or password" in `alertError`.
-  - `AUTH_006` (429): Display rate limit message with retry seconds.
-  - `AUTH_004` (403): Display "Account is deactivated" in `alertError`.
-  - Network error: Display "Network error. Please check your connection".
+  - Display the thrown `Error.message`, or the translated fallback when the thrown value is not an Error.
 
 ### 5.2 Register Form Submit (`btnRegister` onClick)
 - **Trigger:** User clicks "Create Account" button.
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** Strict validation — all fields valid, passwords match, role selected. If role = merchant, validate `txtShopName` (not empty, max 255 chars) and license PDF uploaded.
-  2. **Backend Dispatch:** `POST /api/v1/auth/register` with `{ name, email, password, role }` (and includes `{ shopName }` + license file in multi-part form if role = merchant).
-  3. **Backend Execution:** Create user record with hashed password. If role = merchant, create merchant record with shop name and `license_status = 'pending'`. Set `emailVerified = false`.
+  1. **Client-Side Pre-Check:** Validate the single `name` value, email, password/confirmation, role, terms agreement, and conditional merchant license. The name input is relabeled “Shop Name” for merchants.
+  2. **Backend Dispatch:** `POST /api/v1/auth/register` as multipart form data with `name`, `email`, `password`, optional `role`, optional `address` and `phone` (merchant only, both required), and optional `license` file. Confirmation and terms are not sent.
+  3. **Backend Execution:** Create the user; for merchants the service reuses `name` as the merchant shop name and stores the license.
   4. **Post-Execution UI:** Show success toast. Navigate to `/login`.
 - **Exception Handling:**
-  - `AUTH_007` (409): Display "Email already registered" inline on email field.
-  - `VAL_001` (400): Display field-specific validation errors (e.g., missing shop name).
-  - `AUTH_006` (429): Display rate limit message.
+  - Display the thrown `Error.message`, or the translated fallback when the thrown value is not an Error.
 
 ### 5.3 Show/Hide Password Toggle (`btnShowPassword` / `btnShowRegPassword` / `btnShowConfirmPassword` onClick)
 - **Trigger:** User clicks the eye icon button.
@@ -483,13 +488,12 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 - **Trigger:** User selects a different role (Buyer or Merchant).
 - **Processing Logic:**
   1. **If `buyer` selected:**
-     - Hide `lblShopName`, `txtShopName`, `lblLicenseUpload`, `uplLicense`, `lblLicenseFileName`, `btnRemoveLicense`, `lblLicenseHelper`.
-     - Clear `txtShopName` and any uploaded license file.
-     - Remove shop name and license file requirement from validation.
+     - Hide the conditional license field.
+     - Clear any uploaded license file.
+     - The existing name input remains and is labeled “Full Name”.
   2. **If `merchant` selected:**
-     - Show `lblShopName`, `txtShopName`, `lblLicenseUpload`, `uplLicense`, `lblLicenseHelper`.
-     - Enable shop name input and license file upload zone.
-     - Add shop name requirement and license file requirement to strict validation.
+     - Relabel the same `name` input as “Shop Name”.
+     - Show the license field and require a valid license file.
 - **Exception Handling:** None applicable.
 
 ### 5.8 License File Upload (`uplLicense` onChange / onDrop)
@@ -517,43 +521,36 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
   4. Show upload zone again.
 - **Exception Handling:** None applicable.
 
-### 5.10 Forgot Password Form Submit (`btnSendResetLink` onClick)
-- **Trigger:** User clicks "Send Reset Link" button.
+### 5.10 Forgot Password Form Submit
+- **Trigger:** User submits the Forgot Password form.
 - **Processing Logic:**
   1. **Client-Side Pre-Check:** Form undergoes validation — email format valid.
   2. **Backend Dispatch:** `POST /api/v1/auth/forgot-password` with `{ email }`.
-  3. **Backend Execution:** Validate email format. Check rate limit (max 3 per email per hour). Find user by email. If user exists: invalidate previous unused tokens, generate secure token, hash and store in `password_reset_tokens` table with 24-hour expiry, send reset email. Always return same response regardless of email existence.
-  4. **Post-Execution UI:** Replace form with success message. Show "Back to Login" link.
+  3. **Backend Execution:** For an existing account, create and email a six-digit code. The current service returns 404 for unknown email.
+  4. **Post-Execution UI:** On API success, navigate to `/verify-code`, passing email in React Router location state. No in-place success message is shown.
 - **Exception Handling:**
-  - `AUTH_008` (429): Display rate limit message with retry seconds.
-  - `VAL-AUTH-040` (400): Display field-level inline error for invalid email.
-  - `SYS_001` (500): Display "Something went wrong. Please try again".
-  - Network error: Display "Network error. Please check your connection".
+  - Show the response message when present; otherwise the thrown error message or translated fallback appears in a destructive alert.
 
-### 5.11 Reset Password Form Submit (`btnResetPassword` onClick)
-- **Trigger:** User clicks "Reset Password" button (after clicking email link).
+### 5.11 Verification Code Form Submit and Resend
+- **Trigger:** User submits the code or activates Resend.
 - **Processing Logic:**
-  1. **Client-Side Pre-Check:** Strict validation — password meets strength requirements, passwords match, token exists in URL.
-  2. **Backend Dispatch:** `POST /api/v1/auth/reset-password` with `{ token, password }`.
-  3. **Backend Execution:** Validate token format. Hash received token. Find token record by `token_hash`. Validate: token exists, not used, not expired (24 hours). Find user by `user_id` from token. Validate password strength. Hash new password with Argon2. Update user's password. Mark token as `used = TRUE`. Invalidate all other unused tokens for this user.
-  4. **Post-Execution UI:** Show success message: "Your password has been reset successfully." Show "Back to Login" link.
+  1. Verify Code requires email in router location state; missing email redirects to `/forgot-password`.
+  2. Validate the code has exactly six characters. The input uses numeric mode and max length 6.
+  3. Submit `{ email, code }` to `POST /api/v1/auth/verify-code`.
+  4. On success, navigate to `/reset-password` with email and code in router location state.
+  5. Resend calls `POST /api/v1/auth/forgot-password` with the same email; on success, show an alert and start a 60-second cooldown.
 - **Exception Handling:**
-  - `AUTH_009` (400): Display "Invalid or expired reset link. Please request a new one." in `alertError`.
-  - `VAL-AUTH-041` (400): Display password strength errors inline.
-  - `VAL-AUTH-042` (400): Display "Passwords do not match" inline.
-  - `SYS_001` (500): Display "Something went wrong. Please try again".
-  - Network error: Display "Network error. Please check your connection".
+  - Display the response message when available, otherwise the thrown error message or fallback.
 
-### 5.12 Token Validation on Reset Password Page Load
-- **Trigger:** User navigates to `/reset-password?token=xxx`.
+### 5.12 Reset Password Form Submit
+- **Trigger:** User submits the Reset Password form after code verification.
 - **Processing Logic:**
-  1. Extract `token` from URL query parameters.
-  2. If no token present, display error and redirect to `/login`.
-  3. Token is validated on submission (backend checks expiry, usage).
-  4. If token is invalid/expired on submission, show error and offer link to request new reset.
+  1. Require email and code in router location state; if either is missing, navigate to `/forgot-password`.
+  2. Validate password length/composition and matching confirmation.
+  3. Submit `{ email, code, password }` to `POST /api/v1/auth/reset-password`; confirmation is client-only.
+  4. On success, show a success toast and replace the form with a success view and Back to Login link.
 - **Exception Handling:**
-  - No token: Redirect to `/login`.
-  - Invalid/expired token on submit: Display error, link to `/forgot-password`.
+  - Display the response message when available, otherwise the thrown error message or translated fallback.
 
 ---
 
@@ -564,14 +561,9 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-AUTH-001** | `txtEmail` | Email is empty or invalid format | Red border. Text below field. | "Email is required" | "メールアドレスは必須です" |
-| **VAL-AUTH-002** | `txtEmail` | Email exceeds 255 characters | Red border. Text below field. | "Email must not exceed 255 characters" | "メールアドレスは255文字以内にしてください" |
 | **VAL-AUTH-003** | `txtPassword` | Password is empty | Red border. Text below field. | "Password is required" | "パスワードは必須です" |
 | **VAL-AUTH-004** | `txtPassword` | Password less than 8 characters | Red border. Text below field. | "Password must be at least 8 characters" | "パスワードは8文字以上である必要があります" |
-| **AUTH_001** | `alertError` | Invalid credentials (401 response) | Alert banner (destructive) | "Invalid email or password" | "メールアドレスまたはパスワードが無効です" |
-| **AUTH_004** | `alertError` | Account deactivated (403 response) | Alert banner (destructive) | "Account is deactivated. Please contact support" | "アカウントが無効化されています。サポートにお問い合わせください" |
-| **AUTH_006** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
-| **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
-| **NET_ERR** | `alertError` | Network error | Alert banner (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+| **API_ERROR** | `alertError` | Login request fails | Destructive alert | The thrown `Error.message`, or translated fallback if not an Error | Same fallback handling |
 
 ### 6.2 Register Validation Errors
 
@@ -594,23 +586,25 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | **VAL-AUTH-031** | `uplLicense` | File exceeds 10MB | Inline error on upload zone | "File exceeds maximum size of 10 MB" | "ファイルサイズが10MBを超えています" |
 | **VAL-AUTH-032** | `uplLicense` | Filename is not license.pdf | Inline error on upload zone | "File must be named license.pdf" | "ファイル名はlicense.pdfである必要があります" |
 | **VAL-AUTH-033** | `uplLicense` | No file uploaded when role is merchant | Inline error on upload zone | "Business license is required for merchant registration" | "出品者登録には事業許可書が必要です" |
-| **VAL-AUTH-034** | `txtShopName` | Shop name is empty when role is merchant | Red border. Text below field. | "Shop name is required for merchant registration" | "出品者登録には店舗名が必要です" |
-| **VAL-AUTH-035** | `txtShopName` | Shop name exceeds 255 characters | Red border. Text below field. | "Shop name must not exceed 255 characters" | "店舗名は255文字以内にしてください" |
-| **AUTH_007** | `txtRegEmail` | Email already exists (409 response) | Red border + inline text | "Email already registered" | "メールアドレスは既に登録されています" |
-| **AUTH_006** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
-| **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
+| — | `chkAgreeToTerms` | `agreeToTerms` is false | Inline schema message below the checkbox | `auth.validation.termsRequired` default: "You must agree to the Terms of Service" | Translated schema message |
+| **API_ERROR** | `alertError` | Registration request fails | Destructive alert | The thrown `Error.message`, or translated fallback if not an Error | Same fallback handling |
 
 ### 6.3 Forgot Password Validation Errors
 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **VAL-AUTH-040** | `txtForgotEmail` | Email is empty or invalid format | Red border. Text below field. | "Email is required" / "Invalid email address" | "メールアドレスは必須です" / "メールアドレスが無効です" |
-| **VAL-AUTH-041** | `txtForgotEmail` | Email exceeds 255 characters | Red border. Text below field. | "Email must not exceed 255 characters" | "メールアドレスは255文字以内にしてください" |
-| **AUTH_008** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
-| **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
-| **NET_ERR** | `alertError` | Network error | Alert banner (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" |
+| **API_ERROR** | `alertError` | Request fails, including unknown email | Destructive alert | Response message when available, then thrown error message or fallback | Same precedence |
 
-### 6.4 Reset Password Validation Errors
+### 6.4 Verification Code Validation and Request Errors
+
+| Target Field | Condition | Presentation |
+|--------------|-----------|--------------|
+| `txtVerificationCode` | Empty or not exactly 6 characters | Schema validation message below the field |
+| `alertError` | Verification or resend request fails | Response message when available, otherwise thrown error message or fallback |
+| `alertResendSuccess` | Resend succeeds | Success alert; resend button disabled for 60 seconds |
+
+### 6.5 Reset Password Validation Errors
 
 | Error Code | Target Field | Condition / Evaluation Logic | UI/UX Display Presentation Style | Default Error Message Text (EN) | Default Error Message Text (JA) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -622,10 +616,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | **VAL-AUTH-047** | `txtNewPassword` | Missing number | Red border. Text below field. | "Password must contain at least one number" | "パスワードには数字を含めてください" |
 | **VAL-AUTH-048** | `txtNewPassword` | Missing special character | Red border. Text below field. | "Password must contain at least one special character (@$!%*?&)" | "パスワードには特殊文字を含めてください" |
 | **VAL-AUTH-049** | `txtResetConfirmPassword` | Passwords do not match | Red border. Text below field. | "Passwords do not match" | "パスワードが一致しません" |
-| **AUTH_009** | `alertError` | Invalid or expired reset token (400 response) | Alert banner (destructive) | "Invalid or expired reset link. Please request a new one." | "無効または期限切れのリセットリンクです。新しいリセットをリクエストしてください。" |
-| **AUTH_008** | `alertError` | Rate limited (429 response) | Alert banner (destructive) | "Too many attempts. Please wait {seconds} seconds" | "試行回数が多すぎます。{seconds}秒お待ちください" |
-| **SYS_001** | `alertError` | Server error (500 response) | Alert banner (destructive) | "Something went wrong. Please try again" | "問題が発生しました。もう一度お試しください" |
-| **NET_ERR** | `alertError` | Network error | Alert banner (destructive) | "Network error. Please check your connection" | "ネットワークエラー。接続を確認してください" | (データベースフィールドマッピング)
+| **API_ERROR** | `alertError` | Reset request fails, including invalid/expired code | Alert banner (destructive) | Response message when available, otherwise thrown error message or translated fallback | Same precedence |
 
 ### 7.1 Login Form → Database
 
@@ -638,12 +629,13 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 
 | Form Field | API Field | Database Column | Table | Data Type |
 | :--- | :--- | :--- | :--- | :--- |
-| `txtFullName` | `name` | `name` | `users` | VARCHAR(200) |
+| `txtFullName` | `name` | `name` | `users` | VARCHAR(200) — for merchants this same value is used as shop name |
 | `txtRegEmail` | `email` | `email` | `users` | VARCHAR(255) UNIQUE |
 | `txtRegPassword` | `password` | `password_hash` | `users` | VARCHAR(255) (Argon2 hash) |
 | `rdoRole` | `role` | `role` | `users` | VARCHAR(20) (buyer, merchant, admin, super_admin) |
-| `txtShopName` | `shopName` | `shop_name` | `merchants` | VARCHAR(255) |
 | `uplLicense` | `license` | `business_license_url` | `merchants` | TEXT (nullable) — set with `license_status='pending'` on registration |
+
+`confirmPassword` and `agreeToTerms` are client-side form fields and are not persisted or sent as API fields. The merchant shop name uses the same `name` field shown above.
 
 ---
 
@@ -694,7 +686,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
     "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "licenseStatus": "pending",
     "licenseUrl": "/uploads/licenses/f4c5a1b2-3d6e-4f70-8a9b-1c2d3e4f5a6b.pdf",
-    "emailVerified": false,
+    "emailVerified": true,
     "createdAt": "2026-08-05T12:00:00.000Z"
   }
 }
@@ -720,25 +712,26 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 ```json
 {
   "data": {
-    "message": "If an account exists with that email, you'll receive a password reset link shortly."
+    "message": "If an account exists with that email, you will receive a verification code shortly."
   }
 }
 ```
 
-**Note:** This response is returned regardless of whether the email exists, to prevent email enumeration.
+The current service returns this message on success for an existing account. An unknown email returns `404 Not Found` with `No account found with this email address`. The page navigates to `/verify-code` after a successful response and does not display this message in place.
 
-### 8.6 Forgot Password Error Response (Rate Limited)
+### 8.6 Verify Code API Responses
+
+`POST /api/v1/auth/verify-code` accepts `{ email, code }`. A valid, unexpired six-digit code returns:
 
 ```json
 {
-  "statusCode": 429,
-  "error": "TOO_MANY_REQUESTS",
-  "errorCode": "AUTH_008",
-  "message": "Too many attempts. Please wait {seconds} seconds",
-  "timestamp": "2026-08-20T12:00:00.000Z",
-  "path": "/api/v1/auth/forgot-password"
+  "data": {
+    "message": "Verification code is valid."
+  }
 }
 ```
+
+Invalid or expired codes return `400 Bad Request` with `Invalid or expired verification code`.
 
 ### 8.7 Reset Password Success Response
 
@@ -750,14 +743,13 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 }
 ```
 
-### 8.8 Reset Password Error Response (Invalid Token)
+### 8.8 Reset Password Error Response (Invalid Code)
 
 ```json
 {
   "statusCode": 400,
   "error": "BAD_REQUEST",
-  "errorCode": "AUTH_009",
-  "message": "Invalid or expired reset link. Please request a new one.",
+  "message": "Invalid or expired verification code",
   "timestamp": "2026-08-20T12:00:00.000Z",
   "path": "/api/v1/auth/reset-password"
 }
@@ -792,6 +784,8 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | `auth.register.title` | "Create Account" |
 | `auth.register.fullName` | "Full Name" |
 | `auth.register.fullNamePlaceholder` | "John Doe" |
+| `auth.register.shopName` | "Shop Name" |
+| `auth.register.shopNamePlaceholder` | "Your shop name" |
 | `auth.register.email` | "Email" |
 | `auth.register.emailPlaceholder` | "user@example.com" |
 | `auth.register.password` | "Password" |
@@ -821,6 +815,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | `auth.register.licenseError.size` | "File exceeds maximum size of 10 MB" |
 | `auth.register.licenseError.name` | "File must be named license.pdf" |
 | `auth.register.licenseError.required` | "Business license is required for merchant registration" |
+| `auth.register.termsAgreement` | Not defined in `auth.json`; the component supplies the English default agreement text |
 
 ### 9.3 Japanese (ja) — Login
 
@@ -847,6 +842,8 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | `auth.register.title` | "アカウント作成" |
 | `auth.register.fullName` | "氏名" |
 | `auth.register.fullNamePlaceholder` | "田中太郎" |
+| `auth.register.shopName` | "店舗名" |
+| `auth.register.shopNamePlaceholder` | "店舗名を入力" |
 | `auth.register.email` | "メールアドレス" |
 | `auth.register.emailPlaceholder` | "user@example.com" |
 | `auth.register.password` | "パスワード" |
@@ -887,8 +884,11 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | `auth.forgotPassword.emailPlaceholder` | "user@example.com" |
 | `auth.forgotPassword.submit` | "Send Reset Link" |
 | `auth.forgotPassword.submitting` | "Sending..." |
-| `auth.forgotPassword.success` | "If an account exists with that email, you'll receive a password reset link shortly." |
+| `auth.forgotPassword.successTitle` | "Check your email" (defined but not shown by the current page) |
+| `auth.forgotPassword.successMessage` | "If an account exists with that email, you'll receive a password reset link shortly." (defined but not shown by the current page) |
 | `auth.forgotPassword.backToLogin` | "Back to Login" |
+
+**Implementation note:** The current English locale copy still says “reset link”, while the page sends a verification-code request and navigates to `/verify-code`. The success copy above is the locale value, not the API response.
 
 ### 9.6 English (en) — Reset Password
 
@@ -902,7 +902,8 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | `auth.resetPassword.confirmPasswordPlaceholder` | "Confirm your new password" |
 | `auth.resetPassword.submit` | "Reset Password" |
 | `auth.resetPassword.submitting` | "Resetting..." |
-| `auth.resetPassword.success` | "Your password has been reset successfully." |
+| `auth.resetPassword.successTitle` | "Password reset successful" |
+| `auth.resetPassword.successMessage` | "Your password has been reset successfully. You can now sign in with your new password." |
 | `auth.resetPassword.backToLogin` | "Back to Login" |
 | `auth.resetPassword.invalidToken` | "Invalid or expired reset link. Please request a new one." |
 | `auth.resetPassword.showPassword` | "Show password" |
@@ -913,41 +914,19 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 | `auth.resetPassword.passwordRequirement.number` | "One number (0-9)" |
 | `auth.resetPassword.passwordRequirement.special` | "One special character (@$!%*?&)" |
 
+**Implementation note:** The page uses `auth.resetPassword.invalidToken` when email or code is missing from router state, then redirects to `/forgot-password`; it also uses the same key for request failures. The current locale wording refers to a reset link even though the submitted credential is a verification code.
+
 ### 9.7 Japanese (ja) — Forgot Password
 
-| Key | Value |
-| :--- | :--- |
-| `auth.forgotPassword.title` | "パスワードをお忘れですか？" |
-| `auth.forgotPassword.description` | "メールアドレスを入力すると、リセットリンクを送信します。" |
-| `auth.forgotPassword.email` | "メールアドレス" |
-| `auth.forgotPassword.emailPlaceholder` | "user@example.com" |
-| `auth.forgotPassword.submit` | "リセットリンクを送信" |
-| `auth.forgotPassword.submitting` | "送信中..." |
-| `auth.forgotPassword.success` | "そのメールアドレスにアカウントが存在する場合、パスワードリセットリンクが送信されます。" |
-| `auth.forgotPassword.backToLogin` | "ログインに戻る" |
+The current Japanese `auth.json` does not define `forgotPassword` keys. The English locale defines these keys, but its copy refers to a reset link while the page requests a verification code.
 
 ### 9.8 Japanese (ja) — Reset Password
 
-| Key | Value |
-| :--- | :--- |
-| `auth.resetPassword.title` | "パスワードをリセット" |
-| `auth.resetPassword.description` | "新しいパスワードを入力してください。" |
-| `auth.resetPassword.newPassword` | "新しいパスワード" |
-| `auth.resetPassword.newPasswordPlaceholder` | "新しいパスワードを作成" |
-| `auth.resetPassword.confirmPassword` | "パスワード確認" |
-| `auth.resetPassword.confirmPasswordPlaceholder` | "新しいパスワードを再入力" |
-| `auth.resetPassword.submit` | "パスワードリセット" |
-| `auth.resetPassword.submitting` | "リセット中..." |
-| `auth.resetPassword.success` | "パスワードが正常にリセットされました。" |
-| `auth.resetPassword.backToLogin` | "ログインに戻る" |
-| `auth.resetPassword.invalidToken` | "無効または期限切れのリセットリンクです。新しいリセットをリクエストしてください。" |
-| `auth.resetPassword.showPassword` | "パスワードを表示" |
-| `auth.resetPassword.hidePassword` | "パスワードを非表示" |
-| `auth.resetPassword.passwordRequirement.length` | "8文字以上" |
-| `auth.resetPassword.passwordRequirement.uppercase` | "大文字1つ (A-Z)" |
-| `auth.resetPassword.passwordRequirement.lowercase` | "小文字1つ (a-z)" |
-| `auth.resetPassword.passwordRequirement.number` | "数字1つ (0-9)" |
-| `auth.resetPassword.passwordRequirement.special` | "特殊文字1つ (@$!%*?&)" |
+The current Japanese `auth.json` does not define `resetPassword` keys. The English locale currently contains the corresponding keys, including an `invalidToken` message that still refers to a reset link.
+
+### 9.9 Verification Code Translations
+
+The Verify Code page references `auth.verifyCode.*` keys, but the current English, Japanese, and Myanmar `auth.json` files do not define a `verifyCode` group.
 
 ---
 
@@ -1010,14 +989,12 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 
 - [ ] Email validation accepts valid formats
 - [ ] Email validation rejects invalid formats
-- [ ] Email max length (255) enforced
 - [ ] Password minimum length (8) enforced
 - [ ] Show/hide password toggle works
 - [ ] Forgot password link navigates to `/forgot-password`
 - [ ] Form submits with valid data
 - [ ] Error alert displays on invalid credentials (AUTH_001)
-- [ ] Error alert displays on deactivated account (AUTH_004)
-- [ ] Error alert displays on rate limit (AUTH_006)
+- [ ] Error alert displays when the login request fails
 - [ ] Loading state shows during submission
 - [ ] Navigation to register page works
 - [ ] Language toggle switches all labels
@@ -1036,10 +1013,12 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 - [ ] Role selection defaults to buyer
 - [ ] Form submits with valid data
 - [ ] Duplicate email error displays (AUTH_007)
+- [ ] Name label changes to “Shop Name” for merchant and remains the same `name` field
+- [ ] Terms agreement is required before registration
 - [ ] Loading state shows during submission
 - [ ] Navigation to login page works
 - [ ] All i18n keys render correctly
-- [ ] Show/hide password works for all 3 password fields
+- [ ] Show/hide password works for password and confirmation fields
 - [ ] Keyboard navigation works
 
 ### 12.3 Merchant License Upload Tests
@@ -1063,20 +1042,27 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 
 - [ ] Email validation accepts valid formats
 - [ ] Email validation rejects invalid formats
-- [ ] Email max length (255) enforced
 - [ ] Form submits with valid email
-- [ ] Success message displayed after submission
-- [ ] Form replaced with success message (no email input visible)
+- [ ] Successful submission navigates to `/verify-code` with email in router state
+- [ ] Unknown email request error is displayed
 - [ ] "Back to Login" link navigates to `/login`
-- [ ] Rate limit error displays on too many attempts (AUTH_008)
 - [ ] Loading state shows during submission
-- [ ] Auto-focus on email input
 - [ ] Language toggle switches all labels
 - [ ] Theme toggle works
 - [ ] Keyboard navigation works (Tab, Enter)
 - [ ] Network error displays appropriate message
 
-### 12.5 Reset Password Form Tests
+### 12.5 Verification Code Form Tests
+
+- [ ] Missing email in router state redirects to `/forgot-password`
+- [ ] Code is required and must be exactly 6 characters
+- [ ] Valid code submission navigates to `/reset-password` with email and code in router state
+- [ ] Invalid or expired code request error is displayed
+- [ ] Successful resend displays an alert and disables resend for 60 seconds
+- [ ] Language toggle switches all labels
+- [ ] Theme toggle works
+
+### 12.6 Reset Password Form Tests
 
 - [ ] Password strength requirements enforced (5 rules)
 - [ ] Password requirements checklist updates in real-time
@@ -1084,7 +1070,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 - [ ] Form submits with valid password
 - [ ] Success message displayed after reset
 - [ ] "Back to Login" link navigates to `/login`
-- [ ] Invalid token error displays on invalid/expired token (AUTH_009)
+- [ ] Invalid or expired verification-code error displays
 - [ ] Loading state shows during submission
 - [ ] Auto-focus on new password input
 - [ ] Show/hide password toggle works for both password fields
@@ -1092,7 +1078,7 @@ The Sign-up, Login, and Password Reset pages are the entry points for user authe
 - [ ] Theme toggle works
 - [ ] Keyboard navigation works (Tab, Enter)
 - [ ] Network error displays appropriate message
-- [ ] No token in URL redirects to `/login`
+- [ ] Missing email or code in router state redirects to `/forgot-password`
 
 ---
 
