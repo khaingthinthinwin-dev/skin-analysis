@@ -1,0 +1,107 @@
+{
+  "N-01_1_wishlist_items.png": {
+    "test": "wishlist-cart.spec.ts::should display wishlist items"
+  },
+  "N-02_1_wishlist_add_from_pdp.png": {
+    "test": "wishlist-cart.spec.ts::should add product to wishlist from product detail page"
+  },
+  "N-03_1_wishlist_item_removed.png": {
+    "test": "wishlist-cart.spec.ts::should remove item from wishlist"
+  },
+  "N-04_1_wishlist_item_moved_to_cart.png": {
+    "test": "wishlist-cart.spec.ts::should move an in-stock wishlist item to cart"
+  },
+  "N-05_1_cart_items_and_summary.png": {
+    "test": "wishlist-cart.spec.ts::should display cart items with correct total"
+  },
+  "N-06_1_cart_quantity_increased.png": {
+    "test": "wishlist-cart.spec.ts::should update cart quantity"
+  },
+  "N-07_1_cart_quantity_decreased.png": {
+    "test": "wishlist-cart.spec.ts::should decrease cart quantity with minus stepper"
+  },
+  "N-08_1_cart_quantity_direct_input.png": {
+    "test": "wishlist-cart.spec.ts::should update cart quantity via direct input"
+  },
+  "N-09_1_cart_item_removed.png": {
+    "test": "wishlist-cart.spec.ts::should remove item from cart"
+  },
+  "N-10_1_cart_checkout.png": {
+    "test": "wishlist-cart.spec.ts::should proceed to checkout from cart"
+  },
+  "N-11_1_wishlist_product_navigation.png": {
+    "test": "wishlist-cart.spec.ts::should navigate to product detail page from wishlist card"
+  },
+  "N-13_1_language_toggle_wishlist.png": {
+    "test": "wishlist-cart.spec.ts::should toggle language on wishlist and cart pages"
+  },
+  "N-14_1_dark_theme.png": {
+    "test": "wishlist-cart.spec.ts::should toggle theme on wishlist and cart pages"
+  },
+  "N-14_2_light_theme.png": {
+    "test": "wishlist-cart.spec.ts::should toggle theme on wishlist and cart pages"
+  },
+  "N-15_1_desktop_viewport.png": {
+    "test": "wishlist-cart.spec.ts::should display responsive layout on desktop viewport"
+  },
+  "N-16_1_mobile_viewport.png": {
+    "test": "wishlist-cart.spec.ts::should display responsive layout on mobile viewport"
+  },
+  "N-17_1_wishlist_cleared.png": {
+    "test": "wishlist-cart.spec.ts::should clear all wishlist items and restore them"
+  },
+  "N-18_1_cart_cleared.png": {
+    "test": "wishlist-cart.spec.ts::should clear all cart items and restore them"
+  },
+  "N-19_1_wishlist_ja.png": {
+    "test": "wishlist-cart.spec.ts::should update all wishlist labels in Japanese"
+  },
+  "N-20_1_cart_ja.png": {
+    "test": "wishlist-cart.spec.ts::should update all cart labels in Japanese"
+  },
+  "N-21_1_wishlist_my.png": {
+    "test": "wishlist-cart.spec.ts::should update all wishlist labels in Myanmar"
+  },
+  "N-22_1_cart_my.png": {
+    "test": "wishlist-cart.spec.ts::should update all cart labels in Myanmar"
+  },
+  "A-01_1_duplicate_wishlist.png": {
+    "test": "wishlist-cart.spec.ts::should reject adding duplicate product to wishlist"
+  },
+  "A-02_1_guest_wishlist_disabled.png": {
+    "test": "wishlist-cart.spec.ts::should disable wishlist action for guest user"
+  },
+  "A-03_1_guest_cart_redirect.png": {
+    "test": "wishlist-cart.spec.ts::should redirect guest user attempting to add to cart"
+  },
+  "A-04_1_non_buyer_blocked.png": {
+    "test": "wishlist-cart.spec.ts::should block non-buyer user from wishlist and cart routes"
+  },
+  "A-05_1_guest_redirect_to_login.png": {
+    "test": "wishlist-cart.spec.ts::should redirect unauthenticated users from wishlist to login"
+  },
+  "A-06_1_zero_quantity_blocked.png": {
+    "test": "wishlist-cart.spec.ts::should block cart quantity zero or negative"
+  },
+  "A-08_1_out_of_stock_add_disabled.png": {
+    "test": "wishlist-cart.spec.ts::should disable add button for out-of-stock wishlist item"
+  },
+  "A-12_1_already_in_cart_dialog.png": {
+    "test": "wishlist-cart.spec.ts::should reject moving wishlist item already in cart"
+  },
+  "A-13_1_pdp_duplicate_cart_dialog.png": {
+    "test": "wishlist-cart.spec.ts::should reject adding duplicate product to cart"
+  },
+  "B-01_1_quantity_min_one.png": {
+    "test": "wishlist-cart.spec.ts::should accept minimum cart quantity of 1 and disable minus button"
+  },
+  "B-07_1_wishlist_empty_state.png": {
+    "test": "wishlist-cart.spec.ts::should display empty state when wishlist has no items"
+  },
+  "B-08_1_cart_empty_state.png": {
+    "test": "wishlist-cart.spec.ts::should display empty state when cart has no items"
+  },
+  "B-09_1_no_overflow_320px.png": {
+    "test": "wishlist-cart.spec.ts::should have no horizontal scroll at 320px viewport"
+  }
+}

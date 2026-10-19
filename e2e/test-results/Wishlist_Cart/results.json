@@ -1,0 +1,341 @@
+{
+  "module": "Wishlist_Cart",
+  "timestamp": "2026-10-18T16:23:02.859Z",
+  "total": 55,
+  "passed": 55,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 267325,
+  "tests": [
+    {
+      "title": "should display wishlist items",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8549
+    },
+    {
+      "title": "should add product to wishlist from product detail page",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 7297
+    },
+    {
+      "title": "should remove item from wishlist",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8156
+    },
+    {
+      "title": "should move an in-stock wishlist item to cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 9508
+    },
+    {
+      "title": "should display cart items with correct total",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8911
+    },
+    {
+      "title": "should update cart quantity",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8824
+    },
+    {
+      "title": "should decrease cart quantity with minus stepper",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 6636
+    },
+    {
+      "title": "should update cart quantity via direct input",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 6371
+    },
+    {
+      "title": "should remove item from cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 6137
+    },
+    {
+      "title": "should proceed to checkout from cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 5412
+    },
+    {
+      "title": "should navigate to product detail page from wishlist card",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 5283
+    },
+    {
+      "title": "should toggle language on wishlist and cart pages",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8492
+    },
+    {
+      "title": "should toggle theme on wishlist and cart pages",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 5863
+    },
+    {
+      "title": "should display responsive layout on desktop viewport",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8518
+    },
+    {
+      "title": "should display responsive layout on mobile viewport",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8359
+    },
+    {
+      "title": "should clear all wishlist items and restore them",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8147
+    },
+    {
+      "title": "should clear all cart items and restore them",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 6663
+    },
+    {
+      "title": "should update all wishlist labels in Japanese",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 7062
+    },
+    {
+      "title": "should update all cart labels in Japanese",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 7311
+    },
+    {
+      "title": "should update all wishlist labels in Myanmar",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 9976
+    },
+    {
+      "title": "should update all cart labels in Myanmar",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 10742
+    },
+    {
+      "title": "should reject adding duplicate product to wishlist",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8959
+    },
+    {
+      "title": "should disable wishlist action for guest user",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 3503
+    },
+    {
+      "title": "should redirect guest user attempting to add to cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 4956
+    },
+    {
+      "title": "should block non-buyer user from wishlist and cart routes",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8118
+    },
+    {
+      "title": "should redirect unauthenticated users from wishlist to login",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 4277
+    },
+    {
+      "title": "should block cart quantity zero or negative",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 7534
+    },
+    {
+      "title": "should disable add button for out-of-stock wishlist item",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 9086
+    },
+    {
+      "title": "should reject moving wishlist item already in cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 9345
+    },
+    {
+      "title": "should reject adding duplicate product to cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 8280
+    },
+    {
+      "title": "should accept minimum cart quantity of 1 and disable minus button",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 6699
+    },
+    {
+      "title": "should display empty state when wishlist has no items",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 7427
+    },
+    {
+      "title": "should display empty state when cart has no items",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 6246
+    },
+    {
+      "title": "should have no horizontal scroll at 320px viewport",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 6772
+    },
+    {
+      "title": "GET /api/v1/wishlist returns 200 with saved products",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 555
+    },
+    {
+      "title": "POST /api/v1/wishlist/:productId returns 201 with created item",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 688
+    },
+    {
+      "title": "POST /api/v1/wishlist/:productId returns 409 for duplicate",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 727
+    },
+    {
+      "title": "DELETE /api/v1/wishlist/:productId returns 204",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 861
+    },
+    {
+      "title": "DELETE /api/v1/wishlist returns 200 and clears all items",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 1084
+    },
+    {
+      "title": "POST /api/v1/wishlist/:productId/move-to-cart returns 200 with cart item",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 725
+    },
+    {
+      "title": "POST /api/v1/wishlist/:productId/move-to-cart returns 400 for out-of-stock",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 706
+    },
+    {
+      "title": "POST /api/v1/wishlist/:productId/move-to-cart returns 409 when already in cart",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 1032
+    },
+    {
+      "title": "GET /api/v1/cart returns 200 with items and summary",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 888
+    },
+    {
+      "title": "POST /api/v1/cart/items returns 201 with created cart item",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 950
+    },
+    {
+      "title": "POST /api/v1/cart/items returns 400 for out-of-stock product",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 587
+    },
+    {
+      "title": "POST /api/v1/cart/items returns 409 for duplicate product",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 576
+    },
+    {
+      "title": "PATCH /api/v1/cart/items/:id returns 200 with recomputed totals",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 593
+    },
+    {
+      "title": "PATCH /api/v1/cart/items/:id returns 400 when quantity exceeds stock",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 577
+    },
+    {
+      "title": "PATCH /api/v1/cart/items/:id returns 400 for invalid quantity values",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 677
+    },
+    {
+      "title": "DELETE /api/v1/cart/items/:id returns 204 and removes item",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 640
+    },
+    {
+      "title": "DELETE /api/v1/cart/items returns 200 and clears all items",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 769
+    },
+    {
+      "title": "wishlist and cart endpoints return 401 without valid token",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 29
+    },
+    {
+      "title": "wishlist and cart endpoints return 403 for non-buyer roles",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 598
+    },
+    {
+      "title": "non-existent wishlist or cart resource returns 404",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 622
+    },
+    {
+      "title": "error responses follow standard API error format",
+      "file": "D:\\skin-analysis-EEM\\e2e\\tests\\Wishlist_Cart\\wishlist-cart.spec.ts",
+      "status": "passed",
+      "duration": 22
+    }
+  ]
+}
