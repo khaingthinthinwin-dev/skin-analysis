@@ -15,6 +15,7 @@ import {
 import { Link, useNavigate, useLocation } from 'react-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,7 +49,7 @@ function readDismissedIds(userId: string): Set<string> {
 
 function timeAgo(
   iso: string,
-  t: (key: string, fallback: string, options?: object) => string,
+  t: TFunction,
   locale: string,
 ): string {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -245,7 +246,7 @@ function adActionHint(item: NotificationItem): string | null {
   return null
 }
 
-function orderActionHint(item: NotificationItem, t: (key: string, fallback: string) => string): string | null {
+function orderActionHint(item: NotificationItem, t: TFunction): string | null {
   return ORDER_NOTIFICATION_TYPES.has(normalizeNotificationType(item.type))
     ? t('notifications.viewOrder', 'View order →')
     : null
@@ -253,7 +254,7 @@ function orderActionHint(item: NotificationItem, t: (key: string, fallback: stri
 
 function localizedNotificationText(
   item: NotificationItem,
-  t: (key: string, fallback: string, options?: object) => string,
+  t: TFunction,
 ): { title: string; message: string } {
   const type = normalizeNotificationType(item.type)
   if (type === 'ANALYSIS' || type === 'ANALYSIS_COMPLETED') {
@@ -280,9 +281,14 @@ function localizedNotificationText(
   }
   if (type === 'ORDER_PLACED') {
     const orderNumber = item.message.match(/order\s+([^\s.]+)/i)?.[1] ?? ''
+    const isMerchantOrder = /^A buyer placed order\b/i.test(item.message)
     return {
-      title: t('notifications.newOrderReceived', 'New order received'),
-      message: t('notifications.newOrderReceivedMessage', 'A buyer placed order {{orderNumber}}.', { orderNumber }),
+      title: isMerchantOrder
+        ? t('notifications.newOrderReceived', 'New order received')
+        : t('notifications.orderPlaced', 'Order placed'),
+      message: isMerchantOrder
+        ? t('notifications.newOrderReceivedMessage', 'A buyer placed order {{orderNumber}}.', { orderNumber })
+        : t('notifications.orderPlacedMessage', 'Your order was placed.'),
     }
   }
   return { title: item.title, message: item.message }

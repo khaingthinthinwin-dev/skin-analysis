@@ -521,6 +521,8 @@
     "reanalysisReminderMessage": "前回の肌分析からしばらく経ちました。肌の状態を確認するため、もう一度分析してください。",
     "orderStatusTitle": "注文 {{status}}",
     "orderStatusMessage": "注文 {{orderNumber}} は現在{{status}}です。",
+    "orderPlaced": "注文が完了しました",
+    "orderPlacedMessage": "注文を受け付けました。",
     "newOrderReceived": "新しい注文を受け付けました",
     "newOrderReceivedMessage": "購入者が注文 {{orderNumber}} をしました。",
     "time": { "justNow": "たった今", "minutes": "{{count}} 分前", "hours": "{{count}} 時間前", "days": "{{count}} 日前" }

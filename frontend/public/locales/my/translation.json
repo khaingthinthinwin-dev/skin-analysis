@@ -524,6 +524,8 @@
     "reanalysisReminderMessage": "နောက်ဆုံးစစ်ဆေးမှုမှ အချိန်အတော်ကြာပါပြီ။ အသားအရေအခြေအနေကို သိရှိရန် ထပ်မံစစ်ဆေးပါ။",
     "orderStatusTitle": "အော်ဒါ {{status}}",
     "orderStatusMessage": "သင့်အော်ဒါ {{orderNumber}} သည် ယခု {{status}} ဖြစ်ပါသည်။",
+    "orderPlaced": "အော်ဒါတင်ပြီးပါပြီ",
+    "orderPlacedMessage": "သင့်အော်ဒါကို တင်ပြီးပါပြီ။",
     "newOrderReceived": "အော်ဒါအသစ် ရရှိပါပြီ",
     "newOrderReceivedMessage": "ဝယ်ယူသူတစ်ဦးက အော်ဒါ {{orderNumber}} တင်ထားပါသည်။",
     "time": { "justNow": "ယခုလေးတင်", "minutes": "လွန်ခဲ့သော {{count}} မိနစ်", "hours": "လွန်ခဲ့သော {{count}} နာရီ", "days": "လွန်ခဲ့သော {{count}} ရက်" }

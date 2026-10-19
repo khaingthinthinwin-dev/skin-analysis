@@ -525,6 +525,8 @@
     "reanalysisReminderMessage": "It's been a while since your last skin analysis. Take a new analysis to check your skin condition.",
     "orderStatusTitle": "Order {{status}}",
     "orderStatusMessage": "Your order {{orderNumber}} is now {{status}}.",
+    "orderPlaced": "Order placed",
+    "orderPlacedMessage": "Your order was placed.",
     "newOrderReceived": "New order received",
     "newOrderReceivedMessage": "A buyer placed order {{orderNumber}}.",
     "time": { "justNow": "Just now", "minutes": "{{count}} min ago", "hours": "{{count}} hour ago", "days": "{{count}} day ago" }
