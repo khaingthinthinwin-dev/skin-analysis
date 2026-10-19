@@ -217,6 +217,37 @@ export class PromotionsService {
 
     await this.invalidateCache(merchantId, promotion.code);
 
+    try {
+      const users = await this.prisma.user.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      });
+      if (users.length > 0) {
+        const discountLabel =
+          promotion.discountTypeCode === 'percentage'
+            ? `${Number(promotion.discountValue)}%`
+            : `${Number(promotion.discountValue)} MMK`;
+        const validUntil = expiresAt.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+        await this.prisma.notification.createMany({
+          data: users.map((u) => ({
+            userId: u.id,
+            type: 'PROMO_CREATED',
+            title: 'New Promotion Available',
+            message: `Use code "${promotion.code}" for ${discountLabel} off. Valid until ${validUntil}.`,
+            entityType: 'promotion',
+            entityId: promotion.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    } catch {
+      // notification is best-effort and should not block promotion creation
+    }
+
     return {
       ...promotion,
       discountType: promotion.discountType.typeCode,

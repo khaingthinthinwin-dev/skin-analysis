@@ -491,5 +491,47 @@ describe('AdminService review moderation', () => {
         },
       });
     });
+
+    it('sends a merchant notification when an admin reactivates a product', async () => {
+      prisma.product.findUnique.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        merchantId: 'm1',
+        isActive: false,
+      });
+      prisma.product.update.mockResolvedValue({
+        id: 'p1',
+        name: 'Glow Serum',
+        isActive: true,
+        updatedAt: new Date('2026-09-23T00:00:00Z'),
+      });
+      prisma.merchant.findUnique.mockResolvedValue({
+        id: 'm1',
+        userId: 'merchant-user-1',
+      });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'merchant-user-1',
+        isActive: true,
+      });
+
+      const result = await service.moderateProduct(
+        'p1',
+        { isActive: true },
+        'admin1',
+      );
+
+      expect(result.isActive).toBe(true);
+      expect(prisma.notification.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'merchant-user-1',
+          type: 'PRODUCT_REACTIVATED',
+          title: 'Product Reactivated',
+          message:
+            'Your product "Glow Serum" is active again and is now available to shoppers.',
+          entityType: 'product',
+          entityId: 'p1',
+        },
+      });
+    });
   });
 });

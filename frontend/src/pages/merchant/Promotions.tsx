@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useState, useCallback, useEffect, useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Tag, Plus, Search, Filter, Trash2, Pencil, ShieldAlert, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ import {
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useTranslation } from 'react-i18next'
-import { usePromotions, useDeletePromotion, useTogglePromotionActive, getPromotionErrorInfo } from '@/hooks/usePromotions'
+import { usePromotions, usePromotion, useDeletePromotion, useTogglePromotionActive, getPromotionErrorInfo } from '@/hooks/usePromotions'
 import { useAuth } from '@/hooks/useAuth'
 import { useMerchantProductsGuard } from '@/features/merchant/products/guards/merchantProducts.guard'
 import { AccountDeactivatedBanner } from '@/components/merchant/AccountDeactivatedBanner'
@@ -52,6 +52,8 @@ export default function Promotions() {
   const showCrudActions = guard.showCrudActions && !isPending && !isDeactivated
 
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const highlightPromoId = searchParams.get('highlightPromoId')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | PromotionQueryParams['status']>('all')
   const [sortBy, setSortBy] = useState<PromotionQueryParams['sortBy']>('newest')
@@ -72,10 +74,56 @@ export default function Promotions() {
   const deletePromotion = useDeletePromotion()
   const toggleActive = useTogglePromotionActive()
 
-  const promotions = useMemo<Promotion[]>(() => data?.items || [], [data?.items])
   const meta = data?.meta
 
   const now = useMemo(() => new Date(), [])
+
+  const { data: highlightedPromotion } = usePromotion(highlightPromoId ?? '')
+
+  // Coming from a notification, the record may sit on another page — fetch it
+  // directly and prepend it so it is always displayed.
+  const promotions = useMemo<Promotion[]>(() => {
+    const items = data?.items || []
+    if (
+      !highlightedPromotion ||
+      items.some((p) => p.id === highlightedPromotion.id)
+    ) {
+      return items
+    }
+    return [highlightedPromotion, ...items]
+  }, [data?.items, highlightedPromotion])
+
+  const isHighlighted = useCallback(
+    (promo: Promotion) => highlightPromoId === promo.id,
+    [highlightPromoId],
+  )
+
+  // Scroll to the highlighted promotion whenever the list updates.
+  useEffect(() => {
+    if (!highlightPromoId) return
+    const timer = window.setTimeout(() => {
+      const element = document.querySelector(
+        `[id^="highlighted-promo-${highlightPromoId}"]`,
+      )
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [highlightPromoId, promotions])
+
+  // Auto-clear the highlight after 5 seconds.
+  useEffect(() => {
+    if (!highlightPromoId) return
+    const clearTimer = window.setTimeout(() => {
+      setSearchParams((prev) => {
+        const params = new URLSearchParams(prev)
+        params.delete('highlightPromoId')
+        return params
+      })
+    }, 5000)
+    return () => window.clearTimeout(clearTimer)
+  }, [highlightPromoId, setSearchParams])
 
   const getStatusBadge = useCallback(
     (promo: Promotion) => {
@@ -285,7 +333,15 @@ export default function Promotions() {
             {/* Mobile Card Layout */}
             <div className="space-y-3 md:hidden px-5 pb-5">
             {promotions.map((promo) => (
-              <Card key={promo.id} className="overflow-hidden">
+              <Card
+                key={promo.id}
+                id={isHighlighted(promo) ? `highlighted-promo-${promo.id}-card` : undefined}
+                className={`overflow-hidden transition-all duration-300 ${
+                  isHighlighted(promo)
+                    ? 'ring-4 ring-violet-500 ring-offset-4 ring-offset-background scale-[1.02] shadow-2xl shadow-violet-500/30 animate-pulse'
+                    : ''
+                }`}
+              >
                 <CardContent className="p-4 space-y-3">
                   {/* Code + Status Row */}
                   <div className="flex items-center justify-between gap-2">
@@ -482,7 +538,12 @@ export default function Promotions() {
                 {promotions.map((promo) => (
                   <tr
                     key={promo.id}
-                    className="transition-colors duration-150 ease-in-out hover:bg-muted/40"
+                    id={isHighlighted(promo) ? `highlighted-promo-${promo.id}-row` : undefined}
+                    className={`transition-colors duration-150 ease-in-out hover:bg-muted/40 ${
+                      isHighlighted(promo)
+                        ? 'bg-violet-500/10 outline outline-2 outline-violet-500 animate-pulse'
+                        : ''
+                    }`}
                   >
                     <td className="py-3 px-4 text-[13px] text-muted-foreground border-b border-border bg-card text-foreground font-medium">
                       <div className="flex items-center gap-2 min-w-0">

@@ -705,6 +705,27 @@ export class RevenueService {
       },
     });
 
+    try {
+      const merchant = await this.prisma.merchant.findUnique({
+        where: { id: updated.merchantId },
+        select: { userId: true },
+      });
+      if (merchant) {
+        await this.prisma.notification.create({
+          data: {
+            userId: merchant.userId,
+            type: 'PAYOUT_COMPLETED',
+            title: 'Payout Processed',
+            message: `Your payout of ${fmtDecimal(updated.totalAmount)} Ks has been successfully processed.`,
+            entityType: 'payout',
+            entityId: payoutId,
+          },
+        });
+      }
+    } catch {
+      // notification is best-effort and should not block payout completion
+    }
+
     return {
       payoutId: updated.id,
       merchantId: updated.merchantId,

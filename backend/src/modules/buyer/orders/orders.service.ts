@@ -239,6 +239,32 @@ export class OrdersService {
           },
         });
 
+        if (groupCouponCode) {
+          try {
+            const redeemedPromotion = await tx.promotion.findUnique({
+              where: { code: groupCouponCode },
+              select: { id: true, merchantId: true },
+            });
+            if (
+              redeemedPromotion &&
+              redeemedPromotion.merchantId === merchantId
+            ) {
+              await tx.notification.create({
+                data: {
+                  userId: merchant.userId,
+                  type: 'PROMO_REDEEMED',
+                  title: 'Promotion Redeemed',
+                  message: `A buyer used your promotion code "${groupCouponCode}" on order ${newOrder.orderNumber}.`,
+                  entityType: 'promotion',
+                  entityId: redeemedPromotion.id,
+                },
+              });
+            }
+          } catch {
+            // notification is best-effort and should not block order placement
+          }
+        }
+
         for (const item of group.items) {
           const unitPriceNum = parseFloat(item.product.price.toString());
           const lineTotal = (unitPriceNum * item.quantity).toFixed(2);

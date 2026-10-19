@@ -695,14 +695,25 @@ export class AdminService {
           newValue: { isActive: dto.isActive, reason: dto.reason },
         });
 
-        if (!dto.isActive) {
-          const merchant = await tx.merchant.findUnique({
-            where: { id: product.merchantId },
-            select: { userId: true },
-          });
+        const merchant = await tx.merchant.findUnique({
+          where: { id: product.merchantId },
+          select: { userId: true },
+        });
 
-          if (merchant) {
-            try {
+        if (merchant) {
+          try {
+            if (dto.isActive) {
+              await tx.notification.create({
+                data: {
+                  userId: merchant.userId,
+                  type: 'PRODUCT_REACTIVATED',
+                  title: 'Product Reactivated',
+                  message: `Your product "${product.name}" is active again and is now available to shoppers.`,
+                  entityType: 'product',
+                  entityId: productId,
+                },
+              });
+            } else {
               await tx.notification.create({
                 data: {
                   userId: merchant.userId,
@@ -713,9 +724,9 @@ export class AdminService {
                   entityId: productId,
                 },
               });
-            } catch {
-              // notification is best-effort and should not block moderation
             }
+          } catch {
+            // notification is best-effort and should not block moderation
           }
         }
 
