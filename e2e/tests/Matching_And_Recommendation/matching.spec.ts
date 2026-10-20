@@ -2,6 +2,7 @@ import { test, expect } from '../../fixtures/auth.fixture';
 import type { Page, Route } from '@playwright/test';
 import { MatchingPage } from '../../pages/Matching_And_Recommendation/MatchingPage';
 import { API_BASE_URL } from '../../utils/constants';
+import { captureScreenshot } from '../../utils/screenshot';
 
 type Source = 'ai' | 'generic';
 
@@ -134,6 +135,64 @@ async function tokenFor(page: Page): Promise<string> {
 }
 
 function matching(page: Page) { return new MatchingPage(page); }
+
+async function captureApiEvidence(
+  page: Page,
+  step: string,
+  method: string,
+  url: string,
+  requestBody: unknown,
+  status: number,
+  responseBody: unknown,
+) {
+  const escapeHtml = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  const pretty = (value: unknown) => escapeHtml(
+    value === undefined ? '(no request body)' : JSON.stringify(value, null, 2),
+  );
+  const capturedAt = new Date().toISOString();
+  const statusColor = status >= 400 ? '#b42318' : '#067647';
+
+  await page.setContent(`<!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; padding: 16px; color: #202124; background: #f3f3f3; font: 14px Arial, sans-serif; }
+          header, section, footer { background: #fff; border: 1px solid #ddd; padding: 12px 16px; }
+          h1 { margin: 0 0 4px; font-size: 18px; }
+          p { margin: 0; color: #666; }
+          .endpoint { display: flex; align-items: center; gap: 12px; margin-top: 14px; overflow-wrap: anywhere; }
+          .method { padding: 5px 10px; color: #fff; background: #1976d2; border-radius: 4px; font-weight: bold; }
+          .status { margin-left: auto; padding: 5px 10px; color: ${statusColor}; background: #fff1f0; border: 1px solid #f2b8b5; border-radius: 4px; font-weight: bold; }
+          section { margin-top: 10px; }
+          h2 { margin: -12px -16px 12px; padding: 10px 16px; background: #ededed; border-bottom: 1px solid #ddd; font-size: 14px; }
+          pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px Consolas, monospace; }
+          footer { margin-top: 10px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <header>
+          <h1>API Evidence</h1>
+          <p>${escapeHtml(step.replace(/_/g, ' '))}</p>
+          <div class="endpoint">
+            <span class="method">${escapeHtml(method.toUpperCase())}</span>
+            <code>${escapeHtml(url)}</code>
+            <span class="status">${status}</span>
+          </div>
+        </header>
+        <section><h2>Request Body</h2><pre>${pretty(requestBody)}</pre></section>
+        <section><h2>Response Body</h2><pre>${pretty(responseBody)}</pre></section>
+        <footer>API Evidence — captured ${escapeHtml(capturedAt)}</footer>
+      </body>
+    </html>`);
+  await captureScreenshot(page, step, `API response evidence for ${method.toUpperCase()} ${url}`);
+}
 
 test.describe('Matching & Recommendation', () => {
   test.describe('Recommendations and History', () => {
@@ -640,29 +699,39 @@ test.describe('Matching & Recommendation', () => {
     test('A-01: redirects unauthenticated visitors to login', async ({ page }) => {
       await page.goto('/buyer/recommendations');
       await expect(page).toHaveURL(/\/login/);
+      await expect(page.getByPlaceholder('user@example.com')).toBeVisible();
+      await captureScreenshot(page, 'A-01_1_unauthenticated_redirect');
     });
 
     test('A-02: rejects an invalid recommendation query', async ({ buyerPage }) => {
       const token = await tokenFor(buyerPage);
       const response = await buyerPage.request.get(`${API_BASE_URL}/recommendations/personalized?sort=invalid`, { headers: { Authorization: `Bearer ${token}` } });
       expect(response.status()).toBe(400);
+      await captureApiEvidence(buyerPage, 'A-02_1_invalid_recommendation_query', 'GET', response.url(), undefined, response.status(), await response.json());
     });
 
     test('A-03: rejects a non-buyer recommendation request', async ({ merchantPage }) => {
       const token = await tokenFor(merchantPage);
       const response = await merchantPage.request.get(`${API_BASE_URL}/recommendations/personalized`, { headers: { Authorization: `Bearer ${token}` } });
       expect(response.status()).toBe(403);
+      await captureApiEvidence(merchantPage, 'A-03_1_non_buyer_forbidden', 'GET', response.url(), undefined, response.status(), await response.json());
     });
 
     test('A-04: offers retry after a failed recommendations request', async ({ buyerPage }) => {
       await mockPage(buyerPage);
       let retryRequested = false;
+      let failedRequestUrl = '';
+      let successfulRequestUrl = '';
+      const failedResponseBody = { message: 'Temporary failure' };
+      const successfulResponseBody = { data: { data: products, meta: { page: 1, limit: 12, total: 2, totalPages: 1 }, source: 'ai', analysisAge: 0, skinTypes: ['dry'] } };
       await buyerPage.route('**/recommendations/personalized**', async (route) => {
         if (!retryRequested) {
-          await route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"Temporary failure"}' });
+          failedRequestUrl = route.request().url();
+          await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify(failedResponseBody) });
           return;
         }
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { data: products, meta: { page: 1, limit: 12, total: 2, totalPages: 1 }, source: 'ai', analysisAge: 0, skinTypes: ['dry'] } }) });
+        successfulRequestUrl = route.request().url();
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(successfulResponseBody) });
       });
       const screen = matching(buyerPage);
       await screen.goto();
@@ -671,6 +740,8 @@ test.describe('Matching & Recommendation', () => {
       await buyerPage.getByRole('button', { name: 'Retry' }).click();
       await expect(buyerPage.getByText('Hydrating Serum')).toBeVisible();
       await screen.capture('A-04_1_retry');
+      await captureApiEvidence(buyerPage, 'A-04_2_failed_recommendation_request', 'GET', failedRequestUrl, undefined, 503, failedResponseBody);
+      await captureApiEvidence(buyerPage, 'A-04_3_retried_recommendation_request', 'GET', successfulRequestUrl, undefined, 200, successfulResponseBody);
     });
 
     test('A-05: records malformed and missing similar-product ID behavior', async ({ buyerPage }) => {
@@ -679,20 +750,25 @@ test.describe('Matching & Recommendation', () => {
       // PostgreSQL rejects a non-UUID value for the UUID-typed product ID column.
       expect(malformed.status()).toBe(500);
       expect(missing.status()).toBe(200);
+      await captureApiEvidence(buyerPage, 'A-05_1_malformed_similar_product_id', 'GET', malformed.url(), undefined, malformed.status(), await malformed.json());
       const body = await missing.json();
       expect(body.data.data).toEqual([]);
       expect(body.data.meta).toMatchObject({ total: 0, totalPages: 0 });
+      await captureApiEvidence(buyerPage, 'A-05_2_missing_similar_product', 'GET', missing.url(), undefined, missing.status(), body);
     });
 
     test('A-06: accepts requests above the documented rate-limit threshold', async ({ buyerPage }) => {
       const token = await tokenFor(buyerPage);
       const responses = await Promise.all(Array.from({ length: 31 }, () => buyerPage.request.get(`${API_BASE_URL}/recommendations/personalized`, { headers: { Authorization: `Bearer ${token}` } })));
       expect(responses.every((response) => response.status() === 200)).toBe(true);
+      const lastResponse = responses[responses.length - 1];
+      await captureApiEvidence(buyerPage, 'A-06_1_request_above_rate_limit_threshold', 'GET', lastResponse.url(), undefined, lastResponse.status(), await lastResponse.json());
     });
 
     test('A-07: blocks non-buyers from the recommendations page', async ({ merchantPage }) => {
       await merchantPage.goto('/buyer/recommendations');
       await expect(merchantPage).toHaveURL(/\/unauthorized/);
+      await captureScreenshot(merchantPage, 'A-07_1_non_buyer_unauthorized_page');
     });
 
     test('A-08: rejects negative price input without applying it', async ({ buyerPage }) => {
@@ -733,6 +809,7 @@ test.describe('Matching & Recommendation', () => {
       const body = await response.json();
       expect(response.status()).toBe(200);
       expect(body.data.data).toEqual([]);
+      await captureApiEvidence(buyerPage, 'B-03_1_page_beyond_total_pages', 'GET', response.url(), undefined, response.status(), body);
     });
 
     test('B-04: accepts limit 50 and rejects limit 51', async ({ buyerPage }) => {
@@ -741,8 +818,11 @@ test.describe('Matching & Recommendation', () => {
       const allowed = await buyerPage.request.get(`${API_BASE_URL}/recommendations/personalized?limit=50`, { headers });
       const rejected = await buyerPage.request.get(`${API_BASE_URL}/recommendations/personalized?limit=51`, { headers });
       expect(allowed.status()).toBe(200);
-      expect((await allowed.json()).data.meta.limit).toBe(50);
+      const allowedBody = await allowed.json();
+      expect(allowedBody.data.meta.limit).toBe(50);
       expect(rejected.status()).toBe(400);
+      await captureApiEvidence(buyerPage, 'B-04_1_maximum_allowed_limit', 'GET', allowed.url(), undefined, allowed.status(), allowedBody);
+      await captureApiEvidence(buyerPage, 'B-04_2_limit_above_maximum', 'GET', rejected.url(), undefined, rejected.status(), await rejected.json());
     });
 
     test('B-05: displays the empty recommendation history state', async ({ buyerPage }) => {
@@ -796,6 +876,7 @@ test.describe('Matching & Recommendation', () => {
       expect(Array.isArray(body.data.data)).toBe(true);
       expect(['ai', 'generic']).toContain(body.data.source);
       expect(body.data.meta).toEqual(expect.objectContaining({ page: 1, limit: 12, total: expect.any(Number), totalPages: expect.any(Number) }));
+      await captureApiEvidence(buyerPage, 'I-01_1_api_recommendations', 'GET', response.url(), undefined, response.status(), body);
     });
 
     // Live-data smoke test: nothing is intercepted here, so the assertions run
@@ -841,6 +922,8 @@ test.describe('Matching & Recommendation', () => {
       const invalid = await buyerPage.request.get(`${API_BASE_URL}/recommendations/personalized`, { headers: { Authorization: 'Bearer invalid-token' } });
       expect(missing.status()).toBe(401);
       expect(invalid.status()).toBe(401);
+      await captureApiEvidence(buyerPage, 'I-02_1_missing_token', 'GET', missing.url(), undefined, missing.status(), await missing.json());
+      await captureApiEvidence(buyerPage, 'I-02_2_invalid_token', 'GET', invalid.url(), undefined, invalid.status(), await invalid.json());
     });
 
     test('I-03: returns a similar-products array excluding the source product', async ({ buyerPage }) => {
@@ -849,6 +932,7 @@ test.describe('Matching & Recommendation', () => {
       expect(response.status()).toBe(200);
       expect(Array.isArray(body.data.data)).toBe(true);
       expect(body.data.data.every((item: { id: string }) => item.id !== products[0].id)).toBe(true);
+      await captureApiEvidence(buyerPage, 'I-03_1_api_similar_products', 'GET', response.url(), undefined, response.status(), body);
     });
 
     test('I-04: returns paginated history for the authenticated buyer', async ({ buyerPage }) => {
@@ -858,6 +942,7 @@ test.describe('Matching & Recommendation', () => {
       expect(response.status()).toBe(200);
       expect(Array.isArray(body.data.data)).toBe(true);
       expect(body.data.meta).toMatchObject({ page: 1, limit: 5 });
+      await captureApiEvidence(buyerPage, 'I-04_1_api_recommendation_history', 'GET', response.url(), undefined, response.status(), body);
     });
 
     test('I-05: returns the ad panel contract for the recommendation placement', async ({ buyerPage }) => {
@@ -866,30 +951,41 @@ test.describe('Matching & Recommendation', () => {
       expect(response.status()).toBe(200);
       expect(Array.isArray(body.data.data)).toBe(true);
       expect(body.data.meta).toEqual(expect.objectContaining({ total: expect.any(Number), maxAds: expect.any(Number) }));
+      await captureApiEvidence(buyerPage, 'I-05_1_api_ad_panel', 'GET', response.url(), undefined, response.status(), body);
     });
 
     test('I-06: records impressions for submitted ad IDs', async ({ buyerPage }) => {
       const response = await buyerPage.request.post(`${API_BASE_URL}/ads/track/impression`, { data: { adIds: ['e2e-ad-1', 'e2e-ad-2'] } });
       expect(response.status()).toBe(200);
-      expect((await response.json()).data.data.recorded).toBe(2);
+      const body = await response.json();
+      expect(body.data.data.recorded).toBe(2);
+      await captureApiEvidence(buyerPage, 'I-06_1_api_ad_impression', 'POST', response.url(), { adIds: ['e2e-ad-1', 'e2e-ad-2'] }, response.status(), body);
     });
 
     test('I-07: records a sponsored ad click', async ({ buyerPage }) => {
       const response = await buyerPage.request.post(`${API_BASE_URL}/ads/track/click`, { data: { adId: 'e2e-ad-1', placement: 'recommendation_page_banner' } });
       expect(response.status()).toBe(200);
-      expect((await response.json()).data.data.recorded).toBe(true);
+      const body = await response.json();
+      expect(body.data.data.recorded).toBe(true);
+      await captureApiEvidence(buyerPage, 'I-07_1_api_ad_click', 'POST', response.url(), { adId: 'e2e-ad-1', placement: 'recommendation_page_banner' }, response.status(), body);
     });
 
     test('I-08: documents permissive handling of malformed ad tracking payloads', async ({ buyerPage }) => {
       const malformedImpression = await buyerPage.request.post(`${API_BASE_URL}/ads/track/impression`, { data: { adIds: 'not-an-array' } });
       expect(malformedImpression.status()).toBe(200);
-      expect((await malformedImpression.json()).data.data.recorded).toBe('not-an-array'.length);
+      const malformedImpressionBody = await malformedImpression.json();
+      expect(malformedImpressionBody.data.data.recorded).toBe('not-an-array'.length);
+      await captureApiEvidence(buyerPage, 'I-08_1_malformed_impression', 'POST', malformedImpression.url(), { adIds: 'not-an-array' }, malformedImpression.status(), malformedImpressionBody);
       const emptyImpression = await buyerPage.request.post(`${API_BASE_URL}/ads/track/impression`, { data: { adIds: [] } });
       expect(emptyImpression.status()).toBe(200);
-      expect((await emptyImpression.json()).data.data.recorded).toBe(0);
+      const emptyImpressionBody = await emptyImpression.json();
+      expect(emptyImpressionBody.data.data.recorded).toBe(0);
+      await captureApiEvidence(buyerPage, 'I-08_2_empty_impression', 'POST', emptyImpression.url(), { adIds: [] }, emptyImpression.status(), emptyImpressionBody);
       const malformedClick = await buyerPage.request.post(`${API_BASE_URL}/ads/track/click`, { data: {} });
       expect(malformedClick.status()).toBe(200);
-      expect((await malformedClick.json()).data.data.recorded).toBe(true);
+      const malformedClickBody = await malformedClick.json();
+      expect(malformedClickBody.data.data.recorded).toBe(true);
+      await captureApiEvidence(buyerPage, 'I-08_3_malformed_click', 'POST', malformedClick.url(), {}, malformedClick.status(), malformedClickBody);
     });
   });
 
