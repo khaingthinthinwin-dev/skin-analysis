@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-16T07:13:00.832Z",
+  "capturedAt": "2026-10-20T04:40:58.100Z",
   "description": "DB users row — 128-char password accepted",
   "results": [
     {
@@ -7,13 +7,13 @@
       "rowCount": 1,
       "rows": [
         {
-          "id": "17964961-aafd-4ace-b387-4d195e5c510c",
-          "email": "leo.harding.mvamrx1s28@gmail.com",
+          "id": "9f3a02e9-27ee-48e7-8c94-b3699711e8d9",
+          "email": "leo.harding.mvg73skv38@gmail.com",
           "name": "Leo Harding",
           "role_code": "buyer",
           "is_active": true,
-          "email_verified": false,
-          "created_at": "2026-10-16T00:43:00.488Z"
+          "email_verified": true,
+          "created_at": "2026-10-19T22:10:57.784Z"
         }
       ]
     }
